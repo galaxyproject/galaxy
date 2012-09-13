@@ -3,34 +3,33 @@ Backbone.js implementation of history panel
 
 TODO:
     replicate then refactor (could be the wrong order)
-    History meta controls (rename, annotate, etc. - see history.js.120823.bak)
-    choose a templating system and use it consistently
-    HIview state transitions (eg. upload -> ok), curr: build new, delete old, place new (in render)
-    events (local/ui and otherwise)
-    widget building (popupmenu, etc.)
-    localization
-    incorporate relations
-    convert function comments to /** style
-    complete comments
+    
+    fix:
+        tags
+        annotations
+    _render_displayApps
+    _render_downloadButton
+        widget building (popupmenu, etc.)
     
     don't draw body until it's first unhide event
-    
-    as always: where does the model end and the view begin?
-    HistoryPanel
+    all history.mako js -> this
+    HIview state transitions (eg. upload -> ok), curr: build new, delete old, place new (in render)
+    History (meta controls : collapse all, rename, annotate, etc. - see history.js.120823.bak)
+    events (local/ui and otherwise)
     HistoryCollection: (collection of History: 'Saved Histories')
     
-    CASES:
-        logged-in/NOT
-        show-deleted/DONT
-        
-    ?? anyway to _clone_ base HistoryItemView instead of creating a new one each time?
+    ?move IconButtonViews -> templates?
+    
+    convert function comments to jsDoc style, complete comments
+    collection -> show_deleted, show_hidden
+    poly HistoryItemView on: for_editing, display_structured, trans.user
+    incorporate relations?
+    localization
+        template helper {{#local}} calls _l()
 
     move inline styles into base.less
     add classes, ids on empty divs
-    localized text from template
     watch the magic strings
-    
-    poly HistoryItemView on: can/cant_edit
 */
 
 //==============================================================================
@@ -121,6 +120,12 @@ var HistoryItem = BaseModel.extend( LoggableMixin ).extend({
     initialize : function(){
         this.log( this + '.initialize', this.attributes );
         this.log( '\tparent history_id: ' + this.get( 'history_id' ) );
+        
+        //TODO: accessible is set in alt_hist
+        // this state is not in trans.app.model.Dataset.states - set it here
+        if( !this.get( 'accessible' ) ){
+            this.set( 'state', HistoryItem.STATES.NOT_VIEWABLE );
+        }
     },
 
     isEditable : function(){
@@ -148,14 +153,15 @@ var HistoryItem = BaseModel.extend( LoggableMixin ).extend({
 
 //------------------------------------------------------------------------------
 HistoryItem.STATES = {
-    NEW         : 'new',
-    UPLOAD      : 'upload',
-    QUEUED      : 'queued',
-    RUNNING     : 'running',
-    OK          : 'ok',
-    EMPTY       : 'empty',
-    ERROR       : 'error',
-    DISCARDED   : 'discarded',
+    NOT_VIEWABLE        : 'not_viewable',   // not in trans.app.model.Dataset.states
+    NEW                 : 'new',
+    UPLOAD              : 'upload',
+    QUEUED              : 'queued',
+    RUNNING             : 'running',
+    OK                  : 'ok',
+    EMPTY               : 'empty',
+    ERROR               : 'error',
+    DISCARDED           : 'discarded',
     SETTING_METADATA    : 'setting_metadata',
     FAILED_METADATA     : 'failed_metadata'
 };
@@ -175,13 +181,11 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     // ................................................................................ SET UP
     initialize  : function(){
         this.log( this + '.initialize:', this, this.model );
-        
     },
    
     // ................................................................................ RENDER MAIN
     //??: this style builds an entire, new DOM tree - is that what we want??
     render : function(){
-        this.log( this + '.model:', this.model );
         var id = this.model.get( 'id' ),
             state = this.model.get( 'state' );
         this.clearReferences();
@@ -214,6 +218,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     
     clearReferences : function(){
         //??TODO: best way?
+        //?? do we really need these - not so far
         this.displayButton = null;
         this.editButton = null;
         this.deleteButton = null;
@@ -235,7 +240,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         return titleBar;
     },
 
-    // ................................................................................ DISPLAY, EDIT ATTR, DELETE
+    // ................................................................................ display, edit attr, delete
     _render_titleButtons : function(){
         // render the display, edit attr and delete icon-buttons
         var buttonDiv = $( '<div class="historyItemButtons"></div>' );
@@ -245,11 +250,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         return buttonDiv;
     },
     
-    //TODO: refactor the following three - use extend for new href (with model data or something else)
-    //TODO: move other data (non-href) into {} in view definition, cycle over those keys in _titlebuttons
-    //TODO: move disabled span data into view def, move logic into _titlebuttons
     _render_displayButton : function(){
-        
         // don't show display while uploading
         if( this.model.get( 'state' ) === HistoryItem.STATES.UPLOAD ){ return null; }
         
@@ -257,21 +258,20 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         displayBtnData = ( this.model.get( 'purged' ) )?({
             title       : 'Cannot display datasets removed from disk',
             enabled     : false,
-            icon_class  : 'display',
+            icon_class  : 'display'
             
         // if not, render the display icon-button with href 
         }):({
             title       : 'Display data in browser',
             href        : this.model.get( 'display_url' ),
             target      : ( this.model.get( 'for_editing' ) )?( 'galaxy_main' ):( null ),
-            icon_class  : 'display',
+            icon_class  : 'display'
         });
         this.displayButton = new IconButtonView({ model : new IconButton( displayBtnData ) });
         return this.displayButton.render().$el;
     },
     
     _render_editButton : function(){
-        
         // don't show edit while uploading, or if editable
         if( ( this.model.get( 'state' ) === HistoryItem.STATES.UPLOAD )
         ||  ( !this.model.get( 'for_editing' ) ) ){
@@ -306,29 +306,266 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         // don't show delete if not editable
         if( !this.model.get( 'for_editing' ) ){ return null; }
         
-        var deleteBtnData = ( this.model.get( 'delete_url' ) )?({
+        var deleteBtnData = {
             title       : 'Delete',
             href        : this.model.get( 'delete_url' ),
             target      : 'galaxy_main',
             id          : 'historyItemDeleter-' + this.model.get( 'id' ),
             icon_class  : 'delete'
-        }):({
-            title       : 'Dataset is already deleted',
-            icon_class  : 'delete',
-            enabled     : false
-        });
+        };
+        if( ( this.model.get( 'deleted' ) || this.model.get( 'purged' ) )
+        && ( !this.model.get( 'delete_url' ) ) ){
+            deleteBtnData = {
+                title       : 'Dataset is already deleted',
+                icon_class  : 'delete',
+                enabled     : false
+            };
+        }
         this.deleteButton = new IconButtonView({ model : new IconButton( deleteBtnData ) });
         return this.deleteButton.render().$el;
     },
     
+    // ................................................................................ titleLink
     _render_titleLink : function(){
-        this.log( 'model:', this.model.toJSON() );
         return $( jQuery.trim( HistoryItemView.templates.titleLink( this.model.toJSON() ) ) );
     },
 
     // ................................................................................ RENDER BODY
+    _render_hdaSummary : function(){
+        var modelData = this.model.toJSON();
+        // if there's no dbkey and it's editable : pass a flag to the template to render a link to editing in the '?'
+        if( this.model.get( 'metadata_dbkey' ) === '?'
+        &&  this.model.isEditable() ){
+            _.extend( modelData, { dbkey_unknown_and_editable : true });
+        }
+        return HistoryItemView.templates.hdaSummary( modelData );
+    },
+
+    // ................................................................................ primary actions
+    _render_primaryActionButtons : function( buttonRenderingFuncs ){
+        var primaryActionButtons = $( '<div/>' ),
+            view = this;
+        _.each( buttonRenderingFuncs, function( fn ){
+            primaryActionButtons.append( fn.call( view ) );
+        });
+        return primaryActionButtons;
+    },
+    
+    _render_downloadButton : function(){
+        // return either: a single download icon-button (if there are no meta files)
+        //  or a popupmenu with links to download assoc. meta files (if there are meta files)
+        
+        // don't show anything if the data's been purged
+        if( this.model.get( 'purged' ) ){ return null; }
+        
+        var downloadLink = linkHTMLTemplate({
+            title       : 'Download',
+            href        : this.model.get( 'download_url' ),
+            classes     : [ 'icon-button', 'tooltip', 'disk' ]
+        });
+        
+        // if no metafiles, return only the main download link
+        var download_meta_urls = this.model.get( 'download_meta_urls' );
+        if( !download_meta_urls ){
+            return downloadLink;
+        }
+        
+        // build the popupmenu for downloading main, meta files
+        var popupmenu = $( '<div popupmenu="dataset-' + this.model.get( 'id' ) + '-popup"></div>' );
+        popupmenu.append( linkHTMLTemplate({
+            text        : 'Download Dataset',
+            title       : 'Download',
+            href        : this.model.get( 'download_url' ),
+            classes     : [ 'icon-button', 'tooltip', 'disk' ]
+        }));
+        popupmenu.append( '<a>Additional Files</a>' );
+        for( file_type in download_meta_urls ){
+            popupmenu.append( linkHTMLTemplate({
+                text        : 'Download ' + file_type,
+                href        : download_meta_urls[ file_type ],
+                classes     : [ 'action-button' ]
+            }));
+        }
+        var menuButton = $( ( '<div style="float:left;" class="menubutton split popup"'
+                          + ' id="dataset-${dataset_id}-popup"></div>' ) );
+        menuButton.append( downloadLink );
+        popupmenu.append( menuButton );
+        return popupmenu;
+    },
+    
+    //NOTE: button renderers have the side effect of caching their IconButtonViews to this view
+    _render_errButton : function(){    
+        if( ( this.model.get( 'state' ) !== HistoryItem.STATES.ERROR )
+        ||  ( !this.model.get( 'for_editing' ) ) ){ return null; }
+        
+        this.errButton = new IconButtonView({ model : new IconButton({
+            title       : 'View or report this error',
+            href        : this.model.get( 'report_error_url' ),
+            target      : 'galaxy_main',
+            icon_class  : 'bug'
+        })});
+        return this.errButton.render().$el;
+    },
+    
+    _render_showParamsButton : function(){
+        // gen. safe to show in all cases
+        this.showParamsButton = new IconButtonView({ model : new IconButton({
+            title       : 'View details',
+            href        : this.model.get( 'show_params_url' ),
+            target      : 'galaxy_main',
+            icon_class  : 'information'
+        }) });
+        return this.showParamsButton.render().$el;
+    },
+    
+    _render_rerunButton : function(){
+        if( !this.model.get( 'for_editing' ) ){ return null; }
+        this.rerunButton = new IconButtonView({ model : new IconButton({
+            title       : 'Run this job again',
+            href        : this.model.get( 'rerun_url' ),
+            target      : 'galaxy_main',
+            icon_class  : 'arrow-circle'
+        }) });
+        return this.rerunButton.render().$el;
+    },
+    
+    _render_tracksterButton : function(){
+        var trackster_urls = this.model.get( 'trackster_urls' );
+        if( !( this.model.hasData() )
+        ||  !( this.model.get( 'for_editing' ) )
+        ||  !( trackster_urls ) ){ return null; }
+        
+        this.tracksterButton = new IconButtonView({ model : new IconButton({
+            title       : 'View in Trackster',
+            icon_class  : 'chart_curve'
+        })});
+        this.errButton.render(); //?? needed?
+        this.errButton.$el.addClass( 'trackster-add' ).attr({
+            'data-url'  : trackster_urls[ 'data-url' ],
+            'action-url': trackster_urls[ 'action-url' ],
+            'new-url'   : trackster_urls[ 'new-url' ]
+        });
+        return this.errButton.$el;
+    },
+    
+    // ................................................................................ secondary actions
+    _render_secondaryActionButtons : function( buttonRenderingFuncs ){
+        // move to the right (same level as primary)
+        var secondaryActionButtons = $( '<div style="float: right;"></div>' ),
+            view = this;
+        _.each( buttonRenderingFuncs, function( fn ){
+            secondaryActionButtons.append( fn.call( view ) );
+        });
+        return secondaryActionButtons;
+    },
+
+    _render_tagButton : function(){
+        if( !( this.model.hasData() )
+        ||  !( this.model.get( 'for_editing' ) )
+        ||   ( !this.model.get( 'retag_url' ) ) ){ return null; }
+        
+        this.tagButton = new IconButtonView({ model : new IconButton({
+            title       : 'Edit dataset tags',
+            target      : 'galaxy_main',
+            href        : this.model.get( 'retag_url' ),
+            icon_class  : 'tags'
+        })});
+        return this.tagButton.render().$el;
+    },
+
+    _render_annotateButton : function(){
+        if( !( this.model.hasData() )
+        ||  !( this.model.get( 'for_editing' ) )
+        ||   ( !this.model.get( 'annotate_url' ) ) ){ return null; }
+
+        this.annotateButton = new IconButtonView({ model : new IconButton({
+            title       : 'Edit dataset annotation',
+            target      : 'galaxy_main',
+            href        : this.model.get( 'annotate_url' ),
+            icon_class  : 'annotate'
+        })});
+        return this.annotateButton.render().$el;
+    },
+    
+    // ................................................................................ other elements
+    _render_tagArea : function(){
+        if( this.model.get( 'retag_url' ) ){ return null; }
+        //TODO: move to mvc/tags.js
+        return $( HistoryItemView.templates.tagArea( this.model.toJSON() ) );
+    },
+    
+    _render_annotationArea : function(){
+        if( !this.model.get( 'annotate_url' ) ){ return null; }
+        //TODO: move to mvc/annotations.js
+        return $( HistoryItemView.templates.annotationArea( this.model.toJSON() ) );
+    },
+    
+    _render_displayApps : function(){
+        if( !this.model.get( 'display_apps' ) ){ return null; }
+        var displayApps = this.model.get( 'displayApps' ),
+            displayAppsDiv = $( '<div/>' ),
+            displayAppSpan = $( '<span/>' );
+                
+        this.log( this + 'displayApps:', displayApps );
+        ////TODO: grrr...somethings not in the right scope here
+        //for( app_name in displayApps ){
+        //    //TODO: to template
+        //    var display_app = displayApps[ app_name ],
+        //        display_app_HTML = app_name + ' ';
+        //    for( location_name in display_app ){
+        //        display_app_HTML += linkHTMLTemplate({
+        //            text    : location_name,
+        //            href    : display_app[ location_name ].url,
+        //            target  : display_app[ location_name ].target
+        //        }) + ' ';
+        //    }
+        //    display_app_span.append( display_app_HTML );
+        //}
+        //displayAppsDiv.append( display_app_span );
+        
+        //displayAppsDiv.append( '<br />' );
+
+        //var display_appsDiv = $( '<div/>' );
+        //if( this.model.get( 'display_apps' ) ){
+        //
+        //    var display_apps = this.model.get( 'display_apps' ),
+        //        display_app_span = $( '<span/>' );
+        //        
+        //    //TODO: grrr...somethings not in the right scope here
+        //    for( app_name in display_apps ){
+        //        //TODO: to template
+        //        var display_app = display_apps[ app_name ],
+        //            display_app_HTML = app_name + ' ';
+        //        for( location_name in display_app ){
+        //            display_app_HTML += linkHTMLTemplate({
+        //                text    : location_name,
+        //                href    : display_app[ location_name ].url,
+        //                target  : display_app[ location_name ].target
+        //            }) + ' ';
+        //        }
+        //        display_app_span.append( display_app_HTML );
+        //    }
+        //    display_appsDiv.append( display_app_span );
+        //}
+        ////display_appsDiv.append( '<br />' );
+        //parent.append( display_appsDiv );
+        return displayAppsDiv;
+    },
+            
+    _render_peek : function(){
+        if( !this.model.get( 'peek' ) ){ return null; }
+        return $( '<div/>' ).append(
+            $( '<pre/>' )
+                .attr( 'id', 'peek' + this.model.get( 'id' ) )
+                .addClass( 'peek' )
+                .append( this.model.get( 'peek' ) )
+        );
+    },
+    
+    // ................................................................................ state body renderers
     // _render_body fns for the various states
     _render_body_not_viewable : function( parent ){
+        //TODO: revisit - still showing display, edit, delete (as common) - that CAN'T be right
         parent.append( $( '<div>You do not have permission to view dataset.</div>' ) );
     },
     
@@ -338,12 +575,18 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         
     _render_body_queued : function( parent ){
         parent.append( $( '<div>Job is waiting to run.</div>' ) );
-        parent.append( this._render_showParamsAndRerun() );
+        parent.append( this._render_primaryActionButtons([
+            this._render_showParamsButton,
+            this._render_rerunButton
+        ]));
     },
         
     _render_body_running : function( parent ){
         parent.append( '<div>Job is currently running.</div>' );
-        parent.append( this._render_showParamsAndRerun() );
+        parent.append( this._render_primaryActionButtons([
+            this._render_showParamsButton,
+            this._render_rerunButton
+        ]));
     },
         
     _render_body_error : function( parent ){
@@ -352,31 +595,20 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         }
         parent.append( ( 'An error occurred running this job: '
                        + '<i>' + $.trim( this.model.get( 'misc_info' ) ) + '</i>' ) );
-        
-        var actionBtnDiv = $( this._render_showParamsAndRerun() );
-        // bug report button
-        //NOTE: these are shown _before_ info, rerun so use _prepend_
-        if( this.model.get( 'for_editing' ) ){
-            //TODO??: save to view 'this.errButton'
-            this.errButton = new IconButtonView({ model : new IconButton({
-                title       : 'View or report this error',
-                href        : this.model.get( 'report_error_url' ),
-                target      : 'galaxy_main',
-                icon_class  : 'bug'
-            })});
-            actionBtnDiv.prepend( this.errButton.render().$el );
-        }
-        if( this.model.hasData() ){
-            //TODO: render_download_links( data, dataset_id )
-            // download dropdown
-            actionBtnDiv.prepend( this._render_downloadLinks() );
-        }
-        parent.append( actionBtnDiv );
+        parent.append( this._render_primaryActionButtons([
+            this._render_downloadButton,
+            this._render_errButton,
+            this._render_showParamsButton,
+            this._render_rerunButton
+        ]));
     },
         
     _render_body_discarded : function( parent ){
         parent.append( '<div>The job creating this dataset was cancelled before completion.</div>' );
-        parent.append( this._render_showParamsAndRerun() );
+        parent.append( this._render_primaryActionButtons([
+            this._render_showParamsButton,
+            this._render_rerunButton
+        ]));
     },
         
     _render_body_setting_metadata : function( parent ){
@@ -387,150 +619,46 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         //TODO: replace i with dataset-misc-info class 
         //?? why are we showing the file size when we know it's zero??
         parent.append( $( '<div>No data: <i>' + this.model.get( 'misc_blurb' ) + '</i></div>' ) );
-        parent.append( this._render_showParamsAndRerun() );
+        parent.append( this._render_primaryActionButtons([
+            this._render_showParamsButton,
+            this._render_rerunButton
+        ]));
     },
         
     _render_body_failed_metadata : function( parent ){
-        // add a message box about the failure at the top of the body, then...
-        var warningMsgText = 'An error occurred setting the metadata for this dataset.';
-        if( this.model.isEditable() ){
-            var editLink = linkHTMLTemplate({
-                text        : 'set it manually or retry auto-detection',
-                href        : this.model.get( 'edit_url' ),
-                target      : 'galaxy_main'
-            });
-            warningMsgText += 'You may be able to ' + editLink + '.';
-        }
-        parent.append( $( HistoryItemView.templates.warningMsg({ warning: warningMsgText }) ) );
-        
-        //...render the remaining body as STATES.OK (only diff between these states is the box above)
+        //TODO: the css for this box is broken (unlike the others)
+        // add a message box about the failure at the top of the body...
+        parent.append( $( HistoryItemView.templates.failedMetadata( this.model.toJSON() ) ) );
+        //...then render the remaining body as STATES.OK (only diff between these states is the box above)
         this._render_body_ok( parent );
     },
         
     _render_body_ok : function( parent ){
         // most common state renderer and the most complicated
-        
-        // build the summary info (using template and dbkey data)
         parent.append( this._render_hdaSummary() );
         
-        if( this.model.get( 'misc_info' ) ){
-            parent.append( $( '<div class="info">Info: ' + this.model.get( 'misc_info' ) + '</div>' ) );
-        }
+        parent.append( this._render_primaryActionButtons([
+            this._render_downloadButton,
+            this._render_errButton,
+            this._render_showParamsButton,
+            this._render_rerunButton
+        ]));
+        parent.append( this._render_secondaryActionButtons([
+            this._render_tagButton,
+            this._render_annotateButton
+        ]));
+        parent.append( '<div class="clear"/>' );
         
-        // hasData
-        if( this.model.hasData() ){
-            var actionBtnDiv = $( '<div/>' );
-            
-            // render download links, show_params
-            actionBtnDiv.append( this._render_downloadLinks() );
-            actionBtnDiv.append( $( linkHTMLTemplate({
-                title       : 'View details',
-                href        : this.model.get( 'show_params_url' ),
-                target      : 'galaxy_main',
-                classes     : [ 'icon-button', 'tooltip', 'information' ]
-            })));
-            
-            // if for_editing
-            if( this.model.get( 'for_editing' ) ){
-                
-                // rerun
-                actionBtnDiv.append( $( linkHTMLTemplate({
-                    title       : 'Run this job again',
-                    href        : this.model.get( 'rerun_url' ),
-                    target      : 'galaxy_main',
-                    classes     : [ 'icon-button', 'tooltip', 'arrow-circle' ]
-                })));
-                
-                if( this.model.get( 'trackster_urls' ) ){
-                    // link to trackster
-                    var trackster_urls = this.model.get( 'trackster_urls' );
-                    actionBtnDiv.append( $( linkHTMLTemplate({
-                        title       : 'View in Trackster',
-                        href        : "javascript:void(0)",
-                        classes     : [ 'icon-button', 'tooltip', 'chart_curve', 'trackster-add' ],
-                        // prob just _.extend
-                        'data-url'  : trackster_urls[ 'data-url' ],
-                        'action-url': trackster_urls[ 'action-url' ],
-                        'new-url'   : trackster_urls[ 'new-url' ]
-                    })));
-                }
-                
-                // if trans.user
-                if( this.model.get( 'retag_url' ) && this.model.get( 'annotate_url' ) ){
-                    // tag, annotate buttons
-                    //TODO: move to tag, Annot MV
-                    var tagsAnnotationsBtns = $( '<div style="float: right;"></div>' );
-                    tagsAnnotationsBtns.append( $( linkHTMLTemplate({
-                        title       : 'Edit dataset tags',
-                        target      : 'galaxy_main',
-                        href        : this.model.get( 'retag_url' ),
-                        classes     : [ 'icon-button', 'tooltip', 'tags' ]
-                    })));
-                    tagsAnnotationsBtns.append( $( linkHTMLTemplate({
-                        title       : 'Edit dataset annotation',
-                        target      : 'galaxy_main',
-                        href        : this.model.get( 'annotation_url' ),
-                        classes     : [ 'icon-button', 'tooltip', 'annotate' ]
-                    })));
-                    actionBtnDiv.append( tagsAnnotationsBtns );
-                    actionBtnDiv.append( '<div style="clear: both"></div>' );
-                    
-                    // tag/annot display areas
-                    this.tagArea = $( '<div class="tag-area" style="display: none">' );
-                    this.tagArea.append( '<strong>Tags:</strong>' );
-                    this.tagElt = $( '<div class="tag-elt"></div>' );
-                    actionBtnDiv.append( this.tagArea.append( this.tagElt ) );
-                    
-                    var annotationArea = $( ( '<div id="${dataset_id}-annotation-area"'
-                                            + ' class="annotation-area" style="display: none">' ) );
-                    this.annotationArea = annotationArea;
-                    annotationArea.append( '<strong>Annotation:</strong>' );
-                    this.annotationElem = $( '<div id="' + this.model.get( 'id' ) + '-annotation-elt" '
-                        + 'style="margin: 1px 0px 1px 0px" class="annotation-elt tooltip editable-text" '
-                        + 'title="Edit dataset annotation"></div>' );
-                    annotationArea.append( this.annotationElem );
-                    actionBtnDiv.append( annotationArea );
-                }
-            }
-            // clear div
-            actionBtnDiv.append( '<div style="clear: both;"></div>' );
-            parent.append( actionBtnDiv );
-            
-            var display_appsDiv = $( '<div/>' );
-            if( this.model.get( 'display_apps' ) ){
-                var display_apps = this.model.get( 'display_apps' ),
-                    display_app_span = $( '<span/>' );
-                    
-                //TODO: grrr...somethings not in the right scope here
-                for( app_name in display_apps ){
-                    //TODO: to template
-                    var display_app = display_apps[ app_name ],
-                        display_app_HTML = app_name + ' ';
-                    for( location_name in display_app ){
-                        display_app_HTML += linkHTMLTemplate({
-                            text    : location_name,
-                            href    : display_app[ location_name ].url,
-                            target  : display_app[ location_name ].target
-                        }) + ' ';
-                    }
-                    display_app_span.append( display_app_HTML );
-                }
-                display_appsDiv.append( display_app_span );
-            }
-            //display_appsDiv.append( '<br />' );
-            parent.append( display_appsDiv );
+        parent.append( this._render_tagArea() );
+        parent.append( this._render_annotationArea() );
         
-        } else if( this.model.get( 'for_editing' ) ){
-            parent.append( this._render_showParamsAndRerun() );
-        }
-        
+        parent.append( this._render_displayApps() );
         parent.append( this._render_peek() );
     },
     
     _render_body : function(){
         //this.log( this + '_render_body' );
-        var state = this.model.get( 'state' ),
-            for_editing = this.model.get( 'for_editing' );
+        var state = this.model.get( 'state' );
         //this.log( 'state:', state, 'for_editing', for_editing );
         
         //TODO: incorrect id (encoded - use hid?)
@@ -539,6 +667,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
             .addClass( 'historyItemBody' )
             .attr(  'style', 'display: block' );
         
+        //TODO: not a fan of this
         switch( state ){
             case HistoryItem.STATES.NOT_VIEWABLE :
                 this._render_body_not_viewable( body ); 
@@ -582,92 +711,6 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         return body;
     },
 
-    _render_hdaSummary : function(){
-        var modelData = this.model.toJSON();
-        
-        // if there's no dbkey and it's editable : pass a flag to the template to render a link to editing in the '?'
-        if( this.model.get( 'metadata_dbkey' ) === '?'
-        &&  this.model.isEditable() ){
-            _.extend( modelData, { dbkey_unknown_and_editable : true });
-        }
-        return HistoryItemView.templates.hdaSummary( modelData );
-    },
-
-    _render_showParamsAndRerun : function(){
-        //TODO??: generalize to _render_actionButtons, pass in list of 'buttons' to render, default to these two
-        var actionBtnDiv = $( '<div/>' );
-        
-        this.showParamsButton = new IconButtonView({ model : new IconButton({
-            title       : 'View details',
-            href        : this.model.get( 'show_params_url' ),
-            target      : 'galaxy_main',
-            icon_class  : 'information'
-        }) });
-        actionBtnDiv.append( this.showParamsButton.render().$el );
-        
-        if( this.model.get( 'for_editing' ) ){
-            this.rerunButton = new IconButtonView({ model : new IconButton({
-                title       : 'Run this job again',
-                href        : this.model.get( 'rerun_url' ),
-                target      : 'galaxy_main',
-                icon_class  : 'arrow-circle'
-            }) });
-        }
-        return actionBtnDiv;
-    },
-    
-    _render_downloadLinks : function(){
-        // return either: a single download icon-button (if there are no meta files)
-        //  or a popupmenu with links to download assoc. meta files (if there are meta files)
-        
-        // don't show anything if the data's been purged
-        if( this.model.get( 'purged' ) ){ return null; }
-        
-        var downloadLink = linkHTMLTemplate({
-            title       : 'Download',
-            href        : this.model.get( 'download_url' ),
-            classes     : [ 'icon-button', 'tooltip', 'disk' ]
-        });
-        
-        // if no metafiles, return only the main download link
-        var download_meta_urls = this.model.get( 'download_meta_urls' );
-        if( !download_meta_urls ){
-            return downloadLink;
-        }
-        
-        // build the popupmenu for downloading main, meta files
-        var popupmenu = $( '<div popupmenu="dataset-' + this.model.get( 'id' ) + '-popup"></div>' );
-        popupmenu.append( linkHTMLTemplate({
-            text        : 'Download Dataset',
-            title       : 'Download',
-            href        : this.model.get( 'download_url' ),
-            classes     : [ 'icon-button', 'tooltip', 'disk' ]
-        }));
-        popupmenu.append( '<a>Additional Files</a>' );
-        for( file_type in download_meta_urls ){
-            popupmenu.append( linkHTMLTemplate({
-                text        : 'Download ' + file_type,
-                href        : download_meta_urls[ file_type ],
-                classes     : [ 'action-button' ]
-            }));
-        }
-        var menuButton = $( ( '<div style="float:left;" class="menubutton split popup"'
-                          + ' id="dataset-${dataset_id}-popup"></div>' ) );
-        menuButton.append( downloadLink );
-        popupmenu.append( menuButton );
-        return popupmenu;
-    },
-
-    _render_peek : function(){
-        if( !this.model.get( 'peek' ) ){ return null; }
-        return $( '<div/>' ).append(
-            $( '<pre/>' )
-                .attr( 'id', 'peek' + this.model.get( 'id' ) )
-                .addClass( 'peek' )
-                .append( this.model.get( 'peek' ) )
-        );
-    },
-
     // ................................................................................ EVENTS
     events : {
         'click .historyItemTitle'           : 'toggleBodyVisibility',
@@ -677,10 +720,11 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     
     // ................................................................................ STATE CHANGES / MANIPULATION
     loadAndDisplayTags : function( event ){
+        //BUG: broken with latest
         //TODO: this is a drop in from history.mako - should use MV as well
-        this.log( this, '.loadAndDisplayTags', event );
-        var tagArea = this.tagArea;
-        var tagElt = this.tagElt;
+        this.log( this + '.loadAndDisplayTags', event );
+        var tagArea = this.$el.find( '.tag-area' ),
+            tagElt = tagArea.find( '.tag-elt' );
 
         // Show or hide tag area; if showing tag area and it's empty, fill it.
         if( tagArea.is( ":hidden" ) ){
@@ -688,9 +732,8 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
                 // Need to fill tag element.
                 $.ajax({
                     url: this.model.get( 'ajax_get_tag_url' ),
-                    error: function() { alert( "Tagging failed" ) },
+                    error: function() { alert( "Tagging failed" ); },
                     success: function(tag_elt_html) {
-                        this.log( 'tag_elt_html:', tag_elt_html );
                         tagElt.html(tag_elt_html);
                         tagElt.find(".tooltip").tooltip();
                         tagArea.slideDown("fast");
@@ -709,21 +752,20 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     },
     
     loadAndDisplayAnnotation : function( event ){
+        //BUG: broken with latest
         //TODO: this is a drop in from history.mako - should use MV as well
-        this.log( this, '.loadAndDisplayAnnotation', event );
-        var annotationArea = this.annotationArea,
-            annotationElem = this.annotationElem,
+        this.log( this + '.loadAndDisplayAnnotation', event );
+        var annotationArea = this.$el.find( '.annotation-area' ),
+            annotationElem = annotationArea.find( '.annotation-elt' ),
             setAnnotationUrl = this.model.get( 'ajax_set_annotation_url' );
 
         // Show or hide annotation area; if showing annotation area and it's empty, fill it.
-        this.log( 'annotationArea hidden:', annotationArea.is( ":hidden" ) );
-        this.log( 'annotationElem html:', annotationElem.html() );
         if ( annotationArea.is( ":hidden" ) ){
             if( !annotationElem.html() ){
                 // Need to fill annotation element.
                 $.ajax({
                     url: this.model.get( 'ajax_get_annotation_url' ),
-                    error: function(){ alert( "Annotations failed" ) },
+                    error: function(){ alert( "Annotations failed" ); },
                     success: function( htmlFromAjax ){
                         if( htmlFromAjax === "" ){
                             htmlFromAjax = "<em>Describe or add notes to dataset</em>";
@@ -767,12 +809,15 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
 //HistoryItemView.templates = InDomTemplateLoader.getTemplates({
 HistoryItemView.templates = CompiledTemplateLoader.getTemplates({
     'common-templates.html' : {
-        warningMsg      : 'template-warningmessagesmall',
+        warningMsg      : 'template-warningmessagesmall'
     },
     'history-templates.html' : {
         messages        : 'template-history-warning-messages',
         titleLink       : 'template-history-titleLink',
-        hdaSummary      : 'template-history-hdaSummary'
+        hdaSummary      : 'template-history-hdaSummary',
+        failedMetadata  : 'template-history-failedMetaData',
+        tagArea         : 'template-history-tagArea',
+        annotationArea  : 'template-history-annotationArea'
     }
 });
 
@@ -936,7 +981,7 @@ function createMockHistoryData(){
             metadata_dbkey      : '?', 
             metadata_sequences  : 0, 
             misc_blurb          : '215.8 MB', 
-            misc_info           : 'uploaded fastq file', 
+            misc_info           : 'uploaded fastq file (misc_info)', 
             model_class         : 'HistoryDatasetAssociation', 
             download_url        : '', 
             state               : 'ok', 
@@ -953,13 +998,15 @@ function createMockHistoryData(){
             //can_edit            : true,
             //can_edit            : false,
             
+            accessible          : true,
+            
             //TODO: move into model functions (build there (and cache?))
             //!! be careful with adding these accrd. to permissions
             //!!    IOW, don't send them via template/API if the user doesn't have perms to use
             //!!    (even if they don't show up)
-            undelete_url        : 'example.com/undelete',
-            purge_url           : 'example.com/purge',
-            unhide_url          : 'example.com/unhide',
+            undelete_url        : '',
+            purge_url           : '',
+            unhide_url          : '',
             
             display_url         : 'example.com/display',
             edit_url            : 'example.com/edit',
@@ -986,19 +1033,25 @@ function createMockHistoryData(){
     };
     _.extend( mockHistory.data, {
         
+        notAccessible : 
+            _.extend( _.clone( mockHistory.data.template ),
+                      { accessible : false }),
+        
         //deleted, purged, visible
         deleted     :
             _.extend( _.clone( mockHistory.data.template ),
-                      { deleted : true }),
-        //purged      :
-        //    _.extend( _.clone( mockHistory.data.template ),
-        //              { purged : true, deleted : true }),
+                      { deleted : true,
+                        delete_url : '',
+                        purge_url : 'example.com/purge',
+                        undelete_url : 'example.com/undelete' }),
         purgedNotDeleted :
             _.extend( _.clone( mockHistory.data.template ),
-                      { purged : true }),
+                      { purged : true,
+                        delete_url : '' }),
         notvisible  :
             _.extend( _.clone( mockHistory.data.template ),
-                      { visible : false }),
+                      { visible : false,
+                        unhide_url : 'example.com/unhide' }),
 
         hasDisplayApps :
             _.extend( _.clone( mockHistory.data.template ),

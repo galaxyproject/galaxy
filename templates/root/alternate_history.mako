@@ -302,7 +302,10 @@ ${ h.to_json_string( context_dict ) }
         
         "template-history-warning-messages",
         "template-history-titleLink",
-        "template-history-hdaSummary"
+        "template-history-hdaSummary",
+        "template-history-failedMetadata",
+        "template-history-tagArea",
+        "template-history-annotationArea"
     )}
     
     ## if using in-dom templates they need to go here (before the Backbone classes are defined)
@@ -315,6 +318,53 @@ ${ h.to_json_string( context_dict ) }
         "mvc/history"
         ##"mvc/tags", "mvc/annotations"
     )}
+    
+    <script type="text/javascript">
+        GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
+        // add needed controller urls to GalaxyPaths
+        galaxy_paths.set( 'dataset_path', "${h.url_for( controller='dataset' )}" )
+        
+        // Init. on document load.
+        var pageData = ${context_to_js()};
+        
+        //USE_MOCK_DATA = true;
+        USE_CURR_DATA = true;
+        
+        // on ready
+        $(function(){
+            if( console && console.debug ){ console.debug( 'using backbone.js in history panel' ); }
+            
+            if( window.USE_MOCK_DATA ){
+                if( console && console.debug ){ console.debug( '\t using mock data' ); }
+                createMockHistoryData();
+                return;
+            
+            } else if ( window.USE_CURR_DATA ){
+                if( console && console.debug ){ console.debug( '\t using current history data' ); }
+                glx_history = new History( pageData.history ).loadDatasetsAsHistoryItems( pageData.hdas );
+                glx_history_view = new HistoryView({ model: glx_history });
+                glx_history_view.render();
+                
+                hi = glx_history.items.at( 0 );
+                hi_view = new HistoryItemView({ model: hi });
+                $( 'body' ).append( hi_view.render() );
+                return;
+            }
+            
+            // sandbox here
+            // testing iconButton
+            //ibm = new IconButton({
+            //    icon_class : 'information',
+            //    on_click : function( event ){ console.debug( 'blerg' ); },
+            //});
+            //mockObj = { one : 1 };
+            //ibv = new IconButtonView({ model : ibm });
+            //new_click = function( event ){ console.debug( mockObj.one ); }
+            //$( 'body' ).append( ibv.render().$el );
+            
+        });
+    </script>
+    
 </%def>
 
 <%def name="stylesheets()">
@@ -358,41 +408,4 @@ ${ h.to_json_string( context_dict ) }
 	${_('Galaxy History')}
 </%def>
 
-<script type="text/javascript">
-    GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
-    // add needed controller urls to GalaxyPaths
-    galaxy_paths.set( 'dataset_path', "${h.url_for( controller='dataset' )}" )
-    
-    // Init. on document load.
-    var pageData = ${context_to_js()};
-    
-    //USE_MOCK_DATA = true;
-    USE_CURR_DATA = true;
-    
-    $(function(){
-        if( console && console.debug ){ console.debug( 'using backbone.js in history panel' ); }
-        
-        if( window.USE_MOCK_DATA ){
-            if( console && console.debug ){ console.debug( '\t using mock data' ); }
-            createMockHistoryData();
-            return;
-        
-        } else if ( USE_CURR_DATA ){
-            if( console && console.debug ){ console.debug( '\t using current history data' ); }
-            glx_history = new History( pageData.history ).loadDatasetsAsHistoryItems( pageData.hdas );
-            glx_history_view = new HistoryView({ model: glx_history });
-            glx_history_view.render();
-            
-            hi = glx_history.items.at( 0 );
-            hi_view = new HistoryItemView({ model: hi });
-            $( 'body' ).append( hi_view.render() );
-            return;
-        }
-        
-        // sandbox here
-    });
-</script>
-
-
-<body class="historyPage">
-</body>
+<body class="historyPage"></body>

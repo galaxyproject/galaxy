@@ -48,3 +48,10 @@ Handlebars.registerPartial( 'iconButton', function( buttonData, options ){
     return buffer;
 });
 </script>
+
+<script type="text/template" class="template-common" id="template-iconButton">
+{{! alternate template-based icon-button }}
+{{> iconButton this}}
+</script>
+
+

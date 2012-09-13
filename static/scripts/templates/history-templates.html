@@ -17,7 +17,7 @@
 
 {{#unless visible}}{{#warningmessagesmall}}
     This dataset has been hidden.
-    {{#if undelete_url}}
+    {{#if unhide_url}}
         Click <a href="{{ unhide_url }}" class="historyItemUnhide" id="historyItemUnhider-{{ id }}"
                  target="galaxy_history">here</a> to unhide it
     {{/if}}
@@ -29,12 +29,44 @@
 </script>
 
 <script type="text/template" class="template-history" id="template-history-hdaSummary">
-{{ misc_blurb }}<br />
-format: <span class="{{ data_type }}">{{ data_type }}</span>,
-database:
-{{#if dbkey_unknown_and_editable }}
-    <a href="{{ edit_url }}" target="galaxy_main">{{ metadata_dbkey }}</a>
-{{else}}
-    <span class="{{ metadata_dbkey }}">{{ metadata_dbkey }}</span>
+<div class="hda-summary">
+    {{ misc_blurb }}<br />
+    format: <span class="{{ data_type }}">{{ data_type }}</span>,
+    database:
+    {{#if dbkey_unknown_and_editable }}
+        <a href="{{ edit_url }}" target="galaxy_main">{{ metadata_dbkey }}</a>
+    {{else}}
+        <span class="{{ metadata_dbkey }}">{{ metadata_dbkey }}</span>
+    {{/if}}
+</div>
+{{#if misc_info}}
+<div class="hda-info">{{ misc_info }}</div>
 {{/if}}
 </script>
+
+<script type="text/template" class="template-history" id="template-history-failedMetaData">
+{{#warningmessagesmall}}
+An error occurred setting the metadata for this dataset.
+You may be able to <a href="{{ edit_url }}" target="galaxy_main">set it manually or retry auto-detection</a>.
+{{/warningmessagesmall}}
+</script>
+
+<script type="text/template" class="template-history" id="template-history-tagArea">
+{{! TODO: move to mvc/tag.js templates }}
+<div class="tag-area" style="display: none;">
+    <strong>Tags:</strong>
+    <div class="tag-elt">
+    </div>
+</div>
+</script>
+
+<script type="text/template" class="template-history" id="template-history-annotationArea">
+{{! TODO: move to mvc/annotations.js templates, editable-text }}
+<div id="{{ id }}-annotation-area" class="annotation-area" style="display: none;">
+    <strong>Annotation:</strong>
+    <div id="{{ id }}-anotation-elt" class="annotation-elt tooltip editable-text"
+         style="margin: 1px 0px 1px 0px" title="Edit dataset annotation">
+    </div>
+</div>
+</script>
+

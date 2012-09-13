@@ -39,6 +39,7 @@
 # ------------------------------------------------------------------------------
 
 TODO = """
+remove intermediate, handlebars step of multi->handlebars->compiled/.js (if handlebars does stdin)
 """
 
 import sys

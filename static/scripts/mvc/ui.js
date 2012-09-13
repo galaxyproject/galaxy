@@ -36,7 +36,6 @@ var IconButton = Backbone.Model.extend({
  */
 var IconButtonView = Backbone.View.extend({
     
-    
     initialize  : function(){
         // better rendering this way (for me anyway)
         this.model.attributes.tooltip_config = { placement : 'bottom' };
@@ -62,7 +61,6 @@ var IconButtonView = Backbone.View.extend({
     },
     
     click : function( event ){
-        console.debug( 'click event' );
         // if on_click pass to that function
         if( this.model.attributes.on_click ){
             this.model.attributes.on_click( event );

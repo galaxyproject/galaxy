@@ -80,7 +80,7 @@ function program10(depth0,data) {
   
   var buffer = "", stack1;
   buffer += "\n    This dataset has been hidden.\n    ";
-  stack1 = depth0.undelete_url;
+  stack1 = depth0.unhide_url;
   stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(11, program11, data)});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n";
