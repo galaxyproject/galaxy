@@ -35,12 +35,7 @@ var IconButton = Backbone.Model.extend({
  *  
  */
 var IconButtonView = Backbone.View.extend({
-    tagName     : 'a',
-    className   : 'icon-button',
     
-    // jsHint.shut( up )
-    hrefVoidFn  : [ 'javascript', ':void(0)' ].join( '' ),
-    fadeSpeed   : 0,
     
     initialize  : function(){
         // better rendering this way (for me anyway)
@@ -49,48 +44,16 @@ var IconButtonView = Backbone.View.extend({
     },
     
     render : function(){
-        //NOTE: this is meant to be rerendered on a model change
-        //  - since most of the rendering is attributes, it gets complicated
-        //TODO: template would be faster, more concise - more PITA
-        var disabled_class = this.model.attributes.icon_class + '_disabled';
+        //NOTE: not doing this hide will lead to disappearing buttons when they're both being hovered over & rendered
+        this.$el.tooltip( 'hide' );
         
-        if( !this.model.attributes.visible ){
-            //TODO: fancy - but may not work as you expect
-            this.$el.fadeOut( this.fadeSpeed );
-        }
+        // template in common-templates.html 
+        var newElem = $( Handlebars.partials.iconButton( this.model.toJSON() ) );
+        newElem.tooltip( this.model.get( 'tooltip_config' ) );
         
-        if( this.model.attributes.enabled ){
-            if( this.$el.hasClass( disabled_class ) ){
-                this.$el.removeClass( disabled_class );
-            }
-            this.$el.addClass( this.model.attributes.icon_class );
-        } else {
-            this.$el.removeClass( this.model.attributes.icon_class );
-            this.$el.addClass( disabled_class );
-        }
+        this.$el.replaceWith( newElem );
+        this.setElement( newElem );
         
-        if( this.model.attributes.isMenuButton ){
-            this.$el.addClass( 'menu-button' );
-        } else {
-            this.$el.removeClass( 'menu-button' );
-        }
-        
-        this.$el.data( 'tooltip', false );
-        this.$el.attr( 'data-original-title', null );
-        this.$el.removeClass( 'tooltip' );
-        if( this.model.attributes.title ){
-            this.$el.attr( 'title', this.model.attributes.title ).addClass( 'tooltip' );
-            this.$el.tooltip( this.model.attributes.tooltip_config );
-        }
-        
-        this.$el.attr( 'id',     ( this.model.attributes.id )?( this.model.attributes.id ):( null ) );
-        this.$el.attr( 'target', ( this.model.attributes.target )?( this.model.attributes.target ):( null ) );
-        this.$el.attr( 'href',   ( this.model.attributes.href && !this.model.attributes.on_click )?
-                                 ( this.model.attributes.href ):( this.hrefVoidFn ) );
-        
-        if( this.model.attributes.visible ){
-            this.$el.fadeIn( this.fadeSpeed );
-        }
         return this;
     },
     
@@ -99,6 +62,7 @@ var IconButtonView = Backbone.View.extend({
     },
     
     click : function( event ){
+        console.debug( 'click event' );
         // if on_click pass to that function
         if( this.model.attributes.on_click ){
             this.model.attributes.on_click( event );
@@ -108,6 +72,10 @@ var IconButtonView = Backbone.View.extend({
         return true;
     }
 });
+//TODO: bc h.templates is gen. loaded AFTER ui, Handlebars.partials.iconButton === undefined
+IconButtonView.templates = {
+    iconButton : Handlebars.partials.iconButton
+};
 
 
 var IconButtonCollection = Backbone.Collection.extend({

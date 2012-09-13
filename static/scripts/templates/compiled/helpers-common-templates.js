@@ -12,7 +12,7 @@ Handlebars.registerPartial( 'iconButton', function( buttonData, options ){
     var buffer = "";
     buffer += ( buttonData.enabled )?( '<a' ):( '<span' );
     
-    if( buttonData.title ){ buttonData.buffer += ' title="' + buttonData.title + '"'; }
+    if( buttonData.title ){ buffer += ' title="' + buttonData.title + '"'; }
     
     buffer += ' class="icon-button';
     if( buttonData.isMenuButton ){ buffer += ' menu-button'; }
@@ -27,7 +27,7 @@ Handlebars.registerPartial( 'iconButton', function( buttonData, options ){
     
     if( !buttonData.visible ){ buffer += ' style="display: none;"'; }
     
-    buffer += '>Bler' + ( ( buttonData.enabled )?( '</a>' ):( '</span>' ) );
+    buffer += '>' + ( ( buttonData.enabled )?( '</a>' ):( '</span>' ) );
     return buffer;
 });
 /** Renders a warning in a (mostly css) highlighted, iconned warning box

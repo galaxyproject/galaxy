@@ -122,7 +122,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
             
             history_panel_template = "root/history.mako"
             # history panel -> backbone
-            ##history_panel_template = "root/alternate_history.mako"
+            #history_panel_template = "root/alternate_history.mako"
             return trans.stream_template_mako( history_panel_template,
                                                history = history,
                                                annotation = self.get_item_annotation_str( trans.sa_session, trans.user, history ),

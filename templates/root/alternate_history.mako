@@ -298,6 +298,7 @@ ${ h.to_json_string( context_dict ) }
 
     ${h.templates(
         "helpers-common-templates",
+        "template-warningmessagesmall",
         
         "template-history-warning-messages",
         "template-history-titleLink",
@@ -314,34 +315,6 @@ ${ h.to_json_string( context_dict ) }
         "mvc/history"
         ##"mvc/tags", "mvc/annotations"
     )}
-
-    <script type="text/javascript">
-        GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
-        // add needed controller urls to GalaxyPaths
-        galaxy_paths.set( 'dataset_path', "${h.url_for( controller='dataset' )}" )
-        
-        // Init. on document load.
-        var pageData = ${context_to_js()};
-        
-        //USE_MOCK_DATA = true;
-        
-        $(function(){
-            if( console && console.debug ){ console.debug( 'using backbone.js in history panel' ); }
-            if( window.USE_MOCK_DATA ){
-                if( console && console.debug ){ console.debug( '\t using mock data' ); }
-                createMockHistoryData();
-                return;
-            }
-            
-            glx_history = new History( pageData.history ).loadDatasetsAsHistoryItems( pageData.hdas );
-            glx_history_view = new HistoryView({ model: glx_history });
-            glx_history_view.render();
-            
-            hi = glx_history.items.at( 0 );
-            hi_view = new HistoryItemView({ model: hi });
-            $( 'body' ).append( hi_view.render() );
-        });
-    </script>
 </%def>
 
 <%def name="stylesheets()">
@@ -384,6 +357,42 @@ ${ h.to_json_string( context_dict ) }
 <%def name="title()">
 	${_('Galaxy History')}
 </%def>
+
+<script type="text/javascript">
+    GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
+    // add needed controller urls to GalaxyPaths
+    galaxy_paths.set( 'dataset_path', "${h.url_for( controller='dataset' )}" )
+    
+    // Init. on document load.
+    var pageData = ${context_to_js()};
+    
+    //USE_MOCK_DATA = true;
+    USE_CURR_DATA = true;
+    
+    $(function(){
+        if( console && console.debug ){ console.debug( 'using backbone.js in history panel' ); }
+        
+        if( window.USE_MOCK_DATA ){
+            if( console && console.debug ){ console.debug( '\t using mock data' ); }
+            createMockHistoryData();
+            return;
+        
+        } else if ( USE_CURR_DATA ){
+            if( console && console.debug ){ console.debug( '\t using current history data' ); }
+            glx_history = new History( pageData.history ).loadDatasetsAsHistoryItems( pageData.hdas );
+            glx_history_view = new HistoryView({ model: glx_history });
+            glx_history_view.render();
+            
+            hi = glx_history.items.at( 0 );
+            hi_view = new HistoryItemView({ model: hi });
+            $( 'body' ).append( hi_view.render() );
+            return;
+        }
+        
+        // sandbox here
+    });
+</script>
+
 
 <body class="historyPage">
 </body>

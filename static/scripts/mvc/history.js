@@ -167,7 +167,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     // view for HistoryItem model above
 
     // uncomment this out see log messages
-    logger              : console,
+    //logger              : console,
 
     tagName     : "div",
     className   : "historyItemContainer",
@@ -763,9 +763,12 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
 });
 
 
-//==============================================================================
+//------------------------------------------------------------------------------
 //HistoryItemView.templates = InDomTemplateLoader.getTemplates({
 HistoryItemView.templates = CompiledTemplateLoader.getTemplates({
+    'common-templates.html' : {
+        warningMsg      : 'template-warningmessagesmall',
+    },
     'history-templates.html' : {
         messages        : 'template-history-warning-messages',
         titleLink       : 'template-history-titleLink',
