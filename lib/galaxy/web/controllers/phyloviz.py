@@ -84,7 +84,7 @@ class PhyloVizController( BaseUIController, UsesVisualizationMixin, UsesHistoryD
         else:
             try:
                 pd = Phyloviz_DataProvider()
-                json, config = pd.parseFile(filepath, fileExt)
+                json, config = pd.get_data(filepath, fileExt)
                 json = json[treeIndex]
             except Exception:
                 pass

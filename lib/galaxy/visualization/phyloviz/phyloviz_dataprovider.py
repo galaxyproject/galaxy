@@ -1,13 +1,17 @@
 from newickparser import Newick_Parser
 from nexusparser import Nexus_Parser
 from phyloxmlparser import Phyloxml_Parser
+from galaxy.visualization.data_providers import BaseDataProvider
 
-class Phyloviz_DataProvider(object):
+# TODO: bring this class into line with BaseDataProvider by 
+# using BaseDataProvider.init() and providing original dataset
+# and then reading from dataset rather than filepath.
+class Phyloviz_DataProvider( BaseDataProvider ):
 
-    def __init__(self):
+    def __init__( self ):
         pass
 
-    def parseFile(self, filepath, fileExt):
+    def get_data( self, filepath, fileExt ):
         """returns [trees], meta
             Trees are actually an array of JsonDicts. It's usually one tree, except in the case of Nexus
         """
