@@ -5,7 +5,7 @@ from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.visualization.genome.data_providers import *
 
-class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin ):
+class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     """
     RESTful controller for interactions with tools.
     """

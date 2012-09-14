@@ -357,7 +357,8 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
     def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
         return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
 
-class UsesVisualizationMixin( SharableItemSecurityMixin, UsesLibraryMixinItems ):
+class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, 
+                              UsesLibraryMixinItems ):
     """ Mixin for controllers that use Visualization objects. """
     
     viz_types = [ "trackster", "circster" ]

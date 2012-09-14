@@ -233,8 +233,8 @@ ${render_trackster_js_files()}
                         
             %if add_dataset is not None:
                 $.ajax({
-                    url: "${h.url_for( action='add_track_async' )}",
-                    data: { hda_id: "${add_dataset}" },
+                    url: add_track_async_url + "/${add_dataset}",
+                    data: { hda_ldda: 'hda', 'track_config': true },
                     dataType: "json",
                     success: function(track_data) { view.add_drawable( object_from_template(track_data, view, view) ) }
                 });

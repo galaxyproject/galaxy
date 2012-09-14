@@ -10,10 +10,13 @@ from galaxy.model.orm import *
 
 log = logging.getLogger( __name__ )
 
-class DatasetsController( BaseAPIController, UsesHistoryDatasetAssociationMixin ):
+def is_true ( a_str ):
+    return is_true == True or a_str in [ 'True', 'true', 'T', 't' ]
+
+class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
     @web.expose_api
-    def index( self, trans, hda_id, **kwd ):
+    def index( self, trans, **kwd ):
         """
         GET /api/datasets
         Lists datasets.
@@ -21,24 +24,31 @@ class DatasetsController( BaseAPIController, UsesHistoryDatasetAssociationMixin 
         pass
         
     @web.expose_api
-    def show( self, trans, id, deleted='False', **kwd ):
+    def show( self, trans, id, hda_ldda='hda', deleted='False', **kwd ):
         """
         GET /api/datasets/{encoded_dataset_id}
         Displays information about and/or content of a dataset.
         """
+
+        # Process arguments.
+        track_config = is_true( kwd.get( 'track_config', False ) )
         
-        # Get HDA.
+        # Get dataset.
         try:
-            hda = self.get_dataset( trans, id, check_ownership=True, check_accessible=True )
+            dataset = self.get_hda_or_ldda( trans, hda_ldda=hda_ldda, dataset_id=id )
         except Exception, e:
             return str( e )
-            
-        # Return information about HDA.
+
+        # Return info.
         rval = None
-        try:
-            rval = hda.get_api_value()
-        except Exception, e:
-            rval = "Error in dataset API at listing contents"
-            log.error( rval + ": %s" % str(e) )
-            trans.response.status = 500
+        if track_config:
+            rval = self.get_new_track_config( trans, dataset )
+        else:
+            # Default: return dataset as API value.
+            try:
+                rval = dataset.get_api_value()
+            except Exception, e:
+                rval = "Error in dataset API at listing contents"
+                log.error( rval + ": %s" % str(e) )
+                trans.response.status = 500
         return rval

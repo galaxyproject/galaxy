@@ -742,15 +742,16 @@ var add_datasets = function(dataset_url, add_track_async_url, success_fn) {
                     "Add": function() {
                         var requests = [];
                         $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
-                            var data,
+                            var data = {
+                                    'track_config': true,
+                                    'hda_ldda': 'hda'
+                                },
                                 id = $(this).val();
-                                if ($(this).attr("name") === "id") {
-                                    data = { hda_id: id };
-                                } else {
-                                    data = { ldda_id: id};
+                                if ($(this).attr("name") !== "id") {
+                                    data['hda_ldda'] = 'ldda';
                                 }
                                 requests[requests.length] = $.ajax({
-                                    url: add_track_async_url,
+                                    url: add_track_async_url + "/" + id,
                                     data: data,
                                     dataType: "json"
                                 });

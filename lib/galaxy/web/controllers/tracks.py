@@ -36,19 +36,6 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         return trans.fill_template( "tracks/new_browser.mako", dbkeys=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), default_dbkey=kwargs.get("default_dbkey", None) )
             
     @web.json
-    def add_track_async(self, trans, hda_id=None, ldda_id=None):
-        # Get dataset.
-        if hda_id:
-            hda_ldda = "hda"
-            dataset_id = hda_id
-        elif ldda_id:
-            hda_ldda = "ldda"
-            dataset_id = ldda_id
-        dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-        
-        return self.get_new_track_config( trans, dataset )
-
-    @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):
         if hda_id:
             hda_ldda = "hda"

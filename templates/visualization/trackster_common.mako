@@ -16,7 +16,7 @@
 
 ## Render a block of JavaScript that contains all necessary variables for Trackster.
 <%def name="render_trackster_js_vars()">
-    var add_track_async_url = "${h.url_for( controller='/tracks', action='add_track_async' )}",
+    var add_track_async_url = "${h.url_for( controller='/api/datasets' )}",
         add_datasets_url = "${h.url_for( controller='/visualization', action='list_current_history_datasets' )}",
         default_data_url = "${h.url_for( controller='/tracks', action='data' )}",
         raw_data_url = "${h.url_for( controller='/tracks', action='raw_data' )}",        
