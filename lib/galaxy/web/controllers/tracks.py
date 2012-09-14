@@ -17,7 +17,7 @@ from galaxy.visualization.genome.data_providers import *
 from galaxy.visualization.genomes import decode_dbkey, Genomes
 from galaxy.visualization.genome.visual_analytics import get_dataset_job                    
         
-class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin, SharableMixin ):
+class TracksController( BaseUIController, UsesVisualizationMixin, SharableMixin ):
     """
     Controller for track browser interface. Handles building a new browser from
     datasets in the current history, and display of the resulting browser.
@@ -34,28 +34,6 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
     @web.require_login()
     def new_browser( self, trans, **kwargs ):
         return trans.fill_template( "tracks/new_browser.mako", dbkeys=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), default_dbkey=kwargs.get("default_dbkey", None) )
-            
-    @web.json
-    def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):
-        if hda_id:
-            hda_ldda = "hda"
-            dataset_id = hda_id
-        elif ldda_id:
-            hda_ldda = "ldda"
-            dataset_id = ldda_id
-        dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-        
-        rows = []
-        if isinstance( dataset.datatype, Bed ):
-            data = RawBedDataProvider( original_dataset=dataset ).get_iterator()
-            for i, line in enumerate( data ):
-                if ( i > 500 ): break
-                fields = line.split()
-                location = name = "%s:%s-%s" % ( fields[0], fields[1], fields[2] )
-                if len( fields ) > 3:
-                    name = fields[4]
-                rows.append( [location, name] )
-        return { 'data': rows }
 
     @web.json
     def save( self, trans, vis_json ):
@@ -92,14 +70,6 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
             if trans.security.decode_id(new_dataset) in [ d["dataset_id"] for d in viz_config.get("tracks") ]:
                 new_dataset = None # Already in browser, so don't add
         return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset )
-
-    @web.json
-    def chroms( self, trans, dbkey=None, num=None, chrom=None, low=None ):
-        return self.app.genomes.chroms( trans, dbkey=dbkey, num=num, chrom=chrom, low=low )
-        
-    @web.json
-    def reference( self, trans, dbkey, chrom, low, high, **kwargs ):
-        return self.app.genomes.reference( trans, dbkey, chrom, low, high, **kwargs )
         
     @web.json
     def raw_data( self, trans, dataset_id, chrom, low, high, **kwargs ):
@@ -137,9 +107,7 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
     @web.json
     def dataset_state( self, trans, dataset_id, **kwargs ):
         """ Returns state of dataset. """
-        # TODO: this code is copied from data() -- should refactor.
-
-        # Dataset check.
+        
         dataset = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         msg = self.check_dataset_state( trans, dataset )
         if not msg:
@@ -288,91 +256,3 @@ class TracksController( BaseUIController, UsesVisualizationMixin, UsesHistoryDat
         result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ), **kwargs )
         result.update( { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info } )
         return result
-                                
-    @web.expose
-    def sweepster( self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None ):
-        """
-        Creates a sweepster visualization using the incoming parameters. If id is available,
-        get the visualization with the given id; otherwise, create a new visualization using
-        a given dataset and regions.
-        """
-        # Need to create history if necessary in order to create tool form.
-        trans.get_history( create=True )
-
-        if id:
-            # Loading a shared visualization.
-            viz = self.get_visualization( trans, id )
-            viz_config = self.get_visualization_config( trans, viz )
-            dataset = self.get_dataset( trans, viz_config[ 'dataset_id' ] )
-        else:
-            # Loading new visualization.
-            dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
-            job = get_dataset_job( dataset )
-            viz_config = {
-                'dataset_id': dataset_id,
-                'tool_id': job.tool_id,
-                'regions': from_json_string( regions )
-            }
-                
-        # Add tool, dataset attributes to config based on id.
-        tool = trans.app.toolbox.get_tool( viz_config[ 'tool_id' ] )
-        viz_config[ 'tool' ] = tool.to_dict( trans, for_display=True )
-        viz_config[ 'dataset' ] = dataset.get_api_value()
-
-        return trans.fill_template_mako( "visualization/sweepster.mako", config=viz_config )
-    
-    @web.expose
-    def circster( self, trans, id, **kwargs ):
-        vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
-        viz_config = self.get_visualization_config( trans, vis )
-
-        # Get genome info.
-        dbkey = viz_config[ 'dbkey' ]
-        chroms_info = self.app.genomes.chroms( trans, dbkey=dbkey )
-        genome = { 'dbkey': dbkey, 'chroms_info': chroms_info }
-
-        # Add genome-wide summary tree data to each track in viz.
-        tracks = viz_config[ 'tracks' ]
-        for track in tracks:
-            # Get dataset and indexed datatype.
-            dataset = self.get_hda_or_ldda( trans, track[ 'hda_ldda'], track[ 'dataset_id' ] )
-            data_sources = self._get_datasources( trans, dataset )
-            if 'data_standalone' in data_sources:
-                indexed_type = data_sources['data_standalone']['name']
-                data_provider = get_data_provider( indexed_type )( dataset )
-            else:
-                indexed_type = data_sources['index']['name']
-                # Get converted dataset and append track's genome data.
-                converted_dataset = dataset.get_converted_dataset( trans, indexed_type )
-                data_provider = get_data_provider( indexed_type )( converted_dataset, dataset )
-            # HACK: pass in additional params, which are only used for summary tree data, not BBI data.
-            track[ 'genome_wide_data' ] = { 'data': data_provider.get_genome_data( chroms_info, level=4, detail_cutoff=0, draw_cutoff=0 ) }
-        
-        return trans.fill_template( 'visualization/circster.mako', viz_config=viz_config, genome=genome )
-
-    # -----------------
-    # Helper methods.
-    # -----------------
-        
-    def _get_datasources( self, trans, dataset ):
-        """
-        Returns datasources for dataset; if datasources are not available
-        due to indexing, indexing is started. Return value is a dictionary
-        with entries of type 
-        (<datasource_type> : {<datasource_name>, <indexing_message>}).
-        """
-        track_type, data_sources = dataset.datatype.get_track_type()
-        data_sources_dict = {}
-        msg = None
-        for source_type, data_source in data_sources.iteritems():
-            if source_type == "data_standalone":
-                # Nothing to do.
-                msg = None
-            else:
-                # Convert.
-                msg = self.convert_dataset( trans, dataset, data_source )
-            
-            # Store msg.
-            data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
-        
-        return data_sources_dict

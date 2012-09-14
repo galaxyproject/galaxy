@@ -232,6 +232,73 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     _histories_grid = HistorySelectionGrid()
     _history_datasets_grid = HistoryDatasetsSelectionGrid()
     _tracks_grid = TracksterSelectionGrid()
+
+    #
+    # -- Functions for listing visualizations. --
+    #
+
+    @web.expose
+    @web.require_login( "see all available libraries" )
+    def list_libraries( self, trans, **kwargs ):
+        """List all libraries that can be used for selecting datasets."""
+
+        # Render the list view
+        return self._libraries_grid( trans, **kwargs )
+
+    @web.expose
+    @web.require_login( "see a library's datasets that can added to this visualization" )
+    def list_library_datasets( self, trans, **kwargs ):
+        """List a library's datasets that can be added to a visualization."""
+        
+        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( kwargs.get('f-library') ) )
+        return trans.fill_template( '/tracks/library_datasets_select_grid.mako',
+                                    cntrller="library",
+                                    use_panels=False,
+                                    library=library,
+                                    created_ldda_ids='',
+                                    hidden_folder_ids='',
+                                    show_deleted=False,
+                                    comptypes=[],
+                                    current_user_roles=trans.get_current_user_roles(),
+                                    message='',
+                                    status="done" )
+        
+    @web.expose
+    @web.require_login( "see all available histories" )
+    def list_histories( self, trans, **kwargs ):
+        """List all histories that can be used for selecting datasets."""
+        
+        # Render the list view
+        return self._histories_grid( trans, **kwargs )
+        
+    @web.expose
+    @web.require_login( "see current history's datasets that can added to this visualization" )
+    def list_current_history_datasets( self, trans, **kwargs ):
+        """ List a history's datasets that can be added to a visualization. """
+        
+        kwargs[ 'f-history' ] = trans.security.encode_id( trans.get_history().id )
+        kwargs[ 'show_item_checkboxes' ] = 'True'
+        return self.list_history_datasets( trans, **kwargs )
+        
+    @web.expose
+    @web.require_login( "see a history's datasets that can added to this visualization" )
+    def list_history_datasets( self, trans, **kwargs ):
+        """List a history's datasets that can be added to a visualization."""
+
+        # Render the list view
+        return self._history_datasets_grid( trans, **kwargs )
+    
+    @web.expose
+    @web.require_login( "see all available datasets" )
+    def list_datasets( self, trans, **kwargs ):
+        """List all datasets that can be added as tracks"""
+        
+        # Render the list view
+        return self._data_grid( trans, **kwargs )
+    
+    @web.expose
+    def list_tracks( self, trans, **kwargs ):
+        return self._tracks_grid( trans, **kwargs )
     
     @web.expose
     def list_published( self, trans, *args, **kwargs ):
@@ -241,6 +308,38 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         else:
             # Render grid wrapped in panels
             return trans.fill_template( "visualization/list_published.mako", grid=grid )
+
+    @web.expose
+    @web.require_login( "use Galaxy visualizations", use_panels=True )
+    def list( self, trans, *args, **kwargs ):
+        # Handle operation
+        if 'operation' in kwargs and 'id' in kwargs:
+            session = trans.sa_session
+            operation = kwargs['operation'].lower()
+            ids = util.listify( kwargs['id'] )
+            for id in ids:
+                item = session.query( model.Visualization ).get( trans.security.decode_id( id ) )
+                if operation == "delete":
+                    item.deleted = True
+                if operation == "share or publish":
+                    return self.sharing( trans, **kwargs )
+            session.flush()
+            
+        # Build list of visualizations shared with user.
+        shared_by_others = trans.sa_session \
+            .query( model.VisualizationUserShareAssociation ) \
+            .filter_by( user=trans.get_user() ) \
+            .join( model.Visualization.table ) \
+            .filter( model.Visualization.deleted == False ) \
+            .order_by( desc( model.Visualization.update_time ) ) \
+            .all()
+        
+        return trans.fill_template( "visualization/list.mako", grid=self._user_list_grid( trans, *args, **kwargs ), shared_by_others=shared_by_others )
+    
+
+    #
+    # -- Functions for operating on visualizations. --
+    #
 
     @web.expose
     @web.require_login( "use Galaxy visualizations", use_panels=True )
@@ -268,34 +367,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # Display the management page
         trans.set_message( 'Copy created with name "%s"' % cloned_visualization.title )
         return self.list( trans )
-        
-    @web.expose
-    @web.require_login( "use Galaxy visualizations", use_panels=True )
-    def list( self, trans, *args, **kwargs ):
-        # Handle operation
-        if 'operation' in kwargs and 'id' in kwargs:
-            session = trans.sa_session
-            operation = kwargs['operation'].lower()
-            ids = util.listify( kwargs['id'] )
-            for id in ids:
-                item = session.query( model.Visualization ).get( trans.security.decode_id( id ) )
-                if operation == "delete":
-                    item.deleted = True
-                if operation == "share or publish":
-                    return self.sharing( trans, **kwargs )
-            session.flush()
             
-        # Build list of visualizations shared with user.
-        shared_by_others = trans.sa_session \
-            .query( model.VisualizationUserShareAssociation ) \
-            .filter_by( user=trans.get_user() ) \
-            .join( model.Visualization.table ) \
-            .filter( model.Visualization.deleted == False ) \
-            .order_by( desc( model.Visualization.update_time ) ) \
-            .all()
-        
-        return trans.fill_template( "visualization/list.mako", grid=self._user_list_grid( trans, *args, **kwargs ), shared_by_others=shared_by_others )
-        
     @web.expose
     @web.require_login( "modify Galaxy visualizations" )
     def set_slug_async( self, trans, id, new_slug ):
@@ -608,68 +680,91 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             template="visualization/create.mako" )
 
     @web.expose
-    @web.require_login( "see all available libraries" )
-    def list_libraries( self, trans, **kwargs ):
-        """List all libraries that can be used for selecting datasets."""
+    def circster( self, trans, id, **kwargs ):
+        """
+        Display a circster visualization.
+        """
+        vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+        viz_config = self.get_visualization_config( trans, vis )
 
-        # Render the list view
-        return self._libraries_grid( trans, **kwargs )
+        # Get genome info.
+        dbkey = viz_config[ 'dbkey' ]
+        chroms_info = self.app.genomes.chroms( trans, dbkey=dbkey )
+        genome = { 'dbkey': dbkey, 'chroms_info': chroms_info }
+
+        # Add genome-wide summary tree data to each track in viz.
+        tracks = viz_config[ 'tracks' ]
+        for track in tracks:
+            # Get dataset and indexed datatype.
+            dataset = self.get_hda_or_ldda( trans, track[ 'hda_ldda'], track[ 'dataset_id' ] )
+            data_sources = self._get_datasources( trans, dataset )
+            if 'data_standalone' in data_sources:
+                indexed_type = data_sources['data_standalone']['name']
+                data_provider = get_data_provider( indexed_type )( dataset )
+            else:
+                indexed_type = data_sources['index']['name']
+                # Get converted dataset and append track's genome data.
+                converted_dataset = dataset.get_converted_dataset( trans, indexed_type )
+                data_provider = get_data_provider( indexed_type )( converted_dataset, dataset )
+            # HACK: pass in additional params, which are only used for summary tree data, not BBI data.
+            track[ 'genome_wide_data' ] = { 'data': data_provider.get_genome_data( chroms_info, level=4, detail_cutoff=0, draw_cutoff=0 ) }
+        
+        return trans.fill_template( 'visualization/circster.mako', viz_config=viz_config, genome=genome )
 
     @web.expose
-    @web.require_login( "see a library's datasets that can added to this visualization" )
-    def list_library_datasets( self, trans, **kwargs ):
-        """List a library's datasets that can be added to a visualization."""
-        
-        library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( kwargs.get('f-library') ) )
-        return trans.fill_template( '/tracks/library_datasets_select_grid.mako',
-                                    cntrller="library",
-                                    use_panels=False,
-                                    library=library,
-                                    created_ldda_ids='',
-                                    hidden_folder_ids='',
-                                    show_deleted=False,
-                                    comptypes=[],
-                                    current_user_roles=trans.get_current_user_roles(),
-                                    message='',
-                                    status="done" )
-        
-    @web.expose
-    @web.require_login( "see all available histories" )
-    def list_histories( self, trans, **kwargs ):
-        """List all histories that can be used for selecting datasets."""
-        
-        # Render the list view
-        return self._histories_grid( trans, **kwargs )
-        
-    @web.expose
-    @web.require_login( "see current history's datasets that can added to this visualization" )
-    def list_current_history_datasets( self, trans, **kwargs ):
-        """ List a history's datasets that can be added to a visualization. """
-        
-        kwargs[ 'f-history' ] = trans.security.encode_id( trans.get_history().id )
-        kwargs[ 'show_item_checkboxes' ] = 'True'
-        return self.list_history_datasets( trans, **kwargs )
-        
-    @web.expose
-    @web.require_login( "see a history's datasets that can added to this visualization" )
-    def list_history_datasets( self, trans, **kwargs ):
-        """List a history's datasets that can be added to a visualization."""
+    def sweepster( self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None ):
+        """
+        Displays a sweepster visualization using the incoming parameters. If id is available,
+        get the visualization with the given id; otherwise, create a new visualization using
+        a given dataset and regions.
+        """
+        # Need to create history if necessary in order to create tool form.
+        trans.get_history( create=True )
 
-        # Render the list view
-        return self._history_datasets_grid( trans, **kwargs )
-    
-    @web.expose
-    @web.require_login( "see all available datasets" )
-    def list_datasets( self, trans, **kwargs ):
-        """List all datasets that can be added as tracks"""
-        
-        # Render the list view
-        return self._data_grid( trans, **kwargs )
-    
-    @web.expose
-    def list_tracks( self, trans, **kwargs ):
-        return self._tracks_grid( trans, **kwargs )
+        if id:
+            # Loading a shared visualization.
+            viz = self.get_visualization( trans, id )
+            viz_config = self.get_visualization_config( trans, viz )
+            dataset = self.get_dataset( trans, viz_config[ 'dataset_id' ] )
+        else:
+            # Loading new visualization.
+            dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+            job = get_dataset_job( dataset )
+            viz_config = {
+                'dataset_id': dataset_id,
+                'tool_id': job.tool_id,
+                'regions': from_json_string( regions )
+            }
+                
+        # Add tool, dataset attributes to config based on id.
+        tool = trans.app.toolbox.get_tool( viz_config[ 'tool_id' ] )
+        viz_config[ 'tool' ] = tool.to_dict( trans, for_display=True )
+        viz_config[ 'dataset' ] = dataset.get_api_value()
+
+        return trans.fill_template_mako( "visualization/sweepster.mako", config=viz_config )
     
     def get_item( self, trans, id ):
         return self.get_visualization( trans, id )
+
+    @web.json
+    def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):
+        if hda_id:
+            hda_ldda = "hda"
+            dataset_id = hda_id
+        elif ldda_id:
+            hda_ldda = "ldda"
+            dataset_id = ldda_id
+        dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+        
+        rows = []
+        if isinstance( dataset.datatype, Bed ):
+            data = RawBedDataProvider( original_dataset=dataset ).get_iterator()
+            for i, line in enumerate( data ):
+                if ( i > 500 ): break
+                fields = line.split()
+                location = name = "%s:%s-%s" % ( fields[0], fields[1], fields[2] )
+                if len( fields ) > 3:
+                    name = fields[4]
+                rows.append( [location, name] )
+        return { 'data': rows }
     

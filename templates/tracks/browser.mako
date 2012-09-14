@@ -113,7 +113,7 @@ ${render_trackster_js_files()}
                 title: 'Circster',
                 on_click: function() {
                     // Add viz id dynamically so that newly saved visualizations work as well.
-                    window.location = "${h.url_for( controller='tracks', action='circster' )}?id=" + view.vis_id;
+                    window.location = "${h.url_for( controller='visualization', action='circster' )}?id=" + view.vis_id;
                 }
             },
             { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 

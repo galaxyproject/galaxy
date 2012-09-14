@@ -1320,13 +1320,12 @@ extend( View.prototype, DrawableCollection.prototype, {
      */
     load_chroms: function(url_parms) {
         url_parms.num = MAX_CHROMS_SELECTABLE;
-        url_parms.dbkey = this.dbkey;
 
         var 
             view = this,
             chrom_data = $.Deferred();
         $.ajax({
-            url: chrom_url, 
+            url: chrom_url + "/" + this.dbkey, 
             data: url_parms,
             dataType: "json",
             success: function (result) {
@@ -4198,10 +4197,10 @@ var ReferenceTrack = function (view) {
     this.content_div.css("background", "none");
     this.content_div.css("min-height", "0px");
     this.content_div.css("border", "none");
-    this.data_url = reference_url;
-    this.data_url_extra_params = {dbkey: view.dbkey};
+    this.data_url = reference_url + "/" + this.view.dbkey;
+    this.data_url_extra_params = {reference: true};
     this.data_manager = new ReferenceTrackDataManager({
-        data_url: reference_url
+        data_url: this.data_url
     });
     this.hide_contents();
 };

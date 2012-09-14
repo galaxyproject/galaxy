@@ -626,6 +626,29 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
 
         return visualization
 
+    def _get_datasources( self, trans, dataset ):
+        """
+        Returns datasources for dataset; if datasources are not available
+        due to indexing, indexing is started. Return value is a dictionary
+        with entries of type 
+        (<datasource_type> : {<datasource_name>, <indexing_message>}).
+        """
+        track_type, data_sources = dataset.datatype.get_track_type()
+        data_sources_dict = {}
+        msg = None
+        for source_type, data_source in data_sources.iteritems():
+            if source_type == "data_standalone":
+                # Nothing to do.
+                msg = None
+            else:
+                # Convert.
+                msg = self.convert_dataset( trans, dataset, data_source )
+            
+            # Store msg.
+            data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
+        
+        return data_sources_dict
+
 class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use StoredWorkflow objects. """
     def get_stored_workflow( self, trans, id, check_ownership=True, check_accessible=False ):
