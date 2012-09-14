@@ -1,5 +1,5 @@
 """
-Data providers for tracks visualizations.
+Data providers for genome visualizations.
 """
 
 import os, sys
@@ -17,13 +17,12 @@ from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import *
+from galaxy.visualization.data_providers import BaseDataProvider
 import galaxy_utils.sequence.vcf
 from galaxy.datatypes.tabular import Tabular, Vcf
 from galaxy.datatypes.interval import Interval, Bed, Gff, Gtf, ENCODEPeak, ChromatinInteractions
 
 from pysam import csamtools, ctabix
-
-ERROR_MAX_VALS = "Only the first %i %s in this region are displayed."
 
 #
 # Utility functions.
@@ -66,54 +65,10 @@ def _convert_between_ucsc_and_ensemble_naming( chrom ):
 def _chrom_naming_matches( chrom1, chrom2 ):
     return ( chrom1.startswith( 'chr' ) and chrom2.startswith( 'chr' ) ) or ( not chrom1.startswith( 'chr' ) and not chrom2.startswith( 'chr' ) )
 
-
-class ColumnDataProvider( object ):
-    """ Data provider for columnar data """
-    
-    def __init__( self, original_dataset ):
-        # Compatibility check.
-        if not isinstance( original_dataset.datatype, Tabular ):
-            raise Exception( "Data provider can only be used with tabular data" )
-            
-        # Attribute init.
-        self.original_dataset = original_dataset
-        
-    def get_data( self, cols, start_val=0, max_vals=sys.maxint ):
-        """
-        Returns data from specified columns in dataset. Format is list of lists 
-        where each list is a line of data.
-        """
-        
-        def cast_val( val, type ):
-            """ Cast value based on type. """
-            if type == 'int':
-                try: val = int( val )
-                except: pass
-            elif type == 'float':
-                try: val = float( val )
-                except: pass
-            return val
-        
-        data = []
-        f = open( self.original_dataset.file_name )
-        for count, line in enumerate( f ):
-            if count < start_val:
-                continue
-            if max_vals and count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "features" )
-                break
-            
-            fields = line.split()
-            data.append( [ cast_val( fields[c], self.original_dataset.metadata.column_types[c] ) for c in cols ] )
-            
-        f.close()
-            
-        return data
-
-class FeatureLocationIndexDataProvider( object ):
-    '''
-
-    '''
+class FeatureLocationIndexDataProvider( BaseDataProvider ):
+    """
+    Reads/writes/queries feature location index (FLI) datasets.
+    """
 
     def __init__( self, converted_dataset ):
         self.converted_dataset = converted_dataset
@@ -155,7 +110,7 @@ class FeatureLocationIndexDataProvider( object ):
         textloc_file.close()    
         return result
         
-class TracksDataProvider( object ):
+class TracksDataProvider( BaseDataProvider ):
     """ Base class for tracks data providers. """
     
     """ 
@@ -167,11 +122,12 @@ class TracksDataProvider( object ):
     """
     col_name_data_attr_mapping = {}
     
-    def __init__( self, converted_dataset=None, original_dataset=None, dependencies=None ):
-        """ Create basic data provider. """
-        self.converted_dataset = converted_dataset
-        self.original_dataset = original_dataset
-        self.dependencies = dependencies
+    def __init__( self, converted_dataset=None, original_dataset=None, dependencies=None,
+                  error_max_vals="Only the first %i %s in this region are displayed." ):
+        super( TracksDataProvider, self ).__init__( converted_dataset=converted_dataset, 
+                                                    original_dataset=original_dataset,
+                                                    dependencies=dependencies,
+                                                    error_max_vals=error_max_vals )
         
     def write_data_to_file( self, regions, filename ):
         """
@@ -429,7 +385,7 @@ class IntervalDataProvider( TracksDataProvider ):
             if count < start_val:
                 continue
             if max_vals and count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                message = self.error_max_vals % ( max_vals, "features" )
                 break
             
             feature = line.split()
@@ -502,7 +458,7 @@ class BedDataProvider( TracksDataProvider ):
             if count < start_val:
                 continue
             if max_vals and count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                message = self.error_max_vals % ( max_vals, "features" )
                 break
             # TODO: can we use column metadata to fill out payload?
             # TODO: use function to set payload data
@@ -656,7 +612,7 @@ class VcfDataProvider( TracksDataProvider ):
             if count < start_val:
                 continue
             if max_vals and count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                message = self.error_max_vals % ( max_vals, "features" )
                 break
 
             feature = line.split()
@@ -927,7 +883,7 @@ class BamDataProvider( TracksDataProvider, FilterableMixin ):
             if count < start_val:
                 continue
             if ( count - start_val - unmapped ) >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "reads" )
+                message = self.error_max_vals % ( max_vals, "reads" )
                 break
                 
             # If not mapped, skip read.
@@ -1198,7 +1154,7 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
             if count < start_val:
                 continue
             if count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                message = self.error_max_vals % ( max_vals, "features" )
                 break
             source.seek( offset )
             # TODO: can we use column metadata to fill out payload?
@@ -1260,7 +1216,7 @@ class RawGFFDataProvider( TracksDataProvider ):
             if count < start_val:
                 continue
             if count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "reads" )
+                message = self.error_max_vals % ( max_vals, "reads" )
                 break
                 
             payload = package_gff_feature( feature, no_detail=no_detail, filter_cols=filter_cols )
@@ -1302,7 +1258,7 @@ class GtfTabixDataProvider( TabixDataProvider ):
             if count < start_val:
                 continue
             if count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "reads" )
+                message = self.error_max_vals % ( max_vals, "reads" )
                 break
             
             feature = GFFFeature( None, intervals=intervals )    
@@ -1348,7 +1304,7 @@ class ENCODEPeakDataProvider( TracksDataProvider ):
             if count < start_val:
                 continue
             if max_vals and count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                message = self.error_max_vals % ( max_vals, "features" )
                 break
 
             feature = line.split()
@@ -1440,7 +1396,7 @@ class ChromatinInteractionsDataProvider( TracksDataProvider ):
             if count < start_val:
                 continue
             if max_vals and count-start_val >= max_vals:
-                message = ERROR_MAX_VALS % ( max_vals, "interactions" )
+                message = self.error_max_vals % ( max_vals, "interactions" )
                 break
 
             feature = line.split()
