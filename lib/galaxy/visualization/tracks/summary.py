@@ -1,5 +1,5 @@
 '''
-Summary tree data structure for feature aggregation across large genomic regions.
+This module cannot be moved due to the use of pickling.
 '''
 
 import sys, os
@@ -11,6 +11,9 @@ import cPickle
 MIN_LEVEL = 2
 
 class SummaryTree:
+    '''
+    Summary tree data structure for feature aggregation across large genomic regions.
+    '''
     def __init__( self, block_size=25, levels=6, draw_cutoff=150, detail_cutoff=30 ):
         self.chrom_blocks = {}
         self.levels = levels
