@@ -73,13 +73,14 @@ class DependencyManager( object ):
         else:
             return None, None, None
     def _get_installed_dependency( self, installed_tool_dependencies, name, type, version=None ):
-        for installed_tool_dependency in installed_tool_dependencies:
-            if version:
-                if installed_tool_dependency.name==name and installed_tool_dependency.type==type and installed_tool_dependency.version==version:
-                    return installed_tool_dependency
-            else:
-                if installed_tool_dependency.name==name and installed_tool_dependency.type==type:
-                    return installed_tool_dependency
+        if installed_tool_dependencies:
+            for installed_tool_dependency in installed_tool_dependencies:
+                if version:
+                    if installed_tool_dependency.name==name and installed_tool_dependency.type==type and installed_tool_dependency.version==version:
+                        return installed_tool_dependency
+                else:
+                    if installed_tool_dependency.name==name and installed_tool_dependency.type==type:
+                        return installed_tool_dependency
         return None
     def _get_package_installed_dependency_path( self, installed_tool_dependency, base_path, name, version ):
         tool_shed_repository = installed_tool_dependency.tool_shed_repository
