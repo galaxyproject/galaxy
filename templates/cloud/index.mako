@@ -158,8 +158,11 @@
               <div id="launchFormContainer" class="toolForm">
                     <form id="cloudlaunch_form" action="${h.url_for( controller='/cloudlaunch', action='launch_instance')}" method="post">
 
-                    <p>To launch a Galaxy Cloud Cluster, enter your AWS Secret Key ID, and Secret Key.  Galaxy will use these to present appropriate
-options for launching your cluster.</p>
+                    <p>To launch a Galaxy Cloud Cluster, enter your AWS Secret Key ID, and Secret Key.  Galaxy will use
+                    these to present appropriate options for launching your cluster.   Note that using this form to
+                    launch computational resources in the Amazon Cloud will result in   costs to the account indicated
+                    above.  See <a href="http://aws.amazon.com/ec2/pricing/">Amazon's pricing</a> for more information.
+                    options for launching your cluster.</p> </p>
 
                     <div class="form-row">
                         <label for="id_key_id">Key ID</label>
