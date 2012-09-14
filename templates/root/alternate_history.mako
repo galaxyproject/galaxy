@@ -131,10 +131,10 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         # do these need _localized_ dbkeys?
         trackster_urls = {}
         if hda.dbkey != '?':
-            data_url = h.url_for( controller='tracks', action='list_tracks', dbkey=hda.dbkey )
+            data_url = h.url_for( controller='visualization', action='list_tracks', dbkey=hda.dbkey )
             data_url = hda.replace( 'dbkey', 'f-dbkey' )
         else:
-            data_url = h.url_for( controller='tracks', action='list_tracks' )
+            data_url = h.url_for( controller='visualization', action='list_tracks' )
         trackster_urls[ 'hda-url' ]   = data_url
         trackster_urls[ 'action-url' ] = h.url_for( controller='tracks', action='browser', dataset_id=encoded_data_id )
         trackster_urls[ 'new-url' ]    = h.url_for( controller='tracks', action='index',   dataset_id=encoded_data_id, default_dbkey=hda.dbkey )

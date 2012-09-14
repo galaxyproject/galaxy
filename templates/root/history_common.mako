@@ -229,10 +229,10 @@
                         %if data.ext in app.datatypes_registry.get_available_tracks():
                             <%
                             if data.dbkey != '?':
-                                data_url = h.url_for( controller='tracks', action='list_tracks', dbkey=data.dbkey )
+                                data_url = h.url_for( controller='visualization', action='list_tracks', dbkey=data.dbkey )
                                 data_url = data_url.replace( 'dbkey', 'f-dbkey' )
                             else:
-                                data_url = h.url_for( controller='tracks', action='list_tracks' )
+                                data_url = h.url_for( controller='visualization', action='list_tracks' )
                             %>
                             <a href="javascript:void(0)" data-url="${data_url}" class="icon-button chart_curve tooltip trackster-add"
                                 action-url="${h.url_for( controller='tracks', action='browser', dataset_id=dataset_id)}"

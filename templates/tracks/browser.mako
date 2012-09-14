@@ -51,7 +51,7 @@ ${render_trackster_js_files()}
     var add_bookmarks = function() {
         show_modal( "Select dataset for new bookmarks", "progress" );
         $.ajax({
-            url: "${h.url_for( action='list_histories' )}",
+            url: "${h.url_for( controller='visualization', action='list_histories' )}",
             data: { "f-dbkey": view.dbkey },
             error: function() { alert( "Grid failed" ); },
             success: function(table_html) {

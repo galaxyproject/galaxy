@@ -14,7 +14,7 @@ if sys.version_info[:2] == (2, 4):
 pkg_resources.require( "pysam" )
 
 from pysam import csamtools
-from galaxy.visualization.genome.summary import *
+from galaxy.visualization.tracks.summary import *
 
 def main():
     parser = optparse.OptionParser()

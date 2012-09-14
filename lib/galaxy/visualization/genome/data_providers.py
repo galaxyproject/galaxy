@@ -16,7 +16,7 @@ from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
-from galaxy.visualization.genome.summary import *
+from galaxy.visualization.tracks.summary import *
 from galaxy.visualization.data_providers import BaseDataProvider
 import galaxy_utils.sequence.vcf
 from galaxy.datatypes.tabular import Tabular, Vcf
