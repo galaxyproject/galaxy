@@ -35,7 +35,7 @@ from galaxy.util import listify
 from galaxy.util.shed_util import *
 from galaxy.web import url_for
 
-from galaxy.visualization.tracks.visual_analytics import TracksterConfig
+from galaxy.visualization.genome.visual_analytics import TracksterConfig
 
 log = logging.getLogger( __name__ )
 

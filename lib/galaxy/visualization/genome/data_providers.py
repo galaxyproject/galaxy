@@ -16,7 +16,7 @@ from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
-from galaxy.visualization.tracks.summary import *
+from galaxy.visualization.genome.summary import *
 from galaxy.visualization.data_providers import BaseDataProvider
 import galaxy_utils.sequence.vcf
 from galaxy.datatypes.tabular import Tabular, Vcf
@@ -110,8 +110,8 @@ class FeatureLocationIndexDataProvider( BaseDataProvider ):
         textloc_file.close()    
         return result
         
-class TracksDataProvider( BaseDataProvider ):
-    """ Base class for tracks data providers. """
+class GenomeDataProvider( BaseDataProvider ):
+    """ Base class for genome data providers. """
     
     """ 
     Mapping from column name to payload data; this mapping is used to create
@@ -124,7 +124,7 @@ class TracksDataProvider( BaseDataProvider ):
     
     def __init__( self, converted_dataset=None, original_dataset=None, dependencies=None,
                   error_max_vals="Only the first %i %s in this region are displayed." ):
-        super( TracksDataProvider, self ).__init__( converted_dataset=converted_dataset, 
+        super( GenomeDataProvider, self ).__init__( converted_dataset=converted_dataset, 
                                                     original_dataset=original_dataset,
                                                     dependencies=dependencies,
                                                     error_max_vals=error_max_vals )
@@ -312,7 +312,7 @@ class FilterableMixin:
         return filters
 
 
-class TabixDataProvider( FilterableMixin, TracksDataProvider ):
+class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
     """
     Tabix index data provider for the Galaxy track browser.
     """
@@ -352,7 +352,7 @@ class TabixDataProvider( FilterableMixin, TracksDataProvider ):
 # -- Interval data providers --
 #
 
-class IntervalDataProvider( TracksDataProvider ):
+class IntervalDataProvider( GenomeDataProvider ):
     """
     Processes BED data from native format to payload format.
     
@@ -430,7 +430,7 @@ class IntervalTabixDataProvider( TabixDataProvider, IntervalDataProvider ):
 # -- BED data providers --
 #
 
-class BedDataProvider( TracksDataProvider ):
+class BedDataProvider( GenomeDataProvider ):
     """
     Processes BED data from native format to payload format.
     
@@ -561,7 +561,7 @@ class RawBedDataProvider( BedDataProvider ):
 # -- VCF data providers --
 #
 
-class VcfDataProvider( TracksDataProvider ):
+class VcfDataProvider( GenomeDataProvider ):
     """
     Abstract class that processes VCF data from native format to payload format.
 
@@ -701,7 +701,7 @@ class RawVcfDataProvider( VcfDataProvider ):
         
         return line_filter_iter()
 
-class SummaryTreeDataProvider( TracksDataProvider ):
+class SummaryTreeDataProvider( GenomeDataProvider ):
     """
     Summary tree data provider for the Galaxy track browser. 
     """
@@ -765,7 +765,7 @@ class SummaryTreeDataProvider( TracksDataProvider ):
         # Check for data.
         return st.chrom_blocks.get(chrom, None) or st.chrom_blocks.get(_convert_between_ucsc_and_ensemble_naming(chrom), None)
 
-class BamDataProvider( TracksDataProvider, FilterableMixin ):
+class BamDataProvider( GenomeDataProvider, FilterableMixin ):
     """
     Provides access to intervals from a sorted indexed BAM file. Position data
     is reported in 1-based, closed format, i.e. SAM/BAM format.
@@ -961,7 +961,7 @@ class SamDataProvider( BamDataProvider ):
             self.original_dataset = converted_dataset
         self.dependencies = dependencies
 
-class BBIDataProvider( TracksDataProvider ):
+class BBIDataProvider( GenomeDataProvider ):
     """
     BBI data provider for the Galaxy track browser. 
     """
@@ -1094,7 +1094,7 @@ class BigWigDataProvider ( BBIDataProvider ):
             f = open( self.original_dataset.file_name )
         return f, BigWigFile(file=f)
             
-class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
+class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
     """
     Interval index files used only for GFF files.
     """
@@ -1169,7 +1169,7 @@ class IntervalIndexDataProvider( FilterableMixin, TracksDataProvider ):
 
         return { 'data': results, 'message': message }
 
-class RawGFFDataProvider( TracksDataProvider ):
+class RawGFFDataProvider( GenomeDataProvider ):
     """
     Provide data from GFF file that has not been indexed.
     
@@ -1272,7 +1272,7 @@ class GtfTabixDataProvider( TabixDataProvider ):
 # -- ENCODE Peak data providers.
 #
 
-class ENCODEPeakDataProvider( TracksDataProvider ):
+class ENCODEPeakDataProvider( GenomeDataProvider ):
     """
     Abstract class that processes ENCODEPeak data from native format to payload format.
     
@@ -1384,7 +1384,7 @@ class ENCODEPeakTabixDataProvider( TabixDataProvider, ENCODEPeakDataProvider ):
 #
 # -- ChromatinInteraction data providers --
 #
-class ChromatinInteractionsDataProvider( TracksDataProvider ):
+class ChromatinInteractionsDataProvider( GenomeDataProvider ):
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
         Provides
@@ -1493,7 +1493,7 @@ def get_data_provider( name=None, original_dataset=None ):
             if data_provider_name:
                 data_provider = get_data_provider( name=data_provider_name, original_dataset=original_dataset )
             else: 
-                data_provider = TracksDataProvider
+                data_provider = GenomeDataProvider
         except:
             pass
     return data_provider

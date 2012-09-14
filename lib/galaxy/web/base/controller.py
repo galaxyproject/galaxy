@@ -14,8 +14,8 @@ from galaxy.workflow.modules import *
 from galaxy.web.framework import simplejson
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
 from galaxy.web.form_builder import WorkflowField, WorkflowMappingField, HistoryField, PasswordField, build_select_field
-from galaxy.visualization.tracks.data_providers import get_data_provider
-from galaxy.visualization.tracks.visual_analytics import get_tool_def
+from galaxy.visualization.genome.data_providers import get_data_provider
+from galaxy.visualization.genome.visual_analytics import get_tool_def
 from galaxy.security.validate_user_input import validate_publicname
 from paste.httpexceptions import *
 from galaxy.exceptions import *

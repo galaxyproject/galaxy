@@ -9,7 +9,7 @@ from __future__ import division
 
 import optparse
 import galaxy_utils.sequence.vcf
-from galaxy.visualization.tracks.summary import SummaryTree
+from galaxy.visualization.genome.summary import SummaryTree
 
 def main():
     # Read options, args.

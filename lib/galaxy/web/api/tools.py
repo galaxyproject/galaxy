@@ -1,9 +1,9 @@
 from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin, messages, get_highest_priority_msg
-from galaxy.visualization.tracks.visual_analytics import get_dataset_job
+from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string, from_json_string
-from galaxy.visualization.tracks.data_providers import *
+from galaxy.visualization.genome.data_providers import *
 
 class ToolsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin ):
     """
