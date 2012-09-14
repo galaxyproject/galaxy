@@ -111,7 +111,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="0"/>
       <param name="max_quality" value="0"/>
       <param name="max_num_deviants" value="0"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="False"/>
       <param name="base_offset_type" value="offsets_absolute"/>
       <param name="left_column_offset" value="0"/>
       <param name="right_column_offset" value="0"/>
@@ -127,7 +127,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="-5"/>
       <param name="max_quality" value="0"/>
       <param name="max_num_deviants" value="0"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="False"/>
       <param name="base_offset_type" value="offsets_absolute"/>
       <param name="left_column_offset" value="0"/>
       <param name="right_column_offset" value="0"/>
@@ -144,7 +144,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="0"/>
       <param name="max_quality" value="0"/>
       <param name="max_num_deviants" value="0"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="False"/>
       <param name="base_offset_type" value="offsets_absolute"/>
       <param name="left_column_offset" value="0"/>
       <param name="right_column_offset" value="0"/>
@@ -161,7 +161,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="1"/>
       <param name="max_quality" value="0"/>
       <param name="max_num_deviants" value="0"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="False"/>
       <param name="base_offset_type" value="offsets_absolute"/>
       <param name="left_column_offset" value="0"/>
       <param name="right_column_offset" value="0"/>
@@ -177,7 +177,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="-4"/>
       <param name="max_quality" value="0"/>
       <param name="max_num_deviants" value="0"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="False"/>
       <param name="base_offset_type" value="offsets_absolute"/>
       <param name="left_column_offset" value="0"/>
       <param name="right_column_offset" value="0"/>
@@ -194,7 +194,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="1"/>
       <param name="max_quality" value="0"/>
       <param name="max_num_deviants" value="1"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="False"/>
       <param name="base_offset_type" value="offsets_absolute"/>
       <param name="left_column_offset" value="0"/>
       <param name="right_column_offset" value="0"/>
@@ -210,7 +210,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="-5"/>
       <param name="max_quality" value="61"/>
       <param name="max_num_deviants" value="1"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="False"/>
       <param name="base_offset_type" value="offsets_absolute"/>
       <param name="left_column_offset" value="0"/>
       <param name="right_column_offset" value="0"/>
@@ -227,7 +227,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="0"/>
       <param name="max_quality" value="0"/>
       <param name="max_num_deviants" value="0"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="False"/>
       <param name="base_offset_type" value="offsets_absolute"/>
       <param name="left_column_offset" value="1"/>
       <param name="right_column_offset" value="1"/>
@@ -243,7 +243,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="0"/>
       <param name="max_quality" value="0"/>
       <param name="max_num_deviants" value="0"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="False"/>
       <param name="base_offset_type" value="offsets_absolute"/>
       <param name="left_column_offset" value="1"/>
       <param name="right_column_offset" value="1"/>
@@ -260,7 +260,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="0"/>
       <param name="max_quality" value="0"/>
       <param name="max_num_deviants" value="0"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="False"/>
       <param name="base_offset_type" value="offsets_percent"/>
       <param name="left_column_offset" value="1.075"/>
       <param name="right_column_offset" value="1.075"/>
@@ -276,7 +276,7 @@ ret_val = fastq_read_pass_filter( fastq_read )
       <param name="min_quality" value="0"/>
       <param name="max_quality" value="0"/>
       <param name="max_num_deviants" value="0"/>
-      <param name="paired_end" value="single_end"/>
+      <param name="paired_end" value="True"/>
       <param name="base_offset_type" value="offsets_percent"/>
       <param name="left_column_offset" value="1"/>
       <param name="right_column_offset" value="1"/>
