@@ -18,24 +18,30 @@ from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import *
 import galaxy_utils.sequence.vcf
-from galaxy.datatypes.tabular import Vcf
+from galaxy.datatypes.tabular import Tabular, Vcf
 from galaxy.datatypes.interval import Interval, Bed, Gff, Gtf, ENCODEPeak, ChromatinInteractions
 
 from pysam import csamtools, ctabix
 
 ERROR_MAX_VALS = "Only the first %i %s in this region are displayed."
 
-# Return None instead of NaN to pass jQuery 1.4's strict JSON
+#
+# Utility functions.
+#
+
 def float_nan(n):
+    '''
+    Return None instead of NaN to pass jQuery 1.4's strict JSON
+    '''
     if n != n: # NaN != NaN
         return None
     else:
         return float(n)
         
 def get_bounds( reads, start_pos_index, end_pos_index ):
-    """
+    '''
     Returns the minimum and maximum position for a set of reads.
-    """
+    '''
     max_low = sys.maxint
     max_high = -sys.maxint
     for read in reads:
@@ -59,6 +65,50 @@ def _convert_between_ucsc_and_ensemble_naming( chrom ):
 
 def _chrom_naming_matches( chrom1, chrom2 ):
     return ( chrom1.startswith( 'chr' ) and chrom2.startswith( 'chr' ) ) or ( not chrom1.startswith( 'chr' ) and not chrom2.startswith( 'chr' ) )
+
+
+class ColumnDataProvider( object ):
+    """ Data provider for columnar data """
+    
+    def __init__( self, original_dataset ):
+        # Compatibility check.
+        if not isinstance( original_dataset.datatype, Tabular ):
+            raise Exception( "Data provider can only be used with tabular data" )
+            
+        # Attribute init.
+        self.original_dataset = original_dataset
+        
+    def get_data( self, cols, start_val=0, max_vals=sys.maxint ):
+        """
+        Returns data from specified columns in dataset. Format is list of lists 
+        where each list is a line of data.
+        """
+        
+        def cast_val( val, type ):
+            """ Cast value based on type. """
+            if type == 'int':
+                try: val = int( val )
+                except: pass
+            elif type == 'float':
+                try: val = float( val )
+                except: pass
+            return val
+        
+        data = []
+        f = open( self.original_dataset.file_name )
+        for count, line in enumerate( f ):
+            if count < start_val:
+                continue
+            if max_vals and count-start_val >= max_vals:
+                message = ERROR_MAX_VALS % ( max_vals, "features" )
+                break
+            
+            fields = line.split()
+            data.append( [ cast_val( fields[c], self.original_dataset.metadata.column_types[c] ) for c in cols ] )
+            
+        f.close()
+            
+        return data
 
 class FeatureLocationIndexDataProvider( object ):
     '''
