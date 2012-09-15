@@ -7,6 +7,10 @@ from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
+from galaxy.datatypes.interval import Gff, Bed
+from galaxy.datatypes.tabular import Vcf
+from galaxy.visualization.genome.data_providers import *
+from galaxy.model import NoConverterException, ConverterDependencyException
 
 log = logging.getLogger( __name__ )
 
@@ -35,7 +39,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Use data type to return particular type of data.
         if data_type == 'state':
-            rval = self._dataset_state( self, trans, dataset )
+            rval = self._dataset_state( trans, dataset )
         elif data_type == 'converted_datasets_state':
             rval = self._converted_datasets_state( trans, dataset, kwd.get( 'chrom', None ) )
         elif data_type == 'data':

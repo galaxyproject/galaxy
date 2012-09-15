@@ -1,1 +1,1 @@
-var Dataset=Backbone.RelationalModel.extend({defaults:{id:"",type:"",name:"",hda_ldda:"hda"}});var DatasetCollection=Backbone.Collection.extend({model:Dataset});
+var Dataset=Backbone.RelationalModel.extend({defaults:{id:"",type:"",name:"",hda_ldda:"hda"},urlRoot:galaxy_paths.get("datasets_url")});var DatasetCollection=Backbone.Collection.extend({model:Dataset});

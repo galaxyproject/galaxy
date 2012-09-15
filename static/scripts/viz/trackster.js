@@ -2974,21 +2974,18 @@ var Track = function(view, container, obj_dict) {
     //
     // Attribute init.
     //
-    var url_base = datasets_url + '/' + obj_dict.dataset_id;
-    this.data_url = ('data_url' in obj_dict ? obj_dict.data_url : url_base);
+    this.dataset = new Dataset({
+        id: obj_dict.dataset_id,
+        hda_ldda: obj_dict.hda_ldda
+    }); 
+    this.dataset_check_type = 'converted_datasets_state';
     this.data_url_extra_params = {};
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
     // A little ugly creating data manager right now due to transition to Backbone-based objects.
-    var track = this,
-        dataset = new Dataset({
-            id: obj_dict.dataset_id,
-            hda_ldda: obj_dict.hda_ldda
-        });
     this.data_manager = ('data_manager' in obj_dict ? 
                          obj_dict.data_manager : 
                          new GenomeDataManager({
-                             dataset: dataset,
-                             data_url: track.data_url,
+                             dataset: this.dataset,
                              data_mode_compatible: this.data_and_mode_compatible,
                              can_subset: this.can_subset
                          }));
@@ -3311,9 +3308,9 @@ extend(Track.prototype, Drawable.prototype, {
         var init_deferred = $.Deferred(),
             params = { 
                 hda_ldda: track.hda_ldda, 
-                data_type: 'converted_datasets_state', 
-                chrom: track.view.chrom}
-        $.getJSON(this.data_url, params, function (result) {
+                data_type: this.dataset_check_type,
+                chrom: track.view.chrom };
+        $.getJSON(this.dataset.url(), params, function (result) {
             if (!result || result === "error" || result.kind === "error") {
                 track.container_div.addClass("error");
                 track.tiles_div.text(DATA_ERROR);
@@ -3829,11 +3826,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Set up track to receive tool data.
      */
     init_for_tool_data: function() {
-        // Set up track to fetch initial data from raw data URL when the dataset--not the converted datasets--
-        // is ready.
-        this.data_manager.set('data_url', raw_data_url);
+        // Set up track to fetch raw data rather than converted data.
+        this.data_manager.set('data_type', 'raw_data');
         this.data_query_wait = 1000;
-        this.dataset_check_url = dataset_state_url;
+        this.dataset_check_type = 'state';
         
         //
         // Set up one-time, post-draw to clear tool execution settings.
@@ -3860,8 +3856,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 success_fn: function(result) { return result !== "pending"; }
             });
             $.when(ss_deferred.go()).then(function() {
-                // Dataset is indexed, so use default data URL.
-                self.data_manager.set('data_url', default_data_url);
+                // Dataset is indexed, so use converted data.
+                self.data_manager.set('data_type', 'data');
+                self.dataset_check_type = 'converted_datasets_state';
+                this.data_query_wait = 5000;
             });
                         
             // Reset post-draw actions function.
@@ -4319,7 +4317,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     predraw_init: function() {
         var track = this;
         track.vertical_range = undefined;
-        return $.getJSON( track.data_url, 
+        return $.getJSON( track.dataset.url(), 
             {  data_type: 'data', stats: true, chrom: track.view.chrom, low: 0, 
                high: track.view.max_high, hda_ldda: track.hda_ldda, dataset_id: 
                track.dataset_id }, function(result) {
@@ -4541,6 +4539,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     set_dataset: function(dataset) {
         this.dataset_id = dataset.get('id');
         this.hda_ldda = dataset.get('hda_ldda');
+        this.dataset = dataset;
         this.data_manager.set('dataset', dataset);
     },
     

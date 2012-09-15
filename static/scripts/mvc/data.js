@@ -8,7 +8,9 @@ var Dataset = Backbone.RelationalModel.extend({
         type: '',
         name: '',
         hda_ldda: 'hda'
-    } 
+    },
+
+    urlRoot: galaxy_paths.get('datasets_url')
 });
 
 var DatasetCollection = Backbone.Collection.extend({

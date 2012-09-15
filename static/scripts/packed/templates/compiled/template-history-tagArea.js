@@ -1,0 +1,1 @@
+(function(){var b=Handlebars.template,a=Handlebars.templates=Handlebars.templates||{};a["template-history-tagArea"]=b(function(g,h,e,d,f){e=e||g.helpers;var c="";c+='\n<div class="tag-area" style="display: none;">\n    <strong>Tags:</strong>\n    <div class="tag-elt">\n    </div>\n</div>';return c})})();

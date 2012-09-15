@@ -169,8 +169,7 @@ var GenomeDataManager = Cache.extend({
     defaults: _.extend({}, Cache.prototype.defaults, {
         dataset: null,
         filters_manager: null,
-        data_url: null,
-        feature_search_url: null,
+        data_type: "data",
         genome_wide_summary_data: null,
         data_mode_compatible: function(entry, mode) { return true; },
         can_subset: function(entry) { return false; }
@@ -185,9 +184,8 @@ var GenomeDataManager = Cache.extend({
             ready_deferred = $.Deferred(),
             ss_deferred = new ServerStateDeferred({
                 ajax_settings: {
-                    url: this.get('data_url'),
+                    url: this.get('dataset').url(),
                     data: {
-                        dataset_id: dataset.id,
                         hda_ldda: dataset.get('hda_ldda'),
                         data_type: 'state'
                     },
@@ -214,7 +212,7 @@ var GenomeDataManager = Cache.extend({
                 hda_ldda: dataset.get('hda_ldda'),
                 data_type: 'features'
             };
-        return $.getJSON(this.get('data_url'), params);
+        return $.getJSON(dataset.url(), params);
     },
     
     /**
@@ -223,7 +221,7 @@ var GenomeDataManager = Cache.extend({
     load_data: function(region, mode, resolution, extra_params) {
         // Setup data request params.
         var params = {
-                        "data_type": "data",
+                        "data_type": this.get('data_type'),
                         "chrom": region.get('chrom'), 
                         "low": region.get('start'), 
                         "high": region.get('end'), 
@@ -253,7 +251,7 @@ var GenomeDataManager = Cache.extend({
                         
         // Do request.
         var manager = this;
-        return $.getJSON(this.get('data_url'), params, function (result) {
+        return $.getJSON(dataset.url(), params, function (result) {
             manager.set_data(region, result);
         });
     },
