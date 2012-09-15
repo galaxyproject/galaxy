@@ -2974,12 +2974,10 @@ var Track = function(view, container, obj_dict) {
     //
     // Attribute init.
     //
-    this.data_url = ('data_url' in obj_dict ? obj_dict.data_url : default_data_url);
+    var url_base = datasets_url + '/' + obj_dict.dataset_id;
+    this.data_url = ('data_url' in obj_dict ? obj_dict.data_url : url_base);
     this.data_url_extra_params = {};
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
-    this.dataset_check_url = ('converted_datasets_state_url' in obj_dict ? obj_dict.converted_datasets_state_url : converted_datasets_state_url);
-    this.feature_search_url = ('feature_search_url' in obj_dict ? obj_dict.feature_search_url : feature_search_url);
-    
     // A little ugly creating data manager right now due to transition to Backbone-based objects.
     var track = this,
         dataset = new Dataset({
@@ -2991,8 +2989,6 @@ var Track = function(view, container, obj_dict) {
                          new GenomeDataManager({
                              dataset: dataset,
                              data_url: track.data_url,
-                             dataset_state_url: track.dataset_check_url,
-                             feature_search_url: track.feature_search_url,
                              data_mode_compatible: this.data_and_mode_compatible,
                              can_subset: this.can_subset
                          }));
@@ -3312,9 +3308,12 @@ extend(Track.prototype, Drawable.prototype, {
        
         // Get dataset state; if state is fine, enable and draw track. Otherwise, show message 
         // about track status.
-        var init_deferred = $.Deferred();
-        $.getJSON(this.dataset_check_url, { hda_ldda: track.hda_ldda, dataset_id: track.dataset_id, chrom: track.view.chrom}, 
-                 function (result) {
+        var init_deferred = $.Deferred(),
+            params = { 
+                hda_ldda: track.hda_ldda, 
+                data_type: 'converted_datasets_state', 
+                chrom: track.view.chrom}
+        $.getJSON(this.data_url, params, function (result) {
             if (!result || result === "error" || result.kind === "error") {
                 track.container_div.addClass("error");
                 track.tiles_div.text(DATA_ERROR);
@@ -4320,8 +4319,10 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     predraw_init: function() {
         var track = this;
         track.vertical_range = undefined;
-        return $.getJSON( track.data_url, {  stats: true, chrom: track.view.chrom, low: 0, high: track.view.max_high,
-                                        hda_ldda: track.hda_ldda, dataset_id: track.dataset_id }, function(result) {
+        return $.getJSON( track.data_url, 
+            {  data_type: 'data', stats: true, chrom: track.view.chrom, low: 0, 
+               high: track.view.max_high, hda_ldda: track.hda_ldda, dataset_id: 
+               track.dataset_id }, function(result) {
             track.container_div.addClass( "line-track" );
             var data = result.data;
             if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {

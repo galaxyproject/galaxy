@@ -58,10 +58,7 @@
             tool_url: '${h.url_for( controller="/api/tools" )}',
             history_url: '${h.url_for( controller="/api/histories" )}',
             
-            data_url: '${h.url_for( controller="/tracks", action="data" )}',
-            raw_data_url: '${h.url_for( controller="/tracks", action="raw_data" )}',
-            converted_datasets_state_url: '${h.url_for( controller="/tracks", action="converted_datasets_state" )}',
-            dataset_state_url: '${h.url_for( controller="/tracks", action="dataset_state" )}',
+            datasets_url: '${h.url_for( controller="/api/datasets" )}',
             sweepster_url: '${h.url_for( controller="/visualization", action="sweepster" )}',
             visualization_url: '${h.url_for( controller="/visualization", action="save" )}',
         });

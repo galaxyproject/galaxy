@@ -77,7 +77,7 @@
         $(".add-librarydataset").live("click", function() {
             var link = $(this);
             $.ajax({
-                url: "/tracks/list_libraries",
+                url: "/visualization/list_libraries",
                 error: function(xhr, ajaxOptions, thrownError) { alert( "Grid failed" ); console.log(xhr, ajaxOptions, thrownError); },
                 success: function(table_html) {
                     show_modal(

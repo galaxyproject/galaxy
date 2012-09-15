@@ -170,7 +170,6 @@ var GenomeDataManager = Cache.extend({
         dataset: null,
         filters_manager: null,
         data_url: null,
-        dataset_state_url: null,
         feature_search_url: null,
         genome_wide_summary_data: null,
         data_mode_compatible: function(entry, mode) { return true; },
@@ -186,10 +185,11 @@ var GenomeDataManager = Cache.extend({
             ready_deferred = $.Deferred(),
             ss_deferred = new ServerStateDeferred({
                 ajax_settings: {
-                    url: this.get('dataset_state_url'),
+                    url: this.get('data_url'),
                     data: {
                         dataset_id: dataset.id,
-                        hda_ldda: dataset.get('hda_ldda')
+                        hda_ldda: dataset.get('hda_ldda'),
+                        data_type: 'state'
                     },
                     dataType: "json"
                 },
@@ -211,9 +211,10 @@ var GenomeDataManager = Cache.extend({
             params = {
                 query: query,
                 dataset_id: dataset.id,
-                hda_ldda: dataset.get('hda_ldda')
+                hda_ldda: dataset.get('hda_ldda'),
+                data_type: 'features'
             };
-        return $.getJSON(this.get('feature_search_url'), params);
+        return $.getJSON(this.get('data_url'), params);
     },
     
     /**
@@ -222,10 +223,11 @@ var GenomeDataManager = Cache.extend({
     load_data: function(region, mode, resolution, extra_params) {
         // Setup data request params.
         var params = {
+                        "data_type": "data",
                         "chrom": region.get('chrom'), 
                         "low": region.get('start'), 
                         "high": region.get('end'), 
-                        "mode": mode, 
+                        "mode": mode,
                         "resolution": resolution
                      },
             dataset = this.get('dataset');
@@ -743,7 +745,7 @@ var add_datasets = function(dataset_url, add_track_async_url, success_fn) {
                         var requests = [];
                         $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
                             var data = {
-                                    'track_config': true,
+                                    data_type: 'track_config',
                                     'hda_ldda': 'hda'
                                 },
                                 id = $(this).val();

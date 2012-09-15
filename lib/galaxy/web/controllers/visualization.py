@@ -148,15 +148,9 @@ class VisualizationListGrid( grids.Grid ):
         """
         Returns dictionary used to create item link.
         """
-        controller = "tracks"
-        if item.type == "trackster":
-            action = "browser"
-        elif item.type == "paramamonster":
-            action = "paramamonster"
-        elif item.type == "circster":
-            action = "circster"
-        elif item.type == "phyloviz":
-            # Support phyloviz
+        controller = "visualization"
+        action = item.type
+        if item.type == "phyloviz":
             controller = "phyloviz"
             action = "visualization"
         return dict( controller=controller, action=action, id=item.id )
@@ -678,6 +672,65 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
             template="visualization/create.mako" )
+
+    #
+    # Visualizations.
+    #
+
+    @web.expose
+    @web.require_login()
+    def new_browser( self, trans, **kwargs ):
+        """
+        Provide info necessary for creating a new trackster browser.
+        """
+        return trans.fill_template( "tracks/new_browser.mako", 
+                                    dbkeys=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), 
+                                    default_dbkey=kwargs.get("default_dbkey", None) )
+        
+    @web.expose
+    @web.require_login()
+    def trackster(self, trans, id=None, **kwargs):
+        """
+        Display browser for the visualization denoted by id and add the datasets listed in `dataset_ids`.
+        """
+
+        # Display new browser if no id provided.
+        if not id:
+            return trans.fill_template( "tracks/browser.mako", config={}, 
+                                        add_dataset=kwargs.get("dataset_id", None), 
+                                        default_dbkey=kwargs.get("default_dbkey", None) )
+
+        # Display saved visualization.
+        vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+        viz_config = self.get_visualization_config( trans, vis )
+        
+        # Get new dataset if specified.
+        new_dataset = kwargs.get("dataset_id", None)
+        if new_dataset is not None:
+            if trans.security.decode_id(new_dataset) in [ d["dataset_id"] for d in viz_config.get("tracks") ]:
+                new_dataset = None # Already in browser, so don't add
+        return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset )
+
+    @web.json
+    def save_trackster( self, trans, vis_json ):
+        """
+        Save a visualization; if visualization does not have an ID, a new 
+        visualization is created. Returns JSON of visualization.
+        """
+        
+        # TODO: Need from_dict to convert json to Visualization object.
+        vis_config = from_json_string( vis_json )
+        config = {
+            'view': vis_config[ 'datasets' ],
+            'bookmarks': vis_config[ 'bookmarks' ],
+            'viewport': vis_config[ 'viewport' ]
+        }
+        type = vis_config[ 'type' ]
+        id = vis_config.get( 'id', None )
+        title = vis_config[ 'title' ]
+        dbkey = vis_config[ 'dbkey' ]
+        annotation = vis_config.get( 'annotation', None )
+        return self.save_visualization( trans, config, type, id, title, dbkey, annotation )
 
     @web.expose
     def circster( self, trans, id, **kwargs ):

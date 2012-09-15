@@ -23,13 +23,15 @@ ${parent.javascripts()}
 <![endif]-->
 
 ${render_trackster_js_files()}
+${h.js( "libs/jquery/jquery.autocomplete" )}
+
 
 <script type="text/javascript">
     //
     // Place URLs here so that url_for can be used to generate them.
     //
     galaxy_paths.set({
-        visualization_url: "${h.url_for( action='save' )}"
+        visualization_url: "${h.url_for( action='save_trackster' )}"
     });
 
     ${render_trackster_js_vars()}
@@ -234,7 +236,7 @@ ${render_trackster_js_files()}
             %if add_dataset is not None:
                 $.ajax({
                     url: add_track_async_url + "/${add_dataset}",
-                    data: { hda_ldda: 'hda', 'track_config': true },
+                    data: { hda_ldda: 'hda', data_type: 'track_config' },
                     dataType: "json",
                     success: function(track_data) { view.add_drawable( object_from_template(track_data, view, view) ) }
                 });

@@ -18,11 +18,7 @@
 <%def name="render_trackster_js_vars()">
     var add_track_async_url = "${h.url_for( controller='/api/datasets' )}",
         add_datasets_url = "${h.url_for( controller='/visualization', action='list_current_history_datasets' )}",
-        default_data_url = "${h.url_for( controller='/tracks', action='data' )}",
-        raw_data_url = "${h.url_for( controller='/tracks', action='raw_data' )}",        
         reference_url = "${h.url_for( controller='/api/genomes' )}",
         chrom_url = "${h.url_for( controller='/api/genomes' )}",
-        dataset_state_url = "${h.url_for( controller='/tracks', action='dataset_state' )}",
-        converted_datasets_state_url = "${h.url_for( controller='/tracks', action='converted_datasets_state' )}",
-        feature_search_url = "${h.url_for( controller='/tracks', action='search_features' )}";
+        datasets_url = "${h.url_for( controller='/api/datasets' )}";
 </%def>

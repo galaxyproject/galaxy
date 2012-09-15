@@ -98,7 +98,7 @@
     ## Visualization menu.
     <%
         menu_options = [
-                         [_('New Visualization'), h.url_for( controller='/tracks', action='index' ) ],
+                         [_('New Visualization'), h.url_for( controller='/visualization', action='trackster' ) ],
                          [_('Saved Visualizations'), h.url_for( controller='/visualization', action='list' ) ]
                        ]
         tab( "visualization", _("Visualization"), h.url_for( controller='/visualization', action='list'), menu_options=menu_options )

@@ -450,7 +450,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         session.add( vis_rev )
         session.flush()
         encoded_id = trans.security.encode_id( vis.id )
-        return { "vis_id": encoded_id, "url": url_for( action='browser', id=encoded_id ) }
+        return { "vis_id": encoded_id, "url": url_for( action=vis.type, id=encoded_id ) }
 
     def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
         """ Get a Visualization from the database by id, verifying ownership. """
