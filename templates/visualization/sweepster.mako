@@ -108,7 +108,7 @@
 
     ${h.templates( "tool_link", "panel_section", "tool_search", "tool_form" )}
     ${h.js( "libs/d3", "mvc/data", "mvc/tools", "viz/visualization", "viz/sweepster", 
-            "viz/trackster", "viz/trackster_ui", "libs/jquery/jquery.ui.sortable.slider" )}
+            "viz/trackster", "viz/trackster_ui", "libs/jquery/jquery-ui-1.8.23.custom.min" )}
 
     <script type="text/javascript">
         var viz;

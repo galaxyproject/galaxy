@@ -3843,8 +3843,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             
             // Tool-execution specific post-draw init:
             
-            // Reset dataset state, wait time.
-            self.dataset_state_url = converted_datasets_state_url;
+            // Reset dataset check, wait time.
+            self.dataset_check_type = 'converted_datasets_state';
             self.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
 
             // Reset data URL when dataset indexing has completed/when not pending.
@@ -3858,8 +3858,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             $.when(ss_deferred.go()).then(function() {
                 // Dataset is indexed, so use converted data.
                 self.data_manager.set('data_type', 'data');
-                self.dataset_check_type = 'converted_datasets_state';
-                this.data_query_wait = 5000;
             });
                         
             // Reset post-draw actions function.

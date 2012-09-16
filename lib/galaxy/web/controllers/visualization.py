@@ -5,6 +5,7 @@ from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.controllers.library import LibraryListGrid
 from galaxy.visualization.genomes import decode_dbkey
+from galaxy.visualization.genome.visual_analytics import get_dataset_job
 
 #
 # -- Grids --

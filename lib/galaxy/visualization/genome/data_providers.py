@@ -1186,6 +1186,12 @@ class RawGFFDataProvider( GenomeDataProvider ):
 
         # Read first line in order to match chrom naming format.
         line = source.readline()
+        
+        # If line empty, assume file is empty and return empty iterator.
+        if len( line ) == 0:
+            return iter([])
+        
+        # Determine chromosome naming format.
         dataset_chrom = line.split()[0]
         if not _chrom_naming_matches( chrom, dataset_chrom ):
             chrom = _convert_between_ucsc_and_ensemble_naming( chrom )

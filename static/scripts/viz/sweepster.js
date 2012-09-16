@@ -925,6 +925,9 @@ var SweepsterVisualizationView = Backbone.View.extend({
                                 }, output.first().get('track_config')),
                                 track_obj = object_from_template(track_config, self, null);
 
+                            // Track uses only raw data.
+                            track_obj.data_manager.set('data_type', 'raw_data');
+
                             // Set track block colors.
                             track_obj.prefs.block_color = self.block_color;
                             track_obj.prefs.reverse_strand_color = self.reverse_strand_color;
