@@ -347,6 +347,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         tstamp = time.localtime ( time.time() + 3600 * 24 * age )
         self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp )
         self.response.cookies[name]['version'] = version
+        self.response.cookies[name]['httponly'] = True
     def _ensure_valid_session( self, session_cookie, create=True):
         """
         Ensure that a valid Galaxy session exists and is available as
