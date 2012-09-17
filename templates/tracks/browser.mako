@@ -31,12 +31,11 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
     require.config({ 
         baseUrl: "${h.url_for('/static/scripts') }",
         shim: {
-            "libs/underscore": { exports: "_" }
+            "libs/underscore": { exports: "_" },
+            "libs/backbone/backbone": { exports: "Backbone" }
         }
     });
-    require( ["viz/trackster_ui","viz/trackster/util","viz/trackster/tracks"], function( trackster_ui, util, tracks ) {
-
-    var add_bookmark = trackster_ui.add_bookmark
+    require( ["base", "viz/trackster_ui","viz/trackster/util","viz/trackster/tracks"], function( base, trackster_ui, util, tracks ) {
 
     //
     // Place URLs here so that url_for can be used to generate them.
@@ -48,8 +47,9 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
     ${render_trackster_js_vars()}
 
     var view,
-        browser_router;
-        
+        browser_router,
+        ui = new (trackster_ui.TracksterUI)( "${h.url_for('/')}" );
+
     /**
      * Set up router.
      */
@@ -58,51 +58,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
         Backbone.history.start();   
     };
     
-    /**
-     * Use a popup grid to bookmarks from a dataset.
-     */
-    var add_bookmarks = function() {
-        show_modal( "Select dataset for new bookmarks", "progress" );
-        $.ajax({
-            url: "${h.url_for( controller='visualization', action='list_histories' )}",
-            data: { "f-dbkey": view.dbkey },
-            error: function() { alert( "Grid failed" ); },
-            success: function(table_html) {
-                show_modal(
-                    "Select dataset for new bookmarks",
-                    table_html, {
-                        "Cancel": function() {
-                            hide_modal();
-                        },
-                        "Insert": function() {
-                            // Just use the first selected
-                            $('input[name=id]:checked,input[name=ldda_ids]:checked').first().each(function(){
-                                var data, id = $(this).val();
-                                    if ($(this).attr("name") === "id") {
-                                        data = { hda_id: id };
-                                    } else {
-                                        data = { ldda_id: id};
-                                    }
 
-                                    $.ajax({
-                                        url: "${h.url_for( action='bookmarks_from_dataset' )}",
-                                        data: data,
-                                        dataType: "json",
-                                    }).then( function(data) {
-                                        for( i = 0; i < data.data.length; i++ ) {
-                                            var row = data.data[i];
-                                            add_bookmark( row[0], row[1] );
-                                        }
-                                    });
-                            });
-                            hide_modal();
-                        }
-                    }
-                );
-            }
-        });
-    };
-    
     var browser_router;
     $(function() {
         // Create and initialize menu.
@@ -192,7 +148,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
         $("#right-border").click(function() { view.resize_window(); });
         
         %if config:
-            view = trackster_ui.create_visualization( {
+            view = ui.create_visualization( {
                                             container: $("#browser-container"), 
                                             name: "${config.get('title') | h}",
                                             vis_id: "${config.get('vis_id')}", 
@@ -262,7 +218,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
                 // Add new bookmark.
                 var position = view.chrom + ":" + view.low + "-" + view.high,
                     annotation = "Bookmark description";
-                return add_bookmark(position, annotation, true);
+                return ui.add_bookmark(position, annotation, true);
             });
 
             // make_popupmenu( $("#bookmarks-more-button"), {
@@ -271,7 +227,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
             //     }
             // });
 
-            trackster_ui.init_keyboard_nav(view);
+            ui.init_keyboard_nav(view);
         };
         
     });
