@@ -4764,6 +4764,40 @@ var ReadTrack = function (view, container, obj_dict) {
 };
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);
 
+/**
+ * Objects that can be added to a view.
+ */
+var addable_objects = { 
+    "LineTrack": LineTrack,
+    "FeatureTrack": FeatureTrack,
+    "VcfTrack": VcfTrack,
+    "ReadTrack": ReadTrack,
+    // "DiagonalHeatmapTrack": DiagonalHeatmapTrack,
+    "CompositeTrack": CompositeTrack,
+    "DrawableGroup": DrawableGroup 
+};
+
+/**
+ * Create new object from a template. A template can be either an object dictionary or an 
+ * object itself.
+ */
+var object_from_template = function(template, view, container) {
+    if ('copy' in template) {
+        // Template is an object.
+        return template.copy(container);
+    }
+    else {
+        // Template is a dictionary.
+        var
+           drawable_type = template['obj_type'];
+        // For backward compatibility:
+        if (!drawable_type) {
+            drawable_type = template['track_type']; 
+        }
+        return new addable_objects[ drawable_type ](view, container, template);
+    }
+};
+
 // Exports
 return {
     View: View,
@@ -4773,7 +4807,8 @@ return {
     DiagonalHeatmapTrack: DiagonalHeatmapTrack,
     ReadTrack: ReadTrack,
     VcfTrack: VcfTrack,
-    CompositeTrack: CompositeTrack
+    CompositeTrack: CompositeTrack,
+    object_from_template: object_from_template
 };
 
 // End trackster_module encapsulation

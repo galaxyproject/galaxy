@@ -4,6 +4,8 @@ define( ["libs/underscore","viz/trackster/slotting", "viz/trackster/painters","v
  * Functions used for creating and managing the Trackster user interface.
  ************************************************************************/
 
+var object_from_template = tracks.object_from_template;
+
 /**
  * Add bookmark.
  */
@@ -38,39 +40,6 @@ var add_bookmark = function(position, annotation, editable) {
 
     view.has_changes = true;
     return new_bookmark;
-};
-
-/**
- * Objects that can be added to a view.
- */
-var addable_objects = { 
-    "LineTrack": tracks.LineTrack,
-    "FeatureTrack": tracks.FeatureTrack,
-    "VcfTrack": tracks.VcfTrack,
-    "ReadTrack": tracks.ReadTrack,
-    // "DiagonalHeatmapTrack": DiagonalHeatmapTrack,
-    "CompositeTrack": tracks.CompositeTrack,
-    "DrawableGroup": tracks.DrawableGroup };
-
-/**
- * Create new object from a template. A template can be either an object dictionary or an 
- * object itself.
- */
-var object_from_template = function(template, view, container) {
-    if ('copy' in template) {
-        // Template is an object.
-        return template.copy(container);
-    }
-    else {
-        // Template is a dictionary.
-        var
-           drawable_type = template['obj_type'];
-        // For backward compatibility:
-        if (!drawable_type) {
-            drawable_type = template['track_type']; 
-        }
-        return new addable_objects[ drawable_type ](view, container, template);
-    }
 };
 
 /**
