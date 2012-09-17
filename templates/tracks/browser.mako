@@ -27,6 +27,15 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
 
 
 <script type="text/javascript">
+
+    require.config({ 
+        baseUrl: "${h.url_for('/static/scripts') }",
+        shim: {
+            "libs/underscore": { exports: "_" }
+        }
+    });
+    require( ["viz/trackster_ui","viz/trackster/util"], function( trackster_ui, util ) {
+
     //
     // Place URLs here so that url_for can be used to generate them.
     //
@@ -99,7 +108,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
                 add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
                     _.each(tracks, function(track) {
-                        view.add_drawable( object_from_template(track, view,  view) );  
+                        view.add_drawable( trackster_ui.object_from_template(track, view,  view) );  
                     });
                 });
             } },
@@ -181,7 +190,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
         $("#right-border").click(function() { view.resize_window(); });
         
         %if config:
-            view = create_visualization( {
+            view = trackster_ui.create_visualization( {
                                             container: $("#browser-container"), 
                                             name: "${config.get('title') | h}",
                                             vis_id: "${config.get('vis_id')}", 
@@ -196,7 +205,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
             set_up_router({view: view});
         %else:
             var continue_fn = function() {
-                view = create_visualization( {
+                view = trackster_ui.create_visualization( {
                     container: $("#browser-container"),
                     name: $("#new-title").val(),
                     dbkey: $("#new-dbkey").val()
@@ -238,7 +247,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
                     url: add_track_async_url + "/${add_dataset}",
                     data: { hda_ldda: 'hda', data_type: 'track_config' },
                     dataType: "json",
-                    success: function(track_data) { view.add_drawable( object_from_template(track_data, view, view) ) }
+                    success: function(track_data) { view.add_drawable( trackster_ui.object_from_template(track_data, view, view) ) }
                 });
                 
             %endif
@@ -260,9 +269,11 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
             //     }
             // });
 
-            init_keyboard_nav(view);
+            trackster_ui.init_keyboard_nav(view);
         };
         
+    });
+
     });
 
 </script>
