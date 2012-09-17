@@ -61,85 +61,12 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
 
     var browser_router;
     $(function() {
-        // Create and initialize menu.
-        var menu = create_icon_buttons_menu([
-            { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
-                add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
-                    _.each(tracks, function(track) {
-                        view.add_drawable( trackster_ui.object_from_template(track, view,  view) );  
-                    });
-                });
-            } },
-            { icon_class: 'block--plus', title: 'Add group', on_click: function() { 
-                view.add_drawable( new tracks.DrawableGroup(view, view, { name: "New Group" }) );
-            } },
-            { icon_class: 'bookmarks', title: 'Bookmarks', on_click: function() { 
-                // HACK -- use style to determine if panel is hidden and hide/show accordingly.
-                parent.force_right_panel(($("div#right").css("right") == "0px" ? "hide" : "show"));
-            } },
-            {
-                icon_class: 'globe',
-                title: 'Circster',
-                on_click: function() {
-                    // Add viz id dynamically so that newly saved visualizations work as well.
-                    window.location = "${h.url_for( controller='visualization', action='circster' )}?id=" + view.vis_id;
-                }
-            },
-            { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
-                // Show saving dialog box
-                show_modal("Saving...", "progress");
-                                    
-                // Save bookmarks.
-                var bookmarks = [];
-                $(".bookmark").each(function() { 
-                    bookmarks.push({
-                        position: $(this).children(".position").text(),
-                        annotation: $(this).children(".annotation").text()
-                    });
-                });
 
-                // FIXME: give unique IDs to Drawables and save overview as ID.
-                var overview_track_name = (view.overview_drawable ? view.overview_drawable.name : null),
-                    viz_config = {
-                        'id': view.vis_id,
-                        'title': view.name,
-                        'dbkey': view.dbkey,
-                        'type': 'trackster',
-                        'datasets': view.to_dict(),
-                        'viewport': { 'chrom': view.chrom, 'start': view.low , 'end': view.high, 'overview': overview_track_name },
-                        'bookmarks': bookmarks
-                    };
+        ui.createButtonMenu();
 
-                $.ajax({
-                    url: galaxy_paths.get("visualization_url"),
-                    type: "POST",
-                    dataType: "json",
-                    data: { 
-                        vis_json: JSON.stringify(viz_config)
-                    }
-                }).success(function(vis_info) {
-                    hide_modal();
-                    view.vis_id = vis_info.vis_id;
-                    view.has_changes = false;
-
-                    // Needed to set URL when first saving a visualization.
-                    window.history.pushState({}, "", vis_info.url + window.location.hash);
-                })
-                .error(function() { 
-                    show_modal( "Could Not Save", "Could not save visualization. Please try again later.", 
-                                { "Close" : hide_modal } );
-                });
-            } },
-            { icon_class: 'cross-circle', title: 'Close', on_click: function() { 
-                window.location = "${h.url_for( controller='visualization', action='list' )}";
-            } }
-        ], 
-        { 
-            tooltip_config: { placement: 'bottom' }
-        });
-        
-        menu.$el.attr("style", "float: right");
-        $("#center .unified-panel-header-inner").append(menu.$el);
+        // Attach the button menu to the panel header and float it left
+        ui.buttonMenu.$el.attr("style", "float: right");
+        $("#center .unified-panel-header-inner").append(ui.buttonMenu.$el);
         
         // Hide bookmarks by default right now.
         parent.force_right_panel("hide"); 
@@ -159,7 +86,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
                                          JSON.parse('${ h.to_json_string( config['bookmarks'] ) }'),
                                          true
                                          );
-            init_editor();
+            ui.init_editor();
             set_up_router({view: view});
         %else:
             var continue_fn = function() {
@@ -169,7 +96,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
                     dbkey: $("#new-dbkey").val()
                 } );
                 view.editor = true;
-                init_editor();
+                ui.init_editor();
                 set_up_router({view: view});
                 hide_modal();
             };
