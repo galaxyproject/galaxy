@@ -232,7 +232,7 @@ class SharableItemSecurityMixin:
                 raise ItemOwnershipException( "%s is not owned by the current user" % item.__class__.__name__, type='error' )
         if check_accessible:
             if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
-                if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_i9tem( trans.get_current_user_roles(), item, trans.user ) ):
+                if not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ) ):
                     raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
             else:
                 # Verify accessible.
