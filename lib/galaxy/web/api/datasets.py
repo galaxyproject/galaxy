@@ -219,6 +219,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if data_provider == ColumnDataProvider:
             #pre: should have column kwargs
             #print 'kwargs:', kwargs
+            #TODO??: could default to first two here
             assert 'cols' in kwargs, (
                 "ColumnDataProvider needs a 'cols' parameter in the query string" )
             data = data_provider( original_dataset=dataset ).get_data( **kwargs )

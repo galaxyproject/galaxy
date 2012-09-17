@@ -56,7 +56,6 @@ ${h.js( "libs/d3" )}
 todo:
 	validate columns (here or server)
 	send: type, column title/name in JSON
-	
 
 	move to obj, possibly view?
 	fetch (new?) data
@@ -97,9 +96,9 @@ $(function() {
 		xMax = d3.max( col1_data ),
 		yMin = d3.min( col2_data ),
 		yMax = d3.max( col2_data );
-	console.log( 'col1_data:', col1_data );
-	console.log( 'col2_data:', col2_data );
-	console.log( 'xMin, xMax, yMin, yMax:', xMin, xMax, yMin, yMax );
+	//console.log( 'col1_data:', col1_data );
+	//console.log( 'col2_data:', col2_data );
+	//console.log( 'xMin, xMax, yMin, yMax:', xMin, xMax, yMin, yMax );
 
 	// Set up.
 	d3.select( "body" ).append( "svg:svg" )
@@ -130,14 +129,14 @@ $(function() {
 	var xAxis = chart.append( 'g' ).attr( 'class', 'axis' ).attr( 'id', 'x-axis' )
 		.attr( 'transform', translateStr( 0, HEIGHT ) )
 		.call( xAxisFn )
-	console.debug( 'xAxis:', xAxis ); window.xAxis = xAxis, window.xAxisFn = xAxisFn;
+	//console.debug( 'xAxis:', xAxis ); window.xAxis = xAxis, window.xAxisFn = xAxisFn;
 	
 	var xAxisLabel = xAxis.append( 'text' ).attr( 'class', 'axis-label' ).attr( 'id', 'x-axis-label' )
 		.attr( 'x', WIDTH / 2 )
 		.attr( 'y', X_AXIS_LABEL_BUMP_Y )
 		.attr( 'text-anchor', 'middle' )
 		.text( xLabel );
-	console.debug( 'xAxisLabel:', xAxisLabel ); window.xAxisLabel = xAxisLabel;
+	//console.debug( 'xAxisLabel:', xAxisLabel ); window.xAxisLabel = xAxisLabel;
 
 	var yAxisFn = d3.svg.axis()
 		.scale( y_scale )
@@ -145,7 +144,7 @@ $(function() {
 		.orient( 'left' );
 	var yAxis = chart.append( 'g' ).attr( 'class', 'axis' ).attr( 'id', 'y-axis' )
 		.call( yAxisFn );
-	console.debug( 'yAxis:', yAxis ); window.yAxis = yAxis, window.yAxisFn = yAxisFn;
+	//console.debug( 'yAxis:', yAxis ); window.yAxis = yAxis, window.yAxisFn = yAxisFn;
 
 	var yAxisLabel = yAxis.append( 'text' ).attr( 'class', 'axis-label' ).attr( 'id', 'y-axis-label' )
 		.attr( 'x', Y_AXIS_LABEL_BUMP_X )
@@ -153,7 +152,7 @@ $(function() {
 		.attr( 'text-anchor', 'middle' )
 		.attr( 'transform', rotateStr( -90, Y_AXIS_LABEL_BUMP_X, HEIGHT / 2 ) )
 		.text( yLabel );
-	console.debug( 'yAxisLabel:', yAxisLabel ); window.yAxisLabel = yAxisLabel;
+	//console.debug( 'yAxisLabel:', yAxisLabel ); window.yAxisLabel = yAxisLabel;
 
 	// grid lines
 	var hGridLines = chart.selectAll( '.h-grid-line' )
@@ -162,7 +161,7 @@ $(function() {
 			.classed( 'grid-line h-grid-line', true )
 			.attr( 'x1', x_scale ).attr( 'y1', 0 )
 			.attr( 'x2', x_scale ).attr( 'y2', HEIGHT )
-	console.debug( 'hGridLines:', hGridLines ); window.hGridLines = hGridLines;
+	//console.debug( 'hGridLines:', hGridLines ); window.hGridLines = hGridLines;
 	
 	var vGridLines = chart.selectAll( '.v-grid-line' )
 			.data( y_scale.ticks( yAxisFn.ticks()[0] ) )
@@ -170,7 +169,7 @@ $(function() {
 			.classed( 'grid-line v-grid-line', true )
 			.attr( 'x1', 0 )    .attr( 'y1', y_scale )
 			.attr( 'x2', WIDTH ).attr( 'y2', y_scale )
-	console.debug( 'vGridLines:', vGridLines ); window.vGridLines = vGridLines;
+	//console.debug( 'vGridLines:', vGridLines ); window.vGridLines = vGridLines;
 	
 	// Functions used to render plot.
 	var xPosFn = function( d, i ){

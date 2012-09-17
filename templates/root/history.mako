@@ -349,7 +349,6 @@ $(function() {
     };
     
     _.each( $(".visualize-icon"), function(icon) {
-        console.debug( 'Init visualization icons, icon:', icon );
         init_viz_icon(icon);
     });
         
