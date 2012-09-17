@@ -1,1 +1,1 @@
-define("libs/backbone",function(b){var a=function(){if(this.initialize){this.initialize.apply(this,arguments)}};a.extend=b.Backbone.Model.extend;return{Base:a,Backbone:b.Backbone}});
+define(["libs/backbone/backbone"],function(b){var a=function(){if(this.initialize){this.initialize.apply(this,arguments)}};a.extend=b.Model.extend;return{Base:a,Backbone:b}});
