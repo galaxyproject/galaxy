@@ -25,6 +25,15 @@ ${parent.javascripts()}
 ${render_trackster_js_files()}
 
 <script type="text/javascript">
+
+    require.config({ 
+        baseUrl: "${h.url_for('/static/scripts') }",
+        shim: {
+            "libs/underscore": { exports: "_" }
+        }
+    });
+    require( ["viz/trackster_ui","viz/trackster/util"], function( trackster_ui, util ) {
+
     //
     // Place URLs here so that url_for can be used to generate them.
     //
@@ -97,7 +106,7 @@ ${render_trackster_js_files()}
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
                 add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
                     _.each(tracks, function(track) {
-                        view.add_drawable( object_from_template(track, view,  view) );  
+                        view.add_drawable( trackster_ui.object_from_template(track, view,  view) );  
                     });
                 });
             } },
@@ -179,7 +188,7 @@ ${render_trackster_js_files()}
         $("#right-border").click(function() { view.resize_window(); });
         
         %if config:
-            view = create_visualization( {
+            view = trackster_ui.create_visualization( {
                                             container: $("#browser-container"), 
                                             name: "${config.get('title') | h}",
                                             vis_id: "${config.get('vis_id')}", 
@@ -194,7 +203,7 @@ ${render_trackster_js_files()}
             set_up_router({view: view});
         %else:
             var continue_fn = function() {
-                view = create_visualization( {
+                view = trackster_ui.create_visualization( {
                     container: $("#browser-container"),
                     name: $("#new-title").val(),
                     dbkey: $("#new-dbkey").val()
@@ -236,7 +245,7 @@ ${render_trackster_js_files()}
                     url: "${h.url_for( action='add_track_async' )}",
                     data: { hda_id: "${add_dataset}" },
                     dataType: "json",
-                    success: function(track_data) { view.add_drawable( object_from_template(track_data, view, view) ) }
+                    success: function(track_data) { view.add_drawable( trackster_ui.object_from_template(track_data, view, view) ) }
                 });
                 
             %endif
@@ -258,9 +267,11 @@ ${render_trackster_js_files()}
             //     }
             // });
 
-            init_keyboard_nav(view);
+            trackster_ui.init_keyboard_nav(view);
         };
         
+    });
+
     });
 
 </script>

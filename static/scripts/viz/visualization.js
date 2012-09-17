@@ -10,6 +10,13 @@
  * and models can be used without views.
  */
 
+/**
+ * Helper to determine if object is jQuery deferred.
+ */
+var is_deferred = function ( d ) {
+    return ( 'isResolved' in d );
+};
+
 // --------- Models ---------
 
 /**

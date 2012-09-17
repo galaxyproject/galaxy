@@ -1,3 +1,5 @@
+define( ["libs/underscore","viz/trackster/slotting", "viz/trackster/painters","viz/trackster/tracks"], function( _, slotting, painters, tracks ) {
+
 /************************************************************************
  * Functions used for creating and managing the Trackster user interface.
  ************************************************************************/
@@ -39,6 +41,18 @@ var add_bookmark = function(position, annotation, editable) {
 };
 
 /**
+ * Objects that can be added to a view.
+ */
+var addable_objects = { 
+    "LineTrack": tracks.LineTrack,
+    "FeatureTrack": tracks.FeatureTrack,
+    "VcfTrack": tracks.VcfTrack,
+    "ReadTrack": tracks.ReadTrack,
+    // "DiagonalHeatmapTrack": DiagonalHeatmapTrack,
+    "CompositeTrack": tracks.CompositeTrack,
+    "DrawableGroup": tracks.DrawableGroup };
+
+/**
  * Create new object from a template. A template can be either an object dictionary or an 
  * object itself.
  */
@@ -60,24 +74,12 @@ var object_from_template = function(template, view, container) {
 };
 
 /**
- * Objects that can be added to a view.
- */
-var addable_objects = { 
-    "LineTrack": LineTrack,
-    "FeatureTrack": FeatureTrack,
-    "VcfTrack": VcfTrack,
-    "ReadTrack": ReadTrack,
-    // "DiagonalHeatmapTrack": DiagonalHeatmapTrack,
-    "CompositeTrack": CompositeTrack,
-    "DrawableGroup": DrawableGroup };
-
-/**
  * Create a complete Trackster visualization. Returns view.
  */
 var create_visualization = function(view_config, viewport_config, drawables_config, bookmarks_config, editable) {
     
     // Create view.
-    view = new View(view_config);
+    view = new tracks.View(view_config);
     view.editor = true;
     $.when( view.load_chroms_deferred ).then(function() {
         // Viewport config.
@@ -135,7 +137,7 @@ var create_visualization = function(view_config, viewport_config, drawables_conf
 /**
  * Set up keyboard navigation for a visualization.
  */
-var init_keyboard_nav = function(view) {
+ var init_keyboard_nav = function(view) {
     // Keyboard navigation. Scroll ~7% of height when scrolling up/down.
     $(document).keydown(function(e) {
         // Do not navigate if arrow keys used in input element.
@@ -162,3 +164,12 @@ var init_keyboard_nav = function(view) {
         }
     });
 };
+
+return {
+    add_bookmark: add_bookmark,
+    object_from_template: object_from_template,
+    create_visualization: create_visualization,
+    init_keyboard_nav: init_keyboard_nav
+};
+
+});
