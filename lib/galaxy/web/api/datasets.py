@@ -215,8 +215,14 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         # Return data.
         data = None
         data_provider = trans.app.data_provider_registry.get_data_provider( raw=True, original_dataset=dataset )
+        
         if data_provider == ColumnDataProvider:
+            #pre: should have column kwargs
+            #print 'kwargs:', kwargs
+            assert 'cols' in kwargs, (
+                "ColumnDataProvider needs a 'cols' parameter in the query string" )
             data = data_provider( original_dataset=dataset ).get_data( **kwargs )
+            
         else:
             # Default to genomic data.
             # FIXME: need better way to set dataset_type.

@@ -6,6 +6,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.controllers.library import LibraryListGrid
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genome.visual_analytics import get_dataset_job
+from galaxy.visualization.data_providers.basic import ColumnDataProvider
 
 #
 # -- Grids --
@@ -800,6 +801,28 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     
     def get_item( self, trans, id ):
         return self.get_visualization( trans, id )
+
+    @web.expose    
+    def scatterplot( self, trans, dataset_id, cols ):
+        # Get HDA.
+        hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+        
+        # get some metadata for the page
+        hda_dict = hda.get_api_value()
+        #title = "Scatter plot of {name}:".format( **hda_dict )
+        #subtitle = "{misc_info}".format( **hda_dict )
+        
+        #TODO: add column data
+        # Read data.
+        data_provider = ColumnDataProvider( original_dataset=hda )
+        data = data_provider.get_data( cols )
+        
+        # Return plot.
+        return trans.fill_template_mako( "visualization/scatterplot.mako",
+                                         title=hda.name, subtitle=hda.info,
+                                         hda=hda,
+                                         data=data )
+        
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):

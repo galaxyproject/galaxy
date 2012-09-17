@@ -234,9 +234,12 @@
                             else:
                                 data_url = h.url_for( controller='visualization', action='list_tracks' )
                             %>
-                            <a href="javascript:void(0)" data-url="${data_url}" class="icon-button chart_curve tooltip trackster-add"
-                                action-url="${h.url_for( controller='visualization', action='trackster', dataset_id=dataset_id)}"
-                                new-url="${h.url_for( controller='visualization', action='trackster', dataset_id=dataset_id, default_dbkey=data.dbkey)}" title="View in Trackster"></a>
+                            <!--<a href="javascript:void(0)" data-url="${data_url}" class="icon-button chart_curve tooltip trackster-add"-->
+                            <!--    action-url="${h.url_for( controller='visualization', action='trackster', dataset_id=dataset_id)}"-->
+                            <!--    new-url="${h.url_for( controller='visualization', action='trackster', dataset_id=dataset_id, default_dbkey=data.dbkey)}" title="View in Trackster"></a>-->
+                            <a href="javascript:void(0)" data-url="${data_url}" class="icon-button chart_curve tooltip visualize-icon"
+                                action-url="${h.url_for( controller='tracks', action='browser', dataset_id=dataset_id)}"
+                                new-url="${h.url_for( controller='tracks', action='index', dataset_id=dataset_id, default_dbkey=data.dbkey)}" title="Visualize"></a>
                         %endif
                         <%
                             isPhylogenyData = isinstance(data.datatype,  (Phyloxml, Nexus, Newick))

@@ -90,6 +90,11 @@ class ColumnDataProvider( BaseDataProvider ):
                 break
             
             fields = line.split()
+            #pre: column indeces should be avail in fields
+            for col_index in cols:
+                assert col_index < len( fields ), (
+                    "column index (%d) must be less than fields length: %d" % ( col_index, len( fields ) ) )
+                
             data.append( [ cast_val( fields[c], self.original_dataset.metadata.column_types[c] ) for c in cols ] )
             
         f.close()

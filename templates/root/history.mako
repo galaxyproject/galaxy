@@ -17,7 +17,16 @@
 <meta http-equiv="Pragma" content="no-cache">
 
 ${h.css( "base", "history", "autocomplete_tagging" )}
-${h.js( "libs/jquery/jquery", "libs/bootstrap", "galaxy.base", "libs/json2", "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging" )}
+${h.js(
+    "libs/jquery/jquery",
+    "libs/bootstrap",
+    "galaxy.base",
+    "libs/json2",
+    "libs/jquery/jstorage",
+    "libs/jquery/jquery.autocomplete",
+    "galaxy.autocom_tagging",
+    "libs/underscore"
+)}
 
 <script type="text/javascript">
 
@@ -289,8 +298,61 @@ $(function() {
         });
     }
     
-    init_trackster_links();
+    /**
+     * Create popup menu for visualization icon.
+     */
+    function init_viz_icon(icon) {
+        var icon_link = $(icon);
+        make_popupmenu( icon_link , {
+            "${_("Trackster")}": function() {
+                $.ajax({
+                    url: icon_link.attr("data-url"),
+                    dataType: "html",
+                    error: function() { alert( "Could not add this dataset to browser." ); },
+                    success: function(table_html) {
+                        var parent = window.parent;
 
+                        parent.show_modal("View Data in a New or Saved Visualization", "", {
+                            "Cancel": function() {
+                                parent.hide_modal();
+                            },
+                            "View in saved visualization": function() {
+                                // Show new modal with saved visualizations.
+                                parent.hide_modal();
+                                parent.show_modal("Add Data to Saved Visualization", table_html, {
+                                    "Cancel": function() {
+                                        parent.hide_modal();
+                                    },
+                                    "Add to visualization": function() {
+                                        $(parent.document).find('input[name=id]:checked').each(function() {
+                                            var vis_id = $(this).val();
+                                            parent.location = icon_link.attr("action-url") + "&id=" + vis_id;
+                                        });
+                                    }, 
+                                });
+                            },
+                            "View in new visualization": function() {
+                                parent.location = icon_link.attr("new-url");
+                            }
+                        });
+                    }
+                });
+            },
+            //"${_("Scatterplot")}": function() {
+            //    var data_id = icon_link.parents(".historyItemContainer").attr("id").split("-")[1];
+            //    parent.galaxy_main.location =
+            //        "${h.url_for( controller='visualization', action='scatterplot', col1=9, col2=13 )}"
+            //        + "&dataset_id=" + data_id;
+            //}
+        } );
+        return icon;        
+    };
+    
+    _.each( $(".visualize-icon"), function(icon) {
+        console.debug( 'Init visualization icons, icon:', icon );
+        init_viz_icon(icon);
+    });
+        
     function init_phyloviz_links() {
         // PhyloViz links
         // Add to trackster browser functionality
