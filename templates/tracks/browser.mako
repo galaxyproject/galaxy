@@ -36,6 +36,8 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
     });
     require( ["viz/trackster_ui","viz/trackster/util","viz/trackster/tracks"], function( trackster_ui, util, tracks ) {
 
+    var add_bookmark = trackster_ui.add_bookmark
+
     //
     // Place URLs here so that url_for can be used to generate them.
     //
