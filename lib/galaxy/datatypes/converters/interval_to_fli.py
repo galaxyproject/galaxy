@@ -53,7 +53,17 @@ def main():
     else:
         # BED format.
         for line in open( in_fname, 'r' ):
+            # Ignore track lines.
+            if line.startswith("track"):
+                continue
+
             fields = line.split()
+
+            # Ignore lines with no feature name.
+            if len( fields ) < 4:
+                continue
+
+            # Process line    
             name_loc_dict[ fields[3] ] = {
                 'contig': fields[0],
                 'start': int( fields[1] ),

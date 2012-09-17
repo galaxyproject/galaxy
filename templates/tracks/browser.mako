@@ -86,17 +86,17 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
                                          JSON.parse('${ h.to_json_string( config['bookmarks'] ) }'),
                                          true
                                          );
-            ui.init_editor();
+            init_editor();
             set_up_router({view: view});
         %else:
             var continue_fn = function() {
-                view = trackster_ui.create_visualization( {
+                view = ui.create_visualization( {
                     container: $("#browser-container"),
                     name: $("#new-title").val(),
                     dbkey: $("#new-dbkey").val()
                 } );
                 view.editor = true;
-                ui.init_editor();
+                init_editor();
                 set_up_router({view: view});
                 hide_modal();
             };
