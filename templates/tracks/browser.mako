@@ -34,7 +34,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
             "libs/underscore": { exports: "_" }
         }
     });
-    require( ["viz/trackster_ui","viz/trackster/util"], function( trackster_ui, util ) {
+    require( ["viz/trackster_ui","viz/trackster/util","viz/trackster/tracks"], function( trackster_ui, util, tracks ) {
 
     //
     // Place URLs here so that url_for can be used to generate them.
@@ -113,7 +113,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
                 });
             } },
             { icon_class: 'block--plus', title: 'Add group', on_click: function() { 
-                view.add_drawable( new DrawableGroup(view, view, { name: "New Group" }) );
+                view.add_drawable( new tracks.DrawableGroup(view, view, { name: "New Group" }) );
             } },
             { icon_class: 'bookmarks', title: 'Bookmarks', on_click: function() { 
                 // HACK -- use style to determine if panel is hidden and hide/show accordingly.
