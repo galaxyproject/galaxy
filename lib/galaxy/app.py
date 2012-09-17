@@ -13,6 +13,7 @@ from galaxy.objectstore import build_object_store_from_config
 import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.visualization.genomes import Genomes
+from galaxy.visualization.data_providers.registry import DataProviderRegistry
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
 from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
@@ -73,6 +74,8 @@ class UniverseApplication( object ):
         self.tag_handler = GalaxyTagHandler()
         # Genomes
         self.genomes = Genomes( self )
+        # Data providers registry.
+        self.data_provider_registry = DataProviderRegistry()
         # Tool data tables
         self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_path, self.config.tool_data_table_config_path )
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.

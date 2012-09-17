@@ -7,9 +7,9 @@ from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
-from galaxy.datatypes.interval import Gff, Bed
+from galaxy.visualization.data_providers.genome import *
+from galaxy.visualization.data_providers.basic import ColumnDataProvider
 from galaxy.datatypes.tabular import Vcf
-from galaxy.visualization.genome.data_providers import *
 from galaxy.model import NoConverterException, ConverterDependencyException
 
 log = logging.getLogger( __name__ )
@@ -90,16 +90,17 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         # the client.
         valid_chroms = None
         # Check for data in the genome window.
+        data_provider_registry = trans.app.data_provider_registry
         if data_sources.get( 'index' ):
             tracks_dataset_type = data_sources['index']['name']
             converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
-            indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
+            indexer = data_provider_registry.get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
             if not indexer.has_data( chrom ):
                 return messages.NO_DATA
             #valid_chroms = indexer.valid_chroms()
         else:
             # Standalone data provider
-            standalone_provider = get_data_provider( data_sources['data_standalone']['name'] )( dataset )
+            standalone_provider = data_provider_registry.get_data_provider( data_sources['data_standalone']['name'] )( dataset )
             kwargs = {"stats": True}
             if not standalone_provider.has_data( chrom ):
                 return messages.NO_DATA
@@ -147,11 +148,12 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         extra_info = None
         mode = kwargs.get( "mode", "Auto" )
         # Handle histogram mode uniquely for now:
+        data_provider_registry = trans.app.data_provider_registry
         if mode == "Coverage":
             # Get summary using minimal cutoffs.
             tracks_dataset_type = data_sources['index']['name']
             converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
-            indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
+            indexer = data_provider_registry.get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
             summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ], detail_cutoff=0, draw_cutoff=0 )
             if summary == "detail":
                 # Use maximum level of detail--2--to get summary data no matter the resolution.
@@ -165,7 +167,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             # Have to choose between indexer and data provider
             tracks_dataset_type = data_sources['index']['name']
             converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
-            indexer = get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
+            indexer = data_provider_registry.get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
             summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ] )
             if summary is None:
                 return { 'dataset_type': tracks_dataset_type, 'data': None }
@@ -180,11 +182,11 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         # Get data provider.
         if "data_standalone" in data_sources:
             tracks_dataset_type = data_sources['data_standalone']['name']
-            data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
+            data_provider_class = data_provider_registry.get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
             data_provider = data_provider_class( original_dataset=dataset )
         else:
             tracks_dataset_type = data_sources['data']['name']
-            data_provider_class = get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
+            data_provider_class = data_provider_registry.get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
             converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
             deps = dataset.get_converted_dataset_deps( trans, tracks_dataset_type )
             data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
@@ -198,7 +200,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         result.update( { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info } )
         return result
 
-    def _raw_data( self, trans, dataset, chrom, low, high, **kwargs ):
+    def _raw_data( self, trans, dataset, **kwargs ):
         """
         Uses original (raw) dataset to return data. This method is useful 
         when the dataset is not yet indexed and hence using data would
@@ -209,22 +211,19 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
-
-        low, high = int( low ), int( high )
-            
+    
         # Return data.
         data = None
-        # TODO: for raw data requests, map dataset type to provider using dict in data_providers.py
-        if isinstance( dataset.datatype, Gff ):
-            data = RawGFFDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
+        data_provider = trans.app.data_provider_registry.get_data_provider( raw=True, original_dataset=dataset )
+        if data_provider == ColumnDataProvider:
+            data = data_provider( original_dataset=dataset ).get_data( **kwargs )
+        else:
+            # Default to genomic data.
+            # FIXME: need better way to set dataset_type.
+            low, high = int( kwargs.get( 'low' ) ), int( kwargs.get( 'high' ) )
+            data = data_provider( original_dataset=dataset ).get_data( start=low, end=high, **kwargs )
             data[ 'dataset_type' ] = 'interval_index'
             data[ 'extra_info' ] = None
-        elif isinstance( dataset.datatype, Bed ):
-            data = RawBedDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
-            data[ 'dataset_type' ] = 'interval_index'
-            data[ 'extra_info' ] = None
-        elif isinstance( dataset.datatype, Vcf ):
-            data = RawVcfDataProvider( original_dataset=dataset ).get_data( chrom, low, high, **kwargs )
-            data[ 'dataset_type' ] = 'tabix'
-            data[ 'extra_info' ] = None
+            if isinstance( dataset.datatype, Vcf ):
+                data[ 'dataset_type' ] = 'tabix'
         return data

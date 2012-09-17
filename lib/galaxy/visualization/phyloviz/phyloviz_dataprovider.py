@@ -1,7 +1,7 @@
 from newickparser import Newick_Parser
 from nexusparser import Nexus_Parser
 from phyloxmlparser import Phyloxml_Parser
-from galaxy.visualization.data_providers import BaseDataProvider
+from galaxy.visualization.data_providers.basic import BaseDataProvider
 
 # TODO: bring this class into line with BaseDataProvider by 
 # using BaseDataProvider.init() and providing original dataset

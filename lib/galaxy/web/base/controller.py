@@ -14,7 +14,6 @@ from galaxy.workflow.modules import *
 from galaxy.web.framework import simplejson
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
 from galaxy.web.form_builder import WorkflowField, WorkflowMappingField, HistoryField, PasswordField, build_select_field
-from galaxy.visualization.genome.data_providers import get_data_provider
 from galaxy.visualization.genome.visual_analytics import get_tool_def
 from galaxy.security.validate_user_input import validate_publicname
 from paste.httpexceptions import *
@@ -488,7 +487,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                     prefs = {}
 
                 track_type, _ = dataset.datatype.get_track_type()
-                track_data_provider_class = get_data_provider( original_dataset=dataset )
+                track_data_provider_class = trans.app.data_provider_registry.get_data_provider( original_dataset=dataset )
                 track_data_provider = track_data_provider_class( original_dataset=dataset )
                 
                 return {
@@ -564,7 +563,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         """
         # Get data provider.
         track_type, _ = dataset.datatype.get_track_type()
-        track_data_provider_class = get_data_provider( original_dataset=dataset )
+        track_data_provider_class = trans.app.data_provider_registry.get_data_provider( original_dataset=dataset )
         track_data_provider = track_data_provider_class( original_dataset=dataset )
         
         if isinstance( dataset, trans.app.model.HistoryDatasetAssociation ):

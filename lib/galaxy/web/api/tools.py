@@ -3,7 +3,7 @@ from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAsso
 from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string, from_json_string
-from galaxy.visualization.genome.data_providers import *
+from galaxy.visualization.data_providers.genome import *
 
 class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     """
@@ -199,11 +199,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # If running tool on region, convert input datasets (create indices) so
         # that can regions of data can be quickly extracted.
         # 
+        data_provider_registry = trans.app.data_provider_registry
         messages_list = []
         if run_on_regions:
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
-                if get_data_provider( original_dataset=input_dataset ):
+                if data_provider_registry.get_data_provider( original_dataset=input_dataset ):
                     # Can index dataset.
                     track_type, data_sources = input_dataset.datatype.get_track_type()
                     # Convert to datasource that provides 'data' because we need to
@@ -325,7 +326,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                     trans.app.security_agent.set_all_dataset_permissions( new_dataset.dataset, hda_permissions )
 
                     # Write subset of data to new dataset
-                    data_provider_class = get_data_provider( original_dataset=input_dataset )
+                    data_provider_class = data_provider_registry.get_data_provider( original_dataset=input_dataset )
                     data_provider = data_provider_class( original_dataset=input_dataset, 
                                                          converted_dataset=converted_dataset,
                                                          dependencies=deps )

@@ -752,14 +752,15 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             # Get dataset and indexed datatype.
             dataset = self.get_hda_or_ldda( trans, track[ 'hda_ldda'], track[ 'dataset_id' ] )
             data_sources = self._get_datasources( trans, dataset )
+            data_provider_registry = trans.app.data_provider_registry
             if 'data_standalone' in data_sources:
                 indexed_type = data_sources['data_standalone']['name']
-                data_provider = get_data_provider( indexed_type )( dataset )
+                data_provider = data_provider_registry.get_data_provider( indexed_type )( dataset )
             else:
                 indexed_type = data_sources['index']['name']
                 # Get converted dataset and append track's genome data.
                 converted_dataset = dataset.get_converted_dataset( trans, indexed_type )
-                data_provider = get_data_provider( indexed_type )( converted_dataset, dataset )
+                data_provider = data_provider_registry.get_data_provider( indexed_type )( converted_dataset, dataset )
             # HACK: pass in additional params, which are only used for summary tree data, not BBI data.
             track[ 'genome_wide_data' ] = { 'data': data_provider.get_genome_data( chroms_info, level=4, detail_cutoff=0, draw_cutoff=0 ) }
         
