@@ -51,6 +51,30 @@ CleanupEventHistoryDatasetAssociationAssociation_table = Table( "cleanup_event_h
     Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
     Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ) )
 
+CleanupEventLibraryAssociation_table = Table( "cleanup_event_library_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+    Column( "library_id", Integer, ForeignKey( "library.id" ), index=True ) )
+
+CleanupEventLibraryFolderAssociation_table = Table( "cleanup_event_library_folder_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+    Column( "library_folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ) )
+
+CleanupEventLibraryDatasetAssociation_table = Table( "cleanup_event_library_dataset_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+    Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ) )
+
+CleanupEventLibraryDatasetDatasetAssociationAssociation_table = Table( "cleanup_event_ldda_association", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "cleanup_event_id", Integer, ForeignKey( "cleanup_event.id" ), index=True, nullable=True ),
+    Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ) )
+
 CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table = Table( "cleanup_event_icda_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -66,6 +90,10 @@ def upgrade():
         CleanupEventMetadataFileAssociation_table.create()
         CleanupEventHistoryAssociation_table.create()
         CleanupEventHistoryDatasetAssociationAssociation_table.create()
+        CleanupEventLibraryAssociation_table.create()
+        CleanupEventLibraryFolderAssociation_table.create()
+        CleanupEventLibraryDatasetAssociation_table.create()
+        CleanupEventLibraryDatasetDatasetAssociationAssociation_table.create()
         CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table.create()
     except Exception, e:
         log.debug( "Creating table failed: %s" % str( e ) )
@@ -74,6 +102,10 @@ def downgrade():
     metadata.reflect()
     try:
         CleanupEventImplicitlyConvertedDatasetAssociationAssociation_table.drop()
+        CleanupEventLibraryDatasetDatasetAssociationAssociation_table.drop()
+        CleanupEventLibraryDatasetAssociation_table.drop()
+        CleanupEventLibraryFolderAssociation_table.drop()
+        CleanupEventLibraryAssociation_table.drop()
         CleanupEventHistoryDatasetAssociationAssociation_table.drop()
         CleanupEventHistoryAssociation_table.drop()
         CleanupEventMetadataFileAssociation_table.drop()

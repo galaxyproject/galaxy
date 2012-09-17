@@ -71,6 +71,7 @@ class Cleanup(object):
         parser.add_option('-o', '--older-than', type='int', dest='days', help='Only perform action(s) on objects that have not been updated since the specified number of days', default=14)
         parser.add_option('-U', '--no-update-time', action='store_false', dest='update_time', help="Don't set update_time on updated objects", default=True)
         parser.add_option('-s', '--sequence', dest='sequence', help='Comma-separated sequence of actions, chosen from: %s' % self.action_names, default='')
+        parser.add_option('-w', '--work-mem', dest='work_mem', help='Set PostgreSQL work_mem for this connection', default=None)
         ( self.options, self.args ) = parser.parse_args()
 
         self.options.sequence = [ x.strip() for x in self.options.sequence.split(',') ]
@@ -160,10 +161,13 @@ class Cleanup(object):
             self.__getattribute__(name)()
             log.info('Finished %s' % name)
 
-    def _create_event(self, message):
+    def _create_event(self, message=None):
         """
         Create a new event in the cleanup_event table.
         """
+
+        if message is None:
+            message = inspect.stack()[1][3]
 
         sql = """
             INSERT INTO cleanup_event
@@ -177,6 +181,22 @@ class Cleanup(object):
         args = (message,)
 
         cur = self.conn.cursor()
+
+        if self.options.dry_run:
+            sql = "SELECT MAX(id) FROM cleanup_event;"
+            cur.execute(sql)
+            max_id = cur.fetchone()[0]
+            if max_id is None:
+                # there has to be at least one event in the table, if there are none just create a fake one.
+                sql = "INSERT INTO cleanup_event (create_time, message) VALUES (NOW(), 'dry_run_event') RETURNING id;"
+                cur.execute(sql)
+                max_id = cur.fetchone()[0]
+                self.conn.commit()
+                log.info("An event must exist for the subsequent query to succeed, so a dummy event has been created")
+            else:
+                log.info("Not executing event creation (increments sequence even when rolling back), using an old event ID (%i) for dry run" % max_id)
+            return max_id
+
         log.info("Executing SQL")
         cur.execute(sql, args)
         log.info('Database status: %s' % cur.statusmessage)
@@ -190,6 +210,11 @@ class Cleanup(object):
             log.debug('SQL is: %s' % sql)
 
         cur = self.conn.cursor()
+
+        if self.options.work_mem is not None:
+            log.info('Setting work_mem to %s' % self.options.work_mem)
+            cur.execute('SET work_mem TO %s', (self.options.work_mem,))
+
         log.info('Executing SQL')
         cur.execute(sql, args)
         log.info('Database status: %s' % cur.statusmessage)
@@ -275,7 +300,7 @@ class Cleanup(object):
         """
         log.info('Marking purged all HistoryDatasetAssociations associated with purged Datasets')
 
-        event_id = self._create_event(inspect.stack()[0][3])
+        event_id = self._create_event()
 
         # update_time is intentionally left unmodified.
         sql = """
@@ -312,7 +337,7 @@ class Cleanup(object):
         """
         log.info('Marking deleted all userless Histories older than %i days' % self.options.days)
         
-        event_id = self._create_event(inspect.stack()[0][3])
+        event_id = self._create_event()
 
         sql = """
                 WITH deleted_history_ids
@@ -356,7 +381,7 @@ class Cleanup(object):
         """
         log.info('Marking purged all deleted HistoryDatasetAssociations older than %i days' % self.options.days)
 
-        event_id = self._create_event(inspect.stack()[0][3])
+        event_id = self._create_event()
 
         sql = """
               WITH purged_hda_ids
@@ -385,7 +410,8 @@ class Cleanup(object):
                    deleted_icda_purged_child_hda_ids
                 AS (     UPDATE history_dataset_association
                             SET purged = true%s
-                           FROM deleted_icda_ids where deleted_icda_ids.hda_id = history_dataset_association.id),
+                           FROM deleted_icda_ids
+                          WHERE deleted_icda_ids.hda_id = history_dataset_association.id),
                    hda_events
                 AS (INSERT INTO cleanup_event_hda_association
                                 (create_time, cleanup_event_id, hda_id)
@@ -445,7 +471,7 @@ class Cleanup(object):
                 self.disk_accounting_user_ids.append(int(tup[1]))
             if tup[2] is not None:
                 self._log('Purge of HDA %s caused deletion of MetadataFile: %s in Object Store: %s' % (tup[0], tup[2], tup[3]))
-                self._remove_metadata_file(tup[2], tup[3], 'purge_deleted_hdas')
+                self._remove_metadata_file(tup[2], tup[3], inspect.stack()[0][3])
             if tup[4] is not None:
                 self._log('Purge of HDA %s caused deletion of ImplicitlyConvertedDatasetAssociation: %s and converted HistoryDatasetAssociation: %s' % (tup[0], tup[4], tup[5]))
         self._close_logfile()
@@ -457,7 +483,7 @@ class Cleanup(object):
         """
         log.info('Marking purged all deleted histories that are older than the specified number of days.')
 
-        event_id = self._create_event(inspect.stack()[0][3])
+        event_id = self._create_event()
 
         sql = """
               WITH purged_history_ids
@@ -494,7 +520,8 @@ class Cleanup(object):
                    deleted_icda_purged_child_hda_ids
                 AS (     UPDATE history_dataset_association
                             SET purged = true%s
-                           FROM deleted_icda_ids where deleted_icda_ids.hda_id = history_dataset_association.id),
+                           FROM deleted_icda_ids
+                          WHERE deleted_icda_ids.hda_id = history_dataset_association.id),
                    history_events
                 AS (INSERT INTO cleanup_event_history_association
                                 (create_time, cleanup_event_id, history_id)
@@ -545,7 +572,7 @@ class Cleanup(object):
         else:
             if self.options.update_time:
                 update_time_sql += """,
-                              update_time = NOW()"""
+                                update_time = NOW()"""
 
         sql = sql % (update_time_sql, force_retry_sql, '%s', update_time_sql, update_time_sql, update_time_sql, update_time_sql, '%s', '%s', '%s', '%s', '%s')
         args = (self.options.days, event_id, event_id, event_id, event_id, event_id)
@@ -561,7 +588,7 @@ class Cleanup(object):
                 self._log('Purge of History %s caused deletion of HistoryDatasetAssociation: %s' % (tup[0], tup[2]))
             if tup[3] is not None:
                 self._log('Purge of HDA %s caused deletion of MetadataFile: %s in Object Store: %s' % (tup[1], tup[3], tup[4]))
-                self._remove_metadata_file(tup[3], tup[4], 'purge_deleted_histories')
+                self._remove_metadata_file(tup[3], tup[4], inspect.stack()[0][3])
             if tup[5] is not None:
                 self._log('Purge of HDA %s caused deletion of ImplicitlyConvertedDatasetAssociation: %s and converted HistoryDatasetAssociation: %s' % (tup[1], tup[5], tup[6]))
         self._close_logfile()
@@ -572,7 +599,7 @@ class Cleanup(object):
         """
         log.info('Marking deleted all Datasets that are derivative of JobExportHistoryArchives that are older than the specified number of days.')
 
-        event_id = self._create_event(inspect.stack()[0][3])
+        event_id = self._create_event()
 
         sql = """
                 WITH deleted_dataset_ids
@@ -596,7 +623,7 @@ class Cleanup(object):
         update_time_sql = ""
         if self.options.update_time:
             update_time_sql += """,
-                                update_time = NOW()"""
+                                  update_time = NOW()"""
 
         sql = sql % (update_time_sql, '%s', '%s')
         args = (self.options.days, event_id)
@@ -614,7 +641,7 @@ class Cleanup(object):
         """
         log.info('Marking deleted all Datasets whose associations are all marked as deleted/purged that are older than the specified number of days.')
 
-        event_id = self._create_event(inspect.stack()[0][3])
+        event_id = self._create_event()
 
         sql = """
                 WITH deleted_dataset_ids
@@ -663,7 +690,7 @@ class Cleanup(object):
         """
         log.info('Marking purged all Datasets marked deleted that are older than the specified number of days.')
 
-        event_id = self._create_event(inspect.stack()[0][3])
+        event_id = self._create_event()
 
         sql = """
                 WITH purged_dataset_ids
