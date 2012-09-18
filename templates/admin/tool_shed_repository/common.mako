@@ -129,28 +129,30 @@
                                 <% package_header_row_displayed = True %>
                             %endif
                             %for dependency_key, requirements_dict in tool_dependencies.items():
-                                <%
-                                    name = requirements_dict[ 'name' ]
-                                    version = requirements_dict[ 'version' ]
-                                    type = requirements_dict[ 'type' ]
-                                    install_dir = os.path.join( trans.app.config.tool_dependency_dir,
-                                                                name,
-                                                                version,
-                                                                repository_owner,
-                                                                repository_name,
-                                                                changeset_revision )
-                                    tool_dependency_readme_text = requirements_dict.get( 'readme', None )
-                                %>
-                                %if not os.path.exists( install_dir ):
-                                    <tr>
-                                        <td>${name}</td>
-                                        <td>${version}</td>
-                                        <td>${type}</td>
-                                        <td>${install_dir}</td>
-                                    </tr>
-                                    %if tool_dependency_readme_text:
-                                        <tr><td colspan="4" bgcolor="#FFFFCC">${name} ${version} requirements and installation information</td></tr>
-                                        <tr><td colspan="4"><pre>${tool_dependency_readme_text}</pre></td></tr>
+                                %if dependency_key not in [ 'set_environment' ]:
+                                    <%
+                                        name = requirements_dict[ 'name' ]
+                                        version = requirements_dict[ 'version' ]
+                                        type = requirements_dict[ 'type' ]
+                                        install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                                                    name,
+                                                                    version,
+                                                                    repository_owner,
+                                                                    repository_name,
+                                                                    changeset_revision )
+                                        tool_dependency_readme_text = requirements_dict.get( 'readme', None )
+                                    %>
+                                    %if not os.path.exists( install_dir ):
+                                        <tr>
+                                            <td>${name}</td>
+                                            <td>${version}</td>
+                                            <td>${type}</td>
+                                            <td>${install_dir}</td>
+                                        </tr>
+                                        %if tool_dependency_readme_text:
+                                            <tr><td colspan="4" bgcolor="#FFFFCC">${name} ${version} requirements and installation information</td></tr>
+                                            <tr><td colspan="4"><pre>${tool_dependency_readme_text}</pre></td></tr>
+                                        %endif
                                     %endif
                                 %endif
                             %endfor
