@@ -3,6 +3,8 @@
     <description>Gapped-read mapper for RNA-seq data</description>
     <version_command>tophat2 --version</version_command>
     <requirements>
+        <requirement type="package">samtools</requirement>
+        <requirement type="package">bowtie2</requirement>
         <requirement type="package">tophat2</requirement>
     </requirements>
     <command interpreter="python">
@@ -297,7 +299,7 @@
 
     <outputs>
         <data format="tabular" name="fusions" label="${tool.name} on ${on_string}: fusions" from_work_dir="tophat_out/fusions.out">
-            <filter>(params['fusion_search']['do_search'] == 'Yes')</filter>
+            <filter>(params['settingsType'] == 'full' and params['fusion_search']['do_search'] == 'Yes')</filter>
         </data>
         <data format="bed" name="insertions" label="${tool.name} on ${on_string}: insertions" from_work_dir="tophat_out/insertions.bed">
             <actions>
