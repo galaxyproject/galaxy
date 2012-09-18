@@ -795,19 +795,25 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     changeset_hash = str( repo.changectx( changeset ) )
                     ctx = get_changectx_for_changeset( repo, changeset_hash )
                     if update_to_changeset_hash:
-                        if get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_hash ):
-                            # We found a RepositoryMetadata record.
-                            if changeset_hash == repository.tip:
-                                # The current ctx is the repository tip, so use it.
+                        if changeset_hash == repository.tip:
+                            update_to_ctx = get_changectx_for_changeset( repo, changeset_hash )
+                            latest_changeset_revision = changeset_hash
+                            break
+                        else:
+                            repository_metadata = get_repository_metadata_by_changeset_revision( trans,
+                                                                                                 trans.security.encode_id( repository.id ),
+                                                                                                 changeset_hash )
+                            if repository_metadata:
+                                # We found a RepositoryMetadata record.
                                 update_to_ctx = get_changectx_for_changeset( repo, changeset_hash )
                                 latest_changeset_revision = changeset_hash
+                                break
                             else:
-                                update_to_ctx = get_changectx_for_changeset( repo, update_to_changeset_hash )
-                                latest_changeset_revision = update_to_changeset_hash
-                            break
-                    elif not update_to_changeset_hash and changeset_hash == changeset_revision:
-                        # We've found the changeset in the changelog for which we need to get the next update.
-                        update_to_changeset_hash = changeset_hash
+                                update_to_changeset_hash = changeset_hash
+                    else:
+                        if changeset_hash == changeset_revision:
+                            # We've found the changeset in the changelog for which we need to get the next update.
+                            update_to_changeset_hash = changeset_hash
                 if from_update_manager:
                     if latest_changeset_revision == changeset_revision:
                         return no_update
