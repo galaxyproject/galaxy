@@ -313,8 +313,6 @@ class Tabular( data.Text ):
             if col_type in [ 'int', 'float' ]:
                 num_numerical_cols += 1
 
-        print dataset.name, num_numerical_cols
-
         vizs = super( Tabular, self ).get_visualizations( dataset )
         if num_numerical_cols >= 2:
             vizs.append( 'scatterplot' )
