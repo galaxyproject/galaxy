@@ -1048,7 +1048,7 @@ class TaskWrapper(JobWrapper):
         # Check what the tool returned. If the stdout or stderr matched 
         # regular expressions that indicate errors, then set an error.
         # The same goes if the tool's exit code was in a given range.
-        if ( self.check_tool_output( stdout, stderr, tool_exit_code ) ):
+        if ( self.check_tool_output( stdout, stderr, tool_exit_code, task ) ):
             task.state = task.states.OK
         else: 
             task.state = task.states.ERROR
