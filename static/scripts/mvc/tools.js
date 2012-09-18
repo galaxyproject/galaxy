@@ -5,6 +5,40 @@
  * changes; this is advantageous because multiple views can use the same object 
  * and models can be used without views.
  */
+
+// FIXME: copied from visualization module; remove once a module has been created from tools.
+var ServerStateDeferred = Backbone.Model.extend({
+    defaults: {
+        ajax_settings: {},
+        interval: 1000,
+        success_fn: function(result) { return true; }
+    },
+    
+    /**
+     * Returns a deferred that resolves when success function returns true.
+     */
+    go: function() {
+        var deferred = $.Deferred(),
+            self = this,
+            ajax_settings = self.get('ajax_settings'),
+            success_fn = self.get('success_fn'),
+            interval = self.get('interval'),
+             _go = function() {
+                 $.ajax(ajax_settings).success(function(result) {
+                     if (success_fn(result)) {
+                         // Result is good, so resolve.
+                         deferred.resolve(result);
+                     }
+                     else {
+                         // Result not good, try again.
+                         setTimeout(_go, interval);
+                     }
+                 });
+             };
+         _go();
+         return deferred;
+    }
+});
  
 /**
  * Simple base model for any visible element. Includes useful attributes and ability 

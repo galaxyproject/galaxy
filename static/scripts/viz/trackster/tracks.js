@@ -1,4 +1,4 @@
-define( ["libs/underscore", "viz/trackster/util", "viz/trackster/slotting", "viz/trackster/painters" ], function( _, util, slotting, painters ) {
+define( ["libs/underscore", "viz/visualization", "viz/trackster/util", "viz/trackster/slotting", "viz/trackster/painters" ], function( _, visualization, util, slotting, painters ) {
 
 var extend = _.extend;
 var get_random_color = util.get_random_color;
@@ -2827,7 +2827,7 @@ var Track = function(view, container, obj_dict) {
     // A little ugly creating data manager right now due to transition to Backbone-based objects.
     this.data_manager = ('data_manager' in obj_dict ? 
                          obj_dict.data_manager : 
-                         new GenomeDataManager({
+                         new visualization.GenomeDataManager({
                              dataset: this.dataset,
                              data_mode_compatible: this.data_and_mode_compatible,
                              can_subset: this.can_subset
@@ -3228,7 +3228,7 @@ var TiledTrack = function(view, container, obj_dict) {
     this.data_manager.set('filters_manager', this.filters_manager);
     this.filters_available = false;
     this.tool = ('tool' in obj_dict && obj_dict.tool ? new Tool(this, obj_dict.tool, obj_dict.tool_state) : null);
-    this.tile_cache = new Cache(TILE_CACHE_SIZE);
+    this.tile_cache = new visualization.Cache(TILE_CACHE_SIZE);
     
     if (this.header_div) {
         //

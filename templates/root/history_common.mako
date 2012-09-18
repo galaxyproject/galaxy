@@ -232,8 +232,8 @@
                             visualizations = data.get_visualizations() 
                             ## HACK: if there are visualizations, only provide trackster for now since others
                             ## are not ready.
-                            #if visualizations:
-                            #    visualizations = [ 'trackster' ]
+                            if visualizations:
+                                visualizations = [ 'trackster' ]
                         %>
                         %if visualizations:
                             <a href="${h.url_for( controller='visualization' )}" 

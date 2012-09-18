@@ -107,18 +107,30 @@
     ${parent.javascripts()}
 
     ${h.templates( "tool_link", "panel_section", "tool_search", "tool_form" )}
-    ${h.js( "libs/d3", "mvc/data", "mvc/tools", "viz/visualization", "viz/sweepster", 
-            "viz/trackster", "viz/trackster_ui", "libs/jquery/jquery-ui-1.8.23.custom.min" )}
+    ${h.js( "libs/require", "libs/jquery/jquery-ui-1.8.23.custom.min" )}
+    ${h.js( "mvc/data", "mvc/tools" )}
 
     <script type="text/javascript">
-        var viz;
-        $(function() {            
-            // -- Viz set up. --    
-            var viz = new SweepsterVisualization(
-                ${ h.to_json_string( config ).replace('\\', '\\\\' )}
-            );
-            var viz_view = new SweepsterVisualizationView({ model: viz });
-            viz_view.render();
+        require.config({ 
+                baseUrl: "${h.url_for('/static/scripts')}",
+                shim: {
+                    "libs/underscore": { exports: "_" },
+                    "libs/d3": { exports: "d3" },
+                    "libs/backbone/backbone": { exports: "Backbone" }
+                }
+        });
+
+        require(["libs/d3", "viz/visualization", "viz/sweepster"], function(d3, visualization, sweepster) {
+
+            var viz;
+            $(function() {            
+                // -- Viz set up. --    
+                var viz = new sweepster.SweepsterVisualization(
+                    ${ h.to_json_string( config ).replace('\\', '\\\\' )}
+                );
+                var viz_view = new sweepster.SweepsterVisualizationView({ model: viz });
+                viz_view.render();
+            });
         });
     </script>
 </%def>

@@ -3,6 +3,8 @@
  * genomic visualization.
  */
 
+define( ["libs/d3", "viz/trackster/util", "viz/visualization", "viz/trackster/tracks"], function( d3, util, visualization, tracks ) {
+
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings 
  * for future use without changing the input's value and for preserving inputs order.
@@ -259,7 +261,7 @@ var SweepsterTrack = Backbone.RelationalModel.extend({
         {
             type: Backbone.HasMany,
             key: 'regions',
-            relatedModel: 'GenomeRegion'
+            relatedModel: visualization.GenomeRegion
         }
     ],
 
@@ -270,7 +272,7 @@ var SweepsterTrack = Backbone.RelationalModel.extend({
                                     data_url: galaxy_paths.get('raw_data_url'),
                                     converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
                                 }, options.track);
-            this.set('track', object_from_template(track_config, {}, null));
+            this.set('track', tracks.object_from_template(track_config, {}, null));
         }
     },
 
@@ -302,8 +304,8 @@ var TrackCollection = Backbone.Collection.extend({
 /**
  * Sweepster visualization model.
  */
-var SweepsterVisualization = Visualization.extend({
-    defaults: _.extend({}, Visualization.prototype.defaults, {
+var SweepsterVisualization = visualization.Visualization.extend({
+    defaults: _.extend({}, visualization.Visualization.prototype.defaults, {
         dataset: null,
         tool: null,
         parameter_tree: null,
@@ -316,22 +318,22 @@ var SweepsterVisualization = Visualization.extend({
         {
             type: Backbone.HasOne,
             key: 'dataset',
-            relatedModel: 'Dataset'
+            relatedModel: Dataset
         },
         {
             type: Backbone.HasOne,
             key: 'tool',
-            relatedModel: 'Tool'
+            relatedModel: Tool
         },
         {
             type: Backbone.HasMany,
             key: 'regions',
-            relatedModel: 'GenomeRegion'
+            relatedModel: visualization.GenomeRegion
         },
         {
             type: Backbone.HasMany,
             key: 'tracks',
-            relatedModel: 'SweepsterTrack'
+            relatedModel: SweepsterTrack
         }
         // NOTE: cannot use relationship for parameter tree because creating tree is complex.
     ],
@@ -690,7 +692,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
         '</ol></div>',
     
     initialize: function(options) {
-        this.canvas_manager = new CanvasManager(this.$el.parents('body'));
+        this.canvas_manager = new visualization.CanvasManager(this.$el.parents('body'));
         this.tool_param_tree_view = new ToolParameterTreeView({ model: this.model.get('parameter_tree') });
         this.track_collection_container = $('<table/>').addClass('tracks');
 
@@ -704,8 +706,8 @@ var SweepsterVisualizationView = Backbone.View.extend({
         });
 
         // Set block, reverse strand block colors; these colors will be used for all tracks.
-        this.block_color = get_random_color();
-        this.reverse_strand_color = get_random_color( [ this.block_color, "#ffffff" ] );
+        this.block_color = util.get_random_color();
+        this.reverse_strand_color = util.get_random_color( [ this.block_color, "#ffffff" ] );
     },
     
     render: function() {
@@ -901,7 +903,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
                 if (!run_jobs) { return; }
 
                 // Create and add tracks for each settings group.
-                var tracks = _.map(all_settings, function(settings) {
+                var new_tracks = _.map(all_settings, function(settings) {
                     var pm_track = new SweepsterTrack({
                         settings: settings,
                         regions: regions,
@@ -912,7 +914,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
                 });
                     
                 // For each track, run tool using track's settings and update track.
-                _.each(tracks, function(pm_track, index) {
+                _.each(new_tracks, function(pm_track, index) {
                     setTimeout(function() {
                         // Set inputs and run tool.
                         // console.log('running with settings', pm_track.get('settings'));
@@ -923,7 +925,7 @@ var SweepsterVisualizationView = Backbone.View.extend({
                                     data_url: galaxy_paths.get('raw_data_url'),
                                     converted_datasets_state_url: galaxy_paths.get('dataset_state_url')
                                 }, output.first().get('track_config')),
-                                track_obj = object_from_template(track_config, self, null);
+                                track_obj = tracks.object_from_template(track_config, self, null);
 
                             // Track uses only raw data.
                             track_obj.data_manager.set('data_type', 'raw_data');
@@ -939,4 +941,11 @@ var SweepsterVisualizationView = Backbone.View.extend({
             });
         });
     }
+});
+
+return {
+    SweepsterVisualization: SweepsterVisualization,
+    SweepsterVisualizationView: SweepsterVisualizationView
+};
+
 });
