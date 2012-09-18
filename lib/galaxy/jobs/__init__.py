@@ -155,15 +155,18 @@ class JobWrapper( object ):
         if special:
             out_data[ "output_file" ] = FakeDatasetAssociation( dataset=special.dataset )
             
-        # These can be passed on the command line if wanted as $userId $userEmail
-        if job.history and job.history.user: # check for anonymous user!
-            userId = '%d' % job.history.user.id
-            userEmail = str(job.history.user.email)
+        # These can be passed on the command line if wanted as $__user_*__
+        if job.history and job.history.user:
+            user_id = '%d' % job.history.user.id
+            user_email = str(job.history.user.email)
+            user_name = str(job.history.user.username)
         else:
-            userId = 'Anonymous'
-            userEmail = 'Anonymous'
-        incoming['__user_id__'] = incoming['userId'] = userId
-        incoming['__user_email__'] = incoming['userEmail'] = userEmail
+            user_id = 'Anonymous'
+            user_email = 'Anonymous'
+            user_name = 'Anonymous'
+        incoming['__user_id__'] = incoming['userId'] = user_id
+        incoming['__user_email__'] = incoming['userEmail'] = user_email
+        incoming['__user_name__'] = user_name
         # Build params, done before hook so hook can use
         param_dict = self.tool.build_param_dict( incoming, inp_data, out_data, self.get_output_fnames(), self.working_directory )
         # Certain tools require tasks to be completed prior to job execution
