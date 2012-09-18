@@ -545,7 +545,7 @@ class Data( object ):
             raise Exception('Result %s from %s' % (result, cmd))
     merge = staticmethod(merge)
 
-    def get_visualizations( self ):
+    def get_visualizations( self, dataset ):
         """
         Returns a list of visualizations for datatype.
         """

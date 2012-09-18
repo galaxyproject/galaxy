@@ -301,11 +301,25 @@ class Tabular( data.Text ):
     def as_ucsc_display_file( self, dataset, **kwd ):
         return open( dataset.file_name )
 
-    def get_visualizations( self ):
+    def get_visualizations( self, dataset ):
         """
         Returns a list of visualizations for datatype.
         """
-        return super( Tabular, self ).get_visualizations() + [ 'scatterplot' ]
+
+        # Can visualize tabular data as scatterplot if there are 2+ numerical
+        # columns.
+        num_numerical_cols = 0
+        for col_type in dataset.metadata.column_types:
+            if col_type in [ 'int', 'float' ]:
+                num_numerical_cols += 1
+
+        print dataset.name, num_numerical_cols
+
+        vizs = super( Tabular, self ).get_visualizations( dataset )
+        if num_numerical_cols >= 2:
+            vizs.append( 'scatterplot' )
+
+        return  vizs
 
 class Taxonomy( Tabular ):
     def __init__(self, **kwd):

@@ -229,7 +229,7 @@
                         ## Visualization icon + visualizations. Using anchor attributes is a HACK to encode needed
                         ## information--URL base, dataset id, dbkey, visualizations--in anchor.
                         <% 
-                            visualizations = data.datatype.get_visualizations() 
+                            visualizations = data.get_visualizations() 
                             ## HACK: if there are visualizations, only provide trackster for now since others
                             ## are not ready.
                             if visualizations:

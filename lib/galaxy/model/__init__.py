@@ -1245,6 +1245,9 @@ class DatasetInstance( object ):
     def get_display_applications( self, trans ):
         return self.datatype.get_display_applications_by_dataset( self, trans )
 
+    def get_visualizations( self ):
+        return self.datatype.get_visualizations( self )
+
 class HistoryDatasetAssociation( DatasetInstance ):
     def __init__( self,
                   hid = None,
