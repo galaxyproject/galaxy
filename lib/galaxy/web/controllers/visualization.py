@@ -708,9 +708,12 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         
         # Get new dataset if specified.
         new_dataset = kwargs.get("dataset_id", None)
+        '''
+        FIXME:
         if new_dataset is not None:
             if trans.security.decode_id(new_dataset) in [ d["dataset_id"] for d in viz_config.get("tracks") ]:
                 new_dataset = None # Already in browser, so don't add
+        '''
         return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset )
 
     @web.json

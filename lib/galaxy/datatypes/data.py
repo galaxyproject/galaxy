@@ -545,6 +545,15 @@ class Data( object ):
             raise Exception('Result %s from %s' % (result, cmd))
     merge = staticmethod(merge)
 
+    def get_visualizations( self ):
+        """
+        Returns a list of visualizations for datatype.
+        """
+
+        if hasattr( self, 'get_track_type' ):
+            return [ 'trackster', 'circster' ]
+        return []
+
 class Text( Data ):
     file_ext = 'txt'
     line_class = 'line'

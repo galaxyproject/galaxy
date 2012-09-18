@@ -116,6 +116,95 @@ function annotation_handling(parent_elt) {
     });
 };
 
+// Create trackster action function.
+function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
+    return function() {
+        var params = {};
+        if (dbkey) { params['dbkey'] = dbkey; }
+        $.ajax({
+            url: vis_url + '/list_tracks?f-' + $.param(params),
+            dataType: "html",
+            error: function() { alert( "Could not add this dataset to browser." ); },
+            success: function(table_html) {
+                var parent = window.parent;
+                
+                parent.show_modal("View Data in a New or Saved Visualization", "", {
+                    "Cancel": function() {
+                        parent.hide_modal();
+                    },
+                    "View in saved visualization": function() {
+                        // Show new modal with saved visualizations.
+                        parent.show_modal("Add Data to Saved Visualization", table_html, {
+                            "Cancel": function() {
+                                parent.hide_modal();
+                            },
+                            "Add to visualization": function() {
+                                $(parent.document).find('input[name=id]:checked').each(function() {
+                                    var vis_id = $(this).val();
+                                    dataset_params['id'] = vis_id
+                                    parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                                });
+                            }, 
+                        });
+                    },
+                    "View in new visualization": function() {
+                        parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                    }
+                });
+            }
+        });
+        return false;
+    };
+};
+
+/**
+ * Create popup menu for visualization icon.
+ */
+function init_viz_icon(icon) {
+    var icon = $(icon),
+        vis_url = icon.attr('href'),
+        dataset_id = icon.attr('dataset_id'),
+        visualizations = icon.attr('visualizations').split(','),
+        dbkey = icon.attr('dbkey'),
+        popup_menu_dict = {},
+
+        // Create visualization action.
+        create_viz_action = function(visualization) {
+            var action;
+            if (visualization === 'trackster') {
+                action = create_trackster_action_fn(vis_url, params, dbkey);
+            }
+            else {
+                action = function() {
+                    window.parent.location = vis_url + '/' + visualization + '?' + 
+                                             $.param(params);
+                };
+            }
+            return action;
+        },
+        params = {dataset_id: dataset_id};
+
+    // Add dbkey to params if it exists.
+    if (dbkey) { params['dbkey'] = dbkey; }
+
+    // Populate menu dict with visualizations.
+    _.each(visualizations, function(visualization) {
+        popup_menu_dict[
+            visualization.charAt(0).toUpperCase() + visualization.slice(1)
+                        ] = create_viz_action(visualization);
+    });
+
+    // Set up action or menu.
+    if (visualizations.length === 1) {
+        // No need for popup menu because there's a single visualization.
+        icon.click(create_viz_action(visualizations[0]));
+    }
+    else {
+        make_popupmenu(icon, popup_menu_dict);
+    }
+};
+
+
 // Update the message for async operations
 function render_message(message, status) {
     $("div#message-container").html( "<div class=\"" + status + "message\">" + message + "</div><br/>" );
@@ -258,96 +347,6 @@ $(function() {
         
     });
     
-    // Trackster links
-    function init_trackster_links() {
-        // Add to trackster browser functionality
-        $(".trackster-add").live("click", function() {
-            var dataset = this,
-                dataset_jquery = $(this);
-            $.ajax({
-                url: dataset_jquery.attr("data-url"),
-                dataType: "html",
-                error: function() { alert( "Could not add this dataset to browser." ); },
-                success: function(table_html) {
-                    var parent = window.parent;
-                    
-                    parent.show_modal("View Data in a New or Saved Visualization", "", {
-                        "Cancel": function() {
-                            parent.hide_modal();
-                        },
-                        "View in saved visualization": function() {
-                            // Show new modal with saved visualizations.
-                            parent.show_modal("Add Data to Saved Visualization", table_html, {
-                                "Cancel": function() {
-                                    parent.hide_modal();
-                                },
-                                "Add to visualization": function() {
-                                    $(parent.document).find('input[name=id]:checked').each(function() {
-                                        var vis_id = $(this).val();
-                                        parent.location = dataset_jquery.attr("action-url") + "&id=" + vis_id;
-                                    });
-                                }, 
-                            });
-                        },
-                        "View in new visualization": function() {
-                            parent.location = dataset_jquery.attr("new-url");
-                        }
-                    });
-                }
-            });
-        });
-    }
-    
-    /**
-     * Create popup menu for visualization icon.
-     */
-    function init_viz_icon(icon) {
-        var icon_link = $(icon);
-        make_popupmenu( icon_link , {
-            "${_("Trackster")}": function() {
-                $.ajax({
-                    url: icon_link.attr("data-url"),
-                    dataType: "html",
-                    error: function() { alert( "Could not add this dataset to browser." ); },
-                    success: function(table_html) {
-                        var parent = window.parent;
-
-                        parent.show_modal("View Data in a New or Saved Visualization", "", {
-                            "Cancel": function() {
-                                parent.hide_modal();
-                            },
-                            "View in saved visualization": function() {
-                                // Show new modal with saved visualizations.
-                                parent.hide_modal();
-                                parent.show_modal("Add Data to Saved Visualization", table_html, {
-                                    "Cancel": function() {
-                                        parent.hide_modal();
-                                    },
-                                    "Add to visualization": function() {
-                                        $(parent.document).find('input[name=id]:checked').each(function() {
-                                            var vis_id = $(this).val();
-                                            parent.location = icon_link.attr("action-url") + "&id=" + vis_id;
-                                        });
-                                    }, 
-                                });
-                            },
-                            "View in new visualization": function() {
-                                parent.location = icon_link.attr("new-url");
-                            }
-                        });
-                    }
-                });
-            },
-            //"${_("Scatterplot")}": function() {
-            //    var data_id = icon_link.parents(".historyItemContainer").attr("id").split("-")[1];
-            //    parent.galaxy_main.location =
-            //        "${h.url_for( controller='visualization', action='scatterplot', col1=9, col2=13 )}"
-            //        + "&dataset_id=" + data_id;
-            //}
-        } );
-        return icon;        
-    };
-    
     _.each( $(".visualize-icon"), function(icon) {
         init_viz_icon(icon);
     });
@@ -472,6 +471,9 @@ var updater_callback = function ( tracked_datasets ) {
                 init_history_items( $("div.historyItemWrapper"), "noinit" );
                 tag_handling(container);
                 annotation_handling(container);
+                var viz_icon = container.find(".visualize-icon")[0];
+                if (viz_icon) { init_viz_icon(viz_icon); }
+                
                 // If new state is terminal, stop tracking
                 if (TERMINAL_STATES.indexOf(val.state) !== -1) {
                     if ( val.force_history_refresh ){

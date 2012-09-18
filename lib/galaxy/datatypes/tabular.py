@@ -301,6 +301,12 @@ class Tabular( data.Text ):
     def as_ucsc_display_file( self, dataset, **kwd ):
         return open( dataset.file_name )
 
+    def get_visualizations( self ):
+        """
+        Returns a list of visualizations for datatype.
+        """
+        return super( Tabular, self ).get_visualizations() + [ 'scatterplot' ]
+
 class Taxonomy( Tabular ):
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""

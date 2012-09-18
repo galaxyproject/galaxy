@@ -226,17 +226,24 @@
                     
                     %if for_editing:
                         <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title='${_("Run this job again")}' class="icon-button arrow-circle tooltip"></a>
-                        %if data.ext in app.datatypes_registry.get_available_tracks():
-                            <%
-                            if data.dbkey != '?':
-                                data_url = h.url_for( controller='visualization', action='list_tracks', dbkey=data.dbkey )
-                                data_url = data_url.replace( 'dbkey', 'f-dbkey' )
-                            else:
-                                data_url = h.url_for( controller='visualization', action='list_tracks' )
-                            %>
-                            <a href="javascript:void(0)" data-url="${data_url}" class="icon-button chart_curve tooltip visualize-icon"
-                                action-url="${h.url_for( controller='tracks', action='browser', dataset_id=dataset_id)}"
-                                new-url="${h.url_for( controller='tracks', action='index', dataset_id=dataset_id, default_dbkey=data.dbkey)}" title="Visualize"></a>
+                        ## Visualization icon + visualizations. Using anchor attributes is a HACK to encode needed
+                        ## information--URL base, dataset id, dbkey, visualizations--in anchor.
+                        <% 
+                            visualizations = data.datatype.get_visualizations() 
+                            ## HACK: if there are visualizations, only provide trackster for now since others
+                            ## are not ready.
+                            if visualizations:
+                                visualizations = [ 'trackster' ]
+                        %>
+                        %if visualizations:
+                            <a href="${h.url_for( controller='visualization' )}" 
+                               class="icon-button chart_curve tooltip visualize-icon"
+                               title="Visualize"
+                               dataset_id="${dataset_id}"
+                               %if data.dbkey != '?':
+                                   dbkey="${data.dbkey}" 
+                               %endif
+                               visualizations="${','.join(visualizations)}"></a>
                         %endif
                         <%
                             isPhylogenyData = isinstance(data.datatype,  (Phyloxml, Nexus, Newick))
