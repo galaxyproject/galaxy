@@ -116,6 +116,43 @@ function annotation_handling(parent_elt) {
     });
 };
 
+// -----------------------------------------------------------------------------
+function applyTooltip( elem ){
+    // apply twitter bootstrap tooltip to elem
+    
+    //!! 2 line tooltips placed above do not render properly
+    //TODO: hack (github has an issue on this - see how it's resolved)
+    var $this = $( elem );
+    if( $this.hasClass( 'tooltip' ) ){
+    
+        // remove original tooltip
+        if( $this.attr( 'data-original-title' ) ){
+            // documented method - that doesn't seem to work
+            //$( this ).tooltip( 'destroy' );
+            $this.data( 'tooltip', false );
+            
+            // swap title back
+            var title = $this.attr( 'data-original-title' );
+            $this.attr( 'data-original-title', null );
+            $this.attr( 'title', title );
+        }
+    
+        // (re-)apply tooltip
+        // place them on the bottom for now
+        $this.tooltip({ placement : 'bottom' });
+    }
+    return this;
+}
+
+function applyTooltips( elem ){
+    // apply twitter bootstrap tooltips to this element and all children
+    $( $( elem ).find( '.tooltip' ).andSelf() ).each( function(){
+        applyTooltip( this );
+    });
+    return this;
+}
+
+// -----------------------------------------------------------------------------
 // Create trackster action function.
 function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
     return function() {
@@ -327,24 +364,7 @@ $(function() {
         
         tag_handling(this);
         annotation_handling(this);
-        
-        //TODO: hack (github has an issue on this - see how it's resolved)
-        // fix for two line bootstrap tooltips when placement: above
-        $( this ).find( '.tooltip' ).each( function(){
-            var $this = $( this );
-            
-            // documented method - that doesn't seem to work
-            //$( this ).tooltip( 'destroy' );
-            
-            $this.data( 'tooltip', false );
-            var title = $this.attr( 'data-original-title' );
-            $this.attr( 'data-original-title', null );
-            $this.attr( 'title', title );
-
-            // place them on the bottom for now
-            $this.tooltip({ placement : 'bottom' });
-        });
-        
+        applyTooltips( this );
     });
     
     _.each( $(".visualize-icon"), function(icon) {
@@ -469,8 +489,12 @@ var updater_callback = function ( tracked_datasets ) {
                 var container = $("#historyItemContainer-" + id);
                 container.html( val.html );
                 init_history_items( $("div.historyItemWrapper"), "noinit" );
+                
+                // apply ui element behaviors
                 tag_handling(container);
                 annotation_handling(container);
+                applyTooltips( container );
+                
                 var viz_icon = container.find(".visualize-icon")[0];
                 if (viz_icon) { init_viz_icon(viz_icon); }
                 
