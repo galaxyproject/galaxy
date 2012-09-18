@@ -51,7 +51,7 @@
                     then users that have Role2 will be able to access the library, but will not see those contained datasets whose [dataset] "access" permission 
                     is associated with only Role1.
                     <p/>
-                    In addition to the "access library" permission, permission to perform the following functions on the data library (and it's contents) can 
+                    In addition to the "access library" permission, permission to perform the following functions on the data library (and its contents) can 
                     be granted to users (a library item is one of: a data library, a library folder, a library dataset).
                     <p/>
                     <ul>

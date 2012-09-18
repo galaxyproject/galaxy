@@ -93,7 +93,7 @@ class TestLibrarySecurity( TwillTestCase ):
         permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
         permissions_out = []
         # Role1 members are: admin_user, regular_user1, regular_user3.  Each of these users will be permitted for
-        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on library1 and it's contents.
+        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on library1 and its contents.
         self.library_permissions( self.security.encode_id( library1.id ),
                                   library1.name,
                                   str( role1.id ),
@@ -163,7 +163,7 @@ class TestLibrarySecurity( TwillTestCase ):
         # Logged in as admin_user
         #
         # LIBRARY_ACCESS = Role1: admin_user, regular_user1, regular_user3.  Each of these users will be permitted for
-        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on this library and it's contents.
+        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on this library and its contents.
         #
         # Legitimate roles displayed on the permission form are as follows:
         # 'Role1' since the LIBRARY_ACCESS permission is associated with Role1.  # Role one members are: admin_user, regular_user1, regular_user3.
@@ -239,7 +239,7 @@ class TestLibrarySecurity( TwillTestCase ):
         # groups: group1
         # users: test@bx.psu.edu, test1@bx.psu.edu via group1
         #
-        # We first need to make library1 public, but leave it's contents permissions unchanged
+        # We first need to make library1 public, but leave its contents permissions unchanged
         self.make_library_item_public( self.security.encode_id( library1.id ),
                                        self.security.encode_id( library1.id ),
                                        item_type='library',
@@ -433,7 +433,7 @@ class TestLibrarySecurity( TwillTestCase ):
         permissions_in = [ k for k, v in galaxy.model.Library.permitted_actions.items() ]
         permissions_out = []
         # Only admin_user will be permitted for
-        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on library2 and it's contents.
+        # LIBRARY_ACCESS, LIBRARY_ADD, LIBRARY_MODIFY, LIBRARY_MANAGE on library2 and its contents.
         self.library_permissions( self.security.encode_id( library1.id ),
                                   library1.name,
                                   str( admin_user_private_role.id ),
@@ -526,7 +526,7 @@ class TestLibrarySecurity( TwillTestCase ):
         ldda8 = get_latest_ldda_by_name( filename )
         assert ldda8 is not None, 'Problem retrieving LibraryDatasetDatasetAssociation ldda8 from the database'
     def test_090_make_library2_and_contents_public( self ):
-        """Testing making library2 and all of it's contents public"""
+        """Testing making library2 and all of its contents public"""
         self.make_library_item_public( self.security.encode_id( library2.id ),
                                        self.security.encode_id( library2.id ),
                                        item_type='library',
