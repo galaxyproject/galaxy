@@ -12,12 +12,12 @@ var TracksterUI = base.Base.extend({
         this.baseURL = baseURL;
     },
 
-
     /**
      * Create button menu
      */ 
      createButtonMenu: function() {
-        var menu = create_icon_buttons_menu([
+        var self = this,
+            menu = create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
                 add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
                     _.each(tracks, function(track) {
@@ -36,8 +36,7 @@ var TracksterUI = base.Base.extend({
                 icon_class: 'globe',
                 title: 'Circster',
                 on_click: function() {
-                    // Add viz id dynamically so that newly saved visualizations work as well.
-                    window.location = "${h.url_for( controller='visualization', action='circster' )}?id=" + view.vis_id;
+                    window.location = self.baseURL + 'visualization/circster?id=' + view.vis_id;
                 }
             },
             { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
@@ -86,7 +85,7 @@ var TracksterUI = base.Base.extend({
                 });
             } },
             { icon_class: 'cross-circle', title: 'Close', on_click: function() { 
-                window.location = "${h.url_for( controller='visualization', action='list' )}";
+                window.location = self.baseURL + "visualization/list";
             } }
         ], 
         { 
@@ -126,7 +125,7 @@ var TracksterUI = base.Base.extend({
                                     $.ajax({
                                         url: this.baseURL + "/visualization/bookmarks_from_dataset",
                                         data: data,
-                                        dataType: "json",
+                                        dataType: "json"
                                     }).then( function(data) {
                                         for( i = 0; i < data.data.length; i++ ) {
                                             var row = data.data[i];
@@ -254,7 +253,7 @@ var TracksterUI = base.Base.extend({
             switch(e.which) {
                 case 37:
                     view.move_fraction(0.25);
-                    break
+                    break;
                 case 38:
                     var change = Math.round(view.viewport_container.height()/15.0);
                     view.viewport_container.scrollTop( view.viewport_container.scrollTop() - 20);
