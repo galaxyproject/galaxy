@@ -82,12 +82,12 @@
 
 ## Render large message.
 <%def name="render_large_message( message, status )">
-    <div class="${status}messagelarge" style="margin: 1em">${_(message) | h}</div>
+    <div class="${status}messagelarge" style="margin: 1em">${_(message)}</div>
 </%def>
 
 ## Render a message
 <%def name="render_msg( msg, status='done' )">
-    <div class="${status}message">${_(msg) | h}</div>
+    <div class="${status}message">${_(msg)}</div>
     <br/>
 </%def>
 
