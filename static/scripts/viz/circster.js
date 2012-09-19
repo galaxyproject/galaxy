@@ -69,15 +69,10 @@ var CircsterTrackRenderer = Base.extend( {
         this.options = options;
     },
 
-    render: function( svg ) {
-
-        var genome_arcs = this.chroms_layout(),
-            chroms_arcs = this.genome_data_layout();
-            
-        // -- Render. --
-
+    render: function( svg ) {    
         // Draw background arcs for each chromosome.
-        var radius_start = this.options.radius_start,
+        var genome_arcs = this.chroms_layout(),
+            radius_start = this.options.radius_start,
             radius_end = this.options.radius_end,
             base_arc = svg.append("g").attr("id", "inner-arc"),
             arc_gen = d3.svg.arc()
@@ -91,24 +86,13 @@ var CircsterTrackRenderer = Base.extend( {
                 .style("fill",  "#ccc")
                 .append("title").text(function(d) { return d.data.chrom; });
 
-        // For each chromosome, draw dataset.
+        // Render data.
+        this.render_data(svg);
+
         var prefs = this.options.track.get('prefs'),
             block_color = prefs.block_color;
-
-        _.each(chroms_arcs, function(chrom_layout) {
-            if (!chrom_layout) { return; }
-
-            var group = svg.append("g"),
-                arc_gen = d3.svg.arc().innerRadius(radius_start),
-                dataset_elts = group.selectAll("path")
-                    .data(chrom_layout).enter()
-                    ;
-                    //.style("stroke", block_color)
-                    //.style("fill",  block_color)
-            
-            dataset_elts.append("path").attr("d", arc_gen).style("stroke",  block_color);
-                
-        });
+        if (!block_color) { block_color = prefs.color; }
+        svg.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
     },
 
     /**
@@ -131,12 +115,15 @@ var CircsterTrackRenderer = Base.extend( {
     },
 
     /**
-     * Returns layouts for drawing a chromosome's data.
+     * Render chromosome data and attach elements to svg.
      */
-    chrom_data_layout: function(chrom_arc, chrom_data, inner_radius, outer_radius, max) {
+    render_chrom_data: function(chrom_arc, chrom_data, inner_radius, outer_radius, max) {
     },
 
-    genome_data_layout: function() {
+    /**
+     * Render data as elements attached to svg.
+     */
+    render_data: function(svg) {
         var self = this,
             chrom_arcs = this.chroms_layout(),
             dataset = this.options.track.get('genome_wide_data'),
@@ -150,7 +137,9 @@ var CircsterTrackRenderer = Base.extend( {
             chroms_data_layout = _.map(layout_and_data, function(chrom_info) {
                 var chrom_arc = chrom_info[0],
                     chrom_data = chrom_info[1];
-                return self.chrom_data_layout(chrom_arc, chrom_data, r_start, r_end, dataset.get('min'), dataset.get('max'));
+                return self.render_chrom_data(svg, chrom_arc, chrom_data, 
+                                              r_start, r_end, 
+                                              dataset.get('min'), dataset.get('max'));
             });
 
         return chroms_data_layout;
@@ -165,7 +154,9 @@ var CircsterSummaryTreeTrackRenderer = CircsterTrackRenderer.extend({
     /**
      * Returns layouts for drawing a chromosome's data.
      */
-    chrom_data_layout: function(chrom_arc, chrom_data, inner_radius, outer_radius, min, max) {
+    render_chrom_data: function(svg, chrom_arc, chrom_data, inner_radius, outer_radius, min, max) {
+        // FIXME: draw as area:
+        /*
         // If no chrom data, return null.
         if (!chrom_data || typeof chrom_data === "string") {
             return null;
@@ -189,6 +180,7 @@ var CircsterSummaryTreeTrackRenderer = CircsterTrackRenderer.extend({
         });
         
         return arcs;
+        */
     }
 });
 
@@ -198,32 +190,49 @@ var CircsterSummaryTreeTrackRenderer = CircsterTrackRenderer.extend({
 var CircsterBigWigTrackRenderer = CircsterTrackRenderer.extend({
 
     /**
-     * Returns layouts for drawing a chromosome's data.
+     * Render chromosome data and attach elements to svg.
      */
-    chrom_data_layout: function(chrom_arc, chrom_data, inner_radius, outer_radius, min, max) {
+    render_chrom_data: function(svg, chrom_arc, chrom_data, inner_radius, outer_radius, min, max) {
         var data = chrom_data.data;
         if (data.length === 0) { return; }
-        
-        var scale = d3.scale.linear()
-                .domain( [min, max] )
-                .range( [inner_radius, outer_radius] ),
-            arc_layout = d3.layout.pie().value(function(d, i) {
-                // If at end of data, draw nothing.
-                if (i + 1 === data.length) { return 0; }
 
-                // Layout is from current position to next position.
-                return data[i+1][0] - data[i][0];
-            })
-                .startAngle(chrom_arc.startAngle)
-                .endAngle(chrom_arc.endAngle),
-        arcs = arc_layout(data);
-        
-        // Use scale to assign outer radius.
-        _.each(data, function(datum, index) {
-            arcs[index].outerRadius = scale(datum[1]);
-        });
-        
-        return arcs;
+        // Radius scaler.
+        var radius = d3.scale.linear()
+                       .domain([min, max])
+                       .range([inner_radius, outer_radius]);
+
+        // Scaler for placing data points across arc.
+        var angle = d3.scale.linear()
+            .domain([0, data.length])
+            .range([chrom_arc.startAngle, chrom_arc.endAngle]);
+
+        // FIXME: 
+        //  *area is not necessary as long as 0 is used as the inner radius.
+        //  *could provide fill as an option.
+
+        // Use both a line and area; area creates definition and line ensures that something is 
+        // always drawn.
+        var line = d3.svg.line.radial()
+            .interpolate("linear-closed")
+            .radius(function(d) { return radius(d[1]); })
+            .angle(function(d, i) { return angle(i); });
+
+        var area = d3.svg.area.radial()
+            .interpolate(line.interpolate())
+            .innerRadius(radius(0))
+            .outerRadius(line.radius())
+            .angle(line.angle());
+
+        // Render data.
+        var parent = svg.datum(data);
+                    
+        parent.append("path")
+            .attr("class", "chrom-data")
+            .attr("d", area);
+
+        parent.append("path")
+            .attr("class", "chrom-data")
+            .attr("d", line);
     }
 
 });
