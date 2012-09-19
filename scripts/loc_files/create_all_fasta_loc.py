@@ -195,7 +195,7 @@ def __main__():
     if options.inspect_dir:
         paths_to_look_in = [ os.path.join( options.genome_dir, '%s', id ) for id in options.inspect_dir.split( ',' ) ]
     else:
-        paths_to_look_in = os.path.join( options.genome_dir, '%s' )
+        paths_to_look_in = [os.path.join( options.genome_dir, '%s' )]
 
     # say what we're looking in
     print '\nLooking in:\n\t%s' % '\n\t'.join( [ p % '<build_name>' for p in paths_to_look_in ] )
