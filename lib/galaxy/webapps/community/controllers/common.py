@@ -875,59 +875,60 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
         current_changeset_revision = str( repo.changectx( changeset ) )
         ctx = repo.changectx( changeset )
         log.debug( "Cloning repository revision: %s", str( ctx.rev() ) )
-        clone_repository( repository_clone_url, work_dir, str( ctx.rev() ) )
-        log.debug( "Generating metadata for changset revision: %s", str( ctx.rev() ) )
-        current_metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
-                                                                                             repository_clone_url=repository_clone_url,
-                                                                                             relative_install_dir=repo_dir,
-                                                                                             repository_files_dir=work_dir,
-                                                                                             resetting_all_metadata_on_repository=True,
-                                                                                             webapp='community' )
-        if current_metadata_dict:
-            if not metadata_changeset_revision and not metadata_dict:
-                # We're at the first change set in the change log.
-                metadata_changeset_revision = current_changeset_revision
-                metadata_dict = current_metadata_dict
-            if ancestor_changeset_revision:
-                # Compare metadata from ancestor and current.  The value of comparison will be one of:
-                # 'no metadata' - no metadata for either ancestor or current, so continue from current
-                # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
-                # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
-                # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current metadata, so persist ancestor metadata.
-                comparison = compare_changeset_revisions( ancestor_changeset_revision,
-                                                          ancestor_metadata_dict,
-                                                          current_changeset_revision,
-                                                          current_metadata_dict )
-                if comparison in [ 'no metadata', 'equal', 'subset' ]:
+        cloned_ok, error_message = clone_repository( repository_clone_url, work_dir, str( ctx.rev() ) )
+        if cloned_ok:
+            log.debug( "Generating metadata for changset revision: %s", str( ctx.rev() ) )
+            current_metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                                 repository_clone_url=repository_clone_url,
+                                                                                                 relative_install_dir=repo_dir,
+                                                                                                 repository_files_dir=work_dir,
+                                                                                                 resetting_all_metadata_on_repository=True,
+                                                                                                 webapp='community' )
+            if current_metadata_dict:
+                if not metadata_changeset_revision and not metadata_dict:
+                    # We're at the first change set in the change log.
+                    metadata_changeset_revision = current_changeset_revision
+                    metadata_dict = current_metadata_dict
+                if ancestor_changeset_revision:
+                    # Compare metadata from ancestor and current.  The value of comparison will be one of:
+                    # 'no metadata' - no metadata for either ancestor or current, so continue from current
+                    # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
+                    # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
+                    # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current metadata, so persist ancestor metadata.
+                    comparison = compare_changeset_revisions( ancestor_changeset_revision,
+                                                              ancestor_metadata_dict,
+                                                              current_changeset_revision,
+                                                              current_metadata_dict )
+                    if comparison in [ 'no metadata', 'equal', 'subset' ]:
+                        ancestor_changeset_revision = current_changeset_revision
+                        ancestor_metadata_dict = current_metadata_dict
+                    elif comparison == 'not equal and not subset':
+                        metadata_changeset_revision = ancestor_changeset_revision
+                        metadata_dict = ancestor_metadata_dict
+                        repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                        changeset_revisions.append( metadata_changeset_revision )
+                        ancestor_changeset_revision = current_changeset_revision
+                        ancestor_metadata_dict = current_metadata_dict
+                else:
+                    # We're at the beginning of the change log.
                     ancestor_changeset_revision = current_changeset_revision
                     ancestor_metadata_dict = current_metadata_dict
-                elif comparison == 'not equal and not subset':
-                    metadata_changeset_revision = ancestor_changeset_revision
-                    metadata_dict = ancestor_metadata_dict
+                if not ctx.children():
+                    metadata_changeset_revision = current_changeset_revision
+                    metadata_dict = current_metadata_dict
+                    # We're at the end of the change log.
                     repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
                     changeset_revisions.append( metadata_changeset_revision )
-                    ancestor_changeset_revision = current_changeset_revision
-                    ancestor_metadata_dict = current_metadata_dict
-            else:
-                # We're at the beginning of the change log.
-                ancestor_changeset_revision = current_changeset_revision
-                ancestor_metadata_dict = current_metadata_dict
-            if not ctx.children():
-                metadata_changeset_revision = current_changeset_revision
-                metadata_dict = current_metadata_dict
-                # We're at the end of the change log.
-                repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
-                changeset_revisions.append( metadata_changeset_revision )
-                ancestor_changeset_revision = None
-                ancestor_metadata_dict = None
-        elif ancestor_metadata_dict:
-            # We reach here only if current_metadata_dict is empty and ancestor_metadata_dict is not.
-            if not ctx.children():
-                # We're at the end of the change log.
-                repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
-                changeset_revisions.append( metadata_changeset_revision )
-                ancestor_changeset_revision = None
-                ancestor_metadata_dict = None
+                    ancestor_changeset_revision = None
+                    ancestor_metadata_dict = None
+            elif ancestor_metadata_dict:
+                # We reach here only if current_metadata_dict is empty and ancestor_metadata_dict is not.
+                if not ctx.children():
+                    # We're at the end of the change log.
+                    repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                    changeset_revisions.append( metadata_changeset_revision )
+                    ancestor_changeset_revision = None
+                    ancestor_metadata_dict = None
         if os.path.exists( work_dir ):
             try:
                 shutil.rmtree( work_dir )

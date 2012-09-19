@@ -244,57 +244,58 @@ class InstallManager( object ):
                                                                           owner=self.repository_owner,
                                                                           dist_to_shed=True )
             update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
-            clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
-            self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
-                                             repository_clone_url=repository_clone_url,
-                                             relative_install_dir=relative_install_dir,
-                                             repository_elem=repository_elem,
-                                             install_dependencies=install_dependencies )
-            self.app.sa_session.refresh( tool_shed_repository )
-            metadata_dict = tool_shed_repository.metadata
-            if 'tools' in metadata_dict:
-                update_tool_shed_repository_status( self.app,
-                                                    tool_shed_repository,
-                                                    self.app.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
-                # Get the tool_versions from the tool shed for each tool in the installed change set.
-                url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
-                    ( tool_shed_url, tool_shed_repository.name, self.repository_owner, installed_changeset_revision )
-                response = urllib2.urlopen( url )
-                text = response.read()
-                response.close()
-                if text:
-                    tool_version_dicts = from_json_string( text )
-                    handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )
-                else:
-                    # Set the tool versions since they seem to be missing for this repository in the tool shed.
-                    # CRITICAL NOTE: These default settings may not properly handle all parent/child associations.
-                    for tool_dict in metadata_dict[ 'tools' ]:
-                        flush_needed = False
-                        tool_id = tool_dict[ 'guid' ]
-                        old_tool_id = tool_dict[ 'id' ]
-                        tool_version = tool_dict[ 'version' ]
-                        tool_version_using_old_id = get_tool_version( self.app, old_tool_id )
-                        tool_version_using_guid = get_tool_version( self.app, tool_id )
-                        if not tool_version_using_old_id:
-                            tool_version_using_old_id = self.app.model.ToolVersion( tool_id=old_tool_id,
-                                                                                    tool_shed_repository=tool_shed_repository )
-                            self.app.sa_session.add( tool_version_using_old_id )
-                            self.app.sa_session.flush()
-                        if not tool_version_using_guid:
-                            tool_version_using_guid = self.app.model.ToolVersion( tool_id=tool_id,
-                                                                                  tool_shed_repository=tool_shed_repository )
-                            self.app.sa_session.add( tool_version_using_guid )
-                            self.app.sa_session.flush()
-                        # Associate the two versions as parent / child.
-                        tool_version_association = get_tool_version_association( self.app,
-                                                                                 tool_version_using_old_id,
-                                                                                 tool_version_using_guid )
-                        if not tool_version_association:
-                            tool_version_association = self.app.model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
-                                                                                              parent_id=tool_version_using_old_id.id )
-                            self.app.sa_session.add( tool_version_association )
-                            self.app.sa_session.flush()
-            update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.INSTALLED )
+            cloned_ok, error_message = clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
+            if cloned_ok:
+                self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
+                                                 repository_clone_url=repository_clone_url,
+                                                 relative_install_dir=relative_install_dir,
+                                                 repository_elem=repository_elem,
+                                                 install_dependencies=install_dependencies )
+                self.app.sa_session.refresh( tool_shed_repository )
+                metadata_dict = tool_shed_repository.metadata
+                if 'tools' in metadata_dict:
+                    update_tool_shed_repository_status( self.app,
+                                                        tool_shed_repository,
+                                                        self.app.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
+                    # Get the tool_versions from the tool shed for each tool in the installed change set.
+                    url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                        ( tool_shed_url, tool_shed_repository.name, self.repository_owner, installed_changeset_revision )
+                    response = urllib2.urlopen( url )
+                    text = response.read()
+                    response.close()
+                    if text:
+                        tool_version_dicts = from_json_string( text )
+                        handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )
+                    else:
+                        # Set the tool versions since they seem to be missing for this repository in the tool shed.
+                        # CRITICAL NOTE: These default settings may not properly handle all parent/child associations.
+                        for tool_dict in metadata_dict[ 'tools' ]:
+                            flush_needed = False
+                            tool_id = tool_dict[ 'guid' ]
+                            old_tool_id = tool_dict[ 'id' ]
+                            tool_version = tool_dict[ 'version' ]
+                            tool_version_using_old_id = get_tool_version( self.app, old_tool_id )
+                            tool_version_using_guid = get_tool_version( self.app, tool_id )
+                            if not tool_version_using_old_id:
+                                tool_version_using_old_id = self.app.model.ToolVersion( tool_id=old_tool_id,
+                                                                                        tool_shed_repository=tool_shed_repository )
+                                self.app.sa_session.add( tool_version_using_old_id )
+                                self.app.sa_session.flush()
+                            if not tool_version_using_guid:
+                                tool_version_using_guid = self.app.model.ToolVersion( tool_id=tool_id,
+                                                                                      tool_shed_repository=tool_shed_repository )
+                                self.app.sa_session.add( tool_version_using_guid )
+                                self.app.sa_session.flush()
+                            # Associate the two versions as parent / child.
+                            tool_version_association = get_tool_version_association( self.app,
+                                                                                     tool_version_using_old_id,
+                                                                                     tool_version_using_guid )
+                            if not tool_version_association:
+                                tool_version_association = self.app.model.ToolVersionAssociation( tool_id=tool_version_using_guid.id,
+                                                                                                  parent_id=tool_version_using_old_id.id )
+                                self.app.sa_session.add( tool_version_association )
+                                self.app.sa_session.flush()
+                update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.INSTALLED )
     @property
     def non_shed_tool_panel_configs( self ):
         # Get the non-shed related tool panel config file names from the Galaxy config - the default is tool_conf.xml.

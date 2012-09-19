@@ -1020,10 +1020,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
                         encoded_repository_ids.append( trans.security.encode_id( repository_metadata.repository.id ) )
                         changeset_revisions.append( repository_metadata.changeset_revision )
+                    new_kwd[ 'repository_ids' ] = encoded_repository_ids
+                    new_kwd[ 'changeset_revisions' ] = changeset_revisions
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='install_repositories_by_revision',
-                                                                      repository_ids=encoded_repository_ids,
-                                                                      changeset_revisions=changeset_revisions ) )
+                                                                      **new_kwd ) )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
                 # and the user clicked the operation button without checking any of the check boxes.
@@ -1106,10 +1107,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         repository_metadata = get_repository_metadata_by_id( trans, item_id )
                         encoded_repository_ids.append( trans.security.encode_id( repository_metadata.repository.id ) )
                         changeset_revisions.append( repository_metadata.changeset_revision )
+                    new_kwd = {}
+                    new_kwd[ 'repository_ids' ] = encoded_repository_ids
+                    new_kwd[ 'changeset_revisions' ] = changeset_revisions
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='install_repositories_by_revision',
-                                                                      repository_ids=encoded_repository_ids,
-                                                                      changeset_revisions=changeset_revisions ) )
+                                                                      **new_kwd ) )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
                 # and the user clicked the operation button without checking any of the check boxes.
@@ -1188,7 +1191,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repo_info_dicts = []
         for tup in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
             repository_id, changeset_revision = tup
-            repository_clone_url = generate_clone_url( trans, repository_id )        
+            repository_clone_url = generate_clone_url( trans, repository_id )
             repository = get_repository( trans, repository_id )
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
             metadata = repository_metadata.metadata
@@ -1414,9 +1417,22 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     message=message,
                                     status=status )
     @web.expose
-    def install_repositories_by_revision( self, trans, repository_ids, changeset_revisions, **kwd ):
-        """Send the list of repository_ids and changeset_revisions to Galaxy so it can begin the installation process."""
-        galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
+    def install_repositories_by_revision( self, trans, **kwd ):
+        """
+        Send the list of repository_ids and changeset_revisions to Galaxy so it can begin the installation process.  If the value of
+        repository_ids is not received, then the name and owner of a single repository must be received to install a single repository.
+        """
+        repository_ids = kwd.get( 'repository_ids', None )
+        changeset_revisions = kwd.get( 'changeset_revisions', None )
+        name = kwd.get( 'name', None )
+        owner = kwd.get( 'owner', None )
+        galaxy_url = kwd.get( 'galaxy_url', None )
+        if not repository_ids:
+            repository = get_repository_by_name_and_owner( trans, name, owner )
+            repository_ids = trans.security.encode_id( repository.id )
+        if not galaxy_url:
+            # If galaxy_url is not in the request, it had to have been stored in a cookie by the tool shed.
+            galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
         # Redirect back to local Galaxy to perform install.
         url = url_join( galaxy_url,
                         'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \

@@ -21,9 +21,12 @@
     <div popupmenu="tool_dependency-${tool_dependency.id}-popup">
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">Browse repository files</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ) )}">Manage repository</a>
-        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get updates</a>
+        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='check_for_updates', id=trans.security.encode_id( repository.id ) )}">Get repository updates</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) )}">Deactivate or uninstall repository</a>
         <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', tool_dependency_ids=tool_dependency_ids )}">Manage tool dependencies</a>
+        %if can_uninstall:
+            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='uninstall_tool_dependencies', tool_dependency_ids=trans.security.encode_id( tool_dependency.id ) )}">Uninstall this tool dependency</a>
+        %endif
     </div>
 </ul>
 
@@ -44,6 +47,18 @@
             ${repository.changeset_revision}
             <div style="clear: both"></div>
         </div>
+        <div class="form-row" >
+            <label>Tool dependency status:</label>
+            ${tool_dependency.status}
+            <div style="clear: both"></div>
+        </div>
+        %if in_error_state:
+            <div class="form-row" >
+                <label>Tool dependency installation error:</label>
+                ${tool_dependency.error_message}
+                <div style="clear: both"></div>
+            </div>
+        %endif
         <div class="form-row" >
             <label>Tool dependency installation directory:</label>
             ${tool_dependency.installation_directory( trans.app )}

@@ -380,10 +380,11 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
                         pull=True,
                         noupdate=False,
                         rev=util.listify( str( ctx_rev ) ) )
-        return True
+        return True, None
     except Exception, e:
-        log.debug( 'Encountered an exception while cloning the repository: %s' % e )
-        return False
+        error_message = 'Error cloning repository: %s' % str( e )
+        log.debug( error_message )
+        return False, error_message
 def copy_sample_file( app, filename, dest_path=None ):
     """Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path is ~/tool-data."""
     if dest_path is None:
