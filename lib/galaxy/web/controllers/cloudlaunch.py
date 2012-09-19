@@ -22,7 +22,6 @@ from boto.ec2.regioninfo import RegionInfo
 from boto.exception import EC2ResponseError
 from boto.s3.connection import OrdinaryCallingFormat, S3Connection
 
-
 log = logging.getLogger(__name__)
 
 PKEY_PREFIX = 'gxy_pkey'
@@ -98,7 +97,12 @@ class CloudController(BaseUIController):
                 while not instance.public_dns_name:
                     # Can take a second to have public dns name registered.
                     # DBTODO, push this into a page update, this is not ideal.
-                    instance.update()
+                    try:
+                        instance.update()
+                    except EC2ResponseError:
+                        #This can happen when update is invoked before the instance is fully registered.  Prevent
+                        #failure, wait it out.
+                        pass
                     ct +=1
                     time.sleep(1)
                 if kp_material:
