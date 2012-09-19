@@ -696,11 +696,11 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         Display browser for the visualization denoted by id and add the datasets listed in `dataset_ids`.
         """
 
-        # Display new browser if no id provided.
+        # Set up new browser if no id provided.
         if not id:
             return trans.fill_template( "tracks/browser.mako", config={}, 
                                         add_dataset=kwargs.get("dataset_id", None), 
-                                        default_dbkey=kwargs.get("default_dbkey", None) )
+                                        default_dbkey=kwargs.get("dbkey", None) )
 
         # Display saved visualization.
         vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
