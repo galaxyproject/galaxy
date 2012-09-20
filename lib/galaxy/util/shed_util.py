@@ -341,6 +341,17 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
                         correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
                         invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
     return invalid_files_and_errors_tups
+def concat_messages( msg1, msg2 ):
+    if msg1:
+        if msg2:
+            message = '%s  %s' % ( msg1, msg2 )
+        else:
+            message = msg1
+    elif msg2:
+        message = msg2
+    else:
+        message = ''
+    return message
 def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     # Persist the current in-memory list of config_elems to a file named by the value of config_filename.  
     fd, filename = tempfile.mkstemp()
@@ -352,6 +363,16 @@ def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     os.close( fd )
     shutil.move( filename, os.path.abspath( config_filename ) )
     os.chmod( config_filename, 0644 )
+def copy_disk_sample_files_to_dir( trans, repo_files_dir, dest_path ):
+    sample_files = []
+    for root, dirs, files in os.walk( repo_files_dir ):
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name.endswith( '.sample' ):
+                    relative_path = os.path.join( root, name )
+                    copy_sample_file( trans.app, relative_path, dest_path=dest_path )
+                    sample_files.append( name )
+    return sample_files
 def clean_repository_clone_url( repository_clone_url ):
     if repository_clone_url.find( '@' ) > 0:
         # We have an url that includes an authenticated user, something like:
@@ -1399,12 +1420,13 @@ def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repos
     if missing_data_table_entry:
         # The repository must contain a tool_data_table_conf.xml.sample file that includes all required entries for all tools in the repository.
         sample_tool_data_table_conf = get_config_from_disk( 'tool_data_table_conf.xml.sample', relative_install_dir )
-        # Add entries to the ToolDataTableManager's in-memory data_tables dictionary as well as the list of data_table_elems and the list of
-        # data_table_elem_names.
-        error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
-        if error:
-            # TODO: Do more here than logging an exception.
-            log.debug( correction_msg )
+        if sample_tool_data_table_conf:
+            # Add entries to the ToolDataTableManager's in-memory data_tables dictionary as well as the list of data_table_elems and the list of
+            # data_table_elem_names.
+            error, message = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
+            if error:
+                # TODO: Do more here than logging an exception.
+                log.debug( message )
         # Reload the tool into the local list of repository_tools_tups.
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
@@ -1436,9 +1458,21 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups, sample_files_copied
+def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir ):
+    # Copy all sample files from disk to a temporary directory since the sample files may be in multiple directories.
+    message = ''
+    sample_files = copy_disk_sample_files_to_dir( trans, repo_files_dir, work_dir )
+    if sample_files:
+        if 'tool_data_table_conf.xml.sample' in sample_files:
+            # Load entries into the tool_data_tables if the tool requires them.
+            tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
+            error, message = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
+    tool, valid, message2 = load_tool_from_config( trans.app, tool_config_filepath )
+    message = concat_messages( message, message2 )
+    return tool, valid, message
 def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir ):
     tool = None
-    message = None
+    message = ''
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     # We're not currently doing anything with the returned list of deleted_sample_files here.  It is intended to help handle sample files that are in 
     # the manifest, but have been deleted from disk.
@@ -1448,13 +1482,14 @@ def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_re
         if 'tool_data_table_conf.xml.sample' in sample_files:
             # Load entries into the tool_data_tables if the tool requires them.
             tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
-            error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-            if error:
-                # TODO: Do more here than logging an exception.
-                log.debug( correction_msg )
+            if tool_data_table_config:
+                error, message = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
+                if error:
+                    log.debug( message )
     manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
     if manifest_ctx and ctx_file:
-        tool, message = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
+        tool, message2 = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
+        message = concat_messages( message, message2 )
     return tool, message
 def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
     """

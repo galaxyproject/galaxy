@@ -7,8 +7,9 @@ from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
 from galaxy.util.shed_util import check_tool_input_params, clone_repository, copy_sample_file, generate_metadata_for_changeset_revision
 from galaxy.util.shed_util import get_changectx_for_changeset, get_config_from_disk, get_configured_ui, get_file_context_from_ctx, get_named_tmpfile_from_ctx
-from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_tmp_config, handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH
-from galaxy.util.shed_util import load_tool_from_config, reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path
+from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config
+from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH, load_tool_from_config, reset_tool_data_tables
+from galaxy.util.shed_util import reversed_upper_bounded_changelog, strip_path
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -258,16 +259,6 @@ def compare_workflows( ancestor_workflows, current_workflows ):
         else:
             return 'subset'
     return 'not equal and not subset'
-def copy_disk_sample_files_to_dir( trans, repo_files_dir, dest_path ):
-    sample_files = []
-    for root, dirs, files in os.walk( repo_files_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name.endswith( '.sample' ):
-                    relative_path = os.path.join( root, name )
-                    copy_sample_file( trans.app, relative_path, dest_path=dest_path )
-                    sample_files.append( name )
-    return sample_files
 def copy_file_from_disk( filename, repo_dir, dir ):
     file_path = None
     found = False
@@ -628,15 +619,8 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     work_dir = tempfile.mkdtemp()
     can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
     if can_use_disk_file:
-        # Copy all sample files from disk to a temporary directory since the sample files may be in multiple directories.
-        sample_files = copy_disk_sample_files_to_dir( trans, repo_files_dir, work_dir )
-        if sample_files:
-            trans.app.config.tool_data_path = work_dir
-            if 'tool_data_table_conf.xml.sample' in sample_files:
-                # Load entries into the tool_data_tables if the tool requires them.
-                tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
-                error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-        tool, valid, message = load_tool_from_config( trans.app, tool_config_filepath )
+        trans.app.config.tool_data_path = work_dir
+        tool, valid, message = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir )
         if tool is not None:
             invalid_files_and_errors_tups = check_tool_input_params( trans.app,
                                                                      repo_files_dir,
@@ -645,11 +629,12 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                                                                      sample_files,
                                                                      webapp='community' )
             if invalid_files_and_errors_tups:
-                message = generate_message_for_invalid_tools( invalid_files_and_errors_tups,
-                                                              repository,
-                                                              metadata_dict=None,
-                                                              as_html=True,
-                                                              displaying_invalid_tool=True )
+                message2 = generate_message_for_invalid_tools( invalid_files_and_errors_tups,
+                                                               repository,
+                                                               metadata_dict=None,
+                                                               as_html=True,
+                                                               displaying_invalid_tool=True )
+                message = concat_messages( message, message2 )
                 status = 'error'
     else:
         tool, message = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
