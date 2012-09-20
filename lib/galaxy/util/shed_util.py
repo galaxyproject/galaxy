@@ -1053,12 +1053,75 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
         if converter_path and display_path:
             break
     return converter_path, display_path
+def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
+    """Get the ctx file path for the latest revision of filename from the repository manifest up to the value of changeset_revision."""
+    stripped_filename = strip_path( filename )
+    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+        manifest_changeset_revision = str( repo.changectx( changeset ) )
+        manifest_ctx = repo.changectx( changeset )
+        for ctx_file in manifest_ctx.files():
+            ctx_file_name = strip_path( ctx_file )
+            if ctx_file_name == stripped_filename:
+                return manifest_ctx, ctx_file
+    return None, None
 def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
     url = url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % ( name, owner, changeset_revision ) )
     response = urllib2.urlopen( url )
     ctx_rev = response.read()
     response.close()
     return ctx_rev
+def get_file_context_from_ctx( ctx, filename ):
+    # We have to be careful in determining if we found the correct file because multiple files with the same name may be in different directories
+    # within ctx if the files were moved within the change set.  For example, in the following ctx.files() list, the former may have been moved to
+    # the latter: ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].  Another scenario
+    # is that the file has been deleted.
+    deleted = False
+    filename = strip_path( filename )
+    for ctx_file in ctx.files():
+        ctx_file_name = strip_path( ctx_file )
+        if filename == ctx_file_name:
+            try:
+                # If the file was moved, its destination will be returned here.
+                fctx = ctx[ ctx_file ]
+                return fctx
+            except LookupError, e:
+                # Set deleted for now, and continue looking in case the file was moved instead of deleted.
+                deleted = True
+    if deleted:
+        return 'DELETED'
+    return None
+def get_list_of_copied_sample_files( repo, ctx, dir ):
+    """
+    Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
+    each discovered file to dir and return the list of filenames.  If a .sample file was added in a changeset and then deleted in a later
+    changeset, it will be returned in the deleted_sample_files list.  The caller will set the value of app.config.tool_data_path to dir in
+    order to load the tools and generate metadata for them.
+    """
+    deleted_sample_files = []
+    sample_files = []
+    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
+        changeset_ctx = repo.changectx( changeset )
+        for ctx_file in changeset_ctx.files():
+            ctx_file_name = strip_path( ctx_file )
+            # If we decide in the future that files deleted later in the changelog should not be used, we can use the following if statement.
+            # if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
+            if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files:
+                fctx = get_file_context_from_ctx( changeset_ctx, ctx_file )
+                if fctx in [ 'DELETED' ]:
+                    # Since the possibly future used if statement above is commented out, the same file that was initially added will be
+                    # discovered in an earlier changeset in the change log and fall through to the else block below.  In other words, if
+                    # a file named blast2go.loc.sample was added in change set 0 and then deleted in changeset 3, the deleted file in changeset
+                    # 3 will be handled here, but the later discovered file in changeset 0 will be handled in the else block below.  In this
+                    # way, the file contents will always be found for future tools even though the file was deleted.
+                    if ctx_file_name not in deleted_sample_files:
+                        deleted_sample_files.append( ctx_file_name )
+                else:
+                    sample_files.append( ctx_file_name )
+                    tmp_ctx_file_name = os.path.join( dir, ctx_file_name.replace( '.sample', '' ) )
+                    fh = open( tmp_ctx_file_name, 'wb' )
+                    fh.write( fctx.data() )
+                    fh.close()
+    return sample_files, deleted_sample_files
 def get_named_tmpfile_from_ctx( ctx, filename, dir ):
     filename = strip_path( filename )
     for ctx_file in ctx.files():
@@ -1373,6 +1436,26 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups, sample_files_copied
+def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir ):
+    tool = None
+    message = None
+    ctx = get_changectx_for_changeset( repo, changeset_revision )
+    # We're not currently doing anything with the returned list of deleted_sample_files here.  It is intended to help handle sample files that are in 
+    # the manifest, but have been deleted from disk.
+    sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
+    if sample_files:
+        trans.app.config.tool_data_path = work_dir
+        if 'tool_data_table_conf.xml.sample' in sample_files:
+            # Load entries into the tool_data_tables if the tool requires them.
+            tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
+            error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
+            if error:
+                # TODO: Do more here than logging an exception.
+                log.debug( correction_msg )
+    manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
+    if manifest_ctx and ctx_file:
+        tool, message = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
+    return tool, message
 def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
     """
     Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary.  If persist is True (should only occur)
@@ -1492,6 +1575,31 @@ def load_tool_from_config( app, full_path ):
         valid = False
         error_message = str( e )
     return tool, valid, error_message
+def load_tool_from_tmp_config( trans, repo, ctx, ctx_file, work_dir ):
+    tool = None
+    message = ''
+    tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
+    if tmp_tool_config:
+        element_tree = util.parse_xml( tmp_tool_config )
+        element_tree_root = element_tree.getroot()
+        # Look for code files required by the tool config.
+        tmp_code_files = []
+        for code_elem in element_tree_root.findall( 'code' ):
+            code_file_name = code_elem.get( 'file' )
+            tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
+            if tmp_code_file_name:
+                tmp_code_files.append( tmp_code_file_name )
+        tool, valid, message = load_tool_from_config( trans.app, tmp_tool_config )
+        for tmp_code_file in tmp_code_files:
+            try:
+                os.unlink( tmp_code_file )
+            except:
+                pass
+        try:
+            os.unlink( tmp_tool_config )
+        except:
+            pass
+    return tool, message
 def open_repository_files_folder( trans, folder_path ):
     try:
         files_list = get_repository_files( trans, folder_path )

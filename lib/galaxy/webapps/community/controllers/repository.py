@@ -9,9 +9,10 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
-from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents, INITIAL_CHANGELOG_HASH
-from galaxy.util.shed_util import load_tool_from_config, NOT_TOOL_CONFIGS, open_repository_files_folder, reversed_lower_upper_bounded_changelog
-from galaxy.util.shed_util import reversed_upper_bounded_changelog, strip_path, to_html_escaped, update_repository, url_join
+from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents
+from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_tmp_config, INITIAL_CHANGELOG_HASH, load_tool_from_config, NOT_TOOL_CONFIGS
+from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog, strip_path
+from galaxy.util.shed_util import to_html_escaped, update_repository, url_join
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -2283,6 +2284,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         tool_lineage = []
         tool = None
         guid = None
+        original_tool_data_path = trans.app.config.tool_data_path
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
@@ -2293,16 +2295,18 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         if tool_metadata_dict[ 'id' ] == tool_id:
                             relative_path_to_tool_config = tool_metadata_dict[ 'tool_config' ]
                             guid = tool_metadata_dict[ 'guid' ]
-                            full_path = os.path.abspath( relative_path_to_tool_config )
-                            can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, full_path, changeset_revision )
+                            full_path_to_tool_config = os.path.abspath( relative_path_to_tool_config )
+                            full_path_to_dir, tool_tool_config_filename = os.path.split( full_path_to_tool_config )
+                            can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, full_path_to_tool_config, changeset_revision )
                             if can_use_disk_file:
-                                tool, valid, message = load_tool_from_config( trans.app, full_path )
+                                trans.app.config.tool_data_path = full_path_to_dir
+                                # Load entries into the tool_data_tables if the tool requires them.
+                                tool_data_table_config = get_config_from_disk( 'tool_data_table_conf.xml.sample', full_path_to_dir )
+                                error, correction_msg = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
+                                tool, valid, message = load_tool_from_config( trans.app, full_path_to_tool_config )
                             else:
-                                # We're attempting to load a tool using a config that no longer exists on disk.
                                 work_dir = tempfile.mkdtemp()
-                                manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( relative_path_to_tool_config, repo, changeset_revision )
-                                if manifest_ctx and ctx_file:
-                                    tool, message = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
+                                tool, message = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
                             break
                     if guid:
                         tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
@@ -2312,6 +2316,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
                                                                                  downloadable_only=False )
+        trans.app.config.tool_data_path = original_tool_data_path
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     tool=tool,
