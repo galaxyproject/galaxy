@@ -3,8 +3,32 @@ define( ["libs/d3", "viz/visualization"], function( d3, visualization ) {
 // General backbone style inheritence
 var Base = function() { this.initialize && this.initialize.apply(this, arguments); }; Base.extend = Backbone.Model.extend;
 
+var SVGUtils = Backbone.Model.extend({
+
+    /**
+     * Returns true if element is visible.
+     */
+    is_visible: function(svg_elt, svg) {
+        var eltBRect = svg_elt.getBoundingClientRect(),
+            svgBRect = $('svg')[0].getBoundingClientRect();
+
+        if (// To the left of screen?
+            eltBRect.right < 0 ||
+            // To the right of screen?
+            eltBRect.left > svgBRect.right ||
+            // Above screen?
+            eltBRect.bottom < 0 || 
+            // Below screen?
+            eltBRect.top > svgBRect.bottom) {
+            return false;
+        }
+        return true;
+    }
+
+});
+
 /**
- * Renders a full circster visualization
+ * Renders a full circster visualization.
  */ 
 var CircsterView = Backbone.View.extend({
     className: 'circster',
@@ -23,7 +47,7 @@ var CircsterView = Backbone.View.extend({
             height = self.$el.height(),
             // Compute radius start based on model, will be centered 
             // and fit entirely inside element by default
-            init_radius_start = ( Math.min(width,height)/2 - 
+            init_radius_start = ( Math.min(width, height)/2 - 
                                   this.model.get('tracks').length * (this.dataset_arc_height + this.track_gap) );
 
         // Set up SVG element.
@@ -38,6 +62,13 @@ var CircsterView = Backbone.View.extend({
                     svg.attr("transform",
                       "translate(" + d3.event.translate + ")" + 
                       " scale(" + d3.event.scale + ")");
+                    var utils = new SVGUtils();
+                    var visible_elts = d3.selectAll('path').filter(function(d, i) {
+                        return utils.is_visible(this, svg);
+                    });
+                    visible_elts.each(function(d, i) {
+                        console.log(this.attr('title'));
+                    });
                 }))
                 .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
               .append('svg:g');
@@ -57,7 +88,7 @@ var CircsterView = Backbone.View.extend({
                 total_gap: self.total_gap
             });
 
-            track_renderer.render( svg );
+            track_renderer.render(svg);
 
         });
     }
