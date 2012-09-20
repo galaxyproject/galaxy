@@ -963,17 +963,23 @@ class AdminToolshed( AdminGalaxy ):
                     kwd[ 'message' ] = 'All selected tool dependencies are already uninstalled.'
                     kwd[ 'status' ] = 'error'
             elif operation == "install":
-                tool_dependencies_for_installation = []
-                for tool_dependency_id in tool_dependency_ids:
-                    tool_dependency = get_tool_dependency( trans, tool_dependency_id )
-                    if tool_dependency.status in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                   trans.model.ToolDependency.installation_status.UNINSTALLED ]:
-                        tool_dependencies_for_installation.append( tool_dependency )
-                if tool_dependencies_for_installation:
-                    self.initiate_tool_dependency_installation( trans, tool_dependencies_for_installation )
+                if trans.app.config.tool_dependency_dir:
+                    tool_dependencies_for_installation = []
+                    for tool_dependency_id in tool_dependency_ids:
+                        tool_dependency = get_tool_dependency( trans, tool_dependency_id )
+                        if tool_dependency.status in [ trans.model.ToolDependency.installation_status.NEVER_INSTALLED,
+                                                       trans.model.ToolDependency.installation_status.UNINSTALLED ]:
+                            tool_dependencies_for_installation.append( tool_dependency )
+                    if tool_dependencies_for_installation:
+                        self.initiate_tool_dependency_installation( trans, tool_dependencies_for_installation )
+                    else:
+                        kwd[ 'message' ] = 'All selected tool dependencies are already installed.'
+                        kwd[ 'status' ] = 'error'
                 else:
-                    kwd[ 'message' ] = 'All selected tool dependencies are already installed.'
-                    kwd[ 'status' ] = 'error'
+                        message = 'Set the value of your <b>tool_dependency_dir</b> setting in your Galaxy config file (universe_wsgi.ini) '
+                        message += ' and restart your Galaxy server to install tool dependencies.'
+                        kwd[ 'message' ] = message
+                        kwd[ 'status' ] = 'error'  
         return self.tool_dependency_grid( trans, **kwd )
     @web.expose
     @web.require_admin
@@ -1186,6 +1192,10 @@ class AdminToolshed( AdminGalaxy ):
         else:
             readme_text = '' 
         if trans.app.config.tool_dependency_dir is None:
+            if includes_tool_dependencies:
+                message = "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b>"
+                message += " setting in your Galaxy config file (universe_wsgi.ini) and restart your Galaxy server before installing the repository."
+                status = "warning"
             checked = False
         else:
             checked = True
