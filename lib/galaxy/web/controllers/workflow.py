@@ -214,14 +214,12 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
            raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access workflow.
         self.security_check( trans, stored_workflow, False, True )
-
         # Get data for workflow's steps.
         self.get_stored_workflow_steps( trans, stored_workflow )
         # Get annotations.
         stored_workflow.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, stored_workflow )
         for step in stored_workflow.latest_workflow.steps:
             step.annotation = self.get_item_annotation_str( trans.sa_session, stored_workflow.user, step )
-
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
@@ -1010,6 +1008,10 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
         # Stream workflow to file.
         stored_dict = self._workflow_to_dict( trans, stored )
+        if not stored_dict:
+            #This workflow has a tool that's missing from the distribution
+            trans.response.status = 400
+            return "Workflow cannot be exported due to missing tools."
         valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
         sname = stored.name
         sname = ''.join(c in valid_chars and c or '_' for c in sname)[0:150]
@@ -1661,6 +1663,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         for step in workflow.steps:
             # Load from database representation
             module = module_factory.from_workflow_step( trans, step )
+            if not module:
+                return None
             # Get user annotation.
             step_annotation = self.get_item_annotation_obj(trans.sa_session, trans.user, step )
             annotation_str = ""

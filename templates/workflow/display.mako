@@ -87,10 +87,14 @@
                 tool = trans.app.toolbox.get_tool( step.tool_id )
               %>
               <div class="toolForm">
+                %if tool:
                   <div class="toolFormTitle">Step ${int(step.order_index)+1}: ${tool.name}</div>
                   <div class="toolFormBody">
                     ${do_inputs( tool.inputs, step.state.inputs, "", step )}
                   </div>
+                %else:
+                  <div class="toolFormTitle">Step ${int(step.order_index)+1}: Unknown Tool with id '${step.tool_id}'</div>
+                %endif
               </div>
             %else:
             ## TODO: always input dataset?

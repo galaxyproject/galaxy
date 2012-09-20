@@ -668,14 +668,19 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
             if step.type == 'tool' or step.type is None:
                 # Restore the tool state for the step
                 module = module_factory.from_workflow_step( trans, step )
-                #Check if tool was upgraded
-                step.upgrade_messages = module.check_and_update_state()
-                # Any connected input needs to have value DummyDataset (these
-                # are not persisted so we need to do it every time)
-                module.add_dummy_datasets( connections=step.input_connections )
-                # Store state with the step
-                step.module = module
-                step.state = module.state
+                if module:
+                    #Check if tool was upgraded
+                    step.upgrade_messages = module.check_and_update_state()
+                    # Any connected input needs to have value DummyDataset (these
+                    # are not persisted so we need to do it every time)
+                    module.add_dummy_datasets( connections=step.input_connections )
+                    # Store state with the step
+                    step.module = module
+                    step.state = module.state
+                else:
+                    step.upgrade_messages = "Unknown Tool ID"
+                    step.module = None
+                    step.state = None
                 # Error dict
                 if step.tool_errors:
                     errors[step.id] = step.tool_errors
