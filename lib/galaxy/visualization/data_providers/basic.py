@@ -45,31 +45,64 @@ class BaseDataProvider( object ):
         """
         iterator = self.get_iterator( chrom, start, end )
         return self.process_data( iterator, start_val, max_vals, **kwargs )
+    
     def write_data_to_file( self, filename, **kwargs ):
         """
         Write data in region defined by chrom, start, and end to a file.
         """
         raise Exception( "Unimplemented Function" )
 
+
 class ColumnDataProvider( BaseDataProvider ):
     """ Data provider for columnar data """
+    MAX_LINES_RETURNED = 30000
     
-    def __init__( self, original_dataset ):
+    def __init__( self, original_dataset, max_lines_returned=MAX_LINES_RETURNED ):
         # Compatibility check.
         if not isinstance( original_dataset.datatype, Tabular ):
             raise Exception( "Data provider can only be used with tabular data" )
             
         # Attribute init.
         self.original_dataset = original_dataset
+        # allow throttling
+        self.max_lines_returned = max_lines_returned
         
-    def get_data( self, cols, start_val=0, max_vals=sys.maxint, **kwargs ):
+    def get_data( self, columns, start_val=0, max_vals=None, skip_comments=True, **kwargs ):
         """
         Returns data from specified columns in dataset. Format is list of lists 
         where each list is a line of data.
         """
-
-        cols = from_json_string( cols )
+        #TODO: validate kwargs
+        try:
+            max_vals = int( max_vals )
+            max_vals = min([ max_vals, self.max_lines_returned ])
+        except ( ValueError, TypeError ):
+            max_vals = self.max_lines_returned
         
+        try:
+            start_val = int( start_val )
+            start_val = max([ start_val, 0 ])
+        except ( ValueError, TypeError ):
+            start_val = 0
+                
+        # skip comment lines (if any/avail)
+        # pre: should have original_dataset and
+        if( skip_comments
+        and start_val == 0
+        and self.original_dataset.metadata.comment_lines ):
+            start_val = self.original_dataset.metadata.comment_lines
+        
+        response = {}
+        response[ 'data' ] = data = []
+        
+        #TODO bail if columns None, not parsable, not within meta.columns
+        # columns is an array of ints for now (should handle column names later)
+        columns = from_json_string( columns )
+        assert( all([ column < self.original_dataset.metadata.columns for column in columns ]) ),(
+                "column index (%d) must be less" % ( column )
+              + " than the number of columns: %d" % ( self.original_dataset.metadata.columns ) )
+        
+        # alter meta by column_selectors (if any)
         def cast_val( val, type ):
             """ Cast value based on type. """
             if type == 'int':
@@ -80,23 +113,23 @@ class ColumnDataProvider( BaseDataProvider ):
                 except: pass
             return val
         
-        data = []
         f = open( self.original_dataset.file_name )
+        #TODO: add f.seek if given fptr in kwargs
         for count, line in enumerate( f ):
             if count < start_val:
                 continue
-            if max_vals and count-start_val >= max_vals:
-                message = self.error_max_vals % ( max_vals, "features" )
+            
+            if ( count - start_val ) >= max_vals:
                 break
             
             fields = line.split()
-            #pre: column indeces should be avail in fields
-            for col_index in cols:
-                assert col_index < len( fields ), (
-                    "column index (%d) must be less than fields length: %d" % ( col_index, len( fields ) ) )
-                
-            data.append( [ cast_val( fields[c], self.original_dataset.metadata.column_types[c] ) for c in cols ] )
+            fields_len = len( fields )
+            #TODO: this will return the wrong number of columns for abberrant lines
+            data.append([ cast_val( fields[c], self.original_dataset.metadata.column_types[c] )
+                          for c in columns if ( c < fields_len ) ])
             
+        response[ 'endpoint' ] = dict( last_line=( count - 1 ), file_ptr=f.tell() )
         f.close()
-            
-        return data
+
+        return response
+

@@ -230,10 +230,10 @@
                         ## information--URL base, dataset id, dbkey, visualizations--in anchor.
                         <% 
                             visualizations = data.get_visualizations() 
-                            ## HACK: if there are visualizations, only provide trackster for now since others
-                            ## are not ready.
+                            ## HACK: if there are visualizations, only provide trackster for now
+                            ##  since others are not ready. - comment out to see all WIP visualizations
                             if visualizations:
-                                visualizations = [ 'trackster' ]
+                                visualizations = [ vis for vis in visualizations if vis in [ 'trackster' ]  ]
                         %>
                         %if visualizations:
                             <a href="${h.url_for( controller='visualization' )}" 

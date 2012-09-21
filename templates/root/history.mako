@@ -194,6 +194,17 @@ function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
     };
 };
 
+function create_scatterplot_action_fn( url, params ){
+    action = function() {
+        var galaxy_main = $( window.parent.document ).find( 'iframe#galaxy_main' ),
+            final_url = url + '/scatterplot?' + $.param(params);
+        galaxy_main.attr( 'src', final_url );
+        $( 'div.popmenu-wrapper' ).remove();
+        return false;
+    };
+    return action;
+}
+
 /**
  * Create popup menu for visualization icon.
  */
@@ -208,14 +219,20 @@ function init_viz_icon(icon) {
         // Create visualization action.
         create_viz_action = function(visualization) {
             var action;
-            if (visualization === 'trackster') {
-                action = create_trackster_action_fn(vis_url, params, dbkey);
-            }
-            else {
-                action = function() {
-                    window.parent.location = vis_url + '/' + visualization + '?' + 
-                                             $.param(params);
-                };
+            switch( visualization ){
+                
+                case 'trackster':
+                    action = create_trackster_action_fn(vis_url, params, dbkey);
+                    break;
+                
+                case 'scatterplot':
+                    action = create_scatterplot_action_fn( vis_url, params );
+                    break;
+            
+                default:
+                    action = function(){
+                        window.parent.location = vis_url + '/' + visualization + '?' + $.param(params);
+                    }
             }
             return action;
         },
@@ -234,6 +251,7 @@ function init_viz_icon(icon) {
     // Set up action or menu.
     if (visualizations.length === 1) {
         // No need for popup menu because there's a single visualization.
+        icon.attr( 'title', visualizations[0] ); 
         icon.click(create_viz_action(visualizations[0]));
     }
     else {

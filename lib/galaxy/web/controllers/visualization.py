@@ -800,26 +800,26 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         return self.get_visualization( trans, id )
 
     @web.expose    
-    def scatterplot( self, trans, dataset_id, cols ):
+    def scatterplot( self, trans, dataset_id, **kwargs ):
         # Get HDA.
         hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
-        
-        # get some metadata for the page
         hda_dict = hda.get_api_value()
-        #title = "Scatter plot of {name}:".format( **hda_dict )
-        #subtitle = "{misc_info}".format( **hda_dict )
+        hda_dict[ 'id' ] = dataset_id
+        if( hda_dict[ 'metadata_column_names' ] == None
+        and hasattr( hda.datatype, 'column_names' ) ):
+            hda_dict[ 'metadata_column_names' ] = hda.datatype.column_names
+        history_id = trans.security.encode_id( hda.history.id )
         
         #TODO: add column data
         # Read data.
-        data_provider = ColumnDataProvider( original_dataset=hda )
-        data = data_provider.get_data( cols )
+        #data_provider = ColumnDataProvider( original_dataset=hda, **kwargs )
+        #data = data_provider.get_data()
         
         # Return plot.
         return trans.fill_template_mako( "visualization/scatterplot.mako",
-                                         title=hda.name, subtitle=hda.info,
-                                         hda=hda,
-                                         data=data )
-        
+                                         hda=hda_dict,
+                                         historyID=history_id,
+                                         kwargs=kwargs )
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):

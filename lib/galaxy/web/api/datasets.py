@@ -38,26 +38,27 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             return str( e )
 
         # Use data type to return particular type of data.
-        if data_type == 'state':
-            rval = self._dataset_state( trans, dataset )
-        elif data_type == 'converted_datasets_state':
-            rval = self._converted_datasets_state( trans, dataset, kwd.get( 'chrom', None ) )
-        elif data_type == 'data':
-            rval = self._data( trans, dataset, **kwd )
-        elif data_type == 'features':
-            rval = self._search_features( trans, dataset, kwd.get( 'query ' ) )
-        elif data_type == 'raw_data':
-            rval = self._raw_data( trans, dataset, **kwd )
-        elif data_type == 'track_config':
-            rval = self.get_new_track_config( trans, dataset )
-        else:
-            # Default: return dataset as API value.
-            try:
+        try:
+            if data_type == 'state':
+                rval = self._dataset_state( trans, dataset )
+            elif data_type == 'converted_datasets_state':
+                rval = self._converted_datasets_state( trans, dataset, kwd.get( 'chrom', None ) )
+            elif data_type == 'data':
+                rval = self._data( trans, dataset, **kwd )
+            elif data_type == 'features':
+                rval = self._search_features( trans, dataset, kwd.get( 'query ' ) )
+            elif data_type == 'raw_data':
+                rval = self._raw_data( trans, dataset, **kwd )
+            elif data_type == 'track_config':
+                rval = self.get_new_track_config( trans, dataset )
+            else:
+                # Default: return dataset as API value.
                 rval = dataset.get_api_value()
-            except Exception, e:
-                rval = "Error in dataset API at listing contents"
-                log.error( rval + ": %s" % str(e) )
-                trans.response.status = 500
+                
+        except Exception, e:
+            rval = "Error in dataset API at listing contents"
+            log.error( rval + ": %s" % str(e), exc_info=True )
+            trans.response.status = 500
         return rval
 
     def _dataset_state( self, trans, dataset, **kwargs ):
