@@ -90,7 +90,7 @@ class ColumnDataProvider( BaseDataProvider ):
         if( skip_comments
         and start_val == 0
         and self.original_dataset.metadata.comment_lines ):
-            start_val = self.original_dataset.metadata.comment_lines
+            start_val = int( self.original_dataset.metadata.comment_lines ) + 1
         
         response = {}
         response[ 'data' ] = data = []
@@ -101,6 +101,8 @@ class ColumnDataProvider( BaseDataProvider ):
         assert( all([ column < self.original_dataset.metadata.columns for column in columns ]) ),(
                 "column index (%d) must be less" % ( column )
               + " than the number of columns: %d" % ( self.original_dataset.metadata.columns ) )
+        
+        #print columns, start_val, max_vals, skip_comments, kwargs
         
         # alter meta by column_selectors (if any)
         def cast_val( val, type ):
@@ -125,8 +127,9 @@ class ColumnDataProvider( BaseDataProvider ):
             fields = line.split()
             fields_len = len( fields )
             #TODO: this will return the wrong number of columns for abberrant lines
-            data.append([ cast_val( fields[c], self.original_dataset.metadata.column_types[c] )
-                          for c in columns if ( c < fields_len ) ])
+            line_data = [ cast_val( fields[c], self.original_dataset.metadata.column_types[c] )
+                          for c in columns if ( c < fields_len ) ]
+            data.append( line_data )
             
         response[ 'endpoint' ] = dict( last_line=( count - 1 ), file_ptr=f.tell() )
         f.close()

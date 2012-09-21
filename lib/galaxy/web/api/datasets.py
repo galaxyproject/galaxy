@@ -189,13 +189,9 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         # Return data.
         data = None
         data_provider = trans.app.data_provider_registry.get_data_provider( trans, raw=True, original_dataset=dataset )
+        print 'data_provider:', data_provider
         
-        if data_provider == ColumnDataProvider:
-            #pre: should have column kwargs
-            #print 'kwargs:', kwargs
-            #TODO??: could default to first two here
-            assert 'cols' in kwargs, (
-                "ColumnDataProvider needs a 'cols' parameter in the query string" )
+        if isinstance( data_provider, ColumnDataProvider ):
             data = data_provider.get_data( **kwargs )
             
         else:

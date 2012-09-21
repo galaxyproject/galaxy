@@ -2,22 +2,21 @@
 
 <%def name="stylesheets()">
 ${parent.stylesheets()}
-##${h.css( "history", "autocomplete_tagging", "trackster", "overcast/jquery-ui-1.8.5.custom", "library" )}
 
 <style type="text/css">
-* { margin: 0px, padding: 0px; }
 
 .title {
-    margin: 0px;
+	margin: 0px;
     padding: 8px;
     background-color: #ebd9b2;
+    border: 2px solid #ebd9b2;
 }
 
 .subtitle {
-    margin: 0px;
-    padding: 0px, 8px, 8px, 16px;
+	margin: 0px;
+    padding: 0px 8px 8px 16px;
     background-color: #ebd9b2;
-	color: grey;
+	color: white;
 	font-size: small;
 }
 
@@ -25,7 +24,7 @@ ${parent.stylesheets()}
     /*from width + margin of chart?*/
 	float: right;
     width: 100%;
-    background-color: #ebd9b2;
+	margin: 0px;
     padding-top: 1em;
 }
 
