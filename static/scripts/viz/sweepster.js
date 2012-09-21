@@ -3,7 +3,8 @@
  * genomic visualization.
  */
 
-define( ["libs/d3", "viz/trackster/util", "viz/visualization", "viz/trackster/tracks"], function( d3, util, visualization, tracks ) {
+define(["libs/d3", "viz/trackster/util", "viz/visualization", "viz/trackster/tracks", "mvc/tools", "mvc/data"], 
+       function(d3, util, visualization, tracks, tools, data) {
 
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings 
@@ -318,12 +319,12 @@ var SweepsterVisualization = visualization.Visualization.extend({
         {
             type: Backbone.HasOne,
             key: 'dataset',
-            relatedModel: Dataset
+            relatedModel: data.Dataset
         },
         {
             type: Backbone.HasOne,
             key: 'tool',
-            relatedModel: Tool
+            relatedModel: tools.Tool
         },
         {
             type: Backbone.HasMany,
@@ -571,7 +572,7 @@ var ToolParameterTreeDesignView = Backbone.View.extend({
 
     render: function() {
         // Start with tool form view.
-        var tool_form_view = new ToolFormView({
+        var tool_form_view = new tools.ToolFormView({
             model: this.model.get('tool')
         });
         tool_form_view.render();

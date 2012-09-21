@@ -6,39 +6,8 @@
  * and models can be used without views.
  */
 
-// FIXME: copied from visualization module; remove once a module has been created from tools.
-var ServerStateDeferred = Backbone.Model.extend({
-    defaults: {
-        ajax_settings: {},
-        interval: 1000,
-        success_fn: function(result) { return true; }
-    },
-    
-    /**
-     * Returns a deferred that resolves when success function returns true.
-     */
-    go: function() {
-        var deferred = $.Deferred(),
-            self = this,
-            ajax_settings = self.get('ajax_settings'),
-            success_fn = self.get('success_fn'),
-            interval = self.get('interval'),
-             _go = function() {
-                 $.ajax(ajax_settings).success(function(result) {
-                     if (success_fn(result)) {
-                         // Result is good, so resolve.
-                         deferred.resolve(result);
-                     }
-                     else {
-                         // Result not good, try again.
-                         setTimeout(_go, interval);
-                     }
-                 });
-             };
-         _go();
-         return deferred;
-    }
-});
+ define( ["libs/underscore", "viz/trackster/util", "mvc/data", "libs/backbone/backbone-relational" ], 
+         function(_, util, data) {
  
 /**
  * Simple base model for any visible element. Includes useful attributes and ability 
@@ -64,6 +33,47 @@ var BaseModel = Backbone.RelationalModel.extend({
 });
 
 /**
+ * A tool input.
+ */
+var ToolInput = Backbone.RelationalModel.extend({
+    defaults: {
+        name: null,
+        label: null,
+        type: null,
+        value: null,
+        num_samples: 5
+    },
+    
+    initialize: function() {
+        this.attributes.html = unescape(this.attributes.html);
+    },
+
+    copy: function() {
+        return new ToolInput(this.toJSON());
+    },
+    
+    /**
+     * Returns samples from a tool input.
+     */
+    get_samples: function() {
+        var type = this.get('type'),
+            samples = null;
+        if (type === 'number') {
+            samples = d3.scale.linear()
+                        .domain([this.get('min'), this.get('max')])
+                        .ticks(this.get('num_samples'));
+        }
+        else if (type === 'select') {
+            samples = _.map(this.get('options'), function(option) {
+                return option[0];
+            });
+        }
+        
+        return samples;
+    }   
+});
+
+/**
  * A Galaxy tool.
  */
 var Tool = BaseModel.extend({
@@ -78,7 +88,7 @@ var Tool = BaseModel.extend({
         {
             type: Backbone.HasMany,
             key: 'inputs',
-            relatedModel: 'ToolInput',
+            relatedModel: ToolInput,
             reverseRelation: {
                 key: 'tool',
                 includeInJSON: false
@@ -176,7 +186,7 @@ var Tool = BaseModel.extend({
         // deferred to ensure that job is run. Also use deferred that
         // resolves to outputs from tool.
         var run_deferred = $.Deferred(),
-            ss_deferred = new ServerStateDeferred({
+            ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
                 url: this.urlRoot,
                 data: JSON.stringify(payload),
@@ -192,51 +202,10 @@ var Tool = BaseModel.extend({
         
         // Run job and resolve run_deferred to tool outputs.
         $.when(ss_deferred.go()).then(function(result) {
-            run_deferred.resolve(new DatasetCollection().reset(result));
+            run_deferred.resolve(new data.DatasetCollection().reset(result));
         });
         return run_deferred;
     }
-});
-
-/**
- * A tool input.
- */
-var ToolInput = Backbone.RelationalModel.extend({
-    defaults: {
-        name: null,
-        label: null,
-        type: null,
-        value: null,
-        num_samples: 5
-    },
-    
-    initialize: function() {
-        this.attributes.html = unescape(this.attributes.html);
-    },
-
-    copy: function() {
-        return new ToolInput(this.toJSON());
-    },
-    
-    /**
-     * Returns samples from a tool input.
-     */
-    get_samples: function() {
-        var type = this.get('type'),
-            samples = null;
-        if (type === 'number') {
-            samples = d3.scale.linear()
-                        .domain([this.get('min'), this.get('max')])
-                        .ticks(this.get('num_samples'));
-        }
-        else if (type === 'select') {
-            samples = _.map(this.get('options'), function(option) {
-                return option[0];
-            });
-        }
-        
-        return samples;
-    }   
 });
 
 /**
@@ -723,4 +692,15 @@ var IntegratedToolMenuAndView = Backbone.View.extend({
             $('#left').width("650px");
         });
     }
+});
+
+// Exports
+return {
+    Tool: Tool,
+    ToolSearch: ToolSearch,
+    ToolPanel: ToolPanel,
+    ToolPanelView: ToolPanelView,
+    ToolFormView: ToolFormView
+};
+
 });

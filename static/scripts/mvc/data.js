@@ -1,3 +1,4 @@
+define(["libs/backbone/backbone-relational"], function() {
 /**
  * A dataset. In Galaxy, datasets are associated with a history, so
  * this object is also known as a HistoryDatasetAssociation.
@@ -17,3 +18,9 @@ var DatasetCollection = Backbone.Collection.extend({
     model: Dataset
 });
 
+return {
+	Dataset: Dataset,
+	DatasetCollection: DatasetCollection
+};
+
+});

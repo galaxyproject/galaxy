@@ -32,10 +32,12 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
         baseUrl: "${h.url_for('/static/scripts') }",
         shim: {
             "libs/underscore": { exports: "_" },
-            "libs/backbone/backbone": { exports: "Backbone" }
+            "libs/backbone/backbone": { exports: "Backbone" },
+            "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
         }
     });
-    require( ["base", "viz/trackster_ui","viz/trackster/util","viz/trackster/tracks"], function( base, trackster_ui, util, tracks ) {
+    require( ["base", "viz/visualization", "viz/trackster_ui", "viz/trackster/tracks"], 
+             function( base, visualization, trackster_ui, tracks ) {
 
     //
     // Place URLs here so that url_for can be used to generate them.
@@ -54,7 +56,7 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
      * Set up router.
      */
     var set_up_router = function(options) {
-        browser_router = new TrackBrowserRouter(options);
+        browser_router = new visualization.TrackBrowserRouter(options);
         Backbone.history.start();   
     };
     

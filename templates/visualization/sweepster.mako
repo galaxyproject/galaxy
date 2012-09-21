@@ -108,19 +108,19 @@
 
     ${h.templates( "tool_link", "panel_section", "tool_search", "tool_form" )}
     ${h.js( "libs/require", "libs/jquery/jquery-ui-1.8.23.custom.min" )}
-    ${h.js( "mvc/data", "mvc/tools" )}
-
+    
     <script type="text/javascript">
         require.config({ 
                 baseUrl: "${h.url_for('/static/scripts')}",
                 shim: {
                     "libs/underscore": { exports: "_" },
                     "libs/d3": { exports: "d3" },
-                    "libs/backbone/backbone": { exports: "Backbone" }
+                    "libs/backbone/backbone": { exports: "Backbone" },
+                    "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
                 }
         });
 
-        require(["libs/d3", "viz/visualization", "viz/sweepster"], function(d3, visualization, sweepster) {
+        require(["libs/d3", "viz/sweepster"], function(d3, sweepster) {
 
             var viz;
             $(function() {            

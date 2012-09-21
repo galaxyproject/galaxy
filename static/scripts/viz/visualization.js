@@ -1,4 +1,4 @@
-(function(){
+define( ["mvc/data", "viz/trackster/util" ], function(data, util) {
 
 /**
  * Model, view, and controller objects for Galaxy visualization framework.
@@ -18,45 +18,6 @@ var is_deferred = function ( d ) {
 };
 
 // --------- Models ---------
-
-/**
- * Implementation of a server-state based deferred. Server is repeatedly polled, and when
- * condition is met, deferred is resolved.
- */
-var ServerStateDeferred = Backbone.Model.extend({
-    defaults: {
-        ajax_settings: {},
-        interval: 1000,
-        success_fn: function(result) { return true; }
-    },
-    
-    /**
-     * Returns a deferred that resolves when success function returns true.
-     */
-    go: function() {
-        var deferred = $.Deferred(),
-            self = this,
-            ajax_settings = self.get('ajax_settings'),
-            success_fn = self.get('success_fn'),
-            interval = self.get('interval'),
-             _go = function() {
-                 $.ajax(ajax_settings).success(function(result) {
-                     if (success_fn(result)) {
-                         // Result is good, so resolve.
-                         deferred.resolve(result);
-                     }
-                     else {
-                         // Result not good, try again.
-                         setTimeout(_go, interval);
-                     }
-                 });
-             };
-         _go();
-         return deferred;
-    }
-});
-
-// TODO: move to Backbone
 
 /**
  * Canvas manager is used to create canvases, for browsers, this deals with
@@ -189,7 +150,7 @@ var GenomeDataManager = Cache.extend({
     data_is_ready: function() {
         var dataset = this.get('dataset'),
             ready_deferred = $.Deferred(),
-            ss_deferred = new ServerStateDeferred({
+            ss_deferred = new util.ServerStateDeferred({
                 ajax_settings: {
                     url: this.get('dataset').url(),
                     data: {
@@ -622,7 +583,7 @@ var GenomeWideSummaryTreeData = Backbone.RelationalModel.extend({
  * A track of data in a genome visualization.
  */
 // TODO: rename to Track and merge with Trackster's Track object.
-var BackboneTrack = Dataset.extend({
+var BackboneTrack = data.Dataset.extend({
 
     initialize: function(options) {
         // Dataset id is unique ID for now.
@@ -783,39 +744,23 @@ var add_datasets = function(dataset_url, add_track_async_url, success_fn) {
     });
 };
 
-// ---- Exports ----
+return {
+    BrowserBookmark: BrowserBookmark,
+    BrowserBookmarkCollection: BrowserBookmarkCollection,
+    Cache: Cache,
+    CanvasManager: CanvasManager,
+    Genome: Genome,
+    GenomeDataManager: GenomeDataManager,
+    GenomeRegion: GenomeRegion,
+    GenomeRegionCollection: GenomeRegionCollection,
+    GenomeVisualization: GenomeVisualization,
+    GenomeWideBigWigData: GenomeWideBigWigData,
+    GenomeWideSummaryTreeData: GenomeWideSummaryTreeData,
+    ReferenceTrackDataManager: ReferenceTrackDataManager,
+    TrackBrowserRouter: TrackBrowserRouter,
+    TrackConfig: TrackConfig,
+    Visualization: Visualization,
+    add_datasets: add_datasets
+};
 
-var exports = (function() {
-    if ( typeof module !== 'undefined' && module.exports ) {
-        // CommonJS
-        return module.exports;
-    } else if ( typeof define === 'function' && define.amd ) {
-        // AMD
-        exports = {};
-        define( function() { return exports; } );
-        return exports;
-    } else {
-        // Browser global
-        return window;
-    }
-})();
-
-exports.BrowserBookmark = BrowserBookmark;        
-exports.BrowserBookmarkCollection = BrowserBookmarkCollection;
-exports.Cache = Cache;
-exports.CanvasManager = CanvasManager;
-exports.Genome = Genome;
-exports.GenomeDataManager = GenomeDataManager;
-exports.GenomeRegion = GenomeRegion;
-exports.GenomeRegionCollection = GenomeRegionCollection;
-exports.GenomeVisualization = GenomeVisualization;
-exports.GenomeWideBigWigData = GenomeWideBigWigData;
-exports.GenomeWideSummaryTreeData = GenomeWideSummaryTreeData;
-exports.ReferenceTrackDataManager = ReferenceTrackDataManager;
-exports.ServerStateDeferred = ServerStateDeferred;
-exports.TrackBrowserRouter = TrackBrowserRouter;
-exports.TrackConfig = TrackConfig;
-exports.Visualization = Visualization;
-exports.add_datasets = add_datasets;
-
-}).call(this);
+});

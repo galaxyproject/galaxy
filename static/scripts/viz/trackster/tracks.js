@@ -1,4 +1,6 @@
-define( ["libs/underscore", "viz/visualization", "viz/trackster/util", "viz/trackster/slotting", "viz/trackster/painters" ], function( _, visualization, util, slotting, painters ) {
+define( ["libs/underscore", "viz/visualization", "viz/trackster/util", 
+         "viz/trackster/slotting", "viz/trackster/painters", "mvc/data" ], 
+         function( _, visualization, util, slotting, painters, data ) {
 
 var extend = _.extend;
 var get_random_color = util.get_random_color;
@@ -878,7 +880,7 @@ var View = function(obj_dict) {
     // Deferred object that indicates when view's chrom data has been loaded.
     this.load_chroms_deferred = null;
     this.init();
-    this.canvas_manager = new CanvasManager( this.container.get(0).ownerDocument );
+    this.canvas_manager = new visualization.CanvasManager( this.container.get(0).ownerDocument );
     this.reset();
 };
 _.extend( View.prototype, Backbone.Events);
@@ -1749,7 +1751,7 @@ extend(Tool.prototype, {
         this.run(url_params, new_track,
                  // Success callback.
                  function(track_data) {
-                     new_track.set_dataset(new Dataset(track_data));
+                     new_track.set_dataset(new data.Dataset(track_data));
                      new_track.tiles_div.text("Running job.");
                      new_track.init();
                  }
@@ -1761,7 +1763,7 @@ extend(Tool.prototype, {
     run: function(url_params, new_track, success_callback) {
         // Run tool.
         url_params.inputs = this.get_param_values_dict();
-        var ss_deferred = new ServerStateDeferred({
+        var ss_deferred = new util.ServerStateDeferred({
             ajax_settings: {
                 url: galaxy_paths.get('tool_url'),
                 data: JSON.stringify(url_params),
@@ -2655,7 +2657,7 @@ var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale
                             .css({'height': ERROR_PADDING-1, 'width': canvas.width}).prependTo(this.html_elt);
                                                         
         // Handle message; only message currently is that only the first N elements are displayed.
-        var tile_region = new GenomeRegion({
+        var tile_region = new visualization.GenomeRegion({
                 chrom: track.view.chrom,
                 start: this.low,
                 end: this.high
@@ -2817,7 +2819,7 @@ var Track = function(view, container, obj_dict) {
     //
     // Attribute init.
     //
-    this.dataset = new Dataset({
+    this.dataset = new data.Dataset({
         id: obj_dict.dataset_id,
         hda_ldda: obj_dict.hda_ldda
     }); 
@@ -2928,13 +2930,13 @@ extend(Track.prototype, Drawable.prototype, {
                     ok_fn = function() {
                         var regions_to_use = $('select[name="regions"] option:selected').val(),
                             regions,
-                            view_region = new GenomeRegion({
+                            view_region = new visualization.GenomeRegion({
                                 chrom: view.chrom,
                                 start: view.low,
                                 end: view.high
                             }),
                             bookmarked_regions = _.map($(".bookmark"), function(elt) { 
-                                return new GenomeRegion({from_str: $(elt).children(".position").text()});
+                                return new visualization.GenomeRegion({from_str: $(elt).children(".position").text()});
                             });
 
                         // Get regions for visualization.
@@ -3634,7 +3636,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             tile_length = Math.ceil( TILE_SIZE * resolution ),
             // Tile high cannot be larger than view.max_high, which the chromosome length.
             tile_high = (tile_low + tile_length <= this.view.max_high ? tile_low + tile_length : this.view.max_high);
-        return new GenomeRegion({
+        return new visualization.GenomeRegion({
             chrom: this.view.chrom,
             start: tile_low,
             end: tile_high
@@ -3691,7 +3693,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             self.data_query_wait = DEFAULT_DATA_QUERY_WAIT;
 
             // Reset data URL when dataset indexing has completed/when not pending.
-            var ss_deferred = new ServerStateDeferred({
+            var ss_deferred = new util.ServerStateDeferred({
                 url: self.dataset_state_url,
                 url_params: {dataset_id : self.dataset_id, hda_ldda: self.hda_ldda},
                 interval: self.data_query_wait,

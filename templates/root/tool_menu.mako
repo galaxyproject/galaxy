@@ -17,7 +17,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.templates( "tool_link", "panel_section", "tool_search" )}
-    ${h.js( "galaxy.autocom_tagging", "mvc/tools" )}
+    ${h.js( "libs/require", "galaxy.autocom_tagging" )}
     
     <%
         # Set up for creating tool panel.
@@ -29,51 +29,64 @@
     %>
     
     <script type="text/javascript">
-        // Init. on document load.
-        var tool_panel, tool_panel_view, tool_search;
-        $(function() {
-            // Set up search.
-            tool_search = new ToolSearch( {spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
-										   search_url: "${h.url_for( controller='root', action='tool_search' )}",
-                                           hidden: ${tool_search_hidden} } );
-										   
-            // Set up tool panel.
-            tool_panel = new ToolPanel( { tool_search: tool_search } );
-            tool_panel.reset( tool_panel.parse( ${h.to_json_string( dictified_panel )} ) );
-            
-            // Set up tool panel view and initialize.
-            tool_panel_view = new ToolPanelView( {collection: tool_panel} );
-            tool_panel_view.render();
-            $('body').prepend(tool_panel_view.$el);
-                        
-            // Minsize init hint.
-            $( "a[minsizehint]" ).click( function() {
-                if ( parent.handle_minwidth_hint ) {
-                    parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
+
+        require.config({ 
+                baseUrl: "${h.url_for('/static/scripts')}",
+                shim: {
+                    "libs/underscore": { exports: "_" }
                 }
-            });
-            
-            // Log clicks on tools.
-            /*
-            $("div.toolTitle > a").click( function() {
-                var tool_title = $(this).attr('id').split("-")[1];
-                var section_title = $.trim( $(this).parents("div.toolSectionWrapper").find("div.toolSectionTitle").text() );
-                var search_active = $(this).parents("div.toolTitle").hasClass("search_match");
+        });
+
+        require(["mvc/tools"], function(tools) {
+
+            // Init. on document load.
+            var tool_panel, tool_panel_view, tool_search;
+            $(function() {
+                // Set up search.
+                tool_search = new tools.ToolSearch( 
+                    { spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
+                      search_url: "${h.url_for( controller='root', action='tool_search' )}",
+                      hidden: ${tool_search_hidden} } );
+    										   
+                // Set up tool panel.
+                tool_panel = new tools.ToolPanel( { tool_search: tool_search } );
+                tool_panel.reset( tool_panel.parse( ${h.to_json_string( dictified_panel )} ) );
                 
-                // Log action.
-                galaxy_async.log_user_action("tool_menu_click." + tool_title, section_title, 
-                                                JSON.stringify({"search_active" : search_active}));
+                // Set up tool panel view and initialize.
+                tool_panel_view = new tools.ToolPanelView( {collection: tool_panel} );
+                tool_panel_view.render();
+                $('body').prepend(tool_panel_view.$el);
+                            
+                // Minsize init hint.
+                $( "a[minsizehint]" ).click( function() {
+                    if ( parent.handle_minwidth_hint ) {
+                        parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
+                    }
+                });
+                
+                // Log clicks on tools.
+                /*
+                $("div.toolTitle > a").click( function() {
+                    var tool_title = $(this).attr('id').split("-")[1];
+                    var section_title = $.trim( $(this).parents("div.toolSectionWrapper").find("div.toolSectionTitle").text() );
+                    var search_active = $(this).parents("div.toolTitle").hasClass("search_match");
+                    
+                    // Log action.
+                    galaxy_async.log_user_action("tool_menu_click." + tool_title, section_title, 
+                                                    JSON.stringify({"search_active" : search_active}));
+                });
+                */
+    			
+    			$( '.tooltip' ).tooltip();
+                
+                // TODO: is this necessary?
+                $( "a[minsizehint]" ).click( function() {
+                    if ( parent.handle_minwidth_hint ) {
+                        parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
+                    }
+                });
             });
-            */
-			
-			$( '.tooltip' ).tooltip();
-            
-            // TODO: is this necessary?
-            $( "a[minsizehint]" ).click( function() {
-                if ( parent.handle_minwidth_hint ) {
-                    parent.handle_minwidth_hint( $(this).attr( "minsizehint" ) );
-                }
-            });
+
         });
     </script>
 </%def>

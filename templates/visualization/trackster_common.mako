@@ -11,7 +11,7 @@
 
 ## Render needed JavaScript files.
 <%def name="render_trackster_js_files()">
-	${h.js( "galaxy.panels", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover","libs/jquery/jquery.mousewheel", "libs/jquery/jquery-ui-1.8.23.custom.min", "mvc/data", "viz/visualization", "libs/require", "libs/farbtastic" )}
+	${h.js( "galaxy.panels", "libs/jquery/jstorage", "libs/jquery/jquery.event.drag", "libs/jquery/jquery.event.hover","libs/jquery/jquery.mousewheel", "libs/jquery/jquery-ui-1.8.23.custom.min", "libs/require", "libs/farbtastic" )}
 </%def>
 
 ## Render a block of JavaScript that contains all necessary variables for Trackster.
