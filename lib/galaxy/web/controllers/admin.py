@@ -8,8 +8,10 @@ from galaxy.util import parse_xml, inflector
 from galaxy.actions.admin import AdminActions
 from galaxy.web.params import QuotaParamParser
 from galaxy.exceptions import *
+from galaxy.util.odict import *
+from galaxy.tool_shed.encoding_util import *
 import galaxy.datatypes.registry
-import logging
+import logging, imp, subprocess, urllib2
 
 log = logging.getLogger( __name__ )
 
@@ -685,6 +687,75 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         if emails is None:
             emails = [ u.email for u in trans.sa_session.query( trans.app.model.User ).enable_eagerloads( False ).all() ]
         return trans.fill_template( 'admin/impersonate.mako', emails=emails, message=message, status=status )
+    def get_tool_shed_url_from_tools_xml_file_path( self, trans, tool_shed ):
+        search_str = '://%s' % tool_shed
+        for shed_name, shed_url in trans.app.tool_shed_registry.tool_sheds.items():
+            if shed_url.find( search_str ) >= 0:
+                if shed_url.endswith( '/' ):
+                    shed_url = shed_url.rstrip( '/' )
+                return shed_url
+        return None
+    def check_for_tool_dependencies( self, trans, migration_stage ):
+        # Get the 000x_tools.xml file associated with migration_stage.
+        tools_xml_file_path = os.path.abspath( os.path.join( trans.app.config.root, 'scripts', 'migrate_tools', '%04d_tools.xml' % migration_stage ) )
+        tree = util.parse_xml( tools_xml_file_path )
+        root = tree.getroot()
+        tool_shed = root.get( 'name' )
+        tool_shed_url = self.get_tool_shed_url_from_tools_xml_file_path( trans, tool_shed )
+        repo_name_dependency_tups = []
+        if tool_shed_url:
+            for elem in root:
+                if elem.tag == 'repository':
+                    tool_dependencies = []
+                    tool_dependencies_dict = {}
+                    repository_name = elem.get( 'name' )
+                    changeset_revision = elem.get( 'changeset_revision' )
+                    url = '%s/repository/get_tool_dependencies?name=%s&owner=devteam&changeset_revision=%s&webapp=install_manager' % \
+                    ( tool_shed_url, repository_name, changeset_revision )
+                    response = urllib2.urlopen( url )
+                    text = response.read()
+                    response.close()
+                    if text:
+                        tool_dependencies_dict = tool_shed_decode( text )
+                        for dependency_key, requirements_dict in tool_dependencies_dict.items():
+                            tool_dependency_name = requirements_dict[ 'name' ]
+                            tool_dependency_version = requirements_dict[ 'version' ]
+                            tool_dependency_type = requirements_dict[ 'type' ]
+                            tool_dependency_readme = requirements_dict.get( 'readme', '' )
+                            tool_dependencies.append( ( tool_dependency_name, tool_dependency_version, tool_dependency_type, tool_dependency_readme ) )
+                    repo_name_dependency_tups.append( ( repository_name, tool_dependencies ) )
+        return repo_name_dependency_tups
+    @web.expose
+    @web.require_admin
+    def review_tool_migration_stages( self, trans, **kwd ):
+        message = util.restore_text( kwd.get( 'message', '' ) )
+        status = util.restore_text( kwd.get( 'status', 'done' ) )
+        migration_stages_dict = odict()
+        migration_modules = []
+        migration_scripts_dir = os.path.abspath( os.path.join( trans.app.config.root, 'lib', 'galaxy', 'tool_shed', 'migrate', 'versions' ) )
+        migration_scripts_dir_contents = os.listdir( migration_scripts_dir )
+        for item in migration_scripts_dir_contents:
+            if os.path.isfile( os.path.join( migration_scripts_dir, item ) ) and item.endswith( '.py' ):
+                module = item.replace( '.py', '' )
+                migration_modules.append( module )
+        if migration_modules:
+            migration_modules.sort()
+            # Remove the 0001_tools.py script since it is the seed.
+            migration_modules = migration_modules[ 1: ]
+            # Reverse the list so viewing will be newest to oldest.
+            migration_modules.reverse()
+        for migration_module in migration_modules:
+            migration_stage = int( migration_module.replace( '_tools', '' ) )
+            repo_name_dependency_tups = self.check_for_tool_dependencies( trans, migration_stage )
+            open_file_obj, file_name, description = imp.find_module( migration_module, [ migration_scripts_dir ] )
+            imported_module = imp.load_module( 'upgrade', open_file_obj, file_name, description )
+            migration_info = imported_module.__doc__
+            open_file_obj.close()
+            migration_stages_dict[ migration_stage ] = ( migration_info, repo_name_dependency_tups )
+        return trans.fill_template( 'admin/review_tool_migration_stages.mako',
+                                    migration_stages_dict=migration_stages_dict,
+                                    message=message,
+                                    status=status )
     @web.expose
     @web.require_admin
     def view_datatypes_registry( self, trans, **kwd ):
