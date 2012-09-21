@@ -30,7 +30,8 @@ class DataProviderRegistry( object ):
 
     def get_data_provider( self, trans, name=None, source='data', raw=False, original_dataset=None ):
         """
-        Returns data provider class by name and/or original dataset.
+        Returns data provider matching parameter values. For standalone data 
+        sources, source parameter is ignored.
         """
 
         data_provider = None
