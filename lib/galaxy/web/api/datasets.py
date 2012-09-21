@@ -80,7 +80,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             return msg
             
         # Get datasources and check for messages.
-        data_sources = self._get_datasources( trans, dataset )
+        data_sources = dataset.get_datasources( trans )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
         msg = get_highest_priority_msg( messages_list )
         if msg:
@@ -139,7 +139,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             return msg
             
         # Get datasources and check for messages.
-        data_sources = self._get_datasources( trans, dataset )
+        data_sources = dataset.get_datasources( trans )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
         return_message = get_highest_priority_msg( messages_list )
         if return_message:

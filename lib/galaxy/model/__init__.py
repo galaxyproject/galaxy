@@ -1248,6 +1248,56 @@ class DatasetInstance( object ):
     def get_visualizations( self ):
         return self.datatype.get_visualizations( self )
 
+    def get_datasources( self, trans ):
+        """
+        Returns datasources for dataset; if datasources are not available
+        due to indexing, indexing is started. Return value is a dictionary
+        with entries of type 
+        (<datasource_type> : {<datasource_name>, <indexing_message>}).
+        """
+        track_type, data_sources = self.datatype.get_track_type()
+        data_sources_dict = {}
+        msg = None
+        for source_type, data_source in data_sources.iteritems():
+            if source_type == "data_standalone":
+                # Nothing to do.
+                msg = None
+            else:
+                # Convert.
+                msg = self.convert_dataset( trans, data_source )
+            
+            # Store msg.
+            data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
+        
+        return data_sources_dict
+
+    def convert_dataset( self, trans, target_type ):
+        """
+        Converts a dataset to the target_type and returns a message indicating 
+        status of the conversion. None is returned to indicate that dataset
+        was converted successfully. 
+        """
+
+        # Get converted dataset; this will start the conversion if necessary.
+        try:
+            converted_dataset = self.get_converted_dataset( trans, target_type )
+        except NoConverterException:
+            return messages.NO_CONVERTER
+        except ConverterDependencyException, dep_error:
+            return { 'kind': messages.ERROR, 'message': dep_error.value }
+
+        # Check dataset state and return any messages.
+        msg = None
+        if converted_dataset and converted_dataset.state == trans.app.model.Dataset.states.ERROR:
+            job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ) \
+                        .filter_by( dataset_id=converted_dataset.id ).first().job_id
+            job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
+            msg = { 'kind': messages.ERROR, 'message': job.stderr }
+        elif not converted_dataset or converted_dataset.state != trans.app.model.Dataset.states.OK:
+            msg = messages.PENDING
+
+        return msg
+
 class HistoryDatasetAssociation( DatasetInstance ):
     def __init__( self,
                   hid = None,

@@ -755,7 +755,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         for track in tracks:
             # Get dataset and indexed datatype.
             dataset = self.get_hda_or_ldda( trans, track[ 'hda_ldda'], track[ 'dataset_id' ] )
-            data_sources = self._get_datasources( trans, dataset )
+            data_sources = dataset.get_datasources( trans )
             data_provider_registry = trans.app.data_provider_registry
             if 'data_standalone' in data_sources:
                 indexed_type = data_sources['data_standalone']['name']
