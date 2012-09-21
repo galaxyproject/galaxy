@@ -86,28 +86,14 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if msg:
             return msg
             
-        # NOTE: finding valid chroms is prohibitive for large summary trees and is not currently used by
-        # the client.
-        valid_chroms = None
         # Check for data in the genome window.
         data_provider_registry = trans.app.data_provider_registry
-        if data_sources.get( 'index' ):
-            tracks_dataset_type = data_sources['index']['name']
-            converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
-            indexer = data_provider_registry.get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
-            if not indexer.has_data( chrom ):
-                return messages.NO_DATA
-            #valid_chroms = indexer.valid_chroms()
-        else:
-            # Standalone data provider
-            standalone_provider = data_provider_registry.get_data_provider( data_sources['data_standalone']['name'] )( dataset )
-            kwargs = {"stats": True}
-            if not standalone_provider.has_data( chrom ):
-                return messages.NO_DATA
-            #valid_chroms = standalone_provider.valid_chroms()
+        data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset= dataset, source='index' )
+        if not data_provider.has_data( chrom ):
+            return messages.NO_DATA
             
         # Have data if we get here
-        return { "status": messages.DATA, "valid_chroms": valid_chroms }
+        return { "status": messages.DATA, "valid_chroms": None }
 
     def _search_features( self, trans, dataset, query ):
         """
@@ -151,45 +137,32 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         data_provider_registry = trans.app.data_provider_registry
         if mode == "Coverage":
             # Get summary using minimal cutoffs.
-            tracks_dataset_type = data_sources['index']['name']
-            converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
-            indexer = data_provider_registry.get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
+            indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
             summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ], detail_cutoff=0, draw_cutoff=0 )
             if summary == "detail":
                 # Use maximum level of detail--2--to get summary data no matter the resolution.
                 summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ], level=2, detail_cutoff=0, draw_cutoff=0 )
             frequencies, max_v, avg_v, delta = summary
-            return { 'dataset_type': tracks_dataset_type, 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
+            return { 'dataset_type': indexer.data_type, 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
 
         if 'index' in data_sources and data_sources['index']['name'] == "summary_tree" and mode == "Auto":
             # Only check for summary_tree if it's Auto mode (which is the default)
             # 
             # Have to choose between indexer and data provider
-            tracks_dataset_type = data_sources['index']['name']
-            converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
-            indexer = data_provider_registry.get_data_provider( tracks_dataset_type )( converted_dataset, dataset )
+            indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
             summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ] )
             if summary is None:
-                return { 'dataset_type': tracks_dataset_type, 'data': None }
+                return { 'dataset_type': indexer.data_type, 'data': None }
                 
             if summary == "draw":
                 kwargs["no_detail"] = True # meh
                 extra_info = "no_detail"
             elif summary != "detail":
                 frequencies, max_v, avg_v, delta = summary
-                return { 'dataset_type': tracks_dataset_type, 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
+                return { 'dataset_type': indexer.data_type, 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
         
         # Get data provider.
-        if "data_standalone" in data_sources:
-            tracks_dataset_type = data_sources['data_standalone']['name']
-            data_provider_class = data_provider_registry.get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
-            data_provider = data_provider_class( original_dataset=dataset )
-        else:
-            tracks_dataset_type = data_sources['data']['name']
-            data_provider_class = data_provider_registry.get_data_provider( name=tracks_dataset_type, original_dataset=dataset )
-            converted_dataset = dataset.get_converted_dataset( trans, tracks_dataset_type )
-            deps = dataset.get_converted_dataset_deps( trans, tracks_dataset_type )
-            data_provider = data_provider_class( converted_dataset=converted_dataset, original_dataset=dataset, dependencies=deps )
+        data_provider = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='data' )
         
         # Allow max_vals top be data provider set if not passed
         if max_vals is None:
@@ -197,7 +170,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Get and return data from data_provider.
         result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ), **kwargs )
-        result.update( { 'dataset_type': tracks_dataset_type, 'extra_info': extra_info } )
+        result.update( { 'dataset_type': data_provider.data_type, 'extra_info': extra_info } )
         return result
 
     def _raw_data( self, trans, dataset, **kwargs ):
@@ -214,7 +187,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
     
         # Return data.
         data = None
-        data_provider = trans.app.data_provider_registry.get_data_provider( raw=True, original_dataset=dataset )
+        data_provider = trans.app.data_provider_registry.get_data_provider( trans, raw=True, original_dataset=dataset )
         
         if data_provider == ColumnDataProvider:
             #pre: should have column kwargs
@@ -222,13 +195,13 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             #TODO??: could default to first two here
             assert 'cols' in kwargs, (
                 "ColumnDataProvider needs a 'cols' parameter in the query string" )
-            data = data_provider( original_dataset=dataset ).get_data( **kwargs )
+            data = data_provider.get_data( **kwargs )
             
         else:
             # Default to genomic data.
             # FIXME: need better way to set dataset_type.
             low, high = int( kwargs.get( 'low' ) ), int( kwargs.get( 'high' ) )
-            data = data_provider( original_dataset=dataset ).get_data( start=low, end=high, **kwargs )
+            data = data_provider.get_data( start=low, end=high, **kwargs )
             data[ 'dataset_type' ] = 'interval_index'
             data[ 'extra_info' ] = None
             if isinstance( dataset.datatype, Vcf ):

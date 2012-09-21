@@ -112,6 +112,8 @@ class FeatureLocationIndexDataProvider( BaseDataProvider ):
         
 class GenomeDataProvider( BaseDataProvider ):
     """ Base class for genome data providers. """
+
+    data_type = None
     
     """ 
     Mapping from column name to payload data; this mapping is used to create
@@ -314,6 +316,8 @@ class FilterableMixin:
 
 
 class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
+    data_type = 'tabix'
+
     """
     Tabix index data provider for the Galaxy track browser.
     """
@@ -354,8 +358,10 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
 #
 
 class IntervalDataProvider( GenomeDataProvider ):
+    data_type = 'interval_index'
+
     """
-    Processes BED data from native format to payload format.
+    Processes interval data from native format to payload format.
     
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
@@ -437,6 +443,8 @@ class BedDataProvider( GenomeDataProvider ):
     
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
+
+    data_type = 'interval_index'
     
     def get_iterator( self, chrom, start, end ):
         raise Exception( "Unimplemented Method" )
@@ -533,6 +541,8 @@ class RawBedDataProvider( BedDataProvider ):
     for large datasets.
     """
 
+    data_type = 'interval_index'
+
     def get_iterator( self, chrom=None, start=None, end=None ):
         # Read first line in order to match chrom naming format.
         line = source.readline()
@@ -570,6 +580,8 @@ class VcfDataProvider( GenomeDataProvider ):
     """
     
     col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
+
+    data_type = 'bai'
     
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
@@ -675,6 +687,8 @@ class RawVcfDataProvider( VcfDataProvider ):
     for large datasets.
     """
 
+    data_type = 'tabix'
+
     def get_iterator( self, chrom, start, end ):
         # Read first line in order to match chrom naming format.
         line = source.readline()
@@ -706,6 +720,8 @@ class SummaryTreeDataProvider( GenomeDataProvider ):
     """
     Summary tree data provider for the Galaxy track browser. 
     """
+
+    data_type = 'summary_tree'
     
     CACHE = LRUCache( 20 ) # Store 20 recently accessed indices for performance
     
@@ -771,6 +787,8 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
     Provides access to intervals from a sorted indexed BAM file. Position data
     is reported in 1-based, closed format, i.e. SAM/BAM format.
     """
+
+    data_type = 'bai'
     
     def get_filters( self ):
         """
@@ -951,6 +969,8 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         return { 'data': results, 'message': message, 'max_low': max_low, 'max_high': max_high }
         
 class SamDataProvider( BamDataProvider ):
+
+    data_type = 'bai'
     
     def __init__( self, converted_dataset=None, original_dataset=None, dependencies=None ):
         """ Create SamDataProvider. """
@@ -966,6 +986,9 @@ class BBIDataProvider( GenomeDataProvider ):
     """
     BBI data provider for the Galaxy track browser. 
     """
+
+    data_type = 'bigwig'
+
     def valid_chroms( self ):
         # No way to return this info as of now
         return None
@@ -976,7 +999,7 @@ class BBIDataProvider( GenomeDataProvider ):
         f.close()
         return all_dat is not None
 
-    def get_data( self, chrom, start, end, start_val=0, max_vals=None, **kwargs ):
+    def get_data( self, chrom, start, end, start_val=0, max_vals=None, num_samples=1000, **kwargs ):
         # Bigwig can be a standalone bigwig file, in which case we use 
         # original_dataset, or coming from wig->bigwig conversion in 
         # which we use converted_dataset
@@ -1009,14 +1032,11 @@ class BBIDataProvider( GenomeDataProvider ):
 
             return dict( data=dict( min=min, max=max, mean=mean, sd=sd ) )
 
-        # Sample from region using approximately this many samples.
-        N = 1000
-
         def summarize_region( bbi, chrom, start, end, num_points ):
             '''
             Returns results from summarizing a region using num_points.
             NOTE: num_points cannot be greater than end - start or BBI
-            will return None for all positions.s
+            will return None for all positions.
             '''
             result = []
 
@@ -1042,7 +1062,8 @@ class BBIDataProvider( GenomeDataProvider ):
             return result
 
         # Approach is different depending on region size.
-        if end - start < N:
+        num_samples = int( num_samples )
+        if end - start < num_samples:
             # Get values for individual bases in region, including start and end.
             # To do this, need to increase end to next base and request number of points.
             num_points = end - start + 1
@@ -1050,10 +1071,10 @@ class BBIDataProvider( GenomeDataProvider ):
         else:
             # 
             # The goal is to sample the region between start and end uniformly 
-            # using ~N data points. The challenge is that the size of sampled 
-            # intervals rarely is full bases, so sampling using N points will 
-            # leave the end of the region unsampled due to remainders for each
-            # interval. To recitify this, a new N is calculated based on the 
+            # using ~N (num_samples) data points. The challenge is that the size of 
+            # sampled intervals rarely is full bases, so sampling using N points 
+            # will leave the end of the region unsampled due to remainders for 
+            # each interval. To recitify this, a new N is calculated based on the 
             # step size that covers as much of the region as possible.
             #
             # However, this still leaves some of the region unsampled. This 
@@ -1063,7 +1084,7 @@ class BBIDataProvider( GenomeDataProvider ):
             #
 
             # Start with N samples.
-            num_points = N
+            num_points = num_samples
             step_size = ( end - start ) / num_points
             # Add additional points to sample in the remainder not covered by 
             # the initial N samples.
@@ -1100,6 +1121,8 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
     Interval index files used only for GFF files.
     """
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
+
+    data_type = 'interval_index'
     
     def write_data_to_file( self, regions, filename ):
         source = open( self.original_dataset.file_name )
@@ -1177,6 +1200,8 @@ class RawGFFDataProvider( GenomeDataProvider ):
     NOTE: this data provider does not use indices, and hence will be very slow
     for large datasets.
     """
+
+    data_type = 'interval_index'
     
     def get_iterator( self, chrom, start, end ):
         """

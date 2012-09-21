@@ -28,46 +28,63 @@ class DataProviderRegistry( object ):
             "bigbed": BigBedDataProvider
         }
 
-    def get_data_provider( self, name=None, raw=False, original_dataset=None ):
+    def get_data_provider( self, trans, name=None, source='data', raw=False, original_dataset=None ):
         """
         Returns data provider class by name and/or original dataset.
         """
 
-        # If getting raw data, use original dataset type to get data provider.
-        if raw:
-            if isinstance( original_dataset.datatype, Gff ):
-                return RawGFFDataProvider
-            elif isinstance( original_dataset.datatype, Bed ):
-                return RawBedDataProvider
-            elif isinstance( original_dataset.datatype, Vcf ):
-                return RawVcfDataProvider
-            elif isinstance( original_dataset.datatype, Tabular ):
-                return ColumnDataProvider
-
-        # Using converted dataset, so get corrsponding data provider.
         data_provider = None
-        if name:
-            value = self.dataset_type_name_to_data_provider[ name ]
-            if isinstance( value, dict ):
-                # Get converter by dataset extension; if there is no data provider,
-                # get the default.
-                data_provider = value.get( original_dataset.datatype.__class__, value.get( "default" ) )
-            else:
-                data_provider = value
-        elif original_dataset:
-            # Look up data provider from datatype's informaton.
-            try:
-                # Get data provider mapping and data provider for 'data'. If 
-                # provider available, use it; otherwise use generic provider.
+        if raw:
+            # Working with raw data.
+            if isinstance( original_dataset.datatype, Gff ):
+                data_provider_class = RawGFFDataProvider
+            elif isinstance( original_dataset.datatype, Bed ):
+                data_provider_class = RawBedDataProvider
+            elif isinstance( original_dataset.datatype, Vcf ):
+                data_provider_class = RawVcfDataProvider
+            elif isinstance( original_dataset.datatype, Tabular ):
+                data_provider_class = ColumnDataProvider
+
+            data_provider = data_provider_class( original_dataset=original_dataset )
+
+        else:
+            # Working with converted or standalone dataset.
+
+            if name:
+                # Provider requested by name; get from mappings.
+                value = self.dataset_type_name_to_data_provider[ name ]
+                if isinstance( value, dict ):
+                    # Get converter by dataset extension; if there is no data provider,
+                    # get the default.
+                    data_provider_class = value.get( original_dataset.datatype.__class__, value.get( "default" ) )
+                else:
+                    data_provider_class = value
+
+                # If name is the same as original dataset's type, dataset is standalone.
+                # Otherwise, a converted dataset is being used.
+                if name == original_dataset.ext:
+                    data_provider = data_provider_class( original_dataset=original_dataset )
+                else:
+                    converted_dataset = original_dataset.get_converted_dataset( trans, name )
+                    deps = original_dataset.get_converted_dataset_deps( trans, name )
+                    data_provider = data_provider_class( original_dataset=original_dataset, 
+                                                         converted_dataset=converted_dataset,
+                                                         dependencies=deps )
+                
+            elif original_dataset:
+                # No name, so look up a provider name from datatype's information.
+
+                # Dataset must have get_track_type function to get data.
+                if not hasattr( original_dataset.datatype, 'get_track_type'):
+                    return None
+                
+                # Get data provider mapping and data provider.
                 _ , data_provider_mapping = original_dataset.datatype.get_track_type()
                 if 'data_standalone' in data_provider_mapping:
                     data_provider_name = data_provider_mapping[ 'data_standalone' ]
                 else:
-                    data_provider_name = data_provider_mapping[ 'data' ]
-                if data_provider_name:
-                    data_provider = self.get_data_provider( name=data_provider_name, original_dataset=original_dataset )
-                else: 
-                    data_provider = GenomeDataProvider
-            except:
-                pass
+                    data_provider_name = data_provider_mapping[ source ]
+                
+                data_provider = self.get_data_provider( trans, name=data_provider_name, original_dataset=original_dataset )
+
         return data_provider

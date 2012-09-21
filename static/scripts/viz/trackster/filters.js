@@ -617,7 +617,8 @@ extend(FiltersManager.prototype, {
 });
 
 return {
-    FiltersManager: FiltersManager
+    FiltersManager: FiltersManager,
+    NumberFilter: NumberFilter
 };
 
 });

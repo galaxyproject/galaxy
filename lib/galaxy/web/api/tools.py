@@ -204,15 +204,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         if run_on_regions:
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
-                if data_provider_registry.get_data_provider( original_dataset=input_dataset ):
-                    # Can index dataset.
-                    track_type, data_sources = input_dataset.datatype.get_track_type()
-                    # Convert to datasource that provides 'data' because we need to
-                    # extract the original data.
-                    data_source = data_sources[ 'data' ]
-                    msg = self.convert_dataset( trans, input_dataset, data_source )
-                    if msg is not None:
-                        messages_list.append( msg )
+                data_provider = data_provider_registry.get_data_provider( trans, original_dataset=input_dataset, source='data' )
+                if data_provider:
+                    if not data_provider.converted_dataset:
+                        msg = self.convert_dataset( trans, input_dataset, data_source )
+                        if msg is not None:
+                            messages_list.append( msg )
 
         # Return any messages generated during conversions.
         return_message = get_highest_priority_msg( messages_list )
@@ -326,10 +323,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                     trans.app.security_agent.set_all_dataset_permissions( new_dataset.dataset, hda_permissions )
 
                     # Write subset of data to new dataset
-                    data_provider_class = data_provider_registry.get_data_provider( original_dataset=input_dataset )
-                    data_provider = data_provider_class( original_dataset=input_dataset, 
-                                                         converted_dataset=converted_dataset,
-                                                         dependencies=deps )
+                    data_provider = data_provider_registry.get_data_provider( trans, original_dataset=input_dataset, source='data' )
                     trans.app.object_store.create( new_dataset.dataset )
                     data_provider.write_data_to_file( regions, new_dataset.file_name )
 

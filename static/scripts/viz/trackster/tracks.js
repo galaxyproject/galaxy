@@ -1,7 +1,7 @@
 define( ["libs/underscore", "viz/visualization", "viz/trackster/util", 
          "viz/trackster/slotting", "viz/trackster/painters", "mvc/data",
          "viz/trackster/filters" ], 
-         function( _, visualization, util, slotting, painters, data, filters ) {
+         function( _, visualization, util, slotting, painters, data, filters_mod ) {
 
 var extend = _.extend;
 var get_random_color = util.get_random_color;
@@ -587,7 +587,7 @@ var DrawableGroup = function(view, container, obj_dict) {
     moveable(this.container_div, this.drag_handle_class, ".group", this);
     
     // Set up filters.
-    this.filters_manager = new filters.FiltersManager(this);
+    this.filters_manager = new filters_mod.FiltersManager(this);
     this.header_div.after(this.filters_manager.parent_div);
     // For saving drawables' filter managers when group-level filtering is done:
     this.saved_filters_managers = [];
@@ -601,7 +601,7 @@ var DrawableGroup = function(view, container, obj_dict) {
     if ('filters' in obj_dict) {
         // FIXME: Pass collection_dict to DrawableCollection/Drawable will make this easier.
         var old_manager = this.filters_manager;
-        this.filters_manager = new filters.FiltersManager(this, obj_dict.filters);
+        this.filters_manager = new filters_mod.FiltersManager(this, obj_dict.filters);
         old_manager.parent_div.replaceWith(this.filters_manager.parent_div);
     
         if (obj_dict.filters.visible) {
@@ -761,7 +761,7 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
                     if (filters.length === num_feature_tracks) {
                         // Add new filter.
                         // FIXME: can filter.copy() be used?
-                        new_filter = new NumberFilter( {
+                        new_filter = new filters_mod.NumberFilter( {
                                         name: filters[0].name, 
                                         index: filters[0].index
                                         } );
@@ -2612,7 +2612,7 @@ var TiledTrack = function(view, container, obj_dict) {
     moveable(track.container_div, track.drag_handle_class, ".group", track);
     
     // Attribute init.
-    this.filters_manager = new filters.FiltersManager(this, ('filters' in obj_dict ? obj_dict.filters : null));
+    this.filters_manager = new filters_mod.FiltersManager(this, ('filters' in obj_dict ? obj_dict.filters : null));
     // HACK: set filters manager for data manager.
     // FIXME: prolly need function to set filters and update data_manager reference.
     this.data_manager.set('filters_manager', this.filters_manager);
@@ -4188,7 +4188,6 @@ var object_from_template = function(template, view, container) {
     }
 };
 
-// Exports
 return {
     View: View,
     DrawableGroup: DrawableGroup,

@@ -460,8 +460,9 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                     prefs = {}
 
                 track_type, _ = dataset.datatype.get_track_type()
-                track_data_provider_class = trans.app.data_provider_registry.get_data_provider( original_dataset=dataset )
-                track_data_provider = track_data_provider_class( original_dataset=dataset )
+                track_data_provider = trans.app.data_provider_registry.get_data_provider( trans, 
+                                                                                          original_dataset=dataset, 
+                                                                                          source='data' )
                 
                 return {
                     "track_type": track_type,
@@ -536,8 +537,8 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         """
         # Get data provider.
         track_type, _ = dataset.datatype.get_track_type()
-        track_data_provider_class = trans.app.data_provider_registry.get_data_provider( original_dataset=dataset )
-        track_data_provider = track_data_provider_class( original_dataset=dataset )
+        track_data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset=dataset )
+ 
         
         if isinstance( dataset, trans.app.model.HistoryDatasetAssociation ):
             hda_ldda = "hda"
