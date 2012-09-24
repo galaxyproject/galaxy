@@ -395,6 +395,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                use_panels=use_panels,
                                                message=message,
                                                status=status ) )
+
     @web.expose
     @web.require_login( 'manage OpenIDs' )
     def openid_manage( self, trans, webapp='galaxy', **kwd ):
@@ -409,10 +410,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                        action='openid_disassociate',
                                                        use_panels=use_panels,
                                                        id=kwd['id'] ) )
-        
         kwd['redirect'] = kwd.get( 'redirect', url_for( controller='user', action='openid_manage', use_panels=True ) ).strip()
         kwd['openid_providers'] = trans.app.openid_providers
         return self.user_openid_grid( trans, **kwd )
+
     @web.expose
     def login( self, trans, webapp='galaxy', redirect_url='', refresh_frames=[], **kwd ):
         '''Handle Galaxy Log in'''
@@ -423,6 +424,9 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         header = ''
         user = None
         email = kwd.get( 'email', '' )
+        #Sanitize webapp login here, once, since it can be reflected to the user in messages/etc.
+        #Only text is valid.
+        webapp = util.sanitize_text(webapp)
         if kwd.get( 'login_button', False ):
             if webapp == 'galaxy' and not refresh_frames:
                 if trans.app.config.require_login:
