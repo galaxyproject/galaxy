@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 """
 API operations for Workflows
 """
@@ -11,7 +13,8 @@ from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy.workflow.modules import module_factory
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.web.controllers.workflow import attach_ordered_steps
+
+from ..controllers.workflow import attach_ordered_steps
 
 log = logging.getLogger(__name__)
 

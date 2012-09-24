@@ -1,9 +1,11 @@
+from __future__ import absolute_import
+
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
 from galaxy import model, util
 from galaxy.web.form_builder import *
-from galaxy.web.controllers.requests_common import invalid_id_redirect
+from .requests_common import invalid_id_redirect
 import logging, os
 
 log = logging.getLogger( __name__ )
