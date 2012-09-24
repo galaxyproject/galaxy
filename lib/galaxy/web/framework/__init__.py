@@ -6,6 +6,12 @@ import pkg_resources
 
 import os, sys, time, socket, random, string
 import inspect
+
+from galaxy.web.base.controller import BaseUIController
+from galaxy.web.base.controller import BaseAPIController
+from galaxy.web.base.controller import ControllerUnavailable
+
+
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 import base
@@ -212,6 +218,7 @@ def form( *args, **kwargs ):
     return FormBuilder( *args, **kwargs )
 
 class WebApplication( base.WebApplication ):
+
     def __init__( self, galaxy_app, session_cookie='galaxysession' ):
         base.WebApplication.__init__( self )
         self.set_transaction_factory( lambda e: self.transaction_chooser( e, galaxy_app, session_cookie ) )
@@ -223,18 +230,69 @@ class WebApplication( base.WebApplication ):
             output_encoding = 'utf-8' )
         # Security helper
         self.security = galaxy_app.security
+
     def handle_controller_exception( self, e, trans, **kwargs ):
+
         if isinstance( e, MessageException ):
             return trans.show_message( e.err_msg, e.type )
     def make_body_iterable( self, trans, body ):
+
         if isinstance( body, FormBuilder ):
             body = trans.show_form( body )
         return base.WebApplication.make_body_iterable( self, trans, body )
+
     def transaction_chooser( self, environ, galaxy_app, session_cookie ):
         if 'is_api_request' in environ:
             return GalaxyWebAPITransaction( environ, galaxy_app, self, session_cookie )
         else:
             return GalaxyWebUITransaction( environ, galaxy_app, self, session_cookie )
+
+    def add_ui_controllers( self, app, package_name ):
+        """
+        Search for UI controllers in `package_name` and add 
+        them to the webapp.
+        """
+        package = __import__( package_name )
+        controller_dir = package.__path__[0]
+        for fname in os.listdir( controller_dir ):
+            if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
+                name = fname[:-3]
+                module_name = package_name + "." + name
+                try:
+                    module = __import__( module_name )
+                except ControllerUnavailable, exc:
+                    log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
+                    continue
+                for comp in module_name.split( "." )[1:]:
+                    module = getattr( module, comp )
+                # Look for a controller inside the modules
+                for key in dir( module ):
+                    T = getattr( module, key )
+                    if inspect.isclass( T ) and T is not BaseUIController and issubclass( T, BaseUIController ):
+                        self.add_ui_controller( name, T( app ) )
+
+    def add_api_controllers( self, app, package_name ):
+        """
+        Search for UI controllers in `package_name` and add 
+        them to the webapp.
+        """
+        package = __import__( package_name )
+        controller_dir = package.__path__[0]
+        for fname in os.listdir( controller_dir ):
+            if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
+                name = fname[:-3]
+                module_name = package_name + "." + name
+                try:
+                    module = __import__( module_name )
+                except ControllerUnavailable, exc:
+                    log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
+                    continue
+                for comp in module_name.split( "." )[1:]:
+                    module = getattr( module, comp )
+                for key in dir( module ):
+                    T = getattr( module, key )
+                    if inspect.isclass( T ) and T is not BaseAPIController and issubclass( T, BaseAPIController ):
+                        self.add_api_controller( name, T( app ) )
 
 class GalaxyWebTransaction( base.DefaultWebTransaction ):
     """

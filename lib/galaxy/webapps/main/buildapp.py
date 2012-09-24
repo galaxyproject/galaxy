@@ -22,53 +22,6 @@ import galaxy.model.mapping
 import galaxy.datatypes.registry
 import galaxy.web.framework
 
-def add_ui_controllers( webapp, app ):
-    """
-    Search for controllers in the 'galaxy.web.controllers' module and add 
-    them to the webapp.
-    """
-    from galaxy.web.base.controller import BaseUIController
-    from galaxy.web.base.controller import ControllerUnavailable
-    import galaxy.web.controllers
-    controller_dir = galaxy.web.controllers.__path__[0]
-    for fname in os.listdir( controller_dir ):
-        if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
-            name = fname[:-3]
-            module_name = "galaxy.web.controllers." + name
-            try:
-                module = __import__( module_name )
-            except ControllerUnavailable, exc:
-                log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
-                continue
-            for comp in module_name.split( "." )[1:]:
-                module = getattr( module, comp )
-            # Look for a controller inside the modules
-            for key in dir( module ):
-                T = getattr( module, key )
-                if isclass( T ) and T is not BaseUIController and issubclass( T, BaseUIController ):
-                    webapp.add_ui_controller( name, T( app ) )
-
-def add_api_controllers( webapp, app ):
-    from galaxy.web.base.controller import BaseAPIController
-    from galaxy.web.base.controller import ControllerUnavailable
-    import galaxy.web.api
-    controller_dir = galaxy.web.api.__path__[0]
-    for fname in os.listdir( controller_dir ):
-        if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
-            name = fname[:-3]
-            module_name = "galaxy.web.api." + name
-            try:
-                module = __import__( module_name )
-            except ControllerUnavailable, exc:
-                log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
-                continue
-            for comp in module_name.split( "." )[1:]:
-                module = getattr( module, comp )
-            for key in dir( module ):
-                T = getattr( module, key )
-                if isclass( T ) and T is not BaseAPIController and issubclass( T, BaseAPIController ):
-                    webapp.add_api_controller( name, T( app ) )
-
 def app_factory( global_conf, **kwargs ):
     """
     Return a wsgi application serving the root object
@@ -87,7 +40,7 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxysession' )
-    add_ui_controllers( webapp, app )
+    webapp.add_ui_controllers( 'galaxy.webapps.main.controllers', app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )
     # These two routes handle our simple needs at the moment
@@ -105,7 +58,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
     
     # Add the web API
-    add_api_controllers( webapp, app )
+    webapp.add_api_controllers( 'galaxy.webapps.main.api', app )
     webapp.api_mapper.resource( 'content',
                                 'contents',
                                 controller='library_contents',
