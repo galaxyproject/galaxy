@@ -48,7 +48,17 @@
     <!--[if lt IE 7]>
     ${h.js( 'libs/IE/IE7', 'libs/IE/ie7-recalc' )}
     <![endif]-->
-    ${h.js( 'libs/jquery/jquery', 'libs/json2', 'libs/bootstrap', 'libs/underscore', 'libs/backbone/backbone', 'libs/backbone/backbone-relational', 'libs/handlebars.runtime', 'mvc/ui', 'galaxy.base' )}
+    ${h.js(
+        'libs/jquery/jquery',
+        'libs/json2',
+        'libs/bootstrap',
+        'libs/underscore',
+        'libs/backbone/backbone',
+        'libs/backbone/backbone-relational',
+        'libs/handlebars.runtime',
+        'mvc/ui',
+        'galaxy.base'
+    )}
     <script type="text/javascript">
         // Set up needed paths.
         var galaxy_paths = new GalaxyPaths({

@@ -6,25 +6,25 @@ ${parent.stylesheets()}
 <style type="text/css">
 
 .title {
-	margin: 0px;
+    margin: 0px;
     padding: 8px;
     background-color: #ebd9b2;
     border: 2px solid #ebd9b2;
 }
 
 .subtitle {
-	margin: 0px;
+    margin: 0px;
     padding: 0px 8px 8px 16px;
     background-color: #ebd9b2;
-	color: white;
-	font-size: small;
+    color: white;
+    font-size: small;
 }
 
 #chart-settings-form {
     /*from width + margin of chart?*/
-	float: right;
+    float: right;
     width: 100%;
-	margin: 0px;
+    margin: 0px;
     padding-top: 1em;
 }
 
@@ -45,80 +45,67 @@ ${parent.stylesheets()}
     overflow: auto;
 }
 
-.clear {
-    clear: both;
-    margin: 0px;
-}
-
-
-svg .chart {
-	/*shape-rendering: crispEdges;*/
-}
-
 svg .grid-line {
-	fill: none;
-	stroke: lightgrey;
-	stroke-opacity: 0.5;
-	shape-rendering: crispEdges;
-	stroke-dasharray: 3, 3;
+    fill: none;
+    stroke: lightgrey;
+    stroke-opacity: 0.5;
+    shape-rendering: crispEdges;
+    stroke-dasharray: 3, 3;
 }
 
 svg .axis path, svg .axis line {
-	fill: none;
-	stroke: black;
-	shape-rendering: crispEdges;
+    fill: none;
+    stroke: black;
+    shape-rendering: crispEdges;
 }
 svg .axis text {
-	font-family: sans-serif;
-	font-size: 12px;
+    font-family: sans-serif;
+    font-size: 12px;
 }
-
 
 svg .glyph {
-	stroke: none;
-	fill: black;
-	fill-opacity: 0.2;
+    stroke: none;
+    fill: black;
+    fill-opacity: 0.2;
 }
-	
+    
 </style>
-	
+    
 </%def>
 
 <%def name="javascripts()">
 ${parent.javascripts()}
-${h.js(
-	"libs/underscore",
-	"libs/backbone/backbone",
-	"libs/backbone/backbone-relational",
-	"libs/d3",
-	"mvc/base-mvc",
-	"viz/scatterplot"
-)}
+${h.js( "libs/require" )}
 
 <script type="text/javascript">
-$(function() {
-	var hda         = ${h.to_json_string( hda )},
-		historyID   = '${historyID}'
-		apiDatasetsURL = "${h.url_for( controller='/api/datasets' )}";
-		//?? hmmmm
-		//kwargs      = ${h.to_json_string( kwargs )};
-	
-	var settingsForm = new ScatterplotView({
-		dataset : hda,
-		el 		: $( '#chart-settings-form' ),
+require.config({ baseUrl : "${h.url_for( '/static/scripts' )}", });
+
+require([ "viz/scatterplot" ], function( scatterplot ){
+    
+    var hda             = ${h.to_json_string( hda )},
+        historyID       = '${historyID}'
+        apiDatasetsURL  = "${h.url_for( controller='/api/datasets' )}";
+        //?? hmmmm
+        //kwargs          = ${h.to_json_string( kwargs )};
+    
+    var settingsForm = new scatterplot.ScatterplotView({
+        dataset    : hda,
+        el         : $( '#chart-settings-form' ),
         apiDatasetsURL : apiDatasetsURL,
+        
         chartConfig : {
             containerSelector : '#chart-holder',
             marginTop : 20,
         }
-	}).render();
+    }).render();
 });
+
 </script>
 </%def>
 
 <%def name="body()">
     <h2 class="title">Scatterplot of '${hda['name']}'</h2>
     <p class="subtitle">${hda['misc_info']}</p>
-	<div id="chart-holder"></div>
-	<div id="chart-settings-form"></div>
+    <div id="chart-holder"></div>
+    <div id="chart-settings-form"></div>
 </%def>
