@@ -1,16 +1,22 @@
 """
 Contains the user interface in the Universe class
 """
-from galaxy.web.framework.helpers import time_ago, grids
-from galaxy.web.base.controller import *
-from galaxy.model.orm import *
+
+import glob
+import logging
+import os
+import socket
+import string
+import random
+from galaxy import web
 from galaxy import util, model
-import logging, os, string, re, socket, glob
-from random import choice
-from galaxy.web.form_builder import * 
-from galaxy.util.json import from_json_string, to_json_string
-from galaxy.web.framework.helpers import iff
+from galaxy.model.orm import and_
 from galaxy.security.validate_user_input import validate_email, validate_publicname, validate_password, transform_publicname
+from galaxy.util.json import from_json_string, to_json_string
+from galaxy.web import url_for
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, get_webapp
+from galaxy.web.form_builder import CheckboxField, build_select_field
+from galaxy.web.framework.helpers import time_ago, grids
 
 log = logging.getLogger( __name__ )
 
@@ -916,7 +922,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                     chars = string.letters + string.digits
                     new_pass = ""
                     for i in range(15):
-                        new_pass = new_pass + choice(chars)
+                        new_pass = new_pass + random.choice(chars)
                     host = trans.request.host.split(':')[0]
                     if host == 'localhost':
                         host = socket.getfqdn()
