@@ -3,7 +3,7 @@
 
 %if redirect_url:
     <script type="text/javascript">  
-        top.location.href = '${redirect_url}';
+        top.location.href = '${redirect_url | h}';
     </script>
 %endif
 
@@ -42,21 +42,21 @@
             <div class="toolFormTitle">Create account</div>
             <div class="form-row">
                 <label>Email address:</label>
-                <input type="text" name="email" value="${email}" size="40"/>
-                <input type="hidden" name="webapp" value="${webapp}" size="40"/>
-                <input type="hidden" name="redirect" value="${redirect}" size="40"/>
+                <input type="text" name="email" value="${email | h}" size="40"/>
+                <input type="hidden" name="webapp" value="${webapp | h}" size="40"/>
+                <input type="hidden" name="redirect" value="${redirect | h}" size="40"/>
             </div>
             <div class="form-row">
                 <label>Password:</label>
-                <input type="password" name="password" value="${password}" size="40"/>
+                <input type="password" name="password" value="" size="40"/>
             </div>
             <div class="form-row">
                 <label>Confirm password:</label>
-                <input type="password" name="confirm" value="${confirm}" size="40"/>
+                <input type="password" name="confirm" value="" size="40"/>
             </div>
             <div class="form-row">
                 <label>Public name:</label>
-                <input type="text" name="username" size="40" value="${username}"/>
+                <input type="text" name="username" size="40" value="${username |h}"/>
                 %if webapp == 'galaxy':
                     <div class="toolParamHelp" style="clear: both;">
                         Your public name is an identifier that will be used to generate addresses for information

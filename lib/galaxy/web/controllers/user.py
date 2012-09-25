@@ -493,6 +493,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                     message += '  <a target="_top" href="%s">Click here</a> to continue to the home page.' % web.url_for( '/static/welcome.html' )
             success = True
         return ( message, status, user, success )
+
     @web.expose
     def logout( self, trans, webapp='galaxy', logout_all=False ):
         if webapp == 'galaxy':
@@ -513,6 +514,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     message=message,
                                     status='done',
                                     active_view="user" )
+
     @web.expose
     def create( self, trans, cntrller='user', redirect_url='', refresh_frames=[], **kwd ):
         params = util.Params( kwd )
@@ -583,8 +585,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         return trans.fill_template( '/user/register.mako',
                                     cntrller=cntrller,
                                     email=email,
-                                    password=password,
-                                    confirm=confirm,
                                     username=transform_publicname( trans, username ),
                                     subscribe_checked=subscribe_checked,
                                     user_type_fd_id_select_field=user_type_fd_id_select_field,
@@ -597,6 +597,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     refresh_frames=refresh_frames,
                                     message=message,
                                     status=status )
+
     def __register( self, trans, cntrller, subscribe_checked, **kwd ):
         email = util.restore_text( kwd.get( 'email', '' ) )
         password = kwd.get( 'password', '' )
