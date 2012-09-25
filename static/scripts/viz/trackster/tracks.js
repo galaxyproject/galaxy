@@ -3427,7 +3427,7 @@ var ReferenceTrack = function (view) {
     this.content_div.css("border", "none");
     this.data_url = reference_url + "/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
-    this.data_manager = new ReferenceTrackDataManager({
+    this.data_manager = new visualization.ReferenceTrackDataManager({
         data_url: this.data_url
     });
     this.hide_contents();

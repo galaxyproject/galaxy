@@ -356,6 +356,13 @@ var GenomeDataManager = Cache.extend({
 });
 
 var ReferenceTrackDataManager = GenomeDataManager.extend({
+    initialize: function(options) {
+        // Use generic object in place of dataset and set urlRoot to fetch data.
+        var dataset_placeholder = new Backbone.Model();
+        dataset_placeholder.urlRoot = options.data_url;
+        this.set('dataset', dataset_placeholder);
+    },
+
     load_data: function(low, high, mode, resolution, extra_params) {
         if (resolution > 1) {
             // Now that data is pre-fetched before draw, we don't load reference tracks

@@ -729,7 +729,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
     /**
      * Draw a single read.
      */
-    draw_read: function(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, cigar, strand, orig_seq) {
+    draw_read: function(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, cigar, strand, ref_seq) {
         ctx.textAlign = "center";
         var tile_region = [tile_low, tile_high],
             base_offset = 0,
@@ -743,12 +743,12 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
         
         // Gap is needed so that read is offset and hence first base can be drawn on read.
         // TODO-FIX: using this gap offsets reads so that their start is not visually in sync with other tracks.
-        if ((mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > char_width_px) {
+        if ((mode === "Pack" || this.mode === "Auto") && ref_seq !== undefined && w_scale > char_width_px) {
             gap = Math.round(w_scale/2);
         }
         if (!cigar) {
             // If no cigar string, then assume all matches
-            cigar = [ [0, orig_seq.length] ];
+            cigar = [ [0, ref_seq.length] ];
         }
         for (var cig_id = 0, len = cigar.length; cig_id < len; cig_id++) {
             var cig = cigar[cig_id],
@@ -782,7 +782,8 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 case "=": // Equals.
                     if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
                         // Draw.
-                        var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
+                        // -1 b/c sequence data is 1-based but painter is 0-based.
+                        var seq = ref_seq.slice(seq_offset - 1, seq_offset + cig_len);
                         if (gap > 0) {
                             ctx.fillStyle = block_color;
                             ctx.fillRect(s_start - gap, y_center + 1, s_end - s_start, 9);
@@ -838,7 +839,8 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     var insert_x_coord = s_start - gap;
                     
                     if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
-                        var seq = orig_seq.slice(seq_offset, seq_offset + cig_len);
+                        // -1 b/c sequence data is 1-based but painter is 0-based.
+                        var seq = ref_seq.slice(seq_offset - 1, seq_offset + cig_len);
                         // Insertion point is between the sequence start and the previous base: (-gap) moves
                         // back from sequence start to insertion point.
                         if (this.prefs.show_insertions) {
@@ -849,7 +851,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                             // Draw sequence.
                             // X center is offset + start - <half_sequence_length>
                             var x_center = s_start - (s_end - s_start)/2;
-                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > char_width_px) {
+                            if ( (mode === "Pack" || this.mode === "Auto") && ref_seq !== undefined && w_scale > char_width_px) {
                                 // Draw sequence container.
                                 ctx.fillStyle = "yellow";
                                 ctx.fillRect(x_center - gap, y_center - 9, s_end - s_start, 9);
@@ -885,7 +887,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                             }
                         }
                         else {
-                            if ( (mode === "Pack" || this.mode === "Auto") && orig_seq !== undefined && w_scale > char_width_px) {
+                            if ( (mode === "Pack" || this.mode === "Auto") && ref_seq !== undefined && w_scale > char_width_px) {
                                 // Show insertions with a single number at the insertion point.
                                 draw_last.push( { type: "text", data: [seq.length, insert_x_coord, y_center + 9] } );
                             }
