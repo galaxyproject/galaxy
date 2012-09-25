@@ -620,7 +620,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
     if can_use_disk_file:
         trans.app.config.tool_data_path = work_dir
-        tool, valid, message = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir )
+        tool, valid, message, sample_files = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir )
         if tool is not None:
             invalid_files_and_errors_tups = check_tool_input_params( trans.app,
                                                                      repo_files_dir,
@@ -637,7 +637,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                 message = concat_messages( message, message2 )
                 status = 'error'
     else:
-        tool, message = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
+        tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
     try:
         shutil.rmtree( work_dir )
     except:

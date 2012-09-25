@@ -1469,7 +1469,7 @@ def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_con
             error, message = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
     tool, valid, message2 = load_tool_from_config( trans.app, tool_config_filepath )
     message = concat_messages( message, message2 )
-    return tool, valid, message
+    return tool, valid, message, sample_files
 def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir ):
     tool = None
     message = ''
@@ -1490,7 +1490,7 @@ def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_re
     if manifest_ctx and ctx_file:
         tool, message2 = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
         message = concat_messages( message, message2 )
-    return tool, message
+    return tool, message, sample_files
 def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
     """
     Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary.  If persist is True (should only occur)

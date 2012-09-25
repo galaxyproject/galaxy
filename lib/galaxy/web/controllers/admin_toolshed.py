@@ -1010,9 +1010,8 @@ class AdminToolshed( AdminGalaxy ):
             message += '<b>&lt;toolbox&gt;</b> tag that includes a <b>tool_path</b> attribute value which is a directory relative to the Galaxy installation '
             message += 'directory in order to automatically install tools from a Galaxy tool shed (e.g., the file name <b>shed_tool_conf.xml</b> whose '
             message += '<b>&lt;toolbox&gt;</b> tag is <b>&lt;toolbox tool_path="../shed_tools"&gt;</b>).<p/>See the '
-            message += '<a href="http://wiki.g2.bx.psu.edu/Tool%20Shed#Automatic_installation_of_Galaxy_tool_shed_repository_tools_into_a_local_Galaxy_instance" '
-            message += 'target="_blank">Automatic installation of Galaxy tool shed repository tools into a local Galaxy instance</a> section of the '
-            message += '<a href="http://wiki.g2.bx.psu.edu/Tool%20Shed" target="_blank">Galaxy tool shed wiki</a> for all of the details.'
+            message += '<a href="http://wiki.g2.bx.psu.edu/InstallingRepositoriesToGalaxy" target="_blank">Installation of Galaxy tool shed repository tools '
+            message += 'into a local Galaxy instance</a> section of the Galaxy tool shed wiki for all of the details.'
             return trans.show_error_message( message )
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )

@@ -2301,11 +2301,18 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, full_path_to_tool_config, changeset_revision )
                             if can_use_disk_file:
                                 trans.app.config.tool_data_path = work_dir
-                                tool, valid, message = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, full_path_to_tool_config, work_dir )
+                                tool, valid, message, sample_files = handle_sample_files_and_load_tool_from_disk( trans,
+                                                                                                                  repo_files_dir,
+                                                                                                                  full_path_to_tool_config,
+                                                                                                                  work_dir )
                                 if message:
                                     status = 'error'
                             else:
-                                tool, message = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
+                                tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans,
+                                                                                                                 repo,
+                                                                                                                 changeset_revision,
+                                                                                                                 tool_config_filename,
+                                                                                                                 work_dir )
                                 if message:
                                     status = 'error'
                             break
