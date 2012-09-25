@@ -5,7 +5,7 @@ from galaxy.datatypes.checkers import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
-from galaxy.util.shed_util import check_tool_input_params, clone_repository, copy_sample_file, generate_metadata_for_changeset_revision
+from galaxy.util.shed_util import check_tool_input_params, clone_repository, concat_messages, copy_sample_file, generate_metadata_for_changeset_revision
 from galaxy.util.shed_util import get_changectx_for_changeset, get_config_from_disk, get_configured_ui, get_file_context_from_ctx, get_named_tmpfile_from_ctx
 from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config
 from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH, load_tool_from_config, reset_tool_data_tables
