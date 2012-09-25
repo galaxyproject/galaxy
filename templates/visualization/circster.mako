@@ -23,6 +23,7 @@
         require.config({ 
             baseUrl: "${h.url_for('/static/scripts')}",
             shim: {
+                "libs/underscore": { exports: "_" },
                 "libs/d3": { exports: "d3" }
             }
         });

@@ -113,7 +113,7 @@ class FeatureLocationIndexDataProvider( BaseDataProvider ):
 class GenomeDataProvider( BaseDataProvider ):
     """ Base class for genome data providers. """
 
-    data_type = None
+    dataset_type = None
     
     """ 
     Mapping from column name to payload data; this mapping is used to create
@@ -179,12 +179,21 @@ class GenomeDataProvider( BaseDataProvider ):
         """
         Returns data for complete genome.
         """
-        dataset_summary = []
+        genome_data = []
         for chrom_info in chroms_info[ 'chrom_info' ]:
-            summary = self.get_data( chrom_info[ 'chrom' ], 0, chrom_info[ 'len' ], **kwargs )
-            dataset_summary.append( summary )
+            chrom = chrom_info[ 'chrom' ]
+            chrom_len = chrom_info[ 'len' ]
+            chrom_data = self.get_data( chrom, 0, chrom_len, **kwargs )
+            if chrom_data:
+                chrom_data[ 'region' ] = "%s:%i-%i" % ( chrom, 0, chrom_len )
+                chrom_data[ 'dataset_type' ] = self.dataset_type
+                genome_data.append( chrom_data )
 
-        return dataset_summary
+        return {
+            'data': genome_data,
+            'dataset_type': self.dataset_type
+        }
+
         
     def get_filters( self ):
         """ 
@@ -316,7 +325,7 @@ class FilterableMixin:
 
 
 class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
-    data_type = 'tabix'
+    dataset_type = 'tabix'
 
     """
     Tabix index data provider for the Galaxy track browser.
@@ -358,7 +367,7 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
 #
 
 class IntervalDataProvider( GenomeDataProvider ):
-    data_type = 'interval_index'
+    dataset_type = 'interval_index'
 
     """
     Processes interval data from native format to payload format.
@@ -444,7 +453,7 @@ class BedDataProvider( GenomeDataProvider ):
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
 
-    data_type = 'interval_index'
+    dataset_type = 'interval_index'
     
     def get_iterator( self, chrom, start, end ):
         raise Exception( "Unimplemented Method" )
@@ -541,7 +550,7 @@ class RawBedDataProvider( BedDataProvider ):
     for large datasets.
     """
 
-    data_type = 'interval_index'
+    dataset_type = 'interval_index'
 
     def get_iterator( self, chrom=None, start=None, end=None ):
         # Read first line in order to match chrom naming format.
@@ -581,7 +590,7 @@ class VcfDataProvider( GenomeDataProvider ):
     
     col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
 
-    data_type = 'bai'
+    dataset_type = 'bai'
     
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
@@ -687,7 +696,7 @@ class RawVcfDataProvider( VcfDataProvider ):
     for large datasets.
     """
 
-    data_type = 'tabix'
+    dataset_type = 'tabix'
 
     def get_iterator( self, chrom, start, end ):
         # Read first line in order to match chrom naming format.
@@ -721,7 +730,7 @@ class SummaryTreeDataProvider( GenomeDataProvider ):
     Summary tree data provider for the Galaxy track browser. 
     """
 
-    data_type = 'summary_tree'
+    dataset_type = 'summary_tree'
     
     CACHE = LRUCache( 20 ) # Store 20 recently accessed indices for performance
     
@@ -765,7 +774,13 @@ class SummaryTreeDataProvider( GenomeDataProvider ):
         if results == "detail" or results == "draw":
             return results
         else:
-            return results, stats[ level ][ "max" ], stats[ level ]["avg" ], stats[ level ][ "delta" ]
+            return {
+                'dataset_type': self.dataset_type,
+                'data': results,
+                'max': stats[ level ][ "max" ],
+                'avg': stats[ level ][ "avg" ],
+                'delta': stats[ level ][ "delta" ]
+            }
             
     def has_data( self, chrom ):
         """
@@ -788,7 +803,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
     is reported in 1-based, closed format, i.e. SAM/BAM format.
     """
 
-    data_type = 'bai'
+    dataset_type = 'bai'
     
     def get_filters( self ):
         """
@@ -970,7 +985,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         
 class SamDataProvider( BamDataProvider ):
 
-    data_type = 'bai'
+    dataset_type = 'bai'
     
     def __init__( self, converted_dataset=None, original_dataset=None, dependencies=None ):
         """ Create SamDataProvider. """
@@ -987,7 +1002,7 @@ class BBIDataProvider( GenomeDataProvider ):
     BBI data provider for the Galaxy track browser. 
     """
 
-    data_type = 'bigwig'
+    dataset_type = 'bigwig'
 
     def valid_chroms( self ):
         # No way to return this info as of now
@@ -1122,7 +1137,7 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
     """
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
 
-    data_type = 'interval_index'
+    dataset_type = 'interval_index'
     
     def write_data_to_file( self, regions, filename ):
         source = open( self.original_dataset.file_name )
@@ -1201,7 +1216,7 @@ class RawGFFDataProvider( GenomeDataProvider ):
     for large datasets.
     """
 
-    data_type = 'interval_index'
+    dataset_type = 'interval_index'
     
     def get_iterator( self, chrom, start, end ):
         """

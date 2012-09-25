@@ -3550,8 +3550,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         track.vertical_range = undefined;
         return $.getJSON( track.dataset.url(), 
             {  data_type: 'data', stats: true, chrom: track.view.chrom, low: 0, 
-               high: track.view.max_high, hda_ldda: track.hda_ldda, dataset_id: 
-               track.dataset_id }, function(result) {
+               high: track.view.max_high, hda_ldda: track.hda_ldda }, function(result) {
             track.container_div.addClass( "line-track" );
             var data = result.data;
             if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {

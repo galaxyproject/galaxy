@@ -1,4 +1,4 @@
-define( ["libs/d3", "viz/visualization"], function( d3, visualization ) {
+define( ["libs/underscore", "libs/d3", "viz/visualization"], function(_, d3, visualization) {
 
 // General backbone style inheritence
 var Base = function() { this.initialize && this.initialize.apply(this, arguments); }; Base.extend = Backbone.Model.extend;
@@ -48,7 +48,8 @@ var CircsterView = Backbone.View.extend({
             // Compute radius start based on model, will be centered 
             // and fit entirely inside element by default.
             init_radius_start = ( Math.min(width, height)/2 - 
-                                  this.model.get('tracks').length * (this.dataset_arc_height + this.track_gap) );
+                                  this.model.get('tracks').length * (this.dataset_arc_height + this.track_gap) ),
+            tracks = this.model.get('tracks');
 
         // Set up SVG element.
         var svg = d3.select(self.$el[0])
@@ -59,26 +60,37 @@ var CircsterView = Backbone.View.extend({
               // Set up zooming, dragging.
               .append('svg:g')
                 .call(d3.behavior.zoom().on('zoom', function() {
+                    // Do zoom.
                     svg.attr("transform",
                       "translate(" + d3.event.translate + ")" + 
                       " scale(" + d3.event.scale + ")");
-                    var utils = new SVGUtils();
-                    var visible_elts = d3.selectAll('path').filter(function(d, i) {
+
+                    // Update visible elements with more data.
+                    var utils = new SVGUtils(),
+                        tracks_and_chroms_to_update = {};
+
+                    tracks.each(function(t) {
+                        tracks_and_chroms_to_update[t.id] = [];
+                    });
+
+                    d3.selectAll('path.chrom-data').filter(function(d, i) {
                         return utils.is_visible(this, svg);
+                    }).each(function(d, i) {
+                        var elt_data = $.data(this, "chrom_data");
+                        tracks_and_chroms_to_update[elt_data.track.id].push(elt_data.chrom);
                     });
-                    visible_elts.each(function(d, i) {
-                        // TODO: redraw visible elements.
-                    });
+
+                    // TODO: update tracks and chroms.
+                    //console.log(tracks_and_chroms_to_update);
                 }))
                 .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
               .append('svg:g');
                 
 
         // -- Render each dataset in the visualization. --
-        this.model.get('tracks').each(function(track, index) {
-            var dataset = track.get('genome_wide_data'),
-                radius_start = init_radius_start + index * (dataset_arc_height + self.track_gap),
-                track_renderer_class = (dataset instanceof visualization.GenomeWideBigWigData ? 
+        tracks.each(function(track, index) {
+            var radius_start = init_radius_start + index * (dataset_arc_height + self.track_gap),
+                track_renderer_class = (track.get('track_type') === 'LineTrack' ? 
                                         CircsterBigWigTrackRenderer : 
                                         CircsterSummaryTreeTrackRenderer );
 
@@ -160,12 +172,17 @@ var CircsterTrackRenderer = Base.extend( {
     render_data: function(svg) {
         var self = this,
             chrom_arcs = this.chroms_layout(),
-            dataset = this.options.track.get('genome_wide_data'),
+            track = this.options.track,
             r_start = this.options.radius_start,
             r_end = this.options.radius_end,
+
+            genome_wide_data = track.get_genome_wide_data(this.options.genome),
                 
             // Merge chroms layout with data.
-            layout_and_data = _.zip(chrom_arcs, dataset.get('data')),
+            layout_and_data = _.zip(chrom_arcs, genome_wide_data),
+
+            // Get min, max in data.
+            bounds = this.get_bounds(genome_wide_data),
             
             // Do dataset layout for each chromosome's data using pie layout.
             chroms_data_layout = _.map(layout_and_data, function(chrom_info) {
@@ -173,7 +190,7 @@ var CircsterTrackRenderer = Base.extend( {
                     data = chrom_info[1];
                 return self.render_chrom_data(svg, chrom_arc, data, 
                                               r_start, r_end, 
-                                              dataset.get('min'), dataset.get('max'));
+                                              bounds.min, bounds.max);
             });
 
         return chroms_data_layout;
@@ -187,7 +204,7 @@ var CircsterQuantitativeTrackRenderer = CircsterTrackRenderer.extend({
 
     /**
      * Renders quantitative data with the form [x, value] and assumes data is equally spaced across
-     * chromosome.
+     * chromosome. Attachs a dict with track and chrom name information to DOM element.
      */
     render_quantitative_data: function(svg, chrom_arc, data, inner_radius, outer_radius, min, max) {
         // Radius scaler.
@@ -212,14 +229,25 @@ var CircsterQuantitativeTrackRenderer = CircsterTrackRenderer.extend({
             .angle(line.angle());
 
         // Render data.
-        var parent = svg.datum(data);
-                    
-        parent.append("path")
-            .attr("class", "chrom-data")
-            .attr("d", area);
-    }
+        var parent = svg.datum(data),                    
+            path = parent.append("path")
+                         .attr("class", "chrom-data")
+                         .attr("d", area);
 
-})
+        // Attach dict with track and chrom info for path.
+        $.data(path[0][0], "chrom_data", {
+            track: this.options.track,
+            chrom: chrom_arc.data.chrom
+        });
+    },
+
+    /**
+     * Returns an object with min, max attributes denoting the minimum and maximum
+     * values for the track.
+     */
+    get_bounds: function() {}
+
+});
 
 /**
  * Layout for summary tree data in a circster visualization.
@@ -235,7 +263,19 @@ var CircsterSummaryTreeTrackRenderer = CircsterQuantitativeTrackRenderer.extend(
             return null;
         }
 
-        return this.render_quantitative_data(svg, chrom_arc, chrom_data[0], inner_radius, outer_radius, min, max);
+        return this.render_quantitative_data(svg, chrom_arc, chrom_data.data, inner_radius, outer_radius, min, max);
+    },
+
+    get_bounds: function(data) {
+        // Get max across data.
+        var max_data = _.map(data, function(d) {
+            if (!d || typeof d === 'string') { return 0; }
+            return d.max;
+        });
+        return {
+            min: 0,
+            max: (max_data && typeof max_data !== 'string' ? _.max(max_data) : 0)
+        };
     }
 });
 
@@ -252,6 +292,27 @@ var CircsterBigWigTrackRenderer = CircsterQuantitativeTrackRenderer.extend({
         if (data.length === 0) { return; }
 
         return this.render_quantitative_data(svg, chrom_arc, data, inner_radius, outer_radius, min, max);
+    },
+
+    get_bounds: function(data) {
+        // Set max across dataset by extracting all values, flattening them into a 
+        // single array, and getting the min and max.
+        var values = _.flatten( _.map(data, function(d) {
+            if (d) {
+                // Each data point has the form [position, value], so return all values.
+                return _.map(d.data, function(p) {
+                    return p[1];
+                });
+            }
+            else {
+                return 0;
+            }
+        }) );
+
+        return {
+            min: _.min(values),
+            max: _.max(values)
+        };
     }
 });
 

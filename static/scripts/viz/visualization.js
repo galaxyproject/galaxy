@@ -1,4 +1,4 @@
-define( ["mvc/data", "viz/trackster/util" ], function(data, util) {
+define( ["mvc/data", "viz/trackster/util" ], function(data_mod, util_mod) {
 
 /**
  * Model, view, and controller objects for Galaxy visualization framework.
@@ -138,7 +138,6 @@ var GenomeDataManager = Cache.extend({
         dataset: null,
         filters_manager: null,
         data_type: "data",
-        genome_wide_summary_data: null,
         data_mode_compatible: function(entry, mode) { return true; },
         can_subset: function(entry) { return false; }
     }),
@@ -150,7 +149,7 @@ var GenomeDataManager = Cache.extend({
     data_is_ready: function() {
         var dataset = this.get('dataset'),
             ready_deferred = $.Deferred(),
-            ss_deferred = new util.ServerStateDeferred({
+            ss_deferred = new util_mod.ServerStateDeferred({
                 ajax_settings: {
                     url: this.get('dataset').url(),
                     data: {
@@ -176,7 +175,6 @@ var GenomeDataManager = Cache.extend({
         var dataset = this.get('dataset'),
             params = {
                 query: query,
-                dataset_id: dataset.id,
                 hda_ldda: dataset.get('hda_ldda'),
                 data_type: 'features'
             };
@@ -188,22 +186,17 @@ var GenomeDataManager = Cache.extend({
      */
     load_data: function(region, mode, resolution, extra_params) {
         // Setup data request params.
-        var params = {
+        var dataset = this.get('dataset'),
+            params = {
                         "data_type": this.get('data_type'),
                         "chrom": region.get('chrom'), 
                         "low": region.get('start'), 
                         "high": region.get('end'), 
                         "mode": mode,
-                        "resolution": resolution
-                     },
-            dataset = this.get('dataset');
-                        
-        // ReferenceDataManager does not have dataset.
-        if (dataset) {
-            params.dataset_id = dataset.id;
-            params.hda_ldda = dataset.get('hda_ldda');
-        }
-        
+                        "resolution": resolution,
+                        "hda_ldda": dataset.get('hda_ldda')
+                     };
+
         $.extend(params, extra_params);
         
         // Add track filters to params.
@@ -533,69 +526,53 @@ var BrowserBookmarkCollection = Backbone.Collection.extend({
     model: BrowserBookmark
 });
 
-var GenomeWideBigWigData = Backbone.Model.extend({
-    defaults: {
-        data: null,
-        min: 0,
-        max: 0
-    },
-
-    initialize: function(options) {
-        // Set max across dataset by extracting all values, flattening them into a 
-        // single array, and getting the min and max.
-        var values = _.flatten( _.map(this.get('data'), function(d) {
-            if (d.data.length !== 0) {
-                // Each data point has the form [position, value], so return all values.
-                return _.map(d.data, function(p) {
-                    return p[1];
-                });
-            }
-            else {
-                return 0;
-            }
-        }) );
-        this.set('max', _.max(values));
-        this.set('min', _.min(values));
-    }
-});
-
-/**
- * Genome-wide summary tree dataset.
- */
-var GenomeWideSummaryTreeData = Backbone.RelationalModel.extend({
-    defaults: {
-        data: null,
-        min: 0,
-        max: 0
-    },
-    
-    initialize: function(options) {
-        // Set max across dataset.
-        var max_data = _.max(this.get('data'), function(d) {
-            if (!d || typeof d === 'string') { return 0; }
-            return d[1];
-        });
-        this.attributes.max = (max_data && typeof max_data !== 'string' ? max_data[1] : 0);
-    }
-});
-
 /**
  * A track of data in a genome visualization.
  */
 // TODO: rename to Track and merge with Trackster's Track object.
-var BackboneTrack = data.Dataset.extend({
+var BackboneTrack = data_mod.Dataset.extend({
 
     initialize: function(options) {
         // Dataset id is unique ID for now.
         this.set('id', options.dataset_id);
 
-        // Create genome-wide dataset if available.
-        var genome_wide_data = this.get('genome_wide_data');
-        if (genome_wide_data) {
-            var gwd_class = (this.get('track_type') === 'LineTrack' ? 
-                             GenomeWideBigWigData : GenomeWideSummaryTreeData);
-            this.set('genome_wide_data', new gwd_class(genome_wide_data));
+        // Set up data manager.
+        var data_manager = new GenomeDataManager({
+            dataset: this
+        });
+        this.set('data_manager', data_manager);
+
+        // If there's preloaded data, add it to data manager.
+        var preloaded_data = this.get('preloaded_data');
+        if (preloaded_data) {
+            // Increase size to accomodate all preloaded data.
+            data_manager.set('num_elements', preloaded_data.data.length);
+
+            // Put data into manager.
+            _.each(preloaded_data.data, function(entry) {
+                data_manager.set_data(entry.region, entry);
+            });
         }
+    },
+
+    /**
+     * Returns an array of data with each entry representing one chromosome/contig
+     * of data.
+     */
+    get_genome_wide_data: function(genome) {
+        var self = this,
+            data_manager = this.get('data_manager');
+
+        //  Map chromosome data into track data.
+        return _.map(genome.get('chroms_info').chrom_info, function(chrom_info) {
+            return data_manager.get_elt(
+                new GenomeRegion({
+                    chrom: chrom_info.chrom,
+                    start: 0,
+                    end: chrom_info.len
+                })
+            );
+        });
     }
 });
 
@@ -716,7 +693,7 @@ var add_datasets = function(dataset_url, add_track_async_url, success_fn) {
                                 },
                                 id = $(this).val();
                                 if ($(this).attr("name") !== "id") {
-                                    data['hda_ldda'] = 'ldda';
+                                    data.hda_ldda = 'ldda';
                                 }
                                 requests[requests.length] = $.ajax({
                                     url: add_track_async_url + "/" + id,
@@ -754,8 +731,6 @@ return {
     GenomeRegion: GenomeRegion,
     GenomeRegionCollection: GenomeRegionCollection,
     GenomeVisualization: GenomeVisualization,
-    GenomeWideBigWigData: GenomeWideBigWigData,
-    GenomeWideSummaryTreeData: GenomeWideSummaryTreeData,
     ReferenceTrackDataManager: ReferenceTrackDataManager,
     TrackBrowserRouter: TrackBrowserRouter,
     TrackConfig: TrackConfig,

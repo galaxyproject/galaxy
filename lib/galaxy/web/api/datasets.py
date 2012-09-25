@@ -139,12 +139,15 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if mode == "Coverage":
             # Get summary using minimal cutoffs.
             indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
-            summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ], detail_cutoff=0, draw_cutoff=0 )
+            summary = indexer.get_data( chrom, low, high, 
+                                        resolution=kwargs[ 'resolution' ], 
+                                        level=kwargs.get( 'level', None ),
+                                        detail_cutoff=0, draw_cutoff=0 )
             if summary == "detail":
                 # Use maximum level of detail--2--to get summary data no matter the resolution.
                 summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ], level=2, detail_cutoff=0, draw_cutoff=0 )
             frequencies, max_v, avg_v, delta = summary
-            return { 'dataset_type': indexer.data_type, 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
+            return { 'dataset_type': indexer.dataset_type, 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
 
         if 'index' in data_sources and data_sources['index']['name'] == "summary_tree" and mode == "Auto":
             # Only check for summary_tree if it's Auto mode (which is the default)
@@ -153,14 +156,13 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
             summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ] )
             if summary is None:
-                return { 'dataset_type': indexer.data_type, 'data': None }
+                return { 'dataset_type': indexer.dataset_type, 'data': None }
                 
             if summary == "draw":
                 kwargs["no_detail"] = True # meh
                 extra_info = "no_detail"
             elif summary != "detail":
-                frequencies, max_v, avg_v, delta = summary
-                return { 'dataset_type': indexer.data_type, 'data': frequencies, 'max': max_v, 'avg': avg_v, 'delta': delta }
+                return summary
         
         # Get data provider.
         data_provider = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='data' )
@@ -171,7 +173,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         # Get and return data from data_provider.
         result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ), **kwargs )
-        result.update( { 'dataset_type': data_provider.data_type, 'extra_info': extra_info } )
+        result.update( { 'dataset_type': data_provider.dataset_type, 'extra_info': extra_info } )
         return result
 
     def _raw_data( self, trans, dataset, **kwargs ):

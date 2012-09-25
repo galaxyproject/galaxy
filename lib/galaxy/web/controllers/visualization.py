@@ -760,7 +760,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                                                                 original_dataset=dataset, 
                                                                                 source='index' )
             # HACK: pass in additional params, which are only used for summary tree data, not BBI data.
-            track[ 'genome_wide_data' ] = { 'data': data_provider.get_genome_data( chroms_info, level=4, detail_cutoff=0, draw_cutoff=0 ) }
+            track[ 'preloaded_data' ] = data_provider.get_genome_data( chroms_info, level=4, detail_cutoff=0, draw_cutoff=0 )
         
         return trans.fill_template( 'visualization/circster.mako', viz_config=viz_config, genome=genome )
 
