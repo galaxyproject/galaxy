@@ -59,16 +59,16 @@
             %if not is_admin:
                 <div class="form-row">
                     <label>Current password:</label>
-                    <input type="password" name="current" value="${current}" size="40"/>
+                    <input type="password" name="current" value="" size="40"/>
                 </div>
             %endif
             <div class="form-row">
                 <label>New password:</label>
-                <input type="password" name="password" value="${password}" size="40"/>
+                <input type="password" name="password" value="" size="40"/>
             </div>
             <div class="form-row">
                 <label>Confirm:</label>
-                <input type="password" name="confirm" value="${confirm}" size="40"/>
+                <input type="password" name="confirm" value="" size="40"/>
             </div>
             <div class="form-row">
                 <input type="submit" name="change_password_button" value="Save"/>

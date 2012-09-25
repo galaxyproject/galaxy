@@ -694,6 +694,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             else:
                 widgets = user_type_form_definition.get_widgets( None, contents={}, **kwd )
         return widgets
+
     @web.expose
     def manage_user_info( self, trans, cntrller, **kwd ):
         '''Manage a user's login, password, public username, type, addresses, etc.'''
@@ -707,11 +708,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             raise AssertionError, "The user id (%s) is not valid" % str( user_id )
         webapp = get_webapp( trans, **kwd )
         email = util.restore_text( params.get( 'email', user.email ) )
-        # Do not sanitize passwords, so take from kwd
-        # instead of params ( which were sanitized )
-        current = kwd.get( 'current', '' )
-        password = kwd.get( 'password', '' )
-        confirm = kwd.get( 'confirm', '' )
         username = util.restore_text( params.get( 'username', '' ) )
         if not username:
             username = user.username
@@ -721,7 +717,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id == 'none' and user_type_form_definition is not None:
-                user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )    
+                user_type_fd_id = trans.security.encode_id( user_type_form_definition.id )
             user_type_fd_id_select_field = self.__build_user_type_fd_id_select_field( trans, selected_value=user_type_fd_id )
             widgets = self.__get_widgets( trans, user_type_form_definition, user=user, **kwd )
             # user's addresses
@@ -739,14 +735,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                         cntrller=cntrller,
                                         user=user,
                                         email=email,
-                                        current=current,
-                                        password=password,
-                                        confirm=confirm,
                                         username=username,
                                         user_type_fd_id_select_field=user_type_fd_id_select_field,
                                         user_info_forms=user_info_forms,
                                         user_type_form_definition=user_type_form_definition,
-                                        widgets=widgets, 
+                                        widgets=widgets,
                                         addresses=addresses,
                                         show_filter=show_filter,
                                         webapp=webapp,
@@ -757,13 +750,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                         cntrller=cntrller,
                                         user=user,
                                         email=email,
-                                        current=current,
-                                        password=password,
-                                        confirm=confirm,
                                         username=username,
                                         webapp=webapp,
                                         message=message,
                                         status=status )
+
     # For REMOTE_USER, we need the ability to just edit the username
     @web.expose
     @web.require_login( "to manage the public name" )
