@@ -1,5 +1,5 @@
 <tool id="cuffmerge" name="Cuffmerge" version="0.0.5">
-    <!-- Wrapper supports Cuffmerge version v1.0.0 -->
+    <!-- Wrapper supports Cuffmerge versions 1.3 and newer -->
     <description>merge together several Cufflinks assemblies</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>
@@ -88,7 +88,7 @@
             <param name="reference_annotation" value="cuffcompare_in3.gtf" ftype="gtf"/>
             <param name="use_seq_data" value="No"/>
 			<!-- oId assignment differ/are non-deterministic -->
-            <output name="merged_transcripts" file="cuffmerge_out1.gtf" lines_diff="8"/>
+            <output name="merged_transcripts" file="cuffmerge_out1.gtf" lines_diff="50"/>
         </test>
     </tests>
 

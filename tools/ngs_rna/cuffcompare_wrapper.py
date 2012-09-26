@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Supports Cuffcompare versions v1.3.0 and newer.
+
 import optparse, os, shutil, subprocess, sys, tempfile
 
 def stop_err( msg ):
