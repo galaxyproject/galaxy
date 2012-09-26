@@ -1578,10 +1578,12 @@ class Admin( object ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         toolbox = self.app.toolbox
+        tool_id = None
         if params.get( 'reload_tool_button', False ):
             tool_id = params.tool_id
             message, status = toolbox.reload_tool_by_id( tool_id )
         return trans.fill_template( '/admin/reload_tool.mako',
+                                    tool_id=tool_id,
                                     toolbox=toolbox,
                                     message=message,
                                     status=status )
