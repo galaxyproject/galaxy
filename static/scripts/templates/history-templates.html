@@ -70,3 +70,21 @@ You may be able to <a href="{{ edit_url }}" target="galaxy_main">set it manually
 </div>
 </script>
 
+<script type="text/template" class="template-history" id="template-history-downloadLinks">
+{{#if meta_files}}
+<div popupmenu="dataset-{{id}}-popup">
+    <a class="action-button" href="{{download_url}}">Download Dataset</a>
+    <a>Additional Files</a>
+    {{#each meta_files}}
+    <a class="action-button" href="{{meta_download_url}}">Download {{meta_file_type}}</a>
+    {{/each}}
+</div>
+<div style="float:left;" class="menubutton split popup" id="dataset-{{id}}-popup">
+    <a href="{{download_url}}" title="Download" class="icon-button disk tooltip"></a>
+</div>
+{{else}}
+    <a href="" title="Download" class="icon-button disk tooltip"></a>
+{{/if}}
+</script>
+
+

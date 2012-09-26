@@ -7,6 +7,40 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
 ## ?? add: if string != _(string)
 </%def>
 
+##<%def name="render_download_links( data, dataset_id )">
+##    ##
+##    %if data.purged: return
+##    <%
+##        from galaxy.datatypes.metadata import FileParameter
+##        download_url = h.url_for( controller='/dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )
+##        meta_files = []
+##        for k in data.metadata.spec.keys():
+##            if isinstance( data.metadata.spec[ k ].param, FileParameter ):
+##                file_type = k
+##                download_url = h.url_for( controller='/dataset', action='get_metadata_file', 
+##                                          hda_id=dataset_id, metadata_name=file_type )
+##                meta_files.append( ( file_type, download_url ) )
+##    %>
+##    
+##    %if meta_files:
+##        <div popupmenu="dataset-${dataset_id}-popup">
+##            <a class="action-button" href="${download_url}">Download Dataset</a>
+##            
+##            <a>Additional Files</a>
+##            %for meta_file_type, meta_download_url in zip( meta_download_types, meta_download_urls ):
+##                <a class="action-button" href="${meta_download_url}">Download ${meta_file_type}</a>
+##            %endfor
+##
+##            <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
+##                <a href="${download_url}" title='${_("Download")}' class="icon-button disk tooltip"></a>
+##            </div>
+##        </div>
+##        
+##    %else
+##        <a href="${download_url}" title='${_("Download")}' class="icon-button disk tooltip"></a>
+##    %endif
+##</%def>
+
 <%def name="get_page_localized_strings()">
     ## a list of localized strings used in the backbone views, etc. (to be loaded and cached)
     ##! change on per page basis
@@ -54,33 +88,34 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
 <%def name="get_urls_for_hda( hda, encoded_data_id, for_editing )">
 <%
     from galaxy.datatypes.metadata import FileParameter
+    #print '\n', hda.name
 
     data_dict = {}
     def add_to_data( **kwargs ):
         data_dict.update( kwargs )
     
-    # download links (for both main hda and associated meta files)
-    if hda.has_data():
-        add_to_data( download_url=h.url_for( controller='/dataset', action='display',
-                                             dataset_id=encoded_data_id, to_ext=hda.ext ) )
-    
-        download_meta_urls = {}
-        for file_type in hda.metadata.spec.keys():
-            if not isinstance( hda.metadata.spec[ file_type ].param, FileParameter ):
-                continue
-                
-            download_meta_urls[ file_type ] = h.url_for( controller='/dataset', action='get_metadata_file', 
-                                                         hda_id=encoded_data_id, metadata_name=file_type )
-        if download_meta_urls:
-            #TODO:?? needed? isn't this the same as download_url?
-            add_to_data( download_dataset_url=h.url_for( controller='dataset', action='display',
-                                                         dataset_id=encoded_data_id, to_ext=hda.ext ) )
-            add_to_data( download_meta_urls=download_meta_urls )
-        
     #TODO??: better way to do urls (move into js galaxy_paths (decorate) - _not_ dataset specific)
     deleted = hda.deleted
     purged  = hda.purged
     
+    # download links (for both main hda and associated meta files)
+    if not hda.purged:
+        add_to_data( download_url=h.url_for( controller='/dataset', action='display',
+                                             dataset_id=encoded_data_id, to_ext=hda.ext ) )
+    
+        meta_files = []
+        for k in hda.metadata.spec.keys():
+            if isinstance( hda.metadata.spec[ k ].param, FileParameter ):
+                file_type = k
+                download_url = h.url_for( controller='/dataset', action='get_metadata_file', 
+                                          hda_id=encoded_data_id, metadata_name=file_type )
+                meta_files.append( dict( meta_file_type=file_type, meta_download_url=download_url ) )
+                
+        if meta_files:
+            print hda.name, meta_files
+            add_to_data( meta_files=meta_files )
+                
+        
     #purged  = purged or hda.dataset.purged //??
     
     # all of these urls are 'datasets/data_id/<action>
@@ -305,7 +340,8 @@ ${ h.to_json_string( context_dict ) }
         "template-history-hdaSummary",
         "template-history-failedMetadata",
         "template-history-tagArea",
-        "template-history-annotationArea"
+        "template-history-annotationArea",
+        "template-history-downloadLinks"
     )}
     
     ## if using in-dom templates they need to go here (before the Backbone classes are defined)
@@ -339,6 +375,7 @@ ${ h.to_json_string( context_dict ) }
                 createMockHistoryData();
                 return;
             
+            //TODO: handle empty history
             } else if ( window.USE_CURR_DATA ){
                 if( console && console.debug ){ console.debug( '\t using current history data' ); }
                 glx_history = new History( pageData.history ).loadDatasetsAsHistoryItems( pageData.hdas );
@@ -409,3 +446,163 @@ ${ h.to_json_string( context_dict ) }
 </%def>
 
 <body class="historyPage"></body>
+
+<script type="text/javascript">
+function createMockHistoryData(){
+    mockHistory = {};
+    mockHistory.data = {
+        
+        template : {
+            id                  : 'a799d38679e985db', 
+            name                : 'template', 
+            data_type           : 'fastq', 
+            file_size           : 226297533, 
+            genome_build        : '?', 
+            metadata_data_lines : 0, 
+            metadata_dbkey      : '?', 
+            metadata_sequences  : 0, 
+            misc_blurb          : '215.8 MB', 
+            misc_info           : 'uploaded fastq file (misc_info)', 
+            model_class         : 'HistoryDatasetAssociation', 
+            download_url        : '', 
+            state               : 'ok', 
+            visible             : true,
+            deleted             : false, 
+            purged              : false,
+            
+            hid                 : 0,
+            //TODO: move to history
+            for_editing         : true,
+            //for_editing         : false,
+            
+            //?? not needed
+            //can_edit            : true,
+            //can_edit            : false,
+            
+            accessible          : true,
+            
+            //TODO: move into model functions (build there (and cache?))
+            //!! be careful with adding these accrd. to permissions
+            //!!    IOW, don't send them via template/API if the user doesn't have perms to use
+            //!!    (even if they don't show up)
+            undelete_url        : '',
+            purge_url           : '',
+            unhide_url          : '',
+            
+            display_url         : 'example.com/display',
+            edit_url            : 'example.com/edit',
+            delete_url          : 'example.com/delete',
+            
+            show_params_url     : 'example.com/show_params',
+            rerun_url           : 'example.com/rerun',
+            
+            retag_url           : 'example.com/retag',
+            annotate_url        : 'example.com/annotate',
+            
+            peek                : [
+                '<table cellspacing="0" cellpadding="3"><tr><th>1.QNAME</th><th>2.FLAG</th><th>3.RNAME</th><th>4.POS</th><th>5.MAPQ</th><th>6.CIGAR</th><th>7.MRNM</th><th>8.MPOS</th><th>9.ISIZE</th><th>10.SEQ</th><th>11.QUAL</th><th>12.OPT</th></tr>',
+                '<tr><td colspan="100%">@SQ	SN:gi|87159884|ref|NC_007793.1|	LN:2872769</td></tr>',
+                '<tr><td colspan="100%">@PG	ID:bwa	PN:bwa	VN:0.5.9-r16</td></tr>',
+                '<tr><td colspan="100%">HWUSI-EAS664L:15:64HOJAAXX:1:1:13280:968	73	gi|87159884|ref|NC_007793.1|	2720169	37	101M	=	2720169	0	NAATATGACATTATTTTCAAAACAGCTGAAAATTTAGACGTACCGATTTATCTACATCCCGCGCCAGTTAACAGTGACATTTATCAATCATACTATAAAGG	!!!!!!!!!!$!!!$!!!!!$!!!!!!$!$!$$$!!$!!$!!!!!!!!!!!$!</td></tr>',
+                '<tr><td colspan="100%">!!!$!$!$$!!$$!!$!!!!!!!!!!!!!!!!!!!!!!!!!!$!!$!!	XT:A:U	NM:i:1	SM:i:37	AM:i:0	X0:i:1	X1:i:0	XM:i:1	XO:i:0	XG:i:0	MD:Z:0A100</td></tr>',
+                '<tr><td colspan="100%">HWUSI-EAS664L:15:64HOJAAXX:1:1:13280:968	133	gi|87159884|ref|NC_007793.1|	2720169	0	*	=	2720169	0	NAAACTGTGGCTTCGTTNNNNNNNNNNNNNNNGTGANNNNNNNNNNNNNNNNNNNGNNNNNNNNNNNNNNNNNNNNCNAANNNNNNNNNNNNNNNNNNNNN	!!!!!!!!!!!!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</td></tr>',
+                '<tr><td colspan="100%">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</td></tr>',
+                '</table>'
+            ].join( '' )
+        }
+        
+    };
+    _.extend( mockHistory.data, {
+        
+        notAccessible : 
+            _.extend( _.clone( mockHistory.data.template ),
+                      { accessible : false }),
+        
+        //deleted, purged, visible
+        deleted     :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { deleted : true,
+                        delete_url : '',
+                        purge_url : 'example.com/purge',
+                        undelete_url : 'example.com/undelete' }),
+        purgedNotDeleted :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { purged : true,
+                        delete_url : '' }),
+        notvisible  :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { visible : false,
+                        unhide_url : 'example.com/unhide' }),
+
+        hasDisplayApps :
+            _.extend( _.clone( mockHistory.data.template ),
+                { display_apps : {
+                        'display in IGB' : {
+                            Web: "/display_application/63cd3858d057a6d1/igb_bam/Web",
+                            Local: "/display_application/63cd3858d057a6d1/igb_bam/Local"
+                        }
+                    }
+                }
+            ),
+        canTrackster :
+            _.extend( _.clone( mockHistory.data.template ),
+                { trackster_urls      : {
+                        'data-url'      : "example.com/trackster-data",
+                        'action-url'    : "example.com/trackster-action",
+                        'new-url'       : "example.com/trackster-new"
+                    }
+                }
+            ),
+        zeroSize  :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { file_size : 0 }),
+            
+        hasMetafiles  :
+            _.extend( _.clone( mockHistory.data.template ), {
+                download_meta_urls : {
+                    'bam_index'      : "example.com/bam-index"
+                }
+            }),
+            
+        //states
+        upload :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.UPLOAD }),
+        queued :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.QUEUED }),
+        running :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.RUNNING }),
+        empty :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.EMPTY }),
+        error :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.ERROR,
+                        report_error_url: 'example.com/report_err' }),
+        discarded :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.DISCARDED }),
+        setting_metadata :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.SETTING_METADATA }),
+        failed_metadata :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.FAILED_METADATA })
+/*
+*/        
+    });
+    
+    //mockHistory.views.deleted.logger = console;
+    mockHistory.items = {};
+    mockHistory.views = {};
+    for( key in mockHistory.data ){
+        mockHistory.items[ key ] = new HistoryItem( mockHistory.data[ key ] );
+        mockHistory.items[ key ].set( 'name', key );
+        mockHistory.views[ key ] = new HistoryItemView({ model : mockHistory.items[ key ] });
+        //console.debug( 'view: ', mockHistory.views[ key ] );
+        $( 'body' ).append( mockHistory.views[ key ].render() );
+    }
+}
+</script>

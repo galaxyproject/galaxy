@@ -66,14 +66,15 @@ $.fn.makeAbsolute = function(rebase) {
 };
 
 function make_popupmenu(button_element, initial_options) {
-    
     /*  Use the $.data feature to store options with the link element.
         This allows options to be changed at a later time 
     */
     var element_menu_exists = (button_element.data("menu_options"));
     button_element.data("menu_options", initial_options);
+    
     // If element already has menu, nothing else to do since HTML and actions are already set.
     if (element_menu_exists) { return; }
+    
     button_element.bind("click.show_popup", function(e) {
         // Close existing visible menus
         $(".popmenu-wrapper").remove();
@@ -93,7 +94,8 @@ function make_popupmenu(button_element, initial_options) {
                     menu_element.append( $("<li></li>").addClass( "head" ).append( $("<a href='#'></a>").html(k) ) );
                 }
             });
-            var wrapper = $( "<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'></div>" ).append( menu_element ).appendTo( "body" );
+            var wrapper = $( "<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'></div>" )
+                .append( menu_element ).appendTo( "body" );
                    
             var x = e.pageX - wrapper.width() / 2 ;
             x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 5 );
@@ -137,6 +139,7 @@ function make_popup_menus() {
             var confirmtext = link_dom.getAttribute( "confirm" ),
                 href = link_dom.getAttribute( "href" ),
                 target = link_dom.getAttribute( "target" );
+            
             if (!href) {
                 options[ link.text() ] = null;
             } else {
@@ -161,6 +164,7 @@ function make_popup_menus() {
                 };
             }
         });
+        // locate the element with the id corresponding to the menu's popupmenu attr
         var box = $( "#" + menu.attr( 'popupmenu' ) );
         
         // For menus with clickable link text, make clicking on the link go through instead
@@ -170,6 +174,7 @@ function make_popup_menus() {
             return true;
         });
         
+        // attach the click events and menu box building to the box element
         make_popupmenu(box, options);
         box.addClass("popup");
         menu.remove();
