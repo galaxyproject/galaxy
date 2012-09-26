@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Wrapper supports Cuffdiff versions v1.3.0-v2.0
+
 import optparse, os, shutil, subprocess, sys, tempfile
 
 def group_callback( option, op_str, value, parser ):
@@ -59,6 +61,7 @@ def __main__():
                                                                                 where each end is 50bp, you should set -r to be 200. The default is 45bp.')
     parser.add_option( '-c', '--min-alignment-count', dest='min_alignment_count', help='The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples. If no testing is performed, changes in the locus are deemed not signficant, and the locus\' observed changes don\'t contribute to correction for multiple testing. The default is 1,000 fragment alignments (up to 2,000 paired reads).' )
     parser.add_option( '--FDR', dest='FDR', help='The allowed false discovery rate. The default is 0.05.' )
+    parser.add_option( '-u', '--multi-read-correct', dest='multi_read_correct', action="store_true", help='Tells Cufflinks to do an initial estimation procedure to more accurately weight reads mapping to multiple locations in the genome')
 
     # Advanced Options:	
     parser.add_option( '--num-importance-samples', dest='num_importance_samples', help='Sets the number of importance samples generated for each locus during abundance estimation. Default: 1000' )
@@ -153,6 +156,8 @@ def __main__():
         cmd += ( " -c %i" % int ( options.min_alignment_count ) )
     if options.FDR:
         cmd += ( " --FDR %f" % float( options.FDR ) )
+    if options.multi_read_correct:
+        cmd += ( " -u" )
     if options.num_importance_samples:
         cmd += ( " --num-importance-samples %i" % int ( options.num_importance_samples ) )
     if options.max_mle_iterations:
