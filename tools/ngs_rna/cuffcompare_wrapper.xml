@@ -80,13 +80,18 @@
             from_work_dir="cc_output.stats" />
         <data format="tabular" name="input1_tmap" label="${tool.name} on ${on_string}: ${first_input.hid} data tmap file"
             from_work_dir="cc_output.input1.tmap" />
-        <data format="tabular" name="input1_refmap" label="${tool.name} on ${on_string}: data ${first_input.hid} refmap file" 
-            from_work_dir="cc_output.input1.refmap"/>
-        <data format="tabular" name="input2_tmap" label="${tool.name} on ${on_string}: data ${input_files[0]['additional_input'].hid} tmap file" from_work_dir="cc_output.input2.tmap">
-            <filter>len( input_files ) > 0</filter>
+        <data format="tabular" name="input1_refmap" 
+              label="${tool.name} on ${on_string}: data ${first_input.hid} refmap file" 
+              from_work_dir="cc_output.input1.refmap">
+            <filter>annotation['use_ref_annotation'] == 'Yes'</filter>
         </data>
-        <data format="tabular" name="input2_refmap" label="${tool.name} on ${on_string}: data ${input_files[0]['additional_input'].hid} refmap file" from_work_dir="cc_output.input2.refmap">
-            <filter>len( input_files ) > 0</filter>
+        <data format="tabular" name="input2_tmap" label="${tool.name} on ${on_string}: data ${input_files[0]['additional_input'].hid} tmap file" from_work_dir="cc_output.input2.tmap">
+            <filter>len( input_files ) > 1</filter>
+        </data>
+        <data format="tabular" name="input2_refmap" 
+              label="${tool.name} on ${on_string}: data ${input_files[0]['additional_input'].hid} refmap file" 
+              from_work_dir="cc_output.input2.refmap">
+            <filter>annotation['use_ref_annotation'] == 'Yes' and len( input_files ) > 1</filter>
         </data>
         <data format="tabular" name="transcripts_tracking" label="${tool.name} on ${on_string}: transcript tracking" from_work_dir="cc_output.tracking">
             <filter>len( input_files ) > 0</filter>
