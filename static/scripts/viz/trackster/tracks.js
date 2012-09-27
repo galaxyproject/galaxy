@@ -6,6 +6,58 @@ define( ["libs/underscore", "viz/visualization", "viz/trackster/util",
 var extend = _.extend;
 var get_random_color = util.get_random_color;
 
+/**
+ * Use a popup grid to add more datasets.
+ */
+var add_datasets = function(dataset_url, add_track_async_url, success_fn) {
+    $.ajax({
+        url: dataset_url,
+        data: { "f-dbkey": view.dbkey },
+        error: function() { alert( "Grid failed" ); },
+        success: function(table_html) {
+            show_modal(
+                "Select datasets for new tracks",
+                table_html, {
+                    "Cancel": function() {
+                        hide_modal();
+                    },
+                    "Add": function() {
+                        var requests = [];
+                        $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
+                            var data = {
+                                    data_type: 'track_config',
+                                    'hda_ldda': 'hda'
+                                },
+                                id = $(this).val();
+                                if ($(this).attr("name") !== "id") {
+                                    data.hda_ldda = 'ldda';
+                                }
+                                requests[requests.length] = $.ajax({
+                                    url: add_track_async_url + "/" + id,
+                                    data: data,
+                                    dataType: "json"
+                                });
+                        });
+                        // To preserve order, wait until there are definitions for all tracks and then add 
+                        // them sequentially.
+                        $.when.apply($, requests).then(function() {
+                            // jQuery always returns an Array for arguments, so need to look at first element
+                            // to determine whether multiple requests were made and consequently how to 
+                            // map arguments to track definitions.
+                            var track_defs = (arguments[0] instanceof Array ?  
+                                               $.map(arguments, function(arg) { return arg[0]; }) :
+                                               [ arguments[0] ]
+                                               );
+                            success_fn(track_defs);
+                        });
+                        hide_modal();
+                    }
+                }
+            );
+        }
+    });
+};
+
 
 /**
  * Helper to determine if object is jQuery deferred.
@@ -909,15 +961,11 @@ extend( View.prototype, DrawableCollection.prototype, {
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
-            // Does not work because it would create circular dependency b/t trackster_ui and tracks.
-            /*
-            var ui = new trackster_ui_mod.TracksterUI();
-            ui.add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
+            add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
                 _.each(tracks, function(track) {
                     view.add_drawable( object_from_template(track, view, view) );  
                 });
             });
-            */
         });
         // Another label track at bottom
         this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.bottom_container);
@@ -4200,7 +4248,8 @@ return {
     ReadTrack: ReadTrack,
     VcfTrack: VcfTrack,
     CompositeTrack: CompositeTrack,
-    object_from_template: object_from_template
+    object_from_template: object_from_template,
+    add_datasets: add_datasets
 };
 
 // End trackster_module encapsulation
