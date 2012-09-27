@@ -263,36 +263,35 @@ class ToolBox( object ):
         os.write( fd, '<?xml version="1.0"?>\n' )
         os.write( fd, '<toolbox>\n' )
         for key, item in self.integrated_tool_panel.items():
-            if key.startswith( 'tool_' ):
-                if item:
+            if item:
+                if key.startswith( 'tool_' ):
                     os.write( fd, '    <tool id="%s" />\n' % item.id )
-            elif key.startswith( 'workflow_' ):
-                if item:
+                elif key.startswith( 'workflow_' ):
                     os.write( fd, '    <workflow id="%s" />\n' % item.id )
-            elif key.startswith( 'label_' ):
-                label_id = item.id or ''
-                label_text = item.text or ''
-                label_version = item.version or ''
-                os.write( fd, '    <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
-            elif key.startswith( 'section_' ):
-                section_id = item.id or ''
-                section_name = item.name or ''
-                section_version = item.version or ''
-                os.write( fd, '    <section id="%s" name="%s" version="%s">\n' % ( section_id, section_name, section_version ) )
-                for section_key, section_item in item.elems.items():
-                    if section_key.startswith( 'tool_' ):
-                        if section_item:
-                            os.write( fd, '        <tool id="%s" />\n' % section_item.id )
-                    elif section_key.startswith( 'workflow_' ):
-                        if section_item:
-                            os.write( fd, '        <workflow id="%s" />\n' % section_item.id )
-                    elif section_key.startswith( 'label_' ):
-                        if section_item:
-                            label_id = section_item.id or ''
-                            label_text = section_item.text or ''
-                            label_version = section_item.version or ''
-                            os.write( fd, '        <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
-                os.write( fd, '    </section>\n' )
+                elif key.startswith( 'label_' ):
+                    label_id = item.id or ''
+                    label_text = item.text or ''
+                    label_version = item.version or ''
+                    os.write( fd, '    <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
+                elif key.startswith( 'section_' ):
+                    section_id = item.id or ''
+                    section_name = item.name or ''
+                    section_version = item.version or ''
+                    os.write( fd, '    <section id="%s" name="%s" version="%s">\n' % ( section_id, section_name, section_version ) )
+                    for section_key, section_item in item.elems.items():
+                        if section_key.startswith( 'tool_' ):
+                            if section_item:
+                                os.write( fd, '        <tool id="%s" />\n' % section_item.id )
+                        elif section_key.startswith( 'workflow_' ):
+                            if section_item:
+                                os.write( fd, '        <workflow id="%s" />\n' % section_item.id )
+                        elif section_key.startswith( 'label_' ):
+                            if section_item:
+                                label_id = section_item.id or ''
+                                label_text = section_item.text or ''
+                                label_version = section_item.version or ''
+                                os.write( fd, '        <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
+                    os.write( fd, '    </section>\n' )
         os.write( fd, '</toolbox>\n' )
         os.close( fd )
         shutil.move( filename, os.path.abspath( self.integrated_tool_panel_config ) )
