@@ -1278,6 +1278,18 @@ class DatasetInstance( object ):
         was converted successfully. 
         """
 
+        # FIXME: copied from controller.py
+        messages = Bunch(
+            PENDING = "pending",
+            NO_DATA = "no data",
+            NO_CHROMOSOME = "no chromosome",
+            NO_CONVERTER = "no converter",
+            NO_TOOL = "no tool",
+            DATA = "data",
+            ERROR = "error",
+            OK = "ok"
+        )
+
         # Get converted dataset; this will start the conversion if necessary.
         try:
             converted_dataset = self.get_converted_dataset( trans, target_type )

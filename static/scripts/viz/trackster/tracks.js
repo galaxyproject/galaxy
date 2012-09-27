@@ -1,7 +1,7 @@
 define( ["libs/underscore", "viz/visualization", "viz/trackster/util", 
          "viz/trackster/slotting", "viz/trackster/painters", "mvc/data",
-         "viz/trackster/filters" ], 
-         function( _, visualization, util, slotting, painters, data, filters_mod ) {
+         "viz/trackster/filters", "viz/trackster_ui" ], 
+         function( _, visualization, util, slotting, painters, data, filters_mod, trackster_ui_mod ) {
 
 var extend = _.extend;
 var get_random_color = util.get_random_color;
@@ -909,11 +909,15 @@ extend( View.prototype, DrawableCollection.prototype, {
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
-            add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
+            // Does not work because it would create circular dependency b/t trackster_ui and tracks.
+            /*
+            var ui = new trackster_ui_mod.TracksterUI();
+            ui.add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
                 _.each(tracks, function(track) {
                     view.add_drawable( object_from_template(track, view, view) );  
                 });
             });
+            */
         });
         // Another label track at bottom
         this.nav_labeltrack = $("<div/>").addClass("nav-labeltrack").appendTo(this.bottom_container);
