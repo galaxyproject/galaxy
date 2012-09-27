@@ -207,7 +207,7 @@
     </script>
 </%def>
 
-<%def name="render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, parent, row_counter, tracked_datasets, show_deleted=False, simple=False )">
+<%def name="render_dataset( cntrller, ldda, library_dataset, can_modify, can_manage, selected, library, folder, pad, parent, row_counter, tracked_datasets, show_deleted=False, simple=False )">
     <%
         ## The received ldda must always be a LibraryDatasetDatasetAssociation object.  The object id passed to methods
         ## from the drop down menu should be the ldda id to prevent id collision ( which could happen when displaying
@@ -215,29 +215,15 @@
         ## library_dataset, so we display the attributes from the ldda.
         
         from galaxy.web.controllers.library_common import branch_deleted
-        # SM: DELETEME
-        import logging
-        log = logging.getLogger( __name__ )
-        
+
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
-        
-        if ldda == library_dataset.library_dataset_dataset_association:
-            current_version = True
-            if is_admin:
-                can_modify = can_manage = True
-            elif cntrller in [ 'library', 'requests' ]:
-                #log.debug( "SM: Query 4: backref to Library_Dataset_Permissions" )
-                can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset )
-                can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, library_dataset )
-            else:
-                can_modify = can_manage = False
-        else:
-            current_version = False
+        current_version = ( ldda == library_dataset.library_dataset_dataset_association )
         if current_version and ldda.state not in ( 'ok', 'error', 'empty', 'deleted', 'discarded' ):
             tracked_datasets[ldda.id] = ldda.state
-        #log.debug( "SM: Query 5 call: LibraryDatasetDatasetInfoAssocation" )
+        # SM: This causes a query to be emitted, but it quickly goes down a
+        # rabbit hole of many possible inheritable cases. It may not be 
+        # possible to easily eliminate the extra query from this call.
         info_association, inherited = ldda.get_info_association( restrict=True )
-        # SM: The form type is for displaying URLs only; ignore for now.
         form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
     %>
     %if current_version and ( not ldda.library_dataset.deleted or show_deleted ):
@@ -326,7 +312,7 @@
 
 <%def name="render_folder( cntrller, folder, folder_pad, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=False, parent=None, row_counter=None, root_folder=False, simple=False )">
     <%
-        from galaxy.web.controllers.library_common import active_folders, active_folders_and_library_datasets, activatable_folders_and_library_datasets, map_library_datasets_to_lddas, branch_deleted, datasets_for_lddas
+        from galaxy.web.controllers.library_common import active_folders, active_folders_and_library_datasets, activatable_folders_and_library_datasets, map_library_datasets_to_lddas, branch_deleted, datasets_for_lddas 
 
         # SM: DELETEME
         from datetime import datetime, timedelta
@@ -466,14 +452,20 @@
         if ( len( library_datasets ) > 0 ):
             lib_dataset_ldda_map = map_library_datasets_to_lddas( trans, library_datasets )
             dataset_list = datasets_for_lddas( trans, lib_dataset_ldda_map.values() )
-            can_access_datasets = trans.app.security_agent.get_dataset_access_mapping( trans, current_user_roles, dataset_list )
+            #can_access_datasets = trans.app.security_agent.dataset_access_mapping( trans, current_user_roles, dataset_list )
+            can_access_datasets = trans.app.security_agent.dataset_permission_map_for_access( trans, current_user_roles, dataset_list )
+            can_modify_datasets = trans.app.security_agent.item_permission_map_for_modify( trans, current_user_roles, dataset_list )
+            can_manage_datasets = trans.app.security_agent.item_permission_map_for_manage( trans, current_user_roles, dataset_list )
             for library_dataset in library_datasets:
                 ldda = lib_dataset_ldda_map[ library_dataset.id ]
                 if ldda: 
+                    # SMTODO: Fix awkard modify/manage permission checks.
                     can_access = is_admin or can_access_datasets[ ldda.dataset_id ]
+                    can_modify = is_admin or ( cntrller in ['library', 'requests'] and can_modify_datasets[ ldda.dataset_id ])
+                    can_manage = is_admin or ( cntrller in ['library', 'requests'] and can_manage_datasets[ ldda.dataset_id ])
                     selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
                     if can_access:
-                        render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )
+                        render_dataset( cntrller, ldda, library_dataset, can_modify, can_manage, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )
     %>
 </%def>
 

@@ -324,7 +324,7 @@ class GalaxyRBACAgent( RBACAgent ):
         return ret_permissions
 
 
-    def allow_action_on_items( self, trans, user_roles, action, items ):
+    def allow_action_on_libitems( self, trans, user_roles, action, items ):
         """
         This should be the equivalent of allow_action defined on multiple items.
         It is meant to specifically replace allow_action for multiple 
@@ -379,18 +379,55 @@ class GalaxyRBACAgent( RBACAgent ):
         return ret_allow_action
 
 
-    def get_dataset_access_mapping( self, trans, user_roles, datasets ):
+    # DELETEME: SM: DO NOT TOUCH! This actually works.
+    def dataset_access_mapping( self, trans, user_roles, datasets ):
         '''
         For the given list of datasets, return a mapping of the datasets' ids
         to whether they can be accessed by the user or not. The datasets input
         is expected to be a simple list of Dataset objects. 
         '''
         datasets_public_map = self.datasets_are_public( trans, datasets )
-        datasets_allow_action_map = self.allow_action_on_items( trans, user_roles, self.permitted_actions.DATASET_ACCESS, datasets )
+        datasets_allow_action_map = self.allow_action_on_libitems( trans, user_roles, self.permitted_actions.DATASET_ACCESS, datasets )
         can_access = {}
         for dataset in datasets:
             can_access[ dataset.id ] = datasets_public_map[ dataset.id ] or datasets_allow_action_map[ dataset.id ]
         return can_access
+
+    def dataset_permission_map_for_access( self, trans, user_roles, libitems ):
+        '''
+        For a given list of library items (e.g., Datasets), return a map of the
+        datasets' ids to whether they can have permission to use that action 
+        (e.g., "access" or "modify") on the dataset. The libitems input is 
+        expected to be a simple list of library items, such as Datasets or
+        LibraryDatasets.
+        NB: This is currently only usable for Datasets; it was intended to
+        be used for any library item.
+        '''
+        # Map the library items to whether they are publicly accessible or not.
+        # Then determine what actions are allowed on the item (in case it's not
+        # public). Finally, the item is accessible if it's publicly available
+        # or the right permissions are enabled.
+        # TODO: This only works for Datasets; other code is using X_is_public,
+        # so this will have to be rewritten to support other items.
+        libitems_public_map = self.datasets_are_public( trans, libitems )
+        libitems_allow_action_map = self.allow_action_on_libitems( 
+            trans, user_roles, self.permitted_actions.DATASET_ACCESS, libitems )
+        can_access = {}
+        for libitem in libitems:
+            can_access[ libitem.id ] = libitems_public_map[ libitem.id ] or libitems_allow_action_map[ libitem.id ]
+        return can_access
+
+    def item_permission_map_for_modify( self, trans, user_roles, libitems ): 
+        return self.allow_action_on_libitems( 
+            trans, user_roles, self.permitted_actions.LIBRARY_MODIFY, libitems )
+
+    def item_permission_map_for_manage( self, trans, user_roles, libitems ): 
+        return self.allow_action_on_libitems( 
+            trans, user_roles, self.permitted_actions.LIBRARY_MANAGE, libitems )
+
+    def item_permission_map_for_add( self, trans, user_roles, libitems ): 
+        return self.allow_action_on_libitems( 
+            trans, user_roles, self.permitted_actions.LIBRARY_ADD, libitems )
 
     def can_access_dataset( self, user_roles, dataset ):
         # SM: dataset_is_public will access dataset.actions, which is a 
