@@ -1,4 +1,4 @@
-define( ["libs/underscore", "libs/d3", "viz/visualization"], function(_, d3, visualization) {
+define(["libs/underscore", "libs/d3", "viz/visualization"], function(_, d3, visualization) {
 
 // General backbone style inheritence
 var Base = function() { this.initialize && this.initialize.apply(this, arguments); }; Base.extend = Backbone.Model.extend;
@@ -28,6 +28,18 @@ var SVGUtils = Backbone.Model.extend({
 });
 
 /**
+ * A label track.
+ */
+// FIXME: merge with tracks.js LabelTrack
+var LabelTrack = Backbone.Model.extend({
+    defaults: {
+        prefs: {
+            color: '#ccc'
+        }
+    }
+});
+
+/**
  * Renders a full circster visualization.
  */ 
 var CircsterView = Backbone.View.extend({
@@ -38,6 +50,7 @@ var CircsterView = Backbone.View.extend({
         this.genome = options.genome;
         this.dataset_arc_height = options.dataset_arc_height;
         this.track_gap = 5;
+        this.label_arc_height = 20;
     },
     
     render: function() {
@@ -47,8 +60,9 @@ var CircsterView = Backbone.View.extend({
             height = self.$el.height(),
             // Compute radius start based on model, will be centered 
             // and fit entirely inside element by default.
-            init_radius_start = ( Math.min(width, height)/2 - 
-                                  this.model.get('tracks').length * (this.dataset_arc_height + this.track_gap) ),
+            init_radius_start = Math.min(width, height) / 2 - 
+                                this.model.get('tracks').length * (this.dataset_arc_height + this.track_gap) -
+                                (this.label_arc_height + this.track_gap),
             tracks = this.model.get('tracks');
 
         // Set up SVG element.
@@ -76,7 +90,7 @@ var CircsterView = Backbone.View.extend({
                     d3.selectAll('path.chrom-data').filter(function(d, i) {
                         return utils.is_visible(this, svg);
                     }).each(function(d, i) {
-                        var elt_data = $.data(this, "chrom_data");
+                        var elt_data = $.data(this, 'chrom_data');
                         tracks_and_chroms_to_update[elt_data.track.id].push(elt_data.chrom);
                     });
 
@@ -96,6 +110,7 @@ var CircsterView = Backbone.View.extend({
 
             var track_renderer = new track_renderer_class({
                 track: track,
+                track_index: index, 
                 radius_start: radius_start,
                 radius_end: radius_start + dataset_arc_height,
                 genome: self.genome,
@@ -105,47 +120,67 @@ var CircsterView = Backbone.View.extend({
             track_renderer.render(svg);
 
         });
+
+        // -- Render chromosome labels. --
+        var radius_start = init_radius_start + tracks.length * (dataset_arc_height + self.track_gap) + self.track_gap;
+        var chrom_labels_track = new CircsterLabelTrackRenderer({
+            track: new LabelTrack(),
+            track_index: tracks.length,
+            radius_start: radius_start,
+            radius_end: radius_start,
+            genome: self.genome,
+            total_gap: self.total_gap
+        });
+
+        chrom_labels_track.render(svg);
     }
 });
 
 var CircsterTrackRenderer = Base.extend( {
 
-    initialize: function( options ) {
+    initialize: function(options) {
         this.options = options;
+        this.options.bg_stroke = 'ccc';
+        this.options.bg_fill = 'ccc';
     },
 
-    render: function( svg ) {    
-        // Draw background arcs for each chromosome.
-        var genome_arcs = this.chroms_layout(),
+    render: function(svg) {
+        // Create track group element.
+        var track_group_elt = svg.append("g").attr("id", "parent-" + this.options.track_index);
+
+        // Render background arcs.
+        var genome_arcs = this._chroms_layout(),
             radius_start = this.options.radius_start,
             radius_end = this.options.radius_end,
-            track_parent_elt = svg.append("g").attr("id", "inner-arc"),
             arc_gen = d3.svg.arc()
-                .innerRadius(radius_start)
-                .outerRadius(radius_end),
-            // Draw arcs.
-            chroms_elts = track_parent_elt.selectAll("#inner-arc>path")
-                .data(genome_arcs).enter().append("path")
-                .attr("d", arc_gen)
-                .style("stroke", "#ccc")
-                .style("fill",  "#ccc")
-                .append("title").text(function(d) { return d.data.chrom; });
+                        .innerRadius(radius_start)
+                        .outerRadius(radius_end),
 
-        // Render data.
-        this.render_data(track_parent_elt);
+            chroms_elts = track_group_elt.selectAll('g')
+                .data(genome_arcs).enter().append('svg:g');
+
+        // Draw arcs.
+        chroms_elts.append("path")
+            .attr("d", arc_gen)
+            .style("stroke", this.options.bg_stroke)
+            .style("fill",  this.options.bg_fill)
+            .append("title").text(function(d) { return d.data.chrom; });
+            
+        // Render track data.
+        this.render_data(track_group_elt);
 
         // Apply prefs.
         var prefs = this.options.track.get('prefs'),
             block_color = prefs.block_color;
         if (!block_color) { block_color = prefs.color; }
-        track_parent_elt.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
+        track_group_elt.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
     },
 
     /**
      * Returns arc layouts for genome's chromosomes/contigs. Arcs are arranged in a circle 
      * separated by gaps.
      */
-    chroms_layout: function() {
+    _chroms_layout: function() {
         // Setup chroms layout using pie.
         var chroms_info = this.options.genome.get_chroms_info(),
             pie_layout = d3.layout.pie().value(function(d) { return d.len; }).sort(null),
@@ -171,7 +206,7 @@ var CircsterTrackRenderer = Base.extend( {
      */
     render_data: function(svg) {
         var self = this,
-            chrom_arcs = this.chroms_layout(),
+            chrom_arcs = this._chroms_layout(),
             track = this.options.track,
             r_start = this.options.radius_start,
             r_end = this.options.radius_end,
@@ -194,6 +229,42 @@ var CircsterTrackRenderer = Base.extend( {
             });
 
         return chroms_data_layout;
+    }
+});
+
+/**
+ * Render chromosome labels.
+ */
+var CircsterLabelTrackRenderer = CircsterTrackRenderer.extend({
+
+    initialize: function(options) {
+        this.options = options;
+        this.options.bg_stroke = 'fff';
+        this.options.bg_fill = 'fff';
+    },
+
+    /**
+     * Render labels.
+     */
+    render_data: function(svg) {
+        // Add chromosome label where it will fit; an alternative labeling mechanism 
+        // would be nice for small chromosomes.
+        var chrom_arcs = svg.selectAll('g');
+
+        chrom_arcs.selectAll('path')
+            .attr('id', function(d) { return 'label-' + d.data.chrom; })
+          
+        chrom_arcs.append("svg:text")
+            .filter(function(d) { 
+                return d.endAngle - d.startAngle > 0.08;
+            })
+            .attr('text-anchor', 'middle')
+          .append("svg:textPath")
+            .attr("xlink:href", function(d) { return "#label-" + d.data.chrom; })
+            .attr('startOffset', '25%')
+            .text(function(d) { 
+                return d.data.chrom;
+            });
     }
 });
 
