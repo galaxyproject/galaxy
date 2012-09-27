@@ -7,40 +7,6 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
 ## ?? add: if string != _(string)
 </%def>
 
-##<%def name="render_download_links( data, dataset_id )">
-##    ##
-##    %if data.purged: return
-##    <%
-##        from galaxy.datatypes.metadata import FileParameter
-##        download_url = h.url_for( controller='/dataset', action='display', dataset_id=dataset_id, to_ext=data.ext )
-##        meta_files = []
-##        for k in data.metadata.spec.keys():
-##            if isinstance( data.metadata.spec[ k ].param, FileParameter ):
-##                file_type = k
-##                download_url = h.url_for( controller='/dataset', action='get_metadata_file', 
-##                                          hda_id=dataset_id, metadata_name=file_type )
-##                meta_files.append( ( file_type, download_url ) )
-##    %>
-##    
-##    %if meta_files:
-##        <div popupmenu="dataset-${dataset_id}-popup">
-##            <a class="action-button" href="${download_url}">Download Dataset</a>
-##            
-##            <a>Additional Files</a>
-##            %for meta_file_type, meta_download_url in zip( meta_download_types, meta_download_urls ):
-##                <a class="action-button" href="${meta_download_url}">Download ${meta_file_type}</a>
-##            %endfor
-##
-##            <div style="float:left;" class="menubutton split popup" id="dataset-${dataset_id}-popup">
-##                <a href="${download_url}" title='${_("Download")}' class="icon-button disk tooltip"></a>
-##            </div>
-##        </div>
-##        
-##    %else
-##        <a href="${download_url}" title='${_("Download")}' class="icon-button disk tooltip"></a>
-##    %endif
-##</%def>
-
 <%def name="get_page_localized_strings()">
     ## a list of localized strings used in the backbone views, etc. (to be loaded and cached)
     ##! change on per page basis
@@ -98,26 +64,8 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     deleted = hda.deleted
     purged  = hda.purged
     
-    # download links (for both main hda and associated meta files)
-    if not hda.purged:
-        add_to_data( download_url=h.url_for( controller='/dataset', action='display',
-                                             dataset_id=encoded_data_id, to_ext=hda.ext ) )
-    
-        meta_files = []
-        for k in hda.metadata.spec.keys():
-            if isinstance( hda.metadata.spec[ k ].param, FileParameter ):
-                file_type = k
-                download_url = h.url_for( controller='/dataset', action='get_metadata_file', 
-                                          hda_id=encoded_data_id, metadata_name=file_type )
-                meta_files.append( dict( meta_file_type=file_type, meta_download_url=download_url ) )
-                
-        if meta_files:
-            print hda.name, meta_files
-            add_to_data( meta_files=meta_files )
-                
-        
+    # ................................................................ link actions 
     #purged  = purged or hda.dataset.purged //??
-    
     # all of these urls are 'datasets/data_id/<action>
     if not ( dataset_purged or purged ) and for_editing:
         add_to_data( undelete_url=h.url_for( controller='dataset', action='undelete', dataset_id=encoded_data_id ) )
@@ -128,6 +76,8 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     if not hda.visible:
         add_to_data( unhide_url=h.url_for( controller='dataset', action='unhide', dataset_id=encoded_data_id ) )
     
+    
+    # ................................................................ title actions (display, edit, delete)
     display_url = ''
     if for_editing:
         display_url = h.url_for( controller='dataset', action='display', dataset_id=encoded_data_id, preview=True, filename='' )
@@ -157,11 +107,29 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
                                            show_deleted_on_refresh=show_deleted
         ))
             
+    # ................................................................ primary actions (error, info, download)
+    # download links (hda and associated meta files)
+    if not hda.purged:
+        add_to_data( download_url=h.url_for( controller='/dataset', action='display',
+                                             dataset_id=encoded_data_id, to_ext=hda.ext ) )
+    
+        meta_files = []
+        for k in hda.metadata.spec.keys():
+            if isinstance( hda.metadata.spec[ k ].param, FileParameter ):
+                file_type = k
+                download_url = h.url_for( controller='/dataset', action='get_metadata_file', 
+                                          hda_id=encoded_data_id, metadata_name=file_type )
+                meta_files.append( dict( meta_file_type=file_type, meta_download_url=download_url ) )
+                
+        if meta_files:
+            add_to_data( meta_files=meta_files )
+                
     # error report
     if for_editing:
         #NOTE: no state == 'error' check
         add_to_data( report_error_url=h.url_for( h.url_for( controller='dataset', action='errors', id=encoded_data_id ) ) )
-            
+    
+    # visualizations
     if hda.ext in app.datatypes_registry.get_available_tracks():
         # do these need _localized_ dbkeys?
         trackster_urls = {}
@@ -175,6 +143,48 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         trackster_urls[ 'new-url' ]    = h.url_for( controller='visualization', action='trackster', dataset_id=encoded_data_id, default_dbkey=hda.dbkey )
         add_to_data( trackster_url=trackster_urls )
     
+    # display apps (igv, uscs)
+    display_types = []
+    display_apps = []
+    if( hda.state in [ 'ok', 'failed_metadata' ]
+    and hda.has_data() ):
+        #NOTE: these two data share structures
+        #TODO: this doesn't seem to get called with the hda I'm using. What would call this? How can I spoof it?
+        for display_type in hda.datatype.get_display_types():
+            display_label = hda.datatype.get_display_label( display_type )
+            target_frame, display_links = hda.datatype.get_display_links( hda, display_type, app, request.base )
+            if display_links:
+                display_links = []
+                for display_name, display_href in display_links:
+                    display_type_link = dict(
+                        target  = target_frame,
+                        href    = display_href,
+                        text    = display_name
+                    )
+                    display_links.append( display_type_link )
+                
+                # append the link list to the main map using the display_label
+                display_types.append( dict( label=display_label, links=display_links ) )
+
+        for display_app in hda.get_display_applications( trans ).itervalues():
+            app_links = []
+            for display_app_link in display_app.links.itervalues():
+                app_link = dict(
+                    target = display_app_link.url.get( 'target_frame', '_blank' ),
+                    href = display_app_link.get_display_url( hda, trans ),
+                    text = _( display_app_link.name )
+                )
+                app_links.append( app_link )
+            
+            display_apps.append( dict( label=display_app.name, links=app_links ) )
+                
+    # attach the display types and apps (if any) to the hda obj
+    #if display_types: print 'display_types:', display_types
+    #if display_apps: print 'display_apps:', display_apps
+    add_to_data( display_types=display_types )
+    add_to_data( display_apps=display_apps )
+
+    # ................................................................ secondary actions (tagging, annotation)
     if trans.user:
         add_to_data( ajax_get_tag_url=( h.url_for(
             controller='tag', action='get_tagging_elt_async',
@@ -189,34 +199,6 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         add_to_data( ajax_set_annotation_url=( h.url_for(
             controller='/dataset', action='annotate_async', id=encoded_data_id ) ) )
                     
-    display_type_display_links = {}
-    #TODO: this doesn't seem to get called with the hda I'm using. What would call this? How can I spoof it?
-    for display_app in hda.datatype.get_display_types():
-        # print "display_app:", display_app
-        target_frame, display_links = hda.datatype.get_display_links( hda, display_app, app, request.base )
-        # print "target_frame:", target_frame, "display_links:", display_links
-        #if len( display_links ) > 0:
-        #    display_type_display_links[ display_app ] = {}
-        #    for display_name, display_link in display_links:
-        #NOTE!: localized name
-            #<a target="${target_frame}" href="${display_link}">${_(display_name)}</a>
-            #pass
-        # <br />
-    
-    display_apps = {}
-    for display_app in hda.get_display_applications( trans ).itervalues():
-        display_app_dict = display_apps[ display_app.name ] = {}
-        for link_app in display_app.links.itervalues():
-            # print link_app.name, link_app.get_display_url( hda, trans )
-            #NOTE!: localized name
-            display_app_dict[ _( link_app.name ) ] = {
-                'url' : link_app.get_display_url( hda, trans ),
-                'target' : link_app.url.get( 'target_frame', '_blank' )
-            }
-    if display_apps:
-        # print display_apps
-        add_to_data( display_apps=display_apps )
-
     return data_dict
 %>
 </%def>
@@ -337,11 +319,12 @@ ${ h.to_json_string( context_dict ) }
         
         "template-history-warning-messages",
         "template-history-titleLink",
-        "template-history-hdaSummary",
         "template-history-failedMetadata",
+        "template-history-hdaSummary",
+        "template-history-downloadLinks",
         "template-history-tagArea",
         "template-history-annotationArea",
-        "template-history-downloadLinks"
+        "template-history-displayApps"
     )}
     
     ## if using in-dom templates they need to go here (before the Backbone classes are defined)
@@ -382,9 +365,6 @@ ${ h.to_json_string( context_dict ) }
                 glx_history_view = new HistoryView({ model: glx_history });
                 glx_history_view.render();
                 
-                hi = glx_history.items.at( 0 );
-                hi_view = new HistoryItemView({ model: hi });
-                $( 'body' ).append( hi_view.render() );
                 return;
             }
             

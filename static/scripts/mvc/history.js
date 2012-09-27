@@ -191,7 +191,8 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
         itemWrapper.find( '.tooltip' ).tooltip({ placement : 'bottom' });
         
-        make_popup_menus();
+        // we can potentially skip this step and call popupmenu directly on the download button
+        make_popup_menus( itemWrapper );
         
         //TODO: better transition/method than this...
         this.$el.children().remove();
@@ -336,11 +337,13 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     
     _render_downloadButton : function(){
         // don't show anything if the data's been purged
-        //if( this.model.get( 'purged' ) ){ return null; }
+        if( this.model.get( 'purged' ) ){ return null; }
         
         // return either: a single download icon-button (if there are no meta files)
         //  or a popupmenu with links to download assoc. meta files (if there are meta files)
         var downloadLinkHTML = HistoryItemView.templates.downloadLinks( this.model.toJSON() );
+        this.log( '_render_downloadButton, downloadLinkHTML:', downloadLinkHTML );
+        
         return $( downloadLinkHTML );
     },
     
@@ -456,54 +459,23 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     },
     
     _render_displayApps : function(){
-        if( !this.model.get( 'display_apps' ) ){ return null; }
-        var displayApps = this.model.get( 'displayApps' ),
-            displayAppsDiv = $( '<div/>' ),
-            displayAppSpan = $( '<span/>' );
-                
-        this.log( this + 'displayApps:', displayApps );
-        ////TODO: grrr...somethings not in the right scope here
-        //for( app_name in displayApps ){
-        //    //TODO: to template
-        //    var display_app = displayApps[ app_name ],
-        //        display_app_HTML = app_name + ' ';
-        //    for( location_name in display_app ){
-        //        display_app_HTML += linkHTMLTemplate({
-        //            text    : location_name,
-        //            href    : display_app[ location_name ].url,
-        //            target  : display_app[ location_name ].target
-        //        }) + ' ';
-        //    }
-        //    display_app_span.append( display_app_HTML );
-        //}
-        //displayAppsDiv.append( display_app_span );
+        // render links to external genome display applications (igb, gbrowse, etc.)
+        if( !this.model.hasData() ){ return null; }
         
-        //displayAppsDiv.append( '<br />' );
-
-        //var display_appsDiv = $( '<div/>' );
-        //if( this.model.get( 'display_apps' ) ){
-        //
-        //    var display_apps = this.model.get( 'display_apps' ),
-        //        display_app_span = $( '<span/>' );
-        //        
-        //    //TODO: grrr...somethings not in the right scope here
-        //    for( app_name in display_apps ){
-        //        //TODO: to template
-        //        var display_app = display_apps[ app_name ],
-        //            display_app_HTML = app_name + ' ';
-        //        for( location_name in display_app ){
-        //            display_app_HTML += linkHTMLTemplate({
-        //                text    : location_name,
-        //                href    : display_app[ location_name ].url,
-        //                target  : display_app[ location_name ].target
-        //            }) + ' ';
-        //        }
-        //        display_app_span.append( display_app_HTML );
-        //    }
-        //    display_appsDiv.append( display_app_span );
-        //}
-        ////display_appsDiv.append( '<br />' );
-        //parent.append( display_appsDiv );
+        var displayAppsDiv = $( '<div/>' ).addClass( 'display-apps' );
+        if( !_.isEmpty( this.model.get( 'display_types' ) ) ){
+            this.log( this + 'display_types:', this.model.get( 'display_types' ) );
+            //TODO:?? does this ever get used?
+            displayAppsDiv.append(
+                HistoryItemView.templates.displayApps({ displayApps : this.model.toJSON().display_types })
+            );
+        }
+        if( !_.isEmpty( this.model.get( 'display_apps' ) ) ){
+            this.log( this + 'display_apps:',  this.model.get( 'display_apps' ) );
+            displayAppsDiv.append(
+                HistoryItemView.templates.displayApps({ displayApps : this.model.toJSON().display_apps })
+            );
+        }
         return displayAppsDiv;
     },
             
@@ -770,10 +742,11 @@ HistoryItemView.templates = CompiledTemplateLoader.getTemplates({
         messages        : 'template-history-warning-messages',
         titleLink       : 'template-history-titleLink',
         hdaSummary      : 'template-history-hdaSummary',
+        downloadLinks   : 'template-history-downloadLinks',
         failedMetadata  : 'template-history-failedMetaData',
         tagArea         : 'template-history-tagArea',
         annotationArea  : 'template-history-annotationArea',
-        downloadLinks   : 'template-history-downloadLinks'
+        displayApps     : 'template-history-displayApps'
     }
 });
 
