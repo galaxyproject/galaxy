@@ -151,6 +151,7 @@ class WorkflowController( BaseUIController ):
                                     changeset_revision=repository_metadata.changeset_revision,
                                     repository_metadata_id=repository_metadata_id,
                                     workflow_name=workflow_name,
+                                    metadata=repository_metadata,
                                     webapp=webapp,
                                     message=message,
                                     status=status )

@@ -1,6 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_tool_dependency_section" />
+<%namespace file="/webapps/community/common/common.mako" import="render_readme" />
 
 %if message:
     ${render_msg( message, status )}
@@ -77,13 +78,5 @@
     </div>
 </div>
 %if readme_text:
-    <div class="toolForm">
-        <div class="toolFormTitle">Repository README file (may contain important installation or license information)</div>
-        <div class="toolFormBody">
-            <input type="hidden" name="readme_text" value="${readme_text}"/>
-            <div class="form-row">
-                <pre>${readme_text}</pre>
-            </div>
-        </div>
-    </div>
+    ${render_readme( readme_text )}
 %endif

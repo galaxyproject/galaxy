@@ -18,6 +18,7 @@
         browse_label = 'Browse or delete repository tip files'
     else:
         browse_label = 'Browse repository tip files'
+    has_readme = metadata and 'readme' in metadata
 %>
 
 <%!
@@ -50,6 +51,9 @@
             <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">Manage repository</a>
         %else:
             <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip, webapp='community' )}">View repository</a>
+        %endif
+        %if has_readme:
+            <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, webapp='community' )}">View README</a>
         %endif
         %if can_rate:
             <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>

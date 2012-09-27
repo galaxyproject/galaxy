@@ -1,6 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_tool_dependency_section" />
+<%namespace file="/webapps/community/common/common.mako" import="render_readme" />
 
 %if message:
     ${render_msg( message, status )}
@@ -42,3 +43,6 @@
         </form>
     </div>
 </div>
+%if readme_text:
+    ${render_readme( readme_text )}
+%endif

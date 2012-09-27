@@ -133,6 +133,7 @@ class InstallManager( object ):
                 for k, v in tool_panel_dict_for_tool_config.items():
                     tool_panel_dict_for_display[ k ] = v
         metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=self.app,
+                                                                                     repository=tool_shed_repository,
                                                                                      repository_clone_url=repository_clone_url,
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,

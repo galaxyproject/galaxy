@@ -16,6 +16,7 @@
         browse_label = 'Browse or delete repository tip files'
     else:
         browse_label = 'Browse repository tip files'
+    has_readme = metadata and 'readme' in metadata
 %>
 
 <%!
@@ -26,35 +27,6 @@
            return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
-
-<%def name="stylesheets()">
-    ${parent.stylesheets()}
-    ${h.css( "jquery.rating" )}
-    <style type="text/css">
-    ul.fileBrowser,
-    ul.toolFile {
-        margin-left: 0;
-        padding-left: 0;
-        list-style: none;
-    }
-    ul.fileBrowser {
-        margin-left: 20px;
-    }
-    .fileBrowser li,
-    .toolFile li {
-        padding-left: 20px;
-        background-repeat: no-repeat;
-        background-position: 0;
-        min-height: 20px;
-    }
-    .toolFile li {
-        background-image: url( ${h.url_for( '/static/images/silk/page_white_compressed.png' )} );
-    }
-    .fileBrowser li {
-        background-image: url( ${h.url_for( '/static/images/silk/page_white.png' )} );
-    }
-    </style>
-</%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -67,6 +39,9 @@
     <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), webapp=webapp, changeset_revisions=changeset_revision )}">Install to local Galaxy</a></li>
     <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Tool Shed Actions</a></li>
     <div popupmenu="repository-${repository.id}-popup">
+        %if has_readme:
+            <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, webapp=webapp )}">View README</a>
+        %endif
         <a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories', webapp=webapp )}">Browse valid repositories</a>
         <a class="action-button" href="${h.url_for( controller='repository', action='find_tools', webapp=webapp )}">Search for valid tools</a>
         <a class="action-button" href="${h.url_for( controller='repository', action='find_workflows', webapp=webapp )}">Search for workflows</a>
