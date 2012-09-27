@@ -199,13 +199,9 @@ class ToolModule( WorkflowModule ):
             # TODO: If workflows are ever enhanced to use tool version
             # in addition to tool id, enhance the selection process here
             # to retrieve the correct version of the tool.
-            tool_version = Class.__get_tool_version( trans, tool_id )
-            if tool_version:
-                tool_version_ids = tool_version.get_version_ids( trans.app )
-                for tool_version_id in tool_version_ids:
-                    if tool_version_id in trans.app.toolbox.tools_by_id:
-                        tool_id = tool_version_id
-                        break
+            tool = trans.app.toolbox.get_tool( tool_id )
+            if tool:
+                tool_id = tool.id
         if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ):
             module = Class( trans, tool_id )
             module.state = DefaultToolState()
