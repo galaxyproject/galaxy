@@ -291,34 +291,33 @@ class ToolBox( object ):
         os.chmod( self.integrated_tool_panel_config, 0644 )
     def get_tool( self, tool_id, tool_version=None, get_all_versions=False ):
         """Attempt to locate a tool in the tool box."""
-        if tool_id in self.tools_by_id:
-            tool = self.tools_by_id[ tool_id ]
-            if tool_version and tool.version == tool_version:
-                if get_all_versions:
-                    return [ tool ]
-                else:
-                    return tool
-            else:
-                if get_all_versions:
-                    return [ tool ]
-                else:
-                    return tool
+        if tool_id in self.tools_by_id and not get_all_versions:
+            #tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
+            return self.tools_by_id[ tool_id ]
+        #exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
+        rval = []
         tv = self.__get_tool_version( tool_id )
         if tv:
             tool_version_ids = tv.get_version_ids( self.app )
-            if get_all_versions:
-                available_tool_versions = []
-                for tool_version_id in tool_version_ids:
-                    if tool_version_id in self.tools_by_id:
-                        available_tool_versions.append( self.tools_by_id[ tool_version_id ] )
-                return available_tool_versions
             for tool_version_id in tool_version_ids:
                 if tool_version_id in self.tools_by_id:
-                    tool = self.tools_by_id[ tool_version_id ]
-                    if tool_version and tool.version == tool_version:
-                        return tool
-                    else:
-                        return tool
+                    rval.append( self.tools_by_id[ tool_version_id ] )
+        if not rval:
+            #still no tool, do a deeper search and try to match by old ids
+            for tool in self.tools_by_id.itervalues():
+                if tool.old_id == tool_id:
+                    rval.append( tool )
+        if rval:
+            if get_all_versions:
+                return rval
+            else:
+                if tool_version:
+                    #return first tool with matching version
+                    for tool in rval:
+                        if tool.version == tool_version:
+                            return tool
+                #No tool matches by version, simply return the first available tool found
+                return rval[0] 
         return None
     def get_loaded_tools_by_lineage( self, tool_id ):
         """Get all loaded tools associated by lineage to the tool whose id is tool_id."""
@@ -381,7 +380,6 @@ class ToolBox( object ):
                     tool.repository_owner = repository_owner
                     tool.installed_changeset_revision = installed_changeset_revision
                     tool.guid = guid
-                    tool.old_id = elem.find( "id" ).text
                     tool.version = elem.find( "version" ).text
                 # Make sure the tool has a tool_version.
                 if not self.__get_tool_version( tool.id ):
@@ -906,8 +904,9 @@ class Tool:
         if not self.name: 
             raise Exception, "Missing tool 'name'"
         # Get the UNIQUE id for the tool 
+        self.old_id = root.get( "id" )
         if guid is None:
-            self.id = root.get( "id" )
+            self.id = self.old_id
         else:
             self.id = guid
         if not self.id: 
