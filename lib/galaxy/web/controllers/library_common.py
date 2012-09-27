@@ -92,6 +92,65 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                         #"force_history_refresh": force_history_refresh
                     }
         return rval
+
+    def display_folder_hierarchy( self, trans_in, cntrller_in, use_panels_in, library_in, created_ldda_ids_in, hidden_folder_ids_in, show_deleted_in, comptypes_in, current_user_roles_in, message_in, status ):
+        log.debug( "display_folder_hierarchy: enter" )
+        # SM: Determine if this is an admin user (trans.user_is_admin and cntrller
+        # is library_admin). If so, then the user gets add, modify, manage permissions.
+        # Otherwise, if this is the library/requests controller then lookup those 
+        # three permissions. Otherwise, it's all not true.
+        #
+        # Now get the library's info_assocation (?). TODO: Look into this.
+        # Determine if there are accessible folders:
+        #   1. Is the root folder accessible to this user?
+        #   2. IS the root folder accessible to this user (without looking downward)?
+        #   3. Is this guy an admin OR is the root folder accessible to this user?
+        #   Evidently roles are used each time.
+        # 
+        # Then show management buttons and links, and then call render_folders
+
+        # render_folder:
+        # Repeat determining if this is an admin user: 
+        #     is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+        # Turn the list of created lddas into a list - split by comma, turn one 
+        # element into its own list, and leave lists alone. 
+        # (Christ) If this is an admin user, then all permissions are granted.
+        # O.w., if this is the library controller,
+        # determine the folder ids along with whether the folders can be 
+        # shown, and determine the other three admin permissions.
+        # O.w., no modifications are allowed - it's view-only.
+        # Get the form type and (sigh) again get the folder's info_association (?)
+        # Display information about the folder.
+        # Get the list of deleted (if shown) and non-deleted datasets and subfolders.
+        # Call render_folder for every subfolder
+        # For every library dataset, determine the ldda. If there is an ldda, then
+        # determine if the ldda's dataset can be displayed. 
+
+        # TODO: Move this to a security function/method later.
+        is_admin = trans.user_is_admin() and cntrller == 'library_admin'
+
+        if is_admin:
+            can_add = can_modify = can_manage = True
+        elif cntrller in [ 'library', 'requests' ]:
+            can_add = trans.app.security_agent.can_add_library_item( current_user_roles_in, library )
+            can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles_in, library )
+            can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles_in, library )
+        else:
+            can_add = can_modify = can_manage = False
+
+        info_association, inherited = library_in.get_info_association()
+        log.debug( "type(info_association): %s" % type(info_association) )
+        log.debug( "type(inherited): %s" % type(inherited) )
+        
+        # SM: determine if folders are accessible underneath here:
+        has_accessible_folders = is_admin or trans.app.security_agent.has_accessible_folders( trans, library.root_folder, trans.user, current_user_roles_in ) 
+        if has_accessible_folders and cntrller in ['library', 'requests']:
+            self.display_folder( 'library', library.root_folder, 0, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted = show_deleted, parent=None, root_folder=True, simple=simple )
+        elif ( trans_in.user_is_admin() and cntrller in [ 'library_admin', 'requests_admin' ] ):
+            # SM: TODO: Start here.
+            pass
+        pass
+
     @web.expose
     def browse_library( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -128,22 +187,36 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 message += "message \"This job is running\" is cleared from the \"Information\" column below for each selected dataset."
                 status = "info"
             comptypes = get_comptypes( trans )
-            try:
-                return trans.fill_template( '/library/common/browse_library.mako',
-                                            cntrller=cntrller,
-                                            use_panels=use_panels,
-                                            library=library,
-                                            created_ldda_ids=created_ldda_ids,
-                                            hidden_folder_ids=hidden_folder_ids,
-                                            show_deleted=show_deleted,
-                                            comptypes=comptypes,
-                                            current_user_roles=current_user_roles,
-                                            message=message,
-                                            status=status )
-            except Exception, e:
-                message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
-                status = 'error'
+            # SM: Retrieve the entire hierarchy and pass it to the template to fill in.
+            # We'll eliminate the mako from retrieving stuff for now.
+            # SM: TODO: Add configuration item
+            # if trans.app.config.optimize_folders:
+            if False:
+                hierarchy = self.display_folder_hierarchy( trans, cntrller, use_panels, library,
+                                                      created_ldda_ids, hidden_folder_ids,
+                                                      show_deleted, comptypes,
+                                                      current_user_roles, message,
+                                                      status )
+
+            else:
+                try:
+                    # SM: TODO: Add configuration variable asap. 
+                    return trans.fill_template( '/library/common/browse_library.mako',
+                                                cntrller=cntrller,
+                                                use_panels=use_panels,
+                                                library=library,
+                                                created_ldda_ids=created_ldda_ids,
+                                                hidden_folder_ids=hidden_folder_ids,
+                                                show_deleted=show_deleted,
+                                                comptypes=comptypes,
+                                                current_user_roles=current_user_roles,
+                                                message=message,
+                                                status=status )
+                except Exception, e:
+                    message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
+                    status = 'error'
         default_action = params.get( 'default_action', None )
+
         return trans.response.send_redirect( web.url_for( use_panels=use_panels,
                                                           controller=cntrller,
                                                           action='browse_libraries',
@@ -2534,16 +2607,57 @@ def activatable_folders( trans, folder ):
                            .options( eagerload_all( "actions" ) ) \
                            .order_by( trans.app.model.LibraryFolder.table.c.name ) \
                            .all()
+
+def map_library_datasets_to_lddas( trans, lib_datasets ):
+    '''
+    Given a list of LibraryDatasets, return a map from the LibraryDatasets
+    to their LDDAs. If an LDDA does not exist for a LibraryDataset, then
+    there will be no entry in the return hash.
+    '''
+    # Get a list of the LibraryDatasets' ids so that we can pass it along to
+    # a query to retrieve the LDDAs. This eliminates querying for each 
+    # LibraryDataset.
+    lib_dataset_ids = [ x.library_dataset_dataset_association_id for x in lib_datasets ]
+    lddas = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ) \
+                            .filter( trans.app.model.LibraryDatasetDatasetAssociation.id.in_( lib_dataset_ids ) ) \
+                            .all()
+    
+    # Map the LibraryDataset to the returned LDDAs:
+    ret_lddas = {}
+    for ldda in lddas:
+        ret_lddas[ldda.library_dataset_id] = ldda
+    return ret_lddas
+
+def datasets_for_lddas( trans, lddas ):
+    '''
+    Given a list of LDDAs, return a list of Datasets for them. 
+    '''
+    dataset_ids = [ x.dataset_id for x in lddas ]
+    datasets = trans.sa_session.query( trans.app.model.Dataset ) \
+                               .filter( trans.app.model.Dataset.id.in_( dataset_ids ) ) \
+                               .all()
+    return datasets 
+
 def active_folders_and_library_datasets( trans, folder ):
+    # SM: TODO: Eliminate timing code
+    from datetime import datetime, timedelta
+    query_start = datetime.now()
     folders = active_folders( trans, folder )
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
                                                       trans.model.LibraryDataset.table.c.folder_id == folder.id ) ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
+    query_end = datetime.now()
+    query_delta = query_end - query_start
+    #log.debug( "active_folders_and_library_datasets: %d.%.6d" % 
+    #           ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
+
 def activatable_folders_and_library_datasets( trans, folder ):
     folders = activatable_folders( trans, folder )
+    from datetime import datetime, timedelta
+    query_start = datetime.now()
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( trans.model.LibraryDataset.table.c.folder_id == folder.id ) \
                                        .join( ( trans.model.LibraryDatasetDatasetAssociation.table,
@@ -2553,6 +2667,10 @@ def activatable_folders_and_library_datasets( trans, folder ):
                                        .filter( trans.model.Dataset.table.c.deleted == False ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
+    query_end = datetime.now()
+    query_delta = query_end - query_start
+    log.debug( "activatable_folders_and_library_datasets: %d.%.6d" % 
+               ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
 def branch_deleted( folder ):
     # Return True if a folder belongs to a branch that has been deleted

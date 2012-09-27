@@ -225,13 +225,16 @@ class GalaxyRBACAgent( RBACAgent ):
             # If role.type is neither private nor sharing, it's ok to display
             return True
         return role.type != self.model.Role.types.PRIVATE and role.type != self.model.Role.types.SHARING
+
     def allow_action( self, roles, action, item ):
         """
         Method for checking a permission for the current user ( based on roles ) to perform a
         specific action on an item, which must be one of:
         Dataset, Library, LibraryFolder, LibraryDataset, LibraryDatasetDatasetAssociation
         """
+        # SM: Note that calling get_item_actions will emit a query. 
         item_actions = self.get_item_actions( action, item )
+            
         if not item_actions:
             return action.model == 'restrict'
         ret_val = False
@@ -249,8 +252,152 @@ class GalaxyRBACAgent( RBACAgent ):
                     ret_val = True
                     break
         return ret_val
-    def can_access_dataset( self, roles, dataset ):
-        return self.dataset_is_public( dataset ) or self.allow_action( roles, self.permitted_actions.DATASET_ACCESS, dataset )
+
+
+    def get_actions_for_items( self, trans, action, permission_items ):
+        # TODO: Rename this; it's a replacement for get_item_actions, but it
+        # doesn't represent what it's really confusing.
+        # TODO: Make this work for other classes besides lib_datasets.
+        # That should be as easy as checking the type and writing a query for each;
+        # we're avoiding using the SQLAlchemy backrefs because they can cause lots
+        # of queries to be generated.  
+        #
+        # Originally, get_item_actions did:
+        # return [ permission for permission in item.actions if permission.action == action.action ]
+        # The "item" can be just about anything with permissions, and referencing 
+        # item.actions causes the item's permissions to be retrieved.
+        # This method will retrieve all permissions for all "items" and only
+        # return the permissions associated with that given action.
+        # We initialize the permissions list to be empty; we will return an 
+        # empty list by default.
+        #
+        # If the dataset id has no corresponding action in its permissions,
+        # then the returned permissions will not carry an entry for the dataset.
+        ret_permissions = {} 
+        if ( len( permission_items ) > 0 ): 
+            if ( isinstance( permission_items[0], trans.model.LibraryDataset ) ):
+                ids = [ item.library_dataset_id for item in permission_items ]
+                permissions = trans.sa_session.query( trans.model.LibraryDatasetPermissions ) \
+                                   .filter( and_( trans.model.LibraryDatasetPermissions.library_dataset_id.in_( ids ),
+                                                  trans.model.LibraryDatasetPermissions.action == action ) ) \
+                                   .all()
+
+                # Massage the return data. We will return a list of permissions
+                # for each library dataset. So we initialize the return list to
+                # have an empty list for each dataset. Then each permission is 
+                # appended to the right lib dataset.
+                # TODO: Consider eliminating the initialization and just return
+                # empty values for each library dataset id.
+                for item in permission_items:
+                    ret_permissions[ item.library_dataset_id ] = [] 
+                for permission in permissions:
+                    ret_permissions[ permission.library_dataset_id ].append( permission )
+
+        # Test that we get the same response from get_item_actions each item:
+        test_code = False 
+        if test_code:
+            try:
+                log.debug( "get_actions_for_items: Test start" )
+                for item in permission_items:
+                    base_result = self.get_item_actions( action, item )
+                    new_result = ret_permissions[ item.library_dataset_id ]
+                    # For now, just test against LibraryDatasetIds; other classes
+                    # are not tested yet.
+                    if len( base_result ) == len( new_result ): 
+                        common_result = set(base_result).intersection( new_result )
+                        if len( common_result ) == len( base_result ):
+                            log.debug( "Match on permissions for id %d" % 
+                                       item.library_dataset_id )
+                        # TODO: Fix this failure message:
+                        else:
+                            log.debug( "Error: dataset %d; originally: %s; now: %s"
+                                     % ( item.library_dataset_id, 
+                                         base_result, new_result ) )
+                    else:
+                        log.debug( "Error: dataset %d: had %d entries, now %d entries"
+                                 % ( item.library_dataset_id, len( base_result ), 
+                                     len( new_result ) ) )
+                log.debug( "get_actions_for_items: Test end" )
+            except Exception as e:
+                log.debug( "Exception in test code: %s" % e )
+
+        return ret_permissions
+
+
+    def allow_action_on_items( self, trans, user_roles, action, items ):
+        """
+        This should be the equivalent of allow_action defined on multiple items.
+        It is meant to specifically replace allow_action for multiple 
+        LibraryDatasets, but it could be reproduced or modified for 
+        allow_action's permitted classes - Dataset, Library, LibraryFolder, and
+        LDDAs.
+        """
+        all_items_actions = self.get_actions_for_items( trans, action, items )
+
+        ret_allow_action = {}
+        # Change item to lib_dataset or vice-versa.
+        for item in items:
+            if all_items_actions.has_key( item.id ):
+                item_actions = all_items_actions[ item.id ] 
+
+                # For access, all of the dataset's 
+                if self.permitted_actions.DATASET_ACCESS == action: 
+                    ret_allow_action[ item.id ] = True
+                    for item_action in item_actions: 
+                        if item_action.role not in user_roles:
+                            ret_allow_action[ item.id ] = False
+                            break
+
+                # Else look for just one dataset role to be in the list of
+                # acceptable user roles:
+                else:
+                    ret_allow_action[ item.id ] = False
+                    for item_action in item_actions:
+                        if item_action.role in user_roles:
+                            ret_allow_action[ item.id ] = True
+                            break
+
+            else:
+                if 'restrict' == action.model:
+                    ret_allow_action[ item.id ] = True
+                else:
+                    ret_allow_action[ item.id ] = False
+
+        # Test it: the result for each dataset should match the result for
+        # allow_action:
+        test_code = False 
+        if test_code:
+            log.debug( "allow_action_for_items: test start" )
+            for item in items:
+                orig_value = self.allow_action( user_roles, action, item )
+                if orig_value == ret_allow_action[ item.id ]:
+                    log.debug( "Item %d: success" % item.id )
+                else:
+                    log.debug( "Item %d: fail: original: %s; new: %s"
+                             % ( item.id, orig_value, ret_allow_action[ item.id ] ) )
+            log.debug( "allow_action_for_items: test end" )
+        return ret_allow_action
+
+
+    def get_dataset_access_mapping( self, trans, user_roles, datasets ):
+        '''
+        For the given list of datasets, return a mapping of the datasets' ids
+        to whether they can be accessed by the user or not. The datasets input
+        is expected to be a simple list of Dataset objects. 
+        '''
+        datasets_public_map = self.datasets_are_public( trans, datasets )
+        datasets_allow_action_map = self.allow_action_on_items( trans, user_roles, self.permitted_actions.DATASET_ACCESS, datasets )
+        can_access = {}
+        for dataset in datasets:
+            can_access[ dataset.id ] = datasets_public_map[ dataset.id ] or datasets_allow_action_map[ dataset.id ]
+        return can_access
+
+    def can_access_dataset( self, user_roles, dataset ):
+        # SM: dataset_is_public will access dataset.actions, which is a 
+        # backref that causes a query to be made to DatasetPermissions 
+        retval = self.dataset_is_public( dataset ) or self.allow_action( user_roles, self.permitted_actions.DATASET_ACCESS, dataset )
+        return retval
+
     def can_manage_dataset( self, roles, dataset ):
         return self.allow_action( roles, self.permitted_actions.DATASET_MANAGE_PERMISSIONS, dataset )
     def can_access_library( self, roles, library ):
@@ -317,9 +464,14 @@ class GalaxyRBACAgent( RBACAgent ):
         return self.allow_action( roles, self.permitted_actions.LIBRARY_MODIFY, item )
     def can_manage_library_item( self, roles, item ):
         return self.allow_action( roles, self.permitted_actions.LIBRARY_MANAGE, item )
+
     def get_item_actions( self, action, item ):
         # item must be one of: Dataset, Library, LibraryFolder, LibraryDataset, LibraryDatasetDatasetAssociation
+        # SM: Accessing item.actions emits a query to Library_Dataset_Permissions
+        # if the item is a LibraryDataset:
+        # TODO: Pass in the item's actions - the item isn't needed
         return [ permission for permission in item.actions if permission.action == action.action ]
+
     def guess_derived_permissions_for_datasets( self, datasets=[] ):
         """Returns a dict of { action : [ role, role, ... ] } for the output dataset based upon provided datasets"""
         perms = {}
@@ -667,10 +819,55 @@ class GalaxyRBACAgent( RBACAgent ):
             dataset = library_dataset.library_dataset_dataset_association.dataset
             if not dataset.purged and not self.dataset_is_public( dataset ):
                 self.make_dataset_public( dataset )
+
     def dataset_is_public( self, dataset ):
         # A dataset is considered public if there are no "access" actions associated with it.  Any
         # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
+        # SM: Accessing dataset.actions will cause a query to be emitted.
         return self.permitted_actions.DATASET_ACCESS.action not in [ a.action for a in dataset.actions ]
+
+    def datasets_are_public( self, trans, datasets ):
+        '''
+        Given a transaction object and a list of Datasets, return
+        a mapping from Dataset ids to whether the Dataset is public 
+        or not. All Dataset ids should be returned in the mapping's keys.
+        '''
+        # We go the other way around from dataset_is_public: we start with 
+        # all datasets being marked as public. If there is an access action 
+        # associated with the dataset, then we mark it as nonpublic:
+        datasets_public = {}
+        dataset_ids = [ dataset.id for dataset in datasets ]
+        for dataset_id in dataset_ids:
+            datasets_public[ dataset_id ] = True
+
+        # Now get all datasets which have DATASET_ACCESS actions:
+        access_data_perms = trans.sa_session.query( trans.app.model.DatasetPermissions ) \
+                                 .filter( and_( trans.app.model.DatasetPermissions.dataset_id in dataset_ids,
+                                                trans.app.model.DatasetPermissions.action == self.permitted_actions.DATASET_ACCESS.action ) ) \
+                                 .all()
+
+        # Every dataset returned has "access" privileges associated with it,
+        # so it's not public.
+        for permission in access_data_perms:
+            datasets_public[ permission.dataset_id ] = False 
+
+        # Test code: Check if the results match up with the original:
+        test_code = False 
+        if test_code:
+            log.debug( "datasets_are_public test: check datasets_are_public matches dataset_is_public:" )
+            test_success = True
+            for dataset in datasets:
+                orig_is_public = self.dataset_is_public( dataset )
+                if orig_is_public == datasets_public[ dataset.id ]:
+                    log.debug( "\tMatch for dataset %d" % dataset.id )
+                else:
+                    success = False
+                    log.error( "\tERROR: Did not match: single is_public: %s; multiple is_public: %s" 
+                             % ( single_is_public, datasets_public[ dataset.id ] ) )
+            log.debug( "datasets_are_public: test succeeded? %s" % test_success )
+        return datasets_public
+
+
     def make_dataset_public( self, dataset ):
         # A dataset is considered public if there are no "access" actions associated with it.  Any
         # other actions ( 'manage permissions', 'edit metadata' ) are irrelevant.
@@ -707,7 +904,7 @@ class GalaxyRBACAgent( RBACAgent ):
                     # Ensure that roles being associated with DATASET_ACCESS are a subset of the legitimate roles
                     # derived from the roles associated with the access permission on item if it's not public.  This
                     # will keep ill-legitimate roles from being associated with the DATASET_ACCESS permission on the
-                    # dataset (i.e., in the case where item is a library, if Role1 is associated with LIBRARY_ACCESS,
+                    # dataset (i.e., in the case where item is .a library, if Role1 is associated with LIBRARY_ACCESS,
                     # then only those users that have Role1 should be associated with DATASET_ACCESS.
                     legitimate_roles = self.get_legitimate_roles( trans, item, cntrller )
                     ill_legitimate_roles = []
@@ -944,12 +1141,21 @@ class GalaxyRBACAgent( RBACAgent ):
         if self.can_add_library_item( roles, folder ):
             return True, ''
         action = self.permitted_actions.DATASET_ACCESS
+
+        # SM: TODO: This is for timing debug. Delete it later.
+        from datetime import datetime, timedelta
+        query_start = datetime.now()
         lddas = self.sa_session.query( self.model.LibraryDatasetDatasetAssociation ) \
                                .join( "library_dataset" ) \
                                .filter( self.model.LibraryDataset.folder == folder ) \
                                .join( "dataset" ) \
                                .options( eagerload_all( "dataset.actions" ) ) \
                                .all()
+        query_end = datetime.now()
+        query_delta = query_end - query_start
+        #log.debug( "Check folder contents: join query time: %d.%.6d sec" % 
+        #         ( query_delta.seconds, query_delta.microseconds ) )
+
         for ldda in lddas:
             ldda_access_permissions = self.get_item_actions( action, ldda.dataset )
             if not ldda_access_permissions:
