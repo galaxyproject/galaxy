@@ -127,11 +127,7 @@
             ${repository.description}
         </div>
         %if repository.long_description:
-            <div class="form-row">
-                <label>Detailed description:</label>
-                <pre>${repository.long_description}</pre>
-                <div style="clear: both"></div>
-            </div>
+            ${render_long_description( repository.long_description )}
         %endif
         <div class="form-row">
             <label>Revision:</label>

@@ -36,3 +36,23 @@
         </div>
     </div>
 </%def>
+
+<%def name="render_long_description( description_text )">
+    <style type="text/css">
+        #description_table{ table-layout:fixed;
+                            width:100%;
+                            overflow-wrap:normal;
+                            overflow:hidden;
+                            border:0px; 
+                            word-break:keep-all;
+                            word-wrap:break-word;
+                            line-break:strict; }
+    </style>
+    <div class="form-row">
+        <label>Detailed description:</label>
+        <table id="description_table">
+            <tr><td><pre>${description_text}</pre></td></tr>
+        </table>
+        <div style="clear: both"></div>
+    </div>
+</%def>
