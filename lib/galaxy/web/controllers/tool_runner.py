@@ -50,27 +50,21 @@ class ToolRunner( BaseUIController ):
                 tools = toolbox.get_loaded_tools_by_lineage( tool_id )
             else:
                 tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
-            if len( tools ) > 1:
-                tool_version_select_field = self.build_tool_version_select_field( tools, tool_id, set_selected )
-                for tool in tools:
-                    if tool.id == tool_id:
-                        break
-                else:
-                    tool = tools[ 0 ]
-            else:
-                tool = tools[ 0 ]
-            break
+            if tools:
+                tool = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=False )
+                if len( tools ) > 1:
+                    tool_version_select_field = self.build_tool_version_select_field( tools, tool.id, set_selected )
+                break
         return tool_version_select_field, tools, tool
     @web.expose
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         # No tool id passed, redirect to main page
         if tool_id is None:
             return trans.response.send_redirect( url_for( "/static/welcome.html" ) )
-        set_selected = 'refresh' in kwd
         tool_version_select_field, tools, tool = self.__get_tool_components( tool_id,
                                                                              tool_version=None,
-                                                                             get_loaded_tools_by_lineage=True,
-                                                                             set_selected=set_selected )
+                                                                             get_loaded_tools_by_lineage=False,
+                                                                             set_selected=True )
         # No tool matching the tool id, display an error (shouldn't happen)
         if not tool:
             log.error( "index called with tool id '%s' but no such tool exists", tool_id )
