@@ -159,6 +159,8 @@ class ToolBox( object ):
         else:
             panel_dict = panel_component
         already_loaded = False
+        loaded_version_key = None
+        lineage_id = None
         for lineage_id in tool.lineage_ids:
             if lineage_id in self.tools_by_id:
                 loaded_version_key = 'tool_%s' % lineage_id
@@ -176,7 +178,13 @@ class ToolBox( object ):
             if not inserted:
                 # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
                 panel_dict[ key ] = tool
-            log.debug( "Loaded tool id: %s, version: %s." % ( tool.id, tool.version ) )
+            log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
+        elif tool.lineage_ids.index( tool_id ) > tool.lineage_ids.index( lineage_id ):
+            key = 'tool_%s' % tool.id
+            index = panel_dict.keys().index( loaded_version_key )
+            del panel_dict[ loaded_version_key ]
+            panel_dict.insert( index, key, tool )
+            log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
     def load_tool_panel( self ):
         for key, val in self.integrated_tool_panel.items():
             if key.startswith( 'tool_' ):
