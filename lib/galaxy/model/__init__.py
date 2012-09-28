@@ -2971,7 +2971,7 @@ class ToolShedRepository( object ):
     def repo_files_directory( self, app ):
         repo_path = self.repo_path( app )
         if repo_path:
-            return os.path.join( app.config.root, repo_path, self.name )
+            return os.path.join( repo_path, self.name )
         return None
     def repo_path( self, app ):
         tool_shed_url = self.tool_shed
@@ -2981,10 +2981,16 @@ class ToolShedRepository( object ):
         tool_shed = tool_shed_url.rstrip( '/' )
         for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
             tool_path = shed_tool_conf_dict[ 'tool_path' ]
-            relative_path = os.path.join( app.config.root, tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
+            relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
             if os.path.exists( relative_path ):
                 return relative_path
         return None
+    @property
+    def can_install( self ):
+        return self.status == self.installation_status.NEW
+    @property
+    def can_reset_metadata( self ):
+        return self.status == self.installation_status.INSTALLED
     @property
     def includes_tools( self ):
         return self.metadata and 'tools' in self.metadata
@@ -2994,6 +3000,12 @@ class ToolShedRepository( object ):
     @property
     def includes_workflows( self ):
         return self.metadata and 'workflows' in self.metadata
+    @property
+    def in_error_state( self ):
+        return self.status == self.installation_status.ERROR
+    @property
+    def has_readme( self ):
+        return self.metadata and 'readme' in self.metadata
     @property
     def installed_tool_dependencies( self ):
         """Return the repository's tool dependencies that are currently installed."""
@@ -3061,6 +3073,15 @@ class ToolDependency( object ):
         self.type = type
         self.status = status
         self.error_message = error_message
+    @property
+    def can_install( self ):
+        return self.status  in [ self.installation_status.NEVER_INSTALLED, self.installation_status.UNINSTALLED ]
+    @property
+    def can_uninstall( self ):
+        return self.status  in [ self.installation_status.ERROR, self.installation_status.INSTALLED ]
+    @property
+    def in_error_state( self ):
+        return self.status == self.installation_status.ERROR
     def installation_directory( self, app ):
         if self.type == 'package':
             return os.path.join( app.config.tool_dependency_dir,

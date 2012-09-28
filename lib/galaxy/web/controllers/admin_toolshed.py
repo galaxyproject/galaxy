@@ -342,10 +342,8 @@ class AdminToolshed( AdminGalaxy ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, kwd[ 'id' ] )
-        has_readme = repository.metadata and 'readme' in repository.metadata
         return trans.fill_template( '/admin/tool_shed_repository/browse_repository.mako',
                                     repository=repository,
-                                    has_readme=has_readme,
                                     message=message,
                                     status=status )
     @web.expose
@@ -354,24 +352,38 @@ class AdminToolshed( AdminGalaxy ):
         if 'operation' in kwd:
             operation = kwd.pop( 'operation' ).lower()
             if operation == "manage_repository":
-                return self.manage_repository( trans, **kwd )
+                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                  action='manage_repository',
+                                                                  **kwd ) )
             if operation == "get updates":
-                return self.check_for_updates( trans, **kwd )
+                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                  action='check_for_updates',
+                                                                  **kwd ) )
             if operation == "reset to install":
                 kwd[ 'reset_repository' ] = True
-                return self.reset_to_install( trans, **kwd )
+                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                  action='reset_to_install',
+                                                                  **kwd ) )
             if operation == "activate or reinstall":
                 repository = get_repository( trans, kwd[ 'id' ] )
                 if repository.uninstalled:
                     if repository.includes_tools:
                         # Only allow selecting a different section in the tool panel if the repository was uninstalled.
-                        return self.reselect_tool_panel_section( trans, **kwd )
+                        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                          action='reselect_tool_panel_section',
+                                                                          **kwd ) )
                     else:
-                        return self.reinstall_repository( trans, **kwd )
+                        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                          action='reinstall_repository',
+                                                                          **kwd ) )
                 else:
-                    return self.activate_repository( trans, **kwd )
+                    return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                      action='activate_repository',
+                                                                      **kwd ) )
             if operation == "deactivate or uninstall":
-                return self.deactivate_or_uninstall_repository( trans, **kwd )
+                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                  action='deactivate_or_uninstall_repository',
+                                                                  **kwd ) )
         if 'message' not in kwd or not kwd[ 'message' ]:
             kwd[ 'message' ] = 'Names of repositories for which updates are available are highlighted in yellow.'
         return self.installed_repository_grid( trans, **kwd )
@@ -382,22 +394,15 @@ class AdminToolshed( AdminGalaxy ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         tool_dependency = get_tool_dependency( trans, kwd[ 'id' ] )
-        in_error_state = tool_dependency.status == trans.model.ToolDependency.installation_status.ERROR
-        can_uninstall = tool_dependency.status in [ trans.model.ToolDependency.installation_status.ERROR,
-                                                   trans.model.ToolDependency.installation_status.INSTALLED ]
-        if in_error_state:
+        if tool_dependency.in_error_state:
             message = "This tool dependency is not installed correctly (see the <b>Tool dependency installation error</b> below).  "
             message += "Choose <b>Uninstall this tool dependency</b> from the <b>Repository Actions</b> menu, correct problems "
             message += "if necessary, and try installing the dependency again."
             status = "error"
         tool_shed_repository = tool_dependency.tool_shed_repository
-        has_readme = tool_shed_repository.metadata and 'readme' in tool_shed_repository.metadata
         return trans.fill_template( '/admin/tool_shed_repository/browse_tool_dependency.mako',
                                     repository=tool_shed_repository,
-                                    has_readme=has_readme,
                                     tool_dependency=tool_dependency,
-                                    in_error_state=in_error_state,
-                                    can_uninstall=can_uninstall,
                                     message=message,
                                     status=status )
     @web.expose
@@ -492,11 +497,9 @@ class AdminToolshed( AdminGalaxy ):
                                                               message=message,
                                                               status=status ) )
         remove_from_disk_check_box = CheckboxField( 'remove_from_disk', checked=remove_from_disk_checked )
-        has_readme = tool_shed_repository.metadata and 'readme' in tool_shed_repository.metadata
         return trans.fill_template( '/admin/tool_shed_repository/deactivate_or_uninstall_repository.mako',
                                     repository=tool_shed_repository,
                                     remove_from_disk_check_box=remove_from_disk_check_box,
-                                    has_readme=has_readme,
                                     message=message,
                                     status=status )
     @web.expose
@@ -794,13 +797,11 @@ class AdminToolshed( AdminGalaxy ):
         repository_id = kwd[ 'id' ]
         operation = kwd.get( 'operation', None )
         repository = get_repository( trans, repository_id )
-        in_error_state = repository.status == trans.model.ToolShedRepository.installation_status.ERROR
-        can_install = repository.status == trans.model.ToolShedRepository.installation_status.NEW
         if repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING ]:
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                               action='monitor_repository_installation',
                                                               **kwd ) )
-        if can_install and operation == 'install':
+        if repository.can_install and operation == 'install':
             # Send a request to the tool shed to install the repository.
             tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
             url = url_join( tool_shed_url,
@@ -816,12 +817,12 @@ class AdminToolshed( AdminGalaxy ):
             repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
         else:
             repo_files_dir = None
-        if in_error_state:
+        if repository.in_error_state:
             message = "This repository is not installed correctly (see the <b>Repository installation error</b> below).  Choose "
             message += "<b>Reset to install</b> from the <b>Repository Actions</b> menu, correct problems if necessary, and try "
             message += "installing the repository again."
             status = "error"
-        elif can_install:
+        elif repository.can_install:
             message = "This repository is not installed.  You can install it by choosing  <b>Install</b> from the <b>Repository Actions</b> menu."
             status = "error"
         elif params.get( 'edit_repository_button', False ):
@@ -830,27 +831,8 @@ class AdminToolshed( AdminGalaxy ):
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
             message = "The repository information has been updated."
-        elif params.get( 'set_metadata_button', False ):
-            repository_clone_url = generate_clone_url( trans, repository )
-            # TODO: Fix this by setting up a temporary work_dir - there is currently no way for an admin to reset metadata on an
-            # installed tool shed repository because the manage_repository template checs the value of can_reset_metadata, whic is
-            # currently always False.
-            metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
-                                                                                         repository_clone_url=repository_clone_url,
-                                                                                         relative_install_dir=None,
-                                                                                         repository_files_dir=repository_files_dir,
-                                                                                         resetting_all_metadata_on_repository=True )
-            if metadata_dict:
-                repository.metadata = metadata_dict
-                trans.sa_session.add( repository )
-                trans.sa_session.flush()
-            message = "Repository metadata has been reset."
-        has_readme = repository.metadata and 'readme' in repository.metadata
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,
-                                    has_readme=has_readme,
-                                    in_error_state=in_error_state,
-                                    can_install=can_install,
                                     description=description,
                                     repo_files_dir=repo_files_dir,
                                     message=message,
@@ -1452,8 +1434,38 @@ class AdminToolshed( AdminGalaxy ):
                                     status=status )
     @web.expose
     @web.require_admin
+    def reset_repository_metadata( self, trans, id ):
+        """Reset all metadata on the installed tool shed repository."""
+        repository = get_repository( trans, id )
+        tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
+        repository_clone_url = self.__generate_clone_url( trans, repository )
+        relative_install_dir = repository.repo_path( trans.app )
+        if relative_install_dir:
+            metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                         repository=repository,
+                                                                                         repository_clone_url=repository_clone_url,
+                                                                                         relative_install_dir=relative_install_dir,
+                                                                                         repository_files_dir=None,
+                                                                                         resetting_all_metadata_on_repository=False,
+                                                                                         webapp='galaxy' )
+            repository.metadata = metadata_dict
+            trans.sa_session.add( repository )
+            trans.sa_session.flush()
+            message = 'Metadata has been reset on repository <b>%s</b>.' % repository.name
+            status = 'done'
+        else:
+            message = 'Error locating installation directory for repository <b>%s</b>.' % repository.name
+            status = 'error'
+        new_kwd = dict( id=id,
+                        message=message,
+                        status=status )
+        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                          action='manage_repository',
+                                                          **new_kwd ) )
+    @web.expose
+    @web.require_admin
     def reset_to_install( self, trans, **kwd ):
-        # An error occurred while cloning the repository, so reset everything necessary to enable another attempt.
+        """An error occurred while cloning the repository, so reset everything necessary to enable another attempt."""
         repository = get_repository( trans, kwd[ 'id' ] )
         if kwd.get( 'reset_repository', False ):
             self.set_repository_attributes( trans,
@@ -1549,7 +1561,6 @@ class AdminToolshed( AdminGalaxy ):
             tool_dependency = get_tool_dependency( trans, tool_dependency_id )
             tool_dependencies.append( tool_dependency )
         tool_shed_repository = tool_dependencies[ 0 ].tool_shed_repository
-        has_readme = tool_shed_repository.metadata and 'readme' in tool_shed_repository.metadata
         if kwd.get( 'uninstall_tool_dependencies_button', False ):
             errors = False
             # Filter tool dependencies to only those that are installed.
@@ -1576,7 +1587,6 @@ class AdminToolshed( AdminGalaxy ):
                                                               message=message ) )
         return trans.fill_template( '/admin/tool_shed_repository/uninstall_tool_dependencies.mako',
                                     repository=tool_shed_repository,
-                                    has_readme=has_readme,
                                     tool_dependency_ids=tool_dependency_ids,
                                     tool_dependencies=tool_dependencies,
                                     message=message,
@@ -1609,6 +1619,7 @@ class AdminToolshed( AdminGalaxy ):
                     # Update the repository metadata.
                     tool_shed = clean_tool_shed_url( tool_shed_url )
                     metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                                 repository=repository,
                                                                                                  repository_clone_url=repository_clone_url,
                                                                                                  relative_install_dir=relative_install_dir,
                                                                                                  repository_files_dir=None,
@@ -1681,7 +1692,7 @@ class AdminToolshed( AdminGalaxy ):
             for tool_metadata_dict in repository_metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
                     tool_metadata = tool_metadata_dict
-                    tool = trans.app.toolbox.load_tool( os.path.abspath( tool_metadata[ 'tool_config' ] ), guid=metadata[ 'guid' ] )
+                    tool = trans.app.toolbox.load_tool( os.path.abspath( tool_metadata[ 'tool_config' ] ), guid=tool_metadata[ 'guid' ] )
                     if tool:
                         tool_lineage = self.get_versions_of_tool( trans.app, tool.id )
                     break

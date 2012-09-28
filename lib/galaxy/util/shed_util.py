@@ -1561,16 +1561,13 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     for elem in root:
         if elem.tag == 'package':
             # Only install the tool_dependency if it is not already installed.
-            can_install = False
             package_name = elem.get( 'name', None )
             package_version = elem.get( 'version', None )
             if package_name and package_version:
                 for tool_dependency in tool_dependencies:
                     if tool_dependency.name==package_name and tool_dependency.version==package_version:
-                        can_install = tool_dependency.status in [ app.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                                  app.model.ToolDependency.installation_status.UNINSTALLED ]
                         break
-                if can_install:
+                if tool_dependency.can_install:
                     tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
                     if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
                                                                        app.model.ToolDependency.installation_status.ERROR ]:
