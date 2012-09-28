@@ -30,6 +30,9 @@ def init():
     import galaxy.config
     from galaxy.objectstore import build_object_store_from_config
 
+    # lazy
+    globals()['nice_size'] = __import__( 'galaxy.util', globals(), locals(), ( 'nice_size', ) ).nice_size
+
     config_parser = ConfigParser( dict( here = os.getcwd(),
                                         database_connection = 'sqlite:///database/universe.sqlite?isolation_level=IMMEDIATE' ) )
     config_parser.read( os.path.basename( options.config ) )
@@ -48,7 +51,7 @@ def init():
 def pgcalc( sa_session, id ):
     sql = """
            UPDATE galaxy_user
-              SET disk_usage = (SELECT SUM(total_size)
+              SET disk_usage = (SELECT COALESCE(SUM(total_size), 0)
                                   FROM (  SELECT d.total_size
                                             FROM history_dataset_association hda
                                                  JOIN history h ON h.id = hda.history_id
@@ -72,7 +75,7 @@ def pgcalc( sa_session, id ):
 def quotacheck( sa_session, users, engine ):
     sa_session.refresh( user )
     current = user.get_disk_usage()
-    print user.username, '<' + user.email + '> old usage:', str( current ) + ',',
+    print user.username, '<' + user.email + '>:',
     if engine != 'postgres':
         new = user.calculate_disk_usage()
         sa_session.refresh( user )
@@ -83,10 +86,14 @@ def quotacheck( sa_session, users, engine ):
     else:
         new = pgcalc( sa_session, user.id )
     # yes, still a small race condition between here and the flush
-    if new == current:
-        print 'no change'
+    print 'old usage:', nice_size( current ), 'change:',
+    if new in ( current, None ):
+        print 'none'
     else:
-        print 'new usage:', new
+        op = '-'
+        if new > current:
+            op = '+'
+        print '%s%s' % ( op, nice_size( new ) )
         if not options.dryrun and engine != 'postgres':
             user.set_disk_usage( new )
             sa_session.add( user )
