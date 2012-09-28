@@ -738,7 +738,7 @@ class SummaryTreeDataProvider( GenomeDataProvider ):
         st = summary_tree_from_file( self.converted_dataset.file_name )
         return st.chrom_blocks.keys()
     
-    def get_data( self, chrom, start, end, level=None, resolution=None, detail_cutoff=None, draw_cutoff=None ):
+    def get_data( self, chrom, start, end, level=None, resolution=None, detail_cutoff=None, draw_cutoff=None, **kwargs ):
         """
         Returns summary tree data for a given genomic region.
         """
@@ -779,7 +779,8 @@ class SummaryTreeDataProvider( GenomeDataProvider ):
                 'data': results,
                 'max': stats[ level ][ "max" ],
                 'avg': stats[ level ][ "avg" ],
-                'delta': stats[ level ][ "delta" ]
+                'delta': stats[ level ][ "delta" ],
+                'level': level
             }
             
     def has_data( self, chrom ):
@@ -1015,6 +1016,9 @@ class BBIDataProvider( GenomeDataProvider ):
         return all_dat is not None
 
     def get_data( self, chrom, start, end, start_val=0, max_vals=None, num_samples=1000, **kwargs ):
+        start = int( start )
+        end = int( end )
+
         # Bigwig can be a standalone bigwig file, in which case we use 
         # original_dataset, or coming from wig->bigwig conversion in 
         # which we use converted_dataset
@@ -1111,7 +1115,10 @@ class BBIDataProvider( GenomeDataProvider ):
         
         # Cleanup and return.
         f.close()
-        return { 'data': result }
+        return { 
+            'data': result,
+            'dataset_type': self.dataset_type
+        }
 
 class BigBedDataProvider( BBIDataProvider ):
     def _get_dataset( self ):

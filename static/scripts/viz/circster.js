@@ -94,8 +94,26 @@ var CircsterView = Backbone.View.extend({
                         tracks_and_chroms_to_update[elt_data.track.id].push(elt_data.chrom);
                     });
 
+                    /*
+                    _.each(_.pairs(tracks_and_chroms_to_update), function(track_and_chroms) {
+                        var track = tracks.get(track_and_chroms[0])
+                            chroms = track_and_chroms[1];
+
+                        _.each(chroms, function(chr_name) {
+                            var chr_region = self.genome.get_chrom_region(chr_name),
+                                data_deferred = track.get('data_manager').get_more_detailed_data(chr_region, 'Coverage', 0, d3.event.scale);
+
+                            $.when(data_deferred).then(function(data) {
+                                console.log("got more detailed data", data);
+                            })
+                        })
+
+
+                    });
+
                     // TODO: update tracks and chroms.
-                    //console.log(tracks_and_chroms_to_update);
+                    console.log(tracks_and_chroms_to_update);
+                    */
                 }))
                 .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
               .append('svg:g');

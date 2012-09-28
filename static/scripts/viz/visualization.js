@@ -1,4 +1,4 @@
-define( ["mvc/data", "viz/trackster/util" ], function(data_mod, util_mod) {
+define( ["libs/underscore", "mvc/data", "viz/trackster/util" ], function(_, data_mod, util_mod) {
 
 /**
  * Model, view, and controller objects for Galaxy visualization framework.
@@ -182,7 +182,9 @@ var GenomeDataManager = Cache.extend({
     },
     
     /**
-     * Load data from server; returns Deferred object that resolves when data is available.
+     * Load data from server and manages data entries. Adds a Deferred to manager
+     * for region; when data becomes available, replaces Deferred with data.
+     * Returns the Deferred that resolves when data is available.
      */
     load_data: function(region, mode, resolution, extra_params) {
         // Setup data request params.
@@ -211,10 +213,13 @@ var GenomeDataManager = Cache.extend({
         }
                         
         // Do request.
-        var manager = this;
-        return $.getJSON(dataset.url(), params, function (result) {
-            manager.set_data(region, result);
-        });
+        var manager = this,
+            entry = $.getJSON(dataset.url(), params, function (result) {
+                manager.set_data(region, result);
+            });
+
+        this.set_data(region, entry);
+        return entry;
     },
     
     /**
@@ -261,12 +266,8 @@ var GenomeDataManager = Cache.extend({
                 }
             }
         }
-                
-        // Load data from server. The deferred is immediately saved until the
-        // data is ready, it then replaces itself with the actual data.
-        entry = this.load_data(region, mode, resolution, extra_params);
-        this.set_data(region, entry);
-        return entry;
+
+        return this.load_data(region, mode, resolution, extra_params);
     },
     
     /**
@@ -286,15 +287,11 @@ var GenomeDataManager = Cache.extend({
      * Gets more data for a region using either a depth-first or a breadth-first approach.
      */
     get_more_data: function(region, mode, resolution, extra_params, req_type) {
-        //
-        // Get current data from cache and mark as stale.
-        //
-        var cur_data = this.get_elt(region);
-        if ( !(cur_data && this.get('data_mode_compatible')(cur_data, mode)) ) {
-            console.log("ERROR: no current data for: ", dataset, region.toString(), mode, resolution, extra_params);
+        var cur_data = this._mark_stale(region);
+        if (!(cur_data && this.get('data_mode_compatible')(cur_data, mode))) {
+            console.log('ERROR: problem with getting more data: current data is not compatible');
             return;
         }
-        cur_data.stale = true;
         
         //
         // Set parameters based on request type.
@@ -339,6 +336,43 @@ var GenomeDataManager = Cache.extend({
         });
         return new_data_available;
     },
+
+    /**
+     * Returns more detailed data for an entry.
+     */
+    get_more_detailed_data: function(region, mode, resolution, detail_multiplier, extra_params) {
+        // Mark current entry as stale.
+        var cur_data = this._mark_stale(region);
+        if (!cur_data) {
+            console.log("ERROR getting more detailed data: no current data");
+            return;
+        }
+
+        if (!extra_params) { extra_params = {}; }
+
+        // Use additional parameters to get more detailed data.
+        var mode;
+        if (cur_data.dataset_type === 'bigwig') {
+            extra_params.num_samples = cur_data.data.length * detail_multiplier;
+        }
+        else if (cur_data.dataset_type === 'summary_tree') {
+            extra_params.level = cur_data.level + 1;
+        }
+
+        return this.load_data(region, mode, resolution, extra_params);
+    },
+
+    /**
+     * Marks cache data as stale.
+     */
+    _mark_stale: function(region) {
+        var entry = this.get_elt(region);
+        if (!entry) {
+            console.log("ERROR: no data to mark as stale: ", this.get('dataset'), region.toString());
+        }
+        entry.stale = true;
+        return entry;
+    },
         
     /**
      * Get data from the cache.
@@ -363,13 +397,14 @@ var ReferenceTrackDataManager = GenomeDataManager.extend({
         this.set('dataset', dataset_placeholder);
     },
 
-    load_data: function(low, high, mode, resolution, extra_params) {
+    load_data: function(region, mode, resolution, extra_params) {
+        console.log(region, mode, resolution);
         if (resolution > 1) {
             // Now that data is pre-fetched before draw, we don't load reference tracks
             // unless it's at the bottom level.
             return { data: null };
         }
-        return GenomeDataManager.prototype.load_data.call(this, low, high, mode, resolution, extra_params);
+        return GenomeDataManager.prototype.load_data.call(this, region, mode, resolution, extra_params);
     } 
 });
  
@@ -382,9 +417,29 @@ var Genome = Backbone.Model.extend({
         key: null,
         chroms_info: null
     },
+
+    initialize: function(options) {
+        this.id = options.dbkey;
+    },
     
+    /**
+     * Shorthand for getting to chromosome information.
+     */
     get_chroms_info: function() {
         return this.attributes.chroms_info.chrom_info;  
+    },
+
+    /** 
+     * Returns a GenomeRegion object denoting a complete chromosome.
+     */
+    get_chrom_region: function(chr_name) {
+        var chrom_info = _.find(this.get_chroms_info(), function(chrom_info) { 
+            return chrom_info.chrom == chr_name;
+        });
+        return new GenomeRegion({
+            chrom: chrom_info.chrom,
+            end: chrom_info.len
+        });
     }
 });
 
@@ -567,8 +622,7 @@ var BackboneTrack = data_mod.Dataset.extend({
      * of data.
      */
     get_genome_wide_data: function(genome) {
-        var self = this,
-            data_manager = this.get('data_manager');
+        var data_manager = this.get('data_manager');
 
         //  Map chromosome data into track data.
         return _.map(genome.get('chroms_info').chrom_info, function(chrom_info) {
