@@ -43,6 +43,7 @@ class ToolRunner( BaseUIController ):
         toolbox = self.get_toolbox()
         tool_version_select_field = None
         tools = []
+        tool = None
         # Backwards compatibility for datasource tools that have default tool_id configured, but which are now using only GALAXY_URL.
         tool_ids = util.listify( tool_id )
         for tool_id in tool_ids:
