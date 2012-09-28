@@ -43,31 +43,58 @@ def init():
 
     from galaxy.model import mapping
 
-    return mapping.init( config.file_path, config.database_connection, create_tables = False, object_store = object_store ), object_store
+    return mapping.init( config.file_path, config.database_connection, create_tables = False, object_store = object_store ), object_store, config.database_connection.split(':')[0]
 
-def quotacheck( sa_session, users ):
+def pgcalc( sa_session, id ):
+    sql = """
+           UPDATE galaxy_user
+              SET disk_usage = (SELECT SUM(total_size)
+                                  FROM (  SELECT d.total_size
+                                            FROM history_dataset_association hda
+                                                 JOIN history h ON h.id = hda.history_id
+                                                 JOIN dataset d ON hda.dataset_id = d.id
+                                           WHERE h.user_id = :id
+                                                 AND h.purged = false
+                                                 AND hda.purged = false
+                                                 AND d.purged = false
+                                                 AND d.id NOT IN (SELECT dataset_id
+                                                                    FROM library_dataset_dataset_association)
+                                        GROUP BY d.id) sizes)
+            WHERE id = :id
+        RETURNING disk_usage;
+    """
+    r = sa_session.execute(sql, {'id':id})
+    new = r.fetchone()[0]
+    if options.dryrun:
+        sa_session.rollback()
+    return new
+
+def quotacheck( sa_session, users, engine ):
     sa_session.refresh( user )
     current = user.get_disk_usage()
     print user.username, '<' + user.email + '> old usage:', str( current ) + ',',
-    new = user.calculate_disk_usage()
-    sa_session.refresh( user )
-    # usage changed while calculating, do it again
-    if user.get_disk_usage() != current:
-        print 'usage changed while calculating, trying again...'
-        return quotacheck( sa_session, user )
+    if engine != 'postgres':
+        new = user.calculate_disk_usage()
+        sa_session.refresh( user )
+        # usage changed while calculating, do it again
+        if user.get_disk_usage() != current:
+            print 'usage changed while calculating, trying again...'
+            return quotacheck( sa_session, user, engine )
+    else:
+        new = pgcalc( sa_session, user.id )
     # yes, still a small race condition between here and the flush
     if new == current:
         print 'no change'
     else:
         print 'new usage:', new
-        if not options.dryrun:
+        if not options.dryrun and engine != 'postgres':
             user.set_disk_usage( new )
             sa_session.add( user )
             sa_session.flush()
 
 if __name__ == '__main__':
     print 'Loading Galaxy model...'
-    model, object_store = init()
+    model, object_store, engine = init()
     sa_session = model.context.current
 
     if not options.username and not options.email:
@@ -75,7 +102,7 @@ if __name__ == '__main__':
         print 'Processing %i users...' % user_count
         for i, user in enumerate( sa_session.query( model.User ).enable_eagerloads( False ).yield_per( 1000 ) ):
             print '%3i%%' % int( float(i) / user_count * 100 ),
-            quotacheck( sa_session, user )
+            quotacheck( sa_session, user, engine )
         print '100% complete'
         object_store.shutdown()
         sys.exit( 0 )
@@ -87,4 +114,4 @@ if __name__ == '__main__':
         print 'User not found'
         sys.exit( 1 )
     object_store.shutdown()
-    quotacheck( sa_session, user )
+    quotacheck( sa_session, user, engine )
