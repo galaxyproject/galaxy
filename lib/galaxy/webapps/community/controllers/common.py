@@ -401,7 +401,12 @@ def get_latest_tool_config_revision_from_repository_manifest( repo, filename, ch
         for ctx_file in manifest_ctx.files():
             ctx_file_name = strip_path( ctx_file )
             if ctx_file_name == stripped_filename:
-                fctx = manifest_ctx[ ctx_file ]
+                try:
+                    fctx = manifest_ctx[ ctx_file ]
+                except LookupError:
+                    # The ctx_file may have been moved in the change set.  For example, 'ncbi_blastp_wrapper.xml' was moved to
+                    # 'tools/ncbi_blast_plus/ncbi_blastp_wrapper.xml', so keep looking for the file until we find the new location.
+                    continue
                 fh = tempfile.NamedTemporaryFile( 'wb' )
                 tmp_filename = fh.name
                 fh.close()
