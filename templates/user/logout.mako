@@ -1,10 +1,6 @@
 <%!
     def inherit(context):
-        if context.get('webapp'):
-            webapp = context.get('webapp')
-        else:
-            webapp = 'galaxy'
-        return '/webapps/%s/base_panels.mako' % webapp
+        return '/webapps/%s/base_panels.mako' % context.get('t').webapp.name
 %>
 <%inherit file="${inherit(context)}"/>
 <%namespace file="/message.mako" import="render_msg" />

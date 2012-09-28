@@ -1,4 +1,5 @@
 from galaxy.web.base.controller import *
+from galaxy.web.base.controllers.admin import Admin
 from galaxy import model
 from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids

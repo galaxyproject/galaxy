@@ -43,7 +43,6 @@
             <div class="form-row">
                 <label>Email address:</label>
                 <input type="text" name="email" value="${email | h}" size="40"/>
-                <input type="hidden" name="webapp" value="${webapp | h}" size="40"/>
                 <input type="hidden" name="redirect" value="${redirect | h}" size="40"/>
             </div>
             <div class="form-row">
@@ -57,7 +56,7 @@
             <div class="form-row">
                 <label>Public name:</label>
                 <input type="text" name="username" size="40" value="${username |h}"/>
-                %if webapp == 'galaxy':
+                %if t.webapp.name == 'galaxy':
                     <div class="toolParamHelp" style="clear: both;">
                         Your public name is an identifier that will be used to generate addresses for information
                         you share publicly. Public names must be at least four characters in length and contain only lower-case
