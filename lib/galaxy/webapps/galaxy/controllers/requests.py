@@ -1,8 +1,10 @@
+from __future__ import absolute_import
+
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import *
 from galaxy.web.form_builder import *
-from galaxy.web.controllers.requests_common import RequestsGrid
+from .requests_common import RequestsGrid
 import logging
 
 log = logging.getLogger( __name__ )

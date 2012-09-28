@@ -7,7 +7,7 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.workflow.modules import InputDataModule, ToolModule, WorkflowModuleFactory
 from galaxy.tools import DefaultToolState
-from galaxy.web.controllers.workflow import attach_ordered_steps
+from galaxy.webapps.galaxy.controllers.workflow import attach_ordered_steps
 from galaxy.model.orm import *
 from common import *
 from galaxy.tool_shed.encoding_util import *
