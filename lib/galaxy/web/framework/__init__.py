@@ -607,7 +607,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         Update the session cookie to match the current session.
         """
         self.set_cookie( self.security.encode_guid( self.galaxy_session.session_key ), name=name, path=self.app.config.cookie_path )
-    def handle_user_login( self, user, webapp ):
+    def handle_user_login( self, user ):
         """
         Login a new user (possibly newly created)
            - create a new session
@@ -621,7 +621,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         prev_galaxy_session.is_valid = False
         # Define a new current_session
         self.galaxy_session = self.__create_new_session( prev_galaxy_session, user )
-        if webapp == 'galaxy':
+        if self.webapp.name == 'galaxy':
             cookie_name = 'galaxysession'
             # Associated the current user's last accessed history (if exists) with their new session
             history = None

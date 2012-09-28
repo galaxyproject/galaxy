@@ -2,7 +2,8 @@
 API operations on Quota objects.
 """
 import logging
-from galaxy.web.base.controller import BaseAPIController, Admin, UsesQuotaMixin, url_for
+from galaxy.web.base.controller import BaseAPIController, UsesQuotaMixin, url_for
+from galaxy.web.base.controllers.admin import Admin
 from galaxy import web, util
 from elementtree.ElementTree import XML
 

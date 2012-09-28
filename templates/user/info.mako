@@ -7,13 +7,12 @@
     %if not is_admin:
         <ul class="manage-table-actions">
             <li>
-                <a class="action-button"  href="${h.url_for( controller='user', action='index', cntrller=cntrller, webapp=webapp )}">User preferences</a>
+                <a class="action-button"  href="${h.url_for( controller='user', action='index', cntrller=cntrller )}">User preferences</a>
             </li>
         </ul>
     %endif
     <div class="toolForm">
         <form name="login_info" id="login_info" action="${h.url_for( controller='user', action='edit_info', cntrller=cntrller, user_id=trans.security.encode_id( user.id ) )}" method="post" >
-            <input type="hidden" name="webapp" value="${webapp}" size="40"/>
             <div class="toolFormTitle">Login Information</div>
             <div class="form-row">
                 <label>Email address:</label>
@@ -21,7 +20,7 @@
             </div>
             <div class="form-row">
                 <label>Public name:</label>
-                %if webapp == 'community':
+                %if t.webapp.name == 'community':
                     %if user.active_repositories:
                         <input type="hidden" name="username" value="${username}"/>
                         ${username}
@@ -54,7 +53,6 @@
     <p></p>
     <div class="toolForm">
         <form name="change_password" id="change_password" action="${h.url_for( controller='user', action='edit_info', cntrller=cntrller, user_id=trans.security.encode_id( user.id ) )}" method="post" >
-            <input type="hidden" name="webapp" value="${webapp}" size="40"/>
             <div class="toolFormTitle">Change Password</div>
             %if not is_admin:
                 <div class="form-row">

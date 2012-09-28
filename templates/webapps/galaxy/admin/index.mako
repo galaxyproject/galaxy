@@ -42,11 +42,11 @@
                 <div class="toolSectionTitle">Security</div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users', webapp=webapp )}" target="galaxy_main">Manage users</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups', webapp=webapp )}" target="galaxy_main">Manage groups</a></div>
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles', webapp=webapp )}" target="galaxy_main">Manage roles</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users' )}" target="galaxy_main">Manage users</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups' )}" target="galaxy_main">Manage groups</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles' )}" target="galaxy_main">Manage roles</a></div>
                         %if trans.app.config.allow_user_impersonation:
-                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='impersonate', webapp=webapp )}" target="galaxy_main">Impersonate a user</a></div>
+                            <div class="toolTitle"><a href="${h.url_for( controller='admin', action='impersonate' )}" target="galaxy_main">Impersonate a user</a></div>
                         %endif
                     </div>
                 </div>
@@ -54,7 +54,7 @@
                 <div class="toolSectionTitle">Data</div>
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
-                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='quotas', webapp=webapp )}" target="galaxy_main">Manage quotas</a></div>
+                        <div class="toolTitle"><a href="${h.url_for( controller='admin', action='quotas' )}" target="galaxy_main">Manage quotas</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='library_admin', action='browse_libraries' )}" target="galaxy_main">Manage data libraries</a></div>
                         %if trans.app.config.enable_beta_job_managers:
                             <div class="toolTitle"><a href="${h.url_for( controller='data_admin', action='manage_data' )}" target="galaxy_main">Manage local data</a></div>
@@ -111,6 +111,6 @@
 </%def>
 
 <%def name="center_panel()">
-    <% center_url = h.url_for( controller='admin', action='center', webapp='galaxy', message=message, status=status ) %>
+    <% center_url = h.url_for( controller='admin', action='center', message=message, status=status ) %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>
