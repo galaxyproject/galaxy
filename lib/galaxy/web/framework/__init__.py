@@ -220,13 +220,23 @@ class WebApplication( base.WebApplication ):
         base.WebApplication.__init__( self )
         self.set_transaction_factory( lambda e: self.transaction_chooser( e, galaxy_app, session_cookie ) )
         # Mako support
-        self.mako_template_lookup = mako.lookup.TemplateLookup(
-            directories = [ galaxy_app.config.template_path ] ,
+        self.mako_template_lookup = self.create_mako_template_lookup( galaxy_app, name )
+        # Security helper
+        self.security = galaxy_app.security
+
+    def create_mako_template_lookup( self, galaxy_app, name ):
+        paths = []
+        # First look in webapp specific directory
+        if name is not None:
+            paths.append( os.path.join( galaxy_app.config.template_path, 'webapps', name ) )
+        # Then look in root directory
+        paths.append( galaxy_app.config.template_path )
+        # Create TemplateLookup with a small cache
+        return mako.lookup.TemplateLookup(
+            directories = paths,
             module_directory = galaxy_app.config.template_cache,
             collection_size = 500,
             output_encoding = 'utf-8' )
-        # Security helper
-        self.security = galaxy_app.security
 
     def handle_controller_exception( self, e, trans, **kwargs ):
 
