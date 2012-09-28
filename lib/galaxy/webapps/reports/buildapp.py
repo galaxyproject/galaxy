@@ -20,6 +20,9 @@ import galaxy.model
 import galaxy.model.mapping
 import galaxy.web.framework
 
+class ReportsWebApplication( galaxy.web.framework.WebApplication ):
+    pass
+
 def add_ui_controllers( webapp, app ):
     """
     Search for controllers in the 'galaxy.webapps.controllers' module and add 
@@ -52,7 +55,7 @@ def app_factory( global_conf, **kwargs ):
         app = UniverseApplication( global_conf = global_conf, **kwargs )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
-    webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxyreportssession' )
+    webapp = ReportsWebApplication( app, session_cookie='galaxyreportssession', name="reports" )
     add_ui_controllers( webapp, app )
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/:controller/:action', controller="root", action='index' )
