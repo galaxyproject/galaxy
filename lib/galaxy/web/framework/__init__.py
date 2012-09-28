@@ -215,7 +215,8 @@ def form( *args, **kwargs ):
 
 class WebApplication( base.WebApplication ):
 
-    def __init__( self, galaxy_app, session_cookie='galaxysession' ):
+    def __init__( self, galaxy_app, session_cookie='galaxysession', name=None ):
+        self.name = name
         base.WebApplication.__init__( self )
         self.set_transaction_factory( lambda e: self.transaction_chooser( e, galaxy_app, session_cookie ) )
         # Mako support

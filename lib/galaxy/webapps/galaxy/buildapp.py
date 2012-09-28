@@ -20,6 +20,9 @@ import galaxy.model.mapping
 import galaxy.datatypes.registry
 import galaxy.web.framework
 
+class GalaxyWebApplication( galaxy.web.framework.WebApplication ):
+    pass
+
 def app_factory( global_conf, **kwargs ):
     """
     Return a wsgi application serving the root object
@@ -37,7 +40,7 @@ def app_factory( global_conf, **kwargs ):
             sys.exit( 1 )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
-    webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxysession' )
+    webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )

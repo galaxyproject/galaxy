@@ -21,6 +21,9 @@ from galaxy import util
 
 log = logging.getLogger( __name__ )
 
+class CommunityWebApplication( galaxy.web.framework.WebApplication ):
+    pass
+
 def add_ui_controllers( webapp, app ):
     """
     Search for controllers in the 'galaxy.webapps.controllers' module and add 
@@ -58,7 +61,7 @@ def app_factory( global_conf, **kwargs ):
             sys.exit( 1 )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
-    webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxycommunitysession' )
+    webapp = CommunityWebApplication( app, session_cookie='galaxycommunitysession', name="community" )
     add_ui_controllers( webapp, app )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='repository', action='index' )
