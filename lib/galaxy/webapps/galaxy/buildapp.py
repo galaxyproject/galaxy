@@ -38,7 +38,7 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxysession' )
-    webapp.add_ui_controllers( 'galaxy.webapps.main.controllers', app )
+    webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )
     # These two routes handle our simple needs at the moment
@@ -56,7 +56,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
     
     # Add the web API
-    webapp.add_api_controllers( 'galaxy.webapps.main.api', app )
+    webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
     webapp.api_mapper.resource( 'content',
                                 'contents',
                                 controller='library_contents',
