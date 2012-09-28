@@ -109,10 +109,10 @@ class ColumnDataProvider( BaseDataProvider ):
             """ Cast value based on type. """
             if type == 'int':
                 try: val = int( val )
-                except: pass
+                except: return None
             elif type == 'float':
                 try: val = float( val )
-                except: pass
+                except: return None
             return val
         
         f = open( self.original_dataset.file_name )

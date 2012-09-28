@@ -379,6 +379,9 @@ if wf_parms:
       <div class="toolForm">
           <div class="toolFormTitle">
               <span class='title_ul_text'>Step ${int(step.order_index)+1}: ${tool.name}</span>
+              %if tool.version:
+                  (version ${tool.version})
+              %endif
               % if step.annotations:
                 <div class="step-annotation">${h.to_unicode( step.annotations[0].annotation )}</div>
               % endif

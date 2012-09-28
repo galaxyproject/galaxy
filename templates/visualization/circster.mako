@@ -11,6 +11,11 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
+    <style>
+        text {
+            font-size: 10px;
+        }
+    </style>
 </%def>
 
 <%def name="javascripts()">
@@ -23,6 +28,7 @@
         require.config({ 
             baseUrl: "${h.url_for('/static/scripts')}",
             shim: {
+                "libs/underscore": { exports: "_" },
                 "libs/d3": { exports: "d3" }
             }
         });

@@ -92,6 +92,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                         #"force_history_refresh": force_history_refresh
                     }
         return rval
+
     @web.expose
     def browse_library( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
@@ -129,6 +130,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 status = "info"
             comptypes = get_comptypes( trans )
             try:
+                # SM: TODO: Add configuration variable asap. 
                 return trans.fill_template( '/library/common/browse_library.mako',
                                             cntrller=cntrller,
                                             use_panels=use_panels,
@@ -144,6 +146,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
                 status = 'error'
         default_action = params.get( 'default_action', None )
+
         return trans.response.send_redirect( web.url_for( use_panels=use_panels,
                                                           controller=cntrller,
                                                           action='browse_libraries',
@@ -2534,16 +2537,57 @@ def activatable_folders( trans, folder ):
                            .options( eagerload_all( "actions" ) ) \
                            .order_by( trans.app.model.LibraryFolder.table.c.name ) \
                            .all()
+
+def map_library_datasets_to_lddas( trans, lib_datasets ):
+    '''
+    Given a list of LibraryDatasets, return a map from the LibraryDatasets
+    to their LDDAs. If an LDDA does not exist for a LibraryDataset, then
+    there will be no entry in the return hash.
+    '''
+    # Get a list of the LibraryDatasets' ids so that we can pass it along to
+    # a query to retrieve the LDDAs. This eliminates querying for each 
+    # LibraryDataset.
+    lib_dataset_ids = [ x.library_dataset_dataset_association_id for x in lib_datasets ]
+    lddas = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ) \
+                            .filter( trans.app.model.LibraryDatasetDatasetAssociation.id.in_( lib_dataset_ids ) ) \
+                            .all()
+    
+    # Map the LibraryDataset to the returned LDDAs:
+    ret_lddas = {}
+    for ldda in lddas:
+        ret_lddas[ldda.library_dataset_id] = ldda
+    return ret_lddas
+
+def datasets_for_lddas( trans, lddas ):
+    '''
+    Given a list of LDDAs, return a list of Datasets for them. 
+    '''
+    dataset_ids = [ x.dataset_id for x in lddas ]
+    datasets = trans.sa_session.query( trans.app.model.Dataset ) \
+                               .filter( trans.app.model.Dataset.id.in_( dataset_ids ) ) \
+                               .all()
+    return datasets 
+
 def active_folders_and_library_datasets( trans, folder ):
+    # SM: TODO: Eliminate timing code
+    from datetime import datetime, timedelta
+    query_start = datetime.now()
     folders = active_folders( trans, folder )
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
                                                       trans.model.LibraryDataset.table.c.folder_id == folder.id ) ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
+    query_end = datetime.now()
+    query_delta = query_end - query_start
+    #log.debug( "active_folders_and_library_datasets: %d.%.6d" % 
+    #           ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
+
 def activatable_folders_and_library_datasets( trans, folder ):
     folders = activatable_folders( trans, folder )
+    from datetime import datetime, timedelta
+    query_start = datetime.now()
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( trans.model.LibraryDataset.table.c.folder_id == folder.id ) \
                                        .join( ( trans.model.LibraryDatasetDatasetAssociation.table,
@@ -2553,6 +2597,10 @@ def activatable_folders_and_library_datasets( trans, folder ):
                                        .filter( trans.model.Dataset.table.c.deleted == False ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
+    query_end = datetime.now()
+    query_delta = query_end - query_start
+    log.debug( "activatable_folders_and_library_datasets: %d.%.6d" % 
+               ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
 def branch_deleted( folder ):
     # Return True if a folder belongs to a branch that has been deleted

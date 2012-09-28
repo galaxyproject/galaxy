@@ -1,3 +1,9 @@
+define([
+    "../libs/underscore",
+    "../libs/d3",
+    "../mvc/base-mvc"
+    
+], function(){
 /* =============================================================================
 todo:
     outside this:
@@ -355,11 +361,11 @@ function TwoVarScatterplot( config ){
     };
 }
 
-//// ugh...this seems like the wrong way to use models
-//var ScatterplotModel = BaseModel.extend( LoggableMixin ).extend({
-//    logger        : console
-//});
-
+//==============================================================================
+/**
+ *  Scatterplot control UI as a backbone view
+ *
+ */
 var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
     //logger        : console,
     tagName     : 'form',
@@ -370,15 +376,19 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
     },
     
     initialize : function( attributes ){
-        if( !attributes.dataset ){
+        if( !attributes || !attributes.dataset ){
             throw( "ScatterplotView requires a dataset" );
         } else {
             this.dataset = attributes.dataset;
         }
+        
+        // passed from mako helper
+        //TODO: integrate to galaxyPaths
         this.apiDatasetsURL = attributes.apiDatasetsURL;
+        
+        // set up the basic chart infrastructure with config (if any)
         this.chartConfig = attributes.chartConfig || {};
         this.log( 'this.chartConfig:', this.chartConfig );
-        
         this.plot = new TwoVarScatterplot( this.chartConfig );
     },
     
@@ -422,18 +432,23 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
     },
     
     renderScatterplot : function(){
+        // parse the column values for both
+        //  indeces (for the data fetch) and names (for the graph)
         var view = this,
-            url = this.apiDatasetsURL + '/' + this.dataset.id + '?data_type=raw_data&';
+            url = this.apiDatasetsURL + '/' + this.dataset.id + '?data_type=raw_data&',
+            
             xSelector = this.$el.find( '[name="x-column"]' ),
             xVal = xSelector.val(),
             xName = xSelector.children( '[value="' + xVal + '"]' ).text(),
+            
             ySelector = this.$el.find( '[name="y-column"]' ),
             yVal = ySelector.val(),
             yName = ySelector.children( '[value="' + yVal + '"]' ).text();
-            //TODO
         this.log( xName, yName );
+
         this.chartConfig.xLabel = xName;
         this.chartConfig.yLabel = yName;
+        
         //TODO: alter directly
         view.plot.updateConfig( this.chartConfig );
 
@@ -441,6 +456,7 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
         //TODO: other vals: max, start, page
         //TODO: chart config
         
+        // fetch the data, sending chosen columns to the server
         url += jQuery.param({
             columns : '[' + [ xVal, yVal ] + ']'
         });
@@ -450,6 +466,7 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
             url : url,
             dataType : 'json',
             success : function( response ){
+                //TODO: server sends back an endpoint, cache for next pagination request
                 view.endpoint = response.endpoint;
                 view.plot.render(
                     // pull apart first two regardless of number of columns
@@ -464,3 +481,8 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
     }
 });
 
+//==============================================================================
+return {
+    //TwoVarScatterplot   : TwoVarScatterplot,
+    ScatterplotView     : ScatterplotView
+};});

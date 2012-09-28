@@ -21,6 +21,7 @@
         browse_label = 'Browse repository tip files'
     can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip
     can_reset_all_metadata = is_admin and len( repo ) > 0
+    has_readme = metadata and 'readme' in metadata
 %>
 
 <%!
@@ -31,35 +32,6 @@
            return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
-
-<%def name="stylesheets()">
-    ${parent.stylesheets()}
-    ${h.css( "jquery.rating" )}
-    <style type="text/css">
-    ul.fileBrowser,
-    ul.toolFile {
-        margin-left: 0;
-        padding-left: 0;
-        list-style: none;
-    }
-    ul.fileBrowser {
-        margin-left: 20px;
-    }
-    .fileBrowser li,
-    .toolFile li {
-        padding-left: 20px;
-        background-repeat: no-repeat;
-        background-position: 0;
-        min-height: 20px;
-    }
-    .toolFile li {
-        background-image: url( ${h.url_for( '/static/images/silk/page_white_compressed.png' )} );
-    }
-    .fileBrowser li {
-        background-image: url( ${h.url_for( '/static/images/silk/page_white.png' )} );
-    }
-    </style>
-</%def>
 
 <%def name="javascripts()">
     ${parent.javascripts()}
@@ -76,6 +48,9 @@
         <div popupmenu="repository-${repository.id}-popup">
             %if can_upload:
                 <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp='community' )}">Upload files to repository</a>
+            %endif
+            %if has_readme:
+                <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, webapp='community' )}">View README</a>
             %endif
             %if can_view_change_log:
                 <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ), webapp='community' )}">View change log</a>

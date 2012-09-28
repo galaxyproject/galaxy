@@ -19,12 +19,7 @@
     ${h.templates( "tool_link", "panel_section", "tool_search" )}
     ${h.js( "libs/require", "galaxy.autocom_tagging" )}
     
-    <%
-        # Set up for creating tool panel.
-        tool_search_hidden = "false"
-        if trans.user and trans.user.preferences.get( "show_tool_search", "False" ) == "False":
-            tool_search_hidden = "true"
-        
+    <%        
         dictified_panel = trans.app.toolbox.to_dict( trans )
     %>
     
@@ -42,11 +37,13 @@
             // Init. on document load.
             var tool_panel, tool_panel_view, tool_search;
             $(function() {
+            
                 // Set up search.
-                tool_search = new tools.ToolSearch( 
-                    { spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
-                      search_url: "${h.url_for( controller='root', action='tool_search' )}",
-                      hidden: ${tool_search_hidden} } );
+                tool_search = new tools.ToolSearch({ 
+                    spinner_url: "${h.url_for('/static/images/loading_small_white_bg.gif')}",
+                    search_url: "${h.url_for( controller='root', action='tool_search' )}",
+                    hidden: false 
+                });
     										   
                 // Set up tool panel.
                 tool_panel = new tools.ToolPanel( { tool_search: tool_search } );

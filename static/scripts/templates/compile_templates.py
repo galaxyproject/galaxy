@@ -46,153 +46,99 @@ import sys
 
 from glob import glob
 from subprocess import call
-from shutil import copyfile
-from os import path
+import os
 from optparse import OptionParser
-from HTMLParser import HTMLParser
+import re
 
-import logging
-log = logging.getLogger( __name__ )
+import logging as log
+log.basicConfig(
+    #level = log.DEBUG,
+    name = __name__
+)
 
 COMPILED_DIR = 'compiled'
 COMPILED_EXT = '.js'
 COMPILE_CMD_STR = "handlebars %s -f %s"
 COMPILE_MINIMIZE_SWITCH = ' -m'
 
+TEMPLATE_TAG = 'script'
+TEMPLATE_TYPE = 'text/template'
+HELPER_TYPE = 'text/javascript'
+
 # both of these are off by default for backward compat
 DEFAULT_MINIMIZATION = False
 DEFAULT_MULTI_EXT = None #'.html'
 
 # ------------------------------------------------------------------------------
-class HTMLMultiTemplateParser( HTMLParser ):
-    """Parses multiple templates from an HTML file, saving them to a map of:
-        { id : template_text, ... }
-        
-    Templates must:
-        * be within the TEMPLATE_TAG
-        * TEMPLATE_TAG must have a type attribute
-        * that attr must == TEMPLATE_TYPE
-        * TEMPLATE_TAG cannot be nested within one another
-        * TEMPLATE_TAG must have an id attribute
-    """
-    TEMPLATE_TAG = 'script'
-    TEMPLATE_TYPES = [ 'text/template' ]
-    
-    HELPER_TAG = 'script'
-    HELPER_TYPES = [ 'text/javascript' ]
-    
-    def __init__( self ):
-        HTMLParser.__init__( self )
-        self.templates = {}
-        self.curr_template_id = None
-        self.template_data = ''
-    
-        self.helpers = {}
-        self.curr_helper_id = None
-        self.helper_data = ''
-    
-    def is_template_tag( self, tag, attr_dict ):
-        # both tag and type attr must match
-        return ( ( tag == self.TEMPLATE_TAG )
-             and ( 'type' in attr_dict )
-             and ( attr_dict[ 'type' ] in self.TEMPLATE_TYPES ) )
-    
-    def is_helper_tag( self, tag, attr_dict ):
-        # both tag and type attr must match
-        return ( ( tag == self.HELPER_TAG )
-             and ( 'type' in attr_dict )
-             and ( attr_dict[ 'type' ] in self.HELPER_TYPES ) )
-    
-    def handle_starttag( self, tag, attrs ):
-        attr_dict = dict( attrs )
-        if self.is_template_tag( tag, attr_dict ):
-            log.debug( "\t template tag: %s, %s", tag, str( attr_dict ) );
-            
-            # as far as I know these tags can't/shouldn't nest/overlap
-            #pre: not already inside a template/helper tag
-            assert self.curr_template_id == None, "Found nested template tag: %s" % ( self.curr_template_id )
-            assert self.curr_helper_id   == None, "Found template tag inside helper: %s" % ( self.curr_helper_id )
-            #pre: must have an id
-            assert 'id' in attr_dict, "No id attribute in template: " + str( attr_dict )
-            
-            self.curr_template_id = attr_dict[ 'id' ]
-            
-        elif self.is_helper_tag( tag, attr_dict ):
-            log.debug( "\t helper tag: %s, %s", tag, str( attr_dict ) );
-            
-            #pre: not already inside a template/helper tag
-            assert self.curr_helper_id   == None, "Found nested helper tag: %s" % ( self.curr_helper_id )
-            assert self.curr_template_id == None, "Found helper tag inside template: %s" % ( self.curr_template_id )
-            #pre: must have an id
-            assert 'id' in attr_dict, "No id attribute in helper: " + str( attr_dict )
-            
-            self.curr_helper_id = attr_dict[ 'id' ]
-        
-    def handle_endtag( self, tag ):
-        if( ( tag == self.TEMPLATE_TAG )
-        and ( self.curr_template_id ) ):
-            log.debug( "\t ending template tag :", tag, self.curr_template_id );
-            
-            # store the template data by the id
-            if self.template_data:
-                self.templates[ self.curr_template_id ] = self.template_data
-                
-            #! reset for next template
-            self.curr_template_id = None
-            self.template_data = ''
-            
-        elif( ( tag == self.HELPER_TAG )
-        and   ( self.curr_helper_id ) ):
-            log.debug( "\t ending helper tag :", tag, self.curr_template_id );
-            
-            # store the template data by the id
-            if self.helper_data:
-                self.helpers[ self.curr_helper_id ] = self.helper_data
-                
-            #! reset for next template
-            self.curr_helper_id = None
-            self.helper_data = ''
-        
-    def handle_data(self, data):
-        data = data.strip()
-        if data:
-            if self.curr_template_id:
-                log.debug( "\t template text :", data );
-                self.template_data += data
+def parse_html_tag_attrs( string ):
+    attrs = {}
+    for match in re.finditer( r'(?P<key>\w+?)=[\'|\"](?P<val>.*?)[\'|\"]', string, re.DOTALL | re.MULTILINE ):
+        match = match.groupdict()
+        key = match[ 'key' ]
+        val = match[ 'val' ]
+        attrs[ key ] = val
+    return attrs
 
-            elif self.curr_helper_id:
-                log.debug( "\t helper js fn :", data );
-                self.helper_data += data
+def split_on_html_tag( string, tag ):
+    tag_pattern = r'<%s\s*(?P<attrs>.*?)>(?P<body>.*?)</%s>' % ( tag, tag )
+    log.debug( tag_pattern )
+    tag_pattern = re.compile( tag_pattern, re.MULTILINE | re.DOTALL )
+    
+    found_list = re.findall( tag_pattern, string )
+    for attrs, body in found_list:
+        yield ( parse_html_tag_attrs( attrs ), body )
 
+def filter_on_tag_type( generator, type_attr_to_match ):
+    for attrs, body in generator:
+        log.debug( 'attrs: %s', str( attrs ) )
+        if( ( 'type' in attrs )
+        and ( attrs[ 'type' ] == type_attr_to_match ) ):
+            yield attrs, body
 
+        
 # ------------------------------------------------------------------------------
 def break_multi_template( multi_template_filename ):
     """parse the multi template, writing each template into a new handlebars tmpl and returning their names"""
     template_filenames = []
-    parser = HTMLMultiTemplateParser()
     
     # parse the multi template
     print "\nBreaking multi-template file %s into individual templates and helpers:" % ( multi_template_filename )
     with open( multi_template_filename, 'r' ) as multi_template_file:
-        # wish I could use a gen here
-        parser.feed( multi_template_file.read() )
+        multi_template_file_text = multi_template_file.read()
         
-        # after breaking, write each indiv. template and save the names
-        for template_id, template_text in parser.templates.items():
+        # write a template file for each template (name based on id in tag)
+        tag_generator = split_on_html_tag( multi_template_file_text, TEMPLATE_TAG )
+        for attrs, template_text in filter_on_tag_type( tag_generator, TEMPLATE_TYPE ):
+            if( 'id' not in attrs ):
+                log.warning( 'Template has no "id". attrs: %s' %( str( attrs ) ) )
+                continue
+            
+            template_id = attrs[ 'id' ]
+            template_text = template_text.strip()
             handlebar_template_filename = template_id + '.handlebars'
             with open( handlebar_template_filename, 'w' ) as handlebar_template_file:
                 handlebar_template_file.write( template_text )
                 
+            log.debug( "%s\n%s\n", template_id, template_text )
             template_filenames.append( handlebar_template_filename )
             
-        # write all helpers to a 'helper-' prefixed js file in the compilation dir
-        if parser.helpers:
-            helper_filename = 'helpers-' + path.splitext( multi_template_filename )[0] + '.js'
-            helper_filename = path.join( COMPILED_DIR, helper_filename )
+        ## write all helpers to a single 'helper-' prefixed js file in the compilation dir
+        helper_fns = []
+        # same tag, different type
+        tag_generator = split_on_html_tag( multi_template_file_text, TEMPLATE_TAG )
+        for attrs, helper_text in filter_on_tag_type( tag_generator, HELPER_TYPE ):
+            helper_text = helper_text.strip()
+            print '(helper):', ( attrs[ 'id' ] if 'id' in attrs else '(No id)' )
+            
+            helper_fns.append( helper_text )
+
+        if helper_fns:
+            # prefix original filename (in compiled dir) and write all helper funcs to that file
+            helper_filename = 'helpers-' + os.path.splitext( multi_template_filename )[0] + '.js'
+            helper_filename = os.path.join( COMPILED_DIR, helper_filename )
             with open( helper_filename, 'w' ) as helper_file:
-                for helper_fn_name, helper_fn in parser.helpers.items():
-                    print '(helper)', helper_fn_name
-                    helper_file.write( helper_fn + '\n' )
+                helper_file.write( '\n'.join( helper_fns ) )
+            print '(helper functions written to %s)' % helper_filename
             
     print '\n'.join( template_filenames )
     return template_filenames
@@ -204,8 +150,8 @@ def compile_template( template_filename, minimize=False ):
     
     Use the basename of the template file for the outputed js.
     """
-    template_basename = path.splitext( path.split( template_filename )[1] )[0]
-    compiled_filename = path.join( COMPILED_DIR, template_basename + COMPILED_EXT )
+    template_basename = os.path.splitext( os.path.split( template_filename )[1] )[0]
+    compiled_filename = os.path.join( COMPILED_DIR, template_basename + COMPILED_EXT )
     
     command_string = COMPILE_CMD_STR % ( template_filename, compiled_filename )
     if minimize:
@@ -233,6 +179,7 @@ def main( options, args ):
 
     # if desired, break up any passed-in or found multi template files
     #   adding the names of the new single templates to those needing compilation
+    multi_template_template_filenames = []
     if options.multi_ext:
         multi_templates = []
         if len( args ) >= 1:
@@ -241,10 +188,10 @@ def main( options, args ):
             multi_templates = glob( '*' + options.multi_ext )
             
         for multi_template_filename in multi_templates:
-            handlebars_templates.extend( break_multi_template( multi_template_filename ) )
+            multi_template_template_filenames.extend( break_multi_template( multi_template_filename ) )
             
     # unique filenames only (Q&D)
-    handlebars_templates = list( set( handlebars_templates ) )
+    handlebars_templates = list( set( handlebars_templates + multi_template_template_filenames ) )
         
     # compile the templates
     print "\nCompiling templates:"
@@ -260,6 +207,12 @@ def main( options, args ):
         print ',\n'.join( filenames_w_possible_errors )
         print "\nCall this script with the '-h' for more help"
 
+    # delete multi template intermediate files
+    print "\nCleaning up intermediate multi-template template files:"
+    for filename in multi_template_template_filenames:
+        print 'removing', filename
+        os.remove( filename )
+    
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':

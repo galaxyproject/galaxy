@@ -54,35 +54,18 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
 <%def name="get_urls_for_hda( hda, encoded_data_id, for_editing )">
 <%
     from galaxy.datatypes.metadata import FileParameter
+    #print '\n', hda.name
 
     data_dict = {}
     def add_to_data( **kwargs ):
         data_dict.update( kwargs )
     
-    # download links (for both main hda and associated meta files)
-    if hda.has_data():
-        add_to_data( download_url=h.url_for( controller='/dataset', action='display',
-                                             dataset_id=encoded_data_id, to_ext=hda.ext ) )
-    
-        download_meta_urls = {}
-        for file_type in hda.metadata.spec.keys():
-            if not isinstance( hda.metadata.spec[ file_type ].param, FileParameter ):
-                continue
-                
-            download_meta_urls[ file_type ] = h.url_for( controller='/dataset', action='get_metadata_file', 
-                                                         hda_id=encoded_data_id, metadata_name=file_type )
-        if download_meta_urls:
-            #TODO:?? needed? isn't this the same as download_url?
-            add_to_data( download_dataset_url=h.url_for( controller='dataset', action='display',
-                                                         dataset_id=encoded_data_id, to_ext=hda.ext ) )
-            add_to_data( download_meta_urls=download_meta_urls )
-        
     #TODO??: better way to do urls (move into js galaxy_paths (decorate) - _not_ dataset specific)
     deleted = hda.deleted
     purged  = hda.purged
     
+    # ................................................................ link actions 
     #purged  = purged or hda.dataset.purged //??
-    
     # all of these urls are 'datasets/data_id/<action>
     if not ( dataset_purged or purged ) and for_editing:
         add_to_data( undelete_url=h.url_for( controller='dataset', action='undelete', dataset_id=encoded_data_id ) )
@@ -93,6 +76,8 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     if not hda.visible:
         add_to_data( unhide_url=h.url_for( controller='dataset', action='unhide', dataset_id=encoded_data_id ) )
     
+    
+    # ................................................................ title actions (display, edit, delete)
     display_url = ''
     if for_editing:
         display_url = h.url_for( controller='dataset', action='display', dataset_id=encoded_data_id, preview=True, filename='' )
@@ -122,11 +107,29 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
                                            show_deleted_on_refresh=show_deleted
         ))
             
+    # ................................................................ primary actions (error, info, download)
+    # download links (hda and associated meta files)
+    if not hda.purged:
+        add_to_data( download_url=h.url_for( controller='/dataset', action='display',
+                                             dataset_id=encoded_data_id, to_ext=hda.ext ) )
+    
+        meta_files = []
+        for k in hda.metadata.spec.keys():
+            if isinstance( hda.metadata.spec[ k ].param, FileParameter ):
+                file_type = k
+                download_url = h.url_for( controller='/dataset', action='get_metadata_file', 
+                                          hda_id=encoded_data_id, metadata_name=file_type )
+                meta_files.append( dict( meta_file_type=file_type, meta_download_url=download_url ) )
+                
+        if meta_files:
+            add_to_data( meta_files=meta_files )
+                
     # error report
     if for_editing:
         #NOTE: no state == 'error' check
         add_to_data( report_error_url=h.url_for( h.url_for( controller='dataset', action='errors', id=encoded_data_id ) ) )
-            
+    
+    # visualizations
     if hda.ext in app.datatypes_registry.get_available_tracks():
         # do these need _localized_ dbkeys?
         trackster_urls = {}
@@ -140,6 +143,48 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         trackster_urls[ 'new-url' ]    = h.url_for( controller='visualization', action='trackster', dataset_id=encoded_data_id, default_dbkey=hda.dbkey )
         add_to_data( trackster_url=trackster_urls )
     
+    # display apps (igv, uscs)
+    display_types = []
+    display_apps = []
+    if( hda.state in [ 'ok', 'failed_metadata' ]
+    and hda.has_data() ):
+        #NOTE: these two data share structures
+        #TODO: this doesn't seem to get called with the hda I'm using. What would call this? How can I spoof it?
+        for display_type in hda.datatype.get_display_types():
+            display_label = hda.datatype.get_display_label( display_type )
+            target_frame, display_links = hda.datatype.get_display_links( hda, display_type, app, request.base )
+            if display_links:
+                display_links = []
+                for display_name, display_href in display_links:
+                    display_type_link = dict(
+                        target  = target_frame,
+                        href    = display_href,
+                        text    = display_name
+                    )
+                    display_links.append( display_type_link )
+                
+                # append the link list to the main map using the display_label
+                display_types.append( dict( label=display_label, links=display_links ) )
+
+        for display_app in hda.get_display_applications( trans ).itervalues():
+            app_links = []
+            for display_app_link in display_app.links.itervalues():
+                app_link = dict(
+                    target = display_app_link.url.get( 'target_frame', '_blank' ),
+                    href = display_app_link.get_display_url( hda, trans ),
+                    text = _( display_app_link.name )
+                )
+                app_links.append( app_link )
+            
+            display_apps.append( dict( label=display_app.name, links=app_links ) )
+                
+    # attach the display types and apps (if any) to the hda obj
+    #if display_types: print 'display_types:', display_types
+    #if display_apps: print 'display_apps:', display_apps
+    add_to_data( display_types=display_types )
+    add_to_data( display_apps=display_apps )
+
+    # ................................................................ secondary actions (tagging, annotation)
     if trans.user:
         add_to_data( ajax_get_tag_url=( h.url_for(
             controller='tag', action='get_tagging_elt_async',
@@ -154,34 +199,6 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         add_to_data( ajax_set_annotation_url=( h.url_for(
             controller='/dataset', action='annotate_async', id=encoded_data_id ) ) )
                     
-    display_type_display_links = {}
-    #TODO: this doesn't seem to get called with the hda I'm using. What would call this? How can I spoof it?
-    for display_app in hda.datatype.get_display_types():
-        # print "display_app:", display_app
-        target_frame, display_links = hda.datatype.get_display_links( hda, display_app, app, request.base )
-        # print "target_frame:", target_frame, "display_links:", display_links
-        #if len( display_links ) > 0:
-        #    display_type_display_links[ display_app ] = {}
-        #    for display_name, display_link in display_links:
-        #NOTE!: localized name
-            #<a target="${target_frame}" href="${display_link}">${_(display_name)}</a>
-            #pass
-        # <br />
-    
-    display_apps = {}
-    for display_app in hda.get_display_applications( trans ).itervalues():
-        display_app_dict = display_apps[ display_app.name ] = {}
-        for link_app in display_app.links.itervalues():
-            # print link_app.name, link_app.get_display_url( hda, trans )
-            #NOTE!: localized name
-            display_app_dict[ _( link_app.name ) ] = {
-                'url' : link_app.get_display_url( hda, trans ),
-                'target' : link_app.url.get( 'target_frame', '_blank' )
-            }
-    if display_apps:
-        # print display_apps
-        add_to_data( display_apps=display_apps )
-
     return data_dict
 %>
 </%def>
@@ -302,10 +319,12 @@ ${ h.to_json_string( context_dict ) }
         
         "template-history-warning-messages",
         "template-history-titleLink",
-        "template-history-hdaSummary",
         "template-history-failedMetadata",
+        "template-history-hdaSummary",
+        "template-history-downloadLinks",
         "template-history-tagArea",
-        "template-history-annotationArea"
+        "template-history-annotationArea",
+        "template-history-displayApps"
     )}
     
     ## if using in-dom templates they need to go here (before the Backbone classes are defined)
@@ -339,15 +358,13 @@ ${ h.to_json_string( context_dict ) }
                 createMockHistoryData();
                 return;
             
+            //TODO: handle empty history
             } else if ( window.USE_CURR_DATA ){
                 if( console && console.debug ){ console.debug( '\t using current history data' ); }
                 glx_history = new History( pageData.history ).loadDatasetsAsHistoryItems( pageData.hdas );
                 glx_history_view = new HistoryView({ model: glx_history });
                 glx_history_view.render();
                 
-                hi = glx_history.items.at( 0 );
-                hi_view = new HistoryItemView({ model: hi });
-                $( 'body' ).append( hi_view.render() );
                 return;
             }
             
@@ -409,3 +426,163 @@ ${ h.to_json_string( context_dict ) }
 </%def>
 
 <body class="historyPage"></body>
+
+<script type="text/javascript">
+function createMockHistoryData(){
+    mockHistory = {};
+    mockHistory.data = {
+        
+        template : {
+            id                  : 'a799d38679e985db', 
+            name                : 'template', 
+            data_type           : 'fastq', 
+            file_size           : 226297533, 
+            genome_build        : '?', 
+            metadata_data_lines : 0, 
+            metadata_dbkey      : '?', 
+            metadata_sequences  : 0, 
+            misc_blurb          : '215.8 MB', 
+            misc_info           : 'uploaded fastq file (misc_info)', 
+            model_class         : 'HistoryDatasetAssociation', 
+            download_url        : '', 
+            state               : 'ok', 
+            visible             : true,
+            deleted             : false, 
+            purged              : false,
+            
+            hid                 : 0,
+            //TODO: move to history
+            for_editing         : true,
+            //for_editing         : false,
+            
+            //?? not needed
+            //can_edit            : true,
+            //can_edit            : false,
+            
+            accessible          : true,
+            
+            //TODO: move into model functions (build there (and cache?))
+            //!! be careful with adding these accrd. to permissions
+            //!!    IOW, don't send them via template/API if the user doesn't have perms to use
+            //!!    (even if they don't show up)
+            undelete_url        : '',
+            purge_url           : '',
+            unhide_url          : '',
+            
+            display_url         : 'example.com/display',
+            edit_url            : 'example.com/edit',
+            delete_url          : 'example.com/delete',
+            
+            show_params_url     : 'example.com/show_params',
+            rerun_url           : 'example.com/rerun',
+            
+            retag_url           : 'example.com/retag',
+            annotate_url        : 'example.com/annotate',
+            
+            peek                : [
+                '<table cellspacing="0" cellpadding="3"><tr><th>1.QNAME</th><th>2.FLAG</th><th>3.RNAME</th><th>4.POS</th><th>5.MAPQ</th><th>6.CIGAR</th><th>7.MRNM</th><th>8.MPOS</th><th>9.ISIZE</th><th>10.SEQ</th><th>11.QUAL</th><th>12.OPT</th></tr>',
+                '<tr><td colspan="100%">@SQ	SN:gi|87159884|ref|NC_007793.1|	LN:2872769</td></tr>',
+                '<tr><td colspan="100%">@PG	ID:bwa	PN:bwa	VN:0.5.9-r16</td></tr>',
+                '<tr><td colspan="100%">HWUSI-EAS664L:15:64HOJAAXX:1:1:13280:968	73	gi|87159884|ref|NC_007793.1|	2720169	37	101M	=	2720169	0	NAATATGACATTATTTTCAAAACAGCTGAAAATTTAGACGTACCGATTTATCTACATCCCGCGCCAGTTAACAGTGACATTTATCAATCATACTATAAAGG	!!!!!!!!!!$!!!$!!!!!$!!!!!!$!$!$$$!!$!!$!!!!!!!!!!!$!</td></tr>',
+                '<tr><td colspan="100%">!!!$!$!$$!!$$!!$!!!!!!!!!!!!!!!!!!!!!!!!!!$!!$!!	XT:A:U	NM:i:1	SM:i:37	AM:i:0	X0:i:1	X1:i:0	XM:i:1	XO:i:0	XG:i:0	MD:Z:0A100</td></tr>',
+                '<tr><td colspan="100%">HWUSI-EAS664L:15:64HOJAAXX:1:1:13280:968	133	gi|87159884|ref|NC_007793.1|	2720169	0	*	=	2720169	0	NAAACTGTGGCTTCGTTNNNNNNNNNNNNNNNGTGANNNNNNNNNNNNNNNNNNNGNNNNNNNNNNNNNNNNNNNNCNAANNNNNNNNNNNNNNNNNNNNN	!!!!!!!!!!!!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</td></tr>',
+                '<tr><td colspan="100%">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</td></tr>',
+                '</table>'
+            ].join( '' )
+        }
+        
+    };
+    _.extend( mockHistory.data, {
+        
+        notAccessible : 
+            _.extend( _.clone( mockHistory.data.template ),
+                      { accessible : false }),
+        
+        //deleted, purged, visible
+        deleted     :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { deleted : true,
+                        delete_url : '',
+                        purge_url : 'example.com/purge',
+                        undelete_url : 'example.com/undelete' }),
+        purgedNotDeleted :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { purged : true,
+                        delete_url : '' }),
+        notvisible  :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { visible : false,
+                        unhide_url : 'example.com/unhide' }),
+
+        hasDisplayApps :
+            _.extend( _.clone( mockHistory.data.template ),
+                { display_apps : {
+                        'display in IGB' : {
+                            Web: "/display_application/63cd3858d057a6d1/igb_bam/Web",
+                            Local: "/display_application/63cd3858d057a6d1/igb_bam/Local"
+                        }
+                    }
+                }
+            ),
+        canTrackster :
+            _.extend( _.clone( mockHistory.data.template ),
+                { trackster_urls      : {
+                        'data-url'      : "example.com/trackster-data",
+                        'action-url'    : "example.com/trackster-action",
+                        'new-url'       : "example.com/trackster-new"
+                    }
+                }
+            ),
+        zeroSize  :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { file_size : 0 }),
+            
+        hasMetafiles  :
+            _.extend( _.clone( mockHistory.data.template ), {
+                download_meta_urls : {
+                    'bam_index'      : "example.com/bam-index"
+                }
+            }),
+            
+        //states
+        upload :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.UPLOAD }),
+        queued :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.QUEUED }),
+        running :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.RUNNING }),
+        empty :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.EMPTY }),
+        error :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.ERROR,
+                        report_error_url: 'example.com/report_err' }),
+        discarded :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.DISCARDED }),
+        setting_metadata :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.SETTING_METADATA }),
+        failed_metadata :
+            _.extend( _.clone( mockHistory.data.template ),
+                      { state : HistoryItem.STATES.FAILED_METADATA })
+/*
+*/        
+    });
+    
+    //mockHistory.views.deleted.logger = console;
+    mockHistory.items = {};
+    mockHistory.views = {};
+    for( key in mockHistory.data ){
+        mockHistory.items[ key ] = new HistoryItem( mockHistory.data[ key ] );
+        mockHistory.items[ key ].set( 'name', key );
+        mockHistory.views[ key ] = new HistoryItemView({ model : mockHistory.items[ key ] });
+        //console.debug( 'view: ', mockHistory.views[ key ] );
+        $( 'body' ).append( mockHistory.views[ key ].render() );
+    }
+}
+</script>

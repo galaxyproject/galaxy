@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Supports Cuffmerge versions 1.3 and newer.
+
 import optparse, os, shutil, subprocess, sys, tempfile
 
 def stop_err( msg ):

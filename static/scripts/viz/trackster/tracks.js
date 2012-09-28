@@ -1,10 +1,62 @@
 define( ["libs/underscore", "viz/visualization", "viz/trackster/util", 
          "viz/trackster/slotting", "viz/trackster/painters", "mvc/data",
-         "viz/trackster/filters" ], 
-         function( _, visualization, util, slotting, painters, data, filters_mod ) {
+         "viz/trackster/filters", "viz/trackster_ui" ], 
+         function( _, visualization, util, slotting, painters, data, filters_mod, trackster_ui_mod ) {
 
 var extend = _.extend;
 var get_random_color = util.get_random_color;
+
+/**
+ * Use a popup grid to add more datasets.
+ */
+var add_datasets = function(dataset_url, add_track_async_url, success_fn) {
+    $.ajax({
+        url: dataset_url,
+        data: { "f-dbkey": view.dbkey },
+        error: function() { alert( "Grid failed" ); },
+        success: function(table_html) {
+            show_modal(
+                "Select datasets for new tracks",
+                table_html, {
+                    "Cancel": function() {
+                        hide_modal();
+                    },
+                    "Add": function() {
+                        var requests = [];
+                        $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
+                            var data = {
+                                    data_type: 'track_config',
+                                    'hda_ldda': 'hda'
+                                },
+                                id = $(this).val();
+                                if ($(this).attr("name") !== "id") {
+                                    data.hda_ldda = 'ldda';
+                                }
+                                requests[requests.length] = $.ajax({
+                                    url: add_track_async_url + "/" + id,
+                                    data: data,
+                                    dataType: "json"
+                                });
+                        });
+                        // To preserve order, wait until there are definitions for all tracks and then add 
+                        // them sequentially.
+                        $.when.apply($, requests).then(function() {
+                            // jQuery always returns an Array for arguments, so need to look at first element
+                            // to determine whether multiple requests were made and consequently how to 
+                            // map arguments to track definitions.
+                            var track_defs = (arguments[0] instanceof Array ?  
+                                               $.map(arguments, function(arg) { return arg[0]; }) :
+                                               [ arguments[0] ]
+                                               );
+                            success_fn(track_defs);
+                        });
+                        hide_modal();
+                    }
+                }
+            );
+        }
+    });
+};
 
 
 /**
@@ -3427,7 +3479,7 @@ var ReferenceTrack = function (view) {
     this.content_div.css("border", "none");
     this.data_url = reference_url + "/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
-    this.data_manager = new ReferenceTrackDataManager({
+    this.data_manager = new visualization.ReferenceTrackDataManager({
         data_url: this.data_url
     });
     this.hide_contents();
@@ -3550,8 +3602,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         track.vertical_range = undefined;
         return $.getJSON( track.dataset.url(), 
             {  data_type: 'data', stats: true, chrom: track.view.chrom, low: 0, 
-               high: track.view.max_high, hda_ldda: track.hda_ldda, dataset_id: 
-               track.dataset_id }, function(result) {
+               high: track.view.max_high, hda_ldda: track.hda_ldda }, function(result) {
             track.container_div.addClass( "line-track" );
             var data = result.data;
             if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
@@ -4197,7 +4248,8 @@ return {
     ReadTrack: ReadTrack,
     VcfTrack: VcfTrack,
     CompositeTrack: CompositeTrack,
-    object_from_template: object_from_template
+    object_from_template: object_from_template,
+    add_datasets: add_datasets
 };
 
 // End trackster_module encapsulation

@@ -1,5 +1,5 @@
 <tool id="cuffdiff" name="Cuffdiff" version="0.0.5">
-    <!-- Wrapper supports Cuffdiff versions v1.0.0-v1.3.0 -->
+    <!-- Wrapper supports Cuffdiff versions v1.3.0-v2.0 -->
     <description>find significant changes in transcript expression, splicing, and promoter use</description>
     <requirements>
         <requirement type="package">cufflinks</requirement>
@@ -33,7 +33,11 @@
             -N
             #end if
 
-            
+            ## Multi-read correct?
+            #if str($multiread_correct) == "Yes":
+            -u
+            #end if
+
             ## Bias correction?
             #if $bias_correction.do_bias_correction == "Yes":
 	        -b
@@ -89,11 +93,19 @@
         </conditional>
 
         <param name="fdr" type="float" value="0.05" label="False Discovery Rate" help="The allowed false discovery rate."/>
+
         <param name="min_alignment_count" type="integer" value="10" label="Min Alignment Count" help="The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples."/>
+
         <param name="do_normalization" type="select" label="Perform quartile normalization" help="Removes top 25% of genes from FPKM denominator to improve accuracy of differential expression calls for low abundance transcripts.">
             <option value="No">No</option>
             <option value="Yes">Yes</option>
         </param>
+
+        <param name="multiread_correct" type="select" label="Use multi-read correct" help="Tells Cufflinks to do an initial estimation procedure to more accurately weight reads mapping to multiple locations in the genome.">
+            <option value="No" selected="true">No</option>
+            <option value="Yes">Yes</option>
+        </param>
+
         <conditional name="bias_correction">
             <param name="do_bias_correction" type="select" label="Perform Bias Correction" help="Bias detection and correction can significantly improve accuracy of transcript abundance estimates.">
                 <option value="No">No</option>
@@ -113,6 +125,7 @@
             </when>
             <when value="No"></when>
         </conditional>
+
         <conditional name="additional">
             <param name="sAdditional" type="select" label="Set Additional Parameters? (not recommended)">
                 <option value="No">No</option>
@@ -154,6 +167,7 @@
                 <param name="min_alignment_count" value="0" />
                 <param name="do_bias_correction" value="No" />
                 <param name="do_normalization" value="No" />
+                <param name="multiread_correct" value="No"/>
                 <param name="sAdditional" value="No"/>
                 <!-- 
                     Line diffs are needed because cuffdiff does not produce deterministic output.

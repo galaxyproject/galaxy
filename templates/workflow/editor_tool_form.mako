@@ -98,6 +98,9 @@ from galaxy.util.expressions import ExpressionContext
 
     <div class="toolForm">
         <div class="toolFormTitle">Tool: ${tool.name}</div>
+        %if tool.version:
+            <div class="form-row"><div class='titleRow'>Version: ${tool.version}</div></div>
+        %endif
         <div class="toolFormBody">
             <input type="hidden" name="tool_id" value="${tool.id}" />
             %for i, inputs in enumerate( tool.inputs_by_page ):

@@ -1278,6 +1278,18 @@ class DatasetInstance( object ):
         was converted successfully. 
         """
 
+        # FIXME: copied from controller.py
+        messages = Bunch(
+            PENDING = "pending",
+            NO_DATA = "no data",
+            NO_CHROMOSOME = "no chromosome",
+            NO_CONVERTER = "no converter",
+            NO_TOOL = "no tool",
+            DATA = "data",
+            ERROR = "error",
+            OK = "ok"
+        )
+
         # Get converted dataset; this will start the conversion if necessary.
         try:
             converted_dataset = self.get_converted_dataset( trans, target_type )
@@ -1785,6 +1797,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         # we'll return the next available info_association in the inheritable hierarchy.
         # True is also returned if the info_association was inherited, and False if not.
         # This enables us to eliminate displaying any contents of the inherited template.
+        # SM: Accessing self.info_association can cause a query to be emitted
         if self.info_association:
             return self.info_association[0], inherited
         if restrict:
