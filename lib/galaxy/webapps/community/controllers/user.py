@@ -1,1 +1,1 @@
-from galaxy.webapps.main.controllers.user import *
+from galaxy.webapps.galaxy.controllers.user import *
