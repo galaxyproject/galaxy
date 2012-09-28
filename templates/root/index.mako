@@ -70,115 +70,6 @@
             }
         });
         
-        var menu_options = {}; // Holds dictionary of { label: toggle_fn }
-        
-        SHOW_TOOL = "${_("Show Tool Search")}";
-        HIDE_TOOL = "${_("Hide Tool Search")}";
-        SHOW_RECENT = "${_("Show Recently Used")}";
-        HIDE_RECENT = "${_("Hide Recently Used")}";
-        
-        var toggle_tool_search_fn = function() {
-            // Show/hide menu and update vars, user preferences.
-            var menu = $("#galaxy_tools").contents().find('#tool-search'),
-                pref_value, menu_option_text, old_text;
-            if (menu.is(":visible")) {
-                // Hide menu.
-                pref_value = "False";
-                menu_option_text = SHOW_TOOL;
-                old_text = HIDE_TOOL;
-                
-                // Reset search.
-                reset_tool_search(true);
-            } else {
-                // Show menu.
-                pref_value = "True";
-                menu_option_text = HIDE_TOOL;
-                old_text = SHOW_TOOL;
-            }
-            menu.toggle();
-    
-            // Update menu option.
-            delete menu_options[old_text];
-            
-            var new_menu_options = {}; 
-            // Because we always want tool menu to be the first link in the dropdown,
-            // we re-create the menu_options dictionary by creating a new
-            // dict and then appending the old dict to it
-            new_menu_options[menu_option_text] = toggle_tool_search_fn;
-            menu_options = $.extend( new_menu_options, menu_options );
-            make_popupmenu( $("#tools-options-button"), menu_options );
-            galaxy_async.set_user_pref("show_tool_search", pref_value);
-        };
-        
-        var toggle_recently_used_fn = function() {
-            // Show/hide menu.
-            var ru_menu = $('#galaxy_tools').contents().find('#recently_used_wrapper'),
-                ru_menu_body = ru_menu.find(".toolSectionBody"),
-                pref_value, old_text, menu_option_text;
-            if (ru_menu.hasClass("user_pref_visible")) {
-                // Hide menu.
-                ru_menu_body.slideUp();
-                ru_menu.slideUp();
-                
-                // Set vars used below and in tool menu frame.
-                pref_value = "False";
-                old_text = HIDE_RECENT;
-                menu_option_text = SHOW_RECENT;
-            } else {
-                // "Show" menu.
-                if (!$('#galaxy_tools').contents().find('#tool-search-query').hasClass("search_active")) {
-                    // Default.
-                    ru_menu.slideDown();
-                } else {
-                    // Search active: tf there are matching tools in RU menu, show menu.
-                    if ( ru_menu.find(".toolTitle.search_match").length !== 0 ) {
-                        ru_menu.slideDown();
-                        ru_menu_body.slideDown();
-                    }
-                }
-                // Set vars used below and in tool menu frame.
-                pref_value = "True";
-                old_text = SHOW_RECENT;
-                menu_option_text = HIDE_RECENT;
-            }
-            
-            // Update menu class and option.
-            ru_menu.toggleClass("user_pref_hidden user_pref_visible");
-            delete menu_options[old_text];
-            menu_options[menu_option_text] = toggle_recently_used_fn;
-            make_popupmenu( $("#tools-options-button"), menu_options );
-            galaxy_async.set_user_pref("show_recently_used_menu", pref_value);
-        };
-        
-        // Init tool options.
-        ## Search tools menu item.
-        %if trans.app.toolbox_search.enabled:
-            <% 
-                show_tool_search = True
-                if trans.user:
-                    show_tool_search = trans.user.preferences.get( "show_tool_search", "False" ) == "True"
-                    
-                if show_tool_search:
-                    action = "HIDE_TOOL"
-                else:
-                    action = "SHOW_TOOL"
-            %>
-            menu_options[ ${action} ] = toggle_tool_search_fn;
-        %endif
-        ## Recently used tools menu.
-        %if trans.user:
-            <%
-                if trans.user.preferences.get( 'show_recently_used_menu', 'False' ) == 'True':
-                    action = "HIDE_RECENT"
-                else:
-                    action = "SHOW_RECENT"
-            %>
-            // TODO: make compatible with new tool menu.
-            //menu_options[ ${action} ] = toggle_recently_used_fn;
-        %endif
-        
-        
-        make_popupmenu( $("#tools-options-button"), menu_options );
     });
     </script>
 </%def>
@@ -202,9 +93,9 @@
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>
-            <div style="float: right">
-                <a class='panel-header-button' id="tools-options-button" href="#"><span class="ficon large cog"></span></a>
-            </div>
+            ## <div style="float: right">
+            ##     <a class='panel-header-button' id="tools-options-button" href="#"><span class="ficon large cog"></span></a>
+            ## </div>
             ${n_('Tools')}
         </div>
     </div>
