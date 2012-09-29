@@ -134,6 +134,7 @@ class Job( object ):
         self.post_job_actions = []
         self.imported = False
         self.handler = None
+        self.exit_code = 0
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
     # for the mapper defined to the Job table. 
@@ -319,6 +320,7 @@ class Task( object ):
         # SM: Using default empty strings avoids None exceptions later on.
         self.stdout = "" 
         self.stderr = "" 
+        self.exit_code = 0 
         self.prepare_input_files_cmd = prepare_files_cmd
 
     def get_param_values( self, app ):
