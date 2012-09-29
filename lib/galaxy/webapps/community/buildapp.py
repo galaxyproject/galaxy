@@ -21,6 +21,9 @@ from galaxy import util
 
 log = logging.getLogger( __name__ )
 
+class CommunityWebApplication( galaxy.web.framework.WebApplication ):
+    pass
+
 def add_ui_controllers( webapp, app ):
     """
     Search for controllers in the 'galaxy.webapps.controllers' module and add 
@@ -34,21 +37,6 @@ def add_ui_controllers( webapp, app ):
         if not fname.startswith( "_" ) and fname.endswith( ".py" ):
             name = fname[:-3]
             module_name = "galaxy.webapps.community.controllers." + name
-            module = __import__( module_name )
-            for comp in module_name.split( "." )[1:]:
-                module = getattr( module, comp )
-            # Look for a controller inside the modules
-            for key in dir( module ):
-                T = getattr( module, key )
-                if isclass( T ) and T is not BaseUIController and issubclass( T, BaseUIController ):
-                    webapp.add_ui_controller( name, T( app ) )
-    import galaxy.web.controllers
-    controller_dir = galaxy.web.controllers.__path__[0]
-    for fname in os.listdir( controller_dir ):
-        # TODO: fix this if we decide to use, we don't need to inspect all controllers...
-        if fname.startswith( 'user' ) and fname.endswith( ".py" ):
-            name = fname[:-3]
-            module_name = "galaxy.web.controllers." + name
             module = __import__( module_name )
             for comp in module_name.split( "." )[1:]:
                 module = getattr( module, comp )
@@ -73,7 +61,7 @@ def app_factory( global_conf, **kwargs ):
             sys.exit( 1 )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
-    webapp = galaxy.web.framework.WebApplication( app, session_cookie='galaxycommunitysession' )
+    webapp = CommunityWebApplication( app, session_cookie='galaxycommunitysession', name="community" )
     add_ui_controllers( webapp, app )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='repository', action='index' )

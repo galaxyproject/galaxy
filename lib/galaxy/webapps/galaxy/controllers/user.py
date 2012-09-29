@@ -14,7 +14,7 @@ from galaxy.model.orm import and_
 from galaxy.security.validate_user_input import validate_email, validate_publicname, validate_password, transform_publicname
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web import url_for
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin, get_webapp
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
 from galaxy.web.form_builder import CheckboxField, build_select_field
 from galaxy.web.framework.helpers import time_ago, grids
 
@@ -49,10 +49,10 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
     installed_len_files = None
     
     @web.expose
-    def index( self, trans, cntrller, webapp='galaxy', **kwd ):
-        return trans.fill_template( '/user/index.mako', cntrller=cntrller, webapp=webapp )
+    def index( self, trans, cntrller, **kwd ):
+        return trans.fill_template( '/user/index.mako', cntrller=cntrller )
     @web.expose
-    def openid_auth( self, trans, webapp='galaxy', **kwd ):
+    def openid_auth( self, trans, **kwd ):
         '''Handles user request to access an OpenID provider'''
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
@@ -102,7 +102,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                       message=message,
                                                       status='error' ) )
     @web.expose
-    def openid_process( self, trans, webapp='galaxy', **kwd ):
+    def openid_process( self, trans, **kwd ):
         '''Handle's response from OpenID Providers'''
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
@@ -178,7 +178,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                        message=message,
                                                        status=status ) )
             elif user_openid.user:
-                trans.handle_user_login( user_openid.user, webapp )
+                trans.handle_user_login( user_openid.user )
                 trans.log_event( "User logged in via OpenID: %s" % display_identifier )
                 openid_provider_obj.post_authentication( trans, trans.app.openid_manager, info )
                 if not redirect:
@@ -222,7 +222,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                       message=message,
                                                       status=status ) )
     @web.expose
-    def openid_associate( self, trans, cntrller='user', webapp='galaxy', **kwd ):
+    def openid_associate( self, trans, cntrller='user', **kwd ):
         '''Associates a user with an OpenID log in'''
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
@@ -241,7 +241,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         elif is_admin:
             return trans.show_error_message( 'Associating OpenIDs with accounts cannot be done by administrators.' )
         if kwd.get( 'login_button', False ):
-            message, status, user, success = self.__validate_login( trans, webapp, **kwd )
+            message, status, user, success = self.__validate_login( trans, **kwd )
             if success:
                 openid_objs = []
                 for openid in openids:
@@ -285,7 +285,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 error = 'User registration is disabled.  Please contact your Galaxy administrator for an account.'
             else:
                 # Check email and password validity
-                error = self.__validate( trans, params, email, password, confirm, username, webapp )
+                error = self.__validate( trans, params, email, password, confirm, username )
                 if not error:
                     # all the values are valid
                     message, status, user, success = self.__register( trans,
@@ -330,7 +330,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 else:
                     message = error
                     status = 'error'
-        if webapp == 'galaxy':
+        if trans.webapp.name == 'galaxy':
             user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id == 'none' and user_type_form_definition is not None:
@@ -342,7 +342,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             user_type_form_definition = None
             widgets = []
         return trans.fill_template( '/user/openid_associate.mako',
-                                    webapp=webapp,
                                     cntrller=cntrller,
                                     email=email,
                                     password='',
@@ -362,7 +361,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     openids=openids )
     @web.expose
     @web.require_login( 'manage OpenIDs' )
-    def openid_disassociate( self, trans, webapp='galaxy', **kwd ):
+    def openid_disassociate( self, trans, **kwd ):
         '''Disassociates a user with an OpenID'''
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
@@ -404,7 +403,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
 
     @web.expose
     @web.require_login( 'manage OpenIDs' )
-    def openid_manage( self, trans, webapp='galaxy', **kwd ):
+    def openid_manage( self, trans, **kwd ):
         '''Manage OpenIDs for user'''
         if not trans.app.config.enable_openid:
             return trans.show_error_message( 'OpenID authentication is not enabled in this instance of Galaxy' )
@@ -421,7 +420,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         return self.user_openid_grid( trans, **kwd )
 
     @web.expose
-    def login( self, trans, webapp='galaxy', redirect_url='', refresh_frames=[], **kwd ):
+    def login( self, trans, redirect_url='', refresh_frames=[], **kwd ):
         '''Handle Galaxy Log in'''
         redirect = kwd.get( 'redirect', trans.request.referer ).strip()
         use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
@@ -430,16 +429,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         header = ''
         user = None
         email = kwd.get( 'email', '' )
-        #Sanitize webapp login here, once, since it can be reflected to the user in messages/etc.
-        #Only text is valid.
-        webapp = util.sanitize_text(webapp)
         if kwd.get( 'login_button', False ):
-            if webapp == 'galaxy' and not refresh_frames:
+            if trans.webapp.name == 'galaxy' and not refresh_frames:
                 if trans.app.config.require_login:
                     refresh_frames = [ 'masthead', 'history', 'tools' ]
                 else:
                     refresh_frames = [ 'masthead', 'history' ]
-            message, status, user, success = self.__validate_login( trans, webapp, **kwd )
+            message, status, user, success = self.__validate_login( trans, **kwd )
             if success and redirect and not redirect.startswith( trans.request.base + url_for( controller='user', action='logout' ) ):
                 redirect_url = redirect
             elif success:
@@ -447,18 +443,17 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         if not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
                 create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
-                    web.url_for( action='create', cntrller='user', webapp=webapp )
-                if webapp == 'galaxy':
+                    web.url_for( action='create', cntrller='user' )
+                if trans.webapp.name == 'galaxy':
                     header = require_login_template % ( "Galaxy instance", create_account_str )
                 else:
                     header = require_login_template % ( "Galaxy tool shed", create_account_str )
             else:
-                if webapp == 'galaxy':
+                if trans.webapp.name == 'galaxy':
                     header = require_login_template % ( "Galaxy instance", "" )
                 else:
                     header = require_login_template % ( "Galaxy tool shed", "" )
         return trans.fill_template( '/user/login.mako',
-                                    webapp=webapp,
                                     email=email,
                                     header=header,
                                     use_panels=use_panels,
@@ -469,7 +464,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     status=status,
                                     openid_providers=trans.app.openid_providers,
                                     active_view="user" )
-    def __validate_login( self, trans, webapp='galaxy', **kwd ):
+    def __validate_login( self, trans, **kwd ):
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         email = kwd.get( 'email', '' )
@@ -490,8 +485,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             message = "Invalid password"
             status = 'error'
         else:
-            trans.handle_user_login( user, webapp )
-            if webapp == 'galaxy':
+            trans.handle_user_login( user )
+            if trans.webapp.name == 'galaxy':
                 trans.log_event( "User logged in" )
                 message = 'You are now logged in as %s.<br>You can <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
                     ( user.email, redirect, url_for( '/' ) )
@@ -501,8 +496,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         return ( message, status, user, success )
 
     @web.expose
-    def logout( self, trans, webapp='galaxy', logout_all=False ):
-        if webapp == 'galaxy':
+    def logout( self, trans, logout_all=False ):
+        if trans.webapp.name == 'galaxy':
             if trans.app.config.require_login:
                 refresh_frames = [ 'masthead', 'history', 'tools' ]
             else:
@@ -515,7 +510,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         message = 'You have been logged out.<br>You can log in again, <a target="_top" href="%s">go back to the page you were visiting</a> or <a target="_top" href="%s">go to the home page</a>.' % \
             ( trans.request.referer, url_for( '/' ) )
         return trans.fill_template( '/user/logout.mako',
-                                    webapp=webapp,
                                     refresh_frames=refresh_frames,
                                     message=message,
                                     status='done',
@@ -526,7 +520,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = get_webapp( trans, **kwd )
         use_panels = util.string_as_bool( kwd.get( 'use_panels', True ) )
         email = util.restore_text( params.get( 'email', '' ) )
         # Do not sanitize passwords, so take from kwd
@@ -543,7 +536,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             status = 'error'
         else:
             if not refresh_frames:
-                if webapp == 'galaxy':
+                if trans.webapp.name == 'galaxy':
                     if trans.app.config.require_login:
                         refresh_frames = [ 'masthead', 'history', 'tools' ]
                     else:
@@ -553,19 +546,19 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             # Create the user, save all the user info and login to Galaxy
             if params.get( 'create_user_button', False ):
                 # Check email and password validity
-                message = self.__validate( trans, params, email, password, confirm, username, webapp )
+                message = self.__validate( trans, params, email, password, confirm, username )
                 if not message:
                     # All the values are valid
                     message, status, user, success = self.__register( trans,
                                                                       cntrller,
                                                                       subscribe_checked,
                                                                       **kwd )
-                    if webapp == 'community':
+                    if trans.webapp.name == 'community':
                         redirect_url = url_for( '/' )
                     if success and not is_admin:
                         # The handle_user_login() method has a call to the history_set_default_permissions() method
                         # (needed when logging in with a history), user needs to have default permissions set before logging in
-                        trans.handle_user_login( user, webapp )
+                        trans.handle_user_login( user )
                         trans.log_event( "User created a new account" )
                         trans.log_event( "User logged in" )
                     if success and is_admin:
@@ -577,7 +570,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                                    status=status ) )
                 else:
                     status = 'error'
-        if webapp == 'galaxy':
+        if trans.webapp.name == 'galaxy':
             user_type_form_definition = self.__get_user_type_form_definition( trans, user=None, **kwd )
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id == 'none' and user_type_form_definition is not None:
@@ -596,7 +589,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     user_type_fd_id_select_field=user_type_fd_id_select_field,
                                     user_type_form_definition=user_type_form_definition,
                                     widgets=widgets,
-                                    webapp=webapp,
                                     use_panels=use_panels,
                                     redirect=redirect,
                                     redirect_url=redirect_url,
@@ -608,7 +600,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         email = util.restore_text( kwd.get( 'email', '' ) )
         password = kwd.get( 'password', '' )
         username = util.restore_text( kwd.get( 'username', '' ) )
-        webapp = get_webapp( trans, **kwd )
         status = kwd.get( 'status', 'done' )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
         user = trans.app.model.User( email=email )
@@ -618,7 +609,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         trans.sa_session.flush()
         trans.app.security_agent.create_private_user_role( user )
         error = ''
-        if webapp == 'galaxy':
+        if trans.webapp.name == 'galaxy':
             # We set default user permissions, before we log in and set the default history permissions
             trans.app.security_agent.user_set_default_permissions( user,
                                                                    default_access_private=trans.app.config.new_user_dataset_access_role_default_private )
@@ -654,7 +645,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             if not error and not is_admin:
                 # The handle_user_login() method has a call to the history_set_default_permissions() method
                 # (needed when logging in with a history), user needs to have default permissions set before logging in
-                trans.handle_user_login( user, webapp )
+                trans.handle_user_login( user )
                 trans.log_event( "User created a new account" )
                 trans.log_event( "User logged in" )
             elif not error:
@@ -706,14 +697,13 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             user = trans.user
         if not user:
             raise AssertionError, "The user id (%s) is not valid" % str( user_id )
-        webapp = get_webapp( trans, **kwd )
         email = util.restore_text( params.get( 'email', user.email ) )
         username = util.restore_text( params.get( 'username', '' ) )
         if not username:
             username = user.username
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        if webapp == 'galaxy':
+        if trans.webapp.name == 'galaxy':
             user_type_form_definition = self.__get_user_type_form_definition( trans, user=user, **kwd )
             user_type_fd_id = params.get( 'user_type_fd_id', 'none' )
             if user_type_fd_id == 'none' and user_type_form_definition is not None:
@@ -742,7 +732,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                         widgets=widgets,
                                         addresses=addresses,
                                         show_filter=show_filter,
-                                        webapp=webapp,
                                         message=message,
                                         status=status )
         else:
@@ -751,7 +740,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                         user=user,
                                         email=email,
                                         username=username,
-                                        webapp=webapp,
                                         message=message,
                                         status=status )
 
@@ -761,7 +749,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
     def edit_username( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        webapp = get_webapp( trans, **kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         user_id = params.get( 'user_id', None )
@@ -784,14 +771,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     cntrller=cntrller,
                                     user=user,
                                     username=user.username,
-                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
     def edit_info( self, trans, cntrller, **kwd ):
         params = util.Params( kwd )
         is_admin = cntrller == 'admin' and trans.user_is_admin()
-        webapp = get_webapp( trans, **kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         user_id = params.get( 'user_id', None )
@@ -885,7 +870,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 trans.sa_session.add( user )
                 trans.sa_session.flush()
             message = "The user information has been updated with the changes."
-        if user and webapp == 'galaxy' and is_admin:
+        if user and trans.webapp.name == 'galaxy' and is_admin:
             kwd[ 'user_id' ] = trans.security.encode_id( user.id )
         kwd[ 'id' ] = user_id
         if message:
@@ -897,7 +882,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                           cntrller=cntrller,
                                                           **kwd ) )
     @web.expose
-    def reset_password( self, trans, email=None, webapp='galaxy', **kwd ):
+    def reset_password( self, trans, email=None, **kwd ):
         if trans.app.config.smtp_server is None:
             return trans.show_error_message( "Mail is not configured for this Galaxy instance.  Please contact an administrator." )
         message = util.restore_text( kwd.get( 'message', '' ) )
@@ -941,12 +926,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             elif email is None:
                 email = ""
         return trans.fill_template( '/user/reset_password.mako',
-                                    webapp=webapp,
                                     message=message,
                                     status=status )
-    def __validate( self, trans, params, email, password, confirm, username, webapp ):
+    def __validate( self, trans, params, email, password, confirm, username ):
         # If coming from the community webapp, we'll require a public user name
-        if webapp == 'community' and not username:
+        if trans.webapp.name == 'community' and not username:
             return "A public user name is required"
         message = validate_email( trans, email )
         if not message:
@@ -954,7 +938,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         if not message and username:
             message = validate_publicname( trans, username )
         if not message:
-            if webapp == 'galaxy':
+            if trans.webapp.name == 'galaxy':
                 if self.get_all_forms( trans, 
                                        filter=dict( deleted=False ),
                                        form_type=trans.app.model.FormDefinition.types.USER_INFO ):

@@ -7,9 +7,9 @@ from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
 from galaxy.util.shed_util import check_tool_input_params, clone_repository, concat_messages, copy_sample_file, generate_metadata_for_changeset_revision
 from galaxy.util.shed_util import get_changectx_for_changeset, get_config_from_disk, get_configured_ui, get_file_context_from_ctx, get_named_tmpfile_from_ctx
-from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config
-from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH, load_tool_from_config, reset_tool_data_tables
-from galaxy.util.shed_util import reversed_upper_bounded_changelog, strip_path
+from galaxy.util.shed_util import get_repository_metadata_by_changeset_revision, handle_sample_files_and_load_tool_from_disk
+from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_tmp_config, handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH
+from galaxy.util.shed_util import load_tool_from_config, reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path
 from galaxy.web.base.controller import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
@@ -401,7 +401,12 @@ def get_latest_tool_config_revision_from_repository_manifest( repo, filename, ch
         for ctx_file in manifest_ctx.files():
             ctx_file_name = strip_path( ctx_file )
             if ctx_file_name == stripped_filename:
-                fctx = manifest_ctx[ ctx_file ]
+                try:
+                    fctx = manifest_ctx[ ctx_file ]
+                except LookupError:
+                    # The ctx_file may have been moved in the change set.  For example, 'ncbi_blastp_wrapper.xml' was moved to
+                    # 'tools/ncbi_blast_plus/ncbi_blastp_wrapper.xml', so keep looking for the file until we find the new location.
+                    continue
                 fh = tempfile.NamedTemporaryFile( 'wb' )
                 tmp_filename = fh.name
                 fh.close()
@@ -473,25 +478,6 @@ def get_repository_by_name_and_owner( trans, name, owner ):
                              .filter( and_( trans.model.Repository.table.c.name == name,
                                             trans.model.Repository.table.c.user_id == user.id ) ) \
                              .first()
-def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
-    """Get metadata for a specified repository change set from the database"""
-    # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.  Duplicate records were somehow
-    # created in the past.  The cause of this issue has been resolved, but we'll leave this method as is for a while longer to ensure all duplicate
-    # records are removed.
-    all_metadata_records = trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
-                                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
-                                           .order_by( trans.model.RepositoryMetadata.table.c.update_time.desc() ) \
-                                           .all()
-    if len( all_metadata_records ) > 1:
-        # Delete all recrds older than the last one updated.
-        for repository_metadata in all_metadata_records[ 1: ]:
-            trans.sa_session.delete( repository_metadata )
-            trans.sa_session.flush()
-        return all_metadata_records[ 0 ]
-    elif all_metadata_records:
-        return all_metadata_records[ 0 ]
-    return None
 def get_repository_metadata_by_id( trans, id ):
     """Get repository metadata from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
@@ -762,6 +748,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
         if cloned_ok:
             log.debug( "Generating metadata for changset revision: %s", str( ctx.rev() ) )
             current_metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                                 repository=repository,
                                                                                                  repository_clone_url=repository_clone_url,
                                                                                                  relative_install_dir=repo_dir,
                                                                                                  repository_files_dir=work_dir,
@@ -836,6 +823,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     repo_dir = repository.repo_path
     repo = hg.repository( get_configured_ui(), repo_dir )
     metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                 repository=repository,
                                                                                  repository_clone_url=repository_clone_url,
                                                                                  relative_install_dir=repo_dir,
                                                                                  repository_files_dir=None,

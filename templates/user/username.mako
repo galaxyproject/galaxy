@@ -5,7 +5,6 @@
 <h2>Manage Public Name</h2>
 <div class="toolForm">
     <form name="username" id="username" action="${h.url_for( controller='user', action='edit_username', cntrller=cntrller, user_id=trans.security.encode_id( user.id ) )}" method="post" >
-        <input type="hidden" name="webapp" value="${webapp}" size="40"/>
         <div class="toolFormTitle">Login Information</div>
         <div class="form-row">
             <label>Public name:</label>

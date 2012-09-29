@@ -48,8 +48,10 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
 
     ${render_trackster_js_vars()}
 
-    var view,
-        browser_router,
+    // FIXME: deliberate global required for now due to requireJS integration.
+    view = null;
+
+    var browser_router,
         ui = new (trackster_ui.TracksterUI)( "${h.url_for('/')}" );
 
     /**

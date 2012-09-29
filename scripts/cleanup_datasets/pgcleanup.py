@@ -261,7 +261,7 @@ class Cleanup(object):
             # TODO: h.purged = false should be unnecessary once all hdas in purged histories are purged.
             sql = """
                    UPDATE galaxy_user
-                      SET disk_usage = (SELECT SUM(total_size)
+                      SET disk_usage = (SELECT COALESCE(SUM(total_size), 0)
                                           FROM (  SELECT d.total_size
                                                     FROM history_dataset_association hda
                                                          JOIN history h ON h.id = hda.history_id

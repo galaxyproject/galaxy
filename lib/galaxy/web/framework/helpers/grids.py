@@ -53,7 +53,8 @@ class Grid( object ):
         
     def __call__( self, trans, **kwargs ):
         # Get basics.
-        webapp = get_webapp( trans, **kwargs )
+        # FIXME: pretty sure this is only here to pass along, can likely be eliminated
+        webapp = trans.webapp.name
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
         # Build a base filter and sort key that is the combination of the saved state and defaults.

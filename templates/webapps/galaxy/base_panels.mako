@@ -1,4 +1,4 @@
-<%inherit file="/base_panels.mako"/>
+<%inherit file="/base/base_panels.mako"/>
 
 ## Default title
 <%def name="title()">Galaxy</%def>
@@ -136,7 +136,7 @@
         # Menu for user who is not logged in.
         menu_options = [ [ _("Login"), h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
         if app.config.allow_user_creation:
-            menu_options.append( [ _("Register"), h.url_for( controller='/user', action='create', cntrller='user', webapp='galaxy' ), "galaxy_main" ] ) 
+            menu_options.append( [ _("Register"), h.url_for( controller='/user', action='create', cntrller='user' ), "galaxy_main" ] ) 
         extra_class = "loggedout-only"
         visible = ( trans.user == None )
         tab( "user", _("User"), None, visible=visible, menu_options=menu_options )
@@ -151,20 +151,20 @@
             if app.config.remote_user_logout_href:
                 menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
         else:
-            menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
+            menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
             menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
             if app.config.require_login:
-                logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout', webapp='galaxy' )
+                logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout' )
             else:
-                logout_url = h.url_for( controller='/user', action='logout', webapp='galaxy' )
+                logout_url = h.url_for( controller='/user', action='logout' )
             menu_options.append( [ 'Logout', logout_url, "_top" ] )
             menu_options.append( None )
         menu_options.append( [ _('Saved Histories'), h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
         menu_options.append( [ _('Saved Datasets'), h.url_for( controller='/dataset', action='list' ), "galaxy_main" ] )
         menu_options.append( [ _('Saved Pages'), h.url_for( controller='/page', action='list' ), "_top" ] )
-        menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
+        menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user' ), "galaxy_main" ] )
         if app.config.use_remote_user:
-            menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user', webapp='galaxy' ), "galaxy_main" ] )
+            menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user' ), "galaxy_main" ] )
 
         extra_class = "loggedin-only"
         visible = ( trans.user != None )

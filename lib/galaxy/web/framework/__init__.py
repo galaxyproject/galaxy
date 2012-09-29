@@ -6,6 +6,7 @@ import pkg_resources
 
 import os, sys, time, socket, random, string
 import inspect
+
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 import base
@@ -14,6 +15,7 @@ from functools import wraps
 from galaxy import util
 from galaxy.exceptions import MessageException
 from galaxy.util.json import to_json_string, from_json_string
+from galaxy.util.backports.importlib import import_module
 
 pkg_resources.require( "simplejson" )
 import simplejson
@@ -212,29 +214,94 @@ def form( *args, **kwargs ):
     return FormBuilder( *args, **kwargs )
 
 class WebApplication( base.WebApplication ):
-    def __init__( self, galaxy_app, session_cookie='galaxysession' ):
+
+    def __init__( self, galaxy_app, session_cookie='galaxysession', name=None ):
+        self.name = name
         base.WebApplication.__init__( self )
         self.set_transaction_factory( lambda e: self.transaction_chooser( e, galaxy_app, session_cookie ) )
         # Mako support
-        self.mako_template_lookup = mako.lookup.TemplateLookup(
-            directories = [ galaxy_app.config.template_path ] ,
+        self.mako_template_lookup = self.create_mako_template_lookup( galaxy_app, name )
+        # Security helper
+        self.security = galaxy_app.security
+
+    def create_mako_template_lookup( self, galaxy_app, name ):
+        paths = []
+        # First look in webapp specific directory
+        if name is not None:
+            paths.append( os.path.join( galaxy_app.config.template_path, 'webapps', name ) )
+        # Then look in root directory
+        paths.append( galaxy_app.config.template_path )
+        # Create TemplateLookup with a small cache
+        return mako.lookup.TemplateLookup(
+            directories = paths,
             module_directory = galaxy_app.config.template_cache,
             collection_size = 500,
             output_encoding = 'utf-8' )
-        # Security helper
-        self.security = galaxy_app.security
+
     def handle_controller_exception( self, e, trans, **kwargs ):
+
         if isinstance( e, MessageException ):
             return trans.show_message( e.err_msg, e.type )
     def make_body_iterable( self, trans, body ):
+
         if isinstance( body, FormBuilder ):
             body = trans.show_form( body )
         return base.WebApplication.make_body_iterable( self, trans, body )
+
     def transaction_chooser( self, environ, galaxy_app, session_cookie ):
         if 'is_api_request' in environ:
             return GalaxyWebAPITransaction( environ, galaxy_app, self, session_cookie )
         else:
             return GalaxyWebUITransaction( environ, galaxy_app, self, session_cookie )
+
+    def add_ui_controllers( self, package_name, app ):
+        """
+        Search for UI controllers in `package_name` and add 
+        them to the webapp.
+        """
+        from galaxy.web.base.controller import BaseUIController
+        from galaxy.web.base.controller import ControllerUnavailable
+        package = import_module( package_name )
+        controller_dir = package.__path__[0]
+        print ">>>", controller_dir, package.__path__
+        for fname in os.listdir( controller_dir ):
+            if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
+                name = fname[:-3]
+                module_name = package_name + "." + name
+                print package_name, name, module_name
+                try:
+                    module = import_module( module_name )
+                except ControllerUnavailable, exc:
+                    log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
+                    continue
+                # Look for a controller inside the modules
+                for key in dir( module ):
+                    T = getattr( module, key )
+                    if inspect.isclass( T ) and T is not BaseUIController and issubclass( T, BaseUIController ):
+                        self.add_ui_controller( name, T( app ) )
+
+    def add_api_controllers( self, package_name, app ):
+        """
+        Search for UI controllers in `package_name` and add 
+        them to the webapp.
+        """
+        from galaxy.web.base.controller import BaseAPIController
+        from galaxy.web.base.controller import ControllerUnavailable
+        package = import_module( package_name )
+        controller_dir = package.__path__[0]
+        for fname in os.listdir( controller_dir ):
+            if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
+                name = fname[:-3]
+                module_name = package_name + "." + name
+                try:
+                    module = import_module( module_name )
+                except ControllerUnavailable, exc:
+                    log.debug("%s could not be loaded: %s" % (module_name, str(exc)))
+                    continue
+                for key in dir( module ):
+                    T = getattr( module, key )
+                    if inspect.isclass( T ) and T is not BaseAPIController and issubclass( T, BaseAPIController ):
+                        self.add_api_controller( name, T( app ) )
 
 class GalaxyWebTransaction( base.DefaultWebTransaction ):
     """
@@ -550,7 +617,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         Update the session cookie to match the current session.
         """
         self.set_cookie( self.security.encode_guid( self.galaxy_session.session_key ), name=name, path=self.app.config.cookie_path )
-    def handle_user_login( self, user, webapp ):
+    def handle_user_login( self, user ):
         """
         Login a new user (possibly newly created)
            - create a new session
@@ -564,7 +631,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         prev_galaxy_session.is_valid = False
         # Define a new current_session
         self.galaxy_session = self.__create_new_session( prev_galaxy_session, user )
-        if webapp == 'galaxy':
+        if self.webapp.name == 'galaxy':
             cookie_name = 'galaxysession'
             # Associated the current user's last accessed history (if exists) with their new session
             history = None

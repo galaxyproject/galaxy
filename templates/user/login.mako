@@ -1,11 +1,7 @@
 <%!
     def inherit(context):
         if context.get('use_panels'):
-            if context.get('webapp'):
-                webapp = context.get('webapp')
-            else:
-                webapp = 'galaxy'
-            return '/webapps/%s/base_panels.mako' % webapp
+            return '/base_panels.mako'
         else:
             return '/base.mako'
 %>
@@ -82,14 +78,13 @@
             <div class="form-row">
                 <label>Email address:</label>
                 <input type="text" name="email" value="${email | h}" size="40"/>
-                <input type="hidden" name="webapp" value="${webapp | h}" size="40"/>
                 <input type="hidden" name="redirect" value="${redirect | h}" size="40"/>
             </div>
             <div class="form-row">
                 <label>Password:</label>
                 <input type="password" name="password" value="" size="40"/>
                 <div class="toolParamHelp" style="clear: both;">
-                    <a href="${h.url_for( controller='user', action='reset_password', webapp=webapp, use_panels=use_panels )}">Forgot password? Reset here</a>
+                    <a href="${h.url_for( controller='user', action='reset_password', use_panels=use_panels )}">Forgot password? Reset here</a>
                 </div>
             </div>
             <div class="form-row">
@@ -107,7 +102,6 @@
             <div class="form-row">
                 <label>OpenID URL:</label>
                 <input type="text" name="openid_url" size="60" style="background-image:url('${h.url_for( '/static/images/openid-16x16.gif' )}' ); background-repeat: no-repeat; padding-right: 20px; background-position: 99% 50%;"/>
-                <input type="hidden" name="webapp" value="${webapp | h}" size="40"/>
                 <input type="hidden" name="redirect" value="${redirect | h}" size="40"/>
             </div>
             <div class="form-row">

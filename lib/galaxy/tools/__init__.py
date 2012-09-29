@@ -159,6 +159,8 @@ class ToolBox( object ):
         else:
             panel_dict = panel_component
         already_loaded = False
+        loaded_version_key = None
+        lineage_id = None
         for lineage_id in tool.lineage_ids:
             if lineage_id in self.tools_by_id:
                 loaded_version_key = 'tool_%s' % lineage_id
@@ -176,7 +178,13 @@ class ToolBox( object ):
             if not inserted:
                 # If the tool is not defined in integrated_tool_panel.xml, append it to the tool panel.
                 panel_dict[ key ] = tool
-            log.debug( "Loaded tool id: %s, version: %s." % ( tool.id, tool.version ) )
+            log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
+        elif tool.lineage_ids.index( tool_id ) > tool.lineage_ids.index( lineage_id ):
+            key = 'tool_%s' % tool.id
+            index = panel_dict.keys().index( loaded_version_key )
+            del panel_dict[ loaded_version_key ]
+            panel_dict.insert( index, key, tool )
+            log.debug( "Loaded tool id: %s, version: %s into tool panel." % ( tool.id, tool.version ) )
     def load_tool_panel( self ):
         for key, val in self.integrated_tool_panel.items():
             if key.startswith( 'tool_' ):
@@ -255,70 +263,68 @@ class ToolBox( object ):
         os.write( fd, '<?xml version="1.0"?>\n' )
         os.write( fd, '<toolbox>\n' )
         for key, item in self.integrated_tool_panel.items():
-            if key.startswith( 'tool_' ):
-                if item:
+            if item:
+                if key.startswith( 'tool_' ):
                     os.write( fd, '    <tool id="%s" />\n' % item.id )
-            elif key.startswith( 'workflow_' ):
-                if item:
+                elif key.startswith( 'workflow_' ):
                     os.write( fd, '    <workflow id="%s" />\n' % item.id )
-            elif key.startswith( 'label_' ):
-                label_id = item.id or ''
-                label_text = item.text or ''
-                label_version = item.version or ''
-                os.write( fd, '    <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
-            elif key.startswith( 'section_' ):
-                section_id = item.id or ''
-                section_name = item.name or ''
-                section_version = item.version or ''
-                os.write( fd, '    <section id="%s" name="%s" version="%s">\n' % ( section_id, section_name, section_version ) )
-                for section_key, section_item in item.elems.items():
-                    if section_key.startswith( 'tool_' ):
-                        if section_item:
-                            os.write( fd, '        <tool id="%s" />\n' % section_item.id )
-                    elif section_key.startswith( 'workflow_' ):
-                        if section_item:
-                            os.write( fd, '        <workflow id="%s" />\n' % section_item.id )
-                    elif section_key.startswith( 'label_' ):
-                        if section_item:
-                            label_id = section_item.id or ''
-                            label_text = section_item.text or ''
-                            label_version = section_item.version or ''
-                            os.write( fd, '        <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
-                os.write( fd, '    </section>\n' )
+                elif key.startswith( 'label_' ):
+                    label_id = item.id or ''
+                    label_text = item.text or ''
+                    label_version = item.version or ''
+                    os.write( fd, '    <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
+                elif key.startswith( 'section_' ):
+                    section_id = item.id or ''
+                    section_name = item.name or ''
+                    section_version = item.version or ''
+                    os.write( fd, '    <section id="%s" name="%s" version="%s">\n' % ( section_id, section_name, section_version ) )
+                    for section_key, section_item in item.elems.items():
+                        if section_key.startswith( 'tool_' ):
+                            if section_item:
+                                os.write( fd, '        <tool id="%s" />\n' % section_item.id )
+                        elif section_key.startswith( 'workflow_' ):
+                            if section_item:
+                                os.write( fd, '        <workflow id="%s" />\n' % section_item.id )
+                        elif section_key.startswith( 'label_' ):
+                            if section_item:
+                                label_id = section_item.id or ''
+                                label_text = section_item.text or ''
+                                label_version = section_item.version or ''
+                                os.write( fd, '        <label id="%s" text="%s" version="%s" />\n' % ( label_id, label_text, label_version ) )
+                    os.write( fd, '    </section>\n' )
         os.write( fd, '</toolbox>\n' )
         os.close( fd )
         shutil.move( filename, os.path.abspath( self.integrated_tool_panel_config ) )
         os.chmod( self.integrated_tool_panel_config, 0644 )
     def get_tool( self, tool_id, tool_version=None, get_all_versions=False ):
         """Attempt to locate a tool in the tool box."""
-        if tool_id in self.tools_by_id:
-            tool = self.tools_by_id[ tool_id ]
-            if tool_version and tool.version == tool_version:
-                if get_all_versions:
-                    return [ tool ]
-                else:
-                    return tool
-            else:
-                if get_all_versions:
-                    return [ tool ]
-                else:
-                    return tool
+        if tool_id in self.tools_by_id and not get_all_versions:
+            #tool_id exactly matches an available tool by id (which is 'old' tool_id or guid)
+            return self.tools_by_id[ tool_id ]
+        #exact tool id match not found, or all versions requested, search for other options, e.g. migrated tools or different versions
+        rval = []
         tv = self.__get_tool_version( tool_id )
         if tv:
             tool_version_ids = tv.get_version_ids( self.app )
-            if get_all_versions:
-                available_tool_versions = []
-                for tool_version_id in tool_version_ids:
-                    if tool_version_id in self.tools_by_id:
-                        available_tool_versions.append( self.tools_by_id[ tool_version_id ] )
-                return available_tool_versions
             for tool_version_id in tool_version_ids:
                 if tool_version_id in self.tools_by_id:
-                    tool = self.tools_by_id[ tool_version_id ]
-                    if tool_version and tool.version == tool_version:
-                        return tool
-                    else:
-                        return tool
+                    rval.append( self.tools_by_id[ tool_version_id ] )
+        if not rval:
+            #still no tool, do a deeper search and try to match by old ids
+            for tool in self.tools_by_id.itervalues():
+                if tool.old_id == tool_id:
+                    rval.append( tool )
+        if rval:
+            if get_all_versions:
+                return rval
+            else:
+                if tool_version:
+                    #return first tool with matching version
+                    for tool in rval:
+                        if tool.version == tool_version:
+                            return tool
+                #No tool matches by version, simply return the first available tool found
+                return rval[0] 
         return None
     def get_loaded_tools_by_lineage( self, tool_id ):
         """Get all loaded tools associated by lineage to the tool whose id is tool_id."""
@@ -381,7 +387,6 @@ class ToolBox( object ):
                     tool.repository_owner = repository_owner
                     tool.installed_changeset_revision = installed_changeset_revision
                     tool.guid = guid
-                    tool.old_id = elem.find( "id" ).text
                     tool.version = elem.find( "version" ).text
                 # Make sure the tool has a tool_version.
                 if not self.__get_tool_version( tool.id ):
@@ -906,8 +911,9 @@ class Tool:
         if not self.name: 
             raise Exception, "Missing tool 'name'"
         # Get the UNIQUE id for the tool 
+        self.old_id = root.get( "id" )
         if guid is None:
-            self.id = root.get( "id" )
+            self.id = self.old_id
         else:
             self.id = guid
         if not self.id: 

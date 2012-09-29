@@ -1,12 +1,15 @@
+from __future__ import absolute_import
+
 from galaxy import model
 from galaxy.model.item_attrs import *
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.controllers.library import LibraryListGrid
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.data_providers.basic import ColumnDataProvider
+
+from .library import LibraryListGrid
 
 #
 # -- Grids --

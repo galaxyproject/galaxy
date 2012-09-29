@@ -3,6 +3,11 @@
 Handlebars.registerPartial( 'clearFloatDiv', function( options ){
     return '<div class="clear"></div>';
 });
+/** Renders a warning in a (mostly css) highlighted, iconned warning box
+ */
+Handlebars.registerHelper( 'warningmessagesmall', function( options ){
+    return '<div class="warningmessagesmall"><strong>' + options.fn( this ) + '</strong></div>'
+});
 /** Renders a glx style icon-button (see IconButton in mvc/ui.js)
  *      can be used in either of the following ways:
  *          within a template: {{> iconButton buttonData}}
@@ -29,9 +34,4 @@ Handlebars.registerPartial( 'iconButton', function( buttonData, options ){
     
     buffer += '>' + ( ( buttonData.enabled )?( '</a>' ):( '</span>' ) );
     return buffer;
-});
-/** Renders a warning in a (mostly css) highlighted, iconned warning box
- */
-Handlebars.registerHelper( 'warningmessagesmall', function( options ){
-    return '<div class="warningmessagesmall"><strong>' + options.fn( this ) + '</strong></div>'
 });

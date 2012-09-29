@@ -1,4 +1,8 @@
-/*
+//define([
+//    "../mvc/base-mvc"
+//    
+//], function(){
+/* =============================================================================
 Backbone.js implementation of history panel
 
 TODO:
@@ -10,6 +14,8 @@ TODO:
     _render_displayApps
     _render_downloadButton
         widget building (popupmenu, etc.)
+    history.mako js: updater, etc.
+    have info bodies prev. opened, redisplay on refresh
     
     don't draw body until it's first unhide event
     all history.mako js -> this
@@ -30,26 +36,7 @@ TODO:
     move inline styles into base.less
     add classes, ids on empty divs
     watch the magic strings
-*/
-
-//==============================================================================
-
-//==============================================================================
-//TODO: move to Galaxy obj./namespace, decorate for current page (as GalaxyPaths)
-/*
-var Localizable = {
-    localizedStrings : {},
-    setLocalizedString : function( str, localizedString ){
-        this.localizedStrings[ str ] = localizedString;
-    },
-    localize : function( str ){
-        if( str in this.localizedStrings ){ return this.localizedStrings[ str ]; }
-        return str;
-    }
-};
-var LocalizableView = LoggingView.extend( Localizable );
-*/
-//TODO: wire up to views
+============================================================================= */
 
 //==============================================================================
 // jq plugin?
@@ -204,12 +191,8 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
         itemWrapper.find( '.tooltip' ).tooltip({ placement : 'bottom' });
         
-        //TODO: broken
-        var popupmenus = itemWrapper.find( '[popupmenu]' );
-        popupmenus.each( function( i, menu ){
-            menu = $( menu );
-            make_popupmenu( menu );
-        });
+        // we can potentially skip this step and call popupmenu directly on the download button
+        make_popup_menus( itemWrapper );
         
         //TODO: better transition/method than this...
         this.$el.children().remove();
@@ -343,54 +326,25 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
 
     // ................................................................................ primary actions
     _render_primaryActionButtons : function( buttonRenderingFuncs ){
-        var primaryActionButtons = $( '<div/>' ),
+        var primaryActionButtons = $( '<div/>' ).attr( 'id', 'primary-actions-' + this.model.get( 'id' ) ),
             view = this;
         _.each( buttonRenderingFuncs, function( fn ){
-            primaryActionButtons.append( fn.call( view ) );
+            var render_return = fn.call( view );
+            primaryActionButtons.append( render_return );
         });
         return primaryActionButtons;
     },
     
     _render_downloadButton : function(){
-        // return either: a single download icon-button (if there are no meta files)
-        //  or a popupmenu with links to download assoc. meta files (if there are meta files)
-        
         // don't show anything if the data's been purged
         if( this.model.get( 'purged' ) ){ return null; }
         
-        var downloadLink = linkHTMLTemplate({
-            title       : 'Download',
-            href        : this.model.get( 'download_url' ),
-            classes     : [ 'icon-button', 'tooltip', 'disk' ]
-        });
+        // return either: a single download icon-button (if there are no meta files)
+        //  or a popupmenu with links to download assoc. meta files (if there are meta files)
+        var downloadLinkHTML = HistoryItemView.templates.downloadLinks( this.model.toJSON() );
+        this.log( '_render_downloadButton, downloadLinkHTML:', downloadLinkHTML );
         
-        // if no metafiles, return only the main download link
-        var download_meta_urls = this.model.get( 'download_meta_urls' );
-        if( !download_meta_urls ){
-            return downloadLink;
-        }
-        
-        // build the popupmenu for downloading main, meta files
-        var popupmenu = $( '<div popupmenu="dataset-' + this.model.get( 'id' ) + '-popup"></div>' );
-        popupmenu.append( linkHTMLTemplate({
-            text        : 'Download Dataset',
-            title       : 'Download',
-            href        : this.model.get( 'download_url' ),
-            classes     : [ 'icon-button', 'tooltip', 'disk' ]
-        }));
-        popupmenu.append( '<a>Additional Files</a>' );
-        for( file_type in download_meta_urls ){
-            popupmenu.append( linkHTMLTemplate({
-                text        : 'Download ' + file_type,
-                href        : download_meta_urls[ file_type ],
-                classes     : [ 'action-button' ]
-            }));
-        }
-        var menuButton = $( ( '<div style="float:left;" class="menubutton split popup"'
-                          + ' id="dataset-${dataset_id}-popup"></div>' ) );
-        menuButton.append( downloadLink );
-        popupmenu.append( menuButton );
-        return popupmenu;
+        return $( downloadLinkHTML );
     },
     
     //NOTE: button renderers have the side effect of caching their IconButtonViews to this view
@@ -451,8 +405,12 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     // ................................................................................ secondary actions
     _render_secondaryActionButtons : function( buttonRenderingFuncs ){
         // move to the right (same level as primary)
-        var secondaryActionButtons = $( '<div style="float: right;"></div>' ),
+        var secondaryActionButtons = $( '<div/>' ),
             view = this;
+        secondaryActionButtons
+            .attr( 'style', 'float: right;' )
+            .attr( 'id', 'secondary-actions-' + this.model.get( 'id' ) );
+            
         _.each( buttonRenderingFuncs, function( fn ){
             secondaryActionButtons.append( fn.call( view ) );
         });
@@ -501,54 +459,23 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     },
     
     _render_displayApps : function(){
-        if( !this.model.get( 'display_apps' ) ){ return null; }
-        var displayApps = this.model.get( 'displayApps' ),
-            displayAppsDiv = $( '<div/>' ),
-            displayAppSpan = $( '<span/>' );
-                
-        this.log( this + 'displayApps:', displayApps );
-        ////TODO: grrr...somethings not in the right scope here
-        //for( app_name in displayApps ){
-        //    //TODO: to template
-        //    var display_app = displayApps[ app_name ],
-        //        display_app_HTML = app_name + ' ';
-        //    for( location_name in display_app ){
-        //        display_app_HTML += linkHTMLTemplate({
-        //            text    : location_name,
-        //            href    : display_app[ location_name ].url,
-        //            target  : display_app[ location_name ].target
-        //        }) + ' ';
-        //    }
-        //    display_app_span.append( display_app_HTML );
-        //}
-        //displayAppsDiv.append( display_app_span );
+        // render links to external genome display applications (igb, gbrowse, etc.)
+        if( !this.model.hasData() ){ return null; }
         
-        //displayAppsDiv.append( '<br />' );
-
-        //var display_appsDiv = $( '<div/>' );
-        //if( this.model.get( 'display_apps' ) ){
-        //
-        //    var display_apps = this.model.get( 'display_apps' ),
-        //        display_app_span = $( '<span/>' );
-        //        
-        //    //TODO: grrr...somethings not in the right scope here
-        //    for( app_name in display_apps ){
-        //        //TODO: to template
-        //        var display_app = display_apps[ app_name ],
-        //            display_app_HTML = app_name + ' ';
-        //        for( location_name in display_app ){
-        //            display_app_HTML += linkHTMLTemplate({
-        //                text    : location_name,
-        //                href    : display_app[ location_name ].url,
-        //                target  : display_app[ location_name ].target
-        //            }) + ' ';
-        //        }
-        //        display_app_span.append( display_app_HTML );
-        //    }
-        //    display_appsDiv.append( display_app_span );
-        //}
-        ////display_appsDiv.append( '<br />' );
-        //parent.append( display_appsDiv );
+        var displayAppsDiv = $( '<div/>' ).addClass( 'display-apps' );
+        if( !_.isEmpty( this.model.get( 'display_types' ) ) ){
+            this.log( this + 'display_types:', this.model.get( 'display_types' ) );
+            //TODO:?? does this ever get used?
+            displayAppsDiv.append(
+                HistoryItemView.templates.displayApps({ displayApps : this.model.toJSON().display_types })
+            );
+        }
+        if( !_.isEmpty( this.model.get( 'display_apps' ) ) ){
+            this.log( this + 'display_apps:',  this.model.get( 'display_apps' ) );
+            displayAppsDiv.append(
+                HistoryItemView.templates.displayApps({ displayApps : this.model.toJSON().display_apps })
+            );
+        }
         return displayAppsDiv;
     },
             
@@ -815,9 +742,11 @@ HistoryItemView.templates = CompiledTemplateLoader.getTemplates({
         messages        : 'template-history-warning-messages',
         titleLink       : 'template-history-titleLink',
         hdaSummary      : 'template-history-hdaSummary',
+        downloadLinks   : 'template-history-downloadLinks',
         failedMetadata  : 'template-history-failedMetaData',
         tagArea         : 'template-history-tagArea',
-        annotationArea  : 'template-history-annotationArea'
+        annotationArea  : 'template-history-annotationArea',
+        displayApps     : 'template-history-displayApps'
     }
 });
 
@@ -967,163 +896,10 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
 
 
 //==============================================================================
-function createMockHistoryData(){
-    mockHistory = {};
-    mockHistory.data = {
-        
-        template : {
-            id                  : 'a799d38679e985db', 
-            name                : 'template', 
-            data_type           : 'fastq', 
-            file_size           : 226297533, 
-            genome_build        : '?', 
-            metadata_data_lines : 0, 
-            metadata_dbkey      : '?', 
-            metadata_sequences  : 0, 
-            misc_blurb          : '215.8 MB', 
-            misc_info           : 'uploaded fastq file (misc_info)', 
-            model_class         : 'HistoryDatasetAssociation', 
-            download_url        : '', 
-            state               : 'ok', 
-            visible             : true,
-            deleted             : false, 
-            purged              : false,
-            
-            hid                 : 0,
-            //TODO: move to history
-            for_editing         : true,
-            //for_editing         : false,
-            
-            //?? not needed
-            //can_edit            : true,
-            //can_edit            : false,
-            
-            accessible          : true,
-            
-            //TODO: move into model functions (build there (and cache?))
-            //!! be careful with adding these accrd. to permissions
-            //!!    IOW, don't send them via template/API if the user doesn't have perms to use
-            //!!    (even if they don't show up)
-            undelete_url        : '',
-            purge_url           : '',
-            unhide_url          : '',
-            
-            display_url         : 'example.com/display',
-            edit_url            : 'example.com/edit',
-            delete_url          : 'example.com/delete',
-            
-            show_params_url     : 'example.com/show_params',
-            rerun_url           : 'example.com/rerun',
-            
-            retag_url           : 'example.com/retag',
-            annotate_url        : 'example.com/annotate',
-            
-            peek                : [
-                '<table cellspacing="0" cellpadding="3"><tr><th>1.QNAME</th><th>2.FLAG</th><th>3.RNAME</th><th>4.POS</th><th>5.MAPQ</th><th>6.CIGAR</th><th>7.MRNM</th><th>8.MPOS</th><th>9.ISIZE</th><th>10.SEQ</th><th>11.QUAL</th><th>12.OPT</th></tr>',
-                '<tr><td colspan="100%">@SQ	SN:gi|87159884|ref|NC_007793.1|	LN:2872769</td></tr>',
-                '<tr><td colspan="100%">@PG	ID:bwa	PN:bwa	VN:0.5.9-r16</td></tr>',
-                '<tr><td colspan="100%">HWUSI-EAS664L:15:64HOJAAXX:1:1:13280:968	73	gi|87159884|ref|NC_007793.1|	2720169	37	101M	=	2720169	0	NAATATGACATTATTTTCAAAACAGCTGAAAATTTAGACGTACCGATTTATCTACATCCCGCGCCAGTTAACAGTGACATTTATCAATCATACTATAAAGG	!!!!!!!!!!$!!!$!!!!!$!!!!!!$!$!$$$!!$!!$!!!!!!!!!!!$!</td></tr>',
-                '<tr><td colspan="100%">!!!$!$!$$!!$$!!$!!!!!!!!!!!!!!!!!!!!!!!!!!$!!$!!	XT:A:U	NM:i:1	SM:i:37	AM:i:0	X0:i:1	X1:i:0	XM:i:1	XO:i:0	XG:i:0	MD:Z:0A100</td></tr>',
-                '<tr><td colspan="100%">HWUSI-EAS664L:15:64HOJAAXX:1:1:13280:968	133	gi|87159884|ref|NC_007793.1|	2720169	0	*	=	2720169	0	NAAACTGTGGCTTCGTTNNNNNNNNNNNNNNNGTGANNNNNNNNNNNNNNNNNNNGNNNNNNNNNNNNNNNNNNNNCNAANNNNNNNNNNNNNNNNNNNNN	!!!!!!!!!!!!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</td></tr>',
-                '<tr><td colspan="100%">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</td></tr>',
-                '</table>'
-            ].join( '' )
-        }
-        
-    };
-    _.extend( mockHistory.data, {
-        
-        notAccessible : 
-            _.extend( _.clone( mockHistory.data.template ),
-                      { accessible : false }),
-        
-        //deleted, purged, visible
-        deleted     :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { deleted : true,
-                        delete_url : '',
-                        purge_url : 'example.com/purge',
-                        undelete_url : 'example.com/undelete' }),
-        purgedNotDeleted :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { purged : true,
-                        delete_url : '' }),
-        notvisible  :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { visible : false,
-                        unhide_url : 'example.com/unhide' }),
-
-        hasDisplayApps :
-            _.extend( _.clone( mockHistory.data.template ),
-                { display_apps : {
-                        'display in IGB' : {
-                            Web: "/display_application/63cd3858d057a6d1/igb_bam/Web",
-                            Local: "/display_application/63cd3858d057a6d1/igb_bam/Local"
-                        }
-                    }
-                }
-            ),
-        canTrackster :
-            _.extend( _.clone( mockHistory.data.template ),
-                { trackster_urls      : {
-                        'data-url'      : "example.com/trackster-data",
-                        'action-url'    : "example.com/trackster-action",
-                        'new-url'       : "example.com/trackster-new"
-                    }
-                }
-            ),
-        zeroSize  :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { file_size : 0 }),
-            
-        hasMetafiles  :
-            _.extend( _.clone( mockHistory.data.template ), {
-                download_meta_urls : {
-                    'bam_index'      : "example.com/bam-index"
-                }
-            }),
-            
-        //states
-        upload :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.UPLOAD }),
-        queued :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.QUEUED }),
-        running :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.RUNNING }),
-        empty :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.EMPTY }),
-        error :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.ERROR,
-                        report_error_url: 'example.com/report_err' }),
-        discarded :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.DISCARDED }),
-        setting_metadata :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.SETTING_METADATA }),
-        failed_metadata :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.FAILED_METADATA })
-/*
-*/        
-    });
-    
-    $( document ).ready( function(){
-        //mockHistory.views.deleted.logger = console;
-        mockHistory.items = {};
-        mockHistory.views = {};
-        for( key in mockHistory.data ){
-            mockHistory.items[ key ] = new HistoryItem( mockHistory.data[ key ] );
-            mockHistory.items[ key ].set( 'name', key );
-            mockHistory.views[ key ] = new HistoryItemView({ model : mockHistory.items[ key ] });
-            //console.debug( 'view: ', mockHistory.views[ key ] );
-            $( 'body' ).append( mockHistory.views[ key ].render() );
-        }
-    });
-}
-
+//return {
+//    HistoryItem     : HistoryItem,
+//    HitoryItemView  : HistoryItemView,
+//    HistoryCollection : HistoryCollection,
+//    History         : History,
+//    HistoryView     : HistoryView
+//};});

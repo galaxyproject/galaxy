@@ -31,8 +31,8 @@ MAPPED_CHARS = { '>' :'&gt;',
                  '&' : '&amp;',
                  '\'' : '&apos;' }
 MAX_CONTENT_SIZE = 32768
-VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'tool_dependencies.xml' ]
+VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 
 class ShedCounter( object ):
     def __init__( self, model ):
@@ -602,7 +602,7 @@ def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
             else:
                 tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
     return tool_dependencies_dict
-def generate_metadata_for_changeset_revision( app, repository_clone_url, relative_install_dir=None, repository_files_dir=None,
+def generate_metadata_for_changeset_revision( app, repository, repository_clone_url, relative_install_dir=None, repository_files_dir=None,
                                               resetting_all_metadata_on_repository=False, webapp='galaxy' ):
     """
     Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
@@ -610,6 +610,7 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
     disk files, so the value of repository_files_dir will not always be repository.repo_path (it could be an absolute path to a temporary directory
     containing a clone).  If it is an absolute path, the value of relative_install_dir must contain repository.repo_path.
     """
+    readme_file_names = get_readme_file_names( repository.name )
     metadata_dict = {}
     invalid_file_tups = []
     invalid_tool_configs = []
@@ -653,14 +654,24 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
                                                                                      tool_data_path=app.config.tool_data_path,
                                                                                      tool_data_table_config_path=app.config.tool_data_table_config_path,
                                                                                      persist=False )
-    # Find all tool configs and exported workflows and add them to the repository's metadata.
     for root, dirs, files in os.walk( files_dir ):
         if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
             if '.hg' in dirs:
                 dirs.remove( '.hg' )
             for name in files:
-                # Find all tool configs.
-                if name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
+                # See if we have a READ_ME file.
+                if name.lower() in readme_file_names:
+                    if resetting_all_metadata_on_repository:
+                        full_path_to_readme = os.path.join( root, name )
+                        stripped_path_to_readme = full_path_to_readme.replace( work_dir, '' )
+                        if stripped_path_to_readme.startswith( '/' ):
+                            stripped_path_to_readme = stripped_path_to_readme[ 1: ]
+                        relative_path_to_readme = os.path.join( relative_install_dir, stripped_path_to_readme )
+                    else:
+                        relative_path_to_readme = os.path.join( root, name )
+                    metadata_dict[ 'readme' ] = relative_path_to_readme
+                # See if we have a tool config.
+                elif name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
                     full_path = os.path.abspath( os.path.join( root, name ) )
                     if os.path.getsize( full_path ) > 0:
                         if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
@@ -699,7 +710,7 @@ def generate_metadata_for_changeset_revision( app, repository_clone_url, relativ
                                     else:
                                         for tup in invalid_files_and_errors_tups:
                                             invalid_file_tups.append( tup )
-                # Find all exported workflows
+                # Find all exported workflows.
                 elif name.endswith( '.ga' ):
                     relative_path = os.path.join( root, name )
                     if os.path.getsize( os.path.abspath( relative_path ) ) > 0:
@@ -1195,6 +1206,25 @@ def get_repository_files( trans, folder_path ):
     if contents:
         contents.sort()
     return contents
+def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
+    """Get metadata for a specified repository change set from the database"""
+    # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.  Duplicate records were somehow
+    # created in the past.  The cause of this issue has been resolved, but we'll leave this method as is for a while longer to ensure all duplicate
+    # records are removed.
+    all_metadata_records = trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
+                                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
+                                           .order_by( trans.model.RepositoryMetadata.table.c.update_time.desc() ) \
+                                           .all()
+    if len( all_metadata_records ) > 1:
+        # Delete all recrds older than the last one updated.
+        for repository_metadata in all_metadata_records[ 1: ]:
+            trans.sa_session.delete( repository_metadata )
+            trans.sa_session.flush()
+        return all_metadata_records[ 0 ]
+    elif all_metadata_records:
+        return all_metadata_records[ 0 ]
+    return None
 def get_repository_owner( cleaned_repository_url ):
     items = cleaned_repository_url.split( 'repos' )
     repo_path = items[ 1 ]
@@ -1405,6 +1435,13 @@ def get_url_from_repository_tool_shed( app, repository ):
             return shed_url
     # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
     return None
+def get_readme_file_names( repository_name ):
+    readme_files = [ 'readme', 'read_me', 'install' ]
+    valid_filenames = [ r for r in readme_files ]
+    for r in readme_files:
+        valid_filenames.append( '%s.txt' % r )
+    valid_filenames.append( '%s.txt' % repository_name )
+    return valid_filenames
 def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the
@@ -1524,16 +1561,13 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     for elem in root:
         if elem.tag == 'package':
             # Only install the tool_dependency if it is not already installed.
-            can_install = False
             package_name = elem.get( 'name', None )
             package_version = elem.get( 'version', None )
             if package_name and package_version:
                 for tool_dependency in tool_dependencies:
                     if tool_dependency.name==package_name and tool_dependency.version==package_version:
-                        can_install = tool_dependency.status in [ app.model.ToolDependency.installation_status.NEVER_INSTALLED,
-                                                                  app.model.ToolDependency.installation_status.UNINSTALLED ]
                         break
-                if can_install:
+                if tool_dependency.can_install:
                     tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
                     if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
                                                                        app.model.ToolDependency.installation_status.ERROR ]:
@@ -1907,6 +1941,19 @@ def to_html_str( text ):
         elif c not in [ '\r' ]:
             translated.append( '' )
     return ''.join( translated )
+def translate_string( raw_text, to_html=True ):
+    if raw_text:
+        if to_html:
+            if len( raw_text ) <= MAX_CONTENT_SIZE:
+                translated_string = to_html_str( raw_text )
+            else:
+                large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
+                translated_string = to_html_str( '%s%s' % ( raw_text[ 0:MAX_CONTENT_SIZE ], large_str ) )
+        else:
+            raise Exception( "String translation currently only supports text to HTML." )
+    else:
+        translated_string = ''
+    return translated_string
 def update_repository( repo, ctx_rev=None ):
     """
     Update the cloned repository to changeset_revision.  It is critical that the installed repository is updated to the desired

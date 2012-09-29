@@ -10,9 +10,10 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents
-from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config, INITIAL_CHANGELOG_HASH
-from galaxy.util.shed_util import load_tool_from_config, NOT_TOOL_CONFIGS, open_repository_files_folder, reversed_lower_upper_bounded_changelog
-from galaxy.util.shed_util import reversed_upper_bounded_changelog, strip_path, to_html_escaped, update_repository, url_join
+from galaxy.util.shed_util import get_repository_metadata_by_changeset_revision, handle_sample_files_and_load_tool_from_disk
+from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_tmp_config, INITIAL_CHANGELOG_HASH, load_tool_from_config, NOT_TOOL_CONFIGS
+from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog, strip_path
+from galaxy.util.shed_util import to_html_escaped, translate_string, update_repository, url_join
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -23,7 +24,6 @@ from mercurial import hg, ui, patch, commands
 log = logging.getLogger( __name__ )
 
 VALID_REPOSITORYNAME_RE = re.compile( "^[a-z0-9\_]+$" )
-README_FILES = [ 'readme', 'read_me', 'install' ]
     
 class CategoryListGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
@@ -613,8 +613,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         # Update repository files for browsing.
         update_repository( repo )
         is_malicious = changeset_is_malicious( trans, id, repository.tip )
+        metadata = self.get_metadata( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repository=repository,
+                                    metadata=metadata,
                                     commit_message=commit_message,
                                     is_malicious=is_malicious,
                                     webapp=webapp,
@@ -828,9 +830,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
+        metadata = self.get_metadata( trans, id, repository.tip )
         if trans.user and trans.user.email:
             return trans.fill_template( "/webapps/community/repository/contact_owner.mako",
                                         repository=repository,
+                                        metadata=metadata,
                                         message=message,
                                         status=status )
         else:
@@ -939,9 +943,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository, tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
+        metadata = self.get_metadata( trans, repository_id, changeset_revision )
         try:
             return trans.fill_template( "/webapps/community/repository/tool_form.mako",
                                         repository=repository,
+                                        metadata=metadata,
                                         changeset_revision=changeset_revision,
                                         tool=tool,
                                         tool_state=tool_state,
@@ -1181,6 +1187,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
         return get_repository_file_contents( file_path )
+    def get_metadata( self, trans, repository_id, changeset_revision ):
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        if repository_metadata and repository_metadata.metadata:
+            return repository_metadata.metadata
+        return None
     @web.json
     def get_repository_information( self, trans, repository_ids, changeset_revisions, **kwd ):
         """
@@ -1208,23 +1219,18 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return dict( includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies, repo_info_dicts=repo_info_dicts )
     @web.expose
     def get_readme( self, trans, **kwd ):
-        """If the received changeset_revision includes a file named readme (case ignored), return it's contents."""
+        """If the received changeset_revision includes a readme file, return it's contents."""
         repository_name = kwd[ 'name' ]
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
-        valid_filenames = [ r for r in README_FILES ]
-        for r in README_FILES:
-            valid_filenames.append( '%s.txt' % r )
-        valid_filenames.append( '%s.txt' % repository_name )
         repository = get_repository_by_name_and_owner( trans, repository_name, repository_owner )
-        repo_dir = repository.repo_path
-        for root, dirs, files in os.walk( repo_dir ):
-            for name in files:
-                if name.lower() in valid_filenames:
-                    f = open( os.path.join( root, name ), 'r' )
-                    text = f.read()
-                    f.close()
-                    return str( text )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+        metadata = repository_metadata.metadata
+        if metadata and 'readme' in metadata:
+             f = open( metadata[ 'readme' ], 'r' )
+             text = f.read()
+             f.close()
+             return str( text )
         return ''
     @web.expose
     def get_tool_dependencies( self, trans, **kwd ):
@@ -1829,8 +1835,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
         is_malicious = changeset_is_malicious( trans, id, repository.tip )
+        metadata = self.get_metadata( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/rate_repository.mako', 
                                     repository=repository,
+                                    metadata=metadata,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
@@ -2156,8 +2164,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
         is_malicious = changeset_is_malicious( trans, id, repository.tip )
+        metadata = self.get_metadata( trans, id, repository.tip )
         return trans.fill_template( '/webapps/community/repository/view_changelog.mako', 
                                     repository=repository,
+                                    metadata=metadata,
                                     changesets=changesets,
                                     is_malicious=is_malicious,
                                     message=message,
@@ -2185,8 +2195,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
             diffs.append( to_html_escaped( diff ) )
         is_malicious = changeset_is_malicious( trans, id, repository.tip )
+        metadata = self.get_metadata( trans, id, ctx_str )
         return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
                                     repository=repository,
+                                    metadata=metadata,
                                     ctx=ctx,
                                     anchors=anchors,
                                     modified=modified,
@@ -2198,6 +2210,33 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     clean=clean,
                                     diffs=diffs,
                                     is_malicious=is_malicious,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    def view_readme( self, trans, id, changeset_revision, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        cntrller = params.get( 'cntrller', 'repository' )
+        webapp = params.get( 'webapp', 'community' )
+        repository = get_repository( trans, id )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+        metadata = repository_metadata.metadata
+        if metadata and 'readme' in metadata:
+            f = open( metadata[ 'readme' ], 'r' )
+            raw_text = f.read()
+            f.close()
+            readme_text = translate_string( raw_text, to_html=True )
+        else:
+            readme_text = ''
+        is_malicious = changeset_is_malicious( trans, id, changeset_revision )
+        return trans.fill_template( '/webapps/community/common/view_readme.mako',
+                                    cntrller=cntrller,
+                                    repository=repository,
+                                    changeset_revision=changeset_revision,
+                                    readme_text=readme_text,
+                                    is_malicious=is_malicious,
+                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -2318,6 +2357,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             break
                     if guid:
                         tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
+        else:
+            metadata = None
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
@@ -2327,6 +2368,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         trans.app.config.tool_data_path = original_tool_data_path
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
+                                    metadata=metadata,
                                     tool=tool,
                                     tool_metadata_dict=tool_metadata_dict,
                                     tool_lineage=tool_lineage,

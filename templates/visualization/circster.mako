@@ -11,6 +11,11 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
+    <style>
+        text {
+            font-size: 10px;
+        }
+    </style>
 </%def>
 
 <%def name="javascripts()">

@@ -1,4 +1,4 @@
-define( ["base","libs/underscore","viz/trackster/slotting", "viz/trackster/painters","viz/trackster/tracks"], function( base, _, slotting, painters, tracks ) {
+define( ["base","libs/underscore","viz/trackster/slotting", "viz/trackster/painters", "viz/trackster/tracks" ], function( base, _, slotting, painters, tracks ) {
 
 /************************************************************************
  * Functions used for creating and managing the Trackster user interface.
@@ -19,9 +19,9 @@ var TracksterUI = base.Base.extend({
         var self = this,
             menu = create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
-                add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
+                tracks.add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
                     _.each(tracks, function(track) {
-                        view.add_drawable( trackster_ui.object_from_template(track, view,  view) );  
+                        view.add_drawable( object_from_template(track, view,  view) );  
                     });
                 });
             } },
@@ -99,7 +99,8 @@ var TracksterUI = base.Base.extend({
      * Use a popup to select a dataset of create bookmarks from
      */
     add_bookmarks: function() {
-        var baseURL = this.baseURL;
+        var self = this,
+            baseURL = this.baseURL;
         show_modal( "Select dataset for new bookmarks", "progress" );
         $.ajax({
             url: this.baseURL + "/visualization/list_histories",
@@ -129,7 +130,7 @@ var TracksterUI = base.Base.extend({
                                     }).then( function(data) {
                                         for( i = 0; i < data.data.length; i++ ) {
                                             var row = data.data[i];
-                                            add_bookmark( row[0], row[1] );
+                                            self.add_bookmark( row[0], row[1] );
                                         }
                                     });
                             });
@@ -183,7 +184,8 @@ var TracksterUI = base.Base.extend({
     create_visualization: function(view_config, viewport_config, drawables_config, bookmarks_config, editable) {
         
         // Create view.
-        view = new tracks.View(view_config);
+        var self = this,
+            view = new tracks.View(view_config);
         view.editor = true;
         $.when( view.load_chroms_deferred ).then(function() {
             // Viewport config.
@@ -227,7 +229,7 @@ var TracksterUI = base.Base.extend({
                 var bookmark;
                 for (var i = 0; i < bookmarks_config.length; i++) {
                     bookmark = bookmarks_config[i];
-                    add_bookmark(bookmark['position'], bookmark['annotation'], editable);
+                    self.add_bookmark(bookmark['position'], bookmark['annotation'], editable);
                 }
             }
 

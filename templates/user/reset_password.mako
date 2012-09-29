@@ -11,7 +11,6 @@
         <div class="form-row">
             <label>Email:</label>
             <input type="text" name="email" value="" size="40"/>
-            <input type="hidden" name="webapp" value="${webapp}" size="40"/>
         </div>
         <div style="clear: both"></div>
         <div class="form-row">

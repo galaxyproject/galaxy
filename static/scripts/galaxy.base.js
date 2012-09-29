@@ -65,15 +65,19 @@ $.fn.makeAbsolute = function(rebase) {
     });
 };
 
+/**
+ *  Sets up popupmenu rendering and binds options functions to the appropriate links
+ */
 function make_popupmenu(button_element, initial_options) {
-    
     /*  Use the $.data feature to store options with the link element.
         This allows options to be changed at a later time 
     */
     var element_menu_exists = (button_element.data("menu_options"));
     button_element.data("menu_options", initial_options);
+    
     // If element already has menu, nothing else to do since HTML and actions are already set.
     if (element_menu_exists) { return; }
+    
     button_element.bind("click.show_popup", function(e) {
         // Close existing visible menus
         $(".popmenu-wrapper").remove();
@@ -93,16 +97,17 @@ function make_popupmenu(button_element, initial_options) {
                     menu_element.append( $("<li></li>").addClass( "head" ).append( $("<a href='#'></a>").html(k) ) );
                 }
             });
-            var wrapper = $( "<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'></div>" ).append( menu_element ).appendTo( "body" );
+            var wrapper = $( "<div class='popmenu-wrapper' style='position: absolute;left: 0; top: -1000;'></div>" )
+                .append( menu_element ).appendTo( "body" );
                    
             var x = e.pageX - wrapper.width() / 2 ;
             x = Math.min( x, $(document).scrollLeft() + $(window).width() - $(wrapper).width() - 5 );
             x = Math.max( x, $(document).scrollLeft() + 5 );
 
-            wrapper.css( {
+            wrapper.css({
                top: e.pageY,
                left: x
-            } );
+            });
         }, 10);
         
         setTimeout( function() {
@@ -127,26 +132,53 @@ function make_popupmenu(button_element, initial_options) {
     
 }
 
-function make_popup_menus() {
-    jQuery( "div[popupmenu]" ).each( function() {
+/**
+ *  Convert two seperate (often adjacent) divs into galaxy popupmenu
+ *  - div 1 contains a number of anchors which become the menu options
+ *  - div 1 should have a 'popupmenu' attribute
+ *  - this popupmenu attribute contains the id of div 2
+ *  - div 2 becomes the 'face' of the popupmenu
+ *
+ *  NOTE: make_popup_menus finds and operates on all divs with a popupmenu attr (no need to point it at something)
+ *          but (since that selector searches the dom on the page), you can send a parent in
+ *  NOTE: make_popup_menus, and make_popupmenu are horrible names
+ */
+function make_popup_menus( parent ) {
+    // find all popupmenu menu divs (divs that contains anchors to be converted to menu options)
+    //  either in the parent or the document if no parent passed
+    parent = parent || document;
+    $( parent ).find( "div[popupmenu]" ).each( function() {
         var options = {};
         var menu = $(this);
+        
+        // find each anchor in the menu, convert them into an options map: { a.text : click_function }
         menu.find( "a" ).each( function() {
             var link = $(this),
-                link_dom = link.get(0);
-            var confirmtext = link_dom.getAttribute( "confirm" ),
+                // why do we need the DOM (mixed with jq)?
+                link_dom = link.get(0),
+                confirmtext = link_dom.getAttribute( "confirm" ),
                 href = link_dom.getAttribute( "href" ),
                 target = link_dom.getAttribute( "target" );
+            
+            // no href - no function (gen. a label)
             if (!href) {
                 options[ link.text() ] = null;
+                
             } else {
                 options[ link.text() ] = function() {
+
+                    // if theres confirm text, send the dialog
                     if ( !confirmtext || confirm( confirmtext ) ) {
                         var f;
+                        // relocate the center panel
                         if ( target == "_parent" ) {
                             window.parent.location = href;
+                            
+                        // relocate the entire window
                         } else if ( target == "_top" ) {
                             window.top.location = href;
+                            
+                        //??...wot?
                         } else if ( target == "demo" ) {
                             // Http request target is a window named
                             // demolocal on the local box
@@ -154,6 +186,8 @@ function make_popup_menus() {
                                 f = window.open( href,target );
                                 f.creator = self;
                             }
+                            
+                        // relocate this panel
                         } else {
                             window.location = href;
                         }
@@ -161,6 +195,7 @@ function make_popup_menus() {
                 };
             }
         });
+        // locate the element with the id corresponding to the menu's popupmenu attr
         var box = $( "#" + menu.attr( 'popupmenu' ) );
         
         // For menus with clickable link text, make clicking on the link go through instead
@@ -170,6 +205,7 @@ function make_popup_menus() {
             return true;
         });
         
+        // attach the click events and menu box building to the box element
         make_popupmenu(box, options);
         box.addClass("popup");
         menu.remove();

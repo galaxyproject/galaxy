@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+# Supports Cufflinks versions 1.3 and newer.
+
 import optparse, os, shutil, subprocess, sys, tempfile
 from galaxy import eggs
 from galaxy.datatypes.util.gff_util import parse_gff_attributes, gff_attributes_to_str
@@ -36,6 +38,7 @@ def __main__():
                                                                                 where each end is 50bp, you should set -r to be 200. The default is 45bp.')
     parser.add_option( '-G', '--GTF', dest='GTF', help='Tells Cufflinks to use the supplied reference annotation to estimate isoform expression. It will not assemble novel transcripts, and the program will ignore alignments not structurally compatible with any reference transcript.' )
     parser.add_option( '-g', '--GTF-guide', dest='GTFguide', help='use reference transcript annotation to guide assembly' )
+    parser.add_option( '-u', '--multi-read-correct', dest='multi_read_correct', action="store_true", help='Tells Cufflinks to do an initial estimation procedure to more accurately weight reads mapping to multiple locations in the genome')
     
     # Normalization options.
     parser.add_option( "-N", "--quartile-normalization", dest="do_normalization", action="store_true" )
@@ -116,7 +119,9 @@ def __main__():
     if options.GTF:
         cmd += ( " -G %s" % options.GTF )
     if options.GTFguide:
-	cmd += ( " -g %s" % options.GTFguide )
+        cmd += ( " -g %s" % options.GTFguide )
+    if options.multi_read_correct:
+        cmd += ( " -u" )
     if options.num_importance_samples:
         cmd += ( " --num-importance-samples %i" % int ( options.num_importance_samples ) )
     if options.max_mle_iterations:
@@ -157,7 +162,7 @@ def __main__():
         total_map_mass = -1
         tmp_stderr = open( tmp_name, 'r' )
         for line in tmp_stderr:
-            if line.lower().find( "total map mass" ) >= 0 or line.lower().find( "upper quartile" ) >= 0:
+            if line.lower().find( "map mass" ) >= 0 or line.lower().find( "upper quartile" ) >= 0:
                 total_map_mass = float( line.split(":")[1].strip() )
                 break
         tmp_stderr.close()
