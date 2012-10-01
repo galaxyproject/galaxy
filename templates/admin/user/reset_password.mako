@@ -9,7 +9,6 @@
     <div class="toolFormTitle">Reset password for users</div>
     <div class="toolFormBody">
         <form name="form" action="${h.url_for( controller='admin', action='reset_user_password' )}" method="post" >
-            <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
             <input type="hidden" name="id" value="${id}" size="40">
             %for user in users:
                 <div class="form-row">

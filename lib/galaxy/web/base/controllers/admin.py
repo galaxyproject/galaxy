@@ -1,7 +1,9 @@
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 
-from galaxy import config, tools, web, util
+from galaxy import web, util
 from galaxy.model.orm import *
+
+from galaxy.util import inflector
 
 class Admin( object ):
     # Override these
@@ -296,7 +298,6 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def mark_role_deleted( self, trans, **kwd ):
-        params = util.Params( kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No role ids received for deleting"
@@ -319,7 +320,6 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def undelete_role( self, trans, **kwd ):
-        params = util.Params( kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No role ids received for undeleting"
@@ -358,7 +358,6 @@ class Admin( object ):
         # - DefaultHistoryPermissions where role_id == Role.id
         # - GroupRoleAssociations where role_id == Role.id
         # - DatasetPermissionss where role_id == Role.id
-        params = util.Params( kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No role ids received for purging"
@@ -608,7 +607,6 @@ class Admin( object ):
     @web.expose
     @web.require_admin
     def undelete_group( self, trans, **kwd ):
-        params = util.Params( kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No group ids received for undeleting"
@@ -642,7 +640,6 @@ class Admin( object ):
     def purge_group( self, trans, **kwd ):
         # This method should only be called for a Group that has previously been deleted.
         # Purging a deleted Group simply deletes all UserGroupAssociations and GroupRoleAssociations.
-        params = util.Params( kwd )
         id = kwd.get( 'id', None )
         if not id:
             message = "No group ids received for purging"

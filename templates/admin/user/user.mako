@@ -76,7 +76,6 @@ $().ready(function() {
                 </div>
             </div>
             <div class="form-row">
-                <input type="hidden" name="webapp" value="${webapp}"/>
                 <input type="submit" name="user_roles_groups_edit_button" value="Save"/>
             </div>
         </form>

@@ -26,7 +26,6 @@
     <div class="toolFormTitle">Change quota amount</div>
     <div class="toolFormBody">
         <form name="library" action="${h.url_for( controller='admin', action='edit_quota' )}" method="post" >
-            <input name="webapp" type="hidden" value="${webapp}"/>
             <input name="id" type="hidden" value="${id}"/>
             <div class="form-row">
                 <label>Amount</label>

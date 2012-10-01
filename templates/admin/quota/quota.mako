@@ -51,7 +51,6 @@ $().ready(function() {
     <div class="toolFormTitle">Quota '${name}'</div>
     <div class="toolFormBody">
         <form name="associate_quota_user_group" id="associate_quota_user_group" action="${h.url_for( action='manage_users_and_groups_for_quota', id=id )}" method="post" >
-            <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
                     <label>Users associated with '${name}'</label>

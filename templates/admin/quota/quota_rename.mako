@@ -19,7 +19,6 @@
     <div class="toolFormBody">
         <form name="library" action="${h.url_for( controller='admin', action='rename_quota' )}" method="post" >
             <div class="form-row">
-                <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
                     <input type="text" name="name" value="${name}" size="40"/>

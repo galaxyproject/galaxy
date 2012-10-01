@@ -51,7 +51,6 @@ $().ready(function() {
     <div class="toolFormTitle">Group '${group.name}'</div>
     <div class="toolFormBody">
         <form name="associate_group_role_user" id="associate_group_role_user" action="${h.url_for( action='manage_users_and_roles_for_group', id=trans.security.encode_id( group.id ) )}" method="post" >
-            <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
                     <label>Roles associated with '${group.name}'</label>

@@ -57,7 +57,6 @@ $().ready(function() {
     <div class="toolFormBody">
         <form name="associate_group_role_user" id="associate_group_role_user" action="${h.url_for( action='create_group' )}" method="post" >
             <div class="form-row">
-                <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
                 <label>Name:</label>
                 <input  name="name" type="textfield" value="${name}" size=40"/>
             </div>

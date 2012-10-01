@@ -66,7 +66,6 @@
     <div class="toolFormBody">
         <form name="associate_quota_group_user" id="associate_quota_group_user" action="${h.url_for( action='create_quota' )}" method="post" >
             <div class="form-row">
-                <input  name="webapp" type="hidden" value="${webapp}" size=40"/>
                 <label>Name:</label>
                 <input  name="name" type="textfield" value="${name}" size=40"/>
             </div>
