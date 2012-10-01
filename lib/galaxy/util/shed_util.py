@@ -528,7 +528,6 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
                                                                     status=app.model.ToolDependency.installation_status.NEVER_INSTALLED,
                                                                     set_status=set_status )
                 tool_dependency_objects.append( tool_dependency )
-            
         elif tool_dependency_type == 'set_environment':
             for env_elem in elem:
                 # <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
@@ -603,13 +602,19 @@ def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
                 tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
     return tool_dependencies_dict
 def generate_metadata_for_changeset_revision( app, repository, repository_clone_url, relative_install_dir=None, repository_files_dir=None,
-                                              resetting_all_metadata_on_repository=False, webapp='galaxy' ):
+                                              resetting_all_metadata_on_repository=False, updating_installed_repository=False, webapp='galaxy' ):
     """
     Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
     the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
     disk files, so the value of repository_files_dir will not always be repository.repo_path (it could be an absolute path to a temporary directory
     containing a clone).  If it is an absolute path, the value of relative_install_dir must contain repository.repo_path.
     """
+    if updating_installed_repository:
+        # Keep the original tool shed repository metadata if setting metadata on a repository installed into a local Galaxy instance for which 
+        # we have pulled updates.
+        original_repository_metadata = repository.metadata
+    else:
+        original_repository_metadata = None
     readme_file_names = get_readme_file_names( repository.name )
     metadata_dict = {}
     invalid_file_tups = []
@@ -724,7 +729,11 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
         # This step must be done after metadata for tools has been defined.
         tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', files_dir )
         if tool_dependencies_config:
-            metadata_dict = generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
+            metadata_dict = generate_tool_dependency_metadata( app,
+                                                               repository,
+                                                               tool_dependencies_config,
+                                                               metadata_dict,
+                                                               original_repository_metadata=original_repository_metadata )
     if invalid_tool_configs:
         metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
     # Reset the value of the app's tool_data_path  and tool_data_table_config_path to their respective original values.
@@ -747,11 +756,16 @@ def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
     if requirements_dict:
         tool_dependencies_dict[ dependency_key ] = requirements_dict
     return tool_dependencies_dict
-def generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict ):
+def generate_tool_dependency_metadata( app, repository, tool_dependencies_config, metadata_dict, original_repository_metadata=None ):
     """
     If the combination of name, version and type of each element is defined in the <requirement> tag for at least one tool in the repository,
     then update the received metadata_dict with information from the parsed tool_dependencies_config.
     """
+    if original_repository_metadata:
+        # Keep a copy of the original tool dependencies dictionary in the metadata.
+        original_tool_dependencies_dict = original_repository_metadata.get( 'tool_dependencies', None )
+    else:
+        original_tool_dependencies_dict = None
     try:
         tree = ElementTree.parse( tool_dependencies_config )
     except Exception, e:
@@ -770,6 +784,10 @@ def generate_tool_dependency_metadata( tool_dependencies_config, metadata_dict )
         if tool_dependencies_dict:
             metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
     if tool_dependencies_dict:
+        if original_tool_dependencies_dict:
+            # We're generating metadata on an update pulled to a tool shed repository installed into a Galaxy instance, so handle changes to
+            # tool dependencies appropriately.
+            handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_tool_dependencies_dict, tool_dependencies_dict )
         metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
     return metadata_dict
 def generate_tool_guid( repository_clone_url, tool ):
@@ -1470,6 +1488,24 @@ def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repos
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
         reset_tool_data_tables( app )
     return repository_tools_tups
+def handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_dependency_dict, new_dependency_dict ):
+    """
+    This method is called when a Galaxy admin is getting updates for an installed tool shed repository in order to cover the case where an
+    existing tool dependency was changed (e.g., the version of the dependency was changed) but the tool version for which it is a dependency
+    was not changed.  In this case, we only want to determine if any of the dependency information defined in original_dependency_dict was
+    changed in new_dependency_dict.  We don't care if new dependencies were added in new_dependency_dict since they will just be treated as
+    missing dependencies for the tool.
+    """
+    updated_tool_dependency_names = []
+    deleted_tool_dependency_names = []
+    for original_dependency_key, original_dependency_val_dict in original_dependency_dict.items():
+        if original_dependency_key not in new_dependency_dict:
+            updated_tool_dependency = update_existing_tool_dependency( app, repository, original_dependency_val_dict, new_dependency_dict )
+            if updated_tool_dependency:
+                updated_tool_dependency_names.append( updated_tool_dependency.name )
+            else:
+                deleted_tool_dependency_names.append( original_dependency_val_dict[ 'name' ] )
+    return updated_tool_dependency_names, deleted_tool_dependency_names
 def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups, sample_files_copied ):
     """
     Inspect each tool to see if it has any input parameters that are dynamically generated select lists that depend on a .loc file.
@@ -1862,20 +1898,27 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
         trans.app.toolbox.write_integrated_tool_panel_config_file()
 def remove_tool_dependency( trans, tool_dependency ):
     dependency_install_dir = tool_dependency.installation_directory( trans.app )
-    try:
-        shutil.rmtree( dependency_install_dir )
-        removed = True
-        error_message = ''
-        log.debug( "Removed tool dependency installation directory: %s" % str( dependency_install_dir ) )
-    except Exception, e:
-        removed = False
-        error_message = "Error removing tool dependency installation directory %s: %s" % ( str( dependency_install_dir ), str( e ) )
-        log.debug( error_message )
+    removed, error_message = remove_tool_dependency_installation_directory( dependency_install_dir )
     if removed:
         tool_dependency.status = trans.model.ToolDependency.installation_status.UNINSTALLED
         tool_dependency.error_message = None
         trans.sa_session.add( tool_dependency )
         trans.sa_session.flush()
+    return removed, error_message
+def remove_tool_dependency_installation_directory( dependency_install_dir ):
+    if os.path.exists( dependency_install_dir ):
+        try:
+            shutil.rmtree( dependency_install_dir )
+            removed = True
+            error_message = ''
+            log.debug( "Removed tool dependency installation directory: %s" % str( dependency_install_dir ) )
+        except Exception, e:
+            removed = False
+            error_message = "Error removing tool dependency installation directory %s: %s" % ( str( dependency_install_dir ), str( e ) )
+            log.debug( error_message )
+    else:
+        removed = True
+        error_message = ''
     return removed, error_message
 def reset_tool_data_tables( app ):
     # Reset the tool_data_tables to an empty dictionary.
@@ -1925,7 +1968,7 @@ def to_html_escaped( text ):
             translated.append( '' )
     return ''.join( translated )
 def to_html_str( text ):
-    """Translates the characters in text to sn html string"""
+    """Translates the characters in text to an html string"""
     translated = []
     for c in text:
         if c in VALID_CHARS:
@@ -1954,6 +1997,63 @@ def translate_string( raw_text, to_html=True ):
     else:
         translated_string = ''
     return translated_string
+def update_existing_tool_dependency( app, repository, original_dependency_dict, new_dependencies_dict ):
+    """
+    Update an exsiting tool dependency whose definition was updated in a change set pulled by a Galaxy administrator when getting updates 
+    to an installed tool shed repository.  The original_dependency_dict is a single tool dependency definition, an example of which is:
+    {"name": "bwa", 
+     "readme": "\\nCompiling BWA requires zlib and libpthread to be present on your system.\\n        ", 
+     "type": "package", 
+     "version": "0.6.2"}
+    The new_dependencies_dict is the dictionary generated by the generate_tool_dependency_metadata method.
+    """
+    new_tool_dependency = None
+    original_name = original_dependency_dict[ 'name' ]
+    original_type = original_dependency_dict[ 'type' ]
+    original_version = original_dependency_dict[ 'version' ]
+    # Locate the appropriate tool_dependency associated with the repository.
+    tool_dependency = None
+    for tool_dependency in repository.tool_dependencies:
+        if tool_dependency.name == original_name and tool_dependency.type == original_type and tool_dependency.version == original_version:
+            break
+    if tool_dependency and tool_dependency.can_update:
+        dependency_install_dir = tool_dependency.installation_directory( app )
+        removed_from_disk, error_message = remove_tool_dependency_installation_directory( dependency_install_dir )
+        if removed_from_disk:
+            sa_session = app.model.context.current
+            new_dependency_name = None
+            new_dependency_type = None
+            new_dependency_version = None
+            for new_dependency_key, new_dependency_val_dict in new_dependencies_dict.items():
+                # Match on name only, hopefully this will be enough!
+                if original_name == new_dependency_val_dict[ 'name' ]:
+                    new_dependency_name = new_dependency_val_dict[ 'name' ]
+                    new_dependency_type = new_dependency_val_dict[ 'type' ]
+                    new_dependency_version = new_dependency_val_dict[ 'version' ]
+                    break
+            if new_dependency_name and new_dependency_type and new_dependency_version:
+                # Update all attributes of the tool_dependency record in the database.
+                log.debug( "Updating tool dependency '%s' with type '%s' and version '%s' to have new type '%s' and version '%s'." % \
+                           ( str( tool_dependency.name ),
+                             str( tool_dependency.type ),
+                             str( tool_dependency.version ),
+                             str( new_dependency_type ),
+                             str( new_dependency_version ) ) )
+                tool_dependency.type = new_dependency_type
+                tool_dependency.version = new_dependency_version
+                tool_dependency.status = app.model.ToolDependency.installation_status.UNINSTALLED
+                tool_dependency.error_message = None
+                sa_session.add( tool_dependency )
+                sa_session.flush()
+                new_tool_dependency = tool_dependency
+            else:
+                # We have no new tool dependency definition based on a matching dependency name, so remove the existing tool dependency record
+                # from the database.
+                log.debug( "Deleting tool dependency with name '%s', type '%s' and version '%s' from the database since it is no longer defined." % \
+                           ( str( tool_dependency.name ), str( tool_dependency.type ), str( tool_dependency.version ) ) )
+                sa_session.delete( tool_dependency )
+                sa_session.flush()
+    return new_tool_dependency
 def update_repository( repo, ctx_rev=None ):
     """
     Update the cloned repository to changeset_revision.  It is critical that the installed repository is updated to the desired

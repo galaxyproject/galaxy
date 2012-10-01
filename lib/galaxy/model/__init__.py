@@ -3077,10 +3077,16 @@ class ToolDependency( object ):
         self.error_message = error_message
     @property
     def can_install( self ):
-        return self.status  in [ self.installation_status.NEVER_INSTALLED, self.installation_status.UNINSTALLED ]
+        return self.status in [ self.installation_status.NEVER_INSTALLED, self.installation_status.UNINSTALLED ]
     @property
     def can_uninstall( self ):
-        return self.status  in [ self.installation_status.ERROR, self.installation_status.INSTALLED ]
+        return self.status in [ self.installation_status.ERROR, self.installation_status.INSTALLED ]
+    @property
+    def can_update( self ):
+        return self.status in [ self.installation_status.NEVER_INSTALLED,
+                                self.installation_status.INSTALLED,
+                                self.installation_status.ERROR,
+                                self.installation_status.UNINSTALLED ]
     @property
     def in_error_state( self ):
         return self.status == self.installation_status.ERROR

@@ -731,6 +731,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
                                                                                      resetting_all_metadata_on_repository=False,
+                                                                                     updating_installed_repository=False,
                                                                                      webapp='galaxy' )
         tool_shed_repository.metadata = metadata_dict
         trans.sa_session.add( tool_shed_repository )
@@ -1447,6 +1448,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                          relative_install_dir=relative_install_dir,
                                                                                          repository_files_dir=None,
                                                                                          resetting_all_metadata_on_repository=False,
+                                                                                         updating_installed_repository=False,
                                                                                          webapp='galaxy' )
             repository.metadata = metadata_dict
             trans.sa_session.add( repository )
@@ -1566,8 +1568,7 @@ class AdminToolshed( AdminGalaxy ):
             # Filter tool dependencies to only those that are installed.
             tool_dependencies_for_uninstallation = []
             for tool_dependency in tool_dependencies:
-                if tool_dependency.status in [ trans.model.ToolDependency.installation_status.INSTALLED,
-                                               trans.model.ToolDependency.installation_status.ERROR ]:
+                if tool_dependency.can_uninstall:
                     tool_dependencies_for_uninstallation.append( tool_dependency )
             for tool_dependency in tool_dependencies_for_uninstallation:
                 uninstalled, error_message = remove_tool_dependency( trans, tool_dependency )
@@ -1616,14 +1617,16 @@ class AdminToolshed( AdminGalaxy ):
                     repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
                     pull_repository( repo, repository_clone_url, latest_ctx_rev )
                     update_repository( repo, latest_ctx_rev )
-                    # Update the repository metadata.
                     tool_shed = clean_tool_shed_url( tool_shed_url )
+                    # Update the repository metadata.
                     metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
                                                                                                  repository=repository,
                                                                                                  repository_clone_url=repository_clone_url,
                                                                                                  relative_install_dir=relative_install_dir,
                                                                                                  repository_files_dir=None,
-                                                                                                 resetting_all_metadata_on_repository=False )
+                                                                                                 resetting_all_metadata_on_repository=False,
+                                                                                                 updating_installed_repository=True,
+                                                                                                 webapp='galaxy' )
                     repository.metadata = metadata_dict
                     # Update the repository changeset_revision in the database.
                     repository.changeset_revision = latest_changeset_revision

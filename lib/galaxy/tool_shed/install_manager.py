@@ -138,6 +138,7 @@ class InstallManager( object ):
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
                                                                                      resetting_all_metadata_on_repository=False,
+                                                                                     updating_installed_repository=False,
                                                                                      webapp='galaxy' )
         tool_shed_repository.metadata = metadata_dict
         self.app.sa_session.add( tool_shed_repository )
