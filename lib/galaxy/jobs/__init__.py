@@ -440,6 +440,7 @@ class JobWrapper( object ):
         if len( job.stderr ) > 32768:
             log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
         job.stderr = job.stderr[:32768]
+        job.exit_code = tool_exit_code
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
@@ -1060,9 +1061,9 @@ class TaskWrapper(JobWrapper):
         if len( stderr ) > 32768:
             log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" % task.id )
         task.stderr = stderr[:32768]
+        task.exit_code = tool_exit_code
         task.command_line = self.command_line
         self.sa_session.flush()
-        log.debug( 'task %d ended' % self.task_id )
 
     def cleanup( self ):
         # There is no task cleanup.  The job cleans up for all tasks.
