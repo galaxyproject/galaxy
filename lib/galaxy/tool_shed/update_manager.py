@@ -36,9 +36,13 @@ class UpdateManager( object ):
         tool_shed_url = get_url_from_repository_tool_shed( self.app, repository )
         url = '%s/repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&webapp=update_manager' % \
             ( tool_shed_url, repository.name, repository.owner, repository.changeset_revision )
-        response = urllib2.urlopen( url )
-        text = response.read()
-        response.close()
+        try:
+            response = urllib2.urlopen( url )
+            text = response.read()
+            response.close()
+        except Exception, e:
+            # The required tool shed may be unavailable.
+            text = 'False'
         return string_as_bool( text )
     def shutdown( self ):
         self.running = False
