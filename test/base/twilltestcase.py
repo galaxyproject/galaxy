@@ -835,12 +835,11 @@ class TwillTestCase( unittest.TestCase ):
         self.assertTrue( genome_build == dbkey )
 
     # Functions associated with user accounts
-    def create( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy', redirect='' ):
+    def create( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=%s&use_panels=False" % ( self.url, cntrller ) )
         tc.fv( '1', 'email', email )
-        tc.fv( '1', 'webapp', webapp )
         tc.fv( '1', 'redirect', redirect )
         tc.fv( '1', 'password', password )
         tc.fv( '1', 'confirm', password )
@@ -945,17 +944,16 @@ class TwillTestCase( unittest.TestCase ):
         self.visit_url( "%s/%s" % ( self.url, url ) )
         self.check_page_for_string( 'Default history permissions have been changed.' )
         self.home()
-    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', webapp='galaxy', redirect='' ):
+    def login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         # test@bx.psu.edu is configured as an admin user
         previously_created, username_taken, invalid_username = \
-            self.create( email=email, password=password, username=username, webapp=webapp, redirect=redirect )
+            self.create( email=email, password=password, username=username, redirect=redirect )
         if previously_created:
             # The acount has previously been created, so just login.
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
             # can't find form fields (and hence user can't be logged in).
             self.visit_url( "%s/user/login?use_panels=False" % self.url )
             tc.fv( '1', 'email', email )
-            tc.fv( '1', 'webapp', webapp )
             tc.fv( '1', 'redirect', redirect )
             tc.fv( '1', 'password', password )
             tc.submit( 'login_button' )
@@ -1221,13 +1219,12 @@ class TwillTestCase( unittest.TestCase ):
     # Dataset Security stuff
     # Tests associated with users
     def create_new_account_as_admin( self, email='test4@bx.psu.edu', password='testuser',
-                                     username='regular-user4', webapp='galaxy', redirect='' ):
+                                     username='regular-user4', redirect='' ):
         """Create a new account for another user"""
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=admin" % self.url )
         tc.fv( '1', 'email', email )
-        tc.fv( '1', 'webapp', webapp )
         tc.fv( '1', 'redirect', redirect )
         tc.fv( '1', 'password', password )
         tc.fv( '1', 'confirm', password )
