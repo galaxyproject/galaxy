@@ -76,6 +76,11 @@ class Cleanup(object):
 
         self.options.sequence = [ x.strip() for x in self.options.sequence.split(',') ]
 
+        if self.options.sequence == ['']:
+            print "Error: At least one action must be specified in the action sequence\n"
+            parser.print_help()
+            sys.exit(0)
+
     def __setup_logging(self):
         format = "%(funcName)s %(levelname)s %(asctime)s %(message)s"
         if self.options.debug:
