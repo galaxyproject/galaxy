@@ -6,71 +6,47 @@
 Backbone.js implementation of history panel
 
 TODO:
-    replicate then refactor (could be the wrong order)
+    meta:
+        require.js
+        convert function comments to jsDoc style, complete comments
+        move inline styles into base.less
+        watch the magic strings
+        watch your globals
     
-    fix:
-        tags
-        annotations
-    _render_displayApps
-    _render_downloadButton
-        widget building (popupmenu, etc.)
-    history.mako js: updater, etc.
-    have info bodies prev. opened, redisplay on refresh
+    all:
+        add classes, ids on empty divs
+        incorporate relations?
+        events (local/ui and otherwise)
+        have info bodies prev. opened, redisplay on refresh
+        transfer history.mako js:
+            updater, etc.
+            create viz icon
+                trackster
+                scatterplot
+                phylo-viz
+            on ready:
+                delete function
+                check_transfer_status (running->ok)
+            quota meter update
+        
+    historyItemView:
+        poly HistoryItemView (and HistoryView?) on: for_editing, display_structured, trans.user
+        don't draw body until it's first unhide event
+        HIview state transitions (eg. upload -> ok), curr: build new, delete old, place new (in render)
+        move visualizations menu
+            include phyloviz
     
-    don't draw body until it's first unhide event
-    all history.mako js -> this
-    HIview state transitions (eg. upload -> ok), curr: build new, delete old, place new (in render)
-    History (meta controls : collapse all, rename, annotate, etc. - see history.js.120823.bak)
-    events (local/ui and otherwise)
-    HistoryCollection: (collection of History: 'Saved Histories')
-    
-    ?move IconButtonViews -> templates?
-    
-    convert function comments to jsDoc style, complete comments
-    collection -> show_deleted, show_hidden
-    poly HistoryItemView on: for_editing, display_structured, trans.user
-    incorporate relations?
-    localization
-        template helper {{#local}} calls _l()
+    History:
+        renaming broken
+        tags rendering broken (url?)
+        annotation (url?)
+        meta controls : collapse all, rename, annotate, etc.
+        
+    collection:
+        show_deleted, show_hidden (thru js - no refresh)
 
-    move inline styles into base.less
-    add classes, ids on empty divs
-    watch the magic strings
+    
 ============================================================================= */
-
-//==============================================================================
-// jq plugin?
-//?? into template? I dunno: need to handle variadic keys, remove empty attrs (href="")
-//TODO: not happy with this (a 4th rendering/templating system!?) or it being global
-function linkHTMLTemplate( config, tag ){
-    // Create an anchor (or any tag) using any config params passed in
-    //NOTE!: send class attr as 'classes' to avoid res. keyword collision (jsLint)
-    if( !config ){ return '<a></a>'; }
-    tag = tag || 'a';
-    
-    var template = [ '<' + tag ];
-    for( key in config ){
-        var val = config[ key ];
-        if( val === '' ){ continue; }
-        switch( key ){
-            case 'text': continue;
-            case 'classes':
-                // handle keyword class which is also an HTML attr name
-                key = 'class';
-                val = ( config.classes.join )?( config.classes.join( ' ' ) ):( config.classes );
-                //note: lack of break (fall through)
-            default:
-                template.push( [ ' ', key, '="', val, '"' ].join( '' ) );
-        }
-    }
-    template.push( '>' );
-    if( 'text' in config ){ template.push( config.text ); }
-    template.push( '</' + tag + '>' );
-    
-    return template.join( '' );
-}
-
-//==============================================================================
 //TODO: use initialize (or validate) to check purged AND deleted -> purged XOR deleted
 var HistoryItem = BaseModel.extend( LoggableMixin ).extend({
     // a single HDA model
@@ -292,7 +268,6 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         var deleteBtnData = {
             title       : 'Delete',
             href        : this.model.get( 'delete_url' ),
-            target      : 'galaxy_main',
             id          : 'historyItemDeleter-' + this.model.get( 'id' ),
             icon_class  : 'delete'
         };
@@ -329,8 +304,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         var primaryActionButtons = $( '<div/>' ).attr( 'id', 'primary-actions-' + this.model.get( 'id' ) ),
             view = this;
         _.each( buttonRenderingFuncs, function( fn ){
-            var render_return = fn.call( view );
-            primaryActionButtons.append( render_return );
+            primaryActionButtons.append( fn.call( view ) );
         });
         return primaryActionButtons;
     },
@@ -342,8 +316,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         // return either: a single download icon-button (if there are no meta files)
         //  or a popupmenu with links to download assoc. meta files (if there are meta files)
         var downloadLinkHTML = HistoryItemView.templates.downloadLinks( this.model.toJSON() );
-        this.log( '_render_downloadButton, downloadLinkHTML:', downloadLinkHTML );
-        
+        //this.log( this + '_render_downloadButton, downloadLinkHTML:', downloadLinkHTML );
         return $( downloadLinkHTML );
     },
     
@@ -447,7 +420,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     
     // ................................................................................ other elements
     _render_tagArea : function(){
-        if( this.model.get( 'retag_url' ) ){ return null; }
+        if( !this.model.get( 'retag_url' ) ){ return null; }
         //TODO: move to mvc/tags.js
         return $( HistoryItemView.templates.tagArea( this.model.toJSON() ) );
     },
@@ -464,14 +437,14 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         
         var displayAppsDiv = $( '<div/>' ).addClass( 'display-apps' );
         if( !_.isEmpty( this.model.get( 'display_types' ) ) ){
-            this.log( this + 'display_types:', this.model.get( 'display_types' ) );
+            //this.log( this + 'display_types:', this.model.get( 'display_types' ) );
             //TODO:?? does this ever get used?
             displayAppsDiv.append(
                 HistoryItemView.templates.displayApps({ displayApps : this.model.toJSON().display_types })
             );
         }
         if( !_.isEmpty( this.model.get( 'display_apps' ) ) ){
-            this.log( this + 'display_apps:',  this.model.get( 'display_apps' ) );
+            //this.log( this + 'display_apps:',  this.model.get( 'display_apps' ) );
             displayAppsDiv.append(
                 HistoryItemView.templates.displayApps({ displayApps : this.model.toJSON().display_apps })
             );
@@ -655,9 +628,10 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
 
         // Show or hide tag area; if showing tag area and it's empty, fill it.
         if( tagArea.is( ":hidden" ) ){
-            if( !tagElt.html() ){
+            if( !jQuery.trim( tagElt.html() ) ){
                 // Need to fill tag element.
                 $.ajax({
+                    //TODO: the html from this breaks a couple of times
                     url: this.model.get( 'ajax_get_tag_url' ),
                     error: function() { alert( "Tagging failed" ); },
                     success: function(tag_elt_html) {
@@ -688,7 +662,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
 
         // Show or hide annotation area; if showing annotation area and it's empty, fill it.
         if ( annotationArea.is( ":hidden" ) ){
-            if( !annotationElem.html() ){
+            if( !jQuery.trim( annotationElem.html() ) ){
                 // Need to fill annotation element.
                 $.ajax({
                     url: this.model.get( 'ajax_get_annotation_url' ),
@@ -762,6 +736,7 @@ var HistoryCollection = Backbone.Collection.extend({
 
 //==============================================================================
 var History = BaseModel.extend( LoggableMixin ).extend({
+    //TODO: bind change events from items and collection to this (itemLengths, states)
     
     // uncomment this out see log messages
     //logger              : console,
@@ -770,7 +745,8 @@ var History = BaseModel.extend( LoggableMixin ).extend({
     defaults : {
         id              : '', 
         name            : '', 
-        state           : '', 
+        state           : '',
+        //TODO:?? change these to a list of encoded ids?
         state_details   : {
             discarded       : 0, 
             empty           : 0, 
@@ -781,15 +757,51 @@ var History = BaseModel.extend( LoggableMixin ).extend({
             running         : 0, 
             setting_metadata: 0, 
             upload          : 0
-        }
+        },
+        
+        // maybe security issues...
+        userIsAdmin     : false,
+        userRoles       : [],
+        //TODO: hardcoded
+        
+        //TODO: wire this to items
+        itemsLength     : 0,
+        showDeleted     : false,
+        showHidden      : false,
+        
+        diskSize : 0,
+        deleted : false,
+        
+        //  tagging_common.mako: render_individual_tagging_element(user=trans.get_user(),
+        //      tagged_item=history, elt_context="history.mako", use_toggle_link=False, input_size="20")
+        tags        : [],
+        annotation  : null,
+        message     : null,
+        quotaMsg    : false,
+        
+        baseURL         : null,
+        hideDeletedURL  : null,
+        hideHiddenURL   : null,
+        tagURL          : null,
+        annotateURL     : null
     },
     
     initialize : function( data, history_datasets ){
-        this.log( this + '.initialize', data, history_datasets );
+        //this.log( this + '.initialize', data, history_datasets );
         this.items = new HistoryCollection();
     },
 
+    toJSON : function(){
+        // unfortunately, bb doesn't call 'get' to form the JSON meaning computed vals from get aren't used, so...
+        // a simple example of override and super call
+        var json = Backbone.Model.prototype.toJSON.call( this );
+        json.itemsLength = this.items.length;
+        //this.log( this + '.json:', json );
+        return json;
+    },
+    
     loadDatasetsAsHistoryItems : function( datasets ){
+        //TODO: add via ajax - multiple datasets at once
         // adds the given dataset/Item data to historyItems
         //  and updates this.state based on their states
         //pre: datasets is a list of objs
@@ -799,12 +811,12 @@ var History = BaseModel.extend( LoggableMixin ).extend({
             stateDetails = this.get( 'state_details' );
             
         _.each( datasets, function( dataset, index ){
-            self.log( 'loading dataset: ', dataset, index );
+            //self.log( 'loading dataset: ', dataset, index );
             
             // create an item sending along the history_id as well
             var historyItem = new HistoryItem(
                 _.extend( dataset, { history_id: selfID } ) );
-            self.log( 'as History:', historyItem );
+            //self.log( 'as History:', historyItem );
             self.items.add( historyItem );
    
             // add item's state to running totals in stateDetails
@@ -864,28 +876,42 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
     // direct attachment to existing element
     el                  : 'body.historyPage',
     
-    initialize  : function(){
-        this.log( this + '.initialize' );
+    initialize : function(){
+        this.log( this + '.initialize:', this );
         this.itemViews = [];
         var parent = this;
         this.model.items.each( function( item ){
             var itemView = new HistoryItemView({ model: item });
             parent.itemViews.push( itemView );
         });
-        //itemViews.reverse();
     },
     
-    render      : function(){
-        this.log( this + '.render' );
+    render : function(){
+        this.$el.append( HistoryView.templates.historyPanel( this.model.toJSON() ) );
+        this.log( this + ' rendered from template:', this.$el );
         
-        // render to temp, move all at once, remove temp holder
+        // set up aliases
+        this.itemsDiv = this.$el.find( '#' + this.model.get( 'id' ) + '-datasets' );
+        
+        //TODO: set up widgets, tooltips, etc.
+        
+        if( this.model.items.length ){
+            // render to temp, move all at once, remove temp holder
+            var tempDiv = this._render_items();
+            this.itemsDiv.append( tempDiv.children() );
+            tempDiv.remove();
+        }
+    },
+
+    _render_items : function(){
+        var div = $( '<div/>' ),
+            view = this;
         //NOTE!: render in reverse (newest on top) via prepend (instead of append)
-        var tempDiv = $( '<div/>' );
-        _.each( this.itemViews, function( view ){
-            tempDiv.prepend( view.render() );
+        _.each( this.itemViews, function( itemView ){
+            view.log( view + '.render_items:', itemView );
+            div.prepend( itemView.render() );
         });
-        this.$el.append( tempDiv.children() );
-        tempDiv.remove();
+        return div;
     },
     
     toString    : function(){
@@ -893,6 +919,13 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
         return 'HistoryView(' + nameString + ')';
     }
 });
+//HistoryItemView.templates = InDomTemplateLoader.getTemplates({
+HistoryView.templates = CompiledTemplateLoader.getTemplates({
+    'history-templates.html' : {
+        historyPanel : 'template-history-historyPanel'
+    }
+});
+
 
 
 //==============================================================================

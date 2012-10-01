@@ -69,6 +69,72 @@ var LoggableMixin = {
     }
 };
 
+// =============================================================================
+/** Global string localization object (and global short form alias)
+ *      set with either:
+ *          GalaxyLocalization.setLocalizedString( original, localized )
+ *          GalaxyLocalization.setLocalizedString({ original1 : localized1, original2 : localized2 })
+ *      get with either:
+ *          _l( original )
+ */
+//TODO: move to Galaxy.Localization (maybe galaxy.base.js)
+var GalaxyLocalization = jQuery.extend({}, {
+    aliasName : '_l',
+    localizedStrings : {},
+    
+    setLocalizedString : function( str_or_obj, localizedString ){
+        // pass in either two strings (english, translated) or an obj (map) of english : translated attributes
+        //console.debug( this + '.setLocalizedString:', str_or_obj, localizedString );
+        var self = this;
+        
+        // DRY non-duplicate assignment function
+        var setStringIfNotDuplicate = function( original, localized ){
+            // do not set if identical - strcmp expensive but should only happen once per page per word
+            if( original !== localized ){
+                self.localizedStrings[ original ] = localized;
+            }
+        };
+        
+        if( jQuery.type( str_or_obj ) === "string" ){
+            setStringIfNotDuplicate( str_or_obj, localizedString );
+        
+        } else if( jQuery.type( str_or_obj ) === "object" ){
+            jQuery.each( str_or_obj, function( key, val ){
+                //console.debug( 'key=>val', key, '=>', val );
+                // could recurse here but no reason
+                setStringIfNotDuplicate( key, val );
+            });
+            
+        } else {
+            throw( 'Localization.setLocalizedString needs either a string or object as the first argument,' + 
+                   ' given: ' + str_or_obj );
+        }
+    },
+    
+    localize : function( strToLocalize ){
+        //console.debug( this + '.localize:', strToLocalize );
+        // return the localized version if it's there, the strToLocalize if not
+        var retStr = strToLocalize;
+        if( _.has( this.localizedStrings, strToLocalize ) ){
+            //console.debug( 'found' );
+            retStr = this.localizedStrings[ strToLocalize ];
+        }
+        //console.debug( 'returning:', retStr );
+        return retStr;
+    },
+    
+    toString : function(){ return 'GalaxyLocalization'; }
+});
+
+// global localization alias
+window[ GalaxyLocalization.aliasName ] = function( str ){ return GalaxyLocalization.localize( str ); };
+
+//TEST: setLocalizedString( string, string ), _l( string )
+//TEST: setLocalizedString( hash ), _l( string )
+//TEST: setLocalizedString( string === string ), _l( string )
+//TEST: _l( non assigned string )
+
+
 
 //==============================================================================
 /**

@@ -45,8 +45,13 @@ function program2(depth0,data) {
 
 function program4(depth0,data) {
   
-  
-  return "\n<a href=\"\" title=\"Download\" class=\"icon-button disk tooltip\"></a>\n";}
+  var buffer = "", stack1, foundHelper;
+  buffer += "\n<a href=\"";
+  foundHelper = helpers.download_url;
+  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
+  else { stack1 = depth0.download_url; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
+  buffer += escapeExpression(stack1) + "\" title=\"Download\" class=\"icon-button disk tooltip\"></a>\n";
+  return buffer;}
 
   stack1 = depth0.meta_files;
   stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.program(4, program4, data),fn:self.program(1, program1, data)});

@@ -196,7 +196,7 @@ function make_popup_menus( parent ) {
             }
         });
         // locate the element with the id corresponding to the menu's popupmenu attr
-        var box = $( "#" + menu.attr( 'popupmenu' ) );
+        var box = $( parent ).find( "#" + menu.attr( 'popupmenu' ) );
         
         // For menus with clickable link text, make clicking on the link go through instead
         // of activating the popup menu

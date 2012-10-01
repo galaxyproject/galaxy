@@ -97,15 +97,16 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     # edit attr button
     if for_editing:
         if not( hda.deleted or hda.purged ):
-            edit_url = h.url_for( controller='dataset', action='edit', dataset_id=encoded_data_id )
+            edit_url = h.url_for( controller='dataset', action='edit',
+                                  dataset_id=encoded_data_id )
             add_to_data( edit_url=edit_url )
     
     # delete button
     if for_editing and not ( deleted or dataset_purged or purged ):
-        add_to_data( delete_url=h.url_for( controller='dataset', action='delete', dataset_id=encoded_data_id,
-                                           ##TODO: loose end
-                                           show_deleted_on_refresh=show_deleted
-        ))
+        delete_url = h.url_for( controller='dataset', action='delete',
+                                dataset_id=encoded_data_id,
+                                show_deleted_on_refresh=show_deleted )
+        add_to_data( delete_url=delete_url )
             
     # ................................................................ primary actions (error, info, download)
     # download links (hda and associated meta files)
@@ -127,7 +128,21 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     # error report
     if for_editing:
         #NOTE: no state == 'error' check
-        add_to_data( report_error_url=h.url_for( h.url_for( controller='dataset', action='errors', id=encoded_data_id ) ) )
+        ##TODO: has to have an _UN_ encoded id
+        #report_error_url = h.url_for( controller='dataset', action='errors', id=encoded_data_id )
+        report_error_url = h.url_for( controller='dataset', action='errors', id=hda.id )
+        add_to_data( report_error_url=report_error_url )
+    
+    # info/params
+    show_params_url = h.url_for( controller='dataset', action='show_params', dataset_id=encoded_data_id )
+    add_to_data( show_params_url=show_params_url )
+    
+    # rerun
+    if for_editing:
+        ##TODO: has to have an _UN_ encoded id
+        #rerun_url = h.url_for( controller='tool_runner', action='rerun', id=encoded_data_id )
+        rerun_url = h.url_for( controller='tool_runner', action='rerun', id=hda.id )
+        add_to_data( rerun_url=rerun_url )
     
     # visualizations
     if hda.ext in app.datatypes_registry.get_available_tracks():
@@ -265,39 +280,61 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
 %>
 </%def>
 
-
+##TODO: remove after filling tags.js
+<%namespace file="../tagging_common.mako" import="render_individual_tagging_element" />
 <%def name="context_to_js()">
 <%
     ##print 'context', context, dir( context )
     ##print 'context.kwargs', context.kwargs
     ##print 'history:', history
     
-    user_is_admin = trans.user_is_admin()
-    user_roles = trans.get_current_user_roles()
-    prepped_hdas = [
-        prep_hda( hda, True ) for hda in datasets ]
+    ##TODO: move to API
     
+    for_editing = True
     context_dict = {
         'history'       : { 
-            'id'    : trans.security.encode_id( history.id ),
-            'name'  : history.name
+            'id'            : trans.security.encode_id( history.id ),
+            'name'          : history.name,
+            
+            'status'        : status,
+            'showDeleted' 	: show_deleted,
+            'showHidden' 	: show_hidden,
+            'quotaMsg' 		: over_quota,
+            'message' 		: message, ##'go outside'
+            
+            'deleted'       : history.deleted,
+            'diskSize'      : history.get_disk_size( nice_size=True ),
+        
+            ## maybe security issues...
+            'userIsAdmin'   : trans.user_is_admin(),
+            'userRoles'     : [ role.get_api_value() for role in trans.get_current_user_roles() ],
+            
+            ##tagging_common.mako: render_individual_tagging_element(user=trans.get_user(),
+            ##    tagged_item=history, elt_context="history.mako", use_toggle_link=False, input_size="20")
+            'tags'          : [],
+            ##TODO: broken - of course
+            ##TODO: remove after filling tags.js
+            ##'tagHTML'       : render_individual_tagging_element(
+            ##                    user=trans.get_user(),
+            ##                    tagged_item=history,
+            ##                    elt_context="history.mako",
+            ##                    use_toggle_link=False,
+            ##                    input_size="20"),
+            ##TODO:?? h.to_unicode( annotation ) | h
+            'annotation'    : h.to_unicode( annotation ),
+
+            ##TODO: broken
+            'baseURL'           : h.url_for( 'history', show_deleted=show_deleted ),
+            'hideDeletedURL'    : h.url_for( 'history', show_deleted=False ),
+            'hideHiddenURL'     : h.url_for( 'history', show_hidden=False ),
+            'tagURL'            : h.url_for( controller='history', action='tag' ),
+            'annotateURL'       : h.url_for( controller='history', action='annotate' )
         },
-        'annotation'    : annotation,
-        'hdas'          : prepped_hdas,
-        'hdaId' 		: hda_id,
-        'showDeleted' 	: show_deleted,
-        'showHidden' 	: show_hidden,
-        'quotaMsg' 		: over_quota,
-        'message' 		: message,
-        'status' 		: status,
+        'hdas'          : [ prep_hda( hda, for_editing ) for hda in datasets ],
         
         # some of these may be unneeded when all is said and done...
-        'forEditing'    : True,
-        
-        ## maybe security issues...
-        'userIsAdmin'   : user_is_admin,
-        'userRoles'     : [ role.get_api_value() for role in user_roles ],
-        
+        'hdaId' 		: hda_id,
+        'forEditing'    : for_editing,
     }
 %>
 ${ h.to_json_string( context_dict ) }
@@ -307,9 +344,7 @@ ${ h.to_json_string( context_dict ) }
     ${parent.javascripts()}
     
     ${h.js(
-        "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete",
-        ##"libs/handlebars.full",
-        "galaxy.autocom_tagging",
+        "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging",
         "mvc/base-mvc", "mvc/ui"
     )}
 
@@ -324,15 +359,12 @@ ${ h.to_json_string( context_dict ) }
         "template-history-downloadLinks",
         "template-history-tagArea",
         "template-history-annotationArea",
-        "template-history-displayApps"
+        "template-history-displayApps",
+        
+        "template-history-historyPanel"
     )}
     
-    ## if using in-dom templates they need to go here (before the Backbone classes are defined)
-    ##NOTE: it's impossible(?) to include _ templates in this way bc they use identical delims as mako
-    ##  (without altering Underscore.templateSettings)
-    ##<%include file="../../static/scripts/templates/common-templates.html" />
-    ##<%include file="../../static/scripts/templates/history-templates.html" />
-    
+    ##TODO: fix: curr hasta be _after_ h.templates - move somehow
     ${h.js(
         "mvc/history"
         ##"mvc/tags", "mvc/annotations"
@@ -345,40 +377,34 @@ ${ h.to_json_string( context_dict ) }
         
         // Init. on document load.
         var pageData = ${context_to_js()};
-        
-        //USE_MOCK_DATA = true;
-        USE_CURR_DATA = true;
+        if( console && console.debug ){
+            window.pageData = pageData;
+            
+            ##_.each( pageData.hdas, function( hda ){
+            ##    console.debug( hda );
+            ##});
+        }
         
         // on ready
+        USE_CURR_DATA = true;
         $(function(){
             if( console && console.debug ){ console.debug( 'using backbone.js in history panel' ); }
             
-            if( window.USE_MOCK_DATA ){
-                if( console && console.debug ){ console.debug( '\t using mock data' ); }
-                createMockHistoryData();
-                return;
-            
-            //TODO: handle empty history
-            } else if ( window.USE_CURR_DATA ){
-                if( console && console.debug ){ console.debug( '\t using current history data' ); }
+            if ( window.USE_CURR_DATA ){
+                // Navigate to a dataset.
+                if( pageData.hdaId ){
+                    self.location = "#" + pageData.hdaId;
+                }
+                
                 glx_history = new History( pageData.history ).loadDatasetsAsHistoryItems( pageData.hdas );
                 glx_history_view = new HistoryView({ model: glx_history });
                 glx_history_view.render();
                 
                 return;
+            
+            } else {
+                // sandbox
             }
-            
-            // sandbox here
-            // testing iconButton
-            //ibm = new IconButton({
-            //    icon_class : 'information',
-            //    on_click : function( event ){ console.debug( 'blerg' ); },
-            //});
-            //mockObj = { one : 1 };
-            //ibv = new IconButtonView({ model : ibm });
-            //new_click = function( event ){ console.debug( mockObj.one ); }
-            //$( 'body' ).append( ibv.render().$el );
-            
         });
     </script>
     
@@ -387,7 +413,8 @@ ${ h.to_json_string( context_dict ) }
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css("base", "history", "autocomplete_tagging" )}
-	<style>"
+	<style>
+        ## TODO: move to base.less
 		.historyItemBody {
 			display: none;
 		}
@@ -426,163 +453,3 @@ ${ h.to_json_string( context_dict ) }
 </%def>
 
 <body class="historyPage"></body>
-
-<script type="text/javascript">
-function createMockHistoryData(){
-    mockHistory = {};
-    mockHistory.data = {
-        
-        template : {
-            id                  : 'a799d38679e985db', 
-            name                : 'template', 
-            data_type           : 'fastq', 
-            file_size           : 226297533, 
-            genome_build        : '?', 
-            metadata_data_lines : 0, 
-            metadata_dbkey      : '?', 
-            metadata_sequences  : 0, 
-            misc_blurb          : '215.8 MB', 
-            misc_info           : 'uploaded fastq file (misc_info)', 
-            model_class         : 'HistoryDatasetAssociation', 
-            download_url        : '', 
-            state               : 'ok', 
-            visible             : true,
-            deleted             : false, 
-            purged              : false,
-            
-            hid                 : 0,
-            //TODO: move to history
-            for_editing         : true,
-            //for_editing         : false,
-            
-            //?? not needed
-            //can_edit            : true,
-            //can_edit            : false,
-            
-            accessible          : true,
-            
-            //TODO: move into model functions (build there (and cache?))
-            //!! be careful with adding these accrd. to permissions
-            //!!    IOW, don't send them via template/API if the user doesn't have perms to use
-            //!!    (even if they don't show up)
-            undelete_url        : '',
-            purge_url           : '',
-            unhide_url          : '',
-            
-            display_url         : 'example.com/display',
-            edit_url            : 'example.com/edit',
-            delete_url          : 'example.com/delete',
-            
-            show_params_url     : 'example.com/show_params',
-            rerun_url           : 'example.com/rerun',
-            
-            retag_url           : 'example.com/retag',
-            annotate_url        : 'example.com/annotate',
-            
-            peek                : [
-                '<table cellspacing="0" cellpadding="3"><tr><th>1.QNAME</th><th>2.FLAG</th><th>3.RNAME</th><th>4.POS</th><th>5.MAPQ</th><th>6.CIGAR</th><th>7.MRNM</th><th>8.MPOS</th><th>9.ISIZE</th><th>10.SEQ</th><th>11.QUAL</th><th>12.OPT</th></tr>',
-                '<tr><td colspan="100%">@SQ	SN:gi|87159884|ref|NC_007793.1|	LN:2872769</td></tr>',
-                '<tr><td colspan="100%">@PG	ID:bwa	PN:bwa	VN:0.5.9-r16</td></tr>',
-                '<tr><td colspan="100%">HWUSI-EAS664L:15:64HOJAAXX:1:1:13280:968	73	gi|87159884|ref|NC_007793.1|	2720169	37	101M	=	2720169	0	NAATATGACATTATTTTCAAAACAGCTGAAAATTTAGACGTACCGATTTATCTACATCCCGCGCCAGTTAACAGTGACATTTATCAATCATACTATAAAGG	!!!!!!!!!!$!!!$!!!!!$!!!!!!$!$!$$$!!$!!$!!!!!!!!!!!$!</td></tr>',
-                '<tr><td colspan="100%">!!!$!$!$$!!$$!!$!!!!!!!!!!!!!!!!!!!!!!!!!!$!!$!!	XT:A:U	NM:i:1	SM:i:37	AM:i:0	X0:i:1	X1:i:0	XM:i:1	XO:i:0	XG:i:0	MD:Z:0A100</td></tr>',
-                '<tr><td colspan="100%">HWUSI-EAS664L:15:64HOJAAXX:1:1:13280:968	133	gi|87159884|ref|NC_007793.1|	2720169	0	*	=	2720169	0	NAAACTGTGGCTTCGTTNNNNNNNNNNNNNNNGTGANNNNNNNNNNNNNNNNNNNGNNNNNNNNNNNNNNNNNNNNCNAANNNNNNNNNNNNNNNNNNNNN	!!!!!!!!!!!!$!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</td></tr>',
-                '<tr><td colspan="100%">!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!</td></tr>',
-                '</table>'
-            ].join( '' )
-        }
-        
-    };
-    _.extend( mockHistory.data, {
-        
-        notAccessible : 
-            _.extend( _.clone( mockHistory.data.template ),
-                      { accessible : false }),
-        
-        //deleted, purged, visible
-        deleted     :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { deleted : true,
-                        delete_url : '',
-                        purge_url : 'example.com/purge',
-                        undelete_url : 'example.com/undelete' }),
-        purgedNotDeleted :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { purged : true,
-                        delete_url : '' }),
-        notvisible  :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { visible : false,
-                        unhide_url : 'example.com/unhide' }),
-
-        hasDisplayApps :
-            _.extend( _.clone( mockHistory.data.template ),
-                { display_apps : {
-                        'display in IGB' : {
-                            Web: "/display_application/63cd3858d057a6d1/igb_bam/Web",
-                            Local: "/display_application/63cd3858d057a6d1/igb_bam/Local"
-                        }
-                    }
-                }
-            ),
-        canTrackster :
-            _.extend( _.clone( mockHistory.data.template ),
-                { trackster_urls      : {
-                        'data-url'      : "example.com/trackster-data",
-                        'action-url'    : "example.com/trackster-action",
-                        'new-url'       : "example.com/trackster-new"
-                    }
-                }
-            ),
-        zeroSize  :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { file_size : 0 }),
-            
-        hasMetafiles  :
-            _.extend( _.clone( mockHistory.data.template ), {
-                download_meta_urls : {
-                    'bam_index'      : "example.com/bam-index"
-                }
-            }),
-            
-        //states
-        upload :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.UPLOAD }),
-        queued :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.QUEUED }),
-        running :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.RUNNING }),
-        empty :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.EMPTY }),
-        error :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.ERROR,
-                        report_error_url: 'example.com/report_err' }),
-        discarded :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.DISCARDED }),
-        setting_metadata :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.SETTING_METADATA }),
-        failed_metadata :
-            _.extend( _.clone( mockHistory.data.template ),
-                      { state : HistoryItem.STATES.FAILED_METADATA })
-/*
-*/        
-    });
-    
-    //mockHistory.views.deleted.logger = console;
-    mockHistory.items = {};
-    mockHistory.views = {};
-    for( key in mockHistory.data ){
-        mockHistory.items[ key ] = new HistoryItem( mockHistory.data[ key ] );
-        mockHistory.items[ key ].set( 'name', key );
-        mockHistory.views[ key ] = new HistoryItemView({ model : mockHistory.items[ key ] });
-        //console.debug( 'view: ', mockHistory.views[ key ] );
-        $( 'body' ).append( mockHistory.views[ key ].render() );
-    }
-}
-</script>

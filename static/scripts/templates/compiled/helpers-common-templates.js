@@ -8,6 +8,12 @@ Handlebars.registerPartial( 'clearFloatDiv', function( options ){
 Handlebars.registerHelper( 'warningmessagesmall', function( options ){
     return '<div class="warningmessagesmall"><strong>' + options.fn( this ) + '</strong></div>'
 });
+/** Calls _l (from base-mvc.js) to localize strings (if poosible)
+ *  This helper is specifically for localization within templates
+ */
+Handlebars.registerHelper( 'local', function( options ){
+    return _l( options.fn( this ) );
+});
 /** Renders a glx style icon-button (see IconButton in mvc/ui.js)
  *      can be used in either of the following ways:
  *          within a template: {{> iconButton buttonData}}

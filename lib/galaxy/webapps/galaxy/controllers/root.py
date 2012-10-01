@@ -173,11 +173,19 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
             states = states.split( "," )
             for encoded_id, state in zip( ids, states ):
                 try:
+                    # assume encoded and decode to int
                     id = int( trans.app.security.decode_id( encoded_id ) )
                 except:
+                    # fallback to non-encoded id
                     id = int( encoded_id )
+                    
+                # fetch new data for that id
                 data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
+                
+                # if the state has changed, 
                 if data.state != state:
+                    
+                    # find out if we need to force a refresh on this data
                     job_hda = data
                     while job_hda.copied_from_history_dataset_association:
                         job_hda = job_hda.copied_from_history_dataset_association
@@ -187,12 +195,15 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                         if tool:
                             force_history_refresh = tool.force_history_refresh
                     if not job_hda.visible:
-                        force_history_refresh = True 
+                        force_history_refresh = True
+                        
+                    # add the new state html for the item, the refresh option and the new state, map to the id
                     rval[encoded_id] = {
                         "state": data.state,
                         "html": unicode( trans.fill_template( "root/history_item.mako", data=data, hid=data.hid ), 'utf-8' ),
                         "force_history_refresh": force_history_refresh
                     }
+                    
         return rval
 
     @web.json

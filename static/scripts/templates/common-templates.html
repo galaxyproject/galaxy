@@ -14,6 +14,15 @@ Handlebars.registerHelper( 'warningmessagesmall', function( options ){
 });
 </script>
 
+<script type="text/javascript" class="helper-common" id="helper-local">
+/** Calls _l (from base-mvc.js) to localize strings (if poosible)
+ *  This helper is specifically for localization within templates
+ */
+Handlebars.registerHelper( 'local', function( options ){
+    return _l( options.fn( this ) );
+});
+</script>
+
 <script type="text/template" class="template-common" id="template-warningmessagesmall">
 {{! renders a warning in a (mostly css) highlighted, iconned warning box }} 
     <div class="warningmessagesmall"><strong>{{{ warning }}}</strong></div>
