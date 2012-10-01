@@ -4,6 +4,7 @@ from galaxy import web, util
 from galaxy.model.orm import *
 
 from galaxy.util import inflector
+from galaxy.web.form_builder import CheckboxField
 
 class Admin( object ):
     # Override these
