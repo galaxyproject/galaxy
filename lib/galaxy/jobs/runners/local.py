@@ -143,10 +143,7 @@ class LocalJobRunner( BaseJobRunner ):
         
             # Finish the job!
             try:
-                #job_wrapper.finish( stdout, stderr, exit_code )
-                # DELETEME: This is for testing how null exit codes are handled:
-                log.debug( "############## Finishing job - None exit code" )
-                job_wrapper.finish( stdout, stderr, None )
+                job_wrapper.finish( stdout, stderr, exit_code )
             except:
                 log.exception("Job wrapper finish method failed")
                 job_wrapper.fail("Unable to finish job", exception=True)

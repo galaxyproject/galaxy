@@ -321,31 +321,23 @@ class JobWrapper( object ):
             log.exception( '(%s) Failed to change ownership of %s, failing' % ( job.id, self.working_directory ) )
             return self.fail( job.info, stdout=stdout, stderr=stderr, exit_code=tool_exit_code )
 
-        log.debug( "############## JobWrapper.finish: %s exit code" 
-                 % ( "None" if None == tool_exit_code else str(tool_exit_code)))
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED or job.state == job.states.ERROR:
-            # ERROR at this point means the job was deleted by an administrator.
             # SM: Note that, at this point, the exit code must be saved in case
             # there was an error. Errors caught here could mean that the job
             # was deleted by an administrator (based on old comments), but it
             # could also mean that a job was broken up into tasks and one of
-            # the tasks failed. So 
+            # the tasks failed. So include the stderr, stdout, and exit code:
             return self.fail( job.info, stderr=stderr, stdout=stdout, exit_code=tool_exit_code )
 
         # Check the tool's stdout, stderr, and exit code for errors, but only
         # if the job has not already been marked as having an error. 
         # The job's stdout and stderr will be set accordingly.
-        log.debug( "############## JobWrapper.finish: Post-check exit code: %s/%s" 
-                 % ( ( "None" if None == tool_exit_code else str(tool_exit_code) ),
-                     ( "None" if None == job.exit_code else str(job.exit_code) ) ) )
         if job.states.ERROR != job.state:
             if ( self.check_tool_output( stdout, stderr, tool_exit_code, job )):
                 job.state = job.states.OK
             else:
                 job.state = job.states.ERROR
-            log.debug( "############## JobWrapper.finish: Post-check exit code: %s" 
-                     % ( "None" if None == tool_exit_code else str(tool_exit_code)))
 
         if self.version_string_cmd:
             version_filename = self.get_version_string_path()
@@ -471,8 +463,6 @@ class JobWrapper( object ):
         # is either incorrect or has the wrong semantics. 
         if None != tool_exit_code:
             job.exit_code = tool_exit_code
-        log.debug( "############## JobWrapper.finish: storing %s exit code" 
-                 % ( "None" if None == job.exit_code else str(job.exit_code)))
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
