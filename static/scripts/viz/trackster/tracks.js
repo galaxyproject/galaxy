@@ -1,7 +1,7 @@
 define( ["libs/underscore", "viz/visualization", "viz/trackster/util", 
          "viz/trackster/slotting", "viz/trackster/painters", "mvc/data",
-         "viz/trackster/filters", "viz/trackster_ui" ], 
-         function( _, visualization, util, slotting, painters, data, filters_mod, trackster_ui_mod ) {
+         "viz/trackster/filters" ], 
+         function( _, visualization, util, slotting, painters, data, filters_mod ) {
 
 var extend = _.extend;
 var get_random_color = util.get_random_color;
