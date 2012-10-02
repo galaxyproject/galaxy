@@ -8,6 +8,8 @@ import logging
 import os.path
 import sys
 import tarfile
+import threading
+import uuid
 
 from Cookie import SimpleCookie
 
@@ -68,6 +70,9 @@ class WebApplication( object ):
         self.mapper.explicit = False
         self.api_mapper = routes.Mapper()
         self.transaction_factory = DefaultWebTransaction
+        # Each request will have a unique id. Since we are assuming
+        # a threaded model for the moment we can store that here
+        self.request_id = threading.local()
     def add_ui_controller( self, controller_name, controller ):
         """
         Add a controller class to this application. A controller class has
@@ -106,12 +111,20 @@ class WebApplication( object ):
         # Create/compile the regular expressions for route mapping
         self.mapper.create_regs( self.controllers.keys() )
         self.api_mapper.create_regs( self.api_controllers.keys() )
+    def trace( self, **fields ):
+        if self.trace_logger:
+            self.trace_logger.log( "WebApplication", **fields )
     def __call__( self, environ, start_response ):
         """
         Call interface as specified by WSGI. Wraps the environment in user
         friendly objects, finds the appropriate method to handle the request
         and calls it.
         """
+        # Immediately create request_id which we will use for logging
+        self.request_id = request_id = uuid.uuid1().hex
+        if self.trace_logger:
+            self.trace_logger.context_push( dict( request_id = request_id ) )
+        self.trace( message= "Starting request" )
         # Map url using routes
         path_info = environ.get( 'PATH_INFO', '' )
         map = self.mapper.match( path_info, environ )
@@ -125,6 +138,7 @@ class WebApplication( object ):
             controllers = self.controllers
         if map == None:
             raise httpexceptions.HTTPNotFound( "No route for " + path_info )
+        self.trace( path_info=path_info, map=map )
         # Setup routes
         rc = routes.request_config()
         rc.mapper = mapper
