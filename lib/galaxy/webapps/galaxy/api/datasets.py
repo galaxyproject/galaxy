@@ -56,7 +56,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 rval = dataset.get_api_value()
                 
         except Exception, e:
-            rval = "Error in dataset API at listing contents"
+            rval = "Error in dataset API at listing contents: " + str( e )
             log.error( rval + ": %s" % str(e), exc_info=True )
             trans.response.status = 500
         return rval

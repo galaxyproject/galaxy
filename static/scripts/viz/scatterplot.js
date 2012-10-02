@@ -158,14 +158,16 @@ function TwoVarScatterplot( config ){
     // ........................................................ data and scales
     this.preprocessData = function( data ){
         // set a cap on the data, limit to first n points
-        return data.slice( 0, this.config.maxDataPoints );
+        return ( data.length > this.config.maxDataPoints )? ( data.slice( 0, this.config.maxDataPoints ) ): ( data );
     };
     
-    this.setUpDomains = function( xCol, yCol ){
-        this.xMin = this.config.xMin || d3.min( xCol );
-        this.xMax = this.config.xMax || d3.max( xCol );
-        this.yMin = this.config.yMin || d3.min( yCol );
-        this.yMax = this.config.yMax || d3.max( yCol );
+    this.setUpDomains = function( xCol, yCol, meta ){
+        this.log( 'setUpDomains' );
+        // configuration takes priority, otherwise meta (from the server) if passed, last-resort: compute it here
+        this.xMin = this.config.xMin || ( meta )?( meta[0].min ):( d3.min( xCol ) );
+        this.xMax = this.config.xMax || ( meta )?( meta[0].max ):( d3.max( xCol ) );
+        this.yMin = this.config.yMin || ( meta )?( meta[1].min ):( d3.min( yCol ) );
+        this.yMax = this.config.yMax || ( meta )?( meta[1].max ):( d3.max( yCol ) );
     };
     
     this.setUpScales = function(){
@@ -352,8 +354,12 @@ function TwoVarScatterplot( config ){
         //this.log( this.datapoints, 'glyphs rendered' );
     };
     
-    this.render = function( xCol, yCol ){
+    this.render = function( columnData, meta ){
         //pre: columns passed are numeric
+        //pre: at least two columns are passed
+        //assume: first column is x, second column is y, any remaining aren't used 
+        var xCol = columnData[0],
+            yCol = columnData[1];
         this.log( 'renderScatterplot', xCol.length, yCol.length, this.config );
         
         //pre: xCol.len == yCol.len
@@ -363,8 +369,8 @@ function TwoVarScatterplot( config ){
         //this.log( 'xCol len', xCol.length, 'yCol len', yCol.length );
         
         //TODO: compute min, max on server.
-        this.setUpDomains( xCol, yCol );
-        //this.log( 'xMin, xMax, yMin, yMax:', this.xMin, this.xMax, this.yMin, this.yMax );
+        this.setUpDomains( xCol, yCol, meta );
+        this.log( 'xMin, xMax, yMin, yMax:', this.xMin, this.xMax, this.yMin, this.yMax );
         
         this.setUpScales();
         this.adjustChartDimensions();
@@ -505,12 +511,9 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
             success : function( response ){
                 //TODO: server sends back an endpoint, cache for next pagination request
                 view.showLoadingIndicator( 'Rendering...' );
+                // save the endpoint (number of next line, fileptr) for this object
                 view.endpoint = response.endpoint;
-                view.plot.render(
-                    // pull apart first two regardless of number of columns
-                    _.map( response.data, function( columns ){ return columns[0]; } ),
-                    _.map( response.data, function( columns ){ return columns[1]; } )
-                );
+                view.plot.render( response.data, response.meta );
                 view.hideLoadingIndicator();
             },
             error : function( xhr, status, error ){

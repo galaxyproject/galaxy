@@ -92,22 +92,26 @@ class ColumnDataProvider( BaseDataProvider ):
         and self.original_dataset.metadata.comment_lines ):
             start_val = int( self.original_dataset.metadata.comment_lines ) + 1
         
-        response = {}
-        response[ 'data' ] = data = []
-        
         #TODO bail if columns None, not parsable, not within meta.columns
         # columns is an array of ints for now (should handle column names later)
         columns = from_json_string( columns )
-        assert( all([ column < self.original_dataset.metadata.columns for column in columns ]) ),(
-                "column index (%d) must be less" % ( column )
+        for column in columns:
+            assert( ( column < self.original_dataset.metadata.columns )
+            and     ( column >= 0 ) ),(
+                "column index (%d) must be positive and less" % ( column )
               + " than the number of columns: %d" % ( self.original_dataset.metadata.columns ) )
-        
-        
         #print columns, start_val, max_vals, skip_comments, kwargs
         
-        # alter meta by column_selectors (if any)
+        # set up the response, column lists
+        response = {}
+        response[ 'data' ] = data = [ [] for column in columns ]
+        response[ 'meta' ] = meta = [ { 'min': None, 'max': None } for column in columns ]
+        
+        column_types = [ self.original_dataset.metadata.column_types[ column ] for column in columns ]
+        
+        # function for casting by column_types
         def cast_val( val, type ):
-            """ Cast value based on type. """
+            """ Cast value based on type. Return None if can't be cast """
             if type == 'int':
                 try: val = int( val )
                 except: return None
@@ -119,21 +123,30 @@ class ColumnDataProvider( BaseDataProvider ):
         f = open( self.original_dataset.file_name )
         #TODO: add f.seek if given fptr in kwargs
         for count, line in enumerate( f ):
+            
+            # check line v. desired start, end
             if count < start_val:
                 continue
-            
             if ( count - start_val ) >= max_vals:
                 break
             
             fields = line.split()
             fields_len = len( fields )
-            #TODO: this will return the wrong number of columns for abberrant lines
-            line_data = [ cast_val( fields[c], self.original_dataset.metadata.column_types[c] )
-                          for c in columns if ( c < fields_len ) ]
-            data.append( line_data )
+            #NOTE: this will return None/null for abberrant column values (including bad indeces)
+            for index, column in enumerate( columns ):
+                column_val = None
+                if column < fields_len:
+                    column_val = cast_val( fields[ column ], column_types[ index ] )
+                    if column_val != None:
+                        if( meta[ index ][ 'min' ] == None
+                        or  column_val < meta[ index ][ 'min' ] ):
+                            meta[ index ][ 'min' ] = column_val
+                        if( meta[ index ][ 'max' ] == None
+                        or  column_val > meta[ index ][ 'max' ] ):
+                            meta[ index ][ 'max' ] = column_val
+                data[ index ].append( column_val )
             
         response[ 'endpoint' ] = dict( last_line=( count - 1 ), file_ptr=f.tell() )
         f.close()
 
         return response
-
