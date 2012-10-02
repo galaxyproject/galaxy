@@ -10,11 +10,11 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
-%if webapp == 'galaxy':
+%if trans.webapp.name == 'galaxy':
     <br/><br/>
     <ul class="manage-table-actions">
-        <li><a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories', webapp=webapp )}">Browse valid repositories</a></li>
-        <li><a class="action-button" href="${h.url_for( controller='repository', action='find_workflows', webapp=webapp )}">Search for workflows</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories' )}">Browse valid repositories</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a></li>
     </ul>
 %endif
 
@@ -32,7 +32,7 @@
             strings if these types of search strings are entered in more than one field.
         </div>
         <div style="clear: both"></div>
-        <form name="find_tools" id="find_tools" action="${h.url_for( controller='repository', action='find_tools', webapp=webapp )}" method="post" >
+        <form name="find_tools" id="find_tools" action="${h.url_for( controller='repository', action='find_tools' )}" method="post" >
             <div class="form-row">
                 <label>Tool id:</label>
                 <input name="tool_id" type="textfield" value="${tool_id}" size="40"/>

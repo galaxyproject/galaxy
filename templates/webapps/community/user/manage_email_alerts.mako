@@ -4,10 +4,10 @@
 <br/><br/>
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button"  href="${h.url_for( controller='repository', action='multi_select_email_alerts', cntrller='repository', webapp=webapp )}">Manage repository alerts</a>
+        <a class="action-button"  href="${h.url_for( controller='repository', action='multi_select_email_alerts', cntrller='repository' )}">Manage repository alerts</a>
     </li>
     <li>
-        <a class="action-button"  href="${h.url_for( controller='user', action='index', cntrller='repository', webapp=webapp )}">User preferences</a>
+        <a class="action-button"  href="${h.url_for( controller='user', action='index', cntrller='repository' )}">User preferences</a>
     </li>
 </ul>
 
@@ -17,7 +17,7 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">Email alerts for new repositories</div>
-    <form name="new_repo_alert" id="new_repo_alert" action="${h.url_for( controller='repository', action='manage_email_alerts', webapp=webapp )}" method="post" >
+    <form name="new_repo_alert" id="new_repo_alert" action="${h.url_for( controller='repository', action='manage_email_alerts' )}" method="post" >
         <div class="form-row">
             <label>New repository alert:</label>
             ${new_repo_alert_check_box.get_html()}

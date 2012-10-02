@@ -19,7 +19,7 @@ CHUNK_SIZE = 2**20 # 1Mb
 
 class UploadController( BaseUIController ):
     @web.expose
-    @web.require_login( 'upload', use_panels=True, webapp='community' )
+    @web.require_login( 'upload', use_panels=True )
     def upload( self, trans, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -161,7 +161,6 @@ class UploadController( BaseUIController ):
                                                                action='browse_repository',
                                                                id=repository_id,
                                                                commit_message='Deleted selected files',
-                                                               webapp='community',
                                                                message=message,
                                                                status=status ) )
                 else:

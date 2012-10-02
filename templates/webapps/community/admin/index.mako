@@ -48,19 +48,19 @@
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories', webapp='community' )}">Browse by category</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories' )}">Browse by category</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repositories', webapp='community' )}">Browse all repositories</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repositories' )}">Browse all repositories</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='reset_metadata_on_selected_repositories', webapp='community' )}">Reset selected metadata</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='reset_metadata_on_selected_repositories' )}">Reset selected metadata</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repository_metadata', webapp='community' )}">Browse metadata</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repository_metadata' )}">Browse metadata</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='admin', webapp='community' )}">Browse invalid tools</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='admin' )}">Browse invalid tools</a>
                         </div>
                     </div>
                 </div>
@@ -70,7 +70,7 @@
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='manage_categories', webapp='community' )}">Manage categories</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='manage_categories' )}">Manage categories</a>
                         </div>
                     </div>
                 </div>
@@ -81,13 +81,13 @@
                 <div class="toolSectionBody">
                     <div class="toolSectionBg">
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='users', webapp='community' )}">Manage users</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='users' )}">Manage users</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='groups', webapp='community' )}">Manage groups</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='groups' )}">Manage groups</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='roles', webapp='community' )}">Manage roles</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='roles' )}">Manage roles</a>
                         </div>
                     </div>
                 </div>
@@ -95,7 +95,7 @@
                     Statistics
                 </div>
                     <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='admin', action='regenerate_statistics', webapp='community' )}">View shed statistics</a>
+                        <a target="galaxy_main" href="${h.url_for( controller='admin', action='regenerate_statistics' )}">View shed statistics</a>
                     </div>
             </div>
         </div>    
@@ -104,7 +104,7 @@
 
 <%def name="center_panel()">
     <%
-        center_url = h.url_for( action='center', webapp='community' )
+        center_url = h.url_for( action='center' )
     %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

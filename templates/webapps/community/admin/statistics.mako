@@ -7,7 +7,7 @@
 
 <div class="toolForm">
     <div class="toolFormTitle">Tool shed statistics generated on ${trans.app.shed_counter.generation_time}</div>
-        <form name="regenerate_statistics" id="regenerate_statistics" action="${h.url_for( controller='admin', action='regenerate_statistics', webapp='community' )}" method="post" >
+        <form name="regenerate_statistics" id="regenerate_statistics" action="${h.url_for( controller='admin', action='regenerate_statistics' )}" method="post" >
             <div class="form-row">
                 <table class="grid">
                     <tr>

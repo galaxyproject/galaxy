@@ -11,8 +11,8 @@
     can_rate = not is_new and trans.user and repository.user != trans.user
     can_upload = can_push
     can_download = not is_new and ( not is_malicious or can_push )
-    can_browse_contents = webapp == 'community' and not is_new
-    can_view_change_log = webapp == 'community' and not is_new
+    can_browse_contents = trans.webapp.name == 'community' and not is_new
+    can_view_change_log = trans.webapp.name == 'community' and not is_new
     if can_push:
         browse_label = 'Browse or delete repository tip files'
     else:
@@ -37,44 +37,44 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    %if webapp == 'community':
+    %if trans.webapp.name == 'community':
         %if is_new and can_upload:
-            <li><a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp=webapp )}">Upload files to repository</a></li>
+            <li><a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a></li>
         %else:
             <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
             <div popupmenu="repository-${repository.id}-popup">
                 %if can_upload:
-                    <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ), webapp=webapp )}">Upload files to repository</a>
+                    <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
                 %endif
                 %if has_readme:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, webapp=webapp )}">View README</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">View README</a>
                 %endif
                 %if can_view_change_log:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ), webapp=webapp )}">View change log</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
                 %endif
                 %if can_rate:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ), webapp=webapp )}">Rate repository</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
                 %endif
                 %if can_browse_contents:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ), webapp=webapp )}">${browse_label}</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
                 %endif
                 %if can_contact_owner:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ), webapp=webapp )}">Contact repository owner</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ) )}">Contact repository owner</a>
                 %endif
                 %if can_download:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz', webapp=webapp )}">Download as a .tar.gz file</a>
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2', webapp=webapp )}">Download as a .tar.bz2 file</a>
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='zip', webapp=webapp )}">Download as a zip file</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='zip' )}">Download as a zip file</a>
                 %endif
             </div>
         %endif
     %else:
-        <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), webapp=webapp, changeset_revisions=changeset_revision )}">Install to local Galaxy</a></li>
+        <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), changeset_revisions=changeset_revision )}">Install to local Galaxy</a></li>
         <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Tool Shed Actions</a></li>
         <div popupmenu="repository-${repository.id}-popup">
-            <a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories', webapp=webapp )}">Browse valid repositories</a>
-            <a class="action-button" href="${h.url_for( controller='repository', action='find_tools', webapp=webapp )}">Search for valid tools</a>
-            <a class="action-button" href="${h.url_for( controller='repository', action='find_workflows', webapp=webapp )}">Search for workflows</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories' )}">Browse valid repositories</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>
         </div>
     %endif
 </ul>
@@ -87,7 +87,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Repository revision</div>
         <div class="toolFormBody">
-            <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), webapp=webapp )}" method="post" >
+            <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     <%
                         if changeset_revision == repository.tip:
@@ -117,7 +117,7 @@
         <div class="form-row">
             <label>Name:</label>
             %if can_browse_contents:
-                <a href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ), webapp=webapp )}">${repository.name}</a>
+                <a href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${repository.name}</a>
             %else:
                 ${repository.name}
             %endif
@@ -132,7 +132,7 @@
         <div class="form-row">
             <label>Revision:</label>
             %if can_view_change_log:
-                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ), webapp=webapp )}">${revision_label}</a>
+                <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
             %else:
                 ${revision_label}
             %endif
@@ -157,7 +157,7 @@
         %endif
     </div>
 </div>
-${render_repository_items( repository_metadata_id, metadata, webapp=webapp )}
+${render_repository_items( repository_metadata_id, metadata )}
 %if repository.categories:
     <p/>
     <div class="toolForm">
@@ -172,12 +172,12 @@ ${render_repository_items( repository_metadata_id, metadata, webapp=webapp )}
         </div>
     </div>
 %endif
-%if webapp == 'community' and trans.user and trans.app.config.smtp_server:
+%if trans.webapp.name == 'community' and trans.user and trans.app.config.smtp_server:
     <p/>
     <div class="toolForm">
         <div class="toolFormTitle">Notification on update</div>
         <div class="toolFormBody">
-            <form name="receive_email_alerts" id="receive_email_alerts" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), webapp=webapp )}" method="post" >
+            <form name="receive_email_alerts" id="receive_email_alerts" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     <label>Receive email alerts:</label>
                     ${alerts_check_box.get_html()}
@@ -214,7 +214,7 @@ ${render_repository_items( repository_metadata_id, metadata, webapp=webapp )}
         <div class="toolFormBody">
             %if display_reviews:
                 <div class="form-row">
-                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=False, webapp=webapp )}"><label>Hide Reviews</label></a>
+                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=False )}"><label>Hide Reviews</label></a>
                 </div>
                 <table class="grid">
                     <thead>
@@ -241,7 +241,7 @@ ${render_repository_items( repository_metadata_id, metadata, webapp=webapp )}
                 </table>
             %else:
                 <div class="form-row">
-                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=True, webapp=webapp )}"><label>Display Reviews</label></a>
+                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=True )}"><label>Display Reviews</label></a>
                 </div>
             %endif
         </div>

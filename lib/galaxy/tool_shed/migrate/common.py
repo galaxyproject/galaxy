@@ -30,7 +30,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                 tool_dependencies_dict = {}
                 repository_name = elem.get( 'name' )
                 changeset_revision = elem.get( 'changeset_revision' )
-                url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s&webapp=install_manager' % \
+                url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s&from_install_manager=True' % \
                 ( tool_shed_url, repository_name, REPOSITORY_OWNER, changeset_revision )
                 try:
                     response = urllib2.urlopen( url )

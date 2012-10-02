@@ -612,8 +612,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                                                                      repo_files_dir,
                                                                      tool_config_filename,
                                                                      tool,
-                                                                     sample_files,
-                                                                     webapp='community' )
+                                                                     sample_files )
             if invalid_files_and_errors_tups:
                 message2 = generate_message_for_invalid_tools( invalid_files_and_errors_tups,
                                                                repository,
@@ -753,8 +752,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                                                                                                  relative_install_dir=repo_dir,
                                                                                                  repository_files_dir=work_dir,
                                                                                                  resetting_all_metadata_on_repository=True,
-                                                                                                 updating_installed_repository=False,
-                                                                                                 webapp='community' )
+                                                                                                 updating_installed_repository=False )
             if current_metadata_dict:
                 if not metadata_changeset_revision and not metadata_dict:
                     # We're at the first change set in the change log.
@@ -829,8 +827,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                                                                                  relative_install_dir=repo_dir,
                                                                                  repository_files_dir=None,
                                                                                  resetting_all_metadata_on_repository=False,
-                                                                                 updating_installed_repository=False,
-                                                                                 webapp='community' )
+                                                                                 updating_installed_repository=False )
     if metadata_dict:
         downloadable = is_downloadable( metadata_dict )
         repository_metadata = None

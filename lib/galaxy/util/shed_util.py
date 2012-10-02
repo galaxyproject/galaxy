@@ -297,7 +297,7 @@ def can_generate_tool_dependency_metadata( root, metadata_dict ):
                             # tag for any tool in the repository.
                             break
     return can_generate_dependency_metadata
-def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files, webapp='galaxy' ):
+def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files ):
     """
     Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make 
     sure the files exist.
@@ -602,7 +602,7 @@ def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
                 tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
     return tool_dependencies_dict
 def generate_metadata_for_changeset_revision( app, repository, repository_clone_url, relative_install_dir=None, repository_files_dir=None,
-                                              resetting_all_metadata_on_repository=False, updating_installed_repository=False, webapp='galaxy' ):
+                                              resetting_all_metadata_on_repository=False, updating_installed_repository=False ):
     """
     Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
     the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
@@ -695,7 +695,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                                     if not valid:
                                         invalid_file_tups.append( ( name, error_message ) )
                                 else:
-                                    invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_file_metadata_paths, webapp=webapp )
+                                    invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_file_metadata_paths )
                                     can_set_metadata = True
                                     for tup in invalid_files_and_errors_tups:
                                         if name in tup:
@@ -1115,7 +1115,7 @@ def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
                 return manifest_ctx, ctx_file
     return None, None
 def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
-    url = url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % ( name, owner, changeset_revision ) )
+    url = url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
     response = urllib2.urlopen( url )
     ctx_rev = response.read()
     response.close()

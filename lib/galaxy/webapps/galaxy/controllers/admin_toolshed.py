@@ -65,7 +65,7 @@ class InstalledRepositoryGrid( grids.Grid ):
                     key="name",
                     link=( lambda item: iff( item.status in [ model.ToolShedRepository.installation_status.CLONING ],
                                              None,
-                                             dict( operation="manage_repository", id=item.id, webapp="galaxy" ) ) ),
+                                             dict( operation="manage_repository", id=item.id ) ) ),
                     attach_popup=True ),
         DescriptionColumn( "Description" ),
         OwnerColumn( "Owner" ),
@@ -410,7 +410,7 @@ class AdminToolshed( AdminGalaxy ):
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
         galaxy_url = url_for( '/', qualified=True )
-        url = url_join( tool_shed_url, 'repository/browse_valid_categories?galaxy_url=%s&webapp=galaxy' % ( galaxy_url ) )
+        url = url_join( tool_shed_url, 'repository/browse_valid_categories?galaxy_url=%s' % ( galaxy_url ) )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
@@ -419,7 +419,6 @@ class AdminToolshed( AdminGalaxy ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         return trans.fill_template( '/webapps/galaxy/admin/tool_sheds.mako',
-                                    webapp='galaxy',
                                     message=message,
                                     status='error' )
     @web.expose
@@ -429,7 +428,7 @@ class AdminToolshed( AdminGalaxy ):
         repository = get_repository( trans, kwd[ 'id' ] )
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
         url = url_join( tool_shed_url,
-                        'repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                        'repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
                         ( url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision ) )
         return trans.response.send_redirect( url )
     @web.expose
@@ -507,14 +506,14 @@ class AdminToolshed( AdminGalaxy ):
     def find_tools_in_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
         galaxy_url = url_for( '/', qualified=True )
-        url = url_join( tool_shed_url, 'repository/find_tools?galaxy_url=%s&webapp=galaxy' % galaxy_url )
+        url = url_join( tool_shed_url, 'repository/find_tools?galaxy_url=%s' % galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
     def find_workflows_in_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
         galaxy_url = url_for( '/', qualified=True )
-        url = url_join( tool_shed_url, 'repository/find_workflows?galaxy_url=%s&webapp=galaxy' % galaxy_url )
+        url = url_join( tool_shed_url, 'repository/find_workflows?galaxy_url=%s' % galaxy_url )
         return trans.response.send_redirect( url )
     def generate_tool_path( self, repository_clone_url, changeset_revision ):
         """
@@ -676,7 +675,7 @@ class AdminToolshed( AdminGalaxy ):
                                                         trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                     tool_shed_url = get_url_from_repository_tool_shed( trans.app, tool_shed_repository )
                     url = url_join( tool_shed_url,
-                                    '/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                                    '/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
                                     ( tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.changeset_revision ) )
                     response = urllib2.urlopen( url )
                     text = response.read()
@@ -731,8 +730,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
                                                                                      resetting_all_metadata_on_repository=False,
-                                                                                     updating_installed_repository=False,
-                                                                                     webapp='galaxy' )
+                                                                                     updating_installed_repository=False )
         tool_shed_repository.metadata = metadata_dict
         trans.sa_session.add( tool_shed_repository )
         trans.sa_session.flush()
@@ -806,7 +804,7 @@ class AdminToolshed( AdminGalaxy ):
             # Send a request to the tool shed to install the repository.
             tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
             url = url_join( tool_shed_url,
-                            'repository/install_repositories_by_revision?name=%s&owner=%s&changeset_revisions=%s&galaxy_url=%s&webapp=galaxy' % \
+                            'repository/install_repositories_by_revision?name=%s&owner=%s&changeset_revisions=%s&galaxy_url=%s' % \
                             ( repository.name,
                               repository.owner,
                               repository.installed_changeset_revision,
@@ -1030,7 +1028,7 @@ class AdminToolshed( AdminGalaxy ):
             changeset_revisions = kwd.get( 'changeset_revisions', None )
             # Get the information necessary to install each repository.
             url = url_join( tool_shed_url,
-                            'repository/get_repository_information?repository_ids=%s&changeset_revisions=%s&webapp=galaxy' % \
+                            'repository/get_repository_information?repository_ids=%s&changeset_revisions=%s' % \
                             ( repository_ids, changeset_revisions ) )
             response = urllib2.urlopen( url )
             raw_text = response.read()
@@ -1175,7 +1173,7 @@ class AdminToolshed( AdminGalaxy ):
             repo_info_tuple = repo_info_dict[ name ]
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
             url = url_join( tool_shed_url,
-                            'repository/get_readme?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                            'repository/get_readme?name=%s&owner=%s&changeset_revision=%s' % \
                             ( name, repository_owner, changeset_revision ) )
             response = urllib2.urlopen( url )
             raw_text = response.read()
@@ -1350,7 +1348,7 @@ class AdminToolshed( AdminGalaxy ):
         # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
         # revision to see if it was previously installed using one of them.
         url = url_join( tool_shed_url,
-                        'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                        'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
                         ( url_for( '/', qualified=True ), repository_name, repository_owner, changeset_revision ) )
         response = urllib2.urlopen( url )
         text = response.read()
@@ -1413,7 +1411,7 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=True )
         if metadata and 'readme' in metadata:
             url = url_join( tool_shed_url,
-                            'repository/get_readme?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                            'repository/get_readme?name=%s&owner=%s&changeset_revision=%s' % \
                             ( repository.name, repository.owner, repository.installed_changeset_revision ) )
             response = urllib2.urlopen( url )
             raw_text = response.read()
@@ -1448,8 +1446,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                          relative_install_dir=relative_install_dir,
                                                                                          repository_files_dir=None,
                                                                                          resetting_all_metadata_on_repository=False,
-                                                                                         updating_installed_repository=False,
-                                                                                         webapp='galaxy' )
+                                                                                         updating_installed_repository=False )
             repository.metadata = metadata_dict
             trans.sa_session.add( repository )
             trans.sa_session.flush()
@@ -1506,7 +1503,7 @@ class AdminToolshed( AdminGalaxy ):
         repository = get_repository( trans, kwd[ 'id' ] )
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
         url = url_join( tool_shed_url,
-                        'repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                        'repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
                         ( repository.name, repository.owner, repository.changeset_revision ) )
         response = urllib2.urlopen( url )
         text = response.read()
@@ -1625,8 +1622,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                                  relative_install_dir=relative_install_dir,
                                                                                                  repository_files_dir=None,
                                                                                                  resetting_all_metadata_on_repository=False,
-                                                                                                 updating_installed_repository=True,
-                                                                                                 webapp='galaxy' )
+                                                                                                 updating_installed_repository=True )
                     repository.metadata = metadata_dict
                     # Update the repository changeset_revision in the database.
                     repository.changeset_revision = latest_changeset_revision
@@ -1676,7 +1672,6 @@ class AdminToolshed( AdminGalaxy ):
                                     changeset_revision=repository.changeset_revision,
                                     readme_text=readme_text,
                                     is_malicious=is_malicious,
-                                    webapp='galaxy',
                                     message=message,
                                     status=status )
     @web.expose
@@ -1685,7 +1680,6 @@ class AdminToolshed( AdminGalaxy ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
         repository_metadata = repository.metadata
         tool_metadata = {}

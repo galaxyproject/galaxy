@@ -50,10 +50,10 @@
                     </div>
                     <div class="toolSectionBody">
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools', webapp='community' )}">Search for valid tools</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_workflows', webapp='community' )}">Search for workflows</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>
                         </div>
                     </div>
                 %endif
@@ -62,7 +62,7 @@
                     All Repositories
                 </div>
                 <div class="toolTitle">
-                    <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories', webapp='community' )}">Browse by category</a>
+                    <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories' )}">Browse by category</a>
                 </div>
                 %if trans.user:
                     <div class="toolSectionPad"></div>
@@ -70,20 +70,20 @@
                         My Repositories and Tools
                     </div>
                     <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='repositories_i_own', webapp='community' )}">Repositories I own</a>
+                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='repositories_i_own' )}">Repositories I own</a>
                     </div>
                     <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='writable_repositories', webapp='community' )}">My writable repositories</a>
+                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='writable_repositories' )}">My writable repositories</a>
                     </div>
                     <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='repository', webapp='community' )}">My invalid tools</a>
+                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='repository' )}">My invalid tools</a>
                     </div>
                     <div class="toolSectionPad"></div>
                     <div class="toolSectionTitle">
                         Available Actions
                     </div>
                     <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository', webapp='community' )}">Create new repository</a>
+                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository' )}">Create new repository</a>
                     </div>
                 %else:
                     <div class="toolSectionPad"></div>
@@ -91,7 +91,7 @@
                         Available Actions
                     </div>
                     <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='/user', action='login', webapp='community' )}">Login to create a repository</a>
+                        <a target="galaxy_main" href="${h.url_for( controller='/user', action='login' )}">Login to create a repository</a>
                     </div>
                 %endif
             </div>
@@ -102,9 +102,9 @@
 <%def name="center_panel()">
     <%
         if trans.app.config.require_login and not trans.user:
-            center_url = h.url_for( controller='user', action='login', message=message, status=status, webapp='community' )
+            center_url = h.url_for( controller='user', action='login', message=message, status=status )
         else:
-            center_url = h.url_for( controller='repository', action='browse_categories', message=message, status=status, webapp='community' )
+            center_url = h.url_for( controller='repository', action='browse_categories', message=message, status=status )
     %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>

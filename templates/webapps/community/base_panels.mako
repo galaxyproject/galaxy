@@ -64,10 +64,10 @@
                 </%def>
 
                 ## Repositories tab.
-                ${tab( "repositories", "Repositories", h.url_for( controller='/repository', action='index', webapp='community' ) )}
+                ${tab( "repositories", "Repositories", h.url_for( controller='/repository', action='index' ) )}
                 
                 ## Admin tab.
-                ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index', webapp='community' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
+                ${tab( "admin", "Admin", h.url_for( controller='/admin', action='index' ), extra_class="admin-only", visible=( trans.user and app.config.is_admin_user( trans.user ) ) )}
 
                 ## Help tab.
                 <%
@@ -85,9 +85,9 @@
                 ## User tabs.
                 <%  
                     # Menu for user who is not logged in.
-                    menu_options = [ [ _("Login"), h.url_for( controller='/user', action='login', webapp='community' ), "galaxy_main" ] ]
+                    menu_options = [ [ _("Login"), h.url_for( controller='/user', action='login' ), "galaxy_main" ] ]
                     if app.config.allow_user_creation:
-                        menu_options.append( [ _("Register"), h.url_for( controller='/user', action='create', cntrller='user', webapp='community' ), "galaxy_main" ] ) 
+                        menu_options.append( [ _("Register"), h.url_for( controller='/user', action='create', cntrller='user' ), "galaxy_main" ] ) 
                     extra_class = "loggedout-only"
                     visible = ( trans.user == None )
                     tab( "user", _("User"), None, visible=visible, menu_options=menu_options )
@@ -101,12 +101,12 @@
                         if app.config.remote_user_logout_href:
                             menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
                     else:
-                        menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user', webapp='community' ), "galaxy_main" ] )
-                        logout_url = h.url_for( controller='/user', action='logout', webapp='community' )
+                        menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
+                        logout_url = h.url_for( controller='/user', action='logout' )
                         menu_options.append( [ 'Logout', logout_url, "_top" ] )
                         menu_options.append( None )
                     if app.config.use_remote_user:
-                        menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user', webapp='community' ), "galaxy_main" ] )
+                        menu_options.append( [ _('Public Name'), h.url_for( controller='/user', action='edit_username', cntrller='user' ), "galaxy_main" ] )
             
                     extra_class = "loggedin-only"
                     visible = ( trans.user != None )

@@ -83,7 +83,7 @@
     hg clone <a href="${clone_str}">${clone_str}</a>
 </%def>
 
-<%def name="render_repository_items( repository_metadata_id, metadata, can_set_metadata=False, webapp='community' )">
+<%def name="render_repository_items( repository_metadata_id, metadata, can_set_metadata=False )">
     <% from galaxy.tool_shed.encoding_util import tool_shed_encode %>
     %if metadata or can_set_metadata:
         <p/>
@@ -184,10 +184,10 @@
                                     <tr>
                                         <td>
                                             <div style="float:left;" class="menubutton split popup" id="tool-${index}-popup">
-                                                <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision, webapp=webapp )}">${tool_dict[ 'name' ]}</a>
+                                                <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=tool_dict[ 'tool_config' ], changeset_revision=changeset_revision )}">${tool_dict[ 'name' ]}</a>
                                             </div>
                                             <div popupmenu="tool-${index}-popup">
-                                                <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ], webapp=webapp )}">View tool metadata</a>
+                                                <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ] )}">View tool metadata</a>
                                             </div>
                                         </td>
                                         <td>${tool_dict[ 'description' ]}</td>
@@ -232,7 +232,7 @@
                                 %for invalid_tool_config in invalid_tool_configs:
                                     <tr>
                                         <td>
-                                            <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=invalid_tool_config, changeset_revision=changeset_revision, webapp=webapp )}">
+                                            <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=invalid_tool_config, changeset_revision=changeset_revision )}">
                                                 ${invalid_tool_config}
                                             </a>
                                         </td>
@@ -274,7 +274,7 @@
                                     %>
                                     <tr>
                                         <td>
-                                            <a href="${h.url_for( controller='workflow', action='view_workflow', repository_metadata_id=repository_metadata_id, workflow_name=tool_shed_encode( workflow_name ), webapp=webapp )}">${workflow_name}</a>
+                                            <a href="${h.url_for( controller='workflow', action='view_workflow', repository_metadata_id=repository_metadata_id, workflow_name=tool_shed_encode( workflow_name ) )}">${workflow_name}</a>
                                         </td>
                                         <td>
                                             %if steps:

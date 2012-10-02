@@ -49,7 +49,7 @@ class CategoryListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="Category.name",
-                    link=( lambda item: dict( operation="repositories_by_category", id=item.id, webapp="community" ) ),
+                    link=( lambda item: dict( operation="repositories_by_category", id=item.id ) ),
                     attach_popup=False ),
         DescriptionColumn( "Description",
                            key="Category.description",
@@ -87,7 +87,7 @@ class ValidCategoryListGrid( CategoryListGrid ):
     columns = [
         CategoryListGrid.NameColumn( "Name",
                                      key="Category.name",
-                                     link=( lambda item: dict( operation="valid_repositories_by_category", id=item.id, webapp="galaxy" ) ),
+                                     link=( lambda item: dict( operation="valid_repositories_by_category", id=item.id ) ),
                                      attach_popup=False ),
         CategoryListGrid.DescriptionColumn( "Description",
                                             key="Category.description",
@@ -136,7 +136,7 @@ class RepositoryListGrid( grids.Grid ):
             rval = '<ul>'
             if repository.categories:
                 for rca in repository.categories:
-                    rval += '<li><a href="browse_repositories?operation=repositories_by_category&id=%s&webapp=community">%s</a></li>' \
+                    rval += '<li><a href="browse_repositories?operation=repositories_by_category&id=%s">%s</a></li>' \
                         % ( trans.security.encode_id( rca.category.id ), rca.category.name )
             else:
                 rval += '<li>not set</li>'
@@ -173,8 +173,7 @@ class RepositoryListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     link=( lambda item: dict( operation="view_or_manage_repository",
-                                              id=item.id,
-                                              webapp="community" ) ),
+                                              id=item.id ) ),
                     attach_popup=True ),
         DescriptionColumn( "Synopsis",
                            key="description",
@@ -187,7 +186,7 @@ class RepositoryListGrid( grids.Grid ):
                         attach_popup=False ),
         UserColumn( "Owner",
                      model_class=model.User,
-                     link=( lambda item: dict( operation="repositories_by_user", id=item.id, webapp="community" ) ),
+                     link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                      attach_popup=False,
                      key="User.username" ),
         grids.CommunityRatingColumn( "Average Rating", key="rating" ),
@@ -231,15 +230,14 @@ class EmailAlertsRepositoryListGrid( RepositoryListGrid ):
         RepositoryListGrid.NameColumn( "Name",
                                        key="name",
                                        link=( lambda item: dict( operation="view_or_manage_repository",
-                                                                 id=item.id,
-                                                                 webapp="community" ) ),
+                                                                 id=item.id ) ),
                                        attach_popup=False ),
         RepositoryListGrid.DescriptionColumn( "Synopsis",
                                               key="description",
                                               attach_popup=False ),
         RepositoryListGrid.UserColumn( "Owner",
                                        model_class=model.User,
-                                       link=( lambda item: dict( operation="repositories_by_user", id=item.id, webapp="community" ) ),
+                                       link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                                        attach_popup=False,
                                        key="User.username" ),
         RepositoryListGrid.EmailAlertsColumn( "Alert", attach_popup=False ),
@@ -254,7 +252,7 @@ class EmailAlertsRepositoryListGrid( RepositoryListGrid ):
                                         condition=( lambda item: not item.deleted ),
                                         async_compatible=False ) ]
     global_actions = [
-            grids.GridAction( "User preferences", dict( controller='user', action='index', cntrller='repository', webapp='community' ) )
+            grids.GridAction( "User preferences", dict( controller='user', action='index', cntrller='repository' ) )
         ]
 
 class WritableRepositoryListGrid( RepositoryListGrid ):
@@ -285,7 +283,7 @@ class ValidRepositoryListGrid( RepositoryListGrid ):
             rval = '<ul>'
             if repository.categories:
                 for rca in repository.categories:
-                    rval += '<li><a href="browse_repositories?operation=valid_repositories_by_category&id=%s&webapp=galaxy">%s</a></li>' \
+                    rval += '<li><a href="browse_repositories?operation=valid_repositories_by_category&id=%s">%s</a></li>' \
                         % ( trans.security.encode_id( rca.category.id ), rca.category.name )
             else:
                 rval += '<li>not set</li>'
@@ -372,9 +370,7 @@ class MatchedRepositoryListGrid( grids.Grid ):
     default_sort_key = "Repository.name"
     columns = [
         NameColumn( "Repository name",
-                    link=( lambda item: dict( operation="view_or_manage_repository",
-                                              id=item.id,
-                                              webapp="community" ) ),
+                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                     attach_popup=True ),
         DescriptionColumn( "Synopsis",
                            attach_popup=False ),
@@ -414,9 +410,7 @@ class InstallMatchedRepositoryListGrid( MatchedRepositoryListGrid ):
     columns = [ col for col in MatchedRepositoryListGrid.columns ]
     # Override the NameColumn
     columns[ 0 ] = MatchedRepositoryListGrid.NameColumn( "Name",
-                                                         link=( lambda item: dict( operation="view_or_manage_repository",
-                                                                                   id=item.id,
-                                                                                   webapp="galaxy" ) ),
+                                                         link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                                          attach_popup=False )
 
 class RepositoryController( BaseUIController, ItemRatings ):
@@ -481,7 +475,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = get_webapp( trans, **kwd )
         cntrller = params.get( 'cntrller', 'repository' )
         is_admin = trans.user_is_admin()
         invalid_tools_dict = odict()
@@ -514,15 +507,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return trans.fill_template( '/webapps/community/repository/browse_invalid_tools.mako',
                                     cntrller=cntrller,
                                     invalid_tools_dict=invalid_tools_dict,
-                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
     def browse_repositories( self, trans, **kwd ):
         # We add params to the keyword dict in this method in order to rename the param with an "f-" prefix, simulating filtering by clicking a search
         # link.  We have to take this approach because the "-" character is illegal in HTTP requests.
-        if 'webapp' not in kwd:
-            kwd[ 'webapp' ] = get_webapp( trans, **kwd )
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "view_or_manage_repository":
@@ -606,7 +596,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = get_webapp( trans, **kwd )
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
@@ -619,7 +608,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     metadata=metadata,
                                     commit_message=commit_message,
                                     is_malicious=is_malicious,
-                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -631,7 +619,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if 'f-free-text-search' in kwd:
             if kwd[ 'f-free-text-search' ] == 'All':
                 # The user performed a search, then clicked the "x" to eliminate the search criteria.
-                new_kwd = dict( webapp='galaxy' )
+                new_kwd = {}
                 return self.valid_category_list_grid( trans, **new_kwd )
             # Since we are searching valid repositories and not categories, redirect to browse_valid_repositories().
             if 'id' in kwd and 'f-free-text-search' in kwd and kwd[ 'id' ] == kwd[ 'f-free-text-search' ]:
@@ -656,7 +644,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return self.valid_category_list_grid( trans, **kwd )
     @web.expose
     def browse_valid_repositories( self, trans, **kwd ):
-        webapp = get_webapp( trans, **kwd )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if 'f-free-text-search' in kwd:
             if 'f-Category.name' in kwd:
@@ -676,7 +663,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 latest_installable_changeset_revision = repository_metadata.changeset_revision
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
-                                                                  webapp=webapp,
                                                                   repository_id=repository_id,
                                                                   changeset_revision=latest_installable_changeset_revision ) )
             elif operation == "valid_repositories_by_category":
@@ -700,12 +686,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 if repository.tip != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='preview_tools_in_changeset',
-                                                                      webapp=webapp,
                                                                       repository_id=trans.security.encode_id( repository.id ),
                                                                       changeset_revision=v ) )
         url_args = dict( action='browse_valid_repositories',
                          operation='preview_tools_in_changeset',
-                         webapp=webapp,
                          repository_id=repository_id )
         self.valid_repository_list_grid.operations = [ grids.GridOperation( "Preview and install",
                                                                             url_args=url_args,
@@ -745,10 +729,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     @web.expose
     def check_for_updates( self, trans, **kwd ):
-        """
-        Handle a request from a local Galaxy instance.  If the request originated with the Galaxy instances' UpdateManager, the value of 'webapp'
-        will be 'update_manager'.
-        """
+        """Handle a request from a local Galaxy instance."""
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -757,14 +738,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        webapp = get_webapp( trans, **kwd )
         repository = get_repository_by_name_and_owner( trans, name, owner )
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
         # Default to the current changeset revision.
         update_to_ctx = get_changectx_for_changeset( repo, changeset_revision )
         latest_changeset_revision = changeset_revision
-        from_update_manager = webapp == 'update_manager'
+        from_update_manager = kwd.get( 'from_update_manager', False )
         if from_update_manager:
             update = 'true'
             no_update = 'false'
@@ -923,7 +903,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 message = "Repository '%s' has been created." % repository.name
                 trans.response.send_redirect( web.url_for( controller='repository',
                                                            action='view_repository',
-                                                           webapp='community',
                                                            message=message,
                                                            id=trans.security.encode_id( repository.id ) ) )
         return trans.fill_template( '/webapps/community/repository/create_repository.mako',
@@ -939,7 +918,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = get_webapp( trans, **kwd )
         repository, tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
@@ -952,12 +930,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                         tool=tool,
                                         tool_state=tool_state,
                                         is_malicious=is_malicious,
-                                        webapp=webapp,
                                         message=message,
                                         status=status )
         except Exception, e:
             message = "Error displaying tool, probably due to a problem in the tool config.  The exception is: %s." % str( e )
-        if webapp == 'galaxy':
+        if trans.webapp.name == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',
                                                               repository_id=repository_id,
@@ -996,7 +973,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        webapp = get_webapp( trans, **kwd )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if galaxy_url:
             trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
@@ -1012,7 +988,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     repository = get_repository( trans, repository_id )
                     kwd[ 'id' ] = repository_id
                     kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
-                    if webapp == 'community' and ( is_admin or repository.user == trans.user ):
+                    if trans.webapp.name == 'community' and ( is_admin or repository.user == trans.user ):
                         a = 'manage_repository'
                     else:
                         a = 'view_repository'
@@ -1048,16 +1024,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if ok:
                 kwd[ 'match_tuples' ] = match_tuples
                 # Render the list view
-                if webapp == 'galaxy':
+                if trans.webapp.name == 'galaxy':
                     # Our initial request originated from a Galaxy instance.
                     global_actions = [ grids.GridAction( "Browse valid repositories",
-                                                         dict( controller='repository', action='browse_valid_categories', webapp=webapp ) ),
+                                                         dict( controller='repository', action='browse_valid_categories' ) ),
                                        grids.GridAction( "Search for valid tools",
-                                                         dict( controller='repository', action='find_tools', webapp=webapp ) ),
+                                                         dict( controller='repository', action='find_tools' ) ),
                                        grids.GridAction( "Search for workflows",
-                                                         dict( controller='repository', action='find_workflows', webapp=webapp ) ) ]
+                                                         dict( controller='repository', action='find_workflows' ) ) ]
                     self.install_matched_repository_list_grid.global_actions = global_actions
-                    install_url_args = dict( controller='repository', action='find_tools', webapp=webapp )
+                    install_url_args = dict( controller='repository', action='find_tools' )
                     operations = [ grids.GridOperation( "Install", url_args=install_url_args, allow_multiple=True, async_compatible=False ) ]
                     self.install_matched_repository_list_grid.operations = operations
                     return self.install_matched_repository_list_grid( trans, **kwd )
@@ -1071,7 +1047,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 status = "error"
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
         return trans.fill_template( '/webapps/community/repository/find_tools.mako',
-                                    webapp=webapp,
                                     tool_id=self.__stringify( tool_ids ),
                                     tool_name=self.__stringify( tool_names ),
                                     tool_version=self.__stringify( tool_versions ),
@@ -1083,7 +1058,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        webapp = get_webapp( trans, **kwd )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if galaxy_url:
             trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
@@ -1099,7 +1073,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     repository = get_repository( trans, repository_id )
                     kwd[ 'id' ] = repository_id
                     kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
-                    if webapp == 'community' and ( is_admin or repository.user == trans.user ):
+                    if trans.webapp.name == 'community' and ( is_admin or repository.user == trans.user ):
                         a = 'manage_repository'
                     else:
                         a = 'view_repository'
@@ -1136,17 +1110,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 ok, match_tuples = self.__search_repository_metadata( trans, exact_matches_checked, workflow_names=[], all_workflows=True )
             if ok:
                 kwd[ 'match_tuples' ] = match_tuples
-                # Render the list view
-                if webapp == 'galaxy':
+                if trans.webapp.name == 'galaxy':
                     # Our initial request originated from a Galaxy instance.
                     global_actions = [ grids.GridAction( "Browse valid repositories",
-                                                         dict( controller='repository', action='browse_valid_repositories', webapp=webapp ) ),
+                                                         dict( controller='repository', action='browse_valid_repositories' ) ),
                                        grids.GridAction( "Search for valid tools",
-                                                         dict( controller='repository', action='find_tools', webapp=webapp ) ),
+                                                         dict( controller='repository', action='find_tools' ) ),
                                        grids.GridAction( "Search for workflows",
-                                                         dict( controller='repository', action='find_workflows', webapp=webapp ) ) ]
+                                                         dict( controller='repository', action='find_workflows' ) ) ]
                     self.install_matched_repository_list_grid.global_actions = global_actions
-                    install_url_args = dict( controller='repository', action='find_workflows', webapp=webapp )
+                    install_url_args = dict( controller='repository', action='find_workflows' )
                     operations = [ grids.GridOperation( "Install", url_args=install_url_args, allow_multiple=True, async_compatible=False ) ]
                     self.install_matched_repository_list_grid.operations = operations
                     return self.install_matched_repository_list_grid( trans, **kwd )
@@ -1163,7 +1136,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
             workflow_names = []
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
         return trans.fill_template( '/webapps/community/repository/find_workflows.mako',
-                                    webapp=webapp,
                                     workflow_name=self.__stringify( workflow_names ),
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
@@ -1234,8 +1206,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return ''
     @web.expose
     def get_tool_dependencies( self, trans, **kwd ):
-        # Handle a request from a local Galaxy instance.  If the request originated with the Galaxy instances' InstallManager, the value of 'webapp'
-        # will be 'install_manager'.
+        """Handle a request from a local Galaxy instance."""
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -1244,14 +1215,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        webapp = get_webapp( trans, **kwd )
         repository = get_repository_by_name_and_owner( trans, name, owner )
         for downloadable_revision in repository.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
                 break
         metadata = downloadable_revision.metadata
         tool_dependencies = metadata.get( 'tool_dependencies', '' )
-        if webapp == 'install_manager':
+        from_install_manager = kwd.get( 'from_install_manager', False )
+        if from_install_manager:
             if tool_dependencies:
                 return tool_shed_encode( tool_dependencies )
             return ''
@@ -1450,7 +1421,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'error' )
-        webapp = get_webapp( trans, **kwd )
         repository_clone_url = generate_clone_url( trans, repository_id )
         repository, tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
@@ -1461,8 +1431,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                          repository.repo_path,
                                                          tool_config,
                                                          tool,
-                                                         [],
-                                                         webapp=webapp )
+                                                         [] )
         if invalid_file_tups:
             message = generate_message_for_invalid_tools( invalid_file_tups, repository, {}, as_html=True, displaying_invalid_tool=True )
         elif error_message:
@@ -1474,12 +1443,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                         tool=tool,
                                         tool_state=tool_state,
                                         is_malicious=is_malicious,
-                                        webapp=webapp,
                                         message=message,
                                         status='error' )
         except Exception, e:
             message = "Exception thrown attempting to display tool: %s." % str( e )
-        if webapp == 'galaxy':
+        if trans.webapp.name == 'galaxy':
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',
                                                               repository_id=repository_id,
@@ -1535,7 +1503,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if user.email in repository.email_alerts:
                 email_alert_repositories.append( repository )
         return trans.fill_template( "/webapps/community/user/manage_email_alerts.mako",
-                                    webapp='community',
                                     new_repo_alert_check_box=new_repo_alert_check_box,
                                     email_alert_repositories=email_alert_repositories,
                                     message=message,
@@ -1573,7 +1540,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_repository',
                                                                   id=id,
-                                                                  webapp='community',
                                                                   message=message,
                                                                   status='error' ) )
             if description != repository.description:
@@ -1713,8 +1679,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        if 'webapp' not in kwd:
-            kwd[ 'webapp' ] = 'community'
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "receive email alerts":
@@ -1753,7 +1717,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -1776,7 +1739,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     metadata=metadata,
-                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -2218,7 +2180,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         cntrller = params.get( 'cntrller', 'repository' )
-        webapp = params.get( 'webapp', 'community' )
         repository = get_repository( trans, id )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
         metadata = repository_metadata.metadata
@@ -2236,7 +2197,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     changeset_revision=changeset_revision,
                                     readme_text=readme_text,
                                     is_malicious=is_malicious,
-                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -2245,7 +2205,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
-        webapp = get_webapp( trans, **kwd )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
@@ -2307,7 +2266,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
                                     is_malicious=is_malicious,
-                                    webapp=webapp,
                                     message=message,
                                     status=status )
     @web.expose
@@ -2315,7 +2273,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        webapp = get_webapp( trans, **kwd )
         repository = get_repository( trans, repository_id )
         repo_files_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_files_dir )
@@ -2376,7 +2333,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     is_malicious=is_malicious,
-                                    webapp=webapp,
                                     message=message,
                                     status=status )
 

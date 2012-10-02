@@ -10,11 +10,11 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
-%if webapp == 'galaxy':
+%if trans.webapp.name == 'galaxy':
     <br/><br/>
     <ul class="manage-table-actions">
-        <li><a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories', webapp=webapp )}">Browse valid repositories</a></li>
-        <a class="action-button" href="${h.url_for( controller='repository', action='find_tools', webapp=webapp )}">Search for valid tools</a>
+        <li><a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories' )}">Browse valid repositories</a></li>
+        <a class="action-button" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
     </ul>
 %endif
 
@@ -30,7 +30,7 @@
             Comma-separated strings may be entered to expand search criteria.
         </div>
         <div style="clear: both"></div>
-        <form name="find_workflows" id="find_workflows" action="${h.url_for( controller='repository', action='find_workflows', webapp=webapp )}" method="post" >
+        <form name="find_workflows" id="find_workflows" action="${h.url_for( controller='repository', action='find_workflows' )}" method="post" >
             <div style="clear: both"></div>
             <div class="form-row">
                 <label>Workflow name:</label>

@@ -1026,7 +1026,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         url = kwd.get( 'url', '' )
         workflow_text = kwd.get( 'workflow_text', '' )
-        webapp = get_webapp( trans, **kwd )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         import_button = kwd.get( 'import_button', False )
@@ -1056,8 +1055,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             import_button = True
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
-            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&open_for_url=true' % \
-                ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp )
+            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&open_for_url=true' % \
+                ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ) )
             response = urllib2.urlopen( workflow_url )
             workflow_text = response.read()
             response.close()
@@ -1137,7 +1136,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                             for shed_name, shed_url in trans.app.tool_shed_registry.tool_sheds.items():
                                 if shed_url.endswith( '/' ):
                                     shed_url = shed_url.rstrip( '/' )
-                                    url = '%s/repository/find_tools?galaxy_url=%s&webapp=%s' % ( shed_url, url_for( '/', qualified=True ), webapp )
+                                    url = '%s/repository/find_tools?galaxy_url=%s' % ( shed_url, url_for( '/', qualified=True ) )
                                     if missing_tool_tups:
                                         url += '&tool_id='
                                     for missing_tool_tup in missing_tool_tups:
@@ -1155,7 +1154,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                 action = 'index'
                             return trans.response.send_redirect( web.url_for( controller='admin',
                                                                               action=action,
-                                                                              webapp='galaxy',
                                                                               message=message,
                                                                               status=status ) )
                         else:
@@ -1164,8 +1162,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                     if tool_shed_url:
                         # We've received the textual representation of a workflow from a Galaxy tool shed.
                         message = "Workflow <b>%s</b> imported successfully." % workflow.name
-                        url = '%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&webapp=%s&message=%s' % \
-                            ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), webapp, message )
+                        url = '%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&message=%s' % \
+                            ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), message )
                         return trans.response.send_redirect( url )
                     elif installed_repository_file:
                         # The workflow was read from a file included with an installed tool shed repository.

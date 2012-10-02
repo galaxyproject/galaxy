@@ -20,7 +20,7 @@
                         <% repository_id, repository_name, repository_owner, changeset_revision = repository_tup %>
                         <tr>
                             <td>
-                                <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( repository_id ), tool_config=invalid_tool_config, changeset_revision=changeset_revision, webapp=webapp )}">
+                                <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( repository_id ), tool_config=invalid_tool_config, changeset_revision=changeset_revision )}">
                                     ${invalid_tool_config}
                                 </a>
                             </td>

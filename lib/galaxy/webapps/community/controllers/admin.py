@@ -69,7 +69,7 @@ class UserListGrid( grids.Grid ):
     columns = [
         UserLoginColumn( "Email",
                      key="email",
-                     link=( lambda item: dict( operation="information", id=item.id, webapp="community" ) ),
+                     link=( lambda item: dict( operation="information", id=item.id ) ),
                      attach_popup=True,
                      filterable="advanced" ),
         UserNameColumn( "User Name",
@@ -93,18 +93,18 @@ class UserListGrid( grids.Grid ):
                                                 filterable="standard" ) )
     global_actions = [
         grids.GridAction( "Create new user",
-                          dict( controller='admin', action='users', operation='create', webapp="community" ) )
+                          dict( controller='admin', action='users', operation='create' ) )
     ]
     operations = [
         grids.GridOperation( "Manage Roles and Groups",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=False,
-                             url_args=dict( webapp="community", action="manage_roles_and_groups_for_user" ) ),
+                             url_args=dict( action="manage_roles_and_groups_for_user" ) ),
         grids.GridOperation( "Reset Password",
                              condition=( lambda item: not item.deleted ),
                              allow_multiple=True,
                              allow_popup=False,
-                             url_args=dict( webapp="community", action="reset_user_password" ) )
+                             url_args=dict( action="reset_user_password" ) )
     ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
@@ -119,8 +119,7 @@ class UserListGrid( grids.Grid ):
         return trans.user
 
 class RoleListGrid( grids.Grid ):
-    # TODO: move this to an admin_common controller since it is virtually the same
-    # in the galaxy webapp.
+    # TODO: move this to an admin_common controller since it is virtually the same in the galaxy webapp.
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, role ):
             return role.name
@@ -156,7 +155,7 @@ class RoleListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="Manage users and groups", id=item.id, webapp="community" ) ),
+                    link=( lambda item: dict( operation="Manage users and groups", id=item.id ) ),
                     attach_popup=True,
                     filterable="advanced" ),
         DescriptionColumn( "Description",
@@ -183,24 +182,24 @@ class RoleListGrid( grids.Grid ):
                                                 filterable="standard" ) )
     global_actions = [
         grids.GridAction( "Add new role",
-                          dict( controller='admin', action='roles', operation='create', webapp="community" ) )
+                          dict( controller='admin', action='roles', operation='create' ) )
     ]
     operations = [ grids.GridOperation( "Rename",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="community", action="rename_role" ) ),
+                                        url_args=dict( action="rename_role" ) ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="community", action="mark_role_deleted" ) ),
+                                        url_args=dict( action="mark_role_deleted" ) ),
                    grids.GridOperation( "Undelete",
                                         condition=( lambda item: item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="community", action="undelete_role" ) ),
+                                        url_args=dict( action="undelete_role" ) ),
                    grids.GridOperation( "Purge",
                                         condition=( lambda item: item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="community", action="purge_role" ) ) ]
+                                        url_args=dict( action="purge_role" ) ) ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -213,8 +212,7 @@ class RoleListGrid( grids.Grid ):
         return query.filter( model.Role.type != model.Role.types.PRIVATE )
 
 class GroupListGrid( grids.Grid ):
-    # TODO: move this to an admin_common controller since it is virtually the same
-    # in the galaxy webapp.
+    # TODO: move this to an admin_common controller since it is virtually the same in the galaxy webapp.
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, group ):
             return group.name
@@ -242,7 +240,7 @@ class GroupListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     #key="name",
-                    link=( lambda item: dict( operation="Manage users and roles", id=item.id, webapp="community" ) ),
+                    link=( lambda item: dict( operation="Manage users and roles", id=item.id ) ),
                     attach_popup=True
                     #filterable="advanced"
                     ),
@@ -262,24 +260,24 @@ class GroupListGrid( grids.Grid ):
                                                 filterable="standard" ) )
     global_actions = [
         grids.GridAction( "Add new group",
-                          dict( controller='admin', action='groups', operation='create', webapp="community" ) )
+                          dict( controller='admin', action='groups', operation='create' ) )
     ]
     operations = [ grids.GridOperation( "Rename",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=False,
-                                        url_args=dict( webapp="community", action="rename_group" ) ),
+                                        url_args=dict( action="rename_group" ) ),
                    grids.GridOperation( "Delete",
                                         condition=( lambda item: not item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="community", action="mark_group_deleted" ) ),
+                                        url_args=dict( action="mark_group_deleted" ) ),
                    grids.GridOperation( "Undelete",
                                         condition=( lambda item: item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="community", action="undelete_group" ) ),
+                                        url_args=dict( action="undelete_group" ) ),
                    grids.GridOperation( "Purge",
                                         condition=( lambda item: item.deleted ),
                                         allow_multiple=True,
-                                        url_args=dict( webapp="community", action="purge_group" ) ) ]
+                                        url_args=dict( action="purge_group" ) ) ]
     standard_filters = [
         grids.GridColumnFilter( "Active", args=dict( deleted=False ) ),
         grids.GridColumnFilter( "Deleted", args=dict( deleted=True ) ),
@@ -294,12 +292,12 @@ class ManageCategoryListGrid( CategoryListGrid ):
     # Override the NameColumn to include an Edit link
     columns[ 0 ] = CategoryListGrid.NameColumn( "Name",
                                                 key="Category.name",
-                                                link=( lambda item: dict( operation="Edit", id=item.id, webapp="community" ) ),
+                                                link=( lambda item: dict( operation="Edit", id=item.id ) ),
                                                 model_class=model.Category,
                                                 attach_popup=False )
     global_actions = [
         grids.GridAction( "Add new category",
-                          dict( controller='admin', action='manage_categories', operation='create', webapp="community" ) )
+                          dict( controller='admin', action='manage_categories', operation='create' ) )
     ]
 
 class AdminRepositoryListGrid( RepositoryListGrid ):
@@ -377,9 +375,7 @@ class RepositoryMetadataListGrid( grids.Grid ):
         NameColumn( "Name",
                     key="name",
                     model_class=model.Repository,
-                    link=( lambda item: dict( operation="view_or_manage_repository_revision",
-                                              id=item.id,
-                                              webapp="community" ) ),
+                    link=( lambda item: dict( operation="view_or_manage_repository_revision", id=item.id ) ),
                     attach_popup=True ),
         RevisionColumn( "Revision",
                         attach_popup=False ),
@@ -716,7 +712,6 @@ class AdminController( BaseUIController, Admin ):
                                                                                                                                 "repository" ) )
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='browse_repository_metadata',
-                                                           webapp='community',
                                                            message=util.sanitize_text( message ),
                                                            status=status ) )
             else:

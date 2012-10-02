@@ -138,8 +138,7 @@ class InstallManager( object ):
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
                                                                                      resetting_all_metadata_on_repository=False,
-                                                                                     updating_installed_repository=False,
-                                                                                     webapp='galaxy' )
+                                                                                     updating_installed_repository=False )
         tool_shed_repository.metadata = metadata_dict
         self.app.sa_session.add( tool_shed_repository )
         self.app.sa_session.flush()
@@ -260,7 +259,7 @@ class InstallManager( object ):
                                                         tool_shed_repository,
                                                         self.app.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                     # Get the tool_versions from the tool shed for each tool in the installed change set.
-                    url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s&webapp=galaxy' % \
+                    url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
                         ( tool_shed_url, tool_shed_repository.name, self.repository_owner, installed_changeset_revision )
                     response = urllib2.urlopen( url )
                     text = response.read()
