@@ -11,6 +11,7 @@ from galaxy.util.shed_util import get_repository_metadata_by_changeset_revision,
 from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_tmp_config, handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH
 from galaxy.util.shed_util import load_tool_from_config, reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path
 from galaxy.web.base.controller import *
+from galaxy.web.base.controllers.admin import *
 from galaxy.webapps.community import model
 from galaxy.model.orm import *
 from galaxy.model.item_attrs import UsesItemRatings
