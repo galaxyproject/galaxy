@@ -187,7 +187,6 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         # Return data.
         data = None
         data_provider = trans.app.data_provider_registry.get_data_provider( trans, raw=True, original_dataset=dataset )
-        print 'data_provider:', data_provider
         
         if isinstance( data_provider, ColumnDataProvider ):
             data = data_provider.get_data( **kwargs )

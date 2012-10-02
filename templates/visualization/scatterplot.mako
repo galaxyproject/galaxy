@@ -37,12 +37,14 @@ ${parent.stylesheets()}
     max-width: 256px;
 }
 
-#chart-settings-form [value=Draw] {
-    float: right;
-}
-
 #chart-holder {
     overflow: auto;
+}
+
+#chart-settings-form #loading-indicator .loading-message {
+    margin-left: 16px;
+    font-style: italic;
+    color: grey;
 }
 
 svg .grid-line {

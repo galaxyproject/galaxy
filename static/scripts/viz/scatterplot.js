@@ -181,12 +181,11 @@ function TwoVarScatterplot( config ){
         this.xAxis// = content.select( 'g#x-axis' )
             .attr( 'transform', this.translateStr( 0, this.config.height ) )
             .call( this.xAxisFn );
-        this.log( 'xAxis:', this.xAxis );
+        //this.log( 'xAxis:', this.xAxis );
         
-        //TODO: this isn't reliable with -/+ ranges - better to go thru each tick
         this.xLongestLabel = d3.max( _.map( [ this.xMin, this.xMax ],
                                      function( number ){ return ( String( number ) ).length; } ) );
-        this.log( 'xLongestLabel:', this.xLongestLabel );
+        //this.log( 'xLongestLabel:', this.xLongestLabel );
         
         if( this.xLongestLabel >= X_LABEL_TOO_LONG_AT ){
             //TODO: adjust ticks when tick labels are long - move odds down and extend tick line
@@ -199,7 +198,7 @@ function TwoVarScatterplot( config ){
             .attr( 'y', this.config.xAxisLabelBumpY )
             .attr( 'text-anchor', 'middle' )
             .text( this.config.xLabel );
-        this.log( 'xAxisLabel:', this.xAxisLabel );
+        //this.log( 'xAxisLabel:', this.xAxisLabel );
     };
 
     this.setUpYAxis = function(){
@@ -209,8 +208,9 @@ function TwoVarScatterplot( config ){
             .orient( 'left' );
         this.yAxis// = content.select( 'g#y-axis' )
             .call( this.yAxisFn );
-        this.log( 'yAxis:', this.yAxis );
+        //this.log( 'yAxis:', this.yAxis );
     
+        //TODO: this isn't reliable with -/+ ranges - better to go thru each tick
         this.yLongestLabel = d3.max( _.map( [ this.yMin, this.yMax ],
                                      function( number ){ return ( String( number ) ).length; } ) );
         this.log( 'yLongestLabel:', this.yLongestLabel );
@@ -219,7 +219,7 @@ function TwoVarScatterplot( config ){
         //TODO: this isn't reliable with -/+ ranges - better to go thru each tick
         var neededY = this.yLongestLabel * GUESS_AT_SVG_CHAR_WIDTH + ( PADDING );
             
-        // increase width for xLongerStr, increase margin for y
+        // increase width for yLongerStr, increase margin for y
         //TODO??: (or transform each number: 2k)
         if( this.config.yAxisLabelBumpX > -( neededY ) ){
             this.config.yAxisLabelBumpX = -( neededY );
@@ -238,7 +238,7 @@ function TwoVarScatterplot( config ){
             .attr( 'text-anchor', 'middle' )
             .attr( 'transform', this.rotateStr( -90, this.config.yAxisLabelBumpX, this.config.height / 2 ) )
             .text( this.config.yLabel );
-        this.log( 'yAxisLabel:', this.yAxisLabel ); 
+        //this.log( 'yAxisLabel:', this.yAxisLabel ); 
     };
     
     // ........................................................ grid lines
@@ -261,7 +261,7 @@ function TwoVarScatterplot( config ){
             
         // remove unneeded (less ticks)
         this.vGridLines.exit().remove();
-        this.log( 'vGridLines:', this.vGridLines ); 
+        //this.log( 'vGridLines:', this.vGridLines ); 
 
         // HORIZONTAL
         this.hGridLines = this.content.selectAll( 'line.h-grid-line' )
@@ -277,7 +277,7 @@ function TwoVarScatterplot( config ){
             .attr( 'y2', this.yScale );
             
         this.hGridLines.exit().remove();
-        this.log( 'hGridLines:', this.hGridLines );
+        //this.log( 'hGridLines:', this.hGridLines );
     };
     
     // ........................................................ data points
@@ -332,7 +332,7 @@ function TwoVarScatterplot( config ){
                 .style( "fill-opacity", 0 )
             .remove();
         
-        this.log( this.datapoints, 'glyphs rendered' );
+        //this.log( this.datapoints, 'glyphs rendered' );
     };
     
     this.render = function( xCol, yCol ){
@@ -343,11 +343,11 @@ function TwoVarScatterplot( config ){
         //TODO: ^^ isn't necessarily true with current ColumnDataProvider
         xCol = this.preprocessData( xCol );
         yCol = this.preprocessData( yCol );
-        this.log( 'xCol len', xCol.length, 'yCol len', yCol.length );
+        //this.log( 'xCol len', xCol.length, 'yCol len', yCol.length );
         
         //TODO: compute min, max on server.
         this.setUpDomains( xCol, yCol );
-        this.log( 'xMin, xMax, yMin, yMax:', this.xMin, this.xMax, this.yMin, this.yMax );
+        //this.log( 'xMin, xMax, yMin, yMax:', this.xMin, this.xMax, this.yMin, this.yMax );
         
         this.setUpScales();
         this.adjustChartDimensions();
@@ -367,9 +367,11 @@ function TwoVarScatterplot( config ){
  *
  */
 var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
-    //logger        : console,
+    logger      : console,
     tagName     : 'form',
-    className     : 'scatterplot-settings-form',
+    className   : 'scatterplot-settings-form',
+    
+    loadingIndicatorImagePath : ( galaxy_paths.get( 'image_path' ) + '/loading_large_white_bg.gif' ),
     
     events : {
         'click #render-button' : 'renderScatterplot'
@@ -397,6 +399,7 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
         var view = this,
             html = '',
             columnHtml = '';
+            
         // build column select controls for each x, y (based on name if available)
         // ugh...hafta preprocess 
         this.dataset.metadata_column_types = this.dataset.metadata_column_types.split( ', ' );
@@ -408,9 +411,15 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
                 if( view.dataset.metadata_column_names ){
                     name = view.dataset.metadata_column_names[ index ];
                 }
-                columnHtml += '<option value="' + index + '">' + name + '</column>';
+                columnHtml += '<option value="' + index + '">' + name + '</option>';
             }
         });
+        
+        // loading indicator - initially hidden
+        html += '<div id="loading-indicator" style="display: none;">';
+        html += '<img class="loading-img" src=' + this.loadingIndicatorImagePath + ' />';
+        html += '<span class="loading-message"></span>';
+        html += '</div>';
         
         // column selector containers
         html += '<div id="x-column-input">';
@@ -429,6 +438,18 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
         this.$el.append( html );
         this.$el.find( '#render-button' );
         return this;
+    },
+
+    showLoadingIndicator : function( message ){
+        message = message || '';
+        this.$el.find( 'div#loading-indicator' ).children( '.loading-message' ).text( message );
+        this.$el.find( 'div#loading-indicator' ).show( 'fast' );
+        console.debug( 'showing:', this.$el.find( 'div#loading-indicator' ), message );
+    },
+
+    hideLoadingIndicator : function(){
+        this.$el.find( 'div#loading-indicator' ).hide( 'fast' );
+        console.debug( 'hiding:', this.$el.find( 'div#loading-indicator' ) );
     },
     
     renderScatterplot : function(){
@@ -462,19 +483,23 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
         });
         this.log( 'url:', url );
         
+        this.showLoadingIndicator( 'Fetching data...' );
         jQuery.ajax({
             url : url,
             dataType : 'json',
             success : function( response ){
                 //TODO: server sends back an endpoint, cache for next pagination request
+                view.showLoadingIndicator( 'Rendering...' );
                 view.endpoint = response.endpoint;
                 view.plot.render(
                     // pull apart first two regardless of number of columns
                     _.map( response.data, function( columns ){ return columns[0]; } ),
                     _.map( response.data, function( columns ){ return columns[1]; } )
                 );
+                view.hideLoadingIndicator();
             },
             error : function( xhr, status, error ){
+                view.hideLoadingIndicator();
                 alert( 'ERROR:' + status + '\n' + error );
             }
         });
