@@ -356,7 +356,7 @@ var GenomeDataManager = Cache.extend({
             extra_params.num_samples = cur_data.data.length * detail_multiplier;
         }
         else if (cur_data.dataset_type === 'summary_tree') {
-            extra_params.level = cur_data.level + 1;
+            extra_params.level = Math.min(cur_data.level - 1, 2);
         }
 
         return this.load_data(region, mode, resolution, extra_params);
