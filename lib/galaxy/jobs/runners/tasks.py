@@ -56,6 +56,16 @@ class TaskedJobRunner( object ):
             job_wrapper.fail( "failure preparing job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
+
+        # This is the job's exit code, which will depend on the tasks'
+        # exit code. The overall job's exit code will be one of two values: 
+        # o if the job is successful, then the last task scanned will be
+        #   used to determine the exit code. Note that this is not the same
+        #   thing as the last task to complete, which could be added later.
+        # o if a task fails, then the job will fail and the failing task's
+        #   exit code will become the job's exit code.
+        job_exit_code = ""
+
         # If we were able to get a command line, run the job.  ( must be passed to tasks )
         if command_line:
             try:
@@ -69,7 +79,9 @@ class TaskedJobRunner( object ):
                     job_wrapper.fail("Job Splitting Failed, no match for '%s'" % job_wrapper.tool.parallelism)
                     return
                 tasks = splitter.do_split(job_wrapper)
-                # Not an option for now.  Task objects don't *do* anything useful yet, but we'll want them tracked outside this thread to do anything.
+                # Not an option for now.  Task objects don't *do* anything 
+                # useful yet, but we'll want them tracked outside this thread 
+                # to do anything.
                 # if track_tasks_in_database:
                 task_wrappers = []
                 for task in tasks:
@@ -100,25 +112,31 @@ class TaskedJobRunner( object ):
                 # Deleted tasks are not included right now.
                 # 
                 while tasks_complete is False:
+                    log.debug( "************ Rechecking tasks" )
                     count_complete = 0
                     tasks_complete = True
                     for tw in task_wrappers:
                         task_state = tw.get_state()
+                        log.debug( "***** Checking task %d: state %s"
+                                 % (tw.task_id, task_state) )
                         if ( model.Task.states.ERROR == task_state ):
-                            log.debug( "Canceling job %d: Task %d returned an error"
-                                     % ( tw.job_id, tw.task_id ) )
+                            job_exit_code = tw.get_exit_code()
+                            log.debug( "Canceling job %d: Task %s returned an error (exit code %d)"
+                                     % ( tw.job_id, tw.task_id, job_exit_code ) )
                             self.cancel_job( job_wrapper, task_wrappers )
                             tasks_complete = True
                             break
                         elif not task_state in completed_states:
                             tasks_complete = False
                         else:
+                            job_exit_code = tw.get_exit_code()
                             count_complete = count_complete + 1
                     if tasks_complete is False:
                         sleep( sleep_time )
                         if sleep_time < 8:
                             sleep_time *= 2
                 import time
+                log.debug( "####################### Finished with tasks; job exit code: %d" % job_exit_code )
 
                 job_wrapper.reclaim_ownership()      # if running as the actual user, change ownership before merging.
                 log.debug('execution finished - beginning merge: %s' % command_line)
@@ -146,7 +164,8 @@ class TaskedJobRunner( object ):
 
         # Finish the job
         try:
-            job_wrapper.finish( stdout, stderr )
+            log.debug( "$$$$$$$$$$$$$$ job_exit_code before finish: %d" % job_exit_code )
+            job_wrapper.finish( stdout, stderr, job_exit_code )
         except:
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)

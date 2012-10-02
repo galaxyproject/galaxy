@@ -111,11 +111,8 @@ class LocalJobRunner( BaseJobRunner ):
                                 if sleep_time < 8:
                                     # So we don't stat every second
                                     sleep_time *= 2
-                    # Reap the process and get the exit code. The exit code should
-                    # only be None if the process isn't finished, but check anyway.
-                    exit_code = proc.wait() # reap
-                    if None == exit_code:
-                        exit_code = 0
+                    # Reap the process and get the exit code.
+                    exit_code = proc.wait()
                     stdout_file.seek( 0 )
                     stderr_file.seek( 0 )
                     stdout = stdout_file.read( 32768 )
@@ -146,7 +143,10 @@ class LocalJobRunner( BaseJobRunner ):
         
             # Finish the job!
             try:
-                job_wrapper.finish( stdout, stderr, exit_code )
+                #job_wrapper.finish( stdout, stderr, exit_code )
+                # DELETEME: This is for testing how null exit codes are handled:
+                log.debug( "############## Finishing job - None exit code" )
+                job_wrapper.finish( stdout, stderr, None )
             except:
                 log.exception("Job wrapper finish method failed")
                 job_wrapper.fail("Unable to finish job", exception=True)

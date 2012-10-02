@@ -204,7 +204,7 @@ class JobWrapper( object ):
         self.version_string_cmd = self.tool.version_string_cmd
         return extra_filenames
 
-    def fail( self, message, exception=False ):
+    def fail( self, message, exception=False, stdout="", stderr="", exit_code=None ):
         """
         Indicate job failure by setting state and message on all output
         datasets.
@@ -249,6 +249,20 @@ class JobWrapper( object ):
             job.state = job.states.ERROR
             job.command_line = self.command_line
             job.info = message
+            # TODO: Put setting the stdout, stderr, and exit code in one place
+            # (not duplicated with the finish method).
+            if ( len( stdout ) > 32768 ):
+                stdout = stdout[:32768]
+                log.info( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
+            job.stdout = stdout 
+            if ( len( stderr ) > 32768 ):
+                stderr = stderr[:32768]
+                log.info( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
+            job.stderr = stderr  
+            # Let the exit code be Null if one is not provided:
+            if ( exit_code != None ):
+                job.exit_code = exit_code
+
             self.sa_session.add( job )
             self.sa_session.flush()
         #Perform email action even on failure.
@@ -290,7 +304,7 @@ class JobWrapper( object ):
         self.sa_session.add( job )
         self.sa_session.flush()
 
-    def finish( self, stdout, stderr, tool_exit_code=0 ):
+    def finish( self, stdout, stderr, tool_exit_code=None ):
         """
         Called to indicate that the associated command has been run. Updates
         the output datasets based on stderr and stdout from the command, and
@@ -300,25 +314,38 @@ class JobWrapper( object ):
         self.sa_session.expunge_all()
         job = self.get_job()
 
+        # TODO: After failing here, consider returning from the function. 
         try:
             self.reclaim_ownership()
         except:
-            self.fail( job.info )
             log.exception( '(%s) Failed to change ownership of %s, failing' % ( job.id, self.working_directory ) )
+            return self.fail( job.info, stdout=stdout, stderr=stderr, exit_code=tool_exit_code )
 
+        log.debug( "############## JobWrapper.finish: %s exit code" 
+                 % ( "None" if None == tool_exit_code else str(tool_exit_code)))
         # if the job was deleted, don't finish it
         if job.state == job.states.DELETED or job.state == job.states.ERROR:
-            #ERROR at this point means the job was deleted by an administrator.
-            return self.fail( job.info )
+            # ERROR at this point means the job was deleted by an administrator.
+            # SM: Note that, at this point, the exit code must be saved in case
+            # there was an error. Errors caught here could mean that the job
+            # was deleted by an administrator (based on old comments), but it
+            # could also mean that a job was broken up into tasks and one of
+            # the tasks failed. So 
+            return self.fail( job.info, stderr=stderr, stdout=stdout, exit_code=tool_exit_code )
 
         # Check the tool's stdout, stderr, and exit code for errors, but only
         # if the job has not already been marked as having an error. 
         # The job's stdout and stderr will be set accordingly.
+        log.debug( "############## JobWrapper.finish: Post-check exit code: %s/%s" 
+                 % ( ( "None" if None == tool_exit_code else str(tool_exit_code) ),
+                     ( "None" if None == job.exit_code else str(job.exit_code) ) ) )
         if job.states.ERROR != job.state:
             if ( self.check_tool_output( stdout, stderr, tool_exit_code, job )):
                 job.state = job.states.OK
             else:
                 job.state = job.states.ERROR
+            log.debug( "############## JobWrapper.finish: Post-check exit code: %s" 
+                     % ( "None" if None == tool_exit_code else str(tool_exit_code)))
 
         if self.version_string_cmd:
             version_filename = self.get_version_string_path()
@@ -358,7 +385,6 @@ class JobWrapper( object ):
                 # TODO: The context['stderr'] holds stderr's contents. An error
                 # only really occurs if the job also has an error. So check the
                 # job's state:
-                #if context['stderr']:
                 if job.states.ERROR == job.state:
                     dataset.blurb = "error"
                 elif dataset.has_data():
@@ -435,12 +461,18 @@ class JobWrapper( object ):
         self.sa_session.flush()
         # Save stdout and stderr
         if len( job.stdout ) > 32768:
-            log.error( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
+            log.info( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
         job.stdout = job.stdout[:32768]
         if len( job.stderr ) > 32768:
-            log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
+            log.info( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
         job.stderr = job.stderr[:32768]
-        job.exit_code = tool_exit_code
+        # The exit code will be null if there is no exit code to be set.
+        # This is so that we don't assign an exit code, such as 0, that
+        # is either incorrect or has the wrong semantics. 
+        if None != tool_exit_code:
+            job.exit_code = tool_exit_code
+        log.debug( "############## JobWrapper.finish: storing %s exit code" 
+                 % ( "None" if None == job.exit_code else str(job.exit_code)))
         # custom post process setup
         inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
         out_data = dict( [ ( da.name, da.dataset ) for da in job.output_datasets ] )
@@ -513,26 +545,27 @@ class JobWrapper( object ):
                 # that range, then apply the error level and add a message.
                 # If we've reached a fatal error rule, then stop.
                 max_error_level = galaxy.tools.StdioErrorLevel.NO_ERROR
-                for stdio_exit_code in self.tool.stdio_exit_codes:
-                    if ( tool_exit_code >= stdio_exit_code.range_start and 
-                         tool_exit_code <= stdio_exit_code.range_end ):
-                        # Tack on a generic description of the code 
-                        # plus a specific code description. For example,
-                        # this might prepend "Job 42: Warning: Out of Memory\n".
-                        code_desc = stdio_exit_code.desc
-                        if ( None == code_desc ):
-                            code_desc = ""
-                        tool_msg = ( "%s: Exit code %d: %s" % (
-                                     galaxy.tools.StdioErrorLevel.desc( stdio_exit_code.error_level ),
-                                     tool_exit_code,
-                                     code_desc ) )
-                        log.info( "Job %s: %s" % (job.get_id_tag(), tool_msg) )
-                        stderr = tool_msg + "\n" + stderr
-                        max_error_level = max( max_error_level, 
-                                               stdio_exit_code.error_level )
-                        if ( max_error_level >= 
-                             galaxy.tools.StdioErrorLevel.FATAL ):
-                            break
+                if tool_exit_code != None:
+                    for stdio_exit_code in self.tool.stdio_exit_codes:
+                        if ( tool_exit_code >= stdio_exit_code.range_start and 
+                             tool_exit_code <= stdio_exit_code.range_end ):
+                            # Tack on a generic description of the code 
+                            # plus a specific code description. For example,
+                            # this might prepend "Job 42: Warning (Out of Memory)\n".
+                            code_desc = stdio_exit_code.desc
+                            if ( None == code_desc ):
+                                code_desc = ""
+                            tool_msg = ( "%s: Exit code %d (%s)" % (
+                                         galaxy.tools.StdioErrorLevel.desc( stdio_exit_code.error_level ),
+                                         tool_exit_code,
+                                         code_desc ) )
+                            log.info( "Job %s: %s" % (job.get_id_tag(), tool_msg) )
+                            stderr = tool_msg + "\n" + stderr
+                            max_error_level = max( max_error_level, 
+                                                   stdio_exit_code.error_level )
+                            if ( max_error_level >= 
+                                 galaxy.tools.StdioErrorLevel.FATAL ):
+                                break
     
                 if max_error_level < galaxy.tools.StdioErrorLevel.FATAL:
                     # We'll examine every regex. Each regex specifies whether
@@ -1013,6 +1046,11 @@ class TaskWrapper(JobWrapper):
         self.sa_session.refresh( task )
         return task.state
 
+    def get_exit_code( self ):
+        task = self.get_task()
+        self.sa_session.refresh( task )
+        return task.exit_code
+
     def set_runner( self, runner_url, external_id ):
         task = self.get_task()
         self.sa_session.refresh( task )
@@ -1022,7 +1060,7 @@ class TaskWrapper(JobWrapper):
         self.sa_session.add( task )
         self.sa_session.flush()
 
-    def finish( self, stdout, stderr, tool_exit_code=0 ):
+    def finish( self, stdout, stderr, tool_exit_code=None ):
         # DBTODO integrate previous finish logic.
         # Simple finish for tasks.  Just set the flag OK.
         """
@@ -1032,7 +1070,8 @@ class TaskWrapper(JobWrapper):
         """
         # This may have ended too soon
         log.debug( 'task %s for job %d ended; exit code: %d' 
-                 % (self.task_id, self.job_id, tool_exit_code) )
+                 % (self.task_id, self.job_id, 
+                    tool_exit_code if tool_exit_code != None else -256 ) )
         # default post job setup_external_metadata
         self.sa_session.expunge_all()
         task = self.get_task()
