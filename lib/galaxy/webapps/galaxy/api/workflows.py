@@ -8,9 +8,10 @@ import logging
 from sqlalchemy import desc
 from galaxy import util
 from galaxy import web
-from galaxy.tools.parameters import visit_input_values, DataToolParameter
+from galaxy import model
+from galaxy.tools.parameters import visit_input_values, DataToolParameter, RuntimeValue
 from galaxy.web.base.controller import BaseAPIController, url_for
-from galaxy.workflow.modules import module_factory
+from galaxy.workflow.modules import module_factory, ToolModule
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model.item_attrs import UsesAnnotations
 
@@ -344,7 +345,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
 
     def _workflow_from_dict( self, trans, data, source=None ):
         """
-        RPARK: copied from galaxy.web.controllers.workflows.py
+        RPARK: copied from galaxy.webapps.galaxy.controllers.workflows.py
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
         """
         # Put parameters in workflow mode
@@ -388,7 +389,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
             # Stick this in the step temporarily
             step.temp_input_connections = step_dict['input_connections']
             # Save step annotation.
-            annotation = step_dict[ 'annotation' ]
+            #annotation = step_dict[ 'annotation' ]
             #if annotation:
                 #annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
                 # ------------------------------------------ #
@@ -398,7 +399,7 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
             # Unpack and add post-job actions.
             post_job_actions = step_dict.get( 'post_job_actions', {} )
             for name, pja_dict in post_job_actions.items():
-                pja = PostJobAction( pja_dict[ 'action_type' ],
+                model.PostJobAction( pja_dict[ 'action_type' ],
                                      step, pja_dict[ 'output_name' ],
                                      pja_dict[ 'action_arguments' ] )
         # Second pass to deal with connections between steps
