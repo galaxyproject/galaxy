@@ -61,8 +61,9 @@ todo:
  */
 function TwoVarScatterplot( config ){
     var plot = this,
-        GUESS_AT_SVG_CHAR_WIDTH = 10,
-        GUESS_AT_SVG_CHAR_HEIGHT = 12,
+        TICK_LINE_AND_PADDING = 10,
+        GUESS_AT_SVG_CHAR_WIDTH = 7,
+        GUESS_AT_SVG_CHAR_HEIGHT = 10,
         PADDING = 8,
         X_LABEL_TOO_LONG_AT = 5;
         
@@ -135,16 +136,23 @@ function TwoVarScatterplot( config ){
     
     this.log( 'built svg:', d3.selectAll( 'svg' ) );
     
-    this.adjustChartDimensions = function(){
+    this.adjustChartDimensions = function( top, right, bottom, left ){
+        top = top || 0;
+        right = right || 0;
+        bottom = bottom || 0;
+        left = left || 0;
         this.svg
-            .attr( "width",  this.config.width +  ( this.config.marginRight + this.config.marginLeft ) )
-            .attr( "height", this.config.height + ( this.config.marginTop   + this.config.marginBottom ) )
+            .attr( "width",  this.config.width +  ( this.config.marginRight  + right ) + 
+                                                  ( this.config.marginLeft   + left ) )
+            .attr( "height", this.config.height + ( this.config.marginTop    + top ) +
+                                                  ( this.config.marginBottom + bottom ) )
             // initial is hidden - show it
             .style( 'display', 'block' );
             
         // move content group away from margins
+        //TODO: allow top, right axis
         this.content = this.svg.select( "g.content" )       
-            .attr( "transform", this.translateStr( this.config.marginLeft, this.config.marginTop ) );
+            .attr( "transform", this.translateStr( this.config.marginLeft + left, this.config.marginTop + top ) );
     };
     
     // ........................................................ data and scales
@@ -208,29 +216,38 @@ function TwoVarScatterplot( config ){
             .orient( 'left' );
         this.yAxis// = content.select( 'g#y-axis' )
             .call( this.yAxisFn );
-        //this.log( 'yAxis:', this.yAxis );
+        this.log( 'yAxis:', this.yAxis );
     
-        //TODO: this isn't reliable with -/+ ranges - better to go thru each tick
-        this.yLongestLabel = d3.max( _.map( [ this.yMin, this.yMax ],
-                                     function( number ){ return ( String( number ) ).length; } ) );
-        this.log( 'yLongestLabel:', this.yLongestLabel );
+        // get the tick labels for the y axis
+        var yTickLabels = this.yAxis.selectAll( 'text' ).filter( function( e, i ){ return i !== 0; } );
+        //this.log( 'yTickLabels:', yTickLabels );
         
-        //TODO: ugh ... so clumsy
-        //TODO: this isn't reliable with -/+ ranges - better to go thru each tick
-        var neededY = this.yLongestLabel * GUESS_AT_SVG_CHAR_WIDTH + ( PADDING );
+        // get the longest label length (or 0 if no labels)
+        this.yLongestLabel = d3.max(
+            //NOTE: d3 returns an nested array - use the plain array inside ([0])
+            yTickLabels[0].map( function( e, i ){
+                return ( d3.select( e ).text() ).length;
+            })
+        ) || 0;
+        //this.log( 'yLongestLabel:', this.yLongestLabel );
+        //TODO: lose the guessing if possible
+        var neededY = TICK_LINE_AND_PADDING + ( this.yLongestLabel * GUESS_AT_SVG_CHAR_WIDTH )
+                    + PADDING + GUESS_AT_SVG_CHAR_HEIGHT;
+        //this.log( 'neededY:', neededY );
             
         // increase width for yLongerStr, increase margin for y
         //TODO??: (or transform each number: 2k)
-        if( this.config.yAxisLabelBumpX > -( neededY ) ){
-            this.config.yAxisLabelBumpX = -( neededY );
-        }
+        this.config.yAxisLabelBumpX = -( neededY - GUESS_AT_SVG_CHAR_HEIGHT );
         if( this.config.marginLeft < neededY ){
-            this.config.marginLeft = neededY + GUESS_AT_SVG_CHAR_HEIGHT;
+            var adjusting = ( neededY ) - this.config.marginLeft;
+            adjusting = ( adjusting < 0 )?( 0 ):( adjusting );
+            this.log( 'adjusting:', adjusting );
+            
             // update dimensions, translations
-            this.adjustChartDimensions();
+            this.adjustChartDimensions( 0, 0, 0, adjusting );
         }
-        this.log( 'this.config.yAxisLableBumpx, this.config.marginLeft:',
-                  this.config.yAxisLabelBumpX, this.config.marginLeft );
+        //this.log( 'this.config.yAxisLableBumpx, this.config.marginLeft:',
+        //          this.config.yAxisLabelBumpX, this.config.marginLeft );
         
         this.yAxisLabel// = yAxis.select( 'text#y-axis-label' )
             .attr( 'x', this.config.yAxisLabelBumpX )
@@ -367,7 +384,7 @@ function TwoVarScatterplot( config ){
  *
  */
 var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
-    logger      : console,
+    //logger      : console,
     tagName     : 'form',
     className   : 'scatterplot-settings-form',
     
@@ -444,12 +461,10 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
         message = message || '';
         this.$el.find( 'div#loading-indicator' ).children( '.loading-message' ).text( message );
         this.$el.find( 'div#loading-indicator' ).show( 'fast' );
-        console.debug( 'showing:', this.$el.find( 'div#loading-indicator' ), message );
     },
 
     hideLoadingIndicator : function(){
         this.$el.find( 'div#loading-indicator' ).hide( 'fast' );
-        console.debug( 'hiding:', this.$el.find( 'div#loading-indicator' ) );
     },
     
     renderScatterplot : function(){

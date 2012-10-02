@@ -60,9 +60,15 @@ svg .axis path, svg .axis line {
     stroke: black;
     shape-rendering: crispEdges;
 }
+
 svg .axis text {
-    font-family: sans-serif;
+    font-family: monospace;
     font-size: 12px;
+}
+
+svg #x-axis-label, svg #y-axis-label {
+    font-family: sans-serif;
+    font-size: 10px;
 }
 
 svg .glyph {
