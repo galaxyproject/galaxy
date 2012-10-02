@@ -9,8 +9,8 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
-from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_repository_file_contents
-from galaxy.util.shed_util import get_repository_metadata_by_changeset_revision, handle_sample_files_and_load_tool_from_disk
+from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_changeset, get_configured_ui, get_file_from_changeset_revision
+from galaxy.util.shed_util import get_repository_file_contents, get_repository_metadata_by_changeset_revision, handle_sample_files_and_load_tool_from_disk
 from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_tmp_config, INITIAL_CHANGELOG_HASH, load_tool_from_config, NOT_TOOL_CONFIGS
 from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog, strip_path
 from galaxy.util.shed_util import to_html_escaped, translate_string, update_repository, url_join
@@ -2184,9 +2184,32 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
         metadata = repository_metadata.metadata
         if metadata and 'readme' in metadata:
-            f = open( metadata[ 'readme' ], 'r' )
-            raw_text = f.read()
-            f.close()
+            readme_file = str( metadata[ 'readme' ] )
+            repo_files_dir = repository.repo_path
+            try:
+                f = open( readme_file, 'r' )
+                raw_text = f.read()
+                f.close()
+            except IOError:
+                work_dir = tempfile.mkdtemp()
+                try:
+                    manifest_readme_file = get_file_from_changeset_revision( trans.app,
+                                                                             repository,
+                                                                             repo_files_dir,
+                                                                             changeset_revision,
+                                                                             readme_file,
+                                                                             work_dir )
+                    f = open( manifest_readme_file, 'r' )
+                    raw_text = f.read()
+                    f.close()
+                    remove_dir( work_dir )
+                except Exception, e:
+                    raw_text = "Error locating and reading this repository's README file '%s': %s" % ( readme_file, str( e ) )
+                    log.debug( raw_text )
+                    remove_dir( work_dir )
+            except Exception, e:
+                raw_text = "Error locating and reading this repository's README file '%s': %s" % ( readme_file, str( e ) )
+                log.debug( raw_text )
             readme_text = translate_string( raw_text, to_html=True )
         else:
             readme_text = ''

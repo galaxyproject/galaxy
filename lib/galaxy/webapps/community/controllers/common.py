@@ -624,10 +624,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                 status = 'error'
     else:
         tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
-    try:
-        shutil.rmtree( work_dir )
-    except:
-        pass
+    remove_dir( work_dir )
     trans.app.config.tool_data_path = original_tool_data_path
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     reset_tool_data_tables( trans.app )
@@ -685,6 +682,12 @@ def new_workflow_metadata_required( trans, repository, metadata_dict ):
             return True
     # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table record is not needed.
     return False
+def remove_dir( dir ):
+    if os.path.exists( dir ):
+        try:
+            shutil.rmtree( dir )
+        except:
+            pass
 def reset_all_metadata_on_repository( trans, id, **kwd ):
     def reset_all_tool_versions( trans, id, repo ):
         changeset_revisions = []
@@ -799,11 +802,7 @@ def reset_all_metadata_on_repository( trans, id, **kwd ):
                     changeset_revisions.append( metadata_changeset_revision )
                     ancestor_changeset_revision = None
                     ancestor_metadata_dict = None
-        if os.path.exists( work_dir ):
-            try:
-                shutil.rmtree( work_dir )
-            except:
-                pass
+        remove_dir( work_dir )
     # Delete all repository_metadata records for this repository that do not have a changeset_revision value in changeset_revisions.
     clean_repository_metadata( trans, id, changeset_revisions )
     # Set tool version information for all downloadable changeset revisions.  Get the list of changeset revisions from the changelog.

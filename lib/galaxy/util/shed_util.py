@@ -1043,15 +1043,6 @@ def get_config_from_disk( config_file, relative_install_dir ):
                 if name == config_file:
                     return os.path.abspath( os.path.join( root, name ) )
     return None
-def get_config_from_repository( app, config_file, repository, changeset_revision, dir, install_dir=None ):
-    """Return config_filename if it exists in some changeset of the repository using only the repository and changeset_revision."""
-    if install_dir is None:
-        install_dir = repository.repo_path( app )
-    repo_files_dir = os.path.join( install_dir, repository.name )
-    repo = hg.repository( get_configured_ui(), repo_files_dir )
-    ctx = get_changectx_for_changeset( repo, changeset_revision )
-    config = get_config( config_file, repo, ctx, dir )
-    return config
 def get_configured_ui():
     # Configure any desired ui settings.
     _ui = ui.ui()
@@ -1140,6 +1131,13 @@ def get_file_context_from_ctx( ctx, filename ):
     if deleted:
         return 'DELETED'
     return None
+def get_file_from_changeset_revision( app, repository, repo_files_dir, changeset_revision, file_name, dir ):
+    """Return file_name from the received changeset_revision of the repository manifest."""
+    stripped_file_name = strip_path( file_name )
+    repo = hg.repository( get_configured_ui(), repo_files_dir )
+    ctx = get_changectx_for_changeset( repo, changeset_revision )
+    named_tmp_file = get_named_tmpfile_from_ctx( ctx, file_name, dir )
+    return named_tmp_file
 def get_list_of_copied_sample_files( repo, ctx, dir ):
     """
     Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
