@@ -4,18 +4,19 @@
 ${parent.stylesheets()}
 
 <style type="text/css">
-
-.title {
-    margin: 0px;
-    padding: 8px;
+/*TODO: use/move into base.less*/
+* { margin: 0px; padding: 0px; }
+#chart-header {
+    padding : 8px;
     background-color: #ebd9b2;
-    border: 2px solid #ebd9b2;
 }
 
-.subtitle {
-    margin: 0px;
-    padding: 0px 8px 8px 16px;
-    background-color: #ebd9b2;
+.title {
+}
+
+#chart-header .subtitle {
+    margin: -4px 0px 0px 4px;
+    padding : 0;
     color: white;
     font-size: small;
 }
@@ -28,7 +29,7 @@ ${parent.stylesheets()}
     padding-top: 1em;
 }
 
-#chart-settings-form > * {
+#chart-settings > * {
     margin: 8px;
 }
 
@@ -96,7 +97,7 @@ require([ "viz/scatterplot" ], function( scatterplot ){
         //?? hmmmm
         //kwargs          = ${h.to_json_string( kwargs )};
     
-    var settingsForm = new scatterplot.ScatterplotView({
+    var settingsForm = new scatterplot.ScatterplotControlForm({
         dataset    : hda,
         el         : $( '#chart-settings-form' ),
         apiDatasetsURL : apiDatasetsURL,
@@ -112,8 +113,10 @@ require([ "viz/scatterplot" ], function( scatterplot ){
 </%def>
 
 <%def name="body()">
-    <h2 class="title">Scatterplot of '${hda['name']}'</h2>
-    <p class="subtitle">${hda['misc_info']}</p>
+    <div id="chart-header">
+        <h2 class="title">Scatterplot of '${hda['name']}'</h2>
+        <p class="subtitle">${hda['misc_info']}</p>
+    </div>
     <div id="chart-holder"></div>
     <div id="chart-settings-form"></div>
 </%def>

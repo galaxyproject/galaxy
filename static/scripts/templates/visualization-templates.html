@@ -1,0 +1,33 @@
+<script type="text/template" class="template-visualization" id="template-visualization-scatterplotControlForm">
+
+{{! loading indicator - initially hidden }}
+<div id="loading-indicator" style="display: none;">
+    <img class="loading-img" src="{{loadingIndicatorImagePath}}" />
+    <span class="loading-message"></span>
+</div>
+
+{{! main controls }}
+<div id="chart-settings">
+
+    {{! column selector containers }}
+    <div id="x-column-input">
+        <label for="">Data column for X: </label>
+        <select name="x-column">
+        {{#each availableColumns}}
+            <option value="{{index}}">{{name}}</option>
+        {{/each}}
+        </select>
+    </div>
+    <div id="y-column-input">
+        <label for="">Data column for Y: </label>
+        <select name="y-column">
+        {{#each availableColumns}}
+            <option value="{{index}}">{{name}}</option>
+        {{/each}}
+        </select>
+    </div>
+    
+    <input id="render-button" type="button" value="Draw" />
+    <div class="clear"></div>
+</div>
+</script>

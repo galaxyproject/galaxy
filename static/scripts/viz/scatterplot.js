@@ -1,7 +1,8 @@
 define([
     "../libs/underscore",
     "../libs/d3",
-    "../mvc/base-mvc"
+    "../mvc/base-mvc",
+    "../templates/compiled/template-visualization-scatterplotControlForm"
     
 ], function(){
 /* =============================================================================
@@ -389,7 +390,7 @@ function TwoVarScatterplot( config ){
  *  Scatterplot control UI as a backbone view
  *
  */
-var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
+var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     //logger      : console,
     tagName     : 'form',
     className   : 'scatterplot-settings-form',
@@ -418,48 +419,31 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
     },
     
     render : function(){
-        //TODO: to template
         var view = this,
-            html = '',
-            columnHtml = '';
+            html = '';
             
         // build column select controls for each x, y (based on name if available)
-        // ugh...hafta preprocess 
-        this.dataset.metadata_column_types = this.dataset.metadata_column_types.split( ', ' );
-        _.each( this.dataset.metadata_column_types, function( type, index ){
+        var formData = {
+            loadingIndicatorImagePath : this.loadingIndicatorImagePath,
+            config : this.chartConfig,
+            availableColumns : []
+        };
+        _.each( this.dataset.metadata_column_types.split( ', ' ), function( type, index ){
             // use only numeric columns
             if( type === 'int' || type === 'float' ){
+                //TODO: using 0-based indeces
                 var name = 'column ' + index;
                 // label with the name if available
                 if( view.dataset.metadata_column_names ){
                     name = view.dataset.metadata_column_names[ index ];
                 }
-                columnHtml += '<option value="' + index + '">' + name + '</option>';
+                formData.availableColumns.push({ index: index, name: name });
             }
         });
-        
-        // loading indicator - initially hidden
-        html += '<div id="loading-indicator" style="display: none;">';
-        html += '<img class="loading-img" src=' + this.loadingIndicatorImagePath + ' />';
-        html += '<span class="loading-message"></span>';
-        html += '</div>';
-        
-        // column selector containers
-        html += '<div id="x-column-input">';
-        html += '<label for="">Data column for X: </label><select name="x-column">' + columnHtml + '</select>';
-        html += '</div>';
-        
-        html += '<div id="y-column-input">';
-        html += '<label for="">Data column for Y: </label><select name="y-column">' + columnHtml + '</select>';
-        html += '</div>';
-        
-        html += '<input id="render-button" type="button" value="Draw" />';
-        html += '<div class="clear"></div>';
-        
         //TODO: other vals: max_vals, start_val, pagination
         
+        html = ScatterplotControlForm.templates.form( formData );
         this.$el.append( html );
-        this.$el.find( '#render-button' );
         return this;
     },
 
@@ -509,13 +493,15 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
             url : url,
             dataType : 'json',
             success : function( response ){
-                //TODO: server sends back an endpoint, cache for next pagination request
-                view.showLoadingIndicator( 'Rendering...' );
                 // save the endpoint (number of next line, fileptr) for this object
+                //TODO: server sends back an endpoint, cache for next pagination request
                 view.endpoint = response.endpoint;
+                
+                view.showLoadingIndicator( 'Rendering...' );
                 view.plot.render( response.data, response.meta );
                 view.hideLoadingIndicator();
             },
+            
             error : function( xhr, status, error ){
                 view.hideLoadingIndicator();
                 alert( 'ERROR:' + status + '\n' + error );
@@ -523,9 +509,14 @@ var ScatterplotView = BaseView.extend( LoggableMixin ).extend({
         });
     }
 });
+ScatterplotControlForm.templates = CompiledTemplateLoader.getTemplates({
+    'visualization-templates.html' : {
+        form : 'template-visualization-scatterplotControlForm'
+    }
+});
 
 //==============================================================================
 return {
-    //TwoVarScatterplot   : TwoVarScatterplot,
-    ScatterplotView     : ScatterplotView
+    TwoVarScatterplot       : TwoVarScatterplot,
+    ScatterplotControlForm  : ScatterplotControlForm
 };});
