@@ -154,12 +154,24 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
 
     stored_list_grid = HistoryDatasetAssociationListGrid()
 
+    def _get_job_for_dataset( self, trans, dataset_id ):
+        '''
+        Return the job for the given dataset. This will throw an error if the
+        dataset is either nonexistent or inaccessible to the user. This looks
+        up the job by mapping the dataset to an HDA and then mapping the HDA
+        to its job. This will throw exceptions so that the caller can determine
+        the appropriate response.
+        '''
+        hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
+        assert hda and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+        return hda.creating_job_associations[0].job
+
     @web.expose
     def errors( self, trans, id ):
         hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
         return trans.fill_template( "dataset/errors.mako", hda=hda )
     @web.expose
-    def stdout( self, trans, dataset_id=None, **kwargs ):
+    def stdoutX( self, trans, dataset_id=None, **kwargs ):
         trans.response.set_content_type( 'text/plain' )
         try:
             hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
@@ -168,16 +180,40 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         except:
             return "Invalid dataset ID or you are not allowed to access this dataset"
         return job.stdout
+
     @web.expose
+    def stdout( self, trans, dataset_id=None, **kwargs ):
+        trans.response.set_content_type( 'text/plain' )
+        stdout = ""
+        try:
+            job = self._get_job_for_dataset( trans, dataset_id )
+            stdout = job.stdout
+        except:
+            stdout = "Invalid dataset ID or you are not allowed to access this dataset"
+        return stdout 
+
+    @web.expose
+    # TODO: Migrate stderr and stdout to use _get_job_for_dataset; it wasn't tested.
     def stderr( self, trans, dataset_id=None, **kwargs ):
         trans.response.set_content_type( 'text/plain' )
+        stderr = ""
         try:
-            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
-            assert hda and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-            job = hda.creating_job_associations[0].job
+            job = self._get_job_for_dataset( trans, dataset_id )
+            stderr = job.stderr
         except:
-            return "Invalid dataset ID or you are not allowed to access this dataset"
-        return job.stderr
+            stderr = "Invalid dataset ID or you are not allowed to access this dataset"
+        return stderr 
+
+    @web.expose
+    def exit_code( self, trans, dataset_id=None, **kwargs ):
+        trans.response.set_content_type( 'text/plain' )
+        exit_code = ""
+        try:
+            job = _get_job_for_dataset( dataset_id )
+            exit_code = job.exit_code
+        except:
+            exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
+        return exit_code 
     @web.expose
     def report_error( self, trans, id, email='', message="" ):
         smtp_server = trans.app.config.smtp_server
@@ -986,7 +1022,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     pass
 
         inherit_chain = source_dataset_chain(hda, [])
-        return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, tool=tool, params_objects=params_objects )
+        return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects )
 
     @web.expose
     def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):
