@@ -184,7 +184,9 @@ class DRMAAJobRunner( BaseJobRunner ):
         ofile = "%s.drmout" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
         efile = "%s.drmerr" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
         ecfile = "%s.drmec" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
-        job_name = "g%s_%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id, job_wrapper.user )
+        job_name = "g%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id )
+        if self.external_runJob_script is None:
+            job_name = "%s_%s" % ( job_name, job_wrapper.user )
         job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
 
         jt = self.ds.createJobTemplate()
