@@ -68,7 +68,7 @@ def __filename__():
     return inspect.currentframe().f_back.f_code.co_filename
 
 DRMAA_jobTemplate_attributes = [ 'args', 'remoteCommand', 'outputPath', 'errorPath', 'nativeSpecification',
-                    'name','email','project' ]
+                    'jobName','email','project' ]
 
 class DRMAAJobState( object ):
     def __init__( self ):
