@@ -1,1 +1,1 @@
-<%inherit file="/message.mako"/>
+<%inherit file="../../message.mako"/>
