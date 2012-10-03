@@ -5,6 +5,12 @@ from galaxy.util.bunch import Bunch
 def is_true ( a_str ):
     return is_true == True or a_str in [ 'True', 'true', 'T', 't' ]
 
+def get_id( base, format ):
+    if format:
+        return "%s.%s" % ( base, format )
+    else:
+        return base
+
 class GenomesController( BaseAPIController ):
     """
     RESTful controller for interactions with genome data.
@@ -16,7 +22,7 @@ class GenomesController( BaseAPIController ):
         GET /api/genomes: returns a list of installed genomes
         """        
         
-        return []
+        return self.app.genomes.get_dbkeys_with_chrom_info( trans )
 
     @web.json
     def show( self, trans, id, num=None, chrom=None, low=None, high=None, **kwd ):
@@ -27,6 +33,7 @@ class GenomesController( BaseAPIController ):
         """
 
         # Process kwds.
+        id = get_id( id, kwd.get( 'format', None ) )
         reference = is_true( kwd.get( 'reference', False ) )
 
         # Return info.

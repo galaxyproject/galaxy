@@ -236,7 +236,7 @@ class Genomes( object ):
             if not len_ds:
                 genome = self.genomes[ dbkey ]
             else:
-                gneome = Genome( dbkey, len_file=len_ds.file_name )
+                genome = Genome( dbkey, len_file=len_ds.file_name )
             
         return genome.to_dict( num=num, chrom=chrom, low=low )
         
