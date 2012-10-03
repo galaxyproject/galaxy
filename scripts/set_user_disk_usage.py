@@ -90,10 +90,10 @@ def quotacheck( sa_session, users, engine ):
     if new in ( current, None ):
         print 'none'
     else:
-        op = '-'
         if new > current:
-            op = '+'
-        print '%s%s' % ( op, nice_size( new ) )
+            print '+%s' % ( nice_size( new - current ) )
+        else:
+            print '-%s' % ( nice_size( current - new ) )
         if not options.dryrun and engine != 'postgres':
             user.set_disk_usage( new )
             sa_session.add( user )
