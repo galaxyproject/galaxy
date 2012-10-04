@@ -233,12 +233,16 @@ var PhyloTree = visualization_mod.Visualization.extend({
             // removing unnecessary attributes
             if (node._selected){ delete node._selected;}
 
-            node.children ? node.children.forEach(cleanTree) : 0;
-            node._children ? node._children.forEach(cleanTree) : 0;
+            if (node.children) {
+                node.children.forEach(cleanTree);                
+            }
+            if (node._children) {
+                node._children.forEach(cleanTree);
+            }
         }
 
         var config  = jQuery.extend(true, {}, this.attributes);
-        config["selectedNode"] = null;
+        config.selectedNode = null;
 
         show_message("Saving to Galaxy", "progress");
 
@@ -598,9 +602,11 @@ var PhylovizView = Backbone.View.extend({
          * Function to zoom and pan the svg element which the entire tree is contained within
          * Uses d3.zoom events, and extend them to allow manual updates and keeping states in model
          */
+         var zoomParams,
+            translateParams;
         if (typeof event !== "undefined") {
-            var zoomParams = event.zoom,
-                translateParams = event.translate;
+            zoomParams = event.zoom;
+            translateParams = event.translate;
         }
 
         var self = this,
@@ -761,9 +767,9 @@ var SettingsMenu = UserMenuBase.extend({
          * Applying user values to phylotree model.
          */
         var self = this;
-        if (!self.isAcceptableValue(self.inputs["separation"], 50, 2500) ||
-            !self.isAcceptableValue(self.inputs["leafHeight"], 5, 30) ||
-            !self.isAcceptableValue(self.inputs["fontSize"], 5, 20)){
+        if (!self.isAcceptableValue(self.inputs.separation, 50, 2500) ||
+            !self.isAcceptableValue(self.inputs.leafHeight, 5, 30) ||
+            !self.isAcceptableValue(self.inputs.fontSize, 5, 20)){
             return;
         }
         $.each(self.inputs, function(key, $input){
@@ -854,7 +860,7 @@ var NodeSelectionView = UserMenuBase.extend({
         var self = this,
             checked = self.UI.enableEdit.is(':checked');
 
-        !checked ? self.cancelChanges() : "";
+        if (!checked) { self.cancelChanges(); }
 
         $.each(self.valuesOfConcern, function(key, value) {
             self.UI[key].enable(checked);
