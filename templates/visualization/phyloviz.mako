@@ -138,7 +138,43 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "galaxy.panels", "libs/d3", "mvc/data", "viz/visualization", "viz/phyloviz")}
+    ${h.js( "libs/require" )}
+
+    <script type="text/javascript">
+
+        require.config({
+            baseUrl: "${h.url_for('/static/scripts')}",
+            shim: {
+                "libs/underscore": { exports: "_" },
+                "libs/d3": { exports: "d3" }
+            }
+        });
+
+        require(["viz/phyloviz"], function(phyloviz_mod) {
+
+            function initPhyloViz(data, config) {
+                var phyloviz;
+
+                // -- Initialization code |-->
+                phyloviz = new phyloviz_mod.PhylovizView({
+                    data: data,
+                    layout : "Linear",
+                    config :  config
+                });
+
+                // -- Render viz. --
+                phyloviz.render();
+
+            }
+
+            $(function firstVizLoad(){       // calls when viz is loaded for the first time
+                var config = JSON.parse( '${ h.to_json_string( config )}');
+                var data = JSON.parse('${h.to_json_string(data)}');
+                initPhyloViz(data, config);
+            });
+        });
+
+    </script>
 </%def>
 
 
@@ -289,31 +325,6 @@
 
     <div id="PhyloViz" >
     </div>
-
-    <script type="text/javascript">
-
-        function initPhyloViz(data, config) {
-            var phyloviz;
-
-            // -- Initialization code |-->
-            phyloviz = new PhylovizView({
-                data: data,
-                layout : "Linear",
-                config :  config
-            });
-
-            // -- Render viz. --
-            phyloviz.render();
-
-        }
-
-        $(function firstVizLoad(){       // calls when viz is loaded for the first time
-            var config = JSON.parse( '${ h.to_json_string( config )}');
-            var data = JSON.parse('${h.to_json_string(data)}');
-            initPhyloViz(data, config);
-        });
-
-    </script>
 
 </%def>
 

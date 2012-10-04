@@ -1,3 +1,5 @@
+define(['libs/d3', 'viz/visualization'], function(d3, visualization_mod) {
+
 var UserMenuBase = Backbone.View.extend({
     /**
      * Base class of any menus that takes in user interaction. Contains checking methods.
@@ -165,7 +167,7 @@ function PhyloTreeLayout() {
 /**
  * -- PhyloTree Model --
  */
-var PhyloTree = Visualization.extend({
+var PhyloTree = visualization_mod.Visualization.extend({
     defaults : {
         layout: "Linear",
         separation : 250,    // px dist between nodes of different depth to represent 1 evolutionary until
@@ -588,7 +590,7 @@ var PhylovizView = Backbone.View.extend({
         $("#title").text("Phylogenetic Tree from " + self.phyloTree.get("title") + ":");
 
         // -- Create Linear view instance --
-        var linearView = new PhylovizLinearView(self.layoutOptions)
+        var linearView = new PhylovizLinearView(self.layoutOptions);
     },
 
     zoomAndPan : function(event){
@@ -952,4 +954,10 @@ var PhyloVizSearch = UserMenuBase.extend({
                 }
             });
     }
+});
+
+return {
+    PhylovizView: PhylovizView
+};
+
 });
