@@ -39,7 +39,6 @@ class Phyloxml_Parser(Base_Parser):
     def parseNode(self, node, depth):
         """Parses any node within a phyloxml tree and looks out for claude, which signals the creation of
         nodes - internal OR leaf"""
-        assert isinstance(node, etree._Element)
 
         tag = self.cleanTag(node.tag)
         if not tag == "clade":

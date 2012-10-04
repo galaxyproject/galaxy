@@ -7,7 +7,7 @@ from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genome.visual_analytics import get_dataset_job
-from galaxy.visualization.data_providers.basic import ColumnDataProvider
+from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 
 from .library import LibraryListGrid
 
@@ -823,6 +823,25 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                          hda=hda_dict,
                                          historyID=history_id,
                                          kwargs=kwargs )
+
+    @web.expose    
+    def phyloviz( self, trans, dataset_id, tree_index=0, **kwargs ):
+        # Get HDA.
+        hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
+
+        # Get data.
+        pd = PhylovizDataProvider( original_dataset=hda )
+        json, config = pd.get_data()
+        json = json[tree_index]
+        
+        config["title"] = hda.display_name()
+        config["ext"] = hda.datatype.file_ext
+        config["dataset_id"] = dataset_id
+        config["treeIndex"] = tree_index
+        config["saved_visualization"] = False
+
+        # Return viz.
+        return trans.fill_template_mako( "visualization/phyloviz.mako", data = json, config=config )
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):
