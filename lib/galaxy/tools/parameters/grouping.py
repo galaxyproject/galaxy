@@ -209,7 +209,7 @@ class UploadDataset( Group ):
                     dataset_name = get_file_name( data_file['filename'] )
                 if not dataset_info:
                     dataset_info = 'uploaded file'
-                return Bunch( type='file', path=data_file['local_filename'], name=get_file_name( data_file['filename'] ) )
+                return Bunch( type='file', path=data_file['local_filename'], name=dataset_name )
                 #return 'file', data_file['local_filename'], get_file_name( data_file.filename ), dataset_name, dataset_info
             except:
                 # The uploaded file should've been persisted by the upload tool action
@@ -227,14 +227,13 @@ class UploadDataset( Group ):
                         if line:
                             if not line.lower().startswith( 'http://' ) and not line.lower().startswith( 'ftp://' ) and not line.lower().startswith( 'https://' ):
                                 continue # non-url line, ignore
-                            precreated_name = line
                             dataset_name = override_name
                             if not dataset_name:
                                 dataset_name = line
                             dataset_info = override_info
                             if not dataset_info:
                                 dataset_info = 'uploaded url'
-                            yield Bunch( type='url', path=line, name=precreated_name )
+                            yield Bunch( type='url', path=line, name=dataset_name )
                             #yield ( 'url', line, precreated_name, dataset_name, dataset_info )
                 else:
                     dataset_name = dataset_info = precreated_name = 'Pasted Entry' #we need to differentiate between various url pastes here

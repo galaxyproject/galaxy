@@ -55,6 +55,17 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool = trans.app.toolbox.get_tool( tool_id )
         if not tool:
             return { "message": { "type": "error", "text" : messages.NO_TOOL } }
+
+        # Set running history from payload parameters.
+        # History not set correctly as part of this API call for
+        # dataset upload.
+        history_id = payload.get("history_id", None)
+        if history_id:
+            target_history = trans.sa_session.query(trans.app.model.History).get(
+                trans.security.decode_id(history_id))
+            trans.galaxy_session.current_history = target_history
+        else:
+            target_history = None
         
         # Set up inputs.
         inputs = payload[ 'inputs' ]
@@ -62,10 +73,10 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         inputs['runtool_btn'] = 'Execute'
         # TODO: encode data ids and decode ids.
         params = util.Params( inputs, sanitize = False )
-        template, vars = tool.handle_input( trans, params.__dict__ )
-        
+        template, vars = tool.handle_input( trans, params.__dict__, history=target_history)
+
         # TODO: check for errors and ensure that output dataset(s) are available.
-        output_datasets = vars[ 'out_data' ].values()
+        output_datasets = vars.get('out_data', {}).values()
         rval = {
             "outputs": []
         }
