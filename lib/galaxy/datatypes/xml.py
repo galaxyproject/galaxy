@@ -91,9 +91,18 @@ class Phyloxml( GenericXml ):
 
     def sniff( self, filename ):
         """"Checking for keyword - 'phyloxml' always in lowercase in the first few lines"""
-        f = open(filename, "r")
-        firstlines = "".join(f.readlines(5))
+
+        f = open( filename, "r" )
+        firstlines = "".join( f.readlines(5) )
         f.close()
+
         if "phyloxml" in firstlines:
             return True
         return False
+
+    def get_visualizations( self, dataset ):
+        """
+        Returns a list of visualizations for datatype.
+        """
+
+        return [ 'phyloviz' ]
