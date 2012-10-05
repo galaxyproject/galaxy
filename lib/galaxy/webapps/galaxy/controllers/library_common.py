@@ -131,7 +131,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             comptypes = get_comptypes( trans )
             try:
                 # SM: TODO: Add configuration variable asap. 
-                return trans.fill_template( '/library/common/browse_library.mako',
+                return trans.fill_template( 'library/common/browse_library.mako',
                                             cntrller=cntrller,
                                             use_panels=use_panels,
                                             library=library,
@@ -143,6 +143,8 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                             message=message,
                                             status=status )
             except Exception, e:
+                import traceback
+                log.debug( "traceback: %s" % traceback.format_exc() )
                 message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
                 status = 'error'
         default_action = params.get( 'default_action', None )

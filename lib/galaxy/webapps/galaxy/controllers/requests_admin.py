@@ -284,6 +284,7 @@ class RequestsAdmin( BaseUIController, UsesFormDefinitionsMixin ):
         request_id = trans.security.encode_id( sample.request.id )
         library_id = trans.security.encode_id( sample.library.id )
         self.datatx_grid.title = 'Manage "%s" datasets'  % sample.name
+        log.debug( "!!!!!!!!!!!!!!!!!!!!!!@@@@@@@@@@@@@@@@@@@@@@@##################" )
         self.datatx_grid.global_actions = [ grids.GridAction( "Browse target data library", 
                                                               dict( controller='library_common', 
                                                                     action='browse_library', 

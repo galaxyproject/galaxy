@@ -213,7 +213,7 @@
         ## children, which are always lddas ).  We also need to make sure we're displaying the latest version of this
         ## library_dataset, so we display the attributes from the ldda.
         
-        from galaxy.web.controllers.library_common import branch_deleted
+        from galaxy.webapps.galaxy.controllers.library_common import branch_deleted
         
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         
@@ -312,7 +312,7 @@
 
 <%def name="render_folder( cntrller, folder, folder_pad, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=False, parent=None, row_counter=None, root_folder=False, simple=False )">
     <%
-        from galaxy.web.controllers.library_common import active_folders, active_folders_and_library_datasets, activatable_folders_and_library_datasets, branch_deleted
+        from galaxy.webapps.galaxy.controllers.library_common import active_folders, active_folders_and_library_datasets, activatable_folders_and_library_datasets, branch_deleted
         
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         has_accessible_library_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, folder, trans.user, current_user_roles, search_downward=False )
@@ -472,7 +472,7 @@
 <%def name="render_content(simple=False)">
     <%
         from galaxy import util
-        from galaxy.web.controllers.library_common import branch_deleted
+        from galaxy.webapps.galaxy.controllers.library_common import branch_deleted
         from time import strftime
         
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
