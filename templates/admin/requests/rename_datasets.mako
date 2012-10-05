@@ -1,7 +1,7 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
-<% from galaxy.web.controllers.requests_admin import build_rename_datasets_for_sample_select_field %>
+<% from galaxy.webapps.galaxy.controllers.requests_admin import build_rename_datasets_for_sample_select_field %>
 
 <h3>Rename datasets for Sample "${sample.name}"</h3>
 

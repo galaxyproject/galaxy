@@ -3,7 +3,7 @@
 <%namespace file="/common/template_common.mako" import="render_template_fields" />
 <%
     from galaxy import util
-    from galaxy.web.controllers.library_common import branch_deleted, get_containing_library_from_library_dataset
+    from galaxy.webapps.galaxy.controllers.library_common import branch_deleted, get_containing_library_from_library_dataset
     from galaxy.web.framework.helpers import time_ago
 
     if ldda == ldda.library_dataset.library_dataset_dataset_association:

@@ -4,6 +4,7 @@
 <%
     from galaxy.web.framework.helpers import time_ago
     from galaxy.web.controllers.library_common import get_containing_library_from_library_dataset
+    from galaxy.webapps.galaxy.controllers.library_common import get_containing_library_from_library_dataset
 %>
 
 %if message:

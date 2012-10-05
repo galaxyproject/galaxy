@@ -66,8 +66,7 @@
 <%def name="render_content()">
     <%
         from galaxy import util
-        from galaxy.web.controllers.library_common import branch_deleted
-        #from galaxy.webapps.galaxy.controllers.library_common import branch_deleted
+        from galaxy.webapps.galaxy.controllers.library_common import branch_deleted
         from time import strftime
  
         class RowCounter( object ):
