@@ -33,7 +33,7 @@
             }
         });
 
-        require( [ "libs/d3", "viz/visualization", "viz/circster" ], function( d3, visualization, circster ) {
+        require( [ "viz/visualization", "viz/circster" ], function(visualization, circster ) {
 
             $(function() {
                 

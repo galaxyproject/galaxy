@@ -236,7 +236,10 @@ function init_viz_icon(icon) {
             }
             return action;
         },
-        params = {dataset_id: dataset_id};
+        params = {
+            dataset_id: dataset_id,
+            hda_ldda: 'hda'
+        };
 
     // Add dbkey to params if it exists.
     if (dbkey) { params['dbkey'] = dbkey; }

@@ -335,16 +335,18 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
     
     viz_types = [ "trackster", "circster" ]
 
-    def create_visualization( self, trans, title, slug, type, dbkey, annotation=None, config={} ):
+    def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None, dbkey=None, annotation=None, config={}, save=True ):
         """ Create visualiation and first revision. """
-        visualization = self._create_visualization( trans, title, type, dbkey, slug, annotation )
+        visualization = self._create_visualization( trans, title, type, dbkey, slug, annotation, save )
 
         # Create and save first visualization revision
         revision = trans.model.VisualizationRevision( visualization=visualization, title=title, config=config, dbkey=dbkey )
         visualization.latest_revision = revision
-        session = trans.sa_session
-        session.add( revision )
-        session.flush()
+
+        if save:
+            session = trans.sa_session
+            session.add( revision )
+            session.flush()
 
         return visualization
         
@@ -440,7 +442,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
 
         config = None
-        if visualization.type == 'trackster':
+        if visualization.type in [ 'trackster', 'genome' ]:
             # Unpack Trackster config.
             latest_revision = visualization.latest_revision
             bookmarks = latest_revision.config.get( 'bookmarks', [] )
@@ -566,7 +568,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         
     # -- Helper functions --
         
-    def _create_visualization( self, trans, title, type, dbkey, slug=None, annotation=None ):
+    def _create_visualization( self, trans, title, type, dbkey=None, slug=None, annotation=None, save=True ):
         """ Create visualization but not first revision. Returns Visualization object. """
         user = trans.get_user()
 
@@ -593,9 +595,10 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
             self.add_item_annotation( trans.sa_session, trans.user, visualization, annotation )
 
-        session = trans.sa_session
-        session.add( visualization )
-        session.flush()
+        if save:
+            session = trans.sa_session
+            session.add( visualization )
+            session.flush()
 
         return visualization
 

@@ -226,11 +226,7 @@
                         ## Visualization icon + visualizations. Using anchor attributes is a HACK to encode needed
                         ## information--URL base, dataset id, dbkey, visualizations--in anchor.
                         <% 
-                            visualizations = data.get_visualizations() 
-                            ## HACK: if there are visualizations, only provide a subset for now
-                            ##  since others are not ready. - comment out to see all WIP visualizations
-                            if visualizations:
-                                visualizations = [ vis for vis in visualizations if vis in [ 'trackster', 'phyloviz', 'scatterplot' ]  ]
+                            visualizations = data.get_visualizations()
                         %>
                         %if visualizations:
                             <a href="${h.url_for( controller='visualization' )}" 

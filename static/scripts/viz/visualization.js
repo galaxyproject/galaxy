@@ -351,7 +351,6 @@ var GenomeDataManager = Cache.extend({
         if (!extra_params) { extra_params = {}; }
 
         // Use additional parameters to get more detailed data.
-        var mode;
         if (cur_data.dataset_type === 'bigwig') {
             extra_params.num_samples = cur_data.data.length * detail_multiplier;
         }
@@ -642,20 +641,9 @@ var BackboneTrack = data_mod.Dataset.extend({
  */
 var Visualization = Backbone.RelationalModel.extend({
     defaults: {
-        id: '',
         title: '',
-        type: '',
-        dbkey: '',
-        tracks: null
+        type: ''
     },
-
-    relations: [
-        {
-            type: Backbone.HasMany,
-            key: 'tracks',
-            relatedModel: BackboneTrack
-        }
-    ],
 
     // Use function because visualization_url changes depending on viz.
     // FIXME: all visualizations should save to the same URL (and hence
@@ -682,13 +670,27 @@ var Visualization = Backbone.RelationalModel.extend({
 });
 
 /**
- * A Genome space visualization.
+ * A visualization of genome data.
  */
 var GenomeVisualization = Visualization.extend({
     defaults: _.extend({}, Visualization.prototype.defaults, {
+        dbkey: '',
+        tracks: null,
         bookmarks: null,
         viewport: null
-    })
+    }),
+
+    relations: [
+        {
+            type: Backbone.HasMany,
+            key: 'tracks',
+            relatedModel: BackboneTrack
+        }
+    ],
+
+    add_track: function(track) {
+        this.get('tracks').push(track);
+    }
 });
 
 /**
@@ -727,6 +729,7 @@ var TrackBrowserRouter = Backbone.Router.extend({
 });
 
 return {
+    BackboneTrack: BackboneTrack,
     BrowserBookmark: BrowserBookmark,
     BrowserBookmarkCollection: BrowserBookmarkCollection,
     Cache: Cache,

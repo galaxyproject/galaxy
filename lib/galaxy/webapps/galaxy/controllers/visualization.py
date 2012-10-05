@@ -741,12 +741,28 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         return self.save_visualization( trans, config, type, id, title, dbkey, annotation )
 
     @web.expose
-    def circster( self, trans, id, **kwargs ):
+    def circster( self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None ):
         """
         Display a circster visualization.
         """
-        vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+
+        # Get/create vis.
+        if id:
+            # Display existing viz.
+            vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+        else:
+            # Create new viz.
+            vis = self.create_visualization( trans, type="genome", dbkey=dbkey, save=False )
+
+        # Get the vis config and work with it from here on out. Working with the 
+        # config is only possible because the config structure of trackster/genome
+        # visualizations is well known.
         viz_config = self.get_visualization_config( trans, vis )
+
+        # Add dataset if specified.
+        if dataset_id:
+            dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+            viz_config[ 'tracks' ].append( self.get_new_track_config( trans, dataset ) )
 
         # Get genome info.
         dbkey = viz_config[ 'dbkey' ]
@@ -754,7 +770,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         genome = { 'dbkey': dbkey, 'chroms_info': chroms_info }
 
         # Add genome-wide summary tree data to each track in viz.
-        tracks = viz_config[ 'tracks' ]
+        tracks = viz_config.get( 'tracks', [] )
         for track in tracks:
             # Get dataset and indexed datatype.
             dataset = self.get_hda_or_ldda( trans, track[ 'hda_ldda'], track[ 'dataset_id' ] )
