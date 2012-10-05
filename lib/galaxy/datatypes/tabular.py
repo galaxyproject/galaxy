@@ -309,9 +309,10 @@ class Tabular( data.Text ):
         # Can visualize tabular data as scatterplot if there are 2+ numerical
         # columns.
         num_numerical_cols = 0
-        for col_type in dataset.metadata.column_types:
-            if col_type in [ 'int', 'float' ]:
-                num_numerical_cols += 1
+        if dataset.metadata.column_types:
+            for col_type in dataset.metadata.column_types:
+                if col_type in [ 'int', 'float' ]:
+                    num_numerical_cols += 1
 
         vizs = super( Tabular, self ).get_visualizations( dataset )
         if num_numerical_cols >= 2:
