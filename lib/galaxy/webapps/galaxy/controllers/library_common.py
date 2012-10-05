@@ -143,8 +143,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                             message=message,
                                             status=status )
             except Exception, e:
-                import traceback
-                log.debug( "traceback: %s" % traceback.format_exc() )
                 message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
                 status = 'error'
         default_action = params.get( 'default_action', None )
