@@ -36,6 +36,7 @@
                     select.removeAttr('multiple').removeAttr('size');
                     placeholder = 'type to filter';
                 } else {
+                    // Comment out the following line to multiple batch input workflows in UI.
                     $('.multiinput').addClass('disabled');
                     $('.multiinput', select.closest('.form-row')).removeClass('disabled');
                     select.attr('multiple', 'multiple').attr('size', 8);
@@ -335,6 +336,29 @@ if wf_parms:
 
 <form id="tool_form" name="tool_form" method="POST">
 ## <input type="hidden" name="workflow_name" value="${h.to_unicode( workflow.name ) | h}" />
+
+<!-- TODO: Implement UI for selecting between product and matched mode
+     for batch workflows in multiple inputs are selected for 2 or more
+     params.
+
+     1) Delete this line above: $('.multiinput').addClass('disabled');
+     2) Allow user to select between product and matched mode.
+
+     If user selected 5 inputs for one param and 5 inputs for another
+     in matched mode that will be run the workflow 5 times matching
+     each input and in product mode it will run the workflow 25 times
+     with every combination of input pairs. If user selects 6 inputs
+     for one param and 4 for another, in product mode 24 workflows
+     will run and in matched mode the submission will fail.
+
+     In matched mode the inputs are matched from top to bottom
+     regardless of the order they are actually select in. This
+     behavior is I assume the desired behavior but I have only tested
+     it in chrome, care should be taken to test behavior on other
+     browsers and augment UI to ensure numbers of inputs matches
+     up.
+-->
+<input type="hidden" name="multiple_input_mode" value="matched" /> <!-- product or matched -->
 
 
 %if wf_parms:
