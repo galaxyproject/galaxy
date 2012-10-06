@@ -2075,6 +2075,9 @@ def _build_input_combos(kwargs, mode):
 
 def _build_input_combos_matched(kwargs):
     (single_inputs, multi_inputs) = _split_inputs(kwargs)
+    if len(multi_inputs) == 0:
+        return [{}]
+        
     matched_multi_inputs = []
     
     first_multi_input_key = multi_inputs.keys()[0]
