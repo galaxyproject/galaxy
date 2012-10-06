@@ -1342,7 +1342,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 # been POSTed
                 # List to gather values for the template
                 invocations=[]
-                for (kwargs, multi_input_keys) in _expand_multiple_inputs(kwargs, mode=multiple_input_mode)
+                for (kwargs, multi_input_keys) in _expand_multiple_inputs(kwargs, mode=multiple_input_mode):
                     for step in workflow.steps:
                         step.upgrade_messages = {}
                         # Connections by input name
