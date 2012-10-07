@@ -2054,7 +2054,11 @@ def cleanup_param_values( inputs, values ):
                 #       still need to clean them up so we can serialize
                 # if not( prefix ):
                 if tmp: #this is false for a non-set optional dataset
-                    associations.append( ( tmp.hid, prefix + key ) )
+                    if not isinstance(tmp, list):
+                        associations.append( ( tmp.hid, prefix + key ) )
+                    else:
+                        associations.extend( [ (t.hid, prefix + key) for t in tmp] )
+
                 # Cleanup the other deprecated crap associated with datasets
                 # as well. Worse, for nested datasets all the metadata is
                 # being pushed into the root. FIXME: MUST REMOVE SOON
