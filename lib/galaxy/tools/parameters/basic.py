@@ -1545,9 +1545,30 @@ class DataToolParameter( ToolParameter ):
         else:
             return trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
 
+
+    # TODO: Determine if this needs to be overridden. -John
+    def value_from_basic( self, value, app, ignore_errors=False ):
+        # HACK: Some things don't deal with unicode well, psycopg problem?
+        if type( value ) == unicode:
+            value = str( value )
+        # Handle Runtime values (valid for any parameter?)
+        if isinstance( value, dict ) and '__class__' in value and value['__class__'] == "RuntimeValue":
+            return RuntimeValue()
+        # Delegate to the 'to_python' method
+        if ignore_errors:
+            try:
+                return self.to_python( value, app )
+            except:
+                return value
+        else:
+            return self.to_python( value, app )
+
+
     def to_string( self, value, app ):
         if value is None or isinstance( value, str ):
             return value
+        elif isinstance( value, list ):
+            return ",".join( [ val if isinstance( val, str ) else str(val.id) for val in value] )
         elif isinstance( value, DummyDataset ):
             return None
         return value.id
@@ -1557,6 +1578,10 @@ class DataToolParameter( ToolParameter ):
         # indicates that the dataset is optional, while '' indicates that it is not.
         if value is None or value == '' or value == 'None':
             return value
+        if isinstance(value, str) and value.find(",") > -1:
+            values = value.split(",")
+            # TODO: Optimize. -John
+            return [app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( val ) ) for val in values]
         return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):

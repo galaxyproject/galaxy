@@ -2224,6 +2224,13 @@ class Tool:
                     values = input_values[ input.name ]
                     current = values["__current_case__"]
                     wrap_values( input.cases[current].inputs, values )
+                elif isinstance( input, DataToolParameter ) and input.multiple:
+                    values = input_values[ input.name ]
+                    input_values[ input.name ] = \
+                        [DatasetFilenameWrapper( value,
+                                                 datatypes_registry = self.app.datatypes_registry,
+                                                 tool = self,
+                                                 name = input.name ) for value in values]
                 elif isinstance( input, DataToolParameter ):
                     ## FIXME: We're populating param_dict with conversions when 
                     ##        wrapping values, this should happen as a separate 
