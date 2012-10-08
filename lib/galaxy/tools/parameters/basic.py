@@ -1567,10 +1567,12 @@ class DataToolParameter( ToolParameter ):
     def to_string( self, value, app ):
         if value is None or isinstance( value, str ):
             return value
-        elif isinstance( value, list ):
-            return ",".join( [ val if isinstance( val, str ) else str(val.id) for val in value] )
         elif isinstance( value, DummyDataset ):
             return None
+        elif isinstance( value, list) and len(value) > 0 and isinstance( value[0], DummyDataset):
+            return None
+        elif isinstance( value, list ):
+            return ",".join( [ val if isinstance( val, str ) else str(val.id) for val in value] )
         return value.id
 
     def to_python( self, value, app ):

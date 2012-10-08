@@ -1362,6 +1362,13 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         # Connections by input name
                         step.input_connections_by_name = \
                             dict( ( conn.input_name, conn ) for conn in step.input_connections )
+                        input_connections_by_name = {}
+                        for conn in step.input_connections:
+                            input_name = conn.input_name
+                            if not input_name in input_connections_by_name:
+                                input_connections_by_name[input_name] = []
+                            input_connections_by_name[input_name].append(conn)
+                        step.input_connections_by_name = input_connections_by_name
                         # Extract just the arguments for this step by prefix
                         p = "%s|" % step.id
                         l = len(p)
@@ -1419,10 +1426,15 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                 tool = trans.app.toolbox.get_tool( step.tool_id )
                                 # Connect up
                                 def callback( input, value, prefixed_name, prefixed_label ):
+                                    replacement = None
                                     if isinstance( input, DataToolParameter ):
                                         if prefixed_name in step.input_connections_by_name:
                                             conn = step.input_connections_by_name[ prefixed_name ]
-                                            return outputs[ conn.output_step.id ][ conn.output_name ]
+                                            if input.multiple:
+                                                replacements = [outputs[ c.output_step.id ][ c.output_name ] for c in conn]
+                                            else:
+                                                replacement = outputs[ conn[0].output_step.id ][ conn[0].output_name ]
+                                    return replacement
                                 try:
                                     visit_input_values( tool.inputs, step.state.inputs, callback )
                                 except KeyError, k:
