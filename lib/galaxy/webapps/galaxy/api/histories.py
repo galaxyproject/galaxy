@@ -48,6 +48,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         """
         GET /api/histories/{encoded_history_id}
         GET /api/histories/deleted/{encoded_history_id}
+        GET /api/histories/current
         Displays information about a history.
         """
         history_id = id
@@ -65,8 +66,13 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                     rval[item['state']] = rval[item['state']] + 1
             return rval
         try:
-            history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True, deleted=deleted )
+            if history_id == "current" and len(trans.user.galaxy_sessions) > 0:
+                # Most recent active history for user sessions, not deleted
+                history = trans.user.galaxy_sessions[0].histories[-1].history
+            else:
+                history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True, deleted=deleted )
         except Exception, e:
+            raise
             return str( e )
         try:
             item = history.get_api_value(view='element', value_mapper={'id':trans.security.encode_id})
