@@ -6,6 +6,8 @@
 Backbone.js implementation of history panel
 
 TODO:
+    currently, adding a dataset (via tool execute, etc.) creates a new dataset and refreshes the page
+
     meta:
         require.js
         convert function comments to jsDoc style, complete comments
@@ -142,8 +144,9 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     className   : "historyItemContainer",
     
     // ................................................................................ SET UP
-    initialize  : function(){
+    initialize  : function( attributes ){
         this.log( this + '.initialize:', this, this.model );
+        this.visible = attributes.visible;
     },
    
     // ................................................................................ RENDER MAIN
@@ -209,6 +212,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         return buttonDiv;
     },
     
+    //TODO: ?? the three title buttons render for err'd datasets: is this normal?
     _render_displayButton : function(){
         // don't show display while uploading
         if( this.model.get( 'state' ) === HistoryItem.STATES.UPLOAD ){ return null; }
@@ -608,6 +612,11 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         if( this.model.get( 'bodyIsShown' ) === false ){
             body.hide();
         }
+        if( this.visible ){
+            body.show();
+        } else {
+            body.hide();
+        }
         return body;
     },
 
@@ -693,14 +702,15 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         return false;        
     },
 
-    toggleBodyVisibility : function(){
-        this.log( this + '.toggleBodyVisibility' );
-        this.$el.find( '.historyItemBody' ).toggle();
+    toggleBodyVisibility : function( visible ){
+        var $body = this.$el.find( '.historyItemBody' );
+        $body.toggle();
+        this.trigger( 'toggleBodyVisibility', this.model.get( 'id' ), $body.is( ':visible' ) );
     },
 
     // ................................................................................ UTILTIY
     toString : function(){
-        var modelString = ( this.model )?( this.model + '' ):( '' );
+        var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
         return 'HistoryItemView(' + modelString + ')';    
     }
 });
@@ -708,21 +718,18 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
 
 //------------------------------------------------------------------------------
 //HistoryItemView.templates = InDomTemplateLoader.getTemplates({
-HistoryItemView.templates = CompiledTemplateLoader.getTemplates({
-    'common-templates.html' : {
-        warningMsg      : 'template-warningmessagesmall'
-    },
-    'history-templates.html' : {
-        messages        : 'template-history-warning-messages',
-        titleLink       : 'template-history-titleLink',
-        hdaSummary      : 'template-history-hdaSummary',
-        downloadLinks   : 'template-history-downloadLinks',
-        failedMetadata  : 'template-history-failedMetaData',
-        tagArea         : 'template-history-tagArea',
-        annotationArea  : 'template-history-annotationArea',
-        displayApps     : 'template-history-displayApps'
-    }
-});
+HistoryItemView.templates = {
+    warningMsg      : Handlebars.templates[ 'template-warningmessagesmall' ],
+
+    messages        : Handlebars.templates[ 'template-history-warning-messages' ],
+    titleLink       : Handlebars.templates[ 'template-history-titleLink' ],
+    hdaSummary      : Handlebars.templates[ 'template-history-hdaSummary' ],
+    downloadLinks   : Handlebars.templates[ 'template-history-downloadLinks' ],
+    failedMetadata  : Handlebars.templates[ 'template-history-failedMetaData' ],
+    tagArea         : Handlebars.templates[ 'template-history-tagArea' ],
+    annotationArea  : Handlebars.templates[ 'template-history-annotationArea' ],
+    displayApps     : Handlebars.templates[ 'template-history-displayApps' ]
+};
 
 //==============================================================================
 var HistoryCollection = Backbone.Collection.extend({
@@ -867,22 +874,51 @@ var History = BaseModel.extend( LoggableMixin ).extend({
 });
 
 //------------------------------------------------------------------------------
+// view for the HistoryCollection (as per current right hand panel)
+//var HistoryView = BaseView.extend( LoggableMixin ).extend( UsesStorageMixin ) .extend({
 var HistoryView = BaseView.extend( LoggableMixin ).extend({
-    // view for the HistoryCollection (as per current right hand panel)
     
     // uncomment this out see log messages
     //logger              : console,
 
     // direct attachment to existing element
     el                  : 'body.historyPage',
-    
+    //TODO: add id?
+
     initialize : function(){
         this.log( this + '.initialize:', this );
-        this.itemViews = [];
-        var parent = this;
+        // data that needs to be persistant over page refreshes
+        this.storage = new PersistantStorage(
+            'HistoryView.' + this.model.get( 'id' ),
+            { visibleItems : {} }
+        );
+        // set up the individual history items/datasets
+        this.initializeItems();
+    },
+
+    initializeItems : function(){
+        this.itemViews = {};
+        var historyPanel = this;
         this.model.items.each( function( item ){
-            var itemView = new HistoryItemView({ model: item });
-            parent.itemViews.push( itemView );
+            var itemId = item.get( 'id' ),
+                itemView = new HistoryItemView({
+                    model: item, visible:
+                    historyPanel.storage.get( 'visibleItems' ).get( itemId )
+                });
+            historyPanel.setUpItemListeners( itemView );
+            historyPanel.itemViews[ itemId ] = itemView;
+        });
+    },
+
+    setUpItemListeners : function( itemView ){
+        var HistoryPanel = this;
+        // use storage to maintain a list of items whose bodies are visible
+        itemView.bind( 'toggleBodyVisibility', function( id, visible ){
+            if( visible ){
+                HistoryPanel.storage.get( 'visibleItems' ).set( id, true );
+            } else {
+                HistoryPanel.storage.get( 'visibleItems' ).deleteKey( id );
+            }
         });
     },
     
@@ -907,8 +943,8 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
         var div = $( '<div/>' ),
             view = this;
         //NOTE!: render in reverse (newest on top) via prepend (instead of append)
-        _.each( this.itemViews, function( itemView ){
-            view.log( view + '.render_items:', itemView );
+        _.each( this.itemViews, function( itemView, viewId ){
+            view.log( view + '.render_items:', viewId, itemView );
             div.prepend( itemView.render() );
         });
         return div;
@@ -919,12 +955,9 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
         return 'HistoryView(' + nameString + ')';
     }
 });
-//HistoryItemView.templates = InDomTemplateLoader.getTemplates({
-HistoryView.templates = CompiledTemplateLoader.getTemplates({
-    'history-templates.html' : {
-        historyPanel : 'template-history-historyPanel'
-    }
-});
+HistoryView.templates = {
+    historyPanel : Handlebars.templates[ 'template-history-historyPanel' ]
+};
 
 
 

@@ -344,7 +344,9 @@ ${ h.to_json_string( context_dict ) }
     ${parent.javascripts()}
     
     ${h.js(
-        "libs/jquery/jstorage", "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging",
+        "libs/jquery/jstorage",
+        "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging",
+        "libs/json2",
         "mvc/base-mvc", "mvc/ui"
     )}
 
@@ -395,10 +397,10 @@ ${ h.to_json_string( context_dict ) }
                 if( pageData.hdaId ){
                     self.location = "#" + pageData.hdaId;
                 }
-                
-                glx_history = new History( pageData.history ).loadDatasetsAsHistoryItems( pageData.hdas );
-                glx_history_view = new HistoryView({ model: glx_history });
+                var glx_history = new History( pageData.history ).loadDatasetsAsHistoryItems( pageData.hdas ),
+                    glx_history_view = new HistoryView({ model: glx_history });
                 glx_history_view.render();
+                window.glx_history = glx_history; window.glx_history_view = glx_history_view;
                 
                 return;
             
