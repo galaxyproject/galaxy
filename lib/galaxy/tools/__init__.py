@@ -960,6 +960,12 @@ class Tool:
         version_cmd = root.find("version_command")
         if version_cmd is not None:
             self.version_string_cmd = version_cmd.text
+            version_cmd_interpreter = version_cmd.get( "interpreter", None )
+            if version_cmd_interpreter:
+                executable = self.version_string_cmd.split()[0]
+                abs_executable = os.path.abspath(os.path.join(self.tool_dir, executable))
+                command_line = self.version_string_cmd.replace(executable, abs_executable, 1)
+                self.version_string_cmd = self.interpreter + " " + command_line
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
