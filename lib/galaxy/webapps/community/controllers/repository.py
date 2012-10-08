@@ -76,8 +76,6 @@ class ValidCategoryListGrid( CategoryListGrid ):
                         viewable_repositories += 1
                 return viewable_repositories
             return 0
-
-    # Grid definition
     title = "Categories of valid repositories"
     model_class = model.Category
     template='/webapps/community/category/valid_grid.mako'
@@ -146,15 +144,6 @@ class RepositoryListGrid( grids.Grid ):
             if column_filter == "All":
                 return query
             return query.filter( model.Category.name == column_filter )
-    class DeletedColumn( grids.DeletedColumn ):
-        def get_accepted_filters( self ):
-            """ Returns a list of accepted filters for this column. """
-            accepted_filter_labels_and_vals = { "Active" : "False", "Deactivated or uninstalled" : "True", "All": "All" }
-            accepted_filters = []
-            for label, val in accepted_filter_labels_and_vals.items():
-               args = { self.key: val }
-               accepted_filters.append( grids.GridColumnFilter( label, args) )
-            return accepted_filters
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             if repository.user:
@@ -179,8 +168,7 @@ class RepositoryListGrid( grids.Grid ):
     columns = [
         NameColumn( "Name",
                     key="name",
-                    link=( lambda item: dict( operation="view_or_manage_repository",
-                                              id=item.id ) ),
+                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                     attach_popup=True ),
         DescriptionColumn( "Synopsis",
                            key="description",
@@ -207,10 +195,10 @@ class RepositoryListGrid( grids.Grid ):
                                   model_class=model.Category,
                                   key="Category.name",
                                   visible=False ),
-        DeletedColumn( "Status",
-                       key="deleted",
-                       visible=False,
-                       filterable="advanced" )
+        grids.DeletedColumn( "Deleted",
+                             key="deleted",
+                             visible=False,
+                             filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[0], columns[1] ],

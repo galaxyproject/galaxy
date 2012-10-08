@@ -18,8 +18,7 @@ import logging
 log = logging.getLogger( __name__ )
 
 class UserListGrid( grids.Grid ):
-    # TODO: move this to an admin_common controller since it is virtually the same
-    # in the galaxy webapp.
+    # TODO: move this to an admin_common controller since it is virtually the same in the galaxy webapp.
     class UserLoginColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
             return user.email
@@ -61,7 +60,6 @@ class UserListGrid( grids.Grid ):
                 return query
             return query.filter( and_( model.Tool.table.c.user_id == model.User.table.c.id,
                                        model.User.table.c.email == column_filter ) )
-    # Grid definition
     title = "Users"
     model_class = model.User
     template='/admin/user/grid.mako'
@@ -146,8 +144,6 @@ class RoleListGrid( grids.Grid ):
             if role.users:
                 return len( role.users )
             return 0
-
-    # Grid definition
     title = "Roles"
     model_class = model.Role
     template='/admin/dataset_security/role/grid.mako'
@@ -231,19 +227,14 @@ class GroupListGrid( grids.Grid ):
             if group.members:
                 return len( group.members )
             return 0
-
-    # Grid definition
     title = "Groups"
     model_class = model.Group
     template='/admin/dataset_security/group/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
-                    #key="name",
                     link=( lambda item: dict( operation="Manage users and roles", id=item.id ) ),
-                    attach_popup=True
-                    #filterable="advanced"
-                    ),
+                    attach_popup=True ),
         UsersColumn( "Users", attach_popup=False ),
         RolesColumn( "Roles", attach_popup=False ),
         StatusColumn( "Status", attach_popup=False ),
@@ -301,6 +292,30 @@ class ManageCategoryListGrid( CategoryListGrid ):
     ]
 
 class AdminRepositoryListGrid( RepositoryListGrid ):
+    columns = [ RepositoryListGrid.NameColumn( "Name",
+                                               key="name",
+                                               link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                               attach_popup=True ),
+                RepositoryListGrid.DescriptionColumn( "Synopsis",
+                                                      key="description",
+                                                      attach_popup=False ),
+                RepositoryListGrid.MetadataRevisionColumn( "Metadata Revisions" ),
+                RepositoryListGrid.UserColumn( "Owner",
+                                               model_class=model.User,
+                                               link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
+                                               attach_popup=False,
+                                               key="User.username" ),
+                RepositoryListGrid.EmailAlertsColumn( "Alert", attach_popup=False ),
+                # Columns that are valid for filtering but are not visible.
+                grids.DeletedColumn( "Deleted",
+                                     key="deleted",
+                                     visible=False,
+                                     filterable="advanced" ) ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
     operations = [ operation for operation in RepositoryListGrid.operations ]
     operations.append( grids.GridOperation( "Delete",
                                             allow_multiple=False,
@@ -507,41 +522,26 @@ class AdminController( BaseUIController, Admin ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        name = util.restore_text( params.get( 'name', '' ) ).strip()
+        description = util.restore_text( params.get( 'description', '' ) ).strip()
         if params.get( 'create_category_button', False ):
-            name = util.restore_text( params.name )
-            description = util.restore_text( params.description )
-            error = False
             if not name or not description:
                 message = 'Enter a valid name and a description'
-                error = True
-            elif trans.sa_session.query( trans.app.model.Category ) \
-                                 .filter( trans.app.model.Category.table.c.name==name ) \
-                                 .first():
+                status = 'error'
+            elif get_category_by_name( trans, name ):
                 message = 'A category with that name already exists'
-                error = True
-            if error:
-                return trans.fill_template( '/webapps/community/category/create_category.mako',
-                                            name=name,
-                                            description=description,
-                                            message=message,
-                                            status='error' )
+                status = 'error'
             else:
                 # Create the category
                 category = trans.app.model.Category( name=name, description=description )
                 trans.sa_session.add( category )
-                message = "Category '%s' has been created" % category.name
                 trans.sa_session.flush()
+                message = "Category '%s' has been created" % category.name
+                status = 'done'
                 trans.response.send_redirect( web.url_for( controller='admin',
                                                            action='manage_categories',
-                                                           message=util.sanitize_text( message ),
-                                                           status='done' ) )
-            trans.response.send_redirect( web.url_for( controller='admin',
-                                                       action='create_category',
-                                                       message=util.sanitize_text( message ),
-                                                       status='error' ) )
-        else:
-            name = ''
-            description = ''
+                                                           message=message,
+                                                           status=status ) )
         return trans.fill_template( '/webapps/community/category/create_category.mako',
                                     name=name,
                                     description=description,
@@ -623,8 +623,7 @@ class AdminController( BaseUIController, Admin ):
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif category.name != new_name and \
-                    trans.sa_session.query( trans.app.model.Category ).filter( trans.app.model.Category.table.c.name==new_name ).first():
+                elif category.name != new_name and get_category_by_name( trans, name ):
                     message = 'A category with that name already exists'
                     status = 'error'
                 else:
@@ -633,10 +632,11 @@ class AdminController( BaseUIController, Admin ):
                     trans.sa_session.add( category )
                     trans.sa_session.flush()
                     message = "The information has been saved for category '%s'" % ( category.name )
+                    status = 'done'
                     return trans.response.send_redirect( web.url_for( controller='admin',
                                                                       action='manage_categories',
-                                                                      message=util.sanitize_text( message ),
-                                                                      status='done' ) )
+                                                                      message=message,
+                                                                      status=status ) )
         return trans.fill_template( '/webapps/community/category/edit_category.mako',
                                     category=category,
                                     message=message,
@@ -649,20 +649,31 @@ class AdminController( BaseUIController, Admin ):
             # What we've done is rendered the search box for the RepositoryListGrid on the grid.mako
             # template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.
             # Since we are searching repositories and not categories, redirect to browse_repositories().
-            return self.browse_repositories( trans, **kwd )
+            return trans.response.send_redirect( web.url_for( controller='admin',
+                                                              action='browse_repositories',
+                                                              **kwd ) )
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "create":
-                return self.create_category( trans, **kwd )
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='create_category',
+                                                                  **kwd ) )
             elif operation == "delete":
-                return self.mark_category_deleted( trans, **kwd )
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='mark_category_deleted',
+                                                                  **kwd ) )
             elif operation == "undelete":
-                return self.undelete_category( trans, **kwd )
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='undelete_category',
+                                                                  **kwd ) )
             elif operation == "purge":
-                return self.purge_category( trans, **kwd )
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='purge_category',
+                                                                  **kwd ) )
             elif operation == "edit":
-                return self.edit_category( trans, **kwd )
-        # Render the list view
+                return trans.response.send_redirect( web.url_for( controller='admin',
+                                                                  action='edit_category',
+                                                                  **kwd ) )
         return self.manage_category_list_grid( trans, **kwd )
     @web.expose
     @web.require_admin

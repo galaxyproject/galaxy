@@ -55,6 +55,15 @@ class InstalledRepositoryGrid( grids.Grid ):
     class ToolShedColumn( grids.TextColumn ):
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.tool_shed
+    class DeletedColumn( grids.DeletedColumn ):
+            def get_accepted_filters( self ):
+                """ Returns a list of accepted filters for this column. """
+                accepted_filter_labels_and_vals = { "Active" : "False", "Deactivated or uninstalled" : "True", "All": "All" }
+                accepted_filters = []
+                for label, val in accepted_filter_labels_and_vals.items():
+                   args = { self.key: val }
+                   accepted_filters.append( grids.GridColumnFilter( label, args) )
+                return accepted_filters
     # Grid definition
     title = "Installed tool shed repositories"
     model_class = model.ToolShedRepository
@@ -74,10 +83,10 @@ class InstalledRepositoryGrid( grids.Grid ):
                       filterable="advanced" ),
         ToolShedColumn( "Tool shed" ),
         # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn( "Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced" )
+        DeletedColumn( "Status",
+                       key="deleted",
+                       visible=False,
+                       filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name", 
                                                 cols_to_filter=[ columns[0] ],
