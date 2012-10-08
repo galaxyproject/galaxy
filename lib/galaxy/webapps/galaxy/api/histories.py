@@ -72,7 +72,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True, deleted=deleted )
         except Exception, e:
-            raise
             return str( e )
         try:
             item = history.get_api_value(view='element', value_mapper={'id':trans.security.encode_id})
