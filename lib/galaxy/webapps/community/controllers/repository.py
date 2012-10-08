@@ -40,8 +40,6 @@ class CategoryListGrid( grids.Grid ):
                     viewable_repositories += 1
                 return viewable_repositories
             return 0
-
-    # Grid definition
     title = "Categories"
     model_class = model.Category
     template='/webapps/community/category/grid.mako'
@@ -148,6 +146,15 @@ class RepositoryListGrid( grids.Grid ):
             if column_filter == "All":
                 return query
             return query.filter( model.Category.name == column_filter )
+    class DeletedColumn( grids.DeletedColumn ):
+        def get_accepted_filters( self ):
+            """ Returns a list of accepted filters for this column. """
+            accepted_filter_labels_and_vals = { "Active" : "False", "Deactivated or uninstalled" : "True", "All": "All" }
+            accepted_filters = []
+            for label, val in accepted_filter_labels_and_vals.items():
+               args = { self.key: val }
+               accepted_filters.append( grids.GridColumnFilter( label, args) )
+            return accepted_filters
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             if repository.user:
@@ -200,10 +207,10 @@ class RepositoryListGrid( grids.Grid ):
                                   model_class=model.Category,
                                   key="Category.name",
                                   visible=False ),
-        grids.DeletedColumn( "Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced" )
+        DeletedColumn( "Status",
+                       key="deleted",
+                       visible=False,
+                       filterable="advanced" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[0], columns[1] ],
@@ -2182,7 +2189,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         cntrller = params.get( 'cntrller', 'repository' )
         repository = get_repository( trans, id )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
-        metadata = repository_metadata.metadata
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+        else:
+            metadata = None
         if metadata and 'readme' in metadata:
             readme_file = str( metadata[ 'readme' ] )
             repo_files_dir = repository.repo_path
