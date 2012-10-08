@@ -1360,8 +1360,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                     for step in workflow.steps:
                         step.upgrade_messages = {}
                         # Connections by input name
-                        step.input_connections_by_name = \
-                            dict( ( conn.input_name, conn ) for conn in step.input_connections )
                         input_connections_by_name = {}
                         for conn in step.input_connections:
                             input_name = conn.input_name
