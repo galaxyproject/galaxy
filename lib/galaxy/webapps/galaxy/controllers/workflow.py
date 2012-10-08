@@ -1429,11 +1429,12 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                         if prefixed_name in step.input_connections_by_name:
                                             conn = step.input_connections_by_name[ prefixed_name ]
                                             if input.multiple:
-                                                replacements = [outputs[ c.output_step.id ][ c.output_name ] for c in conn]
+                                                replacement = [outputs[ c.output_step.id ][ c.output_name ] for c in conn]
                                             else:
                                                 replacement = outputs[ conn[0].output_step.id ][ conn[0].output_name ]
                                     return replacement
                                 try:
+                                    # Replace DummyDatasets with historydatasetassociations
                                     visit_input_values( tool.inputs, step.state.inputs, callback )
                                 except KeyError, k:
                                     error( "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow." % (tool.name, k.message))
