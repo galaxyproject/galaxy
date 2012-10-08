@@ -33,7 +33,7 @@ class UserAPIController( BaseAPIController ):
             if not trans.user_is_admin():
                 item = trans.user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
                 item['url'] = url_for( route, id=item['id'] )
-                return item
+                return [item]
         for user in query:
             item = user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
             item['url'] = url_for( route, id=item['id'] )
