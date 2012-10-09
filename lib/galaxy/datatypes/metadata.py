@@ -345,13 +345,13 @@ class ColumnParameter( RangeParameter ):
     
     def get_html_field( self, value=None, context={}, other_values={}, values=None, **kwd ):
         if values is None and context:
-            column_range = range( 1, context.columns+1, 1 )
+            column_range = range( 1, ( context.columns or 0 ) + 1, 1 )
             values = zip( column_range, column_range )
         return RangeParameter.get_html_field( self, value=value, context=context, other_values=other_values, values=values, **kwd )
     
     def get_html( self, value, context={}, other_values={}, values=None, **kwd ):
         if values is None and context:
-            column_range = range( 1, context.columns+1, 1 )
+            column_range = range( 1, ( context.columns or 0 ) + 1, 1 )
             values = zip( column_range, column_range )
         return RangeParameter.get_html( self, value, context=context, other_values=other_values, values=values, **kwd ) 
     
