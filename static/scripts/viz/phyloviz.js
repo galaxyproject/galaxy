@@ -1,4 +1,4 @@
-define(['libs/d3', 'viz/visualization'], function(d3, visualization_mod) {
+define(['libs/d3', 'viz/visualization', 'mvc/data'], function(d3, visualization_mod, data_mod) {
 
 var UserMenuBase = Backbone.View.extend({
     /**
@@ -181,6 +181,12 @@ var PhyloTree = visualization_mod.Visualization.extend({
         nodeAttrChangedTime : 0
     },
 
+    initialize: function(options) {
+        this.set("dataset", new data_mod.Dataset({
+            id: options.dataset_id
+        }));
+    },
+
     root : {}, // Root has to be its own independent object because it is not part of the viz_config
 
     toggle : function (d) {
@@ -255,7 +261,7 @@ var PhyloTree = visualization_mod.Visualization.extend({
             },
             success: function(res){
                 var viz_id = res.url.split("id=")[1].split("&")[0],
-                    viz_url = "/phyloviz/visualization?id=" + viz_id;
+                    viz_url = "/visualization?id=" + viz_id;
                 window.history.pushState({}, "", viz_url + window.location.hash);
                 hide_modal();
             }
@@ -662,11 +668,11 @@ var PhylovizView = Backbone.View.extend({
          * Primes the Ajax URL to load another Nexus tree
          */
         var self = this,
-            treeIndex = $("#phylovizNexSelector :selected").val(),
-            dataset_id = self.phyloTree.get("dataset_id"),
-            url = "phyloviz/getJsonData?dataset_id=" + dataset_id + "&treeIndex=" + String(treeIndex);
-        $.getJSON(url, function(packedJson){
-            window.initPhyloViz(packedJson.data, packedJson.config);
+            treeIndex = $("#phylovizNexSelector :selected").val();
+        $.getJSON(self.phyloTree.get("dataset").url(), { tree_index: treeIndex, data_type: 'raw_data' }, function(packedJson){
+            self.data = packedJson.data;
+            self.config = packedJson;
+            self.render();
         });
     }
 });

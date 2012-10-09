@@ -165,7 +165,7 @@
                 // -- Render viz. --
                 phyloviz.render();
 
-            }
+            };
 
             $(function firstVizLoad(){       // calls when viz is loaded for the first time
                 var config = JSON.parse( '${ h.to_json_string( config )}');

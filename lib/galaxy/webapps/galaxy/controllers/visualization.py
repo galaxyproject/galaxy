@@ -847,8 +847,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         # Get data.
         pd = PhylovizDataProvider( original_dataset=hda )
-        json, config = pd.get_data()
-        json = json[tree_index]
+        config = pd.get_data( tree_index=tree_index )
         
         config["title"] = hda.display_name()
         config["ext"] = hda.datatype.file_ext
@@ -857,7 +856,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         config["saved_visualization"] = False
 
         # Return viz.
-        return trans.fill_template_mako( "visualization/phyloviz.mako", data = json, config=config )
+        return trans.fill_template_mako( "visualization/phyloviz.mako", data = config[ "data" ], config=config )
 
     @web.json
     def bookmarks_from_dataset( self, trans, hda_id=None, ldda_id=None ):

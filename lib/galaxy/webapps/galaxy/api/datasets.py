@@ -185,19 +185,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             return msg
     
         # Return data.
-        data = None
         data_provider = trans.app.data_provider_registry.get_data_provider( trans, raw=True, original_dataset=dataset )
-        
-        if isinstance( data_provider, ColumnDataProvider ):
-            data = data_provider.get_data( **kwargs )
-            
-        else:
-            # Default to genomic data.
-            # FIXME: need better way to set dataset_type.
-            low, high = int( kwargs.get( 'low' ) ), int( kwargs.get( 'high' ) )
-            data = data_provider.get_data( start=low, end=high, **kwargs )
-            data[ 'dataset_type' ] = 'interval_index'
-            data[ 'extra_info' ] = None
-            if isinstance( dataset.datatype, Vcf ):
-                data[ 'dataset_type' ] = 'tabix'
+        data = data_provider.get_data( **kwargs )
+
         return data

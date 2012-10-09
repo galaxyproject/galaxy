@@ -520,7 +520,7 @@ class BedDataProvider( GenomeDataProvider ):
 
             rval.append( payload )
 
-        return { 'data': rval, 'message': message }
+        return { 'data': rval, 'dataset_type': self.dataset_type, 'message': message }
 
     def write_data_to_file( self, regions, filename ):
         out = open( filename, "w" )
@@ -549,8 +549,6 @@ class RawBedDataProvider( BedDataProvider ):
     NOTE: this data provider does not use indices, and hence will be very slow
     for large datasets.
     """
-
-    dataset_type = 'interval_index'
 
     def get_iterator( self, chrom=None, start=None, end=None ):
         # Read first line in order to match chrom naming format.
@@ -695,8 +693,6 @@ class RawVcfDataProvider( VcfDataProvider ):
     NOTE: this data provider does not use indices, and hence will be very slow
     for large datasets.
     """
-
-    dataset_type = 'tabix'
 
     def get_iterator( self, chrom, start, end ):
         # Read first line in order to match chrom naming format.
@@ -1278,7 +1274,7 @@ class RawGFFDataProvider( GenomeDataProvider ):
             results.append( payload )
 
             
-        return { 'data': results, 'message': message }
+        return { 'data': results, 'dataset_type': self.dataset_type, 'message': message }
         
 class GtfTabixDataProvider( TabixDataProvider ):
     """
