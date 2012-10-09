@@ -150,6 +150,11 @@ class ToolBox( object ):
                                         tool_path=tool_path,
                                         config_elems=config_elems )
             self.shed_tool_confs.append( shed_tool_conf_dict )
+    def get_shed_config_dict_by_filename( self, filename, default=None ):
+        for shed_config_dict in self.shed_tool_confs:
+            if shed_config_dict[ 'config_filename' ] == filename:
+                return shed_config_dict
+        return default
     def __add_tool_to_tool_panel( self, tool_id, panel_component, section=False ):
         # See if a version of this tool is already loaded into the tool panel.  The value of panel_component
         # will be a ToolSection (if the value of section=True) or self.tool_panel (if section=False).
