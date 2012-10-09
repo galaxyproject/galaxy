@@ -558,6 +558,14 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
         
         parent.append( this._render_displayApps() );
         parent.append( this._render_peek() );
+
+        //TODO??: still needed?
+        //// If Mozilla, hide scrollbars in hidden items since they cause animation bugs
+        //if ( $.browser.mozilla ) {
+        //    $( "div.historyItemBody" ).each( function() {
+        //        if ( !$(this).is(":visible") ) { $(this).find( "pre.peek" ).css( "overflow", "hidden" ); }
+        //    });
+        //}
     },
     
     _render_body : function(){
@@ -704,7 +712,13 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
 
     toggleBodyVisibility : function( visible ){
         var $body = this.$el.find( '.historyItemBody' );
-        $body.toggle();
+        if( visible === undefined ){
+            $body.toggle();
+        } else if( visible ){
+            $body.show();
+        } else {
+            $body.hide();
+        }
         this.trigger( 'toggleBodyVisibility', this.model.get( 'id' ), $body.is( ':visible' ) );
     },
 
@@ -715,9 +729,7 @@ var HistoryItemView = BaseView.extend( LoggableMixin ).extend({
     }
 });
 
-
 //------------------------------------------------------------------------------
-//HistoryItemView.templates = InDomTemplateLoader.getTemplates({
 HistoryItemView.templates = {
     warningMsg      : Handlebars.templates[ 'template-warningmessagesmall' ],
 
@@ -875,7 +887,6 @@ var History = BaseModel.extend( LoggableMixin ).extend({
 
 //------------------------------------------------------------------------------
 // view for the HistoryCollection (as per current right hand panel)
-//var HistoryView = BaseView.extend( LoggableMixin ).extend( UsesStorageMixin ) .extend({
 var HistoryView = BaseView.extend( LoggableMixin ).extend({
     
     // uncomment this out see log messages
@@ -894,16 +905,20 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
         );
         // set up the individual history items/datasets
         this.initializeItems();
+
     },
 
     initializeItems : function(){
         this.itemViews = {};
         var historyPanel = this;
+        
+        // set up a view for each item, init with model and listeners, cache to map ( model.id : view )
         this.model.items.each( function( item ){
             var itemId = item.get( 'id' ),
+                visible = historyPanel.storage.get( 'visibleItems' ).get( itemId ),
                 itemView = new HistoryItemView({
-                    model: item, visible:
-                    historyPanel.storage.get( 'visibleItems' ).get( itemId )
+                    model: item,
+                    visible: visible
                 });
             historyPanel.setUpItemListeners( itemView );
             historyPanel.itemViews[ itemId ] = itemView;
@@ -912,6 +927,7 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
 
     setUpItemListeners : function( itemView ){
         var HistoryPanel = this;
+
         // use storage to maintain a list of items whose bodies are visible
         itemView.bind( 'toggleBodyVisibility', function( id, visible ){
             if( visible ){
@@ -930,7 +946,34 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
         this.itemsDiv = this.$el.find( '#' + this.model.get( 'id' ) + '-datasets' );
         
         //TODO: set up widgets, tooltips, etc.
+        async_save_text(
+            "history-name-container",
+            "history-name",
+            this.model.get( 'renameURL' ),
+            "new_name",
+            18
+        );
+        this.$el.find( '.tooltip' ).tooltip();
         
+        var historyAnnotationArea = this.$el.find( '#history-annotation-area' );
+        $( '#history-annotate' ).click( function() {
+            if ( historyAnnotationArea.is( ":hidden" ) ) {
+                historyAnnotationArea.slideDown( "fast" );
+            } else {
+                historyAnnotationArea.slideUp( "fast" );
+            }
+            return false;
+        });
+        async_save_text(
+            "history-annotation-container",
+            "history-annotation",
+            this.model.get( 'annotateURL' ),
+            "new_annotation",
+            18,
+            true,
+            4
+        );
+
         if( this.model.items.length ){
             // render to temp, move all at once, remove temp holder
             var tempDiv = this._render_items();
@@ -948,6 +991,53 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
             div.prepend( itemView.render() );
         });
         return div;
+    },
+    
+    events : {
+        'click #history-collapse-all'   : 'hideAllItemBodies',
+        'click #history-tag'            : 'loadAndDisplayTags'
+    },
+
+    hideAllItemBodies : function(){
+        _.each( this.itemViews, function( item ){
+            item.toggleBodyVisibility( false );
+        });
+    },
+
+    loadAndDisplayTags : function( event ){
+        //BUG: broken with latest
+        //TODO: this is a drop in from history.mako - should use MV as well
+        this.log( this + '.loadAndDisplayTags', event );
+        var tagArea = this.$el.find( '#history-tag-area' ),
+            tagElt = tagArea.find( '.tag-elt' );
+        this.log( '\t tagArea', tagArea, ' tagElt', tagElt );
+
+        // Show or hide tag area; if showing tag area and it's empty, fill it.
+        if( tagArea.is( ":hidden" ) ){
+            if( !jQuery.trim( tagElt.html() ) ){
+                var view = this;
+                // Need to fill tag element.
+                $.ajax({
+                    //TODO: the html from this breaks a couple of times
+                    url: this.model.get( 'tagURL' ),
+                    error: function() { alert( "Tagging failed" ); },
+                    success: function(tag_elt_html) {
+                        view.log( view + ' tag elt html (ajax)', tag_elt_html );
+                        tagElt.html(tag_elt_html);
+                        tagElt.find(".tooltip").tooltip();
+                        tagArea.slideDown("fast");
+                    }
+                });
+            } else {
+                // Tag element is filled; show.
+                tagArea.slideDown("fast");
+            }
+
+        } else {
+            // Hide.
+            tagArea.slideUp("fast");
+        }
+        return false;
     },
     
     toString    : function(){

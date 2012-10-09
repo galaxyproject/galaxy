@@ -23,21 +23,13 @@ function program5(depth0,data) {
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(6, program6, data)}); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\"\n            class=\"icon-button tags tooltip\" target=\"galaxy_main\" href=\"";
-  foundHelper = helpers.tagURL;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
-  else { stack1 = depth0.tagURL; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  buffer += escapeExpression(stack1) + "\"></a>\n        <a id=\"history-annotate\" title=\"";
+  buffer += "\"\n            class=\"icon-button tags tooltip\" target=\"galaxy_main\" href=\"javascript:void(0)\"></a>\n        <a id=\"history-annotate\" title=\"";
   foundHelper = helpers.local;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(8, program8, data)}); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(8, program8, data)}); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\"\n            class=\"icon-button annotate tooltip\" target=\"galaxy_main\" href=\"";
-  foundHelper = helpers.annotateURL;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
-  else { stack1 = depth0.annotateURL; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  buffer += escapeExpression(stack1) + "\"></a>\n    </div>\n    ";
+  buffer += "\"\n            class=\"icon-button annotate tooltip\" target=\"galaxy_main\" href=\"javascript:void(0)\"></a>\n    </div>\n    ";
   return buffer;}
 function program6(depth0,data) {
   
@@ -143,9 +135,9 @@ function program24(depth0,data) {
   
   var buffer = "", stack1;
   buffer += "\n";
-  buffer += "\n<div style=\"margin: 0px 5px 10px 5px\">\n\n    <div id=\"history-tag-area\" style=\"display: none\">\n        <b>Tags:</b>\n        ";
+  buffer += "\n<div style=\"margin: 0px 5px 10px 5px\">\n\n    <div id=\"history-tag-area\" style=\"display: none\">\n        ";
   buffer += "\n        ";
-  buffer += "\n    </div>\n\n    <div id=\"history-annotation-area\" style=\"display: none\">\n        <strong>Annotation / Notes:</strong>\n        <div id=\"history-annotation-container\">\n        <div id=\"history-annotation\" class=\"tooltip editable-text\" title=\"Click to edit annotation\">\n            ";
+  buffer += "\n        <strong>Tags:</strong>\n        <div class=\"tag-elt\"></div>\n    </div>\n\n    <div id=\"history-annotation-area\" style=\"display: none\">\n        <strong>Annotation / Notes:</strong>\n        <div id=\"history-annotation-container\">\n        <div id=\"history-annotation\" class=\"tooltip editable-text\" title=\"Click to edit annotation\">\n            ";
   stack1 = depth0.annotation;
   stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.program(27, program27, data),fn:self.program(25, program25, data)});
   if(stack1 || stack1 === 0) { buffer += stack1; }
@@ -228,7 +220,7 @@ function program36(depth0,data) {
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(3, program3, data)}); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "' class='icon-button toggle tooltip' href='#' style=\"display: none\"></a>\n    ";
+  buffer += "' id=\"history-collapse-all\"\n        class='icon-button toggle tooltip' href='javascript:void(0);'></a>\n    ";
   stack1 = depth0.userRoles;
   stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(5, program5, data)});
   if(stack1 || stack1 === 0) { buffer += stack1; }
@@ -251,7 +243,6 @@ function program36(depth0,data) {
   stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(20, program20, data)});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n\n";
-  buffer += "\n";
   buffer += "\n";
   stack1 = depth0.userRoles;
   stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(24, program24, data)});

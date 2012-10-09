@@ -103,13 +103,14 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
 <script type="text/template" class="template-history" id="template-history-historyPanel">
 <div id="top-links" class="historyLinks">
     <a title="{{#local}}refresh{{/local}}" class="icon-button arrow-circle tooltip" href="{{baseURL}}"></a>
-    <a title='{{#local}}collapse all{{/local}}' class='icon-button toggle tooltip' href='#' style="display: none"></a>
+    <a title='{{#local}}collapse all{{/local}}' id="history-collapse-all"
+        class='icon-button toggle tooltip' href='javascript:void(0);'></a>
     {{#if userRoles}}
     <div style="width: 40px; float: right; white-space: nowrap;">
         <a id="history-tag" title="{{#local}}Edit history tags{{/local}}"
-            class="icon-button tags tooltip" target="galaxy_main" href="{{tagURL}}"></a>
+            class="icon-button tags tooltip" target="galaxy_main" href="javascript:void(0)"></a>
         <a id="history-annotate" title="{{#local}}Edit history annotation{{/local}}"
-            class="icon-button annotate tooltip" target="galaxy_main" href="{{annotateURL}}"></a>
+            class="icon-button annotate tooltip" target="galaxy_main" href="javascript:void(0)"></a>
     </div>
     {{/if}}
 </div>
@@ -148,15 +149,15 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
 {{/if}}
 
 {{! tags and annotations }}
-{{! TODO: wire these to js events }}
 {{#if userRoles}}
 {{! TODO: move inline styles out }}
 <div style="margin: 0px 5px 10px 5px">
 
     <div id="history-tag-area" style="display: none">
-        <b>Tags:</b>
         {{! load via js render_individual_tagging_element }}
         {{! render_individual_tagging_element(user=trans.get_user(), tagged_item=history, elt_context="history.mako", use_toggle_link=False, input_size="20") }}
+        <strong>Tags:</strong>
+        <div class="tag-elt"></div>
     </div>
 
     <div id="history-annotation-area" style="display: none">
@@ -202,6 +203,3 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
 </div>
 {{/if}}
 </script>
-
-
-

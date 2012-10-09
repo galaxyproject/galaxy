@@ -291,9 +291,10 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     ##TODO: move to API
     
     for_editing = True
+    encoded_history_id = trans.security.encode_id( history.id )
     context_dict = {
         'history'       : { 
-            'id'            : trans.security.encode_id( history.id ),
+            'id'            : encoded_history_id,
             'name'          : history.name,
             
             'status'        : status,
@@ -324,11 +325,13 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
             'annotation'    : h.to_unicode( annotation ),
 
             ##TODO: broken
-            'baseURL'           : h.url_for( 'history', show_deleted=show_deleted ),
-            'hideDeletedURL'    : h.url_for( 'history', show_deleted=False ),
-            'hideHiddenURL'     : h.url_for( 'history', show_hidden=False ),
-            'tagURL'            : h.url_for( controller='history', action='tag' ),
-            'annotateURL'       : h.url_for( controller='history', action='annotate' )
+            'baseURL'           : h.url_for( controller="/history", show_deleted=show_deleted ),
+            'hideDeletedURL'    : h.url_for( controller="/history", show_deleted=False ),
+            'hideHiddenURL'     : h.url_for( controller="/history", show_hidden=False ),
+            'renameURL'         : h.url_for( controller="/history", action="rename_async", id=encoded_history_id ),
+            'tagURL'            : h.url_for( controller='tag', action='get_tagging_elt_async',
+                                    item_class=history.__class__.__name__, item_id=encoded_history_id ),
+            'annotateURL'       : h.url_for( controller="/history", action="annotate_async", id=encoded_history_id )
         },
         'hdas'          : [ prep_hda( hda, for_editing ) for hda in datasets ],
         
