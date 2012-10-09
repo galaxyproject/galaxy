@@ -274,12 +274,15 @@ class Tabular( data.Text ):
                 column_names = dataset.metadata.column_names
             elif hasattr(dataset.datatype, 'column_names'):
                 column_names = dataset.datatype.column_names
+            column_types = dataset.metadata.column_types
+            if not column_types:
+                column_types = []
             return trans.fill_template( "/dataset/tabular_chunked.mako",
                         dataset = dataset,
                         chunk = self.get_chunk(trans, dataset, 0),
                         column_number = dataset.metadata.columns,
                         column_names = column_names,
-                        column_types = dataset.metadata.column_types)
+                        column_types = column_types )
 
     def set_peek( self, dataset, line_count=None, is_multi_byte=False):
         super(Tabular, self).set_peek( dataset, line_count=line_count, is_multi_byte=is_multi_byte)
