@@ -2987,6 +2987,78 @@ class ToolShedRepository( object ):
                 return relative_path
         return None
     @property
+    def tool_shed_path_name( self ):
+        tool_shed_url = self.tool_shed
+        if tool_shed_url.find( ':' ) > 0:
+            # Eliminate the port, if any, since it will result in an invalid directory name.
+            tool_shed_url = tool_shed_url.split( ':' )[ 0 ]
+        return tool_shed_url.rstrip( '/' )
+    def get_tool_relative_path( self, app ):
+        shed_conf_dict = self.get_shed_config_dict( app )
+        tool_path = None
+        relative_path = None
+        if shed_conf_dict:
+            tool_path = shed_conf_dict[ 'tool_path' ]
+            relative_path = os.path.join( self.tool_shed_path_name, 'repos', self.owner, self.name, self.installed_changeset_revision )
+        return tool_path, relative_path
+    def get_shed_config_filename( self ):
+        shed_config_filename = None
+        if self.metadata:
+            shed_config_filename = self.metadata.get( 'shed_config_filename', shed_config_filename )
+        return shed_config_filename
+    def set_shed_config_filename( self, value ):
+        self.metadata[ 'shed_config_filename' ] = value
+    shed_config_filename = property( get_shed_config_filename, set_shed_config_filename )
+    def guess_shed_config( self, app, default=None ):
+        tool_ids = []
+        metadata = self.metadata or {}
+        for tool in metadata.get( 'tools', [] ):
+            tool_ids.append( tool.get( 'guid' ) )
+        for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+            name = shed_tool_conf_dict[ 'config_filename' ]
+            for elem in shed_tool_conf_dict[ 'config_elems' ]:
+                if elem.tag == 'tool':
+                    for sub_elem in elem.findall( 'id' ):
+                        tool_id = sub_elem.text.strip()
+                        if tool_id in tool_ids:
+                            self.shed_config_filename = name
+                            return shed_tool_conf_dict
+                elif elem.tag == "section":
+                    for tool_elem in elem.findall( 'tool' ):
+                        for sub_elem in tool_elem.findall( 'id' ):
+                            tool_id = sub_elem.text.strip()
+                            if tool_id in tool_ids:
+                                self.shed_config_filename = name
+                                return shed_tool_conf_dict
+        if self.includes_datatypes:
+            #we need to search by filepaths here, which is less desirable
+            tool_shed_url = self.tool_shed
+            if tool_shed_url.find( ':' ) > 0:
+                # Eliminate the port, if any, since it will result in an invalid directory name.
+                tool_shed_url = tool_shed_url.split( ':' )[ 0 ]
+            tool_shed = tool_shed_url.rstrip( '/' )
+            for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+                tool_path = shed_tool_conf_dict[ 'tool_path' ]
+                relative_path = os.path.join( tool_path, tool_shed, 'repos', self.owner, self.name, self.installed_changeset_revision )
+                if os.path.exists( relative_path ):
+                    self.shed_config_filename = shed_tool_conf_dict[ 'config_filename' ]
+                    return shed_tool_conf_dict
+        #if self.dist_to_shed:
+        #    #return ./migrated_tools.xml
+        return default
+    def get_shed_config_dict( self, app, default=None ):
+        """
+        Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
+        in the shed_tool_conf_dict.
+        """
+        if not self.shed_config_filename:
+            self.guess_shed_config( app, default=default )
+        if self.shed_config_filename:
+            for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
+                if self.shed_config_filename == shed_tool_conf_dict[ 'config_filename' ]:
+                    return shed_tool_conf_dict
+        return default
+    @property
     def can_install( self ):
         return self.status == self.installation_status.NEW
     @property
