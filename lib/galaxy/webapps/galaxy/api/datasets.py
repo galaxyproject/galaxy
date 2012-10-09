@@ -46,7 +46,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             elif data_type == 'data':
                 rval = self._data( trans, dataset, **kwd )
             elif data_type == 'features':
-                rval = self._search_features( trans, dataset, kwd.get( 'query ' ) )
+                rval = self._search_features( trans, dataset, kwd.get( 'query' ) )
             elif data_type == 'raw_data':
                 rval = self._raw_data( trans, dataset, **kwd )
             elif data_type == 'track_config':
