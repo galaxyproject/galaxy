@@ -41,6 +41,7 @@
       <param name="space_to_tab" type="select" display="checkboxes" multiple="True" label="Convert spaces to tabs" help="Use this option if you are entering intervals by hand."> 
         <option value="Yes">Yes</option>
       </param>
+      <param name="NAME" type="hidden" help="Name for dataset in upload"></param>
     </upload_dataset>
     <param name="dbkey" type="genomebuild" label="Genome" />
     <conditional name="files_metadata" title="Specify metadata" value_from="self:app.datatypes_registry.get_upload_metadata_params" value_ref="file_type" value_ref_in_group="False" />
