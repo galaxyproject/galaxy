@@ -655,15 +655,17 @@ class AdminToolshed( AdminGalaxy ):
             update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.CLONING )
             repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
-            clone_dir = os.path.join( tool_path, self.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision ) )
-            relative_install_dir = os.path.join( clone_dir, tool_shed_repository.name )
-            cloned_ok, error_message = clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
+            relative_clone_dir = self.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision )
+            clone_dir = os.path.join( tool_path, relative_clone_dir )
+            relative_install_dir = os.path.join( relative_clone_dir, tool_shed_repository.name )
+            install_dir = os.path.join( tool_path, relative_install_dir )
+            cloned_ok, error_message = clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
             if cloned_ok:
                 if reinstalling:
                     # Since we're reinstalling the repository we need to find the latest changeset revision to which is can be updated.
                     current_changeset_revision, current_ctx_rev = get_update_to_changeset_revision_and_ctx_rev( trans, tool_shed_repository )
                     if current_ctx_rev != ctx_rev:
-                        repo = hg.repository( get_configured_ui(), path=os.path.abspath( relative_install_dir ) )
+                        repo = hg.repository( get_configured_ui(), path=os.path.abspath( install_dir ) )
                         pull_repository( repo, repository_clone_url, current_changeset_revision )
                         update_repository( repo, ctx_rev=current_ctx_rev )
                 self.handle_repository_contents( trans,
@@ -704,7 +706,7 @@ class AdminToolshed( AdminGalaxy ):
                                                         tool_shed_repository,
                                                         trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
                     # Get the tool_dependencies.xml file from the repository.
-                    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
+                    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', install_dir )#relative_install_dir )
                     installed_tool_dependencies = handle_tool_dependencies( app=trans.app,
                                                                             tool_shed_repository=tool_shed_repository,
                                                                             tool_dependencies_config=tool_dependencies_config,
@@ -736,6 +738,7 @@ class AdminToolshed( AdminGalaxy ):
         metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
                                                                                      repository=tool_shed_repository,
                                                                                      repository_clone_url=repository_clone_url,
+                                                                                     shed_config_dict = trans.app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf ),
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
                                                                                      resetting_all_metadata_on_repository=False,
@@ -749,7 +752,7 @@ class AdminToolshed( AdminGalaxy ):
             tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
             sample_files = metadata_dict.get( 'sample_files', [] )
             tool_index_sample_files = get_tool_index_sample_files( sample_files )
-            copy_sample_files( self.app, tool_index_sample_files )
+            copy_sample_files( self.app, tool_index_sample_files, tool_path=tool_path )
             sample_files_copied = [ s for s in tool_index_sample_files ]
             repository_tools_tups = get_repository_tools_tups( trans.app, metadata_dict )
             if repository_tools_tups:
@@ -762,7 +765,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                         repository_tools_tups,
                                                                                         sample_files_copied )
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
-                copy_sample_files( trans.app, sample_files, sample_files_copied=sample_files_copied )
+                copy_sample_files( trans.app, sample_files, tool_path=tool_path, sample_files_copied=sample_files_copied )
                 add_to_tool_panel( app=trans.app,
                                    repository_name=tool_shed_repository.name,
                                    repository_clone_url=repository_clone_url,
@@ -805,6 +808,8 @@ class AdminToolshed( AdminGalaxy ):
         repository_id = kwd[ 'id' ]
         operation = kwd.get( 'operation', None )
         repository = get_repository( trans, repository_id )
+        if not repository:
+            return trans.show_error_message( 'Invalid repository specified.' )
         if repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING ]:
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                               action='monitor_repository_installation',
@@ -822,7 +827,7 @@ class AdminToolshed( AdminGalaxy ):
         description = util.restore_text( params.get( 'description', repository.description ) )
         shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         if relative_install_dir:
-            repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
+            repo_files_dir = os.path.abspath( os.path.join( tool_path, relative_install_dir, repository.name ) )
         else:
             repo_files_dir = None
         if repository.in_error_state:
@@ -1447,20 +1452,27 @@ class AdminToolshed( AdminGalaxy ):
         repository = get_repository( trans, id )
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
         repository_clone_url = self.__generate_clone_url( trans, repository )
-        relative_install_dir = repository.repo_path( trans.app )
+        tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
         if relative_install_dir:
+            original_metadata_dict = repository.metadata
             metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
                                                                                          repository=repository,
                                                                                          repository_clone_url=repository_clone_url,
+                                                                                         shed_config_dict = repository.get_shed_config_dict( trans.app ),
                                                                                          relative_install_dir=relative_install_dir,
                                                                                          repository_files_dir=None,
                                                                                          resetting_all_metadata_on_repository=False,
                                                                                          updating_installed_repository=False )
             repository.metadata = metadata_dict
-            trans.sa_session.add( repository )
-            trans.sa_session.flush()
-            message = 'Metadata has been reset on repository <b>%s</b>.' % repository.name
-            status = 'done'
+            if metadata_dict != original_metadata_dict:
+                update_in_shed_tool_config( trans.app, repository  )#def update_in_shed_tool_config( trans, shed_tool_conf_dict, elem_list ):
+                trans.sa_session.add( repository )
+                trans.sa_session.flush()
+                message = 'Metadata has been reset on repository <b>%s</b>.' % repository.name
+                status = 'done'
+            else:
+                message = 'Metadata did not need to be reset on repository <b>%s</b>.' % repository.name
+                status = 'done'
         else:
             message = 'Error locating installation directory for repository <b>%s</b>.' % repository.name
             status = 'error'
@@ -1618,7 +1630,10 @@ class AdminToolshed( AdminGalaxy ):
             else:
                 shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, repository )
                 if relative_install_dir:
-                    repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, name ) )
+                    if tool_path:
+                        repo_files_dir = os.path.abspath( os.path.join( tool_path, relative_install_dir, name ) )
+                    else:
+                        repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, name ) )
                     repo = hg.repository( get_configured_ui(), path=repo_files_dir )
                     repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
                     pull_repository( repo, repository_clone_url, latest_ctx_rev )
@@ -1628,6 +1643,7 @@ class AdminToolshed( AdminGalaxy ):
                     metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
                                                                                                  repository=repository,
                                                                                                  repository_clone_url=repository_clone_url,
+                                                                                                 shed_config_dict = repository.get_shed_config_dict( trans.app ),
                                                                                                  relative_install_dir=relative_install_dir,
                                                                                                  repository_files_dir=None,
                                                                                                  resetting_all_metadata_on_repository=False,
@@ -1667,8 +1683,13 @@ class AdminToolshed( AdminGalaxy ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, id )
         metadata = repository.metadata
+        shed_config_dict = repository.get_shed_config_dict( trans.app )
+        tool_path = shed_config_dict.get( 'tool_path', None )
         if metadata and 'readme' in metadata:
-            f = open( metadata[ 'readme' ], 'r' )
+            readme_filename = metadata[ 'readme' ]
+            if tool_path:
+                readme_filename = os.path.join( tool_path, readme_filename )
+            f = open( readme_filename, 'r' )
             raw_text = f.read()
             f.close()
             readme_text = translate_string( raw_text, to_html=True )
@@ -1691,6 +1712,7 @@ class AdminToolshed( AdminGalaxy ):
         status = params.get( 'status', 'done' )
         repository = get_repository( trans, repository_id )
         repository_metadata = repository.metadata
+        shed_config_dict = repository.get_shed_config_dict( trans.app )
         tool_metadata = {}
         tool_lineage = []
         tool = None
@@ -1698,7 +1720,10 @@ class AdminToolshed( AdminGalaxy ):
             for tool_metadata_dict in repository_metadata[ 'tools' ]:
                 if tool_metadata_dict[ 'id' ] == tool_id:
                     tool_metadata = tool_metadata_dict
-                    tool = trans.app.toolbox.load_tool( os.path.abspath( tool_metadata[ 'tool_config' ] ), guid=tool_metadata[ 'guid' ] )
+                    tool_config = tool_metadata[ 'tool_config' ]
+                    if shed_config_dict and shed_config_dict.get( 'tool_path' ):
+                        tool_config = os.path.join( shed_config_dict.get( 'tool_path' ), tool_config )
+                    tool = trans.app.toolbox.load_tool( os.path.abspath( tool_config ), guid=tool_metadata[ 'guid' ] )
                     if tool:
                         tool_lineage = self.get_versions_of_tool( trans.app, tool.id )
                     break

@@ -387,6 +387,8 @@ def clean_repository_clone_url( repository_clone_url ):
     else:
         tmp_url = repository_clone_url
     return tmp_url
+def tool_shed_from_repository_clone_url( repository_clone_url ):
+    return clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
 def clean_tool_shed_url( tool_shed_url ):
     if tool_shed_url.find( ':' ) > 0:
         # Eliminate the port, if any, since it will result in an invalid directory name.
@@ -421,7 +423,7 @@ def copy_sample_file( app, filename, dest_path=None ):
     # Only create the .loc file if it does not yet exist.  We don't overwrite it in case it contains stuff proprietary to the local instance.
     if not os.path.exists( os.path.join( dest_path, copied_file ) ):
         shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
-def copy_sample_files( app, sample_files, sample_files_copied=None, dest_path=None ):
+def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None ):
     """
     Copy all files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
     are contained in sample_files_copied.  The default value for dest_path is ~/tool-data.
@@ -429,6 +431,8 @@ def copy_sample_files( app, sample_files, sample_files_copied=None, dest_path=No
     sample_files_copied = util.listify( sample_files_copied )
     for filename in sample_files:
         if filename not in sample_files_copied:
+            if tool_path:
+                filename=os.path.join( tool_path, filename )
             copy_sample_file( app, filename, dest_path=dest_path )
 def create_repo_info_dict( repository, owner, repository_clone_url, changeset_revision, ctx_rev, metadata ):
     repo_info_dict = {}
@@ -504,6 +508,9 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
 def create_tool_dependency_objects( app, tool_shed_repository, relative_install_dir, set_status=True ):
     # Create or update a ToolDependency for each entry in tool_dependencies_config.  This method is called when installing a new tool_shed_repository.
     tool_dependency_objects = []
+    shed_config_dict = tool_shed_repository.get_shed_config_dict( app )
+    if shed_config_dict.get( 'tool_path' ):
+        relative_install_dir = os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir )
     # Get the tool_dependencies.xml file from the repository.
     tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
     try:
@@ -601,7 +608,7 @@ def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
             else:
                 tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
     return tool_dependencies_dict
-def generate_metadata_for_changeset_revision( app, repository, repository_clone_url, relative_install_dir=None, repository_files_dir=None,
+def generate_metadata_for_changeset_revision( app, repository, repository_clone_url, shed_config_dict={}, relative_install_dir=None, repository_files_dir=None,
                                               resetting_all_metadata_on_repository=False, updating_installed_repository=False ):
     """
     Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
@@ -616,7 +623,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
     else:
         original_repository_metadata = None
     readme_file_names = get_readme_file_names( repository.name )
-    metadata_dict = {}
+    metadata_dict = { 'shed_config_filename': shed_config_dict.get( 'config_filename' ) }
     invalid_file_tups = []
     invalid_tool_configs = []
     tool_dependencies_config = None
@@ -637,6 +644,8 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
         work_dir = tempfile.mkdtemp()
         # All other files are on disk in the repository's repo_path, which is the value of relative_install_dir.
         files_dir = relative_install_dir
+        if shed_config_dict.get( 'tool_path' ):
+            files_dir = os.path.join( shed_config_dict['tool_path'], files_dir )
         app.config.tool_data_path = work_dir
         app.config.tool_data_table_config_path = work_dir
     # Handle proprietary datatypes, if any.
@@ -645,6 +654,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
         metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
     # Get the relative path to all sample files included in the repository for storage in the repository's metadata.
     sample_file_metadata_paths, sample_file_copy_paths = get_sample_files_from_disk( repository_files_dir=files_dir,
+                                                                                     tool_path=shed_config_dict.get( 'tool_path' ),
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      resetting_all_metadata_on_repository=resetting_all_metadata_on_repository )
     if sample_file_metadata_paths:
@@ -674,6 +684,8 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                         relative_path_to_readme = os.path.join( relative_install_dir, stripped_path_to_readme )
                     else:
                         relative_path_to_readme = os.path.join( root, name )
+                        if relative_install_dir and shed_config_dict.get( 'tool_path' ) and relative_path_to_readme.startswith( os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir ) ):
+                            relative_path_to_readme = relative_path_to_readme[ len( shed_config_dict.get( 'tool_path' ) ) + 1: ]
                     metadata_dict[ 'readme' ] = relative_path_to_readme
                 # See if we have a tool config.
                 elif name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
@@ -711,6 +723,8 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                                             relative_path_to_tool_config = os.path.join( relative_install_dir, stripped_path_to_tool_config )
                                         else:
                                             relative_path_to_tool_config = os.path.join( root, name )
+                                            if relative_install_dir and shed_config_dict.get( 'tool_path' ) and relative_path_to_tool_config.startswith( os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir ) ):
+                                                relative_path_to_tool_config = relative_path_to_tool_config[ len( shed_config_dict.get( 'tool_path' ) ) + 1: ]
                                         metadata_dict = generate_tool_metadata( relative_path_to_tool_config, tool, repository_clone_url, metadata_dict )
                                     else:
                                         for tup in invalid_files_and_errors_tups:
@@ -844,13 +858,35 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
     else:
         metadata_dict[ 'tools' ] = [ tool_dict ]
     return metadata_dict
+def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section ):
+    if tool_section is not None:
+        tool_elem = SubElement( tool_section, 'tool' )
+    else:
+        tool_elem = Element( 'tool' )
+    tool_elem.attrib[ 'file' ] = tool_file_path
+    tool_elem.attrib[ 'guid' ] = tool.guid
+    tool_shed_elem = SubElement( tool_elem, 'tool_shed' )
+    tool_shed_elem.text = tool_shed
+    repository_name_elem = SubElement( tool_elem, 'repository_name' )
+    repository_name_elem.text = repository_name
+    repository_owner_elem = SubElement( tool_elem, 'repository_owner' )
+    repository_owner_elem.text = owner
+    changeset_revision_elem = SubElement( tool_elem, 'installed_changeset_revision' )
+    changeset_revision_elem.text = changeset_revision
+    id_elem = SubElement( tool_elem, 'id' )
+    id_elem.text = tool.id
+    version_elem = SubElement( tool_elem, 'version' )
+    version_elem.text = tool.version
+    return tool_elem
+    
 def generate_tool_panel_elem_list( repository_name, repository_clone_url, changeset_revision, tool_panel_dict, repository_tools_tups, owner='' ):
     """Generate a list of ElementTree Element objects for each section or tool."""
     elem_list = []
     tool_elem = None
-    tmp_url = clean_repository_clone_url( repository_clone_url )
+    cleaned_repository_clone_url = clean_repository_clone_url( repository_clone_url )
     if not owner:
-        owner = get_repository_owner( tmp_url )
+        owner = get_repository_owner( cleaned_repository_clone_url )
+    tool_shed = cleaned_repository_clone_url.split( 'repos' )[ 0 ].rstrip( '/' )
     for guid, tool_section_dicts in tool_panel_dict.items():
         for tool_section_dict in tool_section_dicts:
             tool_section = None
@@ -874,23 +910,9 @@ def generate_tool_panel_elem_list( repository_name, repository_clone_url, change
                 if tup_guid == guid:
                     break
             if inside_section:
-                tool_elem = SubElement( tool_section, 'tool' )
+                tool_elem = generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section )
             else:
-                tool_elem = Element( 'tool' )
-            tool_elem.attrib[ 'file' ] = tool_file_path
-            tool_elem.attrib[ 'guid' ] = guid
-            tool_shed_elem = SubElement( tool_elem, 'tool_shed' )
-            tool_shed_elem.text = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
-            repository_name_elem = SubElement( tool_elem, 'repository_name' )
-            repository_name_elem.text = repository_name
-            repository_owner_elem = SubElement( tool_elem, 'repository_owner' )
-            repository_owner_elem.text = owner
-            changeset_revision_elem = SubElement( tool_elem, 'installed_changeset_revision' )
-            changeset_revision_elem.text = changeset_revision
-            id_elem = SubElement( tool_elem, 'id' )
-            id_elem.text = tool.id
-            version_elem = SubElement( tool_elem, 'version' )
-            version_elem.text = tool.version
+                tool_elem = generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, None )
             if inside_section:
                 if section_in_elem_list:
                     elem_list[ index ] = tool_section
@@ -1253,18 +1275,21 @@ def get_repository_owner_from_clone_url( repository_clone_url ):
     return get_repository_owner( tmp_url )
 def get_repository_tools_tups( app, metadata_dict ):
     repository_tools_tups = []
+    index, shed_conf_dict = get_shed_tool_conf_dict( app, metadata_dict.get( 'shed_config_filename' ) )
     if 'tools' in metadata_dict:
         for tool_dict in metadata_dict[ 'tools' ]:
-            relative_path = tool_dict.get( 'tool_config', None )
+            load_relative_path = relative_path = tool_dict.get( 'tool_config', None )
+            if shed_conf_dict.get( 'tool_path' ):
+                load_relative_path = os.path.join( shed_conf_dict.get( 'tool_path' ), relative_path )
             guid = tool_dict.get( 'guid', None )
             if relative_path and guid:
-                tool = app.toolbox.load_tool( os.path.abspath( relative_path ), guid=guid )
+                tool = app.toolbox.load_tool( os.path.abspath( load_relative_path ), guid=guid )
             else:
                 tool = None
             if tool:
                 repository_tools_tups.append( ( relative_path, guid, tool ) )
     return repository_tools_tups
-def get_sample_files_from_disk( repository_files_dir, relative_install_dir=None, resetting_all_metadata_on_repository=False ):
+def get_sample_files_from_disk( repository_files_dir, tool_path = None, relative_install_dir=None, resetting_all_metadata_on_repository=False ):
     if resetting_all_metadata_on_repository:
         # Keep track of the location where the repository is temporarily cloned so that we can strip it when setting metadata.
         work_dir = repository_files_dir
@@ -1287,6 +1312,9 @@ def get_sample_files_from_disk( repository_files_dir, relative_install_dir=None,
                         else:
                             relative_path_to_sample_file = os.path.join( root, name )
                             sample_file_copy_paths.append( relative_path_to_sample_file )
+                            if tool_path and relative_install_dir:
+                                if relative_path_to_sample_file.startswith( os.path.join( tool_path, relative_install_dir ) ):
+                                    relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
     return sample_file_metadata_paths, sample_file_copy_paths
 def get_shed_tool_conf_dict( app, shed_tool_conf ):
@@ -1327,46 +1355,16 @@ def get_tool_panel_config_tool_path_install_dir( app, repository ):
     partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
     # Get the relative tool installation paths from each of the shed tool configs.
     relative_install_dir = None
-    for shed_tool_conf_dict in app.toolbox.shed_tool_confs:
-        shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
-        if repository.dist_to_shed:
-            # The repository is owned by devteam and contains tools migrated from the Galaxy distribution to the tool shed, so
-            # the reserved tool panel config is migrated_tools_conf.xml, to which app.config.migrated_tools_config refers.
-            if shed_tool_conf == app.config.migrated_tools_config:
-                tool_path = shed_tool_conf_dict[ 'tool_path' ]
-                relative_install_dir = os.path.join( tool_path, partial_install_dir )
-                if tool_path and relative_install_dir:
-                    return shed_tool_conf, tool_path, relative_install_dir
-        elif repository.uninstalled:
-            # Since the repository is uninstalled we don't know what tool panel config was originally used to
-            # define the tools in the repository, so we'll just make sure not to use the reserved migrated_tools_conf.xml.
-            if shed_tool_conf != app.config.migrated_tools_config:
-                tool_path = shed_tool_conf_dict[ 'tool_path' ]
-                relative_install_dir = os.path.join( tool_path, partial_install_dir )
-                if tool_path and relative_install_dir:
-                    return shed_tool_conf, tool_path, relative_install_dir
-        else:
-            if repository.includes_tools:
-                metadata = repository.metadata
-                for tool_dict in metadata[ 'tools' ]:
-                    # Parse the tool panel config to get the entire set of config_elems.  # We'll check config_elems until we
-                    # find an element that matches one of the tools in the repository's metadata.
-                    tool_panel_config = shed_tool_conf_dict[ 'config_filename' ]
-                    tree = util.parse_xml( tool_panel_config )
-                    root = tree.getroot()
-                    tool_path, relative_install_dir = get_tool_path_install_dir( partial_install_dir,
-                                                                                 shed_tool_conf_dict,
-                                                                                 tool_dict,
-                                                                                 root )
-                    if tool_path and relative_install_dir:
-                        return shed_tool_conf, tool_path, relative_install_dir
-            else:
-                # Nothing will be loaded into the tool panel, so look for the installed repository on disk.
-                tool_path = shed_tool_conf_dict[ 'tool_path' ]
-                relative_install_dir = os.path.join( tool_path, partial_install_dir )
-                if tool_path and relative_install_dir and os.path.isdir( relative_install_dir ):
-                    return shed_tool_conf, tool_path, relative_install_dir
-    return None, None, None
+    shed_config_dict = repository.get_shed_config_dict( app )
+    if not shed_config_dict:
+        #just pick a semi-random shed config
+        for shed_config_dict in app.toolbox.shed_tool_confs:
+            if ( repository.dist_to_shed and shed_config_dict['config_filename'] == app.config.migrated_tools_config ) or ( not repository.dist_to_shed and shed_config_dict['config_filename'] != app.config.migrated_tools_config ):
+                break
+    shed_tool_conf = shed_config_dict[ 'config_filename' ]
+    tool_path = shed_config_dict[ 'tool_path' ]
+    relative_install_dir = partial_install_dir
+    return shed_tool_conf, tool_path, relative_install_dir
 def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems ):
     for elem in config_elems:
         if elem.tag == 'tool':
@@ -1774,6 +1772,42 @@ def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
         config_elems.remove( config_elem )
     # Persist the altered in-memory version of the tool config.
     config_elems_to_xml_file( trans.app, config_elems, shed_tool_conf, tool_path )
+def update_in_shed_tool_config( app, repository ):
+    # A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config file to generate the entire list
+    # of config_elems instead of using the in-memory list.
+    shed_conf_dict = repository.get_shed_config_dict( app )
+    shed_tool_conf = shed_conf_dict[ 'config_filename' ]
+    tool_path = shed_conf_dict[ 'tool_path' ]
+    
+    #hack for 'trans.app' used in lots of places. These places should just directly use app
+    trans = util.bunch.Bunch()
+    trans.app = app
+    
+    tool_panel_dict = generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
+    repository_tools_tups = get_repository_tools_tups( app, repository.metadata )
+    cleaned_repository_clone_url = clean_repository_clone_url( generate_clone_url( trans, repository ) )
+    tool_shed = tool_shed_from_repository_clone_url( cleaned_repository_clone_url )
+    owner = repository.owner
+    if not owner:
+        owner = get_repository_owner( cleaned_repository_clone_url )
+    guid_to_tool_elem_dict = {}
+    for tool_config_filename, guid, tool in repository_tools_tups:
+        guid_to_tool_elem_dict[ guid ] = generate_tool_elem( tool_shed, repository.name, repository.changeset_revision, repository.owner or '', tool_config_filename, tool, None )
+    config_elems = []
+    tree = util.parse_xml( shed_tool_conf )
+    root = tree.getroot()
+    for elem in root:
+        if elem.tag == 'section':
+            for i, tool_elem in enumerate( elem ):
+                guid = tool_elem.attrib.get( 'guid' )
+                if guid in guid_to_tool_elem_dict:
+                    elem[i] = guid_to_tool_elem_dict[ guid ]
+        elif elem.tag == 'tool':
+            guid = elem.attrib.get( 'guid' )
+            if guid in guid_to_tool_elem_dict:
+                elem = guid_to_tool_elem_dict[ guid ]
+        config_elems.append( elem )
+    config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
 def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     """A tool shed repository is being deactivated or uninstalled so handle tool panel alterations accordingly."""
     # Determine where the tools are currently defined in the tool panel and store this information so the tools can be displayed

@@ -33,9 +33,12 @@ class InstallManager( object ):
         root = tree.getroot()
         self.tool_shed = clean_tool_shed_url( root.get( 'name' ) )
         self.repository_owner = REPOSITORY_OWNER
+        index, self.shed_config_dict = get_shed_tool_conf_dict( app, self.migrated_tools_config )
         for repository_elem in root:
             self.install_repository( repository_elem, install_dependencies )
     def get_guid( self, repository_clone_url, relative_install_dir, tool_config ):
+        if self.shed_config_dict.get( 'tool_path' ):
+            relative_install_dir = os.path.join( self.shed_config_dict['tool_path'], relative_install_dir )
         found = False
         for root, dirs, files in os.walk( relative_install_dir ):
             if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
@@ -122,6 +125,10 @@ class InstallManager( object ):
     def handle_repository_contents( self, tool_shed_repository, repository_clone_url, relative_install_dir, repository_elem, install_dependencies ):
         """Generate the metadata for the installed tool shed repository, among other things."""
         tool_panel_dict_for_display = odict()
+        if self.tool_path:
+            repo_install_dir = os.path.join( self.tool_path, relative_install_dir )
+        else:
+            repo_install_dir = relative_install_dir
         for tool_elem in repository_elem:
             # The tool_elem looks something like this: <tool id="EMBOSS: antigenic1" version="5.0.0" file="emboss_antigenic.xml" />
             tool_config = tool_elem.get( 'file' )
@@ -135,6 +142,7 @@ class InstallManager( object ):
         metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=self.app,
                                                                                      repository=tool_shed_repository,
                                                                                      repository_clone_url=repository_clone_url,
+                                                                                     shed_config_dict = self.shed_config_dict,
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
                                                                                      resetting_all_metadata_on_repository=False,
@@ -150,7 +158,7 @@ class InstallManager( object ):
         if 'tools' in metadata_dict:
             sample_files = metadata_dict.get( 'sample_files', [] )
             tool_index_sample_files = get_tool_index_sample_files( sample_files )
-            copy_sample_files( self.app, tool_index_sample_files )
+            copy_sample_files( self.app, tool_index_sample_files, tool_path=self.tool_path )
             sample_files_copied = [ s for s in tool_index_sample_files ]
             repository_tools_tups = get_repository_tools_tups( self.app, metadata_dict )
             if repository_tools_tups:
@@ -163,14 +171,14 @@ class InstallManager( object ):
                                                                                         repository_tools_tups,
                                                                                         sample_files_copied )
                 # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
-                copy_sample_files( self.app, sample_files, sample_files_copied=sample_files_copied )
+                copy_sample_files( self.app, sample_files, tool_path=self.tool_path, sample_files_copied=sample_files_copied )
                 if install_dependencies and tool_dependencies and 'tool_dependencies' in metadata_dict:
                     # Install tool dependencies.
                     update_tool_shed_repository_status( self.app,
                                                         tool_shed_repository,
                                                         self.app.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
                     # Get the tool_dependencies.xml file from disk.
-                    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
+                    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
                     installed_tool_dependencies = handle_tool_dependencies( app=self.app,
                                                                             tool_shed_repository=tool_shed_repository,
                                                                             tool_dependencies_config=tool_dependencies_config,
@@ -195,10 +203,10 @@ class InstallManager( object ):
             self.app.sa_session.add( tool_shed_repository )
             self.app.sa_session.flush()
             work_dir = tempfile.mkdtemp()
-            datatypes_config = get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
+            datatypes_config = get_config_from_disk( 'datatypes_conf.xml', repo_install_dir )
             # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
             # after this installation completes.
-            converter_path, display_path = alter_config_and_load_prorietary_datatypes( self.app, datatypes_config, relative_install_dir, override=False )
+            converter_path, display_path = alter_config_and_load_prorietary_datatypes( self.app, datatypes_config, repo_install_dir, override=False ) #repo_install_dir was relative_install_dir
             if converter_path or display_path:
                 # Create a dictionary of tool shed repository related information.
                 repository_dict = create_repository_dict_for_proprietary_datatypes( tool_shed=self.tool_shed,
@@ -224,13 +232,15 @@ class InstallManager( object ):
         description = repository_elem.get( 'description' )
         installed_changeset_revision = repository_elem.get( 'changeset_revision' )
         # Install path is of the form: <tool path>/<tool shed>/repos/<repository owner>/<repository name>/<installed changeset revision>
-        clone_dir = os.path.join( self.tool_path, self.tool_shed, 'repos', self.repository_owner, name, installed_changeset_revision )
+        relative_clone_dir = os.path.join( self.tool_shed, 'repos', self.repository_owner, name, installed_changeset_revision )
+        clone_dir = os.path.join( self.tool_path, relative_clone_dir )
         if self.__isinstalled( clone_dir ):
             print "Skipping automatic install of repository '", name, "' because it has already been installed in location ", clone_dir
         else:
             tool_shed_url = self.__get_url_from_tool_shed( self.tool_shed )
             repository_clone_url = os.path.join( tool_shed_url, 'repos', self.repository_owner, name )
-            relative_install_dir = os.path.join( clone_dir, name )
+            relative_install_dir = os.path.join( relative_clone_dir, name )
+            install_dir = os.path.join( clone_dir, name )
             ctx_rev = get_ctx_rev( tool_shed_url, name, self.repository_owner, installed_changeset_revision )
             print "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name
             tool_shed_repository = create_or_update_tool_shed_repository( app=self.app,
@@ -245,7 +255,7 @@ class InstallManager( object ):
                                                                           owner=self.repository_owner,
                                                                           dist_to_shed=True )
             update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
-            cloned_ok, error_message = clone_repository( repository_clone_url, os.path.abspath( relative_install_dir ), ctx_rev )
+            cloned_ok, error_message = clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
             if cloned_ok:
                 self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
                                                  repository_clone_url=repository_clone_url,
