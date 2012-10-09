@@ -66,9 +66,12 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                     rval[item['state']] = rval[item['state']] + 1
             return rval
         try:
-            if history_id == "current" and len(trans.user.galaxy_sessions) > 0:
-                # Most recent active history for user sessions, not deleted
-                history = trans.user.galaxy_sessions[0].histories[-1].history
+            if history_id == "current":
+                if trans.user and len(trans.user.galaxy_sessions) > 0:
+                    # Most recent active history for user sessions, not deleted
+                    history = trans.user.galaxy_sessions[0].histories[-1].history
+                else:
+                    history = None
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True, deleted=deleted )
         except Exception, e:
