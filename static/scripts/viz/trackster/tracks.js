@@ -3020,13 +3020,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * an existing tile rather than reshowing it.
      */
     show_tile: function(tile, parent_element, w_scale) {
-        var 
-            track = this,
+        var track = this,
             tile_element = tile.html_elt;
         
-        //
-        // Show/move tile element.
-        //
+        // -- Show/move tile element. --
         
         tile.predisplay_actions();
       
@@ -3046,14 +3043,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Showing new tile.
             parent_element.append(tile_element);
         }
+
+        // -- Update track, tile heights based on new tile. --
         
-        track.after_show_tile(tile);
-    },
-    
-    /**
-     * Actions to be taken after showing tile.
-     */
-    after_show_tile: function(tile) {
+        // Clear any previous height settings for tile.
+        tile.html_elt.height('auto');
+
         // Update max height based on current tile.
         this.max_height_px = Math.max(this.max_height_px, tile.html_elt.height());
         
