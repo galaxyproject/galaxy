@@ -95,7 +95,7 @@
         <div class="toolFormTitle">${repository.name}</div>
         <div class="toolFormBody">
             <%
-                metadata = repository.metadata
+                metadata = repository.metadata or {}
                 missing_tool_dependencies = repository.missing_tool_dependencies
                 installed_tool_dependencies = repository.installed_tool_dependencies
             %>
