@@ -387,8 +387,6 @@ def clean_repository_clone_url( repository_clone_url ):
     else:
         tmp_url = repository_clone_url
     return tmp_url
-def tool_shed_from_repository_clone_url( repository_clone_url ):
-    return clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
 def clean_tool_shed_url( tool_shed_url ):
     if tool_shed_url.find( ':' ) > 0:
         # Eliminate the port, if any, since it will result in an invalid directory name.
@@ -1772,42 +1770,6 @@ def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
         config_elems.remove( config_elem )
     # Persist the altered in-memory version of the tool config.
     config_elems_to_xml_file( trans.app, config_elems, shed_tool_conf, tool_path )
-def update_in_shed_tool_config( app, repository ):
-    # A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config file to generate the entire list
-    # of config_elems instead of using the in-memory list.
-    shed_conf_dict = repository.get_shed_config_dict( app )
-    shed_tool_conf = shed_conf_dict[ 'config_filename' ]
-    tool_path = shed_conf_dict[ 'tool_path' ]
-    
-    #hack for 'trans.app' used in lots of places. These places should just directly use app
-    trans = util.bunch.Bunch()
-    trans.app = app
-    
-    tool_panel_dict = generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
-    repository_tools_tups = get_repository_tools_tups( app, repository.metadata )
-    cleaned_repository_clone_url = clean_repository_clone_url( generate_clone_url( trans, repository ) )
-    tool_shed = tool_shed_from_repository_clone_url( cleaned_repository_clone_url )
-    owner = repository.owner
-    if not owner:
-        owner = get_repository_owner( cleaned_repository_clone_url )
-    guid_to_tool_elem_dict = {}
-    for tool_config_filename, guid, tool in repository_tools_tups:
-        guid_to_tool_elem_dict[ guid ] = generate_tool_elem( tool_shed, repository.name, repository.changeset_revision, repository.owner or '', tool_config_filename, tool, None )
-    config_elems = []
-    tree = util.parse_xml( shed_tool_conf )
-    root = tree.getroot()
-    for elem in root:
-        if elem.tag == 'section':
-            for i, tool_elem in enumerate( elem ):
-                guid = tool_elem.attrib.get( 'guid' )
-                if guid in guid_to_tool_elem_dict:
-                    elem[i] = guid_to_tool_elem_dict[ guid ]
-        elif elem.tag == 'tool':
-            guid = elem.attrib.get( 'guid' )
-            if guid in guid_to_tool_elem_dict:
-                elem = guid_to_tool_elem_dict[ guid ]
-        config_elems.append( elem )
-    config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
 def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     """A tool shed repository is being deactivated or uninstalled so handle tool panel alterations accordingly."""
     # Determine where the tools are currently defined in the tool panel and store this information so the tools can be displayed
@@ -2016,6 +1978,8 @@ def to_html_str( text ):
         elif c not in [ '\r' ]:
             translated.append( '' )
     return ''.join( translated )
+def tool_shed_from_repository_clone_url( repository_clone_url ):
+    return clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
 def translate_string( raw_text, to_html=True ):
     if raw_text:
         if to_html:
@@ -2086,6 +2050,42 @@ def update_existing_tool_dependency( app, repository, original_dependency_dict, 
                 sa_session.delete( tool_dependency )
                 sa_session.flush()
     return new_tool_dependency
+def update_in_shed_tool_config( app, repository ):
+    # A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config file to generate the entire list
+    # of config_elems instead of using the in-memory list.
+    shed_conf_dict = repository.get_shed_config_dict( app )
+    shed_tool_conf = shed_conf_dict[ 'config_filename' ]
+    tool_path = shed_conf_dict[ 'tool_path' ]
+    
+    #hack for 'trans.app' used in lots of places. These places should just directly use app
+    trans = util.bunch.Bunch()
+    trans.app = app
+    
+    tool_panel_dict = generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
+    repository_tools_tups = get_repository_tools_tups( app, repository.metadata )
+    cleaned_repository_clone_url = clean_repository_clone_url( generate_clone_url( trans, repository ) )
+    tool_shed = tool_shed_from_repository_clone_url( cleaned_repository_clone_url )
+    owner = repository.owner
+    if not owner:
+        owner = get_repository_owner( cleaned_repository_clone_url )
+    guid_to_tool_elem_dict = {}
+    for tool_config_filename, guid, tool in repository_tools_tups:
+        guid_to_tool_elem_dict[ guid ] = generate_tool_elem( tool_shed, repository.name, repository.changeset_revision, repository.owner or '', tool_config_filename, tool, None )
+    config_elems = []
+    tree = util.parse_xml( shed_tool_conf )
+    root = tree.getroot()
+    for elem in root:
+        if elem.tag == 'section':
+            for i, tool_elem in enumerate( elem ):
+                guid = tool_elem.attrib.get( 'guid' )
+                if guid in guid_to_tool_elem_dict:
+                    elem[i] = guid_to_tool_elem_dict[ guid ]
+        elif elem.tag == 'tool':
+            guid = elem.attrib.get( 'guid' )
+            if guid in guid_to_tool_elem_dict:
+                elem = guid_to_tool_elem_dict[ guid ]
+        config_elems.append( elem )
+    config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
 def update_repository( repo, ctx_rev=None ):
     """
     Update the cloned repository to changeset_revision.  It is critical that the installed repository is updated to the desired
