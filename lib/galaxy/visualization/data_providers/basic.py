@@ -105,7 +105,12 @@ class ColumnDataProvider( BaseDataProvider ):
         # set up the response, column lists
         response = {}
         response[ 'data' ] = data = [ [] for column in columns ]
-        response[ 'meta' ] = meta = [ { 'min': None, 'max': None } for column in columns ]
+        response[ 'meta' ] = meta = [{
+            'min'   : None,
+            'max'   : None,
+            'count' : 0,
+            'sum'   : 0
+        } for column in columns ]
         
         column_types = [ self.original_dataset.metadata.column_types[ column ] for column in columns ]
         
@@ -135,18 +140,39 @@ class ColumnDataProvider( BaseDataProvider ):
             #NOTE: this will return None/null for abberrant column values (including bad indeces)
             for index, column in enumerate( columns ):
                 column_val = None
+                column_type = column_types[ index ]
                 if column < fields_len:
-                    column_val = cast_val( fields[ column ], column_types[ index ] )
+                    column_val = cast_val( fields[ column ], column_type )
                     if column_val != None:
-                        if( meta[ index ][ 'min' ] == None
-                        or  column_val < meta[ index ][ 'min' ] ):
-                            meta[ index ][ 'min' ] = column_val
-                        if( meta[ index ][ 'max' ] == None
-                        or  column_val > meta[ index ][ 'max' ] ):
-                            meta[ index ][ 'max' ] = column_val
+                        
+                        # if numeric, maintain min, max, sum
+                        if( column_type == 'float' or column_type == 'int' ):
+                            if( ( meta[ index ][ 'min' ] == None ) or ( column_val < meta[ index ][ 'min' ] ) ):
+                                meta[ index ][ 'min' ] = column_val
+                                
+                            if( ( meta[ index ][ 'max' ] == None ) or ( column_val > meta[ index ][ 'max' ] ) ):
+                                meta[ index ][ 'max' ] = column_val
+                            
+                            meta[ index ][ 'sum' ] += column_val
+                            
+                # maintain a count - for other stats
+                meta[ index ][ 'count' ] += 1
                 data[ index ].append( column_val )
             
         response[ 'endpoint' ] = dict( last_line=( count - 1 ), file_ptr=f.tell() )
         f.close()
+
+        for index, meta in enumerate( response[ 'meta' ] ):
+            count = meta[ 'count' ]
+            meta[ 'mean' ] = float( meta[ 'sum' ] ) / count
+            
+            sorted_data = sorted( response[ 'data' ][ index ] )
+            # even data count -
+            middle_index = count / 2 - 1
+            if count % 2 == 0:
+                meta[ 'median' ] = sum( sorted_data[ middle_index : ( middle_index + 1 ) ] ) / 2.0
+                
+            else:
+                meta[ 'median' ] = sorted_data[ middle_index ]
 
         return response

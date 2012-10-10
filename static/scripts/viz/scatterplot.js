@@ -1,54 +1,66 @@
 define([
-    "../libs/underscore",
-    "../libs/d3",
-    "../mvc/base-mvc",
-    "../templates/compiled/template-visualization-scatterplotControlForm"
+    //"../libs/jquery/jquery",
     
+    "../libs/underscore",
+    "../mvc/base-mvc",
+    "../templates/compiled/template-visualization-scatterplotControlForm",
+    "../templates/compiled/template-visualization-statsTable",
+    "../templates/compiled/template-visualization-chartSettings",
+    
+    "../libs/d3",
+    
+    "../libs/bootstrap",
+    "../libs/jquery/jquery-ui-1.8.23.custom.min"
 ], function(){
+
+
+
 /* =============================================================================
 todo:
     outside this:
         BUG: visualization menu doesn't disappear
-        BUG?: get column_names (from datatype if necessary)
+        BUG?: get metadata_column_names (from datatype if necessary)
         BUG: single vis in popupmenu should have tooltip with that name NOT 'Visualizations'
     
-    ??: maybe better to do this with a canvas...
+    wire label setters, anim setter
     
-    move renderScatter plot to obj, possibly view?
-    
-    fix x axis - adjust ticks when tick labels are long - move odds down and extend tick line
-    
-    provide callback in view to load data incrementally - for large sets
-    
-    paginate
-        handle rerender
-        use endpoint (here and on the server (fileptr))
-    fetch (new?) data
-        handle rerender
+    TwoVarScatterplot:
+        ??: maybe better to do this with a canvas...
+        save as visualization
+        to seperate file?
+        remove underscore dependencies
+        add interface to change values (seperate)?
+        download svg -> base64 encode
+        incorporate glyphs, glyph state renderers
         
-    selectable list of preset column comparisons (rnaseq etc.)
-    multiple plots on one page (small multiples)
+    ScatterplotSettingsForm:
+        some css bug that lowers the width of settings form when plot-controls tab is open
+            causes chart to shift
+        what can be abstracted/reused for other graphs?
+        avoid direct manipulation of this.plot
+        allow option to put plot into seperate tab of interface (for small multiples)
     
-    where are bad dataprovider params handled? api/datasets?
+        provide callback in view to load data incrementally - for large sets
+            paginate
+                handle rerender
+                use endpoint (here and on the server (fileptr))
+            fetch (new?) data
+                handle rerender
+            use d3.TSV?
+            render warning on long data (> maxDataPoints)
+                adjust endpoint
         
-    config changes to the graph
-    render stats on the data (max, min, count)
-    render warning on long data (> maxDataPoints)
-        adjust endpoint
-    
-    loading indicator
-    
-    download svg -> base64 encode
-    dress up ui
- 
-    incorporate glyphs, glyph state renderers
- 
-    validate columns selection (here or server)
-
-    ?? ensure svg styles thru d3 or css?
-        d3: configable (easily)
-        css: standard - better maintenance
-        ? override at config
+        selectable list of preset column comparisons (rnaseq etc.)
+            how to know what sort of Tabular the data is?
+        smarter about headers
+        validate columns selection (here or server)
+        
+    Scatterplot.mako:
+        multiple plots on one page (small multiples)
+        ?? ensure svg styles thru d3 or css?
+            d3: configable (easily)
+            css: standard - better maintenance
+            ? override at config
 
 ============================================================================= */
 /**
@@ -61,8 +73,7 @@ todo:
  *  depends on: d3, underscore
  */
 function TwoVarScatterplot( config ){
-    var plot = this,
-        TICK_LINE_AND_PADDING = 10,
+    var TICK_LINE_AND_PADDING = 10,
         GUESS_AT_SVG_CHAR_WIDTH = 7,
         GUESS_AT_SVG_CHAR_HEIGHT = 10,
         PADDING = 8,
@@ -73,7 +84,7 @@ function TwoVarScatterplot( config ){
         if( this.debugging && console && console.debug ){
             var args = Array.prototype.slice.call( arguments );
             args.unshift( this.toString() );
-            console.debug.apply( null, args );
+            console.debug.apply( console, args );
         }
     };
     this.log( 'new TwoVarScatterplot:', config );
@@ -84,10 +95,10 @@ function TwoVarScatterplot( config ){
     this.defaults = {
         id : 'TwoVarScatterplot',
         containerSelector : 'body',
-        maxDataPoints : 30000,
-        bubbleRadius : 4,
+        maxDataPoints : 10000,
+        datapointSize : 4,
         entryAnimDuration : 500,
-        //TODO: no effect?
+        //TODO: variable effect (not always exactly # of ticks set to)
         xNumTicks : 10,
         yNumTicks : 10,
         xAxisLabelBumpY : 40,
@@ -99,10 +110,12 @@ function TwoVarScatterplot( config ){
         marginRight : 50,
         marginBottom : 50,
         marginLeft : 50,
+        
         xMin : null,
         xMax : null,
         yMin : null,
         yMax : null,
+        
         xLabel : "X",
         yLabel : "Y"
     };
@@ -126,8 +139,9 @@ function TwoVarScatterplot( config ){
     // ........................................................ initial element creation
     //NOTE: called on new
     this.svg = d3.select( this.config.containerSelector )
-        .append( "svg:svg" ).attr( "class", "chart" ).style( 'display', 'none' );
-    this.content = this.svg.append( "svg:g" ).attr( "class", "content" );
+        .append( "svg:svg" ).attr( "class", "chart" );
+        
+    this.content = this.svg.append( "svg:g" ).attr( "class", "content" ).attr( 'id', this.config.id );
     
     this.xAxis = this.content.append( 'g' ).attr( 'class', 'axis' ).attr( 'id', 'x-axis' );
     this.xAxisLabel = this.xAxis.append( 'text' ).attr( 'class', 'axis-label' ).attr( 'id', 'x-axis-label' );
@@ -157,7 +171,9 @@ function TwoVarScatterplot( config ){
     };
     
     // ........................................................ data and scales
-    this.preprocessData = function( data ){
+    this.preprocessData = function( data, min, max ){
+        //TODO: filter by min, max if set
+        
         // set a cap on the data, limit to first n points
         return ( data.length > this.config.maxDataPoints )? ( data.slice( 0, this.config.maxDataPoints ) ): ( data );
     };
@@ -313,63 +329,110 @@ function TwoVarScatterplot( config ){
         
     };
     
-    this.renderDatapoints = function( xCol, yCol ){
+    this.renderDatapoints = function( xCol, yCol, ids ){
+        // initial render, complete re-render (REPLACE datapoints)
         
-        var xPosFn = function( d, i ){
-            return plot.xScale( xCol[ i ] );
-        };
-        var yPosFn = function( d, i ){
-            return plot.yScale( yCol[ i ] );
-        };
-    
-        // select all existing glyphs and compare to incoming data
-        //  enter() will yield those glyphs that need to be added
-        //  exit() will yield existing glyphs that need to be removed
-        this.datapoints = this.content.selectAll( ".glyph" )
-            .data( xCol );
-            
-        // enter - new data to be added as glyphs: give them a 'entry' position and style
-        this.datapoints.enter()
-            .append( "svg:circle" ).attr( "class", "glyph" )
-                // start all bubbles at corner...
-                .attr( "cx", xPosFn )
-                .attr( "cy", 0 )
-                .attr( "r", 0 );
-        
-        // for all existing glyphs and those that need to be added: transition anim to final state
-        this.datapoints
-            // ...animate to final position
-            .transition().duration( this.config.entryAnimDuration )
-                .attr( "cx", xPosFn )
-                .attr( "cy", yPosFn )            
-                .attr( "r", this.config.bubbleRadius );
+        this.datapoints = this.addDatapoints( xCol, yCol, ids, ".glyph" );
         
         // glyphs that need to be removed: transition to from normal state to 'exit' state, remove from DOM
         this.datapoints.exit()
             .transition().duration( this.config.entryAnimDuration )
                 .attr( "cy", this.config.height )
                 .attr( "r", 0 )
-                .style( "fill-opacity", 0 )
             .remove();
         
-        //this.log( this.datapoints, 'glyphs rendered' );
+        this.log( this.datapoints, 'glyphs rendered' );
+    };
+    
+    this.addDatapoints = function( newXCol, newYCol, ids, selectorForExisting ){
+        // ADD datapoints to plot that's already rendered
+        //  if selectorForExisting === undefined (as in not passed), addDatapoints won't update existing
+        //  pass in the class ( '.glyph' ) to update exising datapoints
+        var plot = this,
+            xPosFn = function( d, i ){
+                return plot.xScale( newXCol[ i ] );
+            },
+            yPosFn = function( d, i ){
+                return plot.yScale( newYCol[ i ] );
+            };
+    
+        // select all existing glyphs and compare to incoming data
+        //  enter() will yield those glyphs that need to be added
+        var newDatapoints = this.content.selectAll( selectorForExisting ).data( newXCol );
+            
+        // enter - new data to be added as glyphs: give them a 'entry' position and style
+        newDatapoints.enter()
+            .append( "svg:circle" )
+                .classed( "glyph", true )
+                // start all bubbles small...
+                .attr( "cx", xPosFn )
+                .attr( "cy", yPosFn )
+                .attr( "r", 0 );
+        
+        // for all existing glyphs and those that need to be added: transition anim to final state
+        newDatapoints
+            // ...animate to final position
+            .transition().duration( this.config.entryAnimDuration )
+                .attr( "r", this.config.datapointSize );
+        
+        // attach ids
+        if( ids ){
+            newDatapoints.attr( 'data', function( d, i ){ return ( ids[ i ] ); } );
+        }
+
+        // titles
+        newDatapoints.attr( 'title', function( d, i ){
+            return (( ids )?( ids[ i ] + ': ' ):( '' )) + newXCol[ i ] + ', ' + newYCol[ i ];
+        });
+        
+        // events
+        newDatapoints
+            //TODO: remove magic numbers
+            .on( 'mouseover', function(){
+                var datapoint = d3.select( this );
+                datapoint
+                    .style( 'fill', 'red' )
+                    .style( 'fill-opacity', 1 );
+                
+                // create horiz, vert lines to axis
+                plot.content.append( 'line' )
+                    .attr( 'stroke', 'red' )
+                    .attr( 'stroke-width', 1 )
+                    .attr( 'x1', datapoint.attr( 'cx' ) ).attr( 'y1', datapoint.attr( 'cy' ) )
+                    .attr( 'x2', 0 ).attr( 'y2', datapoint.attr( 'cy' ) )
+                    .classed( 'hoverline', true );
+                plot.content.append( 'line' )
+                    .attr( 'stroke', 'red' )
+                    .attr( 'stroke-width', 1 )
+                    .attr( 'x1', datapoint.attr( 'cx' ) ).attr( 'y1', datapoint.attr( 'cy' ) )
+                    .attr( 'x2', datapoint.attr( 'cx' ) ).attr( 'y2', plot.config.height )
+                    .classed( 'hoverline', true );
+            })
+            .on( 'mouseout', function(){
+                d3.select( this )
+                    .style( 'fill', 'black' )
+                    .style( 'fill-opacity', 0.2 );
+                    
+                d3.selectAll( '.hoverline' ).remove();
+            });
+        
+        return newDatapoints;
     };
     
     this.render = function( columnData, meta ){
         //pre: columns passed are numeric
         //pre: at least two columns are passed
-        //assume: first column is x, second column is y, any remaining aren't used 
+        //assume: first column is x, second column is y, any remaining aren't used
         var xCol = columnData[0],
-            yCol = columnData[1];
+            yCol = columnData[1],
+            ids = ( columnData.length > 2 )?( columnData[2] ):( undefined );
         this.log( 'renderScatterplot', xCol.length, yCol.length, this.config );
         
         //pre: xCol.len == yCol.len
-        //TODO: ^^ isn't necessarily true with current ColumnDataProvider
         xCol = this.preprocessData( xCol );
         yCol = this.preprocessData( yCol );
         //this.log( 'xCol len', xCol.length, 'yCol len', yCol.length );
         
-        //TODO: compute min, max on server.
         this.setUpDomains( xCol, yCol, meta );
         this.log( 'xMin, xMax, yMin, yMax:', this.xMin, this.xMax, this.yMin, this.yMax );
         
@@ -380,28 +443,31 @@ function TwoVarScatterplot( config ){
         this.setUpYAxis();
         
         this.renderGrid();
-        this.renderDatapoints( xCol, yCol );
-        //TODO: on hover red line to axes, display values
+        this.renderDatapoints( xCol, yCol, ids );
     };
 }
 
 //==============================================================================
 /**
  *  Scatterplot control UI as a backbone view
- *
+ *      handles:
+ *          getting the desired data
+ *          configuring the plot display
  */
 var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     //logger      : console,
     tagName     : 'form',
     className   : 'scatterplot-settings-form',
     
-    loadingIndicatorImagePath : ( galaxy_paths.get( 'image_path' ) + '/loading_large_white_bg.gif' ),
+    loadingIndicatorImage : 'loading_large_white_bg.gif',
     
     events : {
-        'click #render-button' : 'renderScatterplot'
+        'click #render-button'       : 'renderPlot',
+        'click #include-id-checkbox' : 'toggleThirdColumnSelector'
     },
     
     initialize : function( attributes ){
+
         if( !attributes || !attributes.dataset ){
             throw( "ScatterplotView requires a dataset" );
         } else {
@@ -414,106 +480,230 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         
         // set up the basic chart infrastructure with config (if any)
         this.chartConfig = attributes.chartConfig || {};
-        this.log( 'this.chartConfig:', this.chartConfig );
+        this.log( 'initial chartConfig:', this.chartConfig );
         this.plot = new TwoVarScatterplot( this.chartConfig );
+        this.chartConfig = this.plot.config;
+        
+        this.$statsPanel = null;
+        this.$chartSettingsPanel = null;
+        this.$dataSettingsPanel = null;
+        this.dataFetch = null;
     },
     
     render : function(){
         var view = this,
-            html = '';
-            
-        // build column select controls for each x, y (based on name if available)
-        var formData = {
-            loadingIndicatorImagePath : this.loadingIndicatorImagePath,
-            config : this.chartConfig,
-            availableColumns : []
-        };
-        _.each( this.dataset.metadata_column_types.split( ', ' ), function( type, index ){
-            // use only numeric columns
-            if( type === 'int' || type === 'float' ){
-                //TODO: using 0-based indeces
-                var name = 'column ' + index;
-                // label with the name if available
-                if( view.dataset.metadata_column_names ){
-                    name = view.dataset.metadata_column_names[ index ];
-                }
-                formData.availableColumns.push({ index: index, name: name });
-            }
-        });
-        //TODO: other vals: max_vals, start_val, pagination
+            formData = {
+                config : this.chartConfig,
+                allColumns : [],
+                numericColumns : [],
+                loadingIndicatorImagePath : galaxy_paths.get( 'image_path' ) + '/' + this.loadingIndicatorImage
+            };
         
-        html = ScatterplotControlForm.templates.form( formData );
-        this.$el.append( html );
+        // gather column indeces (from metadata_column_types) and names (from metadata_columnnames)
+        _.each( this.dataset.metadata_column_types.split( ', ' ), function( type, index ){
+            //TODO: using 0-based indeces
+            // label with the name if available (fall back on 'column <index>')
+            var name = 'column ' + ( index + 1 );
+            if( view.dataset.metadata_column_names ){
+                name = view.dataset.metadata_column_names[ index ];
+            }
+            
+            // filter numeric columns to their own list
+            if( type === 'int' || type === 'float' ){
+                formData.numericColumns.push({ index: index, name: name });
+            }
+            formData.allColumns.push({ index: index, name: name });
+        });
+        
+        //TODO: other vals: max_vals, start_val, pagination (plot-settings)
+        
+        this.$el.append( ScatterplotControlForm.templates.form( formData ) );
+        this.$dataSettingsPanel  = this.$el.find( '.tab-pane#data-settings' );
+        this.$chartSettingsPanel = this._render_chartSettings();
+        this.$statsPanel         = this.$el.find( '.tab-pane#chart-stats' );
+        
+        this.$el.find( 'ul.nav' ).find( 'a[href="#chart-settings"]' ).tab( 'show' );
         return this;
     },
 
-    showLoadingIndicator : function( message ){
-        message = message || '';
-        this.$el.find( 'div#loading-indicator' ).children( '.loading-message' ).text( message );
-        this.$el.find( 'div#loading-indicator' ).show( 'fast' );
-    },
-
-    hideLoadingIndicator : function(){
-        this.$el.find( 'div#loading-indicator' ).hide( 'fast' );
+    _render_chartSettings : function(){
+        var chartControl = this,
+            $chartSettingsPanel = this.$el.find( '.tab-pane#chart-settings' ),
+            // limits for controls (by control/chartConfig id)
+            controlRanges = {
+                'maxDataPoints' : { min: 1000, max: 30000, step: 100 },
+                'datapointSize' : { min: 2, max: 10, step: 1 },
+                'width'         : { min: 200, max: 800, step: 20 },
+                'height'        : { min: 200, max: 800, step: 20 }
+            };
+            
+        // render the html
+        $chartSettingsPanel.append( ScatterplotControlForm.templates.chartSettings( this.chartConfig ) );
+        
+        // set up js on controls
+        // sliders
+        $chartSettingsPanel.find( '.numeric-slider-input' ).each( function(){
+            var $this = $( this ),
+                $output = $this.find( '.slider-output' ),
+                $slider = $this.find( '.slider' ),
+                id = $this.attr( 'id' );
+            chartControl.log( 'slider set up', 'this:', $this, 'slider:', $slider, 'id', id );
+                
+            // what to do when the slider changes: update display and update chartConfig
+            function onSliderChange(){
+                var $this = $( this ),
+                    newValue = $this.slider( 'value' );
+                //chartControl.log( 'slider change', 'this:', $this, 'output:', $output, 'value', newValue );
+                $output.text( newValue );
+                chartControl.chartConfig[ id ] = newValue;
+            }
+        
+            $slider.slider( _.extend( controlRanges[ id ], {
+                value   : chartControl.chartConfig[ id ],
+                change  : onSliderChange,
+                slide   : onSliderChange
+            }));
+        });
+        
+        //TODO: anim checkbox
+        //TODO: labels -> renderPlot
+        
+        return $chartSettingsPanel;
     },
     
-    renderScatterplot : function(){
+    toggleThirdColumnSelector : function(){
+        this.$el.find( 'select[name="ID"]' ).parent().toggle();
+    },
+    
+    showLoadingIndicator : function( message, callback ){
+        message = message || '';
+        var indicator = this.$el.find( 'div#loading-indicator' );
+            messageBox = indicator.find( '.loading-message' );
+            
+        if( indicator.is( ':visible' ) ){
+            if( message ){
+                messageBox.fadeOut( 'fast', function(){
+                    messageBox.text( message );
+                    messageBox.fadeIn( 'fast', callback );
+                });
+            } else {
+                callback();
+            }
+            
+        } else {
+            if( message ){ messageBox.text( message ); }
+            indicator.fadeIn( 'fast', callback );
+        }
+    },
+
+    hideLoadingIndicator : function( callback ){
+        this.$el.find( 'div#loading-indicator' ).fadeOut( 'fast', callback );
+    },
+    
+    getColumnVals : function(){
+        // returns a map: { column-select name (eg. X) : { colIndex : column-selector val,
+        //                                                 colName : selected option text }, ... }
+        var selections = {};
+        this.$el.find( 'div.column-select select' ).each( function(){
+            var $this   = $( this ),
+                val     = $this.val();
+            selections[ $this.attr( 'name' ) ] = {
+                colIndex : val,
+                colName  : $this.children( '[value="' + val + '"]' ).text()
+            };
+        });
+        return selections;
+    },
+    
+    fetchData : function( params, callbackFn ){
+        var view = this,
+            url = this.apiDatasetsURL + '/' + this.dataset.id + '?data_type=raw_data&' + jQuery.param( params );
+        this.log( 'url:', url );
+
+        this.showLoadingIndicator( 'Fetching data...', function(){
+            jQuery.ajax({
+                url : url,
+                dataType : 'json',
+                success : callbackFn,
+                error : function( xhr, status, error ){
+                    view.hideLoadingIndicator();
+                    alert( 'ERROR:' + status + '\n' + error );
+                }
+            });
+        });
+    },
+    
+    renderPlot : function(){
         // parse the column values for both
         //  indeces (for the data fetch) and names (for the graph)
         var view = this,
-            url = this.apiDatasetsURL + '/' + this.dataset.id + '?data_type=raw_data&',
+            columnSelections = this.getColumnVals(),
+            columns = [];
+        this.log( 'columnSelections:', columnSelections );    
             
-            xSelector = this.$el.find( '[name="x-column"]' ),
-            xVal = xSelector.val(),
-            xName = xSelector.children( '[value="' + xVal + '"]' ).text(),
-            
-            ySelector = this.$el.find( '[name="y-column"]' ),
-            yVal = ySelector.val(),
-            yName = ySelector.children( '[value="' + yVal + '"]' ).text();
-        this.log( xName, yName );
-
-        this.chartConfig.xLabel = xName;
-        this.chartConfig.yLabel = yName;
+        //TODO: ?? could be moved into getColumnVals;
+        this.log( columnSelections.X.val, columnSelections.Y.val );
+        this.xColIndex = columnSelections.X.colIndex;
+        this.yColIndex = columnSelections.Y.colIndex;
+        columns = [ this.xColIndex, this.yColIndex ];
+        
+        // include the desired ID column
+        if( $( '#include-id-checkbox' ).attr( 'checked' ) ){
+            columns.push( columnSelections.ID.colIndex );
+        }
+        
+        this.log( columnSelections.X.colName, columnSelections.Y.colName );
+        this.plot.xLabel = this.chartConfig.xLabel = columnSelections.X.colName;
+        this.plot.xLabel = this.chartConfig.yLabel = columnSelections.Y.colName;
         
         //TODO: alter directly
-        view.plot.updateConfig( this.chartConfig );
-
+        view.plot.updateConfig( this.chartConfig, false );
         //TODO: validate columns - minimally: we can assume either set by selectors or via a good query string
         //TODO: other vals: max, start, page
         //TODO: chart config
         
         // fetch the data, sending chosen columns to the server
-        url += jQuery.param({
-            columns : '[' + [ xVal, yVal ] + ']'
-        });
-        this.log( 'url:', url );
+        var params = {
+            columns : '[' + columns + ']'
+        };
         
-        this.showLoadingIndicator( 'Fetching data...' );
-        jQuery.ajax({
-            url : url,
-            dataType : 'json',
-            success : function( response ){
-                // save the endpoint (number of next line, fileptr) for this object
-                //TODO: server sends back an endpoint, cache for next pagination request
-                view.endpoint = response.endpoint;
-                
-                view.showLoadingIndicator( 'Rendering...' );
+        //TODO: prob. better to use events rather than callback chains like this
+        this.fetchData( params, function( response ){
+            // save the endpoint (number of next line, fileptr) for this object
+            //TODO: server sends back an endpoint, cache for next pagination request
+            view.dataFetch = response;
+            view.showLoadingIndicator( 'Rendering...', function(){
                 view.plot.render( response.data, response.meta );
+                
+                view.renderStats( response.data, response.meta );
+                view.$el.find( 'ul.nav' ).find( 'a[href="#chart-stats"]' ).tab( 'show' );
+                
                 view.hideLoadingIndicator();
-            },
-            
-            error : function( xhr, status, error ){
-                view.hideLoadingIndicator();
-                alert( 'ERROR:' + status + '\n' + error );
-            }
+            });
         });
+    },
+    
+    renderStats : function(){
+        this.$statsPanel.html( ScatterplotControlForm.templates.statsTable({
+            stats:  [
+                { name: 'Count', xval: this.dataFetch.meta[0].count, yval: this.dataFetch.meta[1].count },
+                { name: 'Min', xval: this.dataFetch.meta[0].min, yval: this.dataFetch.meta[1].min },
+                { name: 'Max', xval: this.dataFetch.meta[0].max, yval: this.dataFetch.meta[1].max },
+                { name: 'Mean', xval: this.dataFetch.meta[0].mean, yval: this.dataFetch.meta[1].mean },
+                { name: 'Median', xval: this.dataFetch.meta[0].median, yval: this.dataFetch.meta[1].median }
+            ]
+        }));
+    },
+    
+    toString : function(){
+        return 'ScatterplotControlForm(' + attributes.dataset.id + ')';
     }
 });
-ScatterplotControlForm.templates = CompiledTemplateLoader.getTemplates({
-    'visualization-templates.html' : {
-        form : 'template-visualization-scatterplotControlForm'
-    }
-});
+ScatterplotControlForm.templates = {
+    form            : Handlebars.templates[ 'template-visualization-scatterplotControlForm' ],
+    statsTable      : Handlebars.templates[ 'template-visualization-statsTable' ],
+    chartSettings   : Handlebars.templates[ 'template-visualization-chartSettings' ]
+};
 
 //==============================================================================
 return {

@@ -65,8 +65,10 @@ var LoggableMixin = {
     logger      : null,
     
     log : function(){
-        return ( this.logger )?( this.logger.log.apply( this, arguments ) )
-                              :( undefined );
+        if( this.logger ){
+            return this.logger.log.apply( this.logger, arguments );
+        }
+        return undefined;
     }
 };
 

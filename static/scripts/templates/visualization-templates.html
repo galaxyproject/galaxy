@@ -1,33 +1,155 @@
 <script type="text/template" class="template-visualization" id="template-visualization-scatterplotControlForm">
-
-{{! loading indicator - initially hidden }}
-<div id="loading-indicator" style="display: none;">
-    <img class="loading-img" src="{{loadingIndicatorImagePath}}" />
-    <span class="loading-message"></span>
-</div>
-
 {{! main controls }}
-<div id="chart-settings">
 
+<ul class="nav nav-tabs">
+    <li class="active">
+        <a data-toggle="tab" href="#data-settings">Data Controls</a>
+    </li>
+    <li><a data-toggle="tab" href="#chart-settings">Plot Controls</a></li>
+    <li><a data-toggle="tab" href="#chart-stats">Statistics</a></li>
+</ul>
+
+{{! data settings }}
+<div class="tab-content">
+<div id="data-settings" class="tab-pane active">
+
+    <p class="help-text">
+        Use the following controls to change the data used by the chart.
+        Use the 'Draw' button to render (or re-render) the chart with the current settings.
+    </p>
+        
     {{! column selector containers }}
-    <div id="x-column-input">
-        <label for="">Data column for X: </label>
-        <select name="x-column">
-        {{#each availableColumns}}
+    <div class="column-select">
+        <label for="X-select">Data column for X: </label>
+        <select name="X" id="X-select">
+        {{#each numericColumns}}
             <option value="{{index}}">{{name}}</option>
         {{/each}}
         </select>
     </div>
-    <div id="y-column-input">
-        <label for="">Data column for Y: </label>
-        <select name="y-column">
-        {{#each availableColumns}}
+    <div class="column-select">
+        <label for="Y-select">Data column for Y: </label>
+        <select name="Y" id="Y-select">
+        {{#each numericColumns}}
+            <option value="{{index}}">{{name}}</option>
+        {{/each}}
+        </select>
+    </div>
+    
+    {{! optional id column }}
+    <div id="include-id">
+        <label for="include-id-checkbox">Include a third column as data point IDs?</label>
+        <input type="checkbox" name="include-id" id="include-id-checkbox" />
+        <p class="help-text-small">
+            These will be displayed (along with the x and y values) when you hover over
+            a data point.
+        </p>
+    </div>
+    <div class="column-select" style="display: none">
+        <label for="ID-select">Data column for IDs: </label>
+        <select name="ID" id="ID-select">
+        {{#each allColumns}}
             <option value="{{index}}">{{name}}</option>
         {{/each}}
         </select>
     </div>
     
     <input id="render-button" type="button" value="Draw" />
+    <input id="save-button" type="button" value="Download Plot as SVG" style="display: none;" />
     <div class="clear"></div>
 </div>
+
+<div id="chart-settings" class="tab-pane">
+</div>
+
+<div id="chart-stats" class="tab-pane">
+</div>
+</div>{{! class="tab-content" }}
+
+{{! loading indicator - initially hidden }}
+<div id="loading-indicator" style="display: none;">
+    <img class="loading-img" src="{{loadingIndicatorImagePath}}" />
+    <span class="loading-message">{{message}}</span>
+</div>
+
+</script>
+
+<script type="text/template" class="template-visualization" id="template-visualization-statsTable">
+    <p class="help-text">By column:</p>
+    <table id="chart-stats-table">
+        <thead><th></th><th>X</th><th>Y</th></thead>
+        {{#each stats}}
+        <tr><td>{{name}}</td><td>{{xval}}</td><td>{{yval}}</td></tr>
+        </tr>
+        {{/each}}
+    </table>
+</script>
+
+<script type="text/template" class="template-visualization" id="template-visualization-chartSettings">
+
+    <p class="help-text">
+        Use the following controls to how the chart is displayed.
+        The slide controls can be moved by the mouse or, if the 'handle' is in focus, your keyboard's arrow keys.
+        Move the focus between controls by using the tab or shift+tab keys on your keyboard.
+        Use the 'Draw' button to render (or re-render) the chart with the current settings.
+    </p>
+        
+    <div id="maxDataPoints" class="form-input numeric-slider-input">
+        <label for="maxDataPoints">Maximum data points allowed on graph: </label>
+        <div class="slider-output">{{maxDataPoints}}</div>
+        <div class="slider"></div>
+        <p class="form-help help-text-small">
+            Change the maximum number of data points displayable on this graph (higher values will
+            load significantly slower)
+        </p>
+    </div>
+
+    <div id="datapointSize" class="form-input numeric-slider-input">
+        <label for="datapointSize">Size of data point: </label>
+        <div class="slider-output">{{datapointSize}}</div>
+        <div class="slider"></div>
+        <p class="form-help help-text-small">
+            Size of the graphic representation of each data point
+        </p>
+    </div>
+
+    <div id="entryAnimDuration" class="form-input checkbox-input">
+        <label for="animated">Animate graph transitions?: </label>
+        <input type="checkbox" id="animated" class="checkbox control" value="{{#if entryAnimDuration}}checked{{/if}}" />
+        <p class="form-help help-text-small">
+            Uncheck this to disable the animations used on the graph
+        </p>
+    </div>
+
+    <div id="width" class="form-input numeric-slider-input">
+        <label for="width">Graph width: </label>
+        <div class="slider-output">{{width}}</div>
+        <div class="slider"></div>
+        <p class="form-help help-text-small">
+            (not including graph margins and axes)
+        </p>
+    </div>
+
+    <div id="height" class="form-input numeric-slider-input">
+        <label for="height">Graph height: </label>
+        <div class="slider-output">{{height}}</div>
+        <div class="slider"></div>
+        <p class="form-help help-text-small">
+            (not including graph margins and axes)
+        </p>
+    </div>
+
+    <div id="X-axis-label"class="text-input form-input">
+        <label for="X-axis-label">Re-label the X axis: </label>
+        <input type="text" name="X-axis-label" id="X-axis-label" value="{{xLabel}}" />
+        <p class="form-help help-text-small"></p>
+    </div>
+
+    <div id="Y-axis-label" class="text-input form-input">
+        <label for="Y-axis-label">Re-label the Y axis: </label>
+        <input type="text" name="Y-axis-label" id="Y-axis-label" value="{{yLabel}}" />
+        <p class="form-help help-text-small"></p>
+    </div>
+
+    <input id="render-button" type="button" value="Draw" />
 </script>
