@@ -48,7 +48,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         """
         GET /api/histories/{encoded_history_id}
         GET /api/histories/deleted/{encoded_history_id}
-        GET /api/histories/current
+        GET /api/histories/most_recently_used
         Displays information about a history.
         """
         history_id = id
@@ -66,7 +66,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                     rval[item['state']] = rval[item['state']] + 1
             return rval
         try:
-            if history_id == "current":
+            if history_id == "most_recently_used":
                 if trans.user and len(trans.user.galaxy_sessions) > 0:
                     # Most recent active history for user sessions, not deleted
                     history = trans.user.galaxy_sessions[0].histories[-1].history
