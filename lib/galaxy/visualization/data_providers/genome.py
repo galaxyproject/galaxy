@@ -186,7 +186,6 @@ class GenomeDataProvider( BaseDataProvider ):
             chrom_data = self.get_data( chrom, 0, chrom_len, **kwargs )
             if chrom_data:
                 chrom_data[ 'region' ] = "%s:%i-%i" % ( chrom, 0, chrom_len )
-                chrom_data[ 'dataset_type' ] = self.dataset_type
                 genome_data.append( chrom_data )
 
         return {

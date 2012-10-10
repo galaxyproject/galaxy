@@ -772,18 +772,10 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # Add genome-wide summary tree data to each track in viz.
         tracks = viz_config.get( 'tracks', [] )
         for track in tracks:
-            # Get dataset and data sources.
             dataset = self.get_hda_or_ldda( trans, track[ 'hda_ldda'], track[ 'dataset_id' ] )
-            data_sources = dataset.get_datasources( trans )
-
-            # If there are no messages (messages indicate data is not ready/available), preload data.
-            messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
-            if not get_highest_priority_msg( messages_list ):
-                data_provider = trans.app.data_provider_registry.get_data_provider( trans, 
-                                                                                    original_dataset=dataset, 
-                                                                                    source='index' )
-                # HACK: pass in additional params, which are only used for summary tree data, not BBI data.
-                track[ 'preloaded_data' ] = data_provider.get_genome_data( chroms_info, level=4, detail_cutoff=0, draw_cutoff=0 )
+            genome_data = self._get_genome_data( trans, dataset, dbkey )
+            if not isinstance( genome_data, str ):
+                track[ 'preloaded_data' ] = genome_data
         
         return trans.fill_template( 'visualization/circster.mako', viz_config=viz_config, genome=genome )
 

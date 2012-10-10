@@ -602,6 +602,33 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
 
         return visualization
 
+    def _get_genome_data( self, trans, dataset, dbkey=None ):
+        """
+        Returns genome-wide data for dataset if available; if not, message is returned.
+        """
+        rval = None
+
+        # Get data sources.
+        data_sources = dataset.get_datasources( trans )
+        query_dbkey = dataset.dbkey
+        if query_dbkey == "?":
+            query_dbkey = dbkey
+        chroms_info = self.app.genomes.chroms( trans, dbkey=query_dbkey )
+
+        # If there are no messages (messages indicate data is not ready/available), preload data.
+        messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
+        message = get_highest_priority_msg( messages_list )
+        if message:
+            rval = message
+        else:
+            data_provider = trans.app.data_provider_registry.get_data_provider( trans, 
+                                                                                original_dataset=dataset, 
+                                                                                source='index' )
+            # HACK: pass in additional params, which are only used for summary tree data, not BBI data.
+            rval = data_provider.get_genome_data( chroms_info, level=4, detail_cutoff=0, draw_cutoff=0 )
+
+        return rval
+
 class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use StoredWorkflow objects. """
     def get_stored_workflow( self, trans, id, check_ownership=True, check_accessible=False ):

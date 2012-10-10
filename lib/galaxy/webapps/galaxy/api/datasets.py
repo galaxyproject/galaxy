@@ -51,6 +51,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
                 rval = self._raw_data( trans, dataset, **kwd )
             elif data_type == 'track_config':
                 rval = self.get_new_track_config( trans, dataset )
+            elif data_type == 'genome_data':
+                rval = self._get_genome_data( self, trans, dataset, kwd.get('dbkey', None) )
             else:
                 # Default: return dataset as API value.
                 rval = dataset.get_api_value()
