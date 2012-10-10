@@ -33,7 +33,7 @@ class UserAPIController( BaseAPIController ):
             if not trans.user_is_admin():
                 item = trans.user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
                 item['url'] = url_for( route, id=item['id'] )
-                return item
+                return [item]
         for user in query:
             item = user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
             item['url'] = url_for( route, id=item['id'] )
@@ -45,11 +45,15 @@ class UserAPIController( BaseAPIController ):
         """
         GET /api/users/{encoded_user_id}
         GET /api/users/deleted/{encoded_user_id}
+        GET /api/users/current
         Displays information about a user.
         """
         deleted = util.string_as_bool( deleted )
         try:
-            user = self.get_user( trans, id, deleted=deleted )
+            if id == "current":
+                user = trans.user
+            else:
+                user = self.get_user( trans, id, deleted=deleted )
             if not trans.user_is_admin():
                 assert trans.user == user
                 assert not user.deleted
