@@ -20,7 +20,7 @@
                                 <tr>
                                     <td>
                                         <input type="hidden" name="id" value="${trans.security.encode_id( history.id )}">
-                                        ${history.name}
+                                        ${ util.unicodify( history.name )}
                                     </td>
                                     <td>
                                         %if len( history.datasets ) < 1:
@@ -81,7 +81,7 @@
                         %for history, hdas in no_change_needed.items():
                             <div class="form-row">
                                 <label>History</label>
-                                ${history.name}
+                                ${util.unicodify( history.name )}
                             </div>
                             <div style="clear: both"></div>
                             <div class="form-row">
@@ -89,7 +89,7 @@
                             </div>
                             %for hda in hdas:
                                 <div class="form-row">
-                                    ${hda.name}
+                                    ${util.unicodify( hda.name )}
                                     %if hda.deleted:
                                         (deleted)
                                     %endif
@@ -108,7 +108,7 @@
                         %for history, hdas in can_change.items():
                             <div class="form-row">
                                 <label>History</label>
-                                ${history.name}
+                                ${util.unicodify( history.name )}
                             </div>
                             <div style="clear: both"></div>
                             <div class="form-row">
@@ -116,7 +116,7 @@
                             </div>
                             %for hda in hdas:
                                 <div class="form-row">
-                                    ${hda.name}
+                                    ${util.unicodify( hda.name )}
                                     %if hda.deleted:
                                         (deleted)
                                     %endif
@@ -136,7 +136,7 @@
                         %for history, hdas in cannot_change.items():
                             <div class="form-row">
                                 <label>History</label>
-                                ${history.name}
+                                ${util.unicodify( history.name )}
                             </div>
                             <div style="clear: both"></div>
                             <div class="form-row">
@@ -144,7 +144,7 @@
                             </div>
                             %for hda in hdas:
                                 <div class="form-row">
-                                    ${hda.name}
+                                    ${util.unicodify( hda.name )}
                                     %if hda.deleted:
                                         (deleted)
                                     %endif
