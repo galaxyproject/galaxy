@@ -248,7 +248,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         # Check email a bit
         email = email.strip()
         parts = email.split()
-        if len( parts ) == 1 and len( email ) > 0:
+        if len( parts ) == 1 and len( email ) > 0 and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
             to = to_address + ", " + email
         else:
             to = to_address
