@@ -221,7 +221,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             return trans.show_error_message( "Error reporting has been disabled for this galaxy instance" )
         # Get the dataset and associated job
         hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
-        job = hda.creating_job_associations[0].job
+        job = hda.creating_job
         # Get the name of the server hosting the Galaxy instance from which this report originated
         host = trans.request.host
         history_view_link = "%s/history/view?id=%s" % ( str( host ), trans.security.encode_id( hda.history_id ) )
