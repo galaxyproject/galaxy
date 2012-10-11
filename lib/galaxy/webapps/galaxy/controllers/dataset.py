@@ -157,14 +157,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     def _get_job_for_dataset( self, trans, dataset_id ):
         '''
         Return the job for the given dataset. This will throw an error if the
-        dataset is either nonexistent or inaccessible to the user. This looks
-        up the job by mapping the dataset to an HDA and then mapping the HDA
-        to its job. This will throw exceptions so that the caller can determine
-        the appropriate response.
+        dataset is either nonexistent or inaccessible to the user.
         '''
         hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         assert hda and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-        return hda.creating_job_associations[0].job
+        return hda.creating_job
 
     @web.expose
     def errors( self, trans, id ):
