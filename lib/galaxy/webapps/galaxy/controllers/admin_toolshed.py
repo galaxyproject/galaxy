@@ -1447,7 +1447,59 @@ class AdminToolshed( AdminGalaxy ):
                                     status=status )
     @web.expose
     @web.require_admin
-    def reset_repository_metadata( self, trans, id ):
+    def reset_metadata_on_selected_repositories( self, trans, **kwd ):
+        # TODO: merge this with the similar method in the repository controller.
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository_ids = util.listify( kwd.get( 'repository_names_by_owner', None ) )
+        if 'reset_metadata_on_selected_repositories_button' in kwd:
+            if repository_ids:
+                successful_count = 0
+                unsuccessful_count = 0
+                for repository_id in repository_ids:
+                    repository = get_repository( trans, repository_id )
+                    try:
+                        invalid_file_tups, metadata_dict = self.reset_repository_metadata( trans,
+                                                                                           trans.security.encode_id( repository.id ),
+                                                                                           resetting_all_repositories=True )
+                        if invalid_file_tups:
+                            unsuccessful_count += 1
+                        else:
+                            successful_count += 1
+                    except Exception, e:
+                        log.debug( "Error attempting to reset metadata on repository '%s': %s" % ( repository.name, str( e ) ) )
+                        unsuccessful_count += 1
+                message = "Successfully reset metadata on %d %s.  " % ( successful_count,
+                                                                        inflector.cond_plural( successful_count, "repository" ) )
+                if unsuccessful_count:
+                    message += "Error setting metadata on %d %s - see the paster log for details.  " % ( unsuccessful_count,
+                                                                                                         inflector.cond_plural( unsuccessful_count,
+                                                                                                                                "repository" ) )
+                trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                           action='browse_repositories',
+                                                           message=util.sanitize_text( message ),
+                                                           status=status ) )
+            else:
+                'Select at least one repository to on which to reset all metadata.'
+                status = 'error'
+        repositories_select_field = SelectField( name='repository_names_by_owner', 
+                                                 multiple=True,
+                                                 display='checkboxes' )
+        for repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
+                                          .filter( trans.model.ToolShedRepository.table.c.uninstalled == False ) \
+                                          .order_by( trans.model.ToolShedRepository.table.c.name,
+                                                     trans.model.ToolShedRepository.table.c.owner ):
+            option_label = '%s (%s)' % ( repository.name, repository.owner )
+            option_value = trans.security.encode_id( repository.id )
+            repositories_select_field.add_option( option_label, option_value )
+        return trans.fill_template( '/admin/tool_shed_repository/reset_metadata_on_selected_repositories.mako',
+                                    repositories_select_field=repositories_select_field,
+                                    message=message,
+                                    status=status )
+    @web.expose
+    @web.require_admin
+    def reset_repository_metadata( self, trans, id, resetting_all_repositories=False ):
         """Reset all metadata on the installed tool shed repository."""
         repository = get_repository( trans, id )
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
@@ -1465,23 +1517,33 @@ class AdminToolshed( AdminGalaxy ):
                                                                                          updating_installed_repository=False )
             repository.metadata = metadata_dict
             if metadata_dict != original_metadata_dict:
-                update_in_shed_tool_config( trans.app, repository  )#def update_in_shed_tool_config( trans, shed_tool_conf_dict, elem_list ):
+                update_in_shed_tool_config( trans.app, repository )
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
-                message = 'Metadata has been reset on repository <b>%s</b>.' % repository.name
-                status = 'done'
+                if resetting_all_repositories:
+                    log.debug( 'Metadata has been reset on repository %s.' % repository.name )
+                else:
+                    message = 'Metadata has been reset on repository <b>%s</b>.' % repository.name
+                    status = 'done'
             else:
-                message = 'Metadata did not need to be reset on repository <b>%s</b>.' % repository.name
-                status = 'done'
+                if resetting_all_repositories:
+                    log.debug( 'Metadata did not need to be reset on repository %s.' % repository.name )
+                else:
+                    message = 'Metadata did not need to be reset on repository <b>%s</b>.' % repository.name
+                    status = 'done'
         else:
-            message = 'Error locating installation directory for repository <b>%s</b>.' % repository.name
-            status = 'error'
-        new_kwd = dict( id=id,
-                        message=message,
-                        status=status )
-        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                          action='manage_repository',
-                                                          **new_kwd ) )
+            if resetting_all_repositories:
+                log.debug( 'Error locating installation directory for repository %s.' % repository.name )
+            else:
+                message = 'Error locating installation directory for repository <b>%s</b>.' % repository.name
+                status = 'error'
+        if resetting_all_repositories:
+            return invalid_file_tups, metadata_dict
+        else:
+            new_kwd = dict( id=id, message=message, status=status )
+            return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                              action='manage_repository',
+                                                              **new_kwd ) )
     @web.expose
     @web.require_admin
     def reset_to_install( self, trans, **kwd ):
