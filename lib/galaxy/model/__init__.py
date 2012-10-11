@@ -1242,7 +1242,25 @@ class DatasetInstance( object ):
                     return source
             return ( None, None )
         return get_source( self )
-
+    @property
+    def source_dataset_chain( self ):
+        def _source_dataset_chain( dataset, lst ):
+            try:
+                cp_from_ldda = dataset.copied_from_library_dataset_dataset_association
+                if cp_from_ldda:
+                    lst.append( (cp_from_ldda, "(Data Library)") )
+                    return _source_dataset_chain( cp_from_ldda, lst )
+            except Exception, e:
+                log.warning( e )
+            try:
+                cp_from_hda  = dataset.copied_from_history_dataset_association
+                if cp_from_hda:
+                    lst.append( (cp_from_hda, cp_from_hda.history.name) )
+                    return _source_dataset_chain( cp_from_hda, lst )
+            except Exception, e:
+                log.warning( e )
+            return lst
+        return _source_dataset_chain( self, [] )
     def get_display_applications( self, trans ):
         return self.datatype.get_display_applications_by_dataset( self, trans )
 
