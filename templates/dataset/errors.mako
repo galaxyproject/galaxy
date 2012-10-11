@@ -19,9 +19,9 @@
     <body>
         <h2>Dataset generation errors</h2>
         <p><b>Dataset ${hda.hid}: ${hda.display_name()}</b></p>
-
-        %if hda.creating_job_associations:
-            <% job = hda.creating_job_associations[0].job %>
+        <% job = hda.creating_job %>
+        %if job:
+            
             %if job.traceback:
                 The Galaxy framework encountered the following error while attempting to run the tool:
                 <pre>${ util.unicodify( job.traceback ) | h}</pre>
