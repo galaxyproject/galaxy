@@ -57,7 +57,7 @@
                             
                         %>
                         <option value="${trans.security.encode_id(hist.id)}" ${selected}>
-                            ${i + 1}: ${h.truncate(hist.name, 30)}${current_history_text}
+                            ${i + 1}: ${h.truncate(util.unicodify( hist.name ), 30)}${current_history_text}
                         </option>
                     %endfor
                 </select>
@@ -98,7 +98,7 @@
                                 if encoded_id == target_history_id:
                                     selected = " selected='selected'"
                             %>
-                            <option value="${encoded_id}"${selected}>${i + 1}: ${h.truncate(hist.name, 30)}${source_history_text}</option>
+                            <option value="${encoded_id}"${selected}>${i + 1}: ${h.truncate( util.unicodify( hist.name ), 30)}${source_history_text}</option>
                         %endfor
                     </select><br /><br />
                     <a style="margin-left: 10px;" href="javascript:void(0);" id="select-multiple">Choose multiple histories</a>
@@ -113,7 +113,7 @@
                         %>
                         <div class="form-row">
                             <input type="checkbox" name="target_history_ids" id="hist_${encoded_id}" value="${encoded_id}"/>
-                            <label for="hist_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${hist.name}${cur_history_text}</label>
+                            <label for="hist_${encoded_id}" style="display: inline; font-weight:normal;">${i + 1}: ${ util.unicodify( hist.name ) }${cur_history_text}</label>
                         </div>
                     %endfor
                 </div>
