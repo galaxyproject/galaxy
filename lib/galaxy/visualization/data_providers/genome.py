@@ -184,9 +184,15 @@ class GenomeDataProvider( BaseDataProvider ):
             chrom = chrom_info[ 'chrom' ]
             chrom_len = chrom_info[ 'len' ]
             chrom_data = self.get_data( chrom, 0, chrom_len, **kwargs )
-            if chrom_data:
-                chrom_data[ 'region' ] = "%s:%i-%i" % ( chrom, 0, chrom_len )
-                genome_data.append( chrom_data )
+            # FIXME: data providers probably should never return None.
+            # Some data providers return None when there's no data, so
+            # create a dummy dict if necessary.
+            if not chrom_data:
+                chrom_data = {
+                    'data': None
+                }
+            chrom_data[ 'region' ] = "%s:%i-%i" % ( chrom, 0, chrom_len )
+            genome_data.append( chrom_data )
 
         return {
             'data': genome_data,

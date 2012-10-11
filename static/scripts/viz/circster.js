@@ -143,9 +143,12 @@ var CircsterTrackRenderer = Base.extend({
     initialize: function(options) {
         this.options = options;
         this.options.bg_stroke = 'ccc';
+        // Fill color when loading data.
+        this.options.loading_bg_fill = '000';
+        // Fill color when data has been loaded.
         this.options.bg_fill = 'ccc';
         this.options.chroms_layout = this._chroms_layout();
-        this.options.data_bounds = this.get_data_bounds(this.options.track.get_genome_wide_data(this.options.genome));
+        this.options.data_bounds = [];
         this.options.scale = 1;
         this.options.parent_elt = null;
     },
@@ -154,34 +157,49 @@ var CircsterTrackRenderer = Base.extend({
      * Render track's data by adding SVG elements to parent.
      */
     render: function(parent) {
-        // Create track group element.
+        // -- Create track group element. --
         this.options.parent_elt = parent.append("g").attr("id", "parent-" + this.options.track_index);
         var track_parent_elt = this.options.parent_elt;
 
-        // Render background arcs.
+        // -- Render background arcs. --
         var genome_arcs = this.options.chroms_layout,
             arc_gen = d3.svg.arc()
                         .innerRadius(this.options.radius_bounds[0])
                         .outerRadius(this.options.radius_bounds[1]),
 
+            // Attach data to group element.
             chroms_elts = track_parent_elt.selectAll('g')
-                .data(genome_arcs).enter().append('svg:g');
+                .data(genome_arcs).enter().append('svg:g'),
 
-        // Draw arcs.
-        chroms_elts.append("path")
-            .attr("d", arc_gen)
-            .style("stroke", this.options.bg_stroke)
-            .style("fill",  this.options.bg_fill)
-            .append("title").text(function(d) { return d.data.chrom; });
+            // Draw chrom arcs/paths.
+            chroms_paths = chroms_elts.append("path")
+                .attr("d", arc_gen)
+                .style("stroke", this.options.bg_stroke)
+                .style("fill",  this.options.loading_bg_fill);
+
+            // Append titles to paths.
+            chroms_paths.append("title").text(function(d) { return d.data.chrom; });
             
-        // Render track data.
-        this._render_data(track_parent_elt);
+        // -- Render track data and, when track data is rendered, apply preferences and update chrom_elts fill. --
 
-        // Apply prefs.
-        var prefs = this.options.track.get('prefs'),
-            block_color = prefs.block_color;
-        if (!block_color) { block_color = prefs.color; }
-        track_parent_elt.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
+        var self = this,
+            data_manager = self.options.track.get('data_manager'),
+            // If track has a data manager, get deferred that resolves when data is ready.
+            data_ready_deferred = (data_manager ? data_manager.data_is_ready() : true );
+
+        // When data is ready, render track.
+        $.when(data_ready_deferred).then(function() {
+            $.when(self._render_data(track_parent_elt)).then(function() {
+                // Apply prefs to all track data.
+                // TODO: move to _render_data?
+                var prefs = self.options.track.get('prefs'),
+                    block_color = prefs.block_color;
+                if (!block_color) { block_color = prefs.color; }
+                track_parent_elt.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
+
+                chroms_paths.style("fill", self.options.bg_fill);
+            });
+        });
     },
 
     /**
@@ -243,7 +261,7 @@ var CircsterTrackRenderer = Base.extend({
      * Update data bounds.
      */
     _update_data_bounds: function() {
-        this.options.data_bounds = this.get_data_bounds(this.options.track.get_genome_wide_data(this.options.genome));
+        //this.options.data_bounds = this.get_data_bounds(this.options.track.get_genome_wide_data(this.options.genome));
 
         // TODO: transition all paths to use the new data bounds.
     },
@@ -255,8 +273,13 @@ var CircsterTrackRenderer = Base.extend({
         var self = this,
             chrom_arcs = this.options.chroms_layout,
             track = this.options.track,
-            genome_wide_data = track.get_genome_wide_data(this.options.genome),
-                
+            rendered_deferred = $.Deferred();
+
+        // When genome-wide data is available, render data.
+        $.when(track.get('data_manager').get_genome_wide_data(this.options.genome)).then(function(genome_wide_data) {
+            // Set bounds.
+            self.options.data_bounds = self.get_data_bounds(genome_wide_data);
+
             // Merge chroms layout with data.
             layout_and_data = _.zip(chrom_arcs, genome_wide_data),
 
@@ -267,7 +290,10 @@ var CircsterTrackRenderer = Base.extend({
                 return self._render_chrom_data(svg, chrom_arc, data);
             });
 
-        return svg;
+            rendered_deferred.resolve(svg);
+        });
+
+        return rendered_deferred;
     },
 
     /**
@@ -348,7 +374,7 @@ var CircsterQuantitativeTrackRenderer = CircsterTrackRenderer.extend({
      */
     _render_chrom_data: function(svg, chrom_arc, chrom_data) {
         // If no chrom data, return null.
-        if (!chrom_data || typeof chrom_data === "string" || chrom_data.data.length === 0) {
+        if (typeof chrom_data === "string" || !chrom_data.data || chrom_data.data.length === 0) {
             return null;
         }
 
@@ -407,7 +433,7 @@ var CircsterSummaryTreeTrackRenderer = CircsterQuantitativeTrackRenderer.extend(
     get_data_bounds: function(data) {
         // Get max across data.
         var max_data = _.map(data, function(d) {
-            if (!d || typeof d === 'string') { return 0; }
+            if (typeof d === 'string' || !d.max) { return 0; }
             return d.max;
         });
         return [ 0, (max_data && typeof max_data !== 'string' ? _.max(max_data) : 0) ];

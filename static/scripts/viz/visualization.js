@@ -136,11 +136,42 @@ var Cache = Backbone.Model.extend({
 var GenomeDataManager = Cache.extend({
     defaults: _.extend({}, Cache.prototype.defaults, {
         dataset: null,
+        init_data: null,
         filters_manager: null,
         data_type: "data",
         data_mode_compatible: function(entry, mode) { return true; },
         can_subset: function(entry) { return false; }
     }),
+
+    /**
+     * Initialization.
+     */
+    initialize: function(options) {
+        Cache.prototype.initialize.call(this);
+
+        // Set initial entries in data manager.
+        var initial_entries = this.get('init_data');
+        if (initial_entries) {
+            this.add_data(initial_entries);
+        }
+    },
+
+    /**
+     * Add data entries to manager; each entry should be a dict with attributes region (key), data, and data_type.
+     * If necessary, manager size is increased to hold all data.
+     */
+    add_data: function(entries) {
+        // Increase size to accomodate all entries.
+        if (this.get('num_elements') < entries.length) {
+            this.set('num_elements', entries.length);
+        }
+
+        // Put data into manager.
+        var self = this;
+        _.each(entries, function(entry) {
+            self.set_data(entry.region, entry);
+        });
+    },
 
     /**
      * Returns deferred that resolves to true when dataset is ready (or false if dataset
@@ -149,12 +180,16 @@ var GenomeDataManager = Cache.extend({
     data_is_ready: function() {
         var dataset = this.get('dataset'),
             ready_deferred = $.Deferred(),
+            // If requesting raw data, query dataset state; if requesting (converted) data, 
+            // need to query converted datasets state.
+            query_type = (this.get('data_type') == 'raw_data' ? 'state' : 
+                          this.get('data_type') == 'data' ? 'converted_datasets_state' : "error" ),
             ss_deferred = new util_mod.ServerStateDeferred({
                 ajax_settings: {
                     url: this.get('dataset').url(),
                     data: {
                         hda_ldda: dataset.get('hda_ldda'),
-                        data_type: 'state'
+                        data_type: query_type
                     },
                     dataType: "json"
                 },
@@ -312,8 +347,7 @@ var GenomeDataManager = Cache.extend({
         // Get additional data, append to current data, and set new data. Use a custom deferred object
         // to signal when new data is available.
         //
-        var 
-            data_manager = this,
+        var data_manager = this,
             new_data_request = this.load_data(query_region, mode, resolution, extra_params),
             new_data_available = $.Deferred();
         // load_data sets cache to new_data_request, but use custom deferred object so that signal and data
@@ -372,6 +406,49 @@ var GenomeDataManager = Cache.extend({
         entry.stale = true;
         return entry;
     },
+
+    /**
+     * Returns an array of data with each entry representing one chromosome/contig
+     * of data or, if data is not available, returns a Deferred that resolves to the
+     * data when it becomes available.
+     */
+    get_genome_wide_data: function(genome) {
+        // -- Get all data. --
+
+        var self = this,
+            all_data_available = true,
+
+            //  Map chromosome info into genome data.
+            gw_data = _.map(genome.get('chroms_info').chrom_info, function(chrom_info) {
+                var chrom_data = self.get_elt(
+                    new GenomeRegion({
+                        chrom: chrom_info.chrom,
+                        start: 0,
+                        end: chrom_info.len
+                    })
+                );
+
+                // Set flag if data is not available.
+                if (!chrom_data) { all_data_available = false; }
+
+                return chrom_data;
+            });
+
+        // -- If all data is available, return it. --
+        if (all_data_available) {
+            return gw_data;
+        }
+
+        // -- All data is not available, so load from server. --
+
+        var deferred = $.Deferred();
+        $.getJSON(this.get('dataset').url(), { data_type: 'genome_data' }, function(genome_wide_data) {
+            self.add_data(genome_wide_data.data);
+            deferred.resolve(genome_wide_data.data);
+        });
+
+        return deferred;
+    },
         
     /**
      * Get data from the cache.
@@ -397,7 +474,6 @@ var ReferenceTrackDataManager = GenomeDataManager.extend({
     },
 
     load_data: function(region, mode, resolution, extra_params) {
-        console.log(region, mode, resolution);
         if (resolution > 1) {
             // Now that data is pre-fetched before draw, we don't load reference tracks
             // unless it's at the bottom level.
@@ -598,41 +674,17 @@ var BackboneTrack = data_mod.Dataset.extend({
         this.set('id', options.dataset_id);
 
         // Set up data manager.
-        var data_manager = new GenomeDataManager({
-            dataset: this
-        });
-        this.set('data_manager', data_manager);
-
-        // If there's preloaded data, add it to data manager.
         var preloaded_data = this.get('preloaded_data');
         if (preloaded_data) {
-            // Increase size to accomodate all preloaded data.
-            data_manager.set('num_elements', preloaded_data.data.length);
-
-            // Put data into manager.
-            _.each(preloaded_data.data, function(entry) {
-                data_manager.set_data(entry.region, entry);
-            });
+            preloaded_data = preloaded_data.data
         }
-    },
-
-    /**
-     * Returns an array of data with each entry representing one chromosome/contig
-     * of data.
-     */
-    get_genome_wide_data: function(genome) {
-        var data_manager = this.get('data_manager');
-
-        //  Map chromosome data into track data.
-        return _.map(genome.get('chroms_info').chrom_info, function(chrom_info) {
-            return data_manager.get_elt(
-                new GenomeRegion({
-                    chrom: chrom_info.chrom,
-                    start: 0,
-                    end: chrom_info.len
-                })
-            );
-        });
+        else {
+            preloaded_data = [];
+        }
+        this.set('data_manager', new GenomeDataManager({
+            dataset: this,
+            init_data: preloaded_data
+        }));
     }
 });
 

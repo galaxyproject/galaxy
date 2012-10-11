@@ -52,7 +52,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             elif data_type == 'track_config':
                 rval = self.get_new_track_config( trans, dataset )
             elif data_type == 'genome_data':
-                rval = self._get_genome_data( self, trans, dataset, kwd.get('dbkey', None) )
+                rval = self._get_genome_data( trans, dataset, kwd.get('dbkey', None) )
             else:
                 # Default: return dataset as API value.
                 rval = dataset.get_api_value()
@@ -89,12 +89,13 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         if msg:
             return msg
             
-        # Check for data in the genome window.
-        data_provider_registry = trans.app.data_provider_registry
-        data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset= dataset, source='index' )
-        if not data_provider.has_data( chrom ):
-            return messages.NO_DATA
-            
+        # If there is a chrom, check for data on the chrom.
+        if chrom:
+            data_provider_registry = trans.app.data_provider_registry
+            data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset= dataset, source='index' )
+            if not data_provider.has_data( chrom ):
+                return messages.NO_DATA
+
         # Have data if we get here
         return { "status": messages.DATA, "valid_chroms": None }
 
