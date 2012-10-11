@@ -31,7 +31,7 @@
         %for i, workflow in enumerate( workflows ):
             <tr>
                 <td>
-                    ${workflow.name}
+                    ${util.unicodify( workflow.name )}
                 </td>
                 <td>You</td>
                 <td>${len(workflow.latest_workflow.steps)}</td>
@@ -53,7 +53,7 @@
             <% workflow = association.stored_workflow %>
             <tr>
                 <td>
-                    ${workflow.name}
+                    ${util.unicodify( workflow.name )}
                 </td>
                 <td>${workflow.user.email}</td>
                 <td>${len(workflow.latest_workflow.steps)}</td>
