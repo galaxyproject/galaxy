@@ -166,6 +166,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def errors( self, trans, id ):
         hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
+        if not hda or not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+            return trans.show_error_message( "Either this dataset does not exist or you do not have permission to access it." )
         return trans.fill_template( "dataset/errors.mako", hda=hda )
     @web.expose
     def stdoutX( self, trans, dataset_id=None, **kwargs ):
