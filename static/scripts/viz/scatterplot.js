@@ -1,6 +1,8 @@
 define([
     "../libs/underscore",
+    
     "../mvc/base-mvc",
+    "../utils/LazyDataLoader",
     "../templates/compiled/template-visualization-scatterplotControlForm",
     "../templates/compiled/template-visualization-statsTable",
     "../templates/compiled/template-visualization-chartSettings",
@@ -14,7 +16,7 @@ define([
 /* =============================================================================
 todo:
     outside this:
-        BUG: visualization menu doesn't disappear
+        BUG: setting width, height in plot controls doesn't re-interpolate data locations!!
         BUG?: get metadata_column_names (from datatype if necessary)
         BUG: single vis in popupmenu should have tooltip with that name NOT 'Visualizations'
     
@@ -78,7 +80,7 @@ function TwoVarScatterplot( config ){
         PADDING = 8,
         X_LABEL_TOO_LONG_AT = 5;
         
-    //this.debugging = true;
+    this.debugging = true;
     this.log = function(){
         if( this.debugging && console && console.debug ){
             var args = Array.prototype.slice.call( arguments );
@@ -102,8 +104,8 @@ function TwoVarScatterplot( config ){
         yNumTicks : 10,
         xAxisLabelBumpY : 40,
         yAxisLabelBumpX : -35,
-        width   : 320,
-        height  : 320,
+        width   : 500,
+        height  : 500,
         //TODO: anyway to make this a sub-obj?
         marginTop : 50,
         marginRight : 50,
@@ -120,7 +122,7 @@ function TwoVarScatterplot( config ){
     };
     this.config = _.extend( {}, this.defaults, config );
     
-    this.updateConfig = function( newConfig ){
+    this.updateConfig = function( newConfig, rerender ){
         _.extend( this.config, newConfig );
     };
     
@@ -148,9 +150,10 @@ function TwoVarScatterplot( config ){
     this.yAxis = this.content.append( 'g' ).attr( 'class', 'axis' ).attr( 'id', 'y-axis' );
     this.yAxisLabel = this.yAxis.append( 'text' ).attr( 'class', 'axis-label' ).attr( 'id', 'y-axis-label' );
     
-    this.log( 'built svg:', d3.selectAll( 'svg' ) );
+    //this.log( 'built svg:', d3.selectAll( 'svg' ) );
     
     this.adjustChartDimensions = function( top, right, bottom, left ){
+        //this.log( this + '.adjustChartDimensions', arguments );
         top = top || 0;
         right = right || 0;
         bottom = bottom || 0;
@@ -171,6 +174,7 @@ function TwoVarScatterplot( config ){
     
     // ........................................................ data and scales
     this.preprocessData = function( data, min, max ){
+        //this.log( this + '.preprocessData', arguments );
         //TODO: filter by min, max if set
         
         // set a cap on the data, limit to first n points
@@ -178,7 +182,7 @@ function TwoVarScatterplot( config ){
     };
     
     this.setUpDomains = function( xCol, yCol, meta ){
-        this.log( 'setUpDomains' );
+        //this.log( this + '.setUpDomains', arguments );
         // configuration takes priority, otherwise meta (from the server) if passed, last-resort: compute it here
         this.xMin = this.config.xMin || ( meta )?( meta[0].min ):( d3.min( xCol ) );
         this.xMax = this.config.xMax || ( meta )?( meta[0].max ):( d3.max( xCol ) );
@@ -187,6 +191,7 @@ function TwoVarScatterplot( config ){
     };
     
     this.setUpScales = function(){
+        //this.log( this + '.setUpScales', arguments );
         // Interpolation for x, y based on data domains
         this.xScale = d3.scale.linear()
                 .domain([ this.xMin, this.xMax ])
@@ -198,6 +203,7 @@ function TwoVarScatterplot( config ){
     
     // ........................................................ axis and ticks
     this.setUpXAxis = function(){
+        //this.log( this + '.setUpXAxis', arguments );
         // origin: bottom, left
         //TODO: incoporate top, right
         this.xAxisFn = d3.svg.axis()
@@ -228,13 +234,14 @@ function TwoVarScatterplot( config ){
     };
 
     this.setUpYAxis = function(){
+        //this.log( this + '.setUpYAxis', arguments );
         this.yAxisFn = d3.svg.axis()
             .scale( this.yScale )
             .ticks( this.config.yNumTicks )
             .orient( 'left' );
         this.yAxis// = content.select( 'g#y-axis' )
             .call( this.yAxisFn );
-        this.log( 'yAxis:', this.yAxis );
+        //this.log( 'yAxis:', this.yAxis );
     
         // get the tick labels for the y axis
         var yTickLabels = this.yAxis.selectAll( 'text' ).filter( function( e, i ){ return i !== 0; } );
@@ -259,7 +266,7 @@ function TwoVarScatterplot( config ){
         if( this.config.marginLeft < neededY ){
             var adjusting = ( neededY ) - this.config.marginLeft;
             adjusting = ( adjusting < 0 )?( 0 ):( adjusting );
-            this.log( 'adjusting:', adjusting );
+            //this.log( 'adjusting:', adjusting );
             
             // update dimensions, translations
             this.adjustChartDimensions( 0, 0, 0, adjusting );
@@ -278,6 +285,7 @@ function TwoVarScatterplot( config ){
     
     // ........................................................ grid lines
     this.renderGrid = function(){
+        //this.log( this + '.renderGrid', arguments );
         // VERTICAL
         // select existing
         this.vGridLines = this.content.selectAll( 'line.v-grid-line' )
@@ -328,51 +336,70 @@ function TwoVarScatterplot( config ){
         
     };
     
+    // initial render or complete re-render (REPLACE datapoints)
     this.renderDatapoints = function( xCol, yCol, ids ){
-        // initial render, complete re-render (REPLACE datapoints)
+        this.log( this + '.renderDatapoints', arguments );
+        var count = 0;
         
         this.datapoints = this.addDatapoints( xCol, yCol, ids, ".glyph" );
         
         // glyphs that need to be removed: transition to from normal state to 'exit' state, remove from DOM
         this.datapoints.exit()
+            .each( function(){ count += 1; } )
             .transition().duration( this.config.entryAnimDuration )
                 .attr( "cy", this.config.height )
                 .attr( "r", 0 )
             .remove();
+        this.log( count, ' glyphs removed' );
         
-        this.log( this.datapoints, 'glyphs rendered' );
+        //this.log( this.datapoints.length, ' glyphs in the graph' );
     };
     
+    // adding points to existing
     this.addDatapoints = function( newXCol, newYCol, ids, selectorForExisting ){
+        this.log( this + '.addDatapoints', arguments );
         // ADD datapoints to plot that's already rendered
         //  if selectorForExisting === undefined (as in not passed), addDatapoints won't update existing
         //  pass in the class ( '.glyph' ) to update exising datapoints
         var plot = this,
+            count = 0,
             xPosFn = function( d, i ){
+                //if( d ){ this.log( 'x.data:', newXCol[ i ], 'plotted:', plot.xScale( newXCol[ i ] ) ); }
                 return plot.xScale( newXCol[ i ] );
             },
             yPosFn = function( d, i ){
+                //if( d ){ this.log( 'y.data:', newYCol[ i ], 'plotted:', plot.yScale( newYCol[ i ] ) ); }
                 return plot.yScale( newYCol[ i ] );
             };
     
         // select all existing glyphs and compare to incoming data
         //  enter() will yield those glyphs that need to be added
-        var newDatapoints = this.content.selectAll( selectorForExisting ).data( newXCol );
+        var newDatapoints = this.content.selectAll( selectorForExisting );
+        this.log( 'existing datapoints:', newDatapoints );
+        newDatapoints = newDatapoints.data( newXCol );
             
         // enter - new data to be added as glyphs: give them a 'entry' position and style
+        count = 0;
         newDatapoints.enter()
-            .append( "svg:circle" )
+            .append( 'svg:circle' )
+                .each( function(){ count += 1; } )
                 .classed( "glyph", true )
-                // start all bubbles small...
                 .attr( "cx", xPosFn )
                 .attr( "cy", yPosFn )
+                // start all bubbles small...
                 .attr( "r", 0 );
+        this.log( count, ' new glyphs created' );
         
         // for all existing glyphs and those that need to be added: transition anim to final state
+        count = 0;
         newDatapoints
             // ...animate to final position
             .transition().duration( this.config.entryAnimDuration )
-                .attr( "r", this.config.datapointSize );
+                .each( function(){ count += 1; } )
+                .attr( "cx", xPosFn )
+                .attr( "cy", yPosFn )
+                .attr( "r", plot.config.datapointSize );
+        this.log( count, ' existing glyphs transitioned' );
         
         // attach ids
         if( ids ){
@@ -419,21 +446,22 @@ function TwoVarScatterplot( config ){
     };
     
     this.render = function( columnData, meta ){
+        this.log( this + '.render', arguments );
         //pre: columns passed are numeric
         //pre: at least two columns are passed
         //assume: first column is x, second column is y, any remaining aren't used
         var xCol = columnData[0],
             yCol = columnData[1],
             ids = ( columnData.length > 2 )?( columnData[2] ):( undefined );
-        this.log( 'renderScatterplot', xCol.length, yCol.length, this.config );
+        //this.log( this + '.render', xCol.length, yCol.length, this.config );
         
         //pre: xCol.len == yCol.len
         xCol = this.preprocessData( xCol );
         yCol = this.preprocessData( yCol );
-        //this.log( 'xCol len', xCol.length, 'yCol len', yCol.length );
+        this.log( 'xCol len', xCol.length, 'yCol len', yCol.length );
         
         this.setUpDomains( xCol, yCol, meta );
-        this.log( 'xMin, xMax, yMin, yMax:', this.xMin, this.xMax, this.yMin, this.yMax );
+        //this.log( 'xMin, xMax, yMin, yMax:', this.xMin, this.xMax, this.yMin, this.yMax );
         
         this.setUpScales();
         this.adjustChartDimensions();
@@ -515,7 +543,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         this.$chartSettingsPanel = this._render_chartSettings();
         this.$statsPanel         = this.$el.find( '.tab-pane#chart-stats' );
         
-        this.$el.find( 'ul.nav' ).find( 'a[href="#chart-settings"]' ).tab( 'show' );
+        //this.$el.find( 'ul.nav' ).find( 'a[href="#chart-settings"]' ).tab( 'show' );
         return this;
     },
 
@@ -523,6 +551,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         var chartControl = this,
             $chartSettingsPanel = this.$el.find( '.tab-pane#chart-settings' ),
             // limits for controls (by control/chartConfig id)
+            //TODO: move into TwoVarScatterplot
             controlRanges = {
                 'maxDataPoints' : { min: 1000, max: 30000, step: 100 },
                 'datapointSize' : { min: 2, max: 10, step: 1 },
@@ -559,7 +588,6 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         });
         
         //TODO: anim checkbox
-        //TODO: labels -> renderPlot
         
         return $chartSettingsPanel;
     },
@@ -639,7 +667,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
             columns = [];
         this.log( 'columnSelections:', columnSelections );    
             
-        //TODO: ?? could be moved into getColumnVals;
+        //TODO: move this data/chart settings form crap out
         this.log( columnSelections.X.val, columnSelections.Y.val );
         this.xColIndex = columnSelections.X.colIndex;
         this.yColIndex = columnSelections.Y.colIndex;
@@ -650,15 +678,18 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
             columns.push( columnSelections.ID.colIndex );
         }
         
-        this.log( columnSelections.X.colName, columnSelections.Y.colName );
-        this.plot.xLabel = this.chartConfig.xLabel = columnSelections.X.colName;
-        this.plot.xLabel = this.chartConfig.yLabel = columnSelections.Y.colName;
-        
-        //TODO: alter directly
+        // update labels using chartSettings inputs (if not at defaults), otherwise the selects' colName 
+        var chartSettingsXLabel = this.$chartSettingsPanel.find( 'input#X-axis-label' ).val(),
+            chartSettingsYLabel = this.$chartSettingsPanel.find( 'input#Y-axis-label' ).val();
+        this.chartConfig.xLabel = ( chartSettingsXLabel === 'X' )?
+                                  ( columnSelections.X.colName ):( chartSettingsXLabel );
+        this.chartConfig.yLabel = ( chartSettingsYLabel === 'Y' )?
+                                  ( columnSelections.Y.colName ):( chartSettingsYLabel );
+        //this.log( 'this.chartConfig:', this.chartConfig );
         view.plot.updateConfig( this.chartConfig, false );
+        
         //TODO: validate columns - minimally: we can assume either set by selectors or via a good query string
         //TODO: other vals: max, start, page
-        //TODO: chart config
         
         // fetch the data, sending chosen columns to the server
         var params = {
@@ -705,6 +736,7 @@ ScatterplotControlForm.templates = {
 
 //==============================================================================
 return {
+    LazyDataLoader          : LazyDataLoader,
     TwoVarScatterplot       : TwoVarScatterplot,
     ScatterplotControlForm  : ScatterplotControlForm
 };});

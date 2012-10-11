@@ -209,7 +209,7 @@ require([ "viz/scatterplot" ], function( scatterplot ){
     var hda             = ${h.to_json_string( hda )},
         historyID       = '${historyID}'
         apiDatasetsURL  = "${h.url_for( controller='/api/datasets' )}";
-    
+        
     var settingsForm = new scatterplot.ScatterplotControlForm({
         dataset    : hda,
         el         : $( '#chart-settings-form' ),
@@ -243,3 +243,4 @@ require([ "viz/scatterplot" ], function( scatterplot ){
     <div id="test"></div>
 
 </%def>
+
