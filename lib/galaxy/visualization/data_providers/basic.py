@@ -163,16 +163,19 @@ class ColumnDataProvider( BaseDataProvider ):
         f.close()
 
         for index, meta in enumerate( response[ 'meta' ] ):
-            count = meta[ 'count' ]
-            meta[ 'mean' ] = float( meta[ 'sum' ] ) / count
+            column_type = column_types[ index ]
             
-            sorted_data = sorted( response[ 'data' ][ index ] )
-            # even data count -
-            middle_index = count / 2 - 1
-            if count % 2 == 0:
-                meta[ 'median' ] = sum( sorted_data[ middle_index : ( middle_index + 1 ) ] ) / 2.0
+            if( column_type == 'float' or column_type == 'int' ):
+                count = meta[ 'count' ]
+                meta[ 'mean' ] = float( meta[ 'sum' ] ) / count
                 
-            else:
-                meta[ 'median' ] = sorted_data[ middle_index ]
+                sorted_data = sorted( response[ 'data' ][ index ] )
+                # even data count -
+                middle_index = count / 2 - 1
+                if count % 2 == 0:
+                    meta[ 'median' ] = sum( sorted_data[ middle_index : ( middle_index + 1 ) ] ) / 2.0
+                    
+                else:
+                    meta[ 'median' ] = sorted_data[ middle_index ]
 
         return response

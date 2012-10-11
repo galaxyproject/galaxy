@@ -20,11 +20,11 @@ ${h.css(
 
 .left-column {
 	float: left;
-    width: 30%;
+    width: 40%;
 }
 
 .right-column {
-    margin-left: 32%;
+    margin-left: 41%;
 }
 
 div.tab-pane {

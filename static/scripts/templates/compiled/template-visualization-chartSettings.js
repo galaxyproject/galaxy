@@ -13,7 +13,7 @@ function program1(depth0,data) {
   foundHelper = helpers.maxDataPoints;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
   else { stack1 = depth0.maxDataPoints; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  buffer += escapeExpression(stack1) + "</div>\n        <div class=\"slider\"></div>\n        <p class=\"form-help help-text-small\">\n            Change the maximum number of data points displayable on this graph (higher values will\n            load significantly slower)\n        </p>\n    </div>\n\n    <div id=\"datapointSize\" class=\"form-input numeric-slider-input\">\n        <label for=\"datapointSize\">Size of data point: </label>\n        <div class=\"slider-output\">";
+  buffer += escapeExpression(stack1) + "</div>\n        <div style=\"clear: both;\"></div>\n        <div class=\"slider\"></div>\n        <p class=\"form-help help-text-small\">\n            Change the maximum number of data points displayable on this graph (higher values will\n            load significantly slower)\n        </p>\n    </div>\n\n    <div id=\"datapointSize\" class=\"form-input numeric-slider-input\">\n        <label for=\"datapointSize\">Size of data point: </label>\n        <div class=\"slider-output\">";
   foundHelper = helpers.datapointSize;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
   else { stack1 = depth0.datapointSize; stack1 = typeof stack1 === functionType ? stack1() : stack1; }

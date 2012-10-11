@@ -1,6 +1,4 @@
 define([
-    //"../libs/jquery/jquery",
-    
     "../libs/underscore",
     "../mvc/base-mvc",
     "../templates/compiled/template-visualization-scatterplotControlForm",
@@ -12,8 +10,6 @@ define([
     "../libs/bootstrap",
     "../libs/jquery/jquery-ui-1.8.23.custom.min"
 ], function(){
-
-
 
 /* =============================================================================
 todo:
@@ -54,6 +50,9 @@ todo:
             how to know what sort of Tabular the data is?
         smarter about headers
         validate columns selection (here or server)
+
+        set stats column names by selected columns
+        move chart into tabbed area...
         
     Scatterplot.mako:
         multiple plots on one page (small multiples)
@@ -103,8 +102,8 @@ function TwoVarScatterplot( config ){
         yNumTicks : 10,
         xAxisLabelBumpY : 40,
         yAxisLabelBumpX : -35,
-        width : 500,
-        height : 500,
+        width   : 320,
+        height  : 320,
         //TODO: anyway to make this a sub-obj?
         marginTop : 50,
         marginRight : 50,
@@ -456,15 +455,9 @@ function TwoVarScatterplot( config ){
  */
 var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     //logger      : console,
-    tagName     : 'form',
     className   : 'scatterplot-settings-form',
     
     loadingIndicatorImage : 'loading_large_white_bg.gif',
-    
-    events : {
-        'click #render-button'       : 'renderPlot',
-        'click #include-id-checkbox' : 'toggleThirdColumnSelector'
-    },
     
     initialize : function( attributes ){
 
@@ -571,6 +564,11 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         return $chartSettingsPanel;
     },
     
+    events : {
+        'click #render-button'       : 'renderPlot',
+        'click #include-id-checkbox' : 'toggleThirdColumnSelector'
+    },
+
     toggleThirdColumnSelector : function(){
         this.$el.find( 'select[name="ID"]' ).parent().toggle();
     },
