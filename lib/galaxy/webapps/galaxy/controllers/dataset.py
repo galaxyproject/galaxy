@@ -977,21 +977,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         """
         Show the parameters used for an HDA
         """
-
-        def source_dataset_chain( dataset, lst ):
-            try:
-                cp_from_ldda = dataset.copied_from_library_dataset_dataset_association
-                cp_from_hda  = dataset.copied_from_history_dataset_association
-                if cp_from_ldda:
-                    lst.append( (cp_from_ldda, "(Data Library)") )
-                    return source_dataset_chain( cp_from_ldda, lst )
-                elif cp_from_hda:
-                    lst.append( (cp_from_hda, cp_from_hda.history.name) )
-                    return source_dataset_chain( cp_from_hda, lst )
-            except:
-                pass
-            return lst
-
         hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         if not hda:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
@@ -999,15 +984,17 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             return trans.show_error_message( "You are not allowed to access this dataset" )
 
         # Get the associated job, if any. If this hda was copied from another,
-        # we need to find the job that created the origial hda
+        # we need to find the job that created the origial dataset association.
         params_objects = None
+        job = None
         tool = None
-        job_hda = hda
-        while job_hda.copied_from_history_dataset_association:
-            job_hda = job_hda.copied_from_history_dataset_association
-        if job_hda.creating_job_associations:
-            job = None
-            for assoc in job_hda.creating_job_associations:
+        inherit_chain = hda.source_dataset_chain
+        if inherit_chain:
+            job_dataset_association, dataset_association_container_name = inherit_chain[-1]
+        else:
+            job_dataset_association = hda
+        if job_dataset_association.creating_job_associations:
+            for assoc in job_dataset_association.creating_job_associations:
                 job = assoc.job
                 break
             if job:
@@ -1020,8 +1007,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     params_objects = job.get_param_values( trans.app )
                 except:
                     pass
-
-        inherit_chain = source_dataset_chain(hda, [])
+        if job is None:
+            return trans.show_error_message( "Job information is not available for this dataset." )
         return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects )
 
     @web.expose
