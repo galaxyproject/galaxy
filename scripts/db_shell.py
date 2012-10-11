@@ -1,14 +1,14 @@
 # This script allows easy access to Galaxy's database layer via the
-# Galaxy models. For example:q
-# % python -i scripts/db_shel.py
+# Galaxy models. For example:
+# % python -i scripts/db_shell.py
 # >>> new_user = User("admin@gmail.com")
 # >>> new_user.set_password
 # >>> sa_session.add(new_user)
 # >>> sa_session.commit()
 # >>> sa_session.query(User).all()
 # 
-# You can also use this script as a library, for instance see https://gist.github.com/1979583q
-# TODO: This script overlaps alot wth manage_db.py and create_db.py,
+# You can also use this script as a library, for instance see https://gist.github.com/1979583
+# TODO: This script overlaps a lot with manage_db.py and create_db.py,
 # these should maybe be refactored to remove duplication.
 import sys, os.path, logging
 
