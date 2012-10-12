@@ -1,4 +1,5 @@
-define( ["base","libs/underscore","viz/trackster/slotting", "viz/trackster/painters", "viz/trackster/tracks" ], function( base, _, slotting, painters, tracks ) {
+define( ["base","libs/underscore","viz/trackster/slotting", "viz/trackster/painters", "viz/trackster/tracks", "viz/visualization" ], 
+        function( base, _, slotting, painters, tracks, visualization ) {
 
 /************************************************************************
  * Functions used for creating and managing the Trackster user interface.
@@ -19,7 +20,7 @@ var TracksterUI = base.Base.extend({
         var self = this,
             menu = create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
-                tracks.add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
+                visualization.select_datasets(select_datasets_url, add_track_async_url, { "f-dbkey": view.dbkey }, function(tracks) {
                     _.each(tracks, function(track) {
                         view.add_drawable( object_from_template(track, view,  view) );  
                     });

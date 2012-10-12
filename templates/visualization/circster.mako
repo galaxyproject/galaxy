@@ -1,4 +1,5 @@
 <%inherit file="/webapps/galaxy/base_panels.mako"/>
+<%namespace file="/visualization/trackster_common.mako" import="render_trackster_js_vars" />
 
 <%def name="init()">
 <%
@@ -25,6 +26,9 @@
 
     <script type="text/javascript">
 
+        // These vars are neeed for selecting datasets.
+        ${render_trackster_js_vars()}
+
         require.config({ 
             baseUrl: "${h.url_for('/static/scripts')}",
             shim: {
@@ -39,7 +43,11 @@
                 
                 // -- Visualization menu and set up.
                 var menu = create_icon_buttons_menu([
-                    { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { add_tracks(); } },
+                    { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
+                        visualization.select_datasets(select_datasets_url, add_track_async_url, {}, function(tracks) {
+                            console.log(tracks);
+                            });
+                    } },
                     { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
                         // Show saving dialog box
                         show_modal("Saving...", "progress");

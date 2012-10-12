@@ -4,60 +4,6 @@ define( ["libs/underscore", "viz/visualization", "viz/trackster/util",
          function( _, visualization, util, slotting, painters, data, filters_mod ) {
 
 var extend = _.extend;
-var get_random_color = util.get_random_color;
-
-/**
- * Use a popup grid to add more datasets.
- */
-var add_datasets = function(dataset_url, add_track_async_url, success_fn) {
-    $.ajax({
-        url: dataset_url,
-        data: { "f-dbkey": view.dbkey },
-        error: function() { alert( "Grid failed" ); },
-        success: function(table_html) {
-            show_modal(
-                "Select datasets for new tracks",
-                table_html, {
-                    "Cancel": function() {
-                        hide_modal();
-                    },
-                    "Add": function() {
-                        var requests = [];
-                        $('input[name=id]:checked,input[name=ldda_ids]:checked').each(function() {
-                            var data = {
-                                    data_type: 'track_config',
-                                    'hda_ldda': 'hda'
-                                },
-                                id = $(this).val();
-                                if ($(this).attr("name") !== "id") {
-                                    data.hda_ldda = 'ldda';
-                                }
-                                requests[requests.length] = $.ajax({
-                                    url: add_track_async_url + "/" + id,
-                                    data: data,
-                                    dataType: "json"
-                                });
-                        });
-                        // To preserve order, wait until there are definitions for all tracks and then add 
-                        // them sequentially.
-                        $.when.apply($, requests).then(function() {
-                            // jQuery always returns an Array for arguments, so need to look at first element
-                            // to determine whether multiple requests were made and consequently how to 
-                            // map arguments to track definitions.
-                            var track_defs = (arguments[0] instanceof Array ?  
-                                               $.map(arguments, function(arg) { return arg[0]; }) :
-                                               [ arguments[0] ]
-                                               );
-                            success_fn(track_defs);
-                        });
-                        hide_modal();
-                    }
-                }
-            );
-        }
-    });
-};
-
 
 /**
  * Helper to determine if object is jQuery deferred.
@@ -961,7 +907,7 @@ extend( View.prototype, DrawableCollection.prototype, {
         // Introduction div shown when there are no tracks.
         this.intro_div = $("<div/>").addClass("intro").appendTo(this.viewport_container).hide();
         var add_tracks_button = $("<div/>").text("Add Datasets to Visualization").addClass("action-button").appendTo(this.intro_div).click(function () {
-            add_datasets(add_datasets_url, add_track_async_url, function(tracks) {
+            visualization.select_datasets(select_datasets_url, add_track_async_url, function(tracks) {
                 _.each(tracks, function(track) {
                     view.add_drawable( object_from_template(track, view, view) );  
                 });
@@ -2002,7 +1948,7 @@ extend(DrawableConfig.prototype, {
                     // Use function to fix farb_obj value.
                     (function(fixed_farb_obj) {
                         new_color_icon.click(function() {
-                            fixed_farb_obj.setColor(get_random_color());
+                            fixed_farb_obj.setColor(util.get_random_color());
                         });  
                     })(farb_obj);
                       
@@ -3548,7 +3494,7 @@ var LineTrack = function (view, container, obj_dict) {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
-            { key: 'color', label: 'Color', type: 'color', default_value: get_random_color() },
+            { key: 'color', label: 'Color', type: 'color', default_value: util.get_random_color() },
             { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -3770,8 +3716,8 @@ var FeatureTrack = function(view, container, obj_dict) {
 
     // Define and restore track configuration.
     var 
-        block_color = get_random_color(),
-        reverse_strand_color = get_random_color( [ block_color, "#ffffff" ] );
+        block_color = util.get_random_color(),
+        reverse_strand_color = util.get_random_color( [ block_color, "#ffffff" ] );
     this.config = new DrawableConfig( {
         track: this,
         params: [
@@ -4144,7 +4090,7 @@ var VcfTrack = function(view, container, obj_dict) {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
-            { key: 'block_color', label: 'Block color', type: 'color', default_value: get_random_color() },
+            { key: 'block_color', label: 'Block color', type: 'color', default_value: util.get_random_color() },
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
@@ -4171,8 +4117,8 @@ var ReadTrack = function (view, container, obj_dict) {
     FeatureTrack.call(this, view, container, obj_dict);
     
     var 
-        block_color = get_random_color(),
-        reverse_strand_color = get_random_color( [ block_color, "#ffffff" ] );
+        block_color = util.get_random_color(),
+        reverse_strand_color = util.get_random_color( [ block_color, "#ffffff" ] );
     this.config = new DrawableConfig( {
         track: this,
         params: [
@@ -4243,8 +4189,7 @@ return {
     ReadTrack: ReadTrack,
     VcfTrack: VcfTrack,
     CompositeTrack: CompositeTrack,
-    object_from_template: object_from_template,
-    add_datasets: add_datasets
+    object_from_template: object_from_template
 };
 
 // End trackster_module encapsulation
