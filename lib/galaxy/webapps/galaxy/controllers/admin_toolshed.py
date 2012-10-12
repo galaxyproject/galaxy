@@ -451,6 +451,8 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_repository = get_repository( trans, kwd[ 'id' ] )
         shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
         if relative_install_dir:
+            if tool_path:
+                relative_install_dir = os.path.join( tool_path, relative_install_dir )
             repository_install_dir = os.path.abspath( relative_install_dir )
         else:
             repository_install_dir = None
