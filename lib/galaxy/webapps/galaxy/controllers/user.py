@@ -721,7 +721,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
             user_info_forms = self.get_all_forms( trans,
                                                   filter=dict( deleted=False ),
                                                   form_type=trans.app.model.FormDefinition.types.USER_INFO )
-            return trans.fill_template( '/webapps/galaxy/user/info.mako',
+            return trans.fill_template( '/webapps/galaxy/user/show_info.mako',
                                         cntrller=cntrller,
                                         user=user,
                                         email=email,
