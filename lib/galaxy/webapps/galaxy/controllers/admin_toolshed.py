@@ -1103,6 +1103,7 @@ class AdminToolshed( AdminGalaxy ):
                         if installed_changeset_revision != changeset_revision:
                             message += "You can get the latest updates for the repository using the <b>Get updates</b> option from the repository's "
                             message += "<b>Repository Actions</b> pop-up menu.  "
+                        message+= 'Click <a href="%s">here</a> to manage the repository.  ' % ( web.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( installed_tool_shed_repository.id ) ) )
                         status = 'error'
                         if len( repo_info_dicts ) == 1:
                             new_kwd = dict( message=message, status=status )
