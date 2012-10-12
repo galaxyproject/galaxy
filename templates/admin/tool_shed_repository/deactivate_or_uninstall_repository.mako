@@ -53,32 +53,39 @@
                 ${repository.deleted}
             </div>
             <div class="form-row">
-                ${remove_from_disk_check_box.get_html()}
-                <label for="repository" style="display: inline;font-weight:normal;">Check to uninstall or leave blank to deactivate</label>
-                <br/><br/>
-                <label>Deactivating this repository will result in the following:</label>
-                <div class="toolParamHelp" style="clear: both;">
-                    * The repository and all of it's contents will remain on disk.
-                </div>
-                %if repository.includes_tools:
+                %if repository.can_deactivate:
+                    <% deactivate_uninstall_button_text = "Deactivate or Uninstall" %>
+                    ${remove_from_disk_check_box.get_html()}
+                    <label for="repository" style="display: inline;font-weight:normal;">Check to uninstall or leave blank to deactivate</label>
+                    <br/><br/>
+                    <label>Deactivating this repository will result in the following:</label>
                     <div class="toolParamHelp" style="clear: both;">
-                        * The repository's tools will not be loaded into the tool panel.
+                            * The repository and all of it's contents will remain on disk.
                     </div>
-                %endif
-                %if repository.includes_tool_dependencies:
+                    %if repository.includes_tools:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's tools will not be loaded into the tool panel.
+                        </div>
+                    %endif
+                    %if repository.includes_tool_dependencies:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's installed tool dependencies will remain on disk.
+                        </div>
+                    %endif
+                    %if repository.includes_datatypes:
+                        <div class="toolParamHelp" style="clear: both;">
+                            * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
+                        </div>
+                    %endif
                     <div class="toolParamHelp" style="clear: both;">
-                        * The repository's installed tool dependencies will remain on disk.
+                        * The repository record's deleted column in the tool_shed_repository database table will be set to True.
                     </div>
+                    <br/>
+                %else:
+                    <% deactivate_uninstall_button_text = "Uninstall" %>
+                    ##hack to mimic check box
+                    <input type="hidden" name="remove_from_disk" value="true"/><input type="hidden" name="remove_from_disk" value="true"/>
                 %endif
-                %if repository.includes_datatypes:
-                    <div class="toolParamHelp" style="clear: both;">
-                        * The repository's datatypes, datatype converters and display applications will be eliminated from the datatypes registry.
-                    </div>
-                %endif
-                <div class="toolParamHelp" style="clear: both;">
-                    * The repository record's deleted column in the tool_shed_repository database table will be set to True.
-                </div>
-                <br/>
                 <label>Uninstalling this repository will result in the following:</label>
                 <div class="toolParamHelp" style="clear: both;">
                     * The repository and all of it's contents will be removed from disk.
@@ -110,7 +117,7 @@
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <input type="submit" name="deactivate_or_uninstall_repository_button" value="Deactivate or Uninstall"/>
+                <input type="submit" name="deactivate_or_uninstall_repository_button" value="${deactivate_uninstall_button_text}"/>
             </div>
         </form>
     </div>
