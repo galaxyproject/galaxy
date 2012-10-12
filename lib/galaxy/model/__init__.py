@@ -3095,6 +3095,15 @@ class ToolShedRepository( object ):
     def can_reset_metadata( self ):
         return self.status == self.installation_status.INSTALLED
     @property
+    def can_uninstall( self ):
+        return self.status != self.installation_status.UNINSTALLED
+    @property
+    def can_deactivate( self ):
+        return self.status not in [ self.installation_status.DEACTIVATED, self.installation_status.UNINSTALLED ]
+    @property
+    def can_reinstall_or_activate( self ):
+        return self.deleted
+    @property
     def includes_tools( self ):
         return self.metadata and 'tools' in self.metadata
     @property
