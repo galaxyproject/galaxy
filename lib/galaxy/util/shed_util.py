@@ -165,9 +165,7 @@ def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_rev
     app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
     # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
     app.toolbox.write_integrated_tool_panel_config_file()
-    if app.toolbox_search.enabled:
-        # If search support for tools is enabled, index the new installed tools.
-        app.toolbox_search = ToolBoxSearch( app.toolbox )
+    app.toolbox_search = ToolBoxSearch( app.toolbox )
 def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=False, override=True ):
     """
     Parse a proprietary datatypes config (a datatypes_conf.xml file included in an installed tool shed repository) and
@@ -1884,9 +1882,7 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     # Update the config_elems of the in-memory shed_tool_conf_dict.
     shed_tool_conf_dict[ 'config_elems' ] = config_elems
     trans.app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
-    if trans.app.toolbox_search.enabled:
-        # If search support for tools is enabled, index tools.
-        trans.app.toolbox_search = ToolBoxSearch( trans.app.toolbox )
+    trans.app.toolbox_search = ToolBoxSearch( trans.app.toolbox )
     if uninstall:
         # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
         trans.app.toolbox.write_integrated_tool_panel_config_file()
