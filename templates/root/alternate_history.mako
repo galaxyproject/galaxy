@@ -298,10 +298,10 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
             'name'          : history.name,
             
             'status'        : status,
-            'showDeleted' 	: show_deleted,
-            'showHidden' 	: show_hidden,
-            'quotaMsg' 		: over_quota,
-            'message' 		: message, ##'go outside'
+            'showDeleted'   : show_deleted,
+            'showHidden'    : show_hidden,
+            'quotaMsg'      : over_quota,
+            'message'       : message, ##'go outside'
             
             'deleted'       : history.deleted,
             'diskSize'      : history.get_disk_size( nice_size=True ),
@@ -336,7 +336,7 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         'hdas'          : [ prep_hda( hda, for_editing ) for hda in datasets ],
         
         # some of these may be unneeded when all is said and done...
-        'hdaId' 		: hda_id,
+        'hdaId'         : hda_id,
         'forEditing'    : for_editing,
     }
 %>
@@ -418,43 +418,43 @@ ${ h.to_json_string( context_dict ) }
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css("base", "history", "autocomplete_tagging" )}
-	<style>
+    <style>
         ## TODO: move to base.less
-		.historyItemBody {
-			display: none;
-		}
-		div.form-row {
-			padding: 5px 5px 5px 0px;
-		}
-		#top-links {
-			margin-bottom: 15px;
-		}
-		#history-name-container {
-			color: gray;
-			font-weight: bold;
-		}
-		#history-name {
-			word-wrap: break-word;
-		}
-		.editable-text {
-			border: solid transparent 1px;
-			padding: 3px;
-			margin: -4px;
-		}
-	</style>
-	
-	<noscript>
-		## js disabled: degrade gracefully
-		<style>
-		.historyItemBody {
-			display: block;
-		}
-		</style>
-	</noscript>
+        .historyItemBody {
+            display: none;
+        }
+        div.form-row {
+            padding: 5px 5px 5px 0px;
+        }
+        #top-links {
+            margin-bottom: 15px;
+        }
+        #history-name-container {
+            color: gray;
+            font-weight: bold;
+        }
+        #history-name {
+            word-wrap: break-word;
+        }
+        .editable-text {
+            border: solid transparent 1px;
+            padding: 3px;
+            margin: -4px;
+        }
+    </style>
+    
+    <noscript>
+        ## js disabled: degrade gracefully
+        <style>
+        .historyItemBody {
+            display: block;
+        }
+        </style>
+    </noscript>
 </%def>
 
 <%def name="title()">
-	${_('Galaxy History')}
+    ${_('Galaxy History')}
 </%def>
 
 <body class="historyPage"></body>
