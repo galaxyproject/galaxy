@@ -22,8 +22,8 @@ class GenomeIndexToolAction( ToolAction ):
         job.user_id = incoming['user']
         start_job_state = job.state # should be job.states.NEW
         job.state = job.states.WAITING # we need to set job state to something other than NEW,
-        							   # or else when tracking jobs in db it will be picked up
-        							   # before we have added input / output parameters
+                                       # or else when tracking jobs in db it will be picked up
+                                       # before we have added input / output parameters
         trans.sa_session.add( job )
 
         # Create dataset that will serve as archive.
