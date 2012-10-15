@@ -1,6 +1,6 @@
 <%inherit file="/embed_base.mako"/>
 <%!
-	from galaxy.web.framework.helpers import iff
+    from galaxy.web.framework.helpers import iff
 %>
 
 <%def name="render_summary_content( workflow, steps )">
