@@ -7,16 +7,16 @@
             ##<a href="${h.url_for( controller='external_service', action='view_external_service', id=trans.security.encode_id( external_service.id ) )}">${external_service.name}</a>
             <div style="clear: both"></div>
         </div>
-	    <div class="form-row">
-	        <label>Description:</label>
-	        ${external_service.description}
-	        <div style="clear: both"></div>
-	    </div>
-	    <div class="form-row">
-	        <label>Version:</label>
-	        ${external_service.version}
-	        <div style="clear: both"></div>
-	    </div>
+        <div class="form-row">
+            <label>Description:</label>
+            ${external_service.description}
+            <div style="clear: both"></div>
+        </div>
+        <div class="form-row">
+            <label>Version:</label>
+            ${external_service.version}
+            <div style="clear: both"></div>
+        </div>
         <div class="form-row">
             <label>External service type:</label>
             %if trans.app.external_service_types.all_external_service_types.has_key( external_service.external_service_type_id ):
