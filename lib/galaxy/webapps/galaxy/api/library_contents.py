@@ -13,6 +13,7 @@ log = logging.getLogger( __name__ )
 class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinItems ):
 
     @web.expose_api
+    # TODO: Add parameter to only get top level of datasets/subfolders.
     def index( self, trans, library_id, **kwd ):
         """
         GET /api/libraries/{encoded_library_id}/contents
