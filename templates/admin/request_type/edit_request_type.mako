@@ -60,20 +60,20 @@
     <div class="toolForm">
         <div class="toolFormTitle">Sample states defined for this request type</div>
         %for element_count, state in enumerate( request_type.states ):
-		    <div class="repeat-group-item">
-		        <div class="form-row">
-		            <label>${1+element_count}. State name:</label>
-		            <input type="text" name="state_name_${trans.security.encode_id( state.id )}" value="${state.name}" size="40"/>
-		        </div>
-		        <div class="form-row">
-		            <label>Description:</label>
-		            <input type="text" name="state_desc_${trans.security.encode_id( state.id )}" value="${state.desc}" size="40"/>
-		            <div class="toolParamHelp" style="clear: both;">
-		                optional
-		            </div>
-		        </div>
-		        <div style="clear: both"></div>
-		   </div>
+            <div class="repeat-group-item">
+                <div class="form-row">
+                    <label>${1+element_count}. State name:</label>
+                    <input type="text" name="state_name_${trans.security.encode_id( state.id )}" value="${state.name}" size="40"/>
+                </div>
+                <div class="form-row">
+                    <label>Description:</label>
+                    <input type="text" name="state_desc_${trans.security.encode_id( state.id )}" value="${state.desc}" size="40"/>
+                    <div class="toolParamHelp" style="clear: both;">
+                        optional
+                    </div>
+                </div>
+                <div style="clear: both"></div>
+           </div>
         %endfor
     </div>
     <p/>
