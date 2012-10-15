@@ -15,6 +15,7 @@ except IndexError:
 try:
     data[ 'description' ] = sys.argv[5]
 except IndexError:
+    print "Unable to set description; using empty description in its place"
     data[ 'description' ] = ''
 
 submit( sys.argv[1], sys.argv[2], data )

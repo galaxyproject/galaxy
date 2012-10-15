@@ -60,6 +60,10 @@ def app_factory( global_conf, **kwargs ):
     
     # Add the web API
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
+    # The /folders section is experimental at this point:
+    log.debug( "app.config.api_folders: %s" % app.config.api_folders )
+    if app.config.api_folders:
+        webapp.api_mapper.resource( 'folder', 'folders', path_prefix='/api' )
     webapp.api_mapper.resource( 'content',
                                 'contents',
                                 controller='library_contents',
