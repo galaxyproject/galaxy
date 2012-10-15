@@ -191,7 +191,7 @@ class Velvet( Html ):
             if long_reads:
                  gen_msg = gen_msg + ' Long Reads'
             if len(gen_msg) > 0:
-		    gen_msg = 'Uses: ' + gen_msg
+                gen_msg = 'Uses: ' + gen_msg
         except:
             log.debug( "Velveth could not read Log file in %s" % efp)
         log.debug( "Velveth log info  %s" % gen_msg)
