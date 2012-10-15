@@ -1301,7 +1301,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             ##     % ( workflow_name, web.url_for( action='editor', id=trans.security.encode_id(stored.id) ) ) )
 
     @web.expose
-    def run( self, trans, id, history_id=None, hide_fixed_params=False, **kwargs ):
+    def run( self, trans, id, history_id=None, multiple_input_mode="product", hide_fixed_params=False, **kwargs ):
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
         if stored.user != user:
@@ -1340,23 +1340,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             if kwargs:
                 # If kwargs were provided, the states for each step should have
                 # been POSTed
-                # Get the kwarg keys for data inputs
-                input_keys = filter(lambda a: a.endswith('|input'), kwargs)
-                # Example: prefixed='2|input'
-                # Check if one of them is a list
-                multiple_input_key = None
-                multiple_inputs = [None]
-                for input_key in input_keys:
-                    if isinstance(kwargs[input_key], list):
-                        multiple_input_key = input_key
-                        multiple_inputs = kwargs[input_key]
                 # List to gather values for the template
                 invocations=[]
-                for input_number, single_input in enumerate(multiple_inputs):
-                    # Example: single_input='1', single_input='2', etc...
-                    # 'Fix' the kwargs, to have only the input for this iteration
-                    if multiple_input_key:
-                        kwargs[multiple_input_key] = single_input
+                for (kwargs, multi_input_keys) in _expand_multiple_inputs(kwargs, mode=multiple_input_mode):
                     for step in workflow.steps:
                         step.upgrade_messages = {}
                         # Connections by input name
@@ -1399,9 +1385,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                 nh_name = kwargs['new_history_name']
                             else:
                                 nh_name = "History from %s workflow" % workflow.name
-                            if multiple_input_key:
-                                mx_ds_name = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get( single_input ).name
-                                nh_name = '%s on %s' % (nh_name, mx_ds_name)
+                            instance_inputs = [kwargs[multi_input_key] for multi_input_key in multi_input_keys]
+                            instance_ds_names = [trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( instance_input ).name for instance_input in instance_inputs]
+                            nh_name = '%s%s' % (nh_name, _build_workflow_on_str( instance_ds_names ))
                             new_history = trans.app.model.History( user=trans.user, name=nh_name )
                             new_history.copy_tags_from(trans.user, trans.get_history())
                             trans.sa_session.add( new_history )
@@ -2074,3 +2060,79 @@ def cleanup_param_values( inputs, values ):
     cleanup( "", inputs, values )
     return associations
 
+def _build_workflow_on_str(instance_ds_names):
+    # Returns suffix for new histories based on multi input iteration
+    num_multi_inputs = len(instance_ds_names)
+    if num_multi_inputs == 0:
+        return ""
+    elif num_multi_inputs == 1:
+        return " on %s" % instance_ds_names[0]
+    else:
+        return " on %s and %s" % (", ".join(instance_ds_names[0:-1]), instance_ds_names[-1])
+
+
+def _expand_multiple_inputs(kwargs, mode):
+    (input_combos, multi_inputs) = _build_input_combos(kwargs, mode)
+    for input_combo in input_combos:
+        for key, value in input_combo.iteritems():
+            kwargs[key] = value
+        yield (kwargs, multi_inputs.keys())
+
+def _build_input_combos(kwargs, mode):
+    if mode == "product":
+        return _build_input_combos_product(kwargs)
+    else: # mode == "matched"
+        return _build_input_combos_matched(kwargs)
+
+def _build_input_combos_matched(kwargs):
+    (single_inputs, multi_inputs) = _split_inputs(kwargs)
+    if len(multi_inputs) == 0:
+        return ([{}], {})
+
+    matched_multi_inputs = []
+
+    first_multi_input_key = multi_inputs.keys()[0]
+    first_multi_value = multi_inputs.get(first_multi_input_key)
+
+    for value in first_multi_value:
+        new_inputs = _copy_and_extend_inputs(single_inputs, first_multi_input_key, value)
+        matched_multi_inputs.append(new_inputs)
+
+    for multi_input_key, multi_input_values in multi_inputs.iteritems():
+        if multi_input_key == first_multi_input_key:
+            continue
+        if len(multi_input_values) != len(first_multi_value):
+            raise Exception("Failed to match up multi-select inputs, must select equal number of data files in each multiselect")
+        for index, value in enumerate(multi_input_values):
+            matched_multi_inputs[index][multi_input_key] = value
+    return (matched_multi_inputs, multi_inputs)
+
+def _build_input_combos_product(kwargs):
+    (single_inputs, multi_inputs) = _split_inputs(kwargs)
+    combos = [single_inputs]
+    for multi_input_key, multi_input_value in multi_inputs.iteritems():
+        iter_combos = []
+
+        for combo in combos:
+            for input_value in multi_input_value:
+                iter_combos.append(_copy_and_extend_inputs(combo, multi_input_key, input_value))
+
+        combos = iter_combos
+    return (combos, multi_inputs)
+
+def _copy_and_extend_inputs(inputs, key, value):
+    new_inputs = dict(inputs)
+    new_inputs[key] = value
+    return new_inputs
+
+def _split_inputs(kwargs):
+    input_keys = filter(lambda a: a.endswith('|input'), kwargs)
+    single_inputs = {}
+    multi_inputs = {}
+    for input_key in input_keys:
+        input_val = kwargs[input_key]
+        if isinstance(input_val, list):
+            multi_inputs[input_key] = input_val
+        else:
+            single_inputs[input_key] = input_val
+    return (single_inputs, multi_inputs)
