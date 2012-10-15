@@ -123,18 +123,8 @@ class ToolRunner( BaseUIController ):
         #only allow rerunning if user is allowed access to the dataset.
         if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ):
             error( "You are not allowed to access this dataset" )
-        # Get the associated job, if any. If this hda was copied from another,
-        # we need to find the job that created the origial hda
-        job_hda = data
-        while job_hda.copied_from_history_dataset_association:#should this check library datasets as well?
-            job_hda = job_hda.copied_from_history_dataset_association
-        if not job_hda.creating_job_associations:
-            error( "Could not find the job for this dataset" )
-        # Get the job object
-        job = None
-        for assoc in job_hda.creating_job_associations:
-            job = assoc.job
-            break   
+        # Get the associated job, if any. 
+        job = data.creating_job
         if not job:
             raise Exception("Failed to get job information for dataset hid %d" % data.hid)
         # Get the tool object
@@ -295,7 +285,6 @@ class ToolRunner( BaseUIController ):
         assert dataset_upload_inputs, Exception( "No dataset upload groups were found." )
         for dataset_upload_input in dataset_upload_inputs:
             d_type = dataset_upload_input.get_datatype( trans, kwd )
-            
             if d_type.composite_type is not None:
                 datasets.append( create_dataset( dataset_upload_input.get_composite_dataset_name( kwd ) ) )
             else:
