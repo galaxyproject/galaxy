@@ -94,17 +94,6 @@
         Use the 'Draw' button to render (or re-render) the chart with the current settings.
     </p>
         
-    <div id="maxDataPoints" class="form-input numeric-slider-input">
-        <label for="maxDataPoints">Maximum data points allowed on graph: </label>
-        <div class="slider-output">{{maxDataPoints}}</div>
-        <div style="clear: both;"></div>
-        <div class="slider"></div>
-        <p class="form-help help-text-small">
-            Change the maximum number of data points displayable on this graph (higher values will
-            load significantly slower)
-        </p>
-    </div>
-
     <div id="datapointSize" class="form-input numeric-slider-input">
         <label for="datapointSize">Size of data point: </label>
         <div class="slider-output">{{datapointSize}}</div>
@@ -114,9 +103,10 @@
         </p>
     </div>
 
-    <div id="entryAnimDuration" class="form-input checkbox-input">
+    <div id="animDuration" class="form-input checkbox-input">
         <label for="animated">Animate graph transitions?: </label>
-        <input type="checkbox" id="animated" class="checkbox control" value="{{#if entryAnimDuration}}checked{{/if}}" />
+        <input type="checkbox" id="animated"
+            class="checkbox control"{{#if animDuration}} checked="true"{{/if}} />
         <p class="form-help help-text-small">
             Uncheck this to disable the animations used on the graph
         </p>
