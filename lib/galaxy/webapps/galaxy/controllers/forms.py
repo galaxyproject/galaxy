@@ -596,7 +596,7 @@ class Forms( BaseUIController ):
             index = 1
             for row in reader:
                 if len(row) < 7: # ignore bogus rows
-		    continue
+                    continue
                 options = row[5].split(',')
                 if len(row) >= 8:
                     fields.append( { 'name': '%i_field_name' % index,
