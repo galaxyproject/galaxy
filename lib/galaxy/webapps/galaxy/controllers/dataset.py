@@ -160,13 +160,16 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         dataset is either nonexistent or inaccessible to the user.
         '''
         hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
-        assert hda and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+        assert hda and self._can_access_dataset( trans, hda )
         return hda.creating_job
-
+    
+    def _can_access_dataset( self, trans, dataset, allow_admin=True ):
+        return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset )
+    
     @web.expose
     def errors( self, trans, id ):
         hda = trans.sa_session.query( model.HistoryDatasetAssociation ).get( id )
-        if not hda or not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+        if not hda or not self._can_access_dataset( trans, hda ):
             return trans.show_error_message( "Either this dataset does not exist or you do not have permission to access it." )
         return trans.fill_template( "dataset/errors.mako", hda=hda )
     @web.expose
@@ -174,7 +177,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         trans.response.set_content_type( 'text/plain' )
         try:
             hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
-            assert hda and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+            assert hda and self._can_access_dataset( trans, hda )
             job = hda.creating_job_associations[0].job
         except:
             return "Invalid dataset ID or you are not allowed to access this dataset"
@@ -248,7 +251,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         # Check email a bit
         email = email.strip()
         parts = email.split()
-        if len( parts ) == 1 and len( email ) > 0 and trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+        if len( parts ) == 1 and len( email ) > 0 and self._can_access_dataset( trans, hda ):
             to = to_address + ", " + email
         else:
             to = to_address
@@ -268,7 +271,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     def get_metadata_file(self, trans, hda_id, metadata_name):
         """ Allows the downloading of metadata files associated with datasets (eg. bai index for bam files) """
         data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( hda_id ) )
-        if not data or not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ):
+        if not data or not self._can_access_dataset( trans, data ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
 
         valid_chars = '.,^_-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
@@ -292,7 +295,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                 data = None
         if not data:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( hda_id ) )
-        if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), data.dataset ):
+        if not self._can_access_dataset( trans, data ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
@@ -367,7 +370,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             manage_permissions_action = trans.app.security_agent.get_action( trans.app.security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action )
             permissions = { manage_permissions_action : [ trans.app.security_agent.get_private_user_role( data.history.user ) ] }
             trans.app.security_agent.set_dataset_permission( data.dataset, permissions )
-        if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+        if self._can_access_dataset( trans, data ):
             if data.state == trans.model.Dataset.states.UPLOAD:
                 return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to edit its metadata." )
             params = util.Params( kwd, sanitize=False )
@@ -700,7 +703,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         current_user_roles = trans.get_current_user_roles()
         if trans.app.security_agent.dataset_is_public( data.dataset ):
             return trans.response.send_redirect( redirect_url ) # anon access already permitted by rbac
-        if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
+        if self._can_access_dataset( trans, data ):
             trans.app.host_security_agent.set_dataset_permissions( data, trans.user, site )
             return trans.response.send_redirect( redirect_url )
         else:
@@ -726,7 +729,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         link_name = urllib.unquote_plus( link_name )
         if None in [ app_name, link_name ]:
             return trans.show_error_message( "A display application name and link name must be provided." )
-        if trans.app.security_agent.can_access_dataset( user_roles, data.dataset ):
+        if self._can_access_dataset( trans, data ):
             msg = []
             refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get( app_name )
@@ -979,7 +982,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
         if not hda:
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( dataset_id ) )
-        if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
+        if not self._can_access_dataset( trans, hda ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
 
         # Get the associated job, if any. If this hda was copied from another,
