@@ -60,7 +60,6 @@
         }
 
         // Init tool options.
-        %if trans.app.toolbox_search.enabled:
         make_popupmenu( $("#tools-options-button"), {
             ## Search tools menu item.
             <%
@@ -163,7 +162,6 @@
             }
             this.lastValue = this.value;
         });
-        %endif
 
         // Canvas overview management
         canvas_manager = new CanvasManager( $("#canvas-viewport"), $("#overview") );
