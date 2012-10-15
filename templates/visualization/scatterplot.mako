@@ -14,12 +14,12 @@ ${h.css(
 
 /* -------------------------------------------- layout */
 .column {
-	position:relative;
+    position:relative;
     overflow: auto;
 }
 
 .left-column {
-	float: left;
+    float: left;
     width: 40%;
 }
 
