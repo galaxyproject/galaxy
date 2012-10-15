@@ -231,6 +231,7 @@ class Configuration( object ):
             amqp_config = {}
         for k, v in amqp_config:
             self.amqp[k] = v
+        self.biostar = kwargs.get( 'biostar', None )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
     def __read_tool_job_config( self, global_conf_parser, section, key ):
         try:

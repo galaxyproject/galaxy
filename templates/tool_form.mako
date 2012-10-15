@@ -301,10 +301,12 @@
         %else:
             <div class="toolFormTitle">${tool.name} ${tool_version_select_field.get_html()}
         %endif
-        <!-- BioStar links -->
-        <a href="http://slyfox.bx.psu.edu:8080/new/post/tagged/${low_tool_name}" target="galaxy_main" class="icon-button general-question tooltip close-side-panels" data-original-title="Ask a tool related question"></a>
-        <a href="http://slyfox.bx.psu.edu:8080/show/tag/${low_tool_name}/" target="galaxy_main" class="icon-button tag-question tooltip close-side-panels" data-original-title="See tool related posts" ></a>
-        <!-- End of BioStar links -->
+        %if trans.app.config.biostar:
+            <!-- BioStar links -->
+            <a href="${trans.app.config.biostar}/new/post/tagged/${low_tool_name}" target="galaxy_main" class="icon-button general-question tooltip close-side-panels" data-original-title="Ask a tool related question"></a>
+            <a href="${trans.app.config.biostar}/show/tag/${low_tool_name}/" target="galaxy_main" class="icon-button tag-question tooltip close-side-panels" data-original-title="See tool related posts" ></a>
+            <!-- End of BioStar links -->
+        %endif
         </div>
         <div class="toolFormBody">
             <input type="hidden" name="refresh" value="refresh">
