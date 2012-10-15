@@ -32,10 +32,10 @@
                     ## The request_type_select_field is a SelectField named request_type_id
                     ${request_type_select_field.get_html()}
                     %if cntrller != 'requests_admin':
-		                <div class="toolParamHelp" style="clear: both;">
-		                    Contact the lab manager if you are not sure about the request type configuration.
-		                </div>
-	                %endif
+                        <div class="toolParamHelp" style="clear: both;">
+                            Contact the lab manager if you are not sure about the request type configuration.
+                        </div>
+                    %endif
                 </div>
                 %if request_type_select_field_selected != 'none':
                     ## If a request_type has been selected, display the associated form using received widgets.
@@ -54,7 +54,7 @@
                         <input type="submit" name="add_sample_button" value="Add samples"/>
                     </div>
                 %endif
-	        </form>
-	    </div>
+            </form>
+        </div>
     %endif
 </div>
