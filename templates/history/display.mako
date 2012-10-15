@@ -20,11 +20,11 @@
         }
         .column {
             float: left;
-        	padding: 10px;
-        	margin: 20px;
-        	background: #666;
-        	border: 5px solid #ccc;
-        	width: 300px;
+            padding: 10px;
+            margin: 20px;
+            background: #666;
+            border: 5px solid #ccc;
+            width: 300px;
         }
     </style>
 
