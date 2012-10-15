@@ -1,12 +1,12 @@
 <%!
-	def inherit( context ):
-	    if context.get('no_panels'):
-	        return '/base.mako'
-	    else:
-	        return '/webapps/galaxy/base_panels.mako'
-	
-	from galaxy.model import History, StoredWorkflow, Page
-	from galaxy.web.framework.helpers import iff
+    def inherit( context ):
+        if context.get('no_panels'):
+            return '/base.mako'
+        else:
+            return '/webapps/galaxy/base_panels.mako'
+    
+    from galaxy.model import History, StoredWorkflow, Page
+    from galaxy.web.framework.helpers import iff
 %>
 <%inherit file="${inherit( context )}"/>
 <%namespace file="/tagging_common.mako" import="render_individual_tagging_element, render_community_tagging_element" />
@@ -23,11 +23,11 @@
 
 <%def name="init()">
 <%
-	self.has_left_panel=False
-	self.has_right_panel=True
-	self.message_box_visible=False
-	self.active_view="shared"
-	self.overlay_visible=False
+    self.has_left_panel=False
+    self.has_right_panel=True
+    self.message_box_visible=False
+    self.active_view="shared"
+    self.overlay_visible=False
 %>
 </%def>
 
@@ -171,12 +171,12 @@
 
 ## For base.mako
 <%def name="body()">
-	${self.render_content()}
+    ${self.render_content()}
 </%def>
 
 ## For base_panels.mako
 <%def name="center_panel()">
-	${self.render_content()}
+    ${self.render_content()}
 </%def>
 
 
@@ -196,23 +196,23 @@
     %>
     
     <div class="unified-panel-header" unselectable="on">
-		<div class="unified-panel-header-inner">
-	        %if item.published:    
-	                <a href="${href_to_all_items}">Published ${item_plural}</a> | 
-	                <a href="${href_to_user_items}">${item.user.username}</a>
-	        %elif item.importable:
-				Accessible ${get_class_display_name( item.__class__ )}
-			%elif item.users_shared_with:
-				Shared ${get_class_display_name( item.__class__ )}
-			%else:
-				Private ${get_class_display_name( item.__class__ )}
-	        %endif
-			| ${get_item_name( item )}
-			
+        <div class="unified-panel-header-inner">
+            %if item.published:    
+                    <a href="${href_to_all_items}">Published ${item_plural}</a> | 
+                    <a href="${href_to_user_items}">${item.user.username}</a>
+            %elif item.importable:
+                Accessible ${get_class_display_name( item.__class__ )}
+            %elif item.users_shared_with:
+                Shared ${get_class_display_name( item.__class__ )}
+            %else:
+                Private ${get_class_display_name( item.__class__ )}
+            %endif
+            | ${get_item_name( item )}
+            
             <div style="float: right">
                 ${self.render_item_links( item )}
             </div>
-	    </div>
+        </div>
     </div>
     
     <div class="unified-panel-body">

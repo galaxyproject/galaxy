@@ -18,15 +18,15 @@
 
 <%def name="local_javascripts()">
     <script type="text/javascript">
-	    // This function stops the form from getting submitted when return key is pressed
-	    // This is needed in this form as the barcode scanner (when in keyboard emulation mode)
-	    // may send a return key appended to the scanned barcode string.  
-	    function stopRKey(evt) {
-	      var evt = (evt) ? evt : ((event) ? event : null);
-	      var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
-	      if ((evt.keyCode == 13) && (node.type=="text"))  {return false;}
-	    }
-	    document.onkeypress = stopRKey
+        // This function stops the form from getting submitted when return key is pressed
+        // This is needed in this form as the barcode scanner (when in keyboard emulation mode)
+        // may send a return key appended to the scanned barcode string.  
+        function stopRKey(evt) {
+          var evt = (evt) ? evt : ((event) ? event : null);
+          var node = (evt.target) ? evt.target : ((evt.srcElement) ? evt.srcElement : null);
+          if ((evt.keyCode == 13) && (node.type=="text"))  {return false;}
+        }
+        document.onkeypress = stopRKey
     </script>
 </%def>
 
@@ -100,14 +100,14 @@ ${render_samples_messages(request, is_admin, is_submitted, message, status)}
                         %elif sample_operation_selected_value == trans.app.model.Sample.bulk_operations.SELECT_LIBRARY:
                         <% libraries_selected_value = libraries_select_field.get_selected( return_value=True ) %>
                             <div class="form-row">
-    	                        <label>Select data library:</label>
-    	                        ${libraries_select_field.get_html()}
+                                <label>Select data library:</label>
+                                ${libraries_select_field.get_html()}
                             </div>
                             %if libraries_selected_value != 'none':
                                 <div class="form-row">
-    		                        <label>Select folder:</label>
-    		                        ${folders_select_field.get_html()}
-    	                        </div>
+                                    <label>Select folder:</label>
+                                    ${folders_select_field.get_html()}
+                                </div>
                             %endif
                         %endif
                     </div>

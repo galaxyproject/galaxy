@@ -7,8 +7,10 @@ TODO:
 /**
  *  Object to progressively load JSON data from a REST url, delaying some time between loading chunks
  *
- *  Data from ajax loading is aggregated in a list, with one element for each ajax response.
- *  It's up to the calling code to combine the results in a meaningful, correct way
+ *  Will load size amount of data every delay ms, starting at start and ending at total.
+ *
+ *  NOTE: Data from ajax loading is aggregated in a list, with one element for each ajax response.
+ *      It's up to the calling code to combine the results in a meaningful, correct way.
  *
  *  example:
  *  var loader = new scatterplot.LazyDataLoader({
@@ -29,19 +31,23 @@ TODO:
  *              max_vals:  size
  *          });
  *      },
- *      
- *      loadedPartialEvent    : 'loader.partial',
- *      loadedAllEvent        : 'loader.all',
  *  });
- *  $( loader ).bind( 'loader.partial', function( event, data ){
- *      console.info( 'partial load complete:', event, data );
+ *
+ *  // you can use events
+ *  $( loader ).bind( 'error', function( event, xhr, status, error ){
+ *      alert( loader + ' ERROR:' + status + '\n' + error );
+ *      // bail out...
+ *  });
+ *  $( loader ).bind( 'loaded.new', function( event, response ){
+ *      console.info( 'new data available:', event, response );
  *      // ... do stuff with new data
  *  });
- *  $( loader ).bind( 'loader.all', function( event, data ){
- *      console.info( 'final load complete:', event, data );
+ *  $( loader ).bind( 'complete', function( event, allDataArray, total ){
+ *      console.info( 'final load complete:', event, allDataArray, total );
  *      // ... do stuff with all data
  *  });
- *  
+ *
+ *  // ...or use a callback called when all data is loaded
  *  loader.load( function( dataArray ){ console.debug( 'FINISHED!', x, y, z ); } );
  */
 function LazyDataLoader( config ){
@@ -49,7 +55,14 @@ function LazyDataLoader( config ){
     //  get, async, and params sent via url query string
     //  we want json
     //  we know the size of the data on the server beforehand
-    var loader = this;
+    var loader = this,
+        // events to trigger when new or all data has been loaded
+        //  new batches of data (including last). Will be sent: the ajax response data, start value, and size
+        LOADED_NEW_EVENT  = 'loaded.new',
+        //  all data has been loaded: the final loader's data array and the total
+        LOADED_ALL_EVENT  = 'complete';
+        //  error from ajax
+        ERROR_EVENT       = 'error';
     
     jQuery.extend( loader, LoggableMixin );
     jQuery.extend( loader, {
@@ -62,12 +75,6 @@ function LazyDataLoader( config ){
         
         // holds the interval id for the current load delay
         currentIntervalId   : undefined,
-        
-        // optional events to trigger when partial, last data are loaded
-        //  loadedPartialEvent will be sent: the ajax response data, start value, and size
-        loadedPartialEvent  : undefined,
-        //  loadedAllEvent will be sent: the final loader's data array and the total
-        loadedAllEvent      : undefined,
         
         // each load call will add an element to this array
         //  it's the responsibility of the code using this to combine them properly
@@ -90,10 +97,6 @@ function LazyDataLoader( config ){
                 config.initialize.call( loader, config );
             }
             
-            // ensure necessary stuff
-            if( !loader.total ){ throw( loader + ' requires a total (total size of the data)' ); }
-            if( !loader.url ){ throw( loader + ' requires a url' ); }
-            
             this.log( this + ' initialized:', loader );
         },
         
@@ -103,7 +106,7 @@ function LazyDataLoader( config ){
         //@param {int} size : the number of lines/rows/data to get on the next load
         buildUrl : function( start, size ){
             // currently VERY SPECIFIC to using data_providers.py start_val, max_vals params
-            return loader.url + '&' + jQuery.param({
+            return this.url + '&' + jQuery.param({
                 start_val: start,
                 max_vals:  size
             });
@@ -111,14 +114,33 @@ function LazyDataLoader( config ){
         
         //OVERRIDE: to handle ajax errors differently
         ajaxErrorFn : function( xhr, status, error ){
-            alert( loader + ' ERROR:' + status + '\n' + error );
         },
 
         // interface to begin load (and first recursive call)
         //@param {Function} callback : function to execute when all data is loaded. callback is passed loader.data 
         load : function( callback ){
+            this.log( this + '.load' );
+
+            // ensure necessary stuff
+            if( !loader.url ){ throw( loader + ' requires a url' ); }
+
+            if( this.total === null ){
+                this.log( '\t total is null (will load all)' );
+            } else {
+                this.log( '\t total:', this.total );
+            }
+            //if( !loader.total ){ throw( loader + ' requires a total (total size of the data)' ); }
             
-            // subsequent recursive calls
+            //FIRST RECURSION: start
+            var startingSize = loader.size;
+            if( ( loader.total !== null )
+            &&  ( loader.total < loader.size ) ){
+                startingSize = loader.total;
+            }
+            loader.log( loader + '\t beginning recursion' );
+            loadHelper( loader.start, startingSize );
+            
+            //FIRST, SUBSEQUENT RECURSION function
             function loadHelper( start, size ){
                 loader.log( loader + '.loadHelper, start:', start, 'size:', size );
                 var url = loader.buildUrl( start, size );
@@ -132,46 +154,57 @@ function LazyDataLoader( config ){
                         if( loader.currentIntervalId ){
                             clearInterval( loader.currentIntervalId );
                         }
+                        $( loader ).trigger( ERROR_EVENT, [ status, error ] );
                         loader.ajaxErrorFn( xhr, status, error );
                     },
                     
                     success     : function( response ){
-                        var next = start + size,
-                            remainder = Math.min( loader.total - next, loader.size );
-                        loader.log( '\t ajax success, next:', next, 'remainder:', remainder );
+                        loader.log( '\t ajax success, response:', response, 'next:', next, 'remainder:', remainder );
                             
-                        // store the response as is in a new element
-                        //TODO:?? store start, size as well?
-                        loader.data.push( response );
-                        
-                        // fire the partial load event
-                        if( loader.loadedPartialEvent ){
-                            loader.log( '\t firing:', loader.loadedPartialEvent );
-                            $( loader ).trigger( loader.loadedPartialEvent, response, start, size );
-                        }
-                        
-                        // if we haven't gotten everything yet,
-                        //  set up for next recursive call and set the timer
-                        if( remainder > 0 ){
-                            loader.currentIntervalId = setTimeout(
-                                function(){ loadHelper( next, remainder ); },
-                                loader.delay
-                            );
-                            loader.log( '\t currentIntervalId:', loader.currentIntervalId );
+                        if( response !== null ){
+                            // store the response as is in a new element
+                            //TODO:?? store start, size as well?
+                            loader.data.push( response );
                             
-                        // otherwise (base-case), don't do anything
-                        } else {
-                            loader.log( loader + '.loadHelper, has finished:', loader.data );
-                            if( loader.loadedAllEvent ){
-                                loader.log( '\t firing:', loader.loadedAllEvent );
-                                $( loader ).trigger( loader.loadedAllEvent, loader.data, loader.total );
+                            //TODO: these might not be the best way to split this up
+                            // fire the first load event (if this is the first batch) AND partial
+                            $( loader ).trigger( LOADED_NEW_EVENT, [ response, start, size ] );
+                            
+                            //RECURSION:
+                            var next = start + size,
+                                remainder = loader.size;
+
+                            if( loader.total !== null ){
+                                remainder = Math.min( loader.total - next, loader.size );
                             }
-                            if( callback ){ callback( loader.data ); }
+                            loader.log( '\t next recursion, start:', next, 'size:', remainder );
+
+                            // if we haven't gotten everything yet, so set up for next recursive call and set the timer
+                            if( loader.total === null || remainder > 0 ){
+                                loader.currentIntervalId = setTimeout(
+                                    function(){ loadHelper( next, remainder ); },
+                                    loader.delay
+                                );
+                                loader.log( '\t currentIntervalId:', loader.currentIntervalId );
+                                
+                            // otherwise (base-case), don't do anything
+                            } else {
+                                loadFinished();
+                            }
+                        
+                        } else { //response === null --> base-case, server sez nuthin left
+                            loadFinished();
                         }
                     }
                 });
             }
-            loadHelper( loader.start, Math.min( loader.total, loader.size ) );
+
+            //HANDLE BASE-CASE, LAST RECURSION
+            function loadFinished(){
+                loader.log( loader + '.loadHelper, has finished:', loader.data );
+                $( loader ).trigger( LOADED_ALL_EVENT, [ loader.data, loader.total ] );
+                if( callback ){ callback( loader.data ); }
+            }
         },
     
         toString : function(){ return 'LazyDataLoader'; }
@@ -180,4 +213,3 @@ function LazyDataLoader( config ){
     loader.initialize( config );
     return loader;
 }
-

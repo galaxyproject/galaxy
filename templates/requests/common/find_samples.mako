@@ -59,19 +59,19 @@
                 </div>
             </div>
             %if results:
-	            <div class="form-row">
+                <div class="form-row">
                     <label><i>${results}</i></label>
                     %if samples:
-		                <div class="toolParamHelp" style="clear: both;">
-		                   The search results are sorted by the date the samples where created. 
-		                </div>
-	                %endif
-	            </div>
-	        %endif
+                        <div class="toolParamHelp" style="clear: both;">
+                           The search results are sorted by the date the samples where created. 
+                        </div>
+                    %endif
+                </div>
+            %endif
             <div class="form-row">
-	            %if samples:
-	                %for sample in samples:
-	                    <div class="form-row">
+                %if samples:
+                    %for sample in samples:
+                        <div class="form-row">
                             Sample: <b>${sample.name}</b> | Barcode: ${sample.bar_code}<br/>
                             %if sample.request.is_new or not sample.state:
                                 State: Unsubmitted<br/>
@@ -90,10 +90,10 @@
                             <div class="toolParamHelp" style="clear: both;">
                                 <a href="${h.url_for( controller='requests_common', action='view_request', cntrller=cntrller, id=trans.security.encode_id( sample.request.id ) )}">Sequencing request: ${sample.request.name} | Type: ${sample.request.type.name} | State: ${sample.request.state}</a>
                             </div>
-	                    </div>
-	                    <br/>
-	                %endfor
-	            %endif
+                        </div>
+                        <br/>
+                    %endfor
+                %endif
             </div>
         </form>
     </div>

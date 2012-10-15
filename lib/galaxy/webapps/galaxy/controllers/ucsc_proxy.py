@@ -156,4 +156,4 @@ altered_regions = {
         '<INPUT TYPE=RADIO NAME="hgta_regionType" VALUE="range" onClick="regionType=\'range\';">' : '<INPUT TYPE=RADIO NAME="hgta_regionType" VALUE="range" onClick="regionType=\'range\';" CHECKED>',
         "<OPTION VALUE=bed>" : "<OPTION VALUE=bed SELECTED>" , 
         '<INPUT TYPE=SUBMIT NAME="hgta_doSchema" VALUE="describe table schema">' : '<INPUT TYPE=SUBMIT NAME="hgta_doSchema" VALUE="describe table schema" onClick="changeTarget(\'_blank\')" onMouseOut="changeTarget(\'_self\')">'
-	}
+        }

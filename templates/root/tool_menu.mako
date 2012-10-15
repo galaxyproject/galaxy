@@ -44,7 +44,7 @@
                     search_url: "${h.url_for( controller='root', action='tool_search' )}",
                     hidden: false 
                 });
-    										   
+                                               
                 // Set up tool panel.
                 tool_panel = new tools.ToolPanel( { tool_search: tool_search } );
                 tool_panel.reset( tool_panel.parse( ${h.to_json_string( dictified_panel )} ) );
@@ -73,8 +73,8 @@
                                                     JSON.stringify({"search_active" : search_active}));
                 });
                 */
-    			
-    			$( '.tooltip' ).tooltip();
+                
+                $( '.tooltip' ).tooltip();
                 
                 // TODO: is this necessary?
                 $( "a[minsizehint]" ).click( function() {

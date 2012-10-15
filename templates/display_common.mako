@@ -29,12 +29,12 @@
             item_name = item.get_display_name()
         else:
             item_name = item.name
-    	
+        
         # Encode in unicode.
         if type( item_name ) is str:
             item_name = unicode( item_name, 'utf-8' )
-        return item_name	
-	%>
+        return item_name    
+    %>
 </%def>
 
 ## Get plural display name for a class.
@@ -65,7 +65,7 @@
 
 ## Get plural term for item.
 <%def name="get_item_plural( item )">
-	<% return get_class_plural( item.__class__ ) %>
+    <% return get_class_plural( item.__class__ ) %>
 </%def>
 
 ## Get plural term for class.

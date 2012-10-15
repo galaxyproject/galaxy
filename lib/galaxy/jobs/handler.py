@@ -430,7 +430,7 @@ class DefaultJobDispatcher( object ):
         if ( None != job.get_job_runner_name() ):
             runner_name = (job.get_job_runner_name().split(":",1))[0]
             if ( isinstance( job, model.Job ) ):
-    	        log.debug( "stopping job %d in %s runner" %( job.get_id(), runner_name ) )
+                log.debug( "stopping job %d in %s runner" %( job.get_id(), runner_name ) )
             elif ( isinstance( job, model.Task ) ):
                 log.debug( "Stopping job %d, task %d in %s runner" 
                          % ( job.get_job().get_id(), job.get_id(), runner_name ) )

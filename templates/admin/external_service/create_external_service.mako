@@ -10,16 +10,16 @@
     <div class="toolForm">
         <div class="toolFormTitle">New external service</div>
         %if widgets:
-	        %for i, field in enumerate( widgets ):
-	            <div class="form-row">
-	                <label>${field['label']}:</label>
-	                ${field['widget'].get_html()}
-	                <div class="toolParamHelp" style="clear: both;">
-	                    ${field['helptext']}
-	                </div>
-	                <div style="clear: both"></div>
-	            </div>
-	        %endfor
+            %for i, field in enumerate( widgets ):
+                <div class="form-row">
+                    <label>${field['label']}:</label>
+                    ${field['widget'].get_html()}
+                    <div class="toolParamHelp" style="clear: both;">
+                        ${field['helptext']}
+                    </div>
+                    <div style="clear: both"></div>
+                </div>
+            %endfor
         %endif
     </div>
     <div class="form-row">

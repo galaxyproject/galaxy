@@ -102,15 +102,15 @@ class DataAdmin( BaseUIController ):
     @web.expose
     @web.require_admin
     def index_build( self, trans, **kwd ):
-    	"""Index a previously downloaded genome."""
+        """Index a previously downloaded genome."""
         params = util.Params( kwd )
         path = os.path.abspath( params.get( 'path', None ) )
         indexes = [ params.get( 'indexes', None ) ]
         dbkey = params.get( 'dbkey', None )
         intname = params.get( 'longname', None )
-    	indexjob = trans.app.job_manager.deferred_job_queue.plugins['GenomeIndexPlugin'].create_job( trans, path, indexes, dbkey, intname )
-    	return indexjob
-    	
+        indexjob = trans.app.job_manager.deferred_job_queue.plugins['GenomeIndexPlugin'].create_job( trans, path, indexes, dbkey, intname )
+        return indexjob
+        
     @web.expose
     @web.require_admin
     def download_build( self, trans, **kwd ):

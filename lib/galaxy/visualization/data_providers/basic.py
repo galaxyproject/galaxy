@@ -125,6 +125,7 @@ class ColumnDataProvider( BaseDataProvider ):
                 except: return None
             return val
         
+        returning_data = False
         f = open( self.original_dataset.file_name )
         #TODO: add f.seek if given fptr in kwargs
         for count, line in enumerate( f ):
@@ -134,6 +135,8 @@ class ColumnDataProvider( BaseDataProvider ):
                 continue
             if ( count - start_val ) >= max_vals:
                 break
+
+            returning_data = True
             
             fields = line.split()
             fields_len = len( fields )
@@ -162,20 +165,24 @@ class ColumnDataProvider( BaseDataProvider ):
         response[ 'endpoint' ] = dict( last_line=( count - 1 ), file_ptr=f.tell() )
         f.close()
 
+        if not returning_data: return None
+        
         for index, meta in enumerate( response[ 'meta' ] ):
             column_type = column_types[ index ]
+            count = meta[ 'count' ]
             
-            if( column_type == 'float' or column_type == 'int' ):
-                count = meta[ 'count' ]
+            if( ( column_type == 'float' or column_type == 'int' )
+            and   count ):
                 meta[ 'mean' ] = float( meta[ 'sum' ] ) / count
                 
                 sorted_data = sorted( response[ 'data' ][ index ] )
                 # even data count -
-                middle_index = count / 2 - 1
+                middle_index = ( count / 2 ) - 1
                 if count % 2 == 0:
                     meta[ 'median' ] = sum( sorted_data[ middle_index : ( middle_index + 1 ) ] ) / 2.0
                     
                 else:
                     meta[ 'median' ] = sorted_data[ middle_index ]
 
+        # ugh ... metadata_data_lines is not a reliable source; hafta have an EOF
         return response

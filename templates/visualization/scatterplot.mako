@@ -14,12 +14,12 @@ ${h.css(
 
 /* -------------------------------------------- layout */
 .column {
-	position:relative;
+    position:relative;
     overflow: auto;
 }
 
 .left-column {
-	float: left;
+    float: left;
     width: 40%;
 }
 
@@ -207,19 +207,19 @@ require.config({ baseUrl : "${h.url_for( '/static/scripts' )}", });
 require([ "viz/scatterplot" ], function( scatterplot ){
     
     var hda             = ${h.to_json_string( hda )},
-        historyID       = '${historyID}'
-        apiDatasetsURL  = "${h.url_for( controller='/api/datasets' )}";
+        historyID       = '${historyID}';
         
-    var settingsForm = new scatterplot.ScatterplotControlForm({
+    settingsForm = new scatterplot.ScatterplotControlForm({
         dataset    : hda,
         el         : $( '#chart-settings-form' ),
-        apiDatasetsURL : apiDatasetsURL,
-        
+        apiDatasetsURL : "${h.url_for( controller='/api/datasets' )}",
+
         chartConfig : {
             containerSelector : '#chart-holder',
             marginTop : 20,
         }
     }).render();
+
 });
 
 </script>
@@ -243,4 +243,3 @@ require([ "viz/scatterplot" ], function( scatterplot ){
     <div id="test"></div>
 
 </%def>
-

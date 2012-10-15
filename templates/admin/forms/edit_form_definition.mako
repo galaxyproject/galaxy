@@ -55,23 +55,23 @@ $(document).ready(function(){
         </h4>
         <div class="msg_body2">
     %endif
-	    <div class="repeat-group-item">
-	        %for field_attr in field:
-	            <div class="form-row">
-	                <label>${field_attr[0]}</label>
-	                ${field_attr[1].get_html()}
-	                ${render_selectbox_options( index, field_attr )}
+        <div class="repeat-group-item">
+            %for field_attr in field:
+                <div class="form-row">
+                    <label>${field_attr[0]}</label>
+                    ${field_attr[1].get_html()}
+                    ${render_selectbox_options( index, field_attr )}
                     %if len(field_attr) == 3:
-	                    <div class="toolParamHelp" style="clear: both;">
-	                       ${field_attr[2]}
-	                    </div>
+                        <div class="toolParamHelp" style="clear: both;">
+                           ${field_attr[2]}
+                        </div>
                     %endif
-	            </div>
-	        %endfor
-	        <div class="form-row">
-	            <input type="submit" name="remove_button" value="Remove field ${index+1}"/>
-	        </div>
-	    </div>
+                </div>
+            %endfor
+            <div class="form-row">
+                <input type="submit" name="remove_button" value="Remove field ${index+1}"/>
+            </div>
+        </div>
     </div>
 </%def>
 
@@ -96,7 +96,7 @@ $(document).ready(function(){
 
 <form id="edit_form_definition" name="edit_form_definition" action="${h.url_for( controller='forms', action='edit_form_definition', id=trans.security.encode_id( form_definition.current.id ) )}" method="post" >
     <div class="toolForm">
-	   <div class="toolFormTitle">Edit form definition "${form_definition.name}" (${form_definition.type})</div>
+       <div class="toolFormTitle">Edit form definition "${form_definition.name}" (${form_definition.type})</div>
         %if response_redirect:
             <input type="hidden" name="response_redirect" value="${response_redirect}" size="40" />
         %endif
@@ -112,20 +112,20 @@ $(document).ready(function(){
             </div>
         %endfor
     </div>
-	%if current_form_type == trans.app.model.FormDefinition.types.SAMPLE:
-	    <p/>
-		<div class="toolForm">
-	        <div class="toolFormTitle">Form Layout</div>
-	        <div class="form-row">
-	            <label>Layout grid names</label>
-	        </div>
-	        %for index, lg in enumerate( layout_grids ):
-	            ${render_layout( index, lg )}
-	        %endfor
-	        <div class="form-row">
-	            <input type="submit" name="add_layout_grid_button" value="Add layout grid"/>
-	        </div>
-	    </div>
+    %if current_form_type == trans.app.model.FormDefinition.types.SAMPLE:
+        <p/>
+        <div class="toolForm">
+            <div class="toolFormTitle">Form Layout</div>
+            <div class="form-row">
+                <label>Layout grid names</label>
+            </div>
+            %for index, lg in enumerate( layout_grids ):
+                ${render_layout( index, lg )}
+            %endfor
+            <div class="form-row">
+                <input type="submit" name="add_layout_grid_button" value="Add layout grid"/>
+            </div>
+        </div>
     %endif
     <p/>
     <div class="toolForm">

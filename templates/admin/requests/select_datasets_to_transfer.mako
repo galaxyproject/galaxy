@@ -13,16 +13,16 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
 
 <script type="text/javascript">
     $(function(){
-	    $("#tree").ajaxComplete(function(event, XMLHttpRequest, ajaxOptions) {
-	        _log("debug", "ajaxComplete: %o", this); // dom element listening
-	    });
+        $("#tree").ajaxComplete(function(event, XMLHttpRequest, ajaxOptions) {
+            _log("debug", "ajaxComplete: %o", this); // dom element listening
+        });
         // --- Initialize sample trees
         $("#tree").dynatree({
             title: "${scp_configs['data_location']}",
-			rootVisible: true,
-			minExpandLevel: 0, // 1: root node is not collapsible
-			persist: false,
-			checkbox: true,
+            rootVisible: true,
+            minExpandLevel: 0, // 1: root node is not collapsible
+            persist: false,
+            checkbox: true,
             selectMode: 3,
             onPostInit: function(isReloading, isError) {
                 //alert("reloading: "+isReloading+", error:"+isError);
@@ -43,38 +43,38 @@ ${h.css( "dynatree_skin/ui.dynatree" )}
                     data: { request_id: "${trans.security.encode_id( request.id )}", external_service_id: "${trans.security.encode_id( external_service.id )}", key: dtnode.data.key },
                 });
             },
-	        onSelect: function(select, dtnode) {
+            onSelect: function(select, dtnode) {
                 // Display list of selected nodes
-	            var selNodes = dtnode.tree.getSelectedNodes();
-	            // convert to title/key array
-	            var selKeys = $.map(selNodes, function(node){
-	                return node.data.key;
-	            });
-	            document.select_datasets_to_transfer.selected_datasets_to_transfer.value = selKeys.join(",")
+                var selNodes = dtnode.tree.getSelectedNodes();
+                // convert to title/key array
+                var selKeys = $.map(selNodes, function(node){
+                    return node.data.key;
+                });
+                document.select_datasets_to_transfer.selected_datasets_to_transfer.value = selKeys.join(",")
             },
-	        onActivate: function(dtnode) {
-	            var cell = $("#file_details");
-	            var selected_value;
-	            if (dtnode.data.key == 'root') {
-	                selected_value = "${scp_configs['data_location']}/";
-	            } else {
-	                selected_value = dtnode.data.key;
-	            };
-	            if (selected_value.charAt(selected_value.length-1) != '/') {
-	                // Make ajax call
-	                $.ajax( {
-	                    type: "POST",
-	                    url: "${h.url_for( controller='requests_admin', action='get_file_details' )}",
-	                    dataType: "json",
-	                    data: { request_id: "${trans.security.encode_id(request.id)}", external_service_id: "${trans.security.encode_id(external_service.id)}", folder_path: selected_value },
-	                    success : function ( data ) {
-	                        cell.html( '<label>'+data+'</label>' )
-	                    }
+            onActivate: function(dtnode) {
+                var cell = $("#file_details");
+                var selected_value;
+                if (dtnode.data.key == 'root') {
+                    selected_value = "${scp_configs['data_location']}/";
+                } else {
+                    selected_value = dtnode.data.key;
+                };
+                if (selected_value.charAt(selected_value.length-1) != '/') {
+                    // Make ajax call
+                    $.ajax( {
+                        type: "POST",
+                        url: "${h.url_for( controller='requests_admin', action='get_file_details' )}",
+                        dataType: "json",
+                        data: { request_id: "${trans.security.encode_id(request.id)}", external_service_id: "${trans.security.encode_id(external_service.id)}", folder_path: selected_value },
+                        success : function ( data ) {
+                            cell.html( '<label>'+data+'</label>' )
+                        }
                     });
                 } else {
                     cell.html( '' );
                 };
-	        },
+            },
         });
     });
 </script>

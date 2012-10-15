@@ -69,7 +69,7 @@ def upgrade():
         # Add column.
         deleted_column.create( Visualiation_table )
         assert deleted_column is Visualiation_table.c.deleted
-	    
+        
         # Fill column with default value.
         cmd = "UPDATE visualization SET deleted = %s" % default_false
         db_session.execute( cmd )
@@ -83,7 +83,7 @@ def upgrade():
     except Exception, e:
         print "Adding index 'ix_visualization_deleted' failed: %s" % str( e )
         log.debug( "Adding index 'ix_visualization_deleted' failed: %s" % str( e ) )
-	    
+        
     try:
         # Add column.
         importable_column.create( Visualiation_table )
@@ -102,10 +102,10 @@ def upgrade():
     except Exception, e:
         print "Adding index 'ix_visualization_importable' failed: %s" % str( e )
         log.debug( "Adding index 'ix_visualization_importable' failed: %s" % str( e ) )
-	    
+        
     try:
-	    slug_column.create( Visualiation_table )
-	    assert slug_column is Visualiation_table.c.slug
+        slug_column.create( Visualiation_table )
+        assert slug_column is Visualiation_table.c.slug
     except Exception, e:
         print "Adding slug column to visualization table failed: %s" % str( e )
         log.debug( "Adding slug column to visualization table failed: %s" % str( e ) )
@@ -121,7 +121,7 @@ def upgrade():
     except Exception, e:
         print "Adding index 'ix_visualization_slug' failed: %s" % str( e )
         log.debug( "Adding index 'ix_visualization_slug' failed: %s" % str( e ) )
-	    
+        
     try:
         # Add column.
         published_column.create( Visualiation_table )
@@ -180,25 +180,25 @@ def downgrade():
 
     # Drop columns for supporting sharing from visualization table.
     try:
-	    Visualiation_table.c.deleted.drop()
+        Visualiation_table.c.deleted.drop()
     except Exception, e:
         print "Dropping deleted column from visualization table failed: %s" % str( e )
         log.debug( "Dropping deleted column from visualization table failed: %s" % str( e ) )
 
     try:
-	    Visualiation_table.c.importable.drop()
+        Visualiation_table.c.importable.drop()
     except Exception, e:
         print "Dropping importable column from visualization table failed: %s" % str( e )
         log.debug( "Dropping importable column from visualization table failed: %s" % str( e ) )
 
     try:
-	    Visualiation_table.c.slug.drop()
+        Visualiation_table.c.slug.drop()
     except Exception, e:
         print "Dropping slug column from visualization table failed: %s" % str( e )
         log.debug( "Dropping slug column from visualization table failed: %s" % str( e ) )
 
     try:
-	    Visualiation_table.c.published.drop()
+        Visualiation_table.c.published.drop()
     except Exception, e:
         print "Dropping published column from visualization table failed: %s" % str( e )
         log.debug( "Dropping published column from visualization table failed: %s" % str( e ) )
