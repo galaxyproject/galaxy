@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from string import punctuation as PUNCTUATION
 
 from galaxy import web, util
 from galaxy.model.orm import *
@@ -1016,7 +1017,7 @@ class Admin( object ):
             msg = 'Please enter an error message to display to the user describing why the job was terminated'
             status = 'error'
         elif job_ids:
-            if stop_msg[-1] not in string.punctuation:
+            if stop_msg[-1] not in PUNCTUATION:
                 stop_msg += '.'
             for job_id in job_ids:
                 trans.app.job_manager.job_stop_queue.put( job_id, error_msg="This job was stopped by an administrator: %s  For more information or help" % stop_msg )
