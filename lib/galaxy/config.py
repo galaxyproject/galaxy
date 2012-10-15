@@ -233,11 +233,6 @@ class Configuration( object ):
             self.amqp[k] = v
         self.biostar = kwargs.get( 'biostar', None )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
-        # Experimental: This will not be enabled by default and will hide 
-        # nonproduction code.
-        # The api_folders refers to whether the API exposes 
-        self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
-
     def __read_tool_job_config( self, global_conf_parser, section, key ):
         try:
             tool_runners_config = global_conf_parser.items( section )

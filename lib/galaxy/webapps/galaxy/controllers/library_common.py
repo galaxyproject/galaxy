@@ -317,8 +317,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                                             status='done' )
             # If not inheritable info_association, redirect to the library.
             message = "The new folder named '%s' has been added to the data library." % new_folder.name
-            # SM: This is the second place where the API controller would
-            # reference the library id:
             return trans.response.send_redirect( web.url_for( controller='library_common',
                                                               action='browse_library',
                                                               cntrller=cntrller,

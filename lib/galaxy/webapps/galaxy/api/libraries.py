@@ -20,7 +20,6 @@ class LibrariesController( BaseAPIController ):
         GET /api/libraries/deleted
         Displays a collection (list) of libraries.
         """
-        log.debug( "LibrariesController.index: enter" )
         query = trans.sa_session.query( trans.app.model.Library )
         deleted = util.string_as_bool( deleted )
         if deleted:
@@ -54,7 +53,6 @@ class LibrariesController( BaseAPIController ):
         GET /api/libraries/deleted/{encoded_library_id}
         Displays information about a library.
         """
-        log.debug( "LibraryContentsController.show: enter" )
         library_id = id
         deleted = util.string_as_bool( deleted )
         params = util.Params( kwd )
