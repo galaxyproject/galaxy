@@ -20,7 +20,7 @@ var TracksterUI = base.Base.extend({
         var self = this,
             menu = create_icon_buttons_menu([
             { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
-                visualization.select_datasets(select_datasets_url, add_track_async_url, { "f-dbkey": view.dbkey }, function(tracks) {
+                visualization.select_datasets(select_datasets_url, add_track_async_url, view.dbkey, function(tracks) {
                     _.each(tracks, function(track) {
                         view.add_drawable( object_from_template(track, view,  view) );  
                     });

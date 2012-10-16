@@ -15,10 +15,11 @@ define( ["libs/underscore", "mvc/data", "viz/trackster/util" ], function(_, data
  * track definitions are obtained from the server and the success_fn is called with the list of
  * definitions for selected datasets.
  */
-var select_datasets = function(dataset_url, add_track_async_url, filter_params, success_fn) {
+var select_datasets = function(dataset_url, add_track_async_url, dbkey, success_fn) {
     $.ajax({
         url: dataset_url,
-        data: filter_params,
+        // Filter by dbkey if available.
+        data: ( dbkey ? { 'f-dbkey': dbkey } : {} ),
         error: function() { alert( "Grid failed" ); },
         success: function(table_html) {
             show_modal(

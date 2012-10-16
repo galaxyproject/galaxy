@@ -60,9 +60,10 @@
                 // -- Visualization menu and set up.
                 var menu = create_icon_buttons_menu([
                     { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
-                        visualization_mod.select_datasets(select_datasets_url, add_track_async_url, {}, function(tracks) {
-                            vis.add_tracks(tracks);
-                        });
+                        visualization_mod.select_datasets(select_datasets_url, add_track_async_url, vis.get('dbkey'), function(tracks) {
+                                vis.add_tracks(tracks);
+                            }
+                        );
                     } },
                     { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
                         // Show saving dialog box
