@@ -112,6 +112,9 @@ $.extend( Connector.prototype, {
         var relativeTop = function( e ) {
             return $(e).offset().top - canvas_container.offset().top;
         };
+        if (!this.handle1 || !this.handle2) {
+            return;
+        }
         // Find the position of each handle
         var start_x = relativeLeft( this.handle1.element ) + 5;
         var start_y = relativeTop( this.handle1.element ) + 5;
@@ -175,9 +178,13 @@ $.extend( Node.prototype, {
                 // compatible type
                 return $(d.drag).hasClass( "output-terminal" ) && terminal.can_accept( d.drag.terminal );
             }).bind( "dropstart", function( e, d  ) {
-                d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+                if (d.proxy.terminal) { 
+                    d.proxy.terminal.connectors[0].inner_color = "#BBFFBB";
+                }
             }).bind( "dropend", function ( e, d ) {
-                d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+                if (d.proxy.terminal) { 
+                    d.proxy.terminal.connectors[0].inner_color = "#FFFFFF";
+                }
             }).bind( "drop", function( e, d ) {
                 ( new Connector( d.drag.terminal, terminal ) ).redraw();
             }).bind( "hover", function() {
@@ -191,7 +198,9 @@ $.extend( Node.prototype, {
                             $("<div class='buttons'></div>").append(
                                 $("<img/>").attr("src", galaxy_paths.attributes.image_path + '/delete_icon.png').click( function() {
                                     $.each( terminal.connectors, function( _, x ) {
-                                        x.destroy();
+                                        if (x) {
+                                            x.destroy();
+                                        }
                                     });
                                     t.remove();
                                 })))
