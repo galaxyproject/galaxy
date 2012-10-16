@@ -323,6 +323,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def display(self, trans, dataset_id=None, preview=False, filename=None, to_ext=None, chunk=None, **kwd):
         data = self._check_dataset(trans, dataset_id)
+        if not isinstance( data, trans.app.model.DatasetInstance ):
+            return data
         return data.datatype.display_data(trans, data, preview, filename, to_ext, chunk, **kwd)
 
     @web.expose
