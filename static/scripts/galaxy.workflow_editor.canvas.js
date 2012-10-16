@@ -34,16 +34,17 @@ function OutputTerminal( element, datatypes ) {
 
 OutputTerminal.prototype = new Terminal();
 
-function InputTerminal( element, datatypes ) {
+function InputTerminal( element, datatypes, multiple ) {
     Terminal.call( this, element );
     this.datatypes = datatypes;
+    this.multiple = multiple
 }
 
 InputTerminal.prototype = new Terminal();
 
 $.extend( InputTerminal.prototype, {
     can_accept: function ( other ) {
-        if ( this.connectors.length < 1 ) {
+        if ( this.connectors.length < 1 || this.multiple) {
             for ( var t in this.datatypes ) {
                 var cat_outputs = new Array();
                 cat_outputs = cat_outputs.concat(other.datatypes);
@@ -163,10 +164,10 @@ function Node( element ) {
     this.tool_errors = {};
 }
 $.extend( Node.prototype, {
-    enable_input_terminal : function( elements, name, types ) {
+    enable_input_terminal : function( elements, name, types, multiple ) {
         var node = this;
         $(elements).each( function() {
-            var terminal = this.terminal = new InputTerminal( this, types );
+            var terminal = this.terminal = new InputTerminal( this, types, multiple );
             terminal.node = node;
             terminal.name = name;
             $(this).bind( "dropinit", function( e, d ) {
@@ -304,7 +305,7 @@ $.extend( Node.prototype, {
         var ibox = $("<div class='inputs'></div>").appendTo( b );
         $.each( data.data_inputs, function( i, input ) {
             var t = $("<div class='terminal input-terminal'></div>");
-            node.enable_input_terminal( t, input.name, input.extensions );
+            node.enable_input_terminal( t, input.name, input.extensions, input.multiple );
             var ib = $("<div class='form-row dataRow input-data-row' name='" + input.name + "'>" + input.label + "</div>" );
             ib.css({  position:'absolute',
                         left: -1000,
@@ -407,7 +408,7 @@ $.extend( Node.prototype, {
         var old = old_body.find( "div.input-data-row");
         $.each( data.data_inputs, function( i, input ) {
             var t = $("<div class='terminal input-terminal'></div>");
-            node.enable_input_terminal( t, input.name, input.extensions );
+            node.enable_input_terminal( t, input.name, input.extensions, input.multiple );
             // If already connected save old connection
             old_body.find( "div[name='" + input.name + "']" ).each( function() {
                 $(this).find( ".input-terminal" ).each( function() {
@@ -545,8 +546,10 @@ $.extend( Workflow.prototype, {
                 input_connections[ t.name ] = null;
                 // There should only be 0 or 1 connectors, so this is
                 // really a sneaky if statement
+                var cons = []
                 $.each( t.connectors, function ( i, c ) {
-                    input_connections[ t.name ] = { id: c.handle1.node.id, output_name: c.handle1.name };
+                    cons[i] = { id: c.handle1.node.id, output_name: c.handle1.name };
+                    input_connections[ t.name ] = cons;
                 });
             });
             var post_job_actions = {};
@@ -617,11 +620,21 @@ $.extend( Workflow.prototype, {
             var node = wf.nodes[id];
             $.each( step.input_connections, function( k, v ) {
                 if ( v ) {
-                    var other_node = wf.nodes[ v.id ];
-                    var c = new Connector();
-                    c.connect( other_node.output_terminals[ v.output_name ],
-                               node.input_terminals[ k ] );
-                    c.redraw();
+                    if ($.isArray(v)) {
+                        $.each( v, function (l,x ) {
+                            var other_node = wf.nodes[ x.id ];
+                            var c = new Connector();
+                            c.connect( other_node.output_terminals[ x.output_name ],
+                                       node.input_terminals[ k ] );
+                            c.redraw();
+                        });
+                    } else {
+                        var other_node = wf.nodes[ v.id ];
+                        var c = new Connector();
+                        c.connect( other_node.output_terminals[ v.output_name ],
+                                   node.input_terminals[ k ] );
+                        c.redraw();
+                    }
                 }
             });
             if(using_workflow_outputs && node.type === 'tool'){
