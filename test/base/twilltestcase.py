@@ -878,6 +878,8 @@ class TwillTestCase( unittest.TestCase ):
         if user_type_fd_id:
             # The user_type_fd_id SelectField requires a refresh_on_change
             self.refresh_form( 'user_type_fd_id', user_type_fd_id )
+            tc.fv( "1", "password", password )
+            tc.fv( "1", "confirm", password )
             for index, ( field_name, info_value ) in enumerate( user_info_values ):
                 tc.fv( "1", field_name, info_value )
         for check_str in strings_displayed:
