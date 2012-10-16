@@ -163,8 +163,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         assert hda and self._can_access_dataset( trans, hda )
         return hda.creating_job
     
-    def _can_access_dataset( self, trans, dataset, allow_admin=True ):
-        return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset )
+    def _can_access_dataset( self, trans, dataset_association, allow_admin=True ):
+        return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset_association.dataset )
     
     @web.expose
     def errors( self, trans, id ):
