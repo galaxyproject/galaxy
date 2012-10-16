@@ -1,8 +1,7 @@
 import pkg_resources
 pkg_resources.require( "twill==0.9" )
 
-import StringIO, os, sys, random, filecmp, time, unittest, urllib, logging, difflib, tarfile, zipfile, tempfile, re, shutil, subprocess
-from itertools import *
+import StringIO, os, filecmp, time, unittest, urllib, logging, difflib, tarfile, zipfile, tempfile, re, shutil, subprocess
 
 import twill
 import twill.commands as tc
@@ -703,7 +702,7 @@ class TwillTestCase( unittest.TestCase ):
                         shutil.copy( temp_name, ofn )
                     except Exception, exc:
                         error_log_msg  = ( 'TwillTestCase could not save output file %s to %s: ' % ( temp_name, ofn ) )
-                        error_log_msg += str( e )
+                        error_log_msg += str( exc )
                     else:
                         log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % ( self.keepOutdir, ofn ) )
                         
