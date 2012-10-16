@@ -695,7 +695,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                                 element_tree_root = element_tree.getroot()
                                 is_tool = element_tree_root.tag == 'tool'
                             except Exception, e:
-                                print "Error parsing %s", full_path, ", exception: ", str( e )
+                                log.debug( "Error parsing %s, exception: %s" % ( full_path, str( e ) ) )
                                 is_tool = False
                             if is_tool:
                                 tool, valid, error_message = load_tool_from_config( app, full_path )
@@ -793,6 +793,8 @@ def generate_tool_dependency_metadata( app, repository, tool_dependencies_config
             # Handle tool dependency installation via other means here (future).
         if tool_dependencies_dict:
             metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
+    else:
+        log.debug( "Name, version and type from the <requirement> tag does not match the information in the tool_dependencies.xml file. Tool dependencies will be ignored." )
     if tool_dependencies_dict:
         if original_tool_dependencies_dict:
             # We're generating metadata on an update pulled to a tool shed repository installed into a Galaxy instance, so handle changes to
