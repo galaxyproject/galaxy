@@ -36,6 +36,9 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                 if not admin:
                     can_access = trans.app.security_agent.can_access_dataset( current_user_roles, ld.library_dataset_dataset_association.dataset )
                 if (admin or can_access) and not ld.deleted:
+                    log.debug( "type(folder): %s" % type( folder ) )
+                    log.debug( "type(api_path): %s; folder.api_path: %s" % ( type(folder.api_path), folder.api_path ) )
+                    #log.debug( "attributes of folder: %s" % str(dir(folder)) )
                     ld.api_path = folder.api_path + '/' + ld.name
                     ld.api_type = 'file'
                     rval.append( ld )
@@ -52,11 +55,13 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         if not library or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( current_user_roles, library ) ):
             trans.response.status = 400
             return "Invalid library id ( %s ) specified." % str( library_id )
+        log.debug( "Root folder type: %s" % type( library.root_folder ) )
         encoded_id = 'F' + trans.security.encode_id( library.root_folder.id )
         rval.append( dict( id = encoded_id,
                            type = 'folder',
                            name = '/',
                            url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
+        log.debug( "Root folder attributes: %s" % str(dir(library.root_folder)) )
         library.root_folder.api_path = ''
         for content in traverse( library.root_folder ):
             encoded_id = trans.security.encode_id( content.id )

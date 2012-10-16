@@ -63,7 +63,12 @@ def app_factory( global_conf, **kwargs ):
     # The /folders section is experimental at this point:
     log.debug( "app.config.api_folders: %s" % app.config.api_folders )
     if app.config.api_folders:
-        webapp.api_mapper.resource( 'folder', 'folders', path_prefix='/api' )
+        #webapp.api_mapper.resource( 'folder', 'folders', path_prefix='/api' )
+        webapp.api_mapper.resource( 'content', 'contents',
+                                    controller='folder_contents',
+                                    name_prefix='folder_',
+                                    path_prefix='/api/folders/:folder_id',
+                                    parent_resources=dict( member_name='folder', collection_name='folders' ) )
     webapp.api_mapper.resource( 'content',
                                 'contents',
                                 controller='library_contents',
@@ -79,7 +84,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.resource( 'permission',
                                 'permissions',
                                 path_prefix='/api/libraries/:library_id',
-                                parent_resources=dict( member_name='library', collection_name='libraries' ) )      
+                                parent_resources=dict( member_name='library', collection_name='libraries' ) )
     webapp.api_mapper.resource( 'user',
                                 'users',
                                 controller='group_users',
