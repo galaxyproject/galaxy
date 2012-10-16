@@ -259,7 +259,7 @@ def can_generate_tool_dependency_metadata( root, metadata_dict ):
             can_generate_dependency_metadata = False
             tool_dependency_name = elem.get( 'name', None )
             if tool_dependency_name and tool_dependency_version:
-                for tool_dict in metadata_dict[ 'tools' ]:
+                for tool_dict in metadata_dict.get( 'tools', [] ):
                     requirements = tool_dict.get( 'requirements', [] )
                     for requirement_dict in requirements:
                         req_name = requirement_dict.get( 'name', None )
@@ -281,7 +281,7 @@ def can_generate_tool_dependency_metadata( root, metadata_dict ):
                 # <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
                 env_var_name = env_var_elem.get( 'name', None )
                 if env_var_name:
-                    for tool_dict in metadata_dict[ 'tools' ]:
+                    for tool_dict in metadata_dict.get( 'tools', [] ):
                         requirements = tool_dict.get( 'requirements', [] )
                         for requirement_dict in requirements:
                             # {"name": "R_SCRIPT_PATH", "type": "set_environment", "version": null}
