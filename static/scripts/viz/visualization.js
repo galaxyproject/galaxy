@@ -48,7 +48,7 @@ var select_datasets = function(dataset_url, add_track_async_url, filter_params, 
                         // them sequentially.
                         $.when.apply($, requests).then(function() {
                             // jQuery always returns an Array for arguments, so need to look at first element
-                           // to determine whether multiple requests were made and consequently how to 
+                            // to determine whether multiple requests were made and consequently how to 
                             // map arguments to track definitions.
                             var track_defs = (arguments[0] instanceof Array ?  
                                                $.map(arguments, function(arg) { return arg[0]; }) :
@@ -795,8 +795,11 @@ var GenomeVisualization = Visualization.extend({
         }
     ],
 
-    add_track: function(track) {
-        this.get('tracks').push(track);
+    /**
+     * Add a track or array of tracks to the visualization.
+     */
+    add_tracks: function(tracks) {
+        this.get('tracks').add(tracks);
     }
 });
 

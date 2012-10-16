@@ -37,16 +37,32 @@
             }
         });
 
-        require( [ "viz/visualization", "viz/circster" ], function(visualization, circster ) {
+        require( [ "viz/visualization", "viz/circster" ], function(visualization_mod, circster ) {
 
             $(function() {
+                // -- Viz set up. --
                 
+                var genome = new visualization_mod.Genome(JSON.parse('${ h.to_json_string( genome ) }'))
+                    vis = new visualization_mod.GenomeVisualization(JSON.parse('${ h.to_json_string( viz_config ) }')),
+                    viz_view = new circster.CircsterView({
+                        el: $('#vis'),
+                        // Gap is difficult to set because it very dependent on chromosome size and organization.
+                        total_gap: 2 * Math.PI * 0.1,
+                        genome: genome,
+                        model: vis,
+                        dataset_arc_height: 25
+                    });
+                
+                // -- Render viz. --
+                    
+                viz_view.render();
+
                 // -- Visualization menu and set up.
                 var menu = create_icon_buttons_menu([
                     { icon_class: 'plus-button', title: 'Add tracks', on_click: function() { 
-                        visualization.select_datasets(select_datasets_url, add_track_async_url, {}, function(tracks) {
-                            console.log(tracks);
-                            });
+                        visualization_mod.select_datasets(select_datasets_url, add_track_async_url, {}, function(tracks) {
+                            vis.add_tracks(tracks);
+                        });
                     } },
                     { icon_class: 'disk--arrow', title: 'Save', on_click: function() { 
                         // Show saving dialog box
@@ -88,24 +104,6 @@
                 $("#center .unified-panel-header-inner").append(menu.$el);
                 // Manual tooltip config because default gravity is S and cannot be changed.
                 $(".menu-button").tooltip( { placement: 'bottom' } );
-                
-                // -- Viz set up. --
-                
-                var genome = new visualization.Genome(JSON.parse('${ h.to_json_string( genome ) }'))
-                    vis = new visualization.GenomeVisualization(JSON.parse('${ h.to_json_string( viz_config ) }')),
-                    viz_view = new circster.CircsterView({
-                        el: $('#vis'),
-                        // Gap is difficult to set because it very dependent on chromosome size and organization.
-                        total_gap: 2 * Math.PI * 0.1,
-                        genome: genome,
-                        model: vis,
-                        dataset_arc_height: 25
-                    });
-                
-                // -- Render viz. --
-                    
-                viz_view.render();
-
             });
         });
     </script>
