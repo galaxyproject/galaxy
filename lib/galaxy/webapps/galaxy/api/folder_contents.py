@@ -22,7 +22,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         we want here. We could add a parameter to use the recursive
         style, but this is meant to act similar to an "ls" directory listing.
         """
-        log.debug( "FolderContentsController.index: enter" )
         rval = []
         current_user_roles = trans.get_current_user_roles()
 
@@ -30,19 +29,15 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             admin = trans.user_is_admin()
             rval = []
             for subfolder in folder.active_folders:
-                log.debug( "Subfolder type: %s" % type(subfolder) )
                 if not admin:
-                    log.debug( "calling check_folder_contents" )
                     can_access, folder_ids = trans.app.security_agent.check_folder_contents( trans.user, current_user_roles, subfolder )
                 if (admin or can_access) and not subfolder.deleted:
                     subfolder.api_type = 'folder'
                     rval.append( subfolder )
             for ld in folder.datasets:
-                log.debug( "Folder type: %s" % type(folder) )
                 if not admin:
                     can_access = trans.app.security_agent.can_access_dataset( current_user_roles, ld.library_dataset_dataset_association.dataset )
                 if (admin or can_access) and not ld.deleted:
-                    log.debug( "Folder attributes: %s" % dir(folder) )
                     ld.api_type = 'file'
                     rval.append( ld )
             return rval
@@ -56,7 +51,6 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         try:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( decoded_folder_id )
             parent_library = folder.parent_library
-            log.debug( "parent library type: %s" % type(parent_library) )
         except:
             folder = None
             log.error( "FolderContentsController.index: Unable to retrieve folder %s" 
