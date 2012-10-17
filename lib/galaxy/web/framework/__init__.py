@@ -6,6 +6,7 @@ import pkg_resources
 
 import os, sys, time, socket, random, string
 import inspect
+from Cookie import CookieError
 
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
@@ -414,7 +415,10 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         tstamp = time.localtime ( time.time() + 3600 * 24 * age )
         self.response.cookies[name]['expires'] = time.strftime( '%a, %d-%b-%Y %H:%M:%S GMT', tstamp )
         self.response.cookies[name]['version'] = version
-        self.response.cookies[name]['httponly'] = True
+        try:
+            self.response.cookies[name]['httponly'] = True
+        except CookieError, e:
+            log.warning( "Error setting httponly attribute in cookie '%s': %s" % ( name, e ) )
     def _ensure_valid_session( self, session_cookie, create=True):
         """
         Ensure that a valid Galaxy session exists and is available as
