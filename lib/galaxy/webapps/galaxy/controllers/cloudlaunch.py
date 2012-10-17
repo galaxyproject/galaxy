@@ -61,7 +61,7 @@ class CloudController(BaseUIController):
                 # We need to get persistent data, and the cluster name.
                 for key in bucket.list():
                     if key.name.endswith('.clusterName'):
-                        clusters.append({'name':key.name.split('.clusterName')[0], 'persistent_data': pd.get_contents_as_string()})
+                        clusters.append({'name': key.name.split('.clusterName')[0], 'persistent_data': pd.get_contents_as_string()})
         account_info['clusters'] = clusters
         return to_json_string(account_info)
 
@@ -76,13 +76,13 @@ class CloudController(BaseUIController):
         except EC2ResponseError, err:
             ec2_error = err.error_message
         if ec2_error:
-            #return trans.fill_template("cloud/run.mako", error = ec2_error)
-            return {'errors':[ec2_error]}
+            trans.response.status = 400
+            return ec2_error
         else:
-            user_provided_data={'cluster_name':cluster_name,
-                                'access_key':key_id,
-                                'secret_key':secret,
-                                'instance_type':instance_type}
+            user_provided_data = {'cluster_name': cluster_name,
+                                'access_key': key_id,
+                                'secret_key': secret,
+                                'instance_type': instance_type}
             if password:
                 user_provided_data['password'] = password
             if share_string:
@@ -95,15 +95,13 @@ class CloudController(BaseUIController):
                 instance = rs.instances[0]
                 ct = 0
                 while not instance.public_dns_name:
-                    # Can take a second to have public dns name registered.
-                    # DBTODO, push this into a page update, this is not ideal.
                     try:
                         instance.update()
                     except EC2ResponseError:
-                        #This can happen when update is invoked before the instance is fully registered.  Prevent
-                        #failure, wait it out.
+                        #This can happen when update is invoked before the instance is fully registered.
+                        #Prevent failure, wait it out.
                         pass
-                    ct +=1
+                    ct += 1
                     time.sleep(1)
                 if kp_material:
                     #We have created a keypair.  Save to tempfile for one time retrieval.
@@ -123,7 +121,8 @@ class CloudController(BaseUIController):
                     'kp_material_tag':kp_material_tag
                     })
             else:
-                return {'errors':["Instance failure, but no specific error was detected.  Please check your AWS Console."]}
+                trans.response.status = 400
+                return "Instance failure, but no specific error was detected.  Please check your AWS Console."
 
     @web.expose
     def get_pkey(self, trans, kp_material_tag=None):

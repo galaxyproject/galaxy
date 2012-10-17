@@ -113,9 +113,16 @@
                     type: 'POST',
                     dataType: 'json',
                     beforeSubmit: function(data){
-                        //Hide the form, show pending box with spinner.
-                        $('#launchFormContainer').hide('fast');
-                        $('#responsePanel').show('fast');
+                        if ($('#id_password').val() != $('#id_password_confirm').val()){
+                            //Passwords don't match.
+                            $('#cloudlaunch_form').prepend('<div class="errormessage">Passwords do not match</div>');
+                            return false;
+                        }else{
+                            $('.errormessage').remove()
+                            //Hide the form, show pending box with spinner.
+                            $('#launchFormContainer').hide('fast');
+                            $('#responsePanel').show('fast');
+                        }
                     },
                     success: function(data){
                         //Success Message, link to key download if required, link to server itself.
@@ -144,6 +151,9 @@
                             $('#instance_dns').text(data.public_dns_name);
                             $('#launchSuccess').show('fast');
                         }
+                    },
+                    error: function(data){
+                        $('#cloudlaunch_form').prepend('<div class="errormessage">' + data.responseText + '</div>');
                     }
             });
         });
@@ -199,6 +209,12 @@ Credentials section of the AWS Console</a>.  </div>
                             <label for="id_password">Cluster Password</label>
                             <input type="password" size="40" name="password" id="id_password"/><br/>
                         </div>
+
+                        <div class="form-row">
+                            <label for="id_password_confirm">Cluster Password - Confirmation</label>
+                            <input type="password" size="40" name="password_confirm" id="id_password_confirm"/><br/>
+                        </div>
+
 
                         <div class="form-row">
                             <label for="id_keypair">Key Pair</label>
