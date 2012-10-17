@@ -235,8 +235,10 @@ class Configuration( object ):
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         # Experimental: This will not be enabled by default and will hide 
         # nonproduction code.
-        # The api_folders refers to whether the API exposes 
+        # The api_folders refers to whether the API exposes the /folders section.
         self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
+        # This is for testing new library browsing capabilities.
+        self.new_lib_browse = string_as_bool( kwargs.get( 'new_lib_browse', False ) )
 
     def __read_tool_job_config( self, global_conf_parser, section, key ):
         try:

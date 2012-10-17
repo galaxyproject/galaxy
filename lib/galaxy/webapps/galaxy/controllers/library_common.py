@@ -131,17 +131,20 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             comptypes = get_comptypes( trans )
             try:
                 # SM: TODO: Add configuration variable asap. 
-                return trans.fill_template( 'library/common/browse_library.mako',
-                                            cntrller=cntrller,
-                                            use_panels=use_panels,
-                                            library=library,
-                                            created_ldda_ids=created_ldda_ids,
-                                            hidden_folder_ids=hidden_folder_ids,
-                                            show_deleted=show_deleted,
-                                            comptypes=comptypes,
-                                            current_user_roles=current_user_roles,
-                                            message=message,
-                                            status=status )
+                if self.app.config.new_lib_browse:
+                    pass
+                else:
+                    return trans.fill_template( 'library/common/browse_library.mako',
+                                                cntrller=cntrller,
+                                                use_panels=use_panels,
+                                                library=library,
+                                                created_ldda_ids=created_ldda_ids,
+                                                hidden_folder_ids=hidden_folder_ids,
+                                                show_deleted=show_deleted,
+                                                comptypes=comptypes,
+                                                current_user_roles=current_user_roles,
+                                                message=message,
+                                                status=status )
             except Exception, e:
                 message = 'Error attempting to display contents of library (%s): %s.' % ( str( library.name ), str( e ) )
                 status = 'error'

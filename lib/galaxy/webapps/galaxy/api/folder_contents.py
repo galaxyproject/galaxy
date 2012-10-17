@@ -25,6 +25,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         log.debug( "FolderContentsController.index: enter" )
         rval = []
         current_user_roles = trans.get_current_user_roles()
+
         def traverse( folder ):
             admin = trans.user_is_admin()
             rval = []
@@ -54,6 +55,8 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
 
         try:
             folder = trans.sa_session.query( trans.app.model.LibraryFolder ).get( decoded_folder_id )
+            parent_library = folder.parent_library
+            log.debug( "parent library type: %s" % type(parent_library) )
         except:
             folder = None
             log.error( "FolderContentsController.index: Unable to retrieve folder %s" 

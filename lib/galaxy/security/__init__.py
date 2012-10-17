@@ -256,7 +256,7 @@ class GalaxyRBACAgent( RBACAgent ):
 
     def get_actions_for_items( self, trans, action, permission_items ):
         # TODO: Rename this; it's a replacement for get_item_actions, but it
-        # doesn't represent what it's really confusing.
+        # doesn't represent what it's really doing, which is confusing.
         # TODO: Make this work for other classes besides lib_datasets.
         # That should be as easy as checking the type and writing a query for each;
         # we're avoiding using the SQLAlchemy backrefs because they can cause lots
@@ -1179,19 +1179,12 @@ class GalaxyRBACAgent( RBACAgent ):
             return True, ''
         action = self.permitted_actions.DATASET_ACCESS
 
-        # SM: TODO: This is for timing debug. Delete it later.
-        from datetime import datetime, timedelta
-        query_start = datetime.now()
         lddas = self.sa_session.query( self.model.LibraryDatasetDatasetAssociation ) \
                                .join( "library_dataset" ) \
                                .filter( self.model.LibraryDataset.folder == folder ) \
                                .join( "dataset" ) \
                                .options( eagerload_all( "dataset.actions" ) ) \
                                .all()
-        query_end = datetime.now()
-        query_delta = query_end - query_start
-        #log.debug( "Check folder contents: join query time: %d.%.6d sec" % 
-        #         ( query_delta.seconds, query_delta.microseconds ) )
 
         for ldda in lddas:
             ldda_access_permissions = self.get_item_actions( action, ldda.dataset )
