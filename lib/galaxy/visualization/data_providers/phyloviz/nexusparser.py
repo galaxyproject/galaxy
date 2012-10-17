@@ -1,3 +1,4 @@
+from __future__ import with_statement
 from newickparser import Newick_Parser
 import re
 
