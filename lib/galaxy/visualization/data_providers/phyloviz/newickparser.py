@@ -1,3 +1,4 @@
+from __future__ import with_statement
 from baseparser import Base_Parser, PhyloTree
 import re
 
