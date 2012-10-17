@@ -11,10 +11,10 @@ import logging
 import os
 import tempfile
 import time
-import boto
 import pkg_resources
 from galaxy import eggs
 pkg_resources.require('boto')
+import boto
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 from galaxy.util.json import to_json_string
