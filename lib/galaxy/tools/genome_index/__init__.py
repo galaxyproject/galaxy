@@ -1,6 +1,6 @@
 from __future__ import with_statement
 
-import os, shutil, logging, tempfile, json, tarfile
+import os, shutil, logging, tempfile, tarfile
 
 from galaxy import model, util
 from galaxy.web.framework.helpers import to_unicode
@@ -8,6 +8,10 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.json import *
 from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.tools.data import ToolDataTableManager
+
+import pkg_resources
+pkg_resources.require("simplejson")
+import simplejson
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +74,7 @@ class GenomeIndexToolWrapper( object ):
             fp = open( gitd.dataset.get_file_name(), 'r' )
             deferred = sa_session.query( model.DeferredJob ).filter_by( id=gitd.deferred_job_id ).first()
             try:
-                logloc = json.load( fp )
+                logloc = simplejson.load( fp )
             except ValueError:
                 deferred.state = app.model.DeferredJob.states.ERROR
                 sa_session.add( deferred )
@@ -211,7 +215,7 @@ class GenomeIndexToolWrapper( object ):
         import hashlib
         md5 = hashlib.md5()
         with open( filename, 'rb' ) as f: 
-            for chunk in iter( lambda: f.read( 8192 ), b'' ): 
+            for chunk in iter( lambda: f.read( 8192 ), '' ):
                  md5.update( chunk )
         return md5.digest()
 
