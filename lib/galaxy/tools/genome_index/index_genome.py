@@ -7,7 +7,11 @@ usage: %prog history_attrs dataset_attrs job_attrs out_file
 """
 from __future__ import with_statement
 
-import optparse, sys, os, tempfile, time, subprocess, shlex, json, tarfile, shutil
+import optparse, sys, os, tempfile, time, subprocess, shlex, tarfile, shutil
+
+import pkg_resources
+pkg_resources.require("simplejson")
+import simplejson
 
 class ManagedIndexer():
     def __init__( self, output_file, infile, workingdir, rsync_url, tooldata ):
@@ -72,7 +76,7 @@ class ManagedIndexer():
         return result
     
     def _flush_files( self ):
-        json.dump( self.locations, self.outfile )
+        simplejson.dump( self.locations, self.outfile )
         self.outfile.close()
         self.logfile.close()
     
