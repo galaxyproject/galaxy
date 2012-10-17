@@ -1761,9 +1761,22 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 input_connections = [ conn for conn in input_connections if conn.input_name in data_input_names ]
             # Encode input connections as dictionary
             input_conn_dict = {}
-            for conn in input_connections:
-                input_conn_dict[ conn.input_name ] = \
-                    dict( id=conn.output_step.order_index, output_name=conn.output_name )
+            unique_input_names = set( [conn.input_name for conn in input_connections] )
+            for input_name in unique_input_names:
+                input_conn_dict[ input_name ] = \
+                    [ dict( id=conn.output_step.order_index, output_name=conn.output_name ) for conn in input_connections if conn.input_name == input_name ]
+            # Preserve backward compatability. Previously Galaxy
+            # assumed input connections would be dictionaries not
+            # lists of dictionaries, so replace any singleton list
+            # with just the dictionary so that workflows exported from
+            # newer Galaxy instances can be used with older Galaxy
+            # instances if they do no include multiple input
+            # tools. This should be removed at some point. Mirrored
+            # hack in _workflow_from_dict should never be removed so
+            # existing workflow exports continue to function.
+            for input_name, input_conn in dict(input_conn_dict).iteritems(): 
+                if len(input_conn) == 1:
+                    input_conn_dict[input_name] = input_conn[0]
             step_dict['input_connections'] = input_conn_dict
             # Position
             step_dict['position'] = step.position
@@ -1828,8 +1841,12 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
-            for input_name, conn_dict in step.temp_input_connections.iteritems():
-                if conn_dict:
+            for input_name, conn_list in step.temp_input_connections.iteritems():
+                if not conn_list:
+                    continue
+                if not isinstance(conn_list, list):  # Older style singleton connection
+                    conn_list = [conn_list]
+                for conn_dict in conn_list:
                     conn = model.WorkflowStepConnection()
                     conn.input_step = step
                     conn.input_name = input_name
