@@ -1276,8 +1276,8 @@ class Tool:
                 # isn't bogus. If we have two infinite values, then 
                 # the start must be -inf and the end must be +inf. 
                 # So at least warn about this situation:
-                if ( math.isinf( exit_code.range_start ) and 
-                     math.isinf( exit_code.range_end ) ):
+                if ( util.isinf( exit_code.range_start ) and 
+                     util.isinf( exit_code.range_end ) ):
                     log.warning( "Tool exit_code range %s will match on "
                                + "all exit codes" % code_range )
                 self.stdio_exit_codes.append( exit_code )
