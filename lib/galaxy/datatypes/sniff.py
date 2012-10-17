@@ -94,10 +94,14 @@ def convert_newlines( fname, in_place=True ):
     """
     fd, temp_name = tempfile.mkstemp()
     fp = os.fdopen( fd, "wt" )
-    i = 0
-    for i, line in enumerate( file( fname, "U" ), 1 ):
+    i = None
+    for i, line in enumerate( file( fname, "U" ) ):
         fp.write( "%s\n" % line.rstrip( "\r\n" ) )
     fp.close()
+    if i is None:
+        i = 0
+    else:
+        i += 1
     if in_place:
         shutil.move( temp_name, fname )
         # Return number of lines in file.
@@ -119,12 +123,16 @@ def sep2tabs( fname, in_place=True, patt="\\s+" ):
     regexp = re.compile( patt )
     fd, temp_name = tempfile.mkstemp()
     fp = os.fdopen( fd, "wt" )
-    i = 0
-    for i, line in enumerate( file( fname ), 1):
+    i = None
+    for i, line in enumerate( file( fname ) ):
         line  = line.rstrip( '\r\n' )
         elems = regexp.split( line )
         fp.write( "%s\n" % '\t'.join( elems ) )
     fp.close()
+    if i is None:
+        i = 0
+    else:
+        i += 1        
     if in_place:
         shutil.move( temp_name, fname )
         # Return number of lines in file.
