@@ -16,6 +16,14 @@ try:
 except ImportError:
     from md5 import new as md5
 
+try:
+    from math import isinf
+except ImportError:
+    INF = float( 'inf' )
+    NEG_INF = -INF
+    ISINF_LIST = [ INF, NEG_INF ]
+    isinf = lambda x: x in ISINF_LIST
+
 from galaxy import eggs
 import pkg_resources
 
