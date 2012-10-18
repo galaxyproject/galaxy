@@ -70,9 +70,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
             rval.append( dict( id = encoded_id,
                                type = content.api_type,
                                name = content.name,
-                               # TODO: calculate the folder's library id
-                               # (if necessary) and add library_id=X below: 
-                               url = url_for( controller='folder_content', id=encoded_id ) ) )
+                               url = url_for( 'folder_contents', folder_id=encoded_id ) ) )
         return rval
 
     @web.expose_api

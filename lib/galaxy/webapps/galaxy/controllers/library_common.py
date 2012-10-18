@@ -130,7 +130,6 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                 status = "info"
             comptypes = get_comptypes( trans )
             try:
-                # SM: TODO: Add configuration variable asap. 
                 if self.app.config.new_lib_browse:
                     pass
                 else:
