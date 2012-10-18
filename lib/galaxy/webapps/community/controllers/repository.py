@@ -1681,7 +1681,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         reviewed_by_user = changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
             review = get_review_by_repository_id_changeset_revision_user_id( trans,
-                                                                             repository_id,
+                                                                             id,
                                                                              changeset_revision,
                                                                              trans.security.encode_id( trans.user.id ) )
         else:
