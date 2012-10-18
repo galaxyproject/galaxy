@@ -1684,8 +1684,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                              id,
                                                                              changeset_revision,
                                                                              trans.security.encode_id( trans.user.id ) )
+            review_id = trans.security.encode_id( review.id )
         else:
-            review = None
+            review_id = None
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
                                     cntrller=cntrller,
                                     repo_name=repo_name,
@@ -1698,7 +1699,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     repository_metadata_id=repository_metadata_id,
                                     changeset_revision=changeset_revision,
                                     reviewed_by_user=reviewed_by_user,
-                                    review=review,
+                                    review_id=review_id,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
                                     selected_categories=selected_categories,
@@ -2340,11 +2341,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
         reviewed_by_user = changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
             review = get_review_by_repository_id_changeset_revision_user_id( trans,
-                                                                             repository_id,
+                                                                             id,
                                                                              changeset_revision,
                                                                              trans.security.encode_id( trans.user.id ) )
+            review_id = trans.security.encode_id( review.id )
         else:
-            review = None
+            review_id = None
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     cntrller=cntrller,
                                     repo=repo,
@@ -2357,7 +2359,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     alerts_check_box=alerts_check_box,
                                     changeset_revision=changeset_revision,
                                     reviewed_by_user=reviewed_by_user,
-                                    review=review,
+                                    review_id=review_id,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
                                     is_malicious=is_malicious,
@@ -2421,11 +2423,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
         reviewed_by_user = changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
             review = get_review_by_repository_id_changeset_revision_user_id( trans,
-                                                                             repository_id,
+                                                                             id,
                                                                              changeset_revision,
                                                                              trans.security.encode_id( trans.user.id ) )
+            review_id = trans.security.encode_id( review.id )
         else:
-            review = None
+            review_id = None
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     metadata=metadata,
@@ -2437,7 +2440,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     is_malicious=is_malicious,
                                     reviewed_by_user=reviewed_by_user,
-                                    review=review,
+                                    review_id=review_id,
                                     message=message,
                                     status=status )
 

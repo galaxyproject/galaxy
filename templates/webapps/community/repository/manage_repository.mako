@@ -49,7 +49,7 @@
 <ul class="manage-table-actions">
     %if reviewing_repository:
         %if reviewed_by_user:
-            <a class="action-button" href="${h.url_for( controller='repository_review', action='edit_review', id=trans.app.security.encode_id( review.id ) )}">Manage my review of this revision</a>
+            <a class="action-button" href="${h.url_for( controller='repository_review', action='edit_review', id=review_id )}">Manage my review of this revision</a>
         %else:
             <a class="action-button" href="${h.url_for( controller='repository_review', action='create_review', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Add a review to this revision</a>
         %endif
@@ -61,7 +61,7 @@
             <div popupmenu="repository-${repository.id}-popup">
                 %if can_review_repository:
                     %if reviewed_by_user:
-                        <a class="action-button" href="${h.url_for( controller='repository_review', action='edit_review', id=trans.app.security.encode_id( review.id ) )}">Manage my review of this revision</a>
+                        <a class="action-button" href="${h.url_for( controller='repository_review', action='edit_review', id=review_id )}">Manage my review of this revision</a>
                     %else:
                         <a class="action-button" href="${h.url_for( controller='repository_review', action='create_review', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Add a review to this revision</a>
                     %endif
