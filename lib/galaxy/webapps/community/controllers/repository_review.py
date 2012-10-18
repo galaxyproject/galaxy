@@ -76,6 +76,11 @@ class RepositoriesWithReviewsGrid( RepositoryListGrid ):
         ReviewersColumn( "Reviewers",
                         attach_popup=False )
     ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
     operations = [ 
         grids.GridOperation( "Inspect repository revisions",
                              allow_multiple=False,
@@ -103,6 +108,11 @@ class RepositoriesWithoutReviewsGrid( RepositoriesWithReviewsGrid ):
         RepositoriesWithReviewsGrid.UserColumn( "Owner",
                                                 attach_popup=False )
     ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
     operations = [ grids.GridOperation( "Inspect repository revisions",
                                         allow_multiple=False,
                                         condition=( lambda item: not item.deleted ),
