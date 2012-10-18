@@ -230,7 +230,7 @@ class HideDatasetAction(DefaultJobAction):
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict):
         for dataset_assoc in job.output_datasets:
-            if action.output_name == '' or dataset_assoc.name == action.output_name:
+            if dataset_assoc.dataset.state != dataset_assoc.dataset.states.ERROR and ( action.output_name == '' or dataset_assoc.name == action.output_name ):
                 dataset_assoc.dataset.visible=False
 
     @classmethod
