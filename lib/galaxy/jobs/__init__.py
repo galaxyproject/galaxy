@@ -239,6 +239,7 @@ class JobWrapper( object ):
                 dataset.info = message
                 dataset.set_size()
                 dataset.dataset.set_total_size()
+                dataset.mark_unhidden()
                 if dataset.ext == 'auto':
                     dataset.extension = 'data'
                 # Update (non-library) job output datasets through the object store
@@ -379,6 +380,7 @@ class JobWrapper( object ):
                 # job's state:
                 if job.states.ERROR == job.state:
                     dataset.blurb = "error"
+                    dataset.mark_unhidden()
                 elif dataset.has_data():
                     # If the tool was expected to set the extension, attempt to retrieve it
                     if dataset.ext == 'auto':
