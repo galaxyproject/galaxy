@@ -699,7 +699,7 @@ class AdminController( BaseUIController, Admin ):
                 successful_count = 0
                 unsuccessful_count = 0
                 for repository_name_owner_str in repository_names_by_owner:
-                    repository_name_owner_list = repository_name_owner_str.split( '__ESEP__' )
+                    repository_name_owner_list = repository_name_owner_str.split( STRSEP )
                     name = repository_name_owner_list[ 0 ]
                     owner = repository_name_owner_list[ 1 ]
                     repository = get_repository_by_name_and_owner( trans, name, owner )
@@ -737,7 +737,7 @@ class AdminController( BaseUIController, Admin ):
                                                      trans.model.Repository.table.c.user_id ):
             owner = repository.user.username
             option_label = '%s (%s)' % ( repository.name, owner )
-            option_value = '%s__ESEP__%s' % ( repository.name, owner )
+            option_value = '%s%s%s' % ( repository.name, STRSEP, owner )
             repositories_select_field.add_option( option_label, option_value )
         return trans.fill_template( '/webapps/community/admin/reset_metadata_on_selected_repositories.mako',
                                     repositories_select_field=repositories_select_field,

@@ -25,6 +25,13 @@ class User( object ):
         self.purged = False
         self.username = None
         self.new_repo_alert = False
+    def all_roles( self ):
+        roles = [ ura.role for ura in self.roles ]
+        for group in [ uga.group for uga in self.groups ]:
+            for role in [ gra.role for gra in group.roles ]:
+                if role not in roles:
+                    roles.append( role )
+        return roles
     def set_password_cleartext( self, cleartext ):
         """Set 'self.password' to the digest of 'cleartext'."""
         self.password = new_secure_hash( text_type=cleartext )
@@ -173,7 +180,32 @@ class RepositoryMetadata( object ):
         self.tool_versions = tool_versions or dict()
         self.malicious = malicious
         self.downloadable = downloadable
-    
+
+class RepositoryReview( object ):
+    approved_states = Bunch( NO='no', YES='yes' )
+    def __init__( self, repository_id=None, changeset_revision=None, user_id=None, rating=None, deleted=False ):
+        self.repository_id = repository_id
+        self.changeset_revision = changeset_revision
+        self.user_id = user_id
+        self.rating = rating
+        self.deleted = deleted
+
+class ComponentReview( object ):
+    approved_states = Bunch( NO='no', YES='yes', NA='not_applicable' )
+    def __init__( self, repository_review_id=None, component_id=None, comment=None, private=False, approved=False, rating=None, deleted=False ):
+        self.repository_review_id = repository_review_id
+        self.component_id = component_id
+        self.comment = comment
+        self.private = private
+        self.approved = approved
+        self.rating = rating
+        self.deleted = deleted
+
+class Component( object ):
+    def __init__( self, name=None, description=None ):
+        self.name = name
+        self.description = description
+
 class ItemRatingAssociation( object ):
     def __init__( self, id=None, user=None, item=None, rating=0, comment='' ):
         self.id = id

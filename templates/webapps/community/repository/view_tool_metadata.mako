@@ -21,6 +21,7 @@
     else:
         browse_label = 'Browse repository tip files'
     has_readme = metadata and 'readme' in metadata
+    can_review_repository = trans.app.security_agent.user_can_review_repositories( trans.user )
 %>
 
 <%!
@@ -52,6 +53,13 @@
         %else:
             <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
             <div popupmenu="repository-${repository.id}-popup">
+                %if can_review_repository:
+                    %if reviewed_by_user:
+                        <a class="action-button" href="${h.url_for( controller='repository_review', action='edit_review', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Manage my review of this revision</a>
+                    %else:
+                        <a class="action-button" href="${h.url_for( controller='repository_review', action='create_review', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Add a review to this revision</a>
+                    %endif
+                %endif
                 %if can_manage:
                     <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Manage repository</a>
                 %else:
@@ -274,7 +282,6 @@
             %>
             %if tests:
                 <div class="form-row">
-                    <label>Functional tests:</label></td>
                     <table class="grid">
                         <tr>
                             <td><b>name</b></td>

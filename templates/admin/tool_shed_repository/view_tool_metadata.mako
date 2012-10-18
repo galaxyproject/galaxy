@@ -185,7 +185,6 @@
             %>
             %if tests:
                 <div class="form-row">
-                    <label>Functional tests:</label></td>
                     <table class="grid">
                         <tr>
                             <td><b>name</b></td>

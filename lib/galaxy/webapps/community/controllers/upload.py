@@ -85,7 +85,6 @@ class UploadController( BaseUIController ):
                 isgzip = False
                 isbz2 = False
                 if uploaded_file:
-
                     if uncompress_file:
                         isgzip = is_gzip( uploaded_file_name )
                         if not isgzip:
@@ -208,12 +207,10 @@ class UploadController( BaseUIController ):
         repo = hg.repository( get_configured_ui(), repo_dir )
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
-
         if upload_point is not None:
             full_path = os.path.abspath( os.path.join( repo_dir, upload_point ) )
         else:
             full_path = os.path.abspath( repo_dir )
-
         filenames_in_archive = []
         for root, dirs, files in os.walk( uploaded_directory ):
             for uploaded_file in files:

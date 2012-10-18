@@ -121,6 +121,11 @@ class CommunityRBACAgent( RBACAgent ):
             else:
                 return None
         return role
+    def get_repository_reviewer_role( self ):
+        return self.sa_session.query( self.model.Role ) \
+                              .filter( and_( self.model.Role.table.c.name == 'Repository Reviewer', 
+                                             self.model.Role.table.c.type == self.model.Role.types.SYSTEM ) ) \
+                              .first()
     def set_entity_group_associations( self, groups=[], users=[], roles=[], delete_existing_assocs=True ):
         for group in groups:
             if delete_existing_assocs:
@@ -157,6 +162,13 @@ class CommunityRBACAgent( RBACAgent ):
     def can_push( self, user, repository ):
         if user:
             return user.username in listify( repository.allow_push )
+        return False
+    def user_can_review_repositories( self, user ):
+        if user:
+            roles = user.all_roles()
+            if roles:
+                repository_reviewer_role = self.get_repository_reviewer_role()
+                return repository_reviewer_role and repository_reviewer_role in roles
         return False
 
 def get_permitted_actions( filter=None ):

@@ -124,6 +124,34 @@ RepositoryMetadata.table = Table( "repository_metadata", metadata,
     Column( "malicious", Boolean, default=False ),
     Column( "downloadable", Boolean, default=True ) )
 
+RepositoryReview.table = Table( "repository_review", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "repository_id", Integer, ForeignKey( "repository.id" ), index=True ),
+    Column( "changeset_revision", TrimmedString( 255 ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=False ),
+    Column( "approved", TrimmedString( 255 ) ),
+    Column( "rating", Integer, index=True ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+ComponentReview.table = Table( "component_review", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "repository_review_id", Integer, ForeignKey( "repository_review.id" ), index=True ),
+    Column( "component_id", Integer, ForeignKey( "component.id" ), index=True ),
+    Column( "comment", TEXT ),
+    Column( "private", Boolean, default=False ),
+    Column( "approved", TrimmedString( 255 ) ),
+    Column( "rating", Integer ),
+    Column( "deleted", Boolean, index=True, default=False ) )
+
+Component.table = Table( "component", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "name", TrimmedString( 255 ) ),
+    Column( "description", TEXT ) )
+
 RepositoryRatingAssociation.table = Table( "repository_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -187,7 +215,7 @@ assign_mapper( context, GalaxySession, GalaxySession.table,
     properties=dict( user=relation( User.mapper ) ) )
 
 assign_mapper( context, Tag, Tag.table,
-    properties=dict( children=relation(Tag, backref=backref( 'parent', remote_side=[Tag.table.c.id] ) ) ) )
+    properties=dict( children=relation(Tag, backref=backref( 'parent', remote_side=[ Tag.table.c.id ] ) ) ) )
 
 assign_mapper( context, Category, Category.table,
     properties=dict( repositories=relation( RepositoryCategoryAssociation ) ) )
@@ -201,10 +229,47 @@ assign_mapper( context, Repository, Repository.table,
                                          primaryjoin=( ( Repository.table.c.id == RepositoryMetadata.table.c.repository_id ) & ( RepositoryMetadata.table.c.downloadable == True ) ),
                                          order_by=desc( RepositoryMetadata.table.c.update_time ) ),
         metadata_revisions=relation( RepositoryMetadata,
-                                     order_by=desc( RepositoryMetadata.table.c.update_time ) ) ) )
+                                     order_by=desc( RepositoryMetadata.table.c.update_time ) ),
+        reviews=relation( RepositoryReview,
+                          primaryjoin=( ( Repository.table.c.id == RepositoryReview.table.c.repository_id ) ) ),
+        reviewers=relation( User,
+                            secondary=RepositoryReview.table,
+                            primaryjoin=( Repository.table.c.id == RepositoryReview.table.c.repository_id ),
+                            secondaryjoin=( RepositoryReview.table.c.user_id == User.table.c.id ) ),
+        reviewed_revisions=relation( RepositoryMetadata,
+                                     secondary=RepositoryReview.table,
+                                     foreign_keys=[ RepositoryMetadata.table.c.repository_id, RepositoryMetadata.table.c.changeset_revision ],
+                                     primaryjoin=( Repository.table.c.id == RepositoryMetadata.table.c.repository_id ),
+                                     secondaryjoin=( ( RepositoryMetadata.table.c.repository_id == RepositoryReview.table.c.repository_id ) & ( RepositoryMetadata.table.c.changeset_revision == RepositoryReview.table.c.changeset_revision ) ) ) ) )
 
 assign_mapper( context, RepositoryMetadata, RepositoryMetadata.table,
-    properties=dict( repository=relation( Repository ) ) )
+    properties=dict( repository=relation( Repository ),
+                     reviews=relation( RepositoryReview,
+                                       foreign_keys=[ RepositoryMetadata.table.c.repository_id, RepositoryMetadata.table.c.changeset_revision ],
+                                       primaryjoin=( ( RepositoryMetadata.table.c.repository_id == RepositoryReview.table.c.repository_id ) & ( RepositoryMetadata.table.c.changeset_revision == RepositoryReview.table.c.changeset_revision ) ) ) ) )
+
+assign_mapper( context, RepositoryReview, RepositoryReview.table,
+    properties=dict( repository=relation( Repository,
+                                          primaryjoin=( RepositoryReview.table.c.repository_id == Repository.table.c.id ) ),
+                     # Take case when using the mapper below!  It should be used only when a new review is being created for a repository change set revision.
+                     # Keep in mind that repository_metadata records can be removed from the database for certain change set revisions when metadata is being
+                     # reset on a repository!
+                     repository_metadata=relation( RepositoryMetadata,
+                                                   foreign_keys=[ RepositoryReview.table.c.repository_id, RepositoryReview.table.c.changeset_revision ],
+                                                   primaryjoin=( ( RepositoryReview.table.c.repository_id == RepositoryMetadata.table.c.repository_id ) & ( RepositoryReview.table.c.changeset_revision == RepositoryMetadata.table.c.changeset_revision ) ),
+                                                   backref='review' ),
+                     user=relation( User, backref="repository_reviews" ),
+                     component_reviews=relation( ComponentReview,
+                                                 primaryjoin=( ( RepositoryReview.table.c.id == ComponentReview.table.c.repository_review_id ) & ( ComponentReview.table.c.deleted == False ) ) ),
+                     private_component_reviews=relation( ComponentReview,
+                                                         primaryjoin=( ( RepositoryReview.table.c.id == ComponentReview.table.c.repository_review_id ) & ( ComponentReview.table.c.deleted == False ) & ( ComponentReview.table.c.private == True ) ) ) ) )
+
+assign_mapper( context, ComponentReview, ComponentReview.table,
+    properties=dict( repository_review=relation( RepositoryReview ),
+                     component=relation( Component,
+                                         primaryjoin=( ComponentReview.table.c.component_id == Component.table.c.id ) ) ) )
+
+assign_mapper( context, Component, Component.table )
 
 assign_mapper( context, RepositoryRatingAssociation, RepositoryRatingAssociation.table,
     properties=dict( repository=relation( Repository ), user=relation( User ) ) )

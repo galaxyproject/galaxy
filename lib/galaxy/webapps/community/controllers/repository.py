@@ -110,13 +110,41 @@ class RepositoryListGrid( grids.Grid ):
         def __init__( self, col_name ):
             grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
-            """Display a SelectField whose options are the changeset_revision strings of all revisions of this repository."""
+            """Display a SelectField whose options are the changeset_revision strings of all metadata revisions of this repository."""
             # A repository's metadata revisions may not all be installable, as some may contain only invalid tools.
-            select_field = build_changeset_revision_select_field( trans, repository, downloadable_only=False )
+            select_field = build_changeset_revision_select_field( trans, repository, downloadable=False )
             if len( select_field.options ) > 1:
                 return select_field.get_html()
             elif len( select_field.options ) == 1:
                 return select_field.options[ 0 ][ 0 ]
+            return ''
+    class WithReviewsRevisionColumn( grids.GridColumn ):
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
+        def get_value( self, trans, grid, repository ):
+            # Restrict to revisions that have been reviewed.
+            repository_metadata_revisions = get_repository_metadata_revisions_for_review( repository, reviewed=True )
+            if repository_metadata_revisions:
+                rval = ''
+                for repository_metadata in repository_metadata_revisions:
+                    rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( repository_metadata, repository=repository )
+                    rval += '<a href="manage_repository_reviews_of_revision'
+                    rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
+                return rval
+            return ''
+    class WithoutReviewsRevisionColumn( grids.GridColumn ):
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
+        def get_value( self, trans, grid, repository ):
+            # Restrict the options to revisions that have not yet been reviewed.
+            repository_metadata_revisions = get_repository_metadata_revisions_for_review( repository, reviewed=False )
+            if repository_metadata_revisions:
+                rval = ''
+                for repository_metadata in repository_metadata_revisions:
+                    rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( repository_metadata, repository=repository )
+                    rval += '<a href="manage_repository_reviews_of_revision'
+                    rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
+                return rval
             return ''
     class TipRevisionColumn( grids.GridColumn ):
         def __init__( self, col_name ):
@@ -224,8 +252,7 @@ class EmailAlertsRepositoryListGrid( RepositoryListGrid ):
     columns = [
         RepositoryListGrid.NameColumn( "Name",
                                        key="name",
-                                       link=( lambda item: dict( operation="view_or_manage_repository",
-                                                                 id=item.id ) ),
+                                       link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                        attach_popup=False ),
         RepositoryListGrid.DescriptionColumn( "Synopsis",
                                               key="description",
@@ -295,7 +322,7 @@ class ValidRepositoryListGrid( RepositoryListGrid ):
             grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
             """Display a SelectField whose options are the changeset_revision strings of all download-able revisions of this repository."""
-            select_field = build_changeset_revision_select_field( trans, repository, downloadable_only=True )
+            select_field = build_changeset_revision_select_field( trans, repository, downloadable=True )
             if len( select_field.options ) > 1:
                 return select_field.get_html()
             elif len( select_field.options ) == 1:
@@ -511,17 +538,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             if operation == "view_or_manage_repository":
-                repository_id = kwd[ 'id' ]
-                repository = get_repository( trans, repository_id )
-                is_admin = trans.user_is_admin()
-                if is_admin or repository.user == trans.user:
-                    return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                      action='manage_repository',
-                                                                      **kwd ) )
-                else:
-                    return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                      action='view_repository',
-                                                                      **kwd ) )
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
             elif operation == "edit_repository":
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='edit_repository',
@@ -546,6 +565,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 kwd[ 'f-email' ] = trans.user.email
+            elif operation == "reviewed_repositories_i_own":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='reviewed_repositories_i_own' ) )
             elif operation == "writable_repositories":
                 kwd[ 'username' ] = trans.user.username
                 return self.writable_repository_list_grid( trans, **kwd )
@@ -1385,8 +1407,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         # See if there are any RepositoryMetadata records since menu items require them.
         repository_metadata = trans.sa_session.query( model.RepositoryMetadata ).first()
+        # See if the current user owns any repositories that have been reviewed.
+        has_reviewed_repositories = False
+        current_user = trans.user
+        if current_user:
+            for repository in current_user.active_repositories:
+                if repository.reviewed_revisions:
+                    has_reviewed_repositories = True
+                    break
         return trans.fill_template( '/webapps/community/index.mako',
                                     repository_metadata=repository_metadata,
+                                    has_reviewed_repositories=has_reviewed_repositories,
                                     message=message,
                                     status=status )
     @web.expose
@@ -1508,6 +1539,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        cntrller = params.get( 'cntrller', 'repository' )
         repository = get_repository( trans, id )
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
@@ -1614,7 +1646,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
-                                                                                 downloadable_only=False )
+                                                                                 downloadable=False )
         revision_label = get_revision_label( trans, repository, repository.tip )
         repository_metadata_id = None
         metadata = None
@@ -1645,7 +1677,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         malicious_check_box = CheckboxField( 'malicious', checked=is_malicious )
         categories = get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
+        # Determine if the current changeset revision has been reviewed by the current user.
+        reviewed_by_user = changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
+                                    cntrller=cntrller,
                                     repo_name=repo_name,
                                     description=description,
                                     long_description=long_description,
@@ -1655,6 +1690,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
                                     changeset_revision=changeset_revision,
+                                    reviewed_by_user=reviewed_by_user,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
                                     selected_categories=selected_categories,
@@ -1668,6 +1704,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     is_malicious=is_malicious,
                                     message=message,
                                     status=status )
+    @web.expose
+    @web.require_login( "review repository revision" )
+    def manage_repository_reviews_of_revision( self, trans, mine=False, **kwd ):
+        return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                          action='manage_repository_reviews_of_revision',
+                                                          **kwd ) )
     @web.expose
     @web.require_login( "multi select email alerts" )
     def multi_select_email_alerts( self, trans, **kwd ):
@@ -1726,7 +1768,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
-                                                                                 downloadable_only=False )
+                                                                                 downloadable=False )
         return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
@@ -2170,6 +2212,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     message=message,
                                     status=status )
     @web.expose
+    def view_or_manage_repository( self, trans, **kwd ):
+        repository = get_repository( trans, kwd[ 'id' ] )
+        if trans.user_is_admin() or repository.user == trans.user:
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='manage_repository',
+                                                              **kwd ) )
+        else:
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='view_repository',
+                                                              **kwd ) )
+    @web.expose
     def view_readme( self, trans, id, changeset_revision, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -2225,6 +2278,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        cntrller = params.get( 'cntrller', 'repository' )
         repository = get_repository( trans, id )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
@@ -2258,7 +2312,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
-                                                                                 downloadable_only=False )
+                                                                                 downloadable=False )
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
@@ -2274,7 +2328,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
             else:
                 message += malicious_error
             status = 'error'
+        # Determine if the current changeset revision has been reviewed by the current user.
+        reviewed_by_user = changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
+                                    cntrller=cntrller,
                                     repo=repo,
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
@@ -2284,6 +2341,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
                                     changeset_revision=changeset_revision,
+                                    reviewed_by_user=reviewed_by_user,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
                                     is_malicious=is_malicious,
@@ -2342,8 +2400,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
-                                                                                 downloadable_only=False )
+                                                                                 downloadable=False )
         trans.app.config.tool_data_path = original_tool_data_path
+        reviewed_by_user = changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     metadata=metadata,
@@ -2354,29 +2413,44 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     is_malicious=is_malicious,
+                                    reviewed_by_user=reviewed_by_user,
                                     message=message,
                                     status=status )
 
 # ----- Utility methods -----
-def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True, downloadable_only=False ):
-    """Build a SelectField whose options are the changeset_rev strings of all downloadable revisions of the received repository."""
-    repo = hg.repository( get_configured_ui(), repository.repo_path )
+
+def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True,
+                                           downloadable=False, reviewed=False, not_reviewed=False ):
+    """Build a SelectField whose options are the changeset_rev strings of certain revisions of the received repository."""
     options = []
     changeset_tups = []
     refresh_on_change_values = []
-    if downloadable_only:
+    if downloadable:
+        # Restrict the options to downloadable revisions.
         repository_metadata_revisions = repository.downloadable_revisions
+    elif reviewed:
+        # Restrict the options to revisions that have been reviewed.
+        repository_metadata_revisions = []
+        metadata_changeset_revision_hashes = []
+        for metadata_revision in repository.metadata_revisions:
+            metadata_changeset_revision_hashes.append( metadata_revision.changeset_revision )
+        for review in repository.reviews:
+            if review.changeset_revision in metadata_changeset_revision_hashes:
+                repository_metadata_revisions.append( review.repository_metadata )
+    elif not_reviewed:
+        # Restrict the options to revisions that have not yet been reviewed.
+        repository_metadata_revisions = []
+        reviewed_metadata_changeset_revision_hashes = []
+        for review in repository.reviews:
+            reviewed_metadata_changeset_revision_hashes.append( review.changeset_revision )
+        for metadata_revision in repository.metadata_revisions:
+            if metadata_revision.changeset_revision not in reviewed_metadata_changeset_revision_hashes:
+                repository_metadata_revisions.append( metadata_revision )
     else:
+        # Restrict the options to all revisions that have associated metadata.
         repository_metadata_revisions = repository.metadata_revisions
     for repository_metadata in repository_metadata_revisions:
-        changeset_revision = repository_metadata.changeset_revision
-        ctx = get_changectx_for_changeset( repo, changeset_revision )
-        if ctx:
-            rev = '%04d' % ctx.rev()
-            label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
-        else:
-            rev = '-1'
-            label = "-1:%s" % changeset_revision
+        rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( repository_metadata, repository=repository )
         changeset_tups.append( ( rev, label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
     # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,

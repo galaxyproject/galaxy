@@ -79,6 +79,9 @@ This message was sent from the Galaxy Tool Shed instance hosted on the server
 '${host}'
 """
 
+# String separator
+STRSEP = '__ESEP__'
+
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
@@ -149,6 +152,15 @@ def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
         return repository_metadata.malicious
+    return False
+def changeset_revision_reviewed_by_user( trans, user, repository, changeset_revision ):
+    """Determine if the current changeset revision has been reviewed by the current user."""
+    changeset_revision_reviewed_by_user = False
+    for reviewed_revision in repository.reviewed_revisions:
+        if reviewed_revision.changeset_revision == changeset_revision:
+            for review in repository.reviews:
+                if review.changeset_revision == changeset_revision and review.user == user:
+                    return True
     return False
 def check_file_contents( trans ):
     # See if any admin users have chosen to receive email alerts when a repository is updated.
@@ -386,7 +398,28 @@ def get_categories( trans ):
     """Get all categories from the database"""
     return trans.sa_session.query( trans.model.Category ) \
                            .filter( trans.model.Category.table.c.deleted==False ) \
-                           .order_by( trans.model.Category.table.c.name ).all()
+                           .order_by( trans.model.Category.table.c.name ) \
+                           .all()
+def get_component( trans, id ):
+    """Get a component from the database"""
+    return trans.sa_session.query( trans.model.Component ).get( trans.security.decode_id( id ) )
+def get_component_by_name( trans, name ):
+    return trans.sa_session.query( trans.app.model.Component ) \
+                           .filter( trans.app.model.Component.table.c.name==name ) \
+                           .first()
+def get_component_review( trans, id ):
+    """Get a component_review from the database"""
+    return trans.sa_session.query( trans.model.ComponentReview ).get( trans.security.decode_id( id ) )
+def get_component_review_by_repository_review_id_component_id( trans, repository_review_id, component_id ):
+    """Get a component_review from the database via repository_review_id and component_id"""
+    return trans.sa_session.query( trans.model.ComponentReview ) \
+                           .filter( and_( trans.model.ComponentReview.table.c.repository_review_id == trans.security.decode_id( repository_review_id ),
+                                          trans.model.ComponentReview.table.c.component_id == trans.security.decode_id( component_id ) ) ) \
+                           .first()
+def get_components( trans ):
+    return trans.sa_session.query( trans.app.model.Component ) \
+                           .order_by( trans.app.model.Component.name ) \
+                           .all()
 def get_latest_repository_metadata( trans, decoded_repository_id ):
     """Get last metadata defined for a specified repository from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
@@ -469,6 +502,46 @@ def get_previous_downloadable_changset_revision( repository, repo, before_change
                 return INITIAL_CHANGELOG_HASH
         else:
             previous_changeset_revision = current_changeset_revision
+def get_previous_repository_reviews( trans, repository, changeset_revision ):
+    """Return an ordered dictionary of repository reviews up to and including the received changeset revision."""
+    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    reviewed_revision_hashes = [ reviewed_revisions.changeset_revision for reviewed_revisions in repository.reviewed_revisions ]
+    previous_reviews_dict = odict()
+    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+        previous_changeset_revision = str( repo.changectx( changeset ) )
+        if previous_changeset_revision in reviewed_revision_hashes:
+            previous_rev, previous_changeset_revision_label = get_rev_label_from_changeset_revision( repo, previous_changeset_revision )
+            revision_reviews = get_reviews_by_repository_id_changeset_revision( trans, trans.security.encode_id( repository.id ), previous_changeset_revision )
+            previous_reviews_dict[ previous_changeset_revision ] = dict( changeset_revision_label=previous_changeset_revision_label,
+                                                                         reviews=revision_reviews )
+    return previous_reviews_dict
+def get_rev_label_changeset_revision_from_repository_metadata( repository_metadata, repository=None ):
+    if repository is None:
+        repository = repository_metadata.repository
+    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    changeset_revision = repository_metadata.changeset_revision
+    ctx = get_changectx_for_changeset( repo, changeset_revision )
+    if ctx:
+        rev = '%04d' % ctx.rev()
+        label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+    else:
+        rev = '-1'
+        label = "-1:%s" % changeset_revision
+    return rev, label, changeset_revision
+def get_rev_label_from_changeset_revision( repo, changeset_revision ):
+    ctx = get_changectx_for_changeset( repo, changeset_revision )
+    if ctx:
+        rev = '%04d' % ctx.rev()
+        label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
+    else:
+        rev = '-1'
+        label = "-1:%s" % changeset_revision
+    return rev, label
+def get_reversed_changelog_changesets( repo ):
+    reversed_changelog = []
+    for changeset in repo.changelog:
+        reversed_changelog.insert( 0, changeset )
+    return reversed_changelog
 def get_repository( trans, id ):
     """Get a repository from the database via id"""
     return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
@@ -489,6 +562,41 @@ def get_repository_metadata_by_repository_id( trans, id ):
     """Get all metadata records for a specified repository."""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
                            .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) )
+def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
+    repository_metadata_revisions = []
+    metadata_changeset_revision_hashes = []
+    if reviewed:
+        for metadata_revision in repository.metadata_revisions:
+            metadata_changeset_revision_hashes.append( metadata_revision.changeset_revision )
+        for review in repository.reviews:
+            if review.changeset_revision in metadata_changeset_revision_hashes:
+                rmcr_hashes = [ rmr.changeset_revision for rmr in repository_metadata_revisions ]
+                if review.changeset_revision not in rmcr_hashes:
+                    repository_metadata_revisions.append( review.repository_metadata )
+    else:
+        for review in repository.reviews:
+            if review.changeset_revision not in metadata_changeset_revision_hashes:
+                metadata_changeset_revision_hashes.append( review.changeset_revision )
+        for metadata_revision in repository.metadata_revisions:
+            if metadata_revision.changeset_revision not in metadata_changeset_revision_hashes:
+                repository_metadata_revisions.append( metadata_revision )
+    return repository_metadata_revisions
+def get_review( trans, id ):
+    """Get a repository_review from the database via id"""
+    return trans.sa_session.query( trans.model.RepositoryReview ).get( trans.security.decode_id( id ) )
+def get_review_by_repository_id_changeset_revision_user_id( trans, repository_id, changeset_revision, user_id ):
+    """Get a repository_review from the database via repository id, changeset_revision and user_id"""
+    return trans.sa_session.query( trans.model.RepositoryReview ) \
+                           .filter( and_( trans.model.RepositoryReview.repository_id == trans.security.decode_id( repository_id ),
+                                          trans.model.RepositoryReview.changeset_revision == changeset_revision,
+                                          trans.model.RepositoryReview.user_id == trans.security.decode_id( user_id ) ) ) \
+                           .first()
+def get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision ):
+    """Get all repository_reviews from the database via repository id and changeset_revision"""
+    return trans.sa_session.query( trans.model.RepositoryReview ) \
+                           .filter( and_( trans.model.RepositoryReview.repository_id == trans.security.decode_id( repository_id ),
+                                          trans.model.RepositoryReview.changeset_revision == changeset_revision ) ) \
+                           .all()
 def get_revision_label( trans, repository, changeset_revision ):
     """
     Return a string consisting of the human read-able 
@@ -590,6 +698,15 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                     util.send_mail( frm, to, subject, body, trans.app.config )
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
+def has_previous_repository_reviews( trans, repository, changeset_revision ):
+    """Determine if a repository has a changeset revision review prior to the received changeset revision."""
+    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    reviewed_revision_hashes = [ reviewed_revisions.changeset_revision for reviewed_revisions in repository.reviewed_revisions ]
+    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+        previous_changeset_revision = str( repo.changectx( changeset ) )
+        if previous_changeset_revision in reviewed_revision_hashes:
+            return True
+    return False
 def is_downloadable( metadata_dict ):
     return 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
 def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config_filename ):

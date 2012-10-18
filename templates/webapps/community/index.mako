@@ -37,6 +37,7 @@
 </%def>
 
 <%def name="left_panel()">
+    <% can_review_repositories = trans.app.security_agent.user_can_review_repositories( trans.user ) %>
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>${trans.app.shed_counter.valid_tools} valid tools on ${trans.app.shed_counter.generation_time}</div>
     </div>
@@ -72,6 +73,11 @@
                     <div class="toolTitle">
                         <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='repositories_i_own' )}">Repositories I own</a>
                     </div>
+                    %if has_reviewed_repositories:
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='reviewed_repositories_i_own' )}">Reviewed repositories I own</a>
+                        </div>
+                    %endif
                     <div class="toolTitle">
                         <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='writable_repositories' )}">My writable repositories</a>
                     </div>
@@ -85,6 +91,30 @@
                     <div class="toolTitle">
                         <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository' )}">Create new repository</a>
                     </div>
+                    %if can_review_repositories:
+                        <div class="toolSectionPad"></div>
+                        <div class="toolSectionTitle">
+                            Reviewing Repositories
+                        </div>
+                        <div class="toolSectionBody">
+                            <div class="toolSectionBg">
+                                %if trans.user.repository_reviews:
+                                    <div class="toolTitle">
+                                        <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_reviewed_by_me' )}">Repositories reviewed by me</a>
+                                    </div>
+                                %endif
+                                <div class="toolTitle">
+                                    <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_with_reviews' )}">All reviewed repositories</a>
+                                </div>
+                                <div class="toolTitle">
+                                    <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_without_reviews' )}">Repositories with no reviews</a>
+                                </div>
+                                <div class="toolTitle">
+                                    <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_components' )}">Manage review components</a>
+                                </div>
+                            </div>
+                        </div>
+                    %endif
                 %else:
                     <div class="toolSectionPad"></div>
                     <div class="toolSectionTitle">
