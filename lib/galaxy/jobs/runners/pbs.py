@@ -310,13 +310,19 @@ class PBSJobRunner( BaseJobRunner ):
         galaxy_job_id = job_wrapper.get_id_tag()
         log.debug("(%s) submitting file %s" % ( galaxy_job_id, job_file ) )
         log.debug("(%s) command is: %s" % ( galaxy_job_id, command_line ) )
-        job_id = pbs.pbs_submit(c, job_attrs, job_file, pbs_queue_name, None)
-        pbs.pbs_disconnect(c)
 
-        # check to see if it submitted
-        if not job_id:
+        tries = 0
+        while tries < 5:
+            job_id = pbs.pbs_submit(c, job_attrs, job_file, pbs_queue_name, None)
+            tries += 1
+            if job_id:
+                pbs.pbs_disconnect(c)
+                break
             errno, text = pbs.error()
-            log.debug( "(%s) pbs_submit failed, PBS error %d: %s" % (galaxy_job_id, errno, text) )
+            log.warning( "(%s) pbs_submit failed (try %d/5), PBS error %d: %s" % (galaxy_job_id, tries, errno, text) )
+            time.sleep(2)
+        else:
+            log.error( "(%s) All attempts to submit job failed" % galaxy_job_id )
             job_wrapper.fail( "Unable to run this job due to a cluster error, please retry it later" )
             return
 
