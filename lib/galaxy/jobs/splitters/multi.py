@@ -115,6 +115,7 @@ def do_merge( job_wrapper,  task_wrappers):
     try:
         working_directory = job_wrapper.working_directory
         task_dirs = [os.path.join(working_directory, x) for x in os.listdir(working_directory) if x.startswith('task_')]
+        assert task_dirs, "Should be at least one sub-task!"
         # TODO: Output datasets can be very complex. This doesn't handle metadata files
         outputs = job_wrapper.get_output_hdas_and_fnames()
         pickone_done = []
@@ -129,10 +130,16 @@ def do_merge( job_wrapper,  task_wrappers):
                 # Just include those files f in the output list for which the 
                 # file f exists; some files may not exist if a task fails.
                 output_files = [ f for f in output_files if os.path.exists(f) ]
-                log.debug('files %s ' % output_files)
-                output_type.merge(output_files, output_file_name)
-                log.debug('merge finished: %s' % output_file_name)
-                pass # TODO: merge all the files
+                if output_files:
+                    log.debug('files %s ' % output_files)
+                    if len(output_files) < len(task_dirs):
+                        log.debug('merging only %i out of expected %i files for %s'
+                                  % (len(output_files), len(task_dirs), output_file_name))
+                    output_type.merge(output_files, output_file_name)
+                    log.debug('merge finished: %s' % output_file_name)
+                else:
+                    log.debug('nothing to merge for %s (expected %i files)'
+                              % (output_file_name, len(task_dirs)))
             elif output in pickone_outputs:
                 # just pick one of them
                 if output not in pickone_done:
