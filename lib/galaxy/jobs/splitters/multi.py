@@ -138,8 +138,10 @@ def do_merge( job_wrapper,  task_wrappers):
                     output_type.merge(output_files, output_file_name)
                     log.debug('merge finished: %s' % output_file_name)
                 else:
-                    log.debug('nothing to merge for %s (expected %i files)'
-                              % (output_file_name, len(task_dirs)))
+                    msg = 'nothing to merge for %s (expected %i files)' \
+                          % (output_file_name, len(task_dirs))
+                    log.debug(msg)
+                    stderr += msg + "\n"
             elif output in pickone_outputs:
                 # just pick one of them
                 if output not in pickone_done:
