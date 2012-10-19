@@ -89,6 +89,10 @@ class JobWrapper( object ):
         self.__user_system_pwent = None
         self.__galaxy_system_pwent = None
 
+    def can_split( self ):
+        # Should the job handler split this job up?
+        return self.app.config.use_tasked_jobs and self.tool.parallelism
+
     def get_job_runner_url( self ):
         return self.job_runner_mapper.get_job_runner_url( self.params )
 
@@ -921,6 +925,11 @@ class TaskWrapper(JobWrapper):
         else:
             self.prepare_input_files_cmds = None
         self.status = task.states.NEW
+
+    def can_split( self ):
+        # Should the job handler split this job up? TaskWrapper should 
+        # always return False as the job has already been split.
+        return False
 
     def get_job( self ):
         if self.job_id:

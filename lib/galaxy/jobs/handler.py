@@ -449,7 +449,7 @@ class DefaultJobDispatcher( object ):
             log.debug( 'Loaded job runner: %s' % display_name )
 
     def __get_runner_name( self, job_wrapper ):
-        if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and not isinstance(job_wrapper, TaskWrapper):
+        if job_wrapper.can_split():
             runner_name = "tasks"
         else:
             runner_name = ( job_wrapper.get_job_runner_url().split(":", 1) )[0]
@@ -458,7 +458,7 @@ class DefaultJobDispatcher( object ):
     def put( self, job_wrapper ):
         try:
             runner_name = self.__get_runner_name( job_wrapper )
-            if self.app.config.use_tasked_jobs and job_wrapper.tool.parallelism is not None and isinstance(job_wrapper, TaskWrapper):
+            if isinstance(job_wrapper, TaskWrapper):
                 #DBTODO Refactor
                 log.debug( "dispatching task %s, of job %d, to %s runner" %( job_wrapper.task_id, job_wrapper.job_id, runner_name ) )
             else:
