@@ -7,22 +7,25 @@
     from galaxy.web.framework.helpers import time_ago
     is_admin = trans.user_is_admin()
     is_new = repository.is_new
+    is_deprecated = repository.deprecated
     can_contact_owner = trans.user and trans.user != repository.user
-    can_push = trans.app.security_agent.can_push( trans.user, repository )
+    can_push = not is_deprecated and trans.app.security_agent.can_push( trans.user, repository )
     can_upload = can_push
-    can_download = not is_new and ( not is_malicious or can_push )
+    can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
-    can_set_metadata = not is_new
-    can_rate = not is_new and trans.user and repository.user != trans.user
+    can_set_metadata = not is_new and not is_deprecated
+    can_rate = not is_new and not is_deprecated and trans.user and repository.user != trans.user
     can_view_change_log = not is_new
     if can_push:
         browse_label = 'Browse or delete repository tip files'
     else:
         browse_label = 'Browse repository tip files'
     can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip
-    can_reset_all_metadata = is_admin and len( repo ) > 0
+    can_deprecate = not is_new and trans.user and ( is_admin or repository.user == trans.user ) and not is_deprecated
+    can_undeprecate = trans.user and ( is_admin or repository.user == trans.user ) and is_deprecated
+    can_reset_all_metadata = not is_deprecated and is_admin and len( repo ) > 0
     has_readme = metadata and 'readme' in metadata
-    can_review_repository = trans.app.security_agent.user_can_review_repositories( trans.user )
+    can_review_repository = not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
     reviewing_repository = cntrller and cntrller == 'repository_review'
     if changeset_revision == repository.tip:
         tip_str = 'repository tip'
@@ -87,6 +90,12 @@
                 %if can_reset_all_metadata:
                     <a class="action-button" href="${h.url_for( controller='repository', action='reset_all_metadata', id=trans.security.encode_id( repository.id ) )}">Reset all repository metadata</a>
                 %endif
+                %if can_deprecate:
+                    <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=True )}">Mark repository as deprecated</a>
+                %endif
+                %if can_undeprecate:
+                    <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=False )}">Mark repository as not deprecated</a>
+                %endif
                 %if can_download:
                     <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
                     <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
@@ -99,6 +108,12 @@
 
 %if message:
     ${render_msg( message, status )}
+%endif
+
+%if repository.deprecated:
+    <div class="warningmessage">
+        This repository has been marked as deprecated, so some tool shed features may be restricted.
+    </div>
 %endif
 
 %if len( changeset_revision_select_field.options ) > 1:
@@ -122,7 +137,7 @@
     <p/>
 %endif
 <div class="toolForm">
-    <div class="toolFormTitle">${repository.name}</div>
+    <div class="toolFormTitle">Repository '${repository.name}'</div>
     <div class="toolFormBody">
         <form name="edit_repository" id="edit_repository" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             %if can_download:

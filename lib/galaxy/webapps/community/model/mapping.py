@@ -111,7 +111,8 @@ Repository.table = Table( "repository", metadata,
     Column( "private", Boolean, default=False ),
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "email_alerts", JSONType, nullable=True ),
-    Column( "times_downloaded", Integer ) )
+    Column( "times_downloaded", Integer ),
+    Column( "deprecated", Boolean, default=False ) )
 
 RepositoryMetadata.table = Table( "repository_metadata", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -218,7 +219,10 @@ assign_mapper( context, Tag, Tag.table,
     properties=dict( children=relation(Tag, backref=backref( 'parent', remote_side=[ Tag.table.c.id ] ) ) ) )
 
 assign_mapper( context, Category, Category.table,
-    properties=dict( repositories=relation( RepositoryCategoryAssociation ) ) )
+    properties=dict( repositories=relation( RepositoryCategoryAssociation,
+                                            secondary=Repository.table,
+                                            primaryjoin=( Category.table.c.id == RepositoryCategoryAssociation.table.c.category_id ),
+                                            secondaryjoin=( ( RepositoryCategoryAssociation.table.c.repository_id == Repository.table.c.id ) & ( Repository.table.c.deprecated == False ) ) ) ) )
 
 assign_mapper( context, Repository, Repository.table, 
     properties = dict(

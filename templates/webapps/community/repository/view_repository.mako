@@ -6,11 +6,12 @@
 <%
     from galaxy.web.framework.helpers import time_ago
     is_new = repository.is_new
+    is_deprecated = repository.deprecated
     can_contact_owner = trans.user and trans.user != repository.user
-    can_push = trans.app.security_agent.can_push( trans.user, repository )
-    can_rate = not is_new and trans.user and repository.user != trans.user
+    can_push = not is_deprecated and trans.app.security_agent.can_push( trans.user, repository )
+    can_rate = not is_deprecated and not is_new and trans.user and repository.user != trans.user
     can_upload = can_push
-    can_download = not is_new and ( not is_malicious or can_push )
+    can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
     can_browse_contents = trans.webapp.name == 'community' and not is_new
     can_view_change_log = trans.webapp.name == 'community' and not is_new
     if can_push:
@@ -19,7 +20,7 @@
         browse_label = 'Browse repository tip files'
     has_readme = metadata and 'readme' in metadata
     reviewing_repository = cntrller and cntrller == 'repository_review'
-    can_review_repository = trans.app.security_agent.user_can_review_repositories( trans.user )
+    can_review_repository = not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
 %>
 
 <%!
@@ -100,6 +101,12 @@
     ${render_msg( message, status )}
 %endif
 
+%if repository.deprecated:
+    <div class="warningmessage">
+        This repository has been marked as deprecated, so some tool shed features may be restricted.
+    </div>
+%endif
+
 %if len( changeset_revision_select_field.options ) > 1:
     <div class="toolForm">
         <div class="toolFormTitle">Repository revision</div>
@@ -123,7 +130,7 @@
     <p/>
 %endif
 <div class="toolForm">
-    <div class="toolFormTitle">${repository.name}</div>
+    <div class="toolFormTitle">Repository '${repository.name}'</div>
     <div class="toolFormBody">
         %if can_download:
             <div class="form-row">

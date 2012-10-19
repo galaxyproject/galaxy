@@ -7,7 +7,7 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
 from sqlalchemy.sql.expression import func
 from common import *
-from repository import RepositoryListGrid
+from repository import RepositoryGrid
 from galaxy.util.shed_util import get_configured_ui
 from galaxy.util.odict import odict
 
@@ -48,36 +48,33 @@ class ComponentGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
-class RepositoriesWithReviewsGrid( RepositoryListGrid ):
+class RepositoriesWithReviewsGrid( RepositoryGrid ):
+    # This grid filters out repositories that have been marked as deprecated.
     class ReviewersColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
+            rval = ''
             if repository.reviewers:
-                rval = ''
                 for user in repository.reviewers:
-                    rval += '%s<br/>' % user.username
-                return rval
-            return ''
-    title = "All reviewed Repositories"
+                    rval += '<a class="view-info" href="repository_reviews_by_user?id=%s">' % trans.security.encode_id( user.id )
+                    rval += '%s</a> | ' % user.username
+                rval = rval.rstrip( ' | ' )
+            return rval
+    title = "All reviewed repositories"
     model_class = model.Repository
     template='/webapps/community/repository_review/grid.mako'
     default_sort_key = "Repository.name"
     columns = [
-        RepositoryListGrid.NameColumn( "Repository name",
-                                       key="name",
-                                       link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
-                                       attach_popup=True ),
-        RepositoryListGrid.DescriptionColumn( "Synopsis",
-                                              key="description",
-                                              attach_popup=False ),
-        RepositoryListGrid.WithReviewsRevisionColumn( "Reviewed revisions" ),
-        RepositoryListGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
-        RepositoryListGrid.UserColumn( "Owner",
-                                       attach_popup=False ),
-        ReviewersColumn( "Reviewers",
-                        attach_popup=False )
+        RepositoryGrid.NameColumn( "Repository name",
+                                    key="name",
+                                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                    attach_popup=True ),
+        RepositoryGrid.WithReviewsRevisionColumn( "Reviewed revisions" ),
+        RepositoryGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
+        RepositoryGrid.UserColumn( "Owner", attach_popup=False ),
+        ReviewersColumn( "Reviewers", attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
-                                                cols_to_filter=[ columns[0], columns[1] ],
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -89,12 +86,14 @@ class RepositoriesWithReviewsGrid( RepositoryListGrid ):
     ]
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.deprecated == False ) \
                                .join( ( model.RepositoryReview.table, model.RepositoryReview.table.c.repository_id == model.Repository.table.c.id ) ) \
                                .join( ( model.User.table, model.User.table.c.id == model.Repository.table.c.user_id ) ) \
                                .outerjoin( ( model.ComponentReview.table, model.ComponentReview.table.c.repository_review_id == model.RepositoryReview.table.c.id ) ) \
                                .outerjoin( ( model.Component.table, model.Component.table.c.id == model.ComponentReview.table.c.component_id ) )
 
 class RepositoriesWithoutReviewsGrid( RepositoriesWithReviewsGrid ):
+    # This grid filters out repositories that have been marked as deprecated.
     title = "Repositories with no reviews"
     columns = [
         RepositoriesWithReviewsGrid.NameColumn( "Repository name",
@@ -119,12 +118,15 @@ class RepositoriesWithoutReviewsGrid( RepositoriesWithReviewsGrid ):
                                         async_compatible=False ) ]
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.reviews == None ) \
+                               .filter( and_( model.Repository.table.c.deprecated == False,
+                                              model.Repository.reviews == None ) ) \
                                .join( model.User.table )
 
 class RepositoriesReviewedByMeGrid( RepositoriesWithReviewsGrid ):
+    # This grid filters out repositories that have been marked as deprecated.
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.deprecated == False ) \
                                .join( ( model.RepositoryReview.table, model.RepositoryReview.table.c.repository_id == model.Repository.table.c.id ) ) \
                                .filter( model.RepositoryReview.table.c.user_id == trans.user.id ) \
                                .join( ( model.User.table, model.User.table.c.id == model.RepositoryReview.table.c.user_id ) ) \
@@ -132,6 +134,7 @@ class RepositoriesReviewedByMeGrid( RepositoriesWithReviewsGrid ):
                                .outerjoin( ( model.Component.table, model.Component.table.c.id == model.ComponentReview.table.c.component_id ) )
 
 class RepositoryReviewsByUserGrid( grids.Grid ):
+    # This grid filters out repositories that have been marked as deprecated.
     class RepositoryNameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, review ):
             return review.repository.name
@@ -166,33 +169,61 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
     default_sort_key = 'repository_id'
     columns = [
         RepositoryNameColumn( "Repository Name",
-                    model_class=model.Repository,
-                    key="Repository.name",
-                    attach_popup=False ),
+                              model_class=model.Repository,
+                              key="Repository.name",
+                              link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                              attach_popup=True ),
         RepositoryDescriptionColumn( "Description",
-                           model_class=model.Repository,
-                           key="Repository.description",
-                           attach_popup=False ),
-        RevisionColumn( "Revision",
-                        attach_popup=False ),
-        RatingColumn( "Rating",
-                      attach_popup=False )
+                                     model_class=model.Repository,
+                                     key="Repository.description",
+                                     attach_popup=False ),
+        RevisionColumn( "Revision", attach_popup=False ),
+        RatingColumn( "Rating", attach_popup=False ),
     ]
     # Override these
     default_filter = {}
     global_actions = []
-    operations = []
+    operations = [ 
+        grids.GridOperation( "Inspect repository revisions",
+                             allow_multiple=False,
+                             condition=( lambda item: not item.deleted ),
+                             async_compatible=False )
+    ]
     standard_filters = []
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
     def build_initial_query( self, trans, **kwd ):
         user_id = trans.security.decode_id( kwd[ 'id' ] )
-        return trans.sa_session.query( self.model_class ) \
+        return trans.sa_session.query( model.RepositoryReview ) \
                                .filter( and_( model.RepositoryReview.table.c.deleted == False, \
-                                              model.RepositoryReview.table.c.user_id == user_id ) )
+                                              model.RepositoryReview.table.c.user_id == user_id ) ) \
+                               .join( ( model.Repository.table, model.RepositoryReview.table.c.repository_id == model.Repository.table.c.id ) ) \
+                               .filter( model.Repository.table.c.deprecated == False )
 
 class ReviewedRepositoriesIOwnGrid( RepositoriesWithReviewsGrid ):
+    title = "Reviewed repositories I own"
+    columns = [
+        RepositoriesWithReviewsGrid.NameColumn( "Repository name",
+                                                key="name",
+                                                link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                                attach_popup=True ),
+        RepositoriesWithReviewsGrid.WithReviewsRevisionColumn( "Reviewed revisions" ),
+        RepositoriesWithReviewsGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
+        RepositoriesWithReviewsGrid.ReviewersColumn( "Reviewers", attach_popup=False ),
+        RepositoryGrid.DeprecatedColumn( "Deprecated" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[0] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = [ 
+        grids.GridOperation( "Inspect repository revisions",
+                             allow_multiple=False,
+                             condition=( lambda item: not item.deleted ),
+                             async_compatible=False )
+    ]
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
                                .join( ( model.RepositoryReview.table, model.RepositoryReview.table.c.repository_id == model.Repository.table.c.id ) ) \
@@ -655,10 +686,26 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
     @web.expose
     @web.require_login( "repository reviews by user" )
     def repository_reviews_by_user( self, trans, **kwd ):
-        # The user may not be the current user.  The value of the received id is the encoded user id.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            # The value of the received id is the encoded review id.
+            review = get_review( trans, kwd[ 'id' ] )
+            repository = review.repository
+            kwd[ 'id' ] = trans.security.encode_id( repository.id )
+            if operation == "inspect repository revisions":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='manage_repository_reviews',
+                                                                  **kwd ) )
+            if operation == "view_or_manage_repository":
+                kwd[ 'changeset_revision' ] = review.changeset_revision
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+        # The user may not be the current user.  The value of the received id is the encoded user id.
         user = get_user( trans, kwd[ 'id' ] )
         self.repository_reviews_by_user_grid.title = "All repository revision reviews for user '%s'" % user.username
         return self.repository_reviews_by_user_grid( trans, **kwd )
@@ -668,6 +715,13 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
+        # The value of the received id is the encoded repository id.
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
         return self.reviewed_repositories_i_own_grid( trans, **kwd )
     @web.expose
     @web.require_login( "select previous review" )
