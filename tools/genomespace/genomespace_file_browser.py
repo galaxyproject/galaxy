@@ -39,6 +39,7 @@ GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
                                  'gmt': 'gmt', 
                                  'gct': 'gct'}
 
+VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
 
 def chunk_write( source_stream, target_stream, source_method = "read", target_method="write" ):
     source_method = getattr( source_stream, source_method )
@@ -113,6 +114,7 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
             name = name[len( file_url_prefix ):]
             file_numbers.append( int( name ) )
     file_numbers.sort()
+    used_filenames = []
     for file_num in file_numbers:
         url_key = "%s%i" % ( file_url_prefix, file_num )
         download_url = datasource_params.get( url_key, None )
@@ -135,8 +137,14 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
             parsed_url = urlparse.urlparse( download_url )
             query_params = urlparse.parse_qs( parsed_url[4] )
             filename = urllib.unquote_plus( parsed_url[2].split( '/' )[-1] )
+        if not filename:
+            filename = download_url
         if output_filename is None:
-            output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_output%i_visible_%s' % ( hda_id, file_num, galaxy_ext ) )
+            filename = ''.join( c in VALID_CHARS and c or '-' for c in filename )
+            while filename in used_filenames:
+                filename = "-%s" % filename
+            used_filenames.append( filename )
+            output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_%s_visible_%s' % ( hda_id, filename, galaxy_ext ) )
         else:
             if dataset_id is not None:
                metadata_parameter_file.write( "%s\n" % simplejson.dumps( dict( type = 'dataset',
