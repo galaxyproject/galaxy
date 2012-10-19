@@ -1,4 +1,5 @@
-define( ["libs/underscore", "mvc/data", "viz/trackster/util" ], function(_, data_mod, util_mod) {
+define( ["libs/underscore", "mvc/data", "viz/trackster/util", "utils/config"], 
+        function(_, data_mod, util_mod, config_mod) {
 
 /**
  * Model, view, and controller objects for Galaxy visualization framework.
@@ -728,6 +729,9 @@ var BackboneTrack = data_mod.Dataset.extend({
     initialize: function(options) {
         // Dataset id is unique ID for now.
         this.set('id', options.dataset_id);
+
+        // -- Set up config settings. -- 
+        this.set('settings', config_mod.ConfigSettingCollection.from_config_dict(options.prefs));
 
         // Set up data manager.
         var preloaded_data = this.get('preloaded_data');
