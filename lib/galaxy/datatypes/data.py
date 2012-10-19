@@ -536,7 +536,9 @@ class Data( object ):
         TODO: Do we need to merge gzip files using gzjoin? cat seems to work,
         but might be brittle. Need to revisit this.
         """
-        if len(split_files) == 1:
+        if not split_files:
+            raise ValueError('Asked to merge zero files as %s' % output_file)
+        elif len(split_files) == 1:
             cmd = 'mv -f %s %s' % ( split_files[0], output_file )
         else:
             cmd = 'cat %s > %s' % ( ' '.join(split_files), output_file )
