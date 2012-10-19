@@ -4,28 +4,19 @@ define(['libs/underscore', 'viz/trackster/util'], function(_, util_mod) {
  * A configuration setting. Currently key is used as id.
  */
 var ConfigSetting = Backbone.Model.extend({
-    defaults: {
-        key: null,
-        value: null,
-        type: 'text',
-        label: null,
-        options: null,
-        hidden: false
-    },
-
     initialize: function(options) {
         // Use key as id for now.
         var key = this.get('key');
         this.set('id', key);
 
         // Set defaults based on key.
-        var defaults = _.find(ConfigSetting.known_settings, function(s) { return s.key === key; });
+        var defaults = _.find(ConfigSetting.known_settings_defaults, function(s) { return s.key === key; });
         if (defaults) {
             this.set(_.extend({}, defaults, options));
         }
 
-        // If type color, get random color.
-        if (this.get('type') === 'color') {
+        // If type color and no value, get random color.
+        if (this.get('type') === 'color' && !this.get('value')) {
             this.set('value', util_mod.get_random_color());
         }
 
@@ -50,22 +41,22 @@ var ConfigSetting = Backbone.Model.extend({
         this.set('value');
     }
 }, {
-    // Keep a master list of settings. This list is useful to fetching attributes based on key.
-    known_settings: [
+    // This is a master list of default settings for known settings.
+    known_settings_defaults: [
         { key: 'name', label: 'Name', type: 'text', default_value: '' },
-        { key: 'color', label: 'Color', type: 'color', default_value: undefined },
-        { key: 'min_value', label: 'Min Value', type: 'float', default_value: undefined },
-        { key: 'max_value', label: 'Max Value', type: 'float', default_value: undefined },
+        { key: 'color', label: 'Color', type: 'color', default_value: null },
+        { key: 'min_value', label: 'Min Value', type: 'float', default_value: null },
+        { key: 'max_value', label: 'Max Value', type: 'float', default_value: null },
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
         { key: 'height', type: 'int', default_value: 32, hidden: true },
         { key: 'pos_color', label: 'Positive Color', type: 'color', default_value: "4169E1" },
         { key: 'negative_color', label: 'Negative Color', type: 'color', default_value: "FF8C00" },
-        { key: 'block_color', label: 'Block color', type: 'color', default_value: undefined },
+        { key: 'block_color', label: 'Block color', type: 'color', default_value: null },
         { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
         { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
         { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
-        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: undefined },
+        { key: 'reverse_strand_color', label: 'Antisense strand color', type: 'color', default_value: null },
         { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
         { key: 'histogram_max', label: 'Histogram maximum', type: 'float', default_value: null, help: 'Clear value to set automatically' },
         { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
@@ -92,24 +83,15 @@ var ConfigSettingCollection = Backbone.Collection.extend({
     },
 
     /**
-     * Restore settings' values from a dictionary of key-value pairs.
-     * This function is needed for backwards compatibility.
-     */
-    restore_values: function(values) {
-        var self = this;
-        _.keys(values, function(key) {
-            var setting = self.find(function(s) { return s.get('key') === key; });
-            if (setting) {
-                setting.set('value', values.key);
-            }
-        });
-    },
-
-    /**
-     * Returns value for a given key.
+     * Returns value for a given key. Returns undefined if there is no setting with the specified key.
      */
     get_value: function(key) {
-        return this.get(key).get('value');
+        var s = this.get(key);
+        if (s) {
+            return s.get('value');
+        }
+
+        return undefined;
     }
 }, {
     /**

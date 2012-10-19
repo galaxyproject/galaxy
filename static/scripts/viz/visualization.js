@@ -731,9 +731,16 @@ var BackboneTrack = data_mod.Dataset.extend({
         this.set('id', options.dataset_id);
 
         // -- Set up config settings. -- 
-        this.set('settings', config_mod.ConfigSettingCollection.from_config_dict(options.prefs));
 
-        // Set up data manager.
+        this.set('config', config_mod.ConfigSettingCollection.from_config_dict(options.prefs));
+
+        // Set up some minimal config.
+        this.get('config').add( [
+            { key: 'name', value: this.get('name') },
+            { key: 'color' }
+        ] );
+
+        // -- Set up data manager. --
         var preloaded_data = this.get('preloaded_data');
         if (preloaded_data) {
             preloaded_data = preloaded_data.data;

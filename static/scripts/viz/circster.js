@@ -251,13 +251,6 @@ var CircsterTrackView = Backbone.View.extend({
         // When data is ready, render track.
         $.when(data_ready_deferred).then(function() {
             $.when(self._render_data(track_parent_elt)).then(function() {
-                // Apply prefs to all track data.
-                // TODO: move to _render_data?
-                var prefs = self.options.track.get('prefs'),
-                    block_color = prefs.block_color;
-                if (!block_color) { block_color = prefs.color; }
-                track_parent_elt.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
-
                 chroms_paths.style("fill", self.options.bg_fill);
             });
         });
@@ -392,6 +385,12 @@ var CircsterTrackView = Backbone.View.extend({
                     data = chrom_info[1];
                 return self._render_chrom_data(svg, chrom_arc, data);
             });
+
+            // Apply prefs to all track data.
+            var config = track.get('config'),
+                block_color = config.get_value('block_color');;
+            if (!block_color) { block_color = config.get_value('color'); }
+            self.options.parent_elt.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
 
             rendered_deferred.resolve(svg);
         });
