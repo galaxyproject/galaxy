@@ -7,7 +7,7 @@ from galaxy.web.form_builder import SelectField
 from galaxy.util import inflector
 from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui
 from common import *
-from repository import RepositoryListGrid, CategoryListGrid
+from repository import RepositoryGrid, CategoryGrid
 
 from galaxy import eggs
 eggs.require( 'mercurial' )
@@ -17,7 +17,7 @@ import logging
 
 log = logging.getLogger( __name__ )
 
-class UserListGrid( grids.Grid ):
+class UserGrid( grids.Grid ):
     # TODO: move this to an admin_common controller since it is virtually the same in the galaxy webapp.
     class UserLoginColumn( grids.TextColumn ):
         def get_value( self, trans, grid, user ):
@@ -66,10 +66,10 @@ class UserListGrid( grids.Grid ):
     default_sort_key = "email"
     columns = [
         UserLoginColumn( "Email",
-                     key="email",
-                     link=( lambda item: dict( operation="information", id=item.id ) ),
-                     attach_popup=True,
-                     filterable="advanced" ),
+                         key="email",
+                         link=( lambda item: dict( operation="information", id=item.id ) ),
+                         attach_popup=True,
+                         filterable="advanced" ),
         UserNameColumn( "User Name",
                         key="username",
                         attach_popup=False,
@@ -116,7 +116,7 @@ class UserListGrid( grids.Grid ):
     def get_current_item( self, trans, **kwargs ):
         return trans.user
 
-class RoleListGrid( grids.Grid ):
+class RoleGrid( grids.Grid ):
     # TODO: move this to an admin_common controller since it is virtually the same in the galaxy webapp.
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, role ):
@@ -207,7 +207,7 @@ class RoleListGrid( grids.Grid ):
     def apply_query_filter( self, trans, query, **kwd ):
         return query.filter( model.Role.type != model.Role.types.PRIVATE )
 
-class GroupListGrid( grids.Grid ):
+class GroupGrid( grids.Grid ):
     # TODO: move this to an admin_common controller since it is virtually the same in the galaxy webapp.
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, group ):
@@ -278,34 +278,35 @@ class GroupListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
 
-class ManageCategoryListGrid( CategoryListGrid ):
-    columns = [ col for col in CategoryListGrid.columns ]
+class ManageCategoryGrid( CategoryGrid ):
+    columns = [ col for col in CategoryGrid.columns ]
     # Override the NameColumn to include an Edit link
-    columns[ 0 ] = CategoryListGrid.NameColumn( "Name",
-                                                key="Category.name",
-                                                link=( lambda item: dict( operation="Edit", id=item.id ) ),
-                                                model_class=model.Category,
-                                                attach_popup=False )
+    columns[ 0 ] = CategoryGrid.NameColumn( "Name",
+                                            key="Category.name",
+                                            link=( lambda item: dict( operation="Edit", id=item.id ) ),
+                                            model_class=model.Category,
+                                            attach_popup=False )
     global_actions = [
         grids.GridAction( "Add new category",
                           dict( controller='admin', action='manage_categories', operation='create' ) )
     ]
 
-class AdminRepositoryListGrid( RepositoryListGrid ):
-    columns = [ RepositoryListGrid.NameColumn( "Name",
-                                               key="name",
-                                               link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
-                                               attach_popup=True ),
-                RepositoryListGrid.DescriptionColumn( "Synopsis",
-                                                      key="description",
-                                                      attach_popup=False ),
-                RepositoryListGrid.MetadataRevisionColumn( "Metadata Revisions" ),
-                RepositoryListGrid.UserColumn( "Owner",
-                                               model_class=model.User,
-                                               link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
-                                               attach_popup=False,
-                                               key="User.username" ),
-                RepositoryListGrid.EmailAlertsColumn( "Alert", attach_popup=False ),
+class AdminRepositoryGrid( RepositoryGrid ):
+    columns = [ RepositoryGrid.NameColumn( "Name",
+                                           key="name",
+                                           link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                           attach_popup=True ),
+                RepositoryGrid.DescriptionColumn( "Synopsis",
+                                                  key="description",
+                                                  attach_popup=False ),
+                RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
+                RepositoryGrid.UserColumn( "Owner",
+                                           model_class=model.User,
+                                           link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
+                                           attach_popup=False,
+                                           key="User.username" ),
+                RepositoryGrid.EmailAlertsColumn( "Alert", attach_popup=False ),
+                RepositoryGrid.DeprecatedColumn( "Deprecated", attach_popup=False ),
                 # Columns that are valid for filtering but are not visible.
                 grids.DeletedColumn( "Deleted",
                                      key="deleted",
@@ -316,7 +317,7 @@ class AdminRepositoryListGrid( RepositoryListGrid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ operation for operation in RepositoryListGrid.operations ]
+    operations = [ operation for operation in RepositoryGrid.operations ]
     operations.append( grids.GridOperation( "Delete",
                                             allow_multiple=False,
                                             condition=( lambda item: not item.deleted ),
@@ -327,7 +328,7 @@ class AdminRepositoryListGrid( RepositoryListGrid ):
                                             async_compatible=False ) )
     standard_filters = []
 
-class RepositoryMetadataListGrid( grids.Grid ):
+class RepositoryMetadataGrid( grids.Grid ):
     class IdColumn( grids.IntegerColumn ):
         def get_value( self, trans, grid, repository_metadata ):
             return repository_metadata.id
@@ -414,17 +415,18 @@ class RepositoryMetadataListGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
     def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( self.model_class ) \
-                               .join( model.Repository.table )
+        return trans.sa_session.query( model.RepositoryMetadata ) \
+                               .join( model.Repository.table ) \
+                               .filter( model.Repository.table.c.deprecated == False )
 
 class AdminController( BaseUIController, Admin ):
     
-    user_list_grid = UserListGrid()
-    role_list_grid = RoleListGrid()
-    group_list_grid = GroupListGrid()
-    manage_category_list_grid = ManageCategoryListGrid()
-    repository_list_grid = AdminRepositoryListGrid()
-    repository_metadata_list_grid = RepositoryMetadataListGrid()
+    user_list_grid = UserGrid()
+    role_list_grid = RoleGrid()
+    group_list_grid = GroupGrid()
+    manage_category_grid = ManageCategoryGrid()
+    repository_grid = AdminRepositoryGrid()
+    repository_metadata_grid = RepositoryMetadataGrid()
 
     @web.expose
     @web.require_admin
@@ -477,7 +479,7 @@ class AdminController( BaseUIController, Admin ):
                 return self.delete_repository( trans, **kwd )
             elif operation == "undelete":
                 return self.undelete_repository( trans, **kwd )
-        # The changeset_revision_select_field in the RepositoryListGrid performs a refresh_on_change
+        # The changeset_revision_select_field in the RepositoryGrid performs a refresh_on_change
         # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
         # of the many select fields on the grid performed the refresh_on_change, so we loop through 
         # all of the received values to see which value is not the repository tip.  If we find it, we
@@ -495,7 +497,7 @@ class AdminController( BaseUIController, Admin ):
                                                                       id=trans.security.encode_id( repository.id ),
                                                                       changeset_revision=v ) )
         # Render the list view
-        return self.repository_list_grid( trans, **kwd )
+        return self.repository_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def browse_repository_metadata( self, trans, **kwd ):
@@ -515,7 +517,7 @@ class AdminController( BaseUIController, Admin ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_repositories',
                                                                   **kwd ) )
-        return self.repository_metadata_list_grid( trans, **kwd )
+        return self.repository_metadata_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def create_category( self, trans, **kwd ):
@@ -645,9 +647,9 @@ class AdminController( BaseUIController, Admin ):
     @web.require_admin
     def manage_categories( self, trans, **kwd ):
         if 'f-free-text-search' in kwd:
-            # Trick to enable searching repository name, description from the CategoryListGrid.
-            # What we've done is rendered the search box for the RepositoryListGrid on the grid.mako
-            # template for the CategoryListGrid.  See ~/templates/webapps/community/category/grid.mako.
+            # Trick to enable searching repository name, description from the CategoryGrid.
+            # What we've done is rendered the search box for the RepositoryGrid on the grid.mako
+            # template for the CategoryGrid.  See ~/templates/webapps/community/category/grid.mako.
             # Since we are searching repositories and not categories, redirect to browse_repositories().
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='browse_repositories',
@@ -674,7 +676,7 @@ class AdminController( BaseUIController, Admin ):
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action='edit_category',
                                                                   **kwd ) )
-        return self.manage_category_list_grid( trans, **kwd )
+        return self.manage_category_grid( trans, **kwd )
     @web.expose
     @web.require_admin
     def regenerate_statistics( self, trans, **kwd ):
@@ -732,7 +734,8 @@ class AdminController( BaseUIController, Admin ):
                                                  multiple=True,
                                                  display='checkboxes' )
         for repository in trans.sa_session.query( trans.model.Repository ) \
-                                          .filter( trans.model.Repository.table.c.deleted == False ) \
+                                          .filter( and_( trans.model.Repository.table.c.deleted == False,
+                                                         trans.model.Repository.table.c.deprecated == False ) ) \
                                           .order_by( trans.model.Repository.table.c.name,
                                                      trans.model.Repository.table.c.user_id ):
             owner = repository.user.username

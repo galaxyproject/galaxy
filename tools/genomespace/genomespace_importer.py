@@ -43,7 +43,7 @@ GENOMESPACE_EXT_TO_GALAXY_EXT = {'rifles': 'rifles',
                                  'gmt': 'gmt', 
                                  'gct': 'gct'}
 
-VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+VALID_CHARS = '.-()[]0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ '
 
 def chunk_write( source_stream, target_stream, source_method = "read", target_method="write" ):
     source_method = getattr( source_stream, source_method )
@@ -112,6 +112,7 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
     datatypes_registry = Registry()
     datatypes_registry.load_datatypes( root_dir = json_params[ 'job_config' ][ 'GALAXY_ROOT_DIR' ], config = json_params[ 'job_config' ][ 'GALAXY_DATATYPES_CONF_FILE' ] )
     url_param = datasource_params.get( file_url_name, None )
+    used_filenames = []
     for download_url in url_param.split( ',' ):
         using_temp_file = False
         parsed_url = urlparse.urlparse( download_url )
@@ -129,6 +130,8 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
             parsed_url = urlparse.urlparse( download_url )
             query_params = urlparse.parse_qs( parsed_url[4] )
             filename = urllib.unquote_plus( parsed_url[2].split( '/' )[-1] )
+        if not filename:
+            filename = download_url
         if output_filename is None:
             #need to use a temp file here, because we do not know the ext yet
             using_temp_file = True
@@ -179,7 +182,11 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
                                  name = "GenomeSpace importer on %s" % ( filename ) ) ) )
         #if using tmp file, move the file to the new file path dir to get scooped up later
         if using_temp_file:
-            shutil.move( output_filename, os.path.join( datasource_params['__new_file_path__'],  'primary_%i_output%s_visible_%s' % ( hda_id, ''.join( c in VALID_CHARS and c or '-' for c in filename ), file_type ) ) )
+            filename = ''.join( c in VALID_CHARS and c or '-' for c in filename )
+            while filename in used_filenames:
+                filename = "-%s" % filename
+            used_filenames.append( filename )
+            shutil.move( output_filename, os.path.join( datasource_params['__new_file_path__'],  'primary_%i_%s_visible_%s' % ( hda_id, filename, file_type ) ) )
         
         dataset_id = None #only one primary dataset available
         output_filename = None #only have one filename available

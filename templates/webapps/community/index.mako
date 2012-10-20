@@ -78,8 +78,13 @@
                             <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='reviewed_repositories_i_own' )}">Reviewed repositories I own</a>
                         </div>
                     %endif
+                    %if has_deprecated_repositories:
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='deprecated_repositories_i_own' )}">Deprecated repositories I own</a>
+                        </div>
+                    %endif
                     <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='writable_repositories' )}">My writable repositories</a>
+                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='my_writable_repositories' )}">My writable repositories</a>
                     </div>
                     <div class="toolTitle">
                         <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='repository' )}">My invalid tools</a>
