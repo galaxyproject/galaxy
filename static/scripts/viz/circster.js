@@ -50,8 +50,9 @@ var CircsterView = Backbone.View.extend({
         this.scale = 1;
         this.track_views = null;
 
-        // When track added to the model, add to view as well.
+        // When tracks added to/removed from model, update view.
         this.model.get('tracks').on('add', this.add_track, this);
+        this.model.get('tracks').on('remove', this.remove_track, this);
     },
 
     /**
@@ -158,8 +159,6 @@ var CircsterView = Backbone.View.extend({
      * Render a single track on the outside of the current visualization.
      */
     add_track: function(new_track) {
-        // TODO: Reset scale and zoom.
-
         // Recompute and update track bounds.
         var new_track_bounds = this.get_tracks_bounds();
         _.each(this.track_views, function(track_view, i) {
@@ -186,6 +185,23 @@ var CircsterView = Backbone.View.extend({
         var track_bounds = new_track_bounds[ new_track_bounds.length-1 ];
         track_bounds[1] = track_bounds[0];
         this.label_track_view.update_radius_bounds(track_bounds);
+    },
+
+    /**
+     * Remove a track from the view.
+     */
+    remove_track: function(track, tracks, options) {
+        // -- Remove track from view. --
+        var track_view = this.track_views[options.index];
+        this.track_views.splice(options.index, 1);
+        track_view.$el.remove();
+        
+        // Recompute and update track bounds.
+        var new_track_bounds = this.get_tracks_bounds();
+        _.each(this.track_views, function(track_view, i) {
+            //console.log(self.get_tracks_bounds(), i);
+            track_view.update_radius_bounds(new_track_bounds[i]);
+        });
     }
 });
 
