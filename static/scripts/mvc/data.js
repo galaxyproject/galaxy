@@ -1,4 +1,5 @@
 define(["libs/backbone/backbone-relational"], function() {
+
 /**
  * A dataset. In Galaxy, datasets are associated with a history, so
  * this object is also known as a HistoryDatasetAssociation.

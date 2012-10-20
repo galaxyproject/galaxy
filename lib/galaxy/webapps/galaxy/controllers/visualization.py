@@ -719,27 +719,6 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         '''
         return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset )
 
-    @web.json
-    def save_trackster( self, trans, vis_json ):
-        """
-        Save a visualization; if visualization does not have an ID, a new 
-        visualization is created. Returns JSON of visualization.
-        """
-        
-        # TODO: Need from_dict to convert json to Visualization object.
-        vis_config = from_json_string( vis_json )
-        config = {
-            'view': vis_config[ 'datasets' ],
-            'bookmarks': vis_config[ 'bookmarks' ],
-            'viewport': vis_config[ 'viewport' ]
-        }
-        type = vis_config[ 'type' ]
-        id = vis_config.get( 'id', None )
-        title = vis_config[ 'title' ]
-        dbkey = vis_config[ 'dbkey' ]
-        annotation = vis_config.get( 'annotation', None )
-        return self.save_visualization( trans, config, type, id, title, dbkey, annotation )
-
     @web.expose
     def circster( self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None ):
         """

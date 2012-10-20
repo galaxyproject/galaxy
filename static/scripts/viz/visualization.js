@@ -764,12 +764,8 @@ var Visualization = Backbone.RelationalModel.extend({
         type: ''
     },
 
-    // Use function because visualization_url changes depending on viz.
-    // FIXME: all visualizations should save to the same URL (and hence
-    // this function won't be needed).
-    url: function() { 
-        return galaxy_paths.get("visualization_url");
-    },
+    // No API to create/save visualization yet, so use this path:
+    url: galaxy_paths.get("visualization_url"),
     
     /**
      * POSTs visualization's JSON to its URL using the parameter 'vis_json'

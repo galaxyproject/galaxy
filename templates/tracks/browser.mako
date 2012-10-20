@@ -39,13 +39,6 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
     require( ["base", "viz/visualization", "viz/trackster_ui", "viz/trackster/tracks"], 
              function( base, visualization, trackster_ui, tracks ) {
 
-    //
-    // Place URLs here so that url_for can be used to generate them.
-    //
-    galaxy_paths.set({
-        visualization_url: "${h.url_for( action='save_trackster' )}"
-    });
-
     ${render_trackster_js_vars()}
 
     // FIXME: deliberate global required for now due to requireJS integration.
