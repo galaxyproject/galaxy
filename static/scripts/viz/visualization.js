@@ -429,6 +429,17 @@ var GenomeDataManager = Cache.extend({
     },
 
     /**
+     * Returns true if more detailed data can be obtained for entry.
+     */
+    can_get_more_detailed_data: function(region) {
+        var cur_data = this.get_elt(region);
+
+        // Can only get more detailed data for bigwig data that has less than 8000 data points.
+        // Summary tree returns *way* too much data, and 8000 data points ~ 500KB.
+        return (cur_data.dataset_type === 'bigwig' && cur_data.data.length < 8000);
+    },
+
+    /**
      * Returns more detailed data for an entry.
      */
     get_more_detailed_data: function(region, mode, resolution, detail_multiplier, extra_params) {
@@ -443,7 +454,8 @@ var GenomeDataManager = Cache.extend({
 
         // Use additional parameters to get more detailed data.
         if (cur_data.dataset_type === 'bigwig') {
-            extra_params.num_samples = cur_data.data.length * detail_multiplier;
+            // FIXME: constant should go somewhere.
+            extra_params.num_samples = 1000 * detail_multiplier;
         }
         else if (cur_data.dataset_type === 'summary_tree') {
             extra_params.level = Math.min(cur_data.level - 1, 2);

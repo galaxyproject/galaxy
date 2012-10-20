@@ -167,7 +167,7 @@ var CircsterView = Backbone.View.extend({
         });
 
         // Render new track.
-        var track_index = this.track_views.length
+        var track_index = this.track_views.length,
             track_view_class = (new_track.get('track_type') === 'LineTrack' ? 
                                     CircsterBigWigTrackView : 
                                     CircsterSummaryTreeTrackView ),
@@ -313,13 +313,21 @@ var CircsterTrackView = Backbone.View.extend({
         this.parent_elt.selectAll('path.chrom-data').filter(function(d, i) {
             return utils.is_visible(this);
         }).each(function(d, i) {
-            // Now operating on a single path element representing chromosome data.
+            // -- Now operating on a single path element representing chromosome data. --
+
             var path_elt = d3.select(this),
                 chrom = path_elt.attr('chrom'),
                 chrom_region = self.genome.get_chrom_region(chrom),
+                data_manager = self.track.get('data_manager'),
+                data_deferred;
 
-                // Get more detailde data for chrom.
-                data_deferred = self.track.get('data_manager').get_more_detailed_data(chrom_region, 'Coverage', 0, new_scale);
+            // If can't get more detailed data, return.
+            if (!data_manager.can_get_more_detailed_data(chrom_region)) {
+                return;
+            }
+
+            // -- Get more detailed data. --
+            data_deferred = self.track.get('data_manager').get_more_detailed_data(chrom_region, 'Coverage', 0, new_scale);
 
             // When more data is available, use new data to redraw path.
             $.when(data_deferred).then(function(data) {
@@ -417,7 +425,7 @@ var CircsterTrackView = Backbone.View.extend({
 
             // Apply prefs to all track data.
             var config = track.get('config'),
-                block_color = config.get_value('block_color');;
+                block_color = config.get_value('block_color');
             if (!block_color) { block_color = config.get_value('color'); }
             self.parent_elt.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
 
