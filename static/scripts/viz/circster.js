@@ -214,16 +214,19 @@ var CircsterTrackView = Backbone.View.extend({
     /* ----------------------- Public Methods ------------------------- */
 
     initialize: function(options) {
-        this.options = options;
-        this.options.bg_stroke = 'ccc';
+        this.bg_stroke = 'ccc';
         // Fill color when loading data.
-        this.options.loading_bg_fill = '000';
+        this.loading_bg_fill = '000';
         // Fill color when data has been loaded.
-        this.options.bg_fill = 'ccc';
-        this.options.chroms_layout = this._chroms_layout();
-        this.options.data_bounds = [];
-        this.options.scale = 1;
-        this.options.parent_elt = d3.select(this.$el[0]);
+        this.bg_fill = 'ccc';
+        this.total_gap = options.total_gap;
+        this.track = options.track;
+        this.radius_bounds = options.radius_bounds;
+        this.genome = options.genome;
+        this.chroms_layout = this._chroms_layout();
+        this.data_bounds = [];
+        this.scale = 1;
+        this.parent_elt = d3.select(this.$el[0]);
     },
 
     /**
@@ -231,17 +234,17 @@ var CircsterTrackView = Backbone.View.extend({
      */
     render: function() {
         // -- Create track group element. --
-        var track_parent_elt = this.options.parent_elt;
+        var track_parent_elt = this.parent_elt;
 
         if (!track_parent_elt) {
             console.log('no parent elt');
         }
 
         // -- Render background arcs. --
-        var genome_arcs = this.options.chroms_layout,
+        var genome_arcs = this.chroms_layout,
             arc_gen = d3.svg.arc()
-                        .innerRadius(this.options.radius_bounds[0])
-                        .outerRadius(this.options.radius_bounds[1]),
+                        .innerRadius(this.radius_bounds[0])
+                        .outerRadius(this.radius_bounds[1]),
 
             // Attach data to group element.
             chroms_elts = track_parent_elt.selectAll('g')
@@ -251,8 +254,8 @@ var CircsterTrackView = Backbone.View.extend({
             chroms_paths = chroms_elts.append('path')
                 .attr("d", arc_gen)
                 .attr('class', 'chrom-background')
-                .style("stroke", this.options.bg_stroke)
-                .style("fill",  this.options.loading_bg_fill);
+                .style("stroke", this.bg_stroke)
+                .style("fill",  this.loading_bg_fill);
 
             // Append titles to paths.
             chroms_paths.append("title").text(function(d) { return d.data.chrom; });
@@ -260,14 +263,14 @@ var CircsterTrackView = Backbone.View.extend({
         // -- Render track data and, when track data is rendered, apply preferences and update chrom_elts fill. --
 
         var self = this,
-            data_manager = self.options.track.get('data_manager'),
+            data_manager = self.track.get('data_manager'),
             // If track has a data manager, get deferred that resolves when data is ready.
             data_ready_deferred = (data_manager ? data_manager.data_is_ready() : true );
 
         // When data is ready, render track.
         $.when(data_ready_deferred).then(function() {
             $.when(self._render_data(track_parent_elt)).then(function() {
-                chroms_paths.style("fill", self.options.bg_fill);
+                chroms_paths.style("fill", self.bg_fill);
             });
         });
     },
@@ -277,14 +280,14 @@ var CircsterTrackView = Backbone.View.extend({
      */
     update_radius_bounds: function(radius_bounds) {
         // Update bounds.
-        this.options.radius_bounds = radius_bounds;
+        this.radius_bounds = radius_bounds;
 
         // -- Update background arcs. --
         var new_d = d3.svg.arc()
-                        .innerRadius(this.options.radius_bounds[0])
-                        .outerRadius(this.options.radius_bounds[1]);
+                        .innerRadius(this.radius_bounds[0])
+                        .outerRadius(this.radius_bounds[1]);
         
-        this.options.parent_elt.selectAll('g>path.chrom-background').transition().duration(1000).attr('d', new_d);
+        this.parent_elt.selectAll('g>path.chrom-background').transition().duration(1000).attr('d', new_d);
 
         this._transition_chrom_data();
     },
@@ -295,8 +298,8 @@ var CircsterTrackView = Backbone.View.extend({
     update_scale: function(new_scale) {
         // -- Update scale and return if new scale is less than old scale. --
 
-        var old_scale = this.options.scale;
-        this.options.scale = new_scale;
+        var old_scale = this.scale;
+        this.scale = new_scale;
         if (new_scale <= old_scale) {
             return;
         }
@@ -307,16 +310,16 @@ var CircsterTrackView = Backbone.View.extend({
             utils = new SVGUtils();
 
         // Select all chrom data and filter to operate on those that are visible.
-        this.options.parent_elt.selectAll('path.chrom-data').filter(function(d, i) {
+        this.parent_elt.selectAll('path.chrom-data').filter(function(d, i) {
             return utils.is_visible(this);
         }).each(function(d, i) {
             // Now operating on a single path element representing chromosome data.
             var path_elt = d3.select(this),
                 chrom = path_elt.attr('chrom'),
-                chrom_region = self.options.genome.get_chrom_region(chrom),
+                chrom_region = self.genome.get_chrom_region(chrom),
 
                 // Get more detailde data for chrom.
-                data_deferred = self.options.track.get('data_manager').get_more_detailed_data(chrom_region, 'Coverage', 0, new_scale);
+                data_deferred = self.track.get('data_manager').get_more_detailed_data(chrom_region, 'Coverage', 0, new_scale);
 
             // When more data is available, use new data to redraw path.
             $.when(data_deferred).then(function(data) {
@@ -327,15 +330,15 @@ var CircsterTrackView = Backbone.View.extend({
                 self._update_data_bounds();
 
                 // Find chromosome arc to draw data on.
-                var chrom_arc = _.find(self.options.chroms_layout, function(layout) { 
+                var chrom_arc = _.find(self.chroms_layout, function(layout) { 
                         return layout.data.chrom === chrom; 
                 });
 
                 // Add new data path and apply preferences.
-                var prefs = self.options.track.get('prefs'),
+                var prefs = self.track.get('prefs'),
                     block_color = prefs.block_color;
                 if (!block_color) { block_color = prefs.color; }
-                self._render_chrom_data(self.options.parent_elt, chrom_arc, data).style('stroke', block_color).style('fill', block_color);
+                self._render_chrom_data(self.parent_elt, chrom_arc, data).style('stroke', block_color).style('fill', block_color);
             });
         });
 
@@ -348,14 +351,14 @@ var CircsterTrackView = Backbone.View.extend({
      * Transitions chrom data to new values (e.g new radius or data bounds).
      */
     _transition_chrom_data: function() {
-        var track = this.options.track,
-            chrom_arcs = this.options.chroms_layout,
-            chrom_data_paths = this.options.parent_elt.selectAll('g>path.chrom-data'),
+        var track = this.track,
+            chrom_arcs = this.chroms_layout,
+            chrom_data_paths = this.parent_elt.selectAll('g>path.chrom-data'),
             num_paths = chrom_data_paths[0].length;
 
         if (num_paths > 0) {
             var self = this;
-            $.when(track.get('data_manager').get_genome_wide_data(this.options.genome)).then(function(genome_wide_data) {
+            $.when(track.get('data_manager').get_genome_wide_data(this.genome)).then(function(genome_wide_data) {
                 // Map chrom data to path data, filtering out null values.
                 var path_data = _.reject( _.map(genome_wide_data, function(chrom_data, i) {
                     var rval = null,
@@ -379,11 +382,11 @@ var CircsterTrackView = Backbone.View.extend({
      * Update data bounds.
      */
     _update_data_bounds: function() {
-        var old_bounds = this.options.data_bounds;
-        this.options.data_bounds = this.get_data_bounds(this.options.track.get('data_manager').get_genome_wide_data(this.options.genome));
+        var old_bounds = this.data_bounds;
+        this.data_bounds = this.get_data_bounds(this.track.get('data_manager').get_genome_wide_data(this.genome));
 
         // If bounds have changed, transition all paths to use the new data bounds.
-        if (this.options.data_bounds[0] < old_bounds[0] || this.options.data_bounds[1] > old_bounds[1]) {
+        if (this.data_bounds[0] < old_bounds[0] || this.data_bounds[1] > old_bounds[1]) {
             this._transition_chrom_data();
         }
     },
@@ -393,14 +396,14 @@ var CircsterTrackView = Backbone.View.extend({
      */
     _render_data: function(svg) {
         var self = this,
-            chrom_arcs = this.options.chroms_layout,
-            track = this.options.track,
+            chrom_arcs = this.chroms_layout,
+            track = this.track,
             rendered_deferred = $.Deferred();
 
         // When genome-wide data is available, render data.
-        $.when(track.get('data_manager').get_genome_wide_data(this.options.genome)).then(function(genome_wide_data) {
+        $.when(track.get('data_manager').get_genome_wide_data(this.genome)).then(function(genome_wide_data) {
             // Set bounds.
-            self.options.data_bounds = self.get_data_bounds(genome_wide_data);
+            self.data_bounds = self.get_data_bounds(genome_wide_data);
 
             // Merge chroms layout with data.
             layout_and_data = _.zip(chrom_arcs, genome_wide_data),
@@ -416,7 +419,7 @@ var CircsterTrackView = Backbone.View.extend({
             var config = track.get('config'),
                 block_color = config.get_value('block_color');;
             if (!block_color) { block_color = config.get_value('color'); }
-            self.options.parent_elt.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
+            self.parent_elt.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
 
             rendered_deferred.resolve(svg);
         });
@@ -440,10 +443,10 @@ var CircsterTrackView = Backbone.View.extend({
      */
     _chroms_layout: function() {
         // Setup chroms layout using pie.
-        var chroms_info = this.options.genome.get_chroms_info(),
+        var chroms_info = this.genome.get_chroms_info(),
             pie_layout = d3.layout.pie().value(function(d) { return d.len; }).sort(null),
             init_arcs = pie_layout(chroms_info),
-            gap_per_chrom = this.options.total_gap / chroms_info.length,
+            gap_per_chrom = this.total_gap / chroms_info.length,
             chrom_arcs = _.map(init_arcs, function(arc, index) {
                 // For short chroms, endAngle === startAngle.
                 var new_endAngle = arc.endAngle - gap_per_chrom;
@@ -461,8 +464,8 @@ var CircsterLabelTrackView = CircsterTrackView.extend({
 
     initialize: function(options) {
         CircsterTrackView.prototype.initialize.call(this, options);
-        this.options.bg_stroke = 'fff';
-        this.options.bg_fill = 'fff';
+        this.bg_stroke = 'fff';
+        this.bg_fill = 'fff';
     },
 
     /**
@@ -525,8 +528,8 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
 
         // Radius scaler.
         var radius = d3.scale.linear()
-                       .domain(this.options.data_bounds)
-                       .range(this.options.radius_bounds);
+                       .domain(this.data_bounds)
+                       .range(this.radius_bounds);
 
         // Scaler for placing data points across arc.
         var angle = d3.scale.linear()
