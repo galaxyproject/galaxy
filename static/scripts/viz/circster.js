@@ -286,32 +286,7 @@ var CircsterTrackView = Backbone.View.extend({
         
         this.options.parent_elt.selectAll('g>path.chrom-background').transition().duration(1000).attr('d', new_d);
 
-        // -- Update chrom data. --
-        var track = this.options.track,
-            chrom_arcs = this.options.chroms_layout,
-            chrom_data_paths = this.options.parent_elt.selectAll('g>path.chrom-data'),
-            num_paths = chrom_data_paths[0].length;
-
-        if (num_paths > 0) {
-            var self = this;
-            $.when(track.get('data_manager').get_genome_wide_data(this.options.genome)).then(function(genome_wide_data) {
-                // Map chrom data to path data, filtering out null values.
-                var path_data = _.reject( _.map(genome_wide_data, function(chrom_data, i) {
-                    var rval = null,
-                        path_fn = self._compute_path_data(chrom_arcs[i], chrom_data);
-                    if (path_fn) {
-                        rval = path_fn(chrom_data.data);
-                    }
-                    return rval;
-                }), function(p_data) { return p_data === null; } );
-
-                // Transition each path.
-                chrom_data_paths.each(function(path, index) {
-                    d3.select(this).transition().duration(1000).attr('d', path_data[index]);
-                });
-                
-            });
-        }
+        this._transition_chrom_data();
     },
 
     /**
@@ -370,12 +345,47 @@ var CircsterTrackView = Backbone.View.extend({
     /* ----------------------- Internal Methods ------------------------- */
 
     /**
+     * Transitions chrom data to new values (e.g new radius or data bounds).
+     */
+    _transition_chrom_data: function() {
+        var track = this.options.track,
+            chrom_arcs = this.options.chroms_layout,
+            chrom_data_paths = this.options.parent_elt.selectAll('g>path.chrom-data'),
+            num_paths = chrom_data_paths[0].length;
+
+        if (num_paths > 0) {
+            var self = this;
+            $.when(track.get('data_manager').get_genome_wide_data(this.options.genome)).then(function(genome_wide_data) {
+                // Map chrom data to path data, filtering out null values.
+                var path_data = _.reject( _.map(genome_wide_data, function(chrom_data, i) {
+                    var rval = null,
+                        path_fn = self._get_path_function(chrom_arcs[i], chrom_data);
+                    if (path_fn) {
+                        rval = path_fn(chrom_data.data);
+                    }
+                    return rval;
+                }), function(p_data) { return p_data === null; } );
+
+                // Transition each path.
+                chrom_data_paths.each(function(path, index) {
+                    d3.select(this).transition().duration(1000).attr('d', path_data[index]);
+                });
+                
+            });
+        }
+    },
+
+    /**
      * Update data bounds.
      */
     _update_data_bounds: function() {
-        //this.options.data_bounds = this.get_data_bounds(this.options.track.get_genome_wide_data(this.options.genome));
+        var old_bounds = this.options.data_bounds;
+        this.options.data_bounds = this.get_data_bounds(this.options.track.get('data_manager').get_genome_wide_data(this.options.genome));
 
-        // TODO: transition all paths to use the new data bounds.
+        // If bounds have changed, transition all paths to use the new data bounds.
+        if (this.options.data_bounds[0] < old_bounds[0] || this.options.data_bounds[1] > old_bounds[1]) {
+            this._transition_chrom_data();
+        }
     },
 
     /**
@@ -422,7 +432,7 @@ var CircsterTrackView = Backbone.View.extend({
     /**
      * Returns data for creating a path for the given data using chrom_arc and data bounds.
      */
-    _compute_path_data: function(chrom_arc, chrom_data) {},
+    _get_path_function: function(chrom_arc, chrom_data) {},
 
     /**
      * Returns arc layouts for genome's chromosomes/contigs. Arcs are arranged in a circle 
@@ -490,7 +500,7 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
      * chromosome. Attachs a dict with track and chrom name information to DOM element.
      */
     _render_chrom_data: function(svg, chrom_arc, chrom_data) {
-        var path_data = this._compute_path_data(chrom_arc, chrom_data);
+        var path_data = this._get_path_function(chrom_arc, chrom_data);
 
         if (!path_data) { return null; }
 
@@ -505,9 +515,9 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
     },
 
     /**
-     * Returns data for creating a path for the given data using chrom_arc, radius bounds, and data bounds.
+     * Returns function for creating a path across the chrom arc.
      */
-    _compute_path_data: function(chrom_arc, chrom_data) {
+    _get_path_function: function(chrom_arc, chrom_data) {
         // If no chrom data, return null.
         if (typeof chrom_data === "string" || !chrom_data.data || chrom_data.data.length === 0) {
             return null;
