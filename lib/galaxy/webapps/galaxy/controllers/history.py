@@ -664,7 +664,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 else:
                     trans.response.set_content_type( 'application/x-tar' )
                 trans.response.headers["Content-Disposition"] = 'attachment; filename="%s"' % ( hname )
-                return trans.app.object_store.get_data(jeha.dataset)
+                return open( trans.app.object_store.get_filename( jeha.dataset ) )
             elif jeha.job.state in [ model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.WAITING ]:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
                         % ( { 'n' : history.name, 's' : url_for( action="export_archive", id=id, qualified=True ) } ) )
