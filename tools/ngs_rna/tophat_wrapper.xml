@@ -224,7 +224,7 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
                              </param>
                              <when value="No" />
                              <when value="Yes">
-                               <param format="gtf" name="gene_annotation_model" type="data" label="Gene Model Annotations" help="TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping."/>
+                               <param format="gtf,gff3" name="gene_annotation_model" type="data" label="Gene Model Annotations" help="TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping."/>
                              </when>
                           </conditional>
                           <conditional name="raw_juncs">

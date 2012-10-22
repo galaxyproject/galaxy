@@ -72,7 +72,7 @@
 
     </command>
     <inputs>
-        <param format="gtf" name="gtf_input" type="data" label="Transcripts" help="A transcript GTF file produced by cufflinks, cuffcompare, or other source."/>
+        <param format="gtf,gff3" name="gtf_input" type="data" label="Transcripts" help="A transcript GTF file produced by cufflinks, cuffcompare, or other source."/>
         <conditional name="group_analysis"> 
             <param name="do_groups" type="select" label="Perform replicate analysis" help="Perform cuffdiff with replicates in each group.">
                 <option value="No">No</option>
