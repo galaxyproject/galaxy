@@ -148,9 +148,6 @@ var moveable = function(element, handle_class, container_selector, element_js_ob
     });
 };
 
-// TODO: do we need to export?
-exports.moveable = moveable;
-
 /**
  * Init constants & functions used throughout trackster.
  */

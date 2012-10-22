@@ -594,14 +594,7 @@ var GenomeRegion = Backbone.RelationalModel.extend({
     defaults: {
         chrom: null,
         start: 0,
-        end: 0,
-        DIF_CHROMS: 1000,
-        BEFORE: 1001, 
-        CONTAINS: 1002, 
-        OVERLAP_START: 1003, 
-        OVERLAP_END: 1004, 
-        CONTAINED_BY: 1005, 
-        AFTER: 1006
+        end: 0
     },
     
     /**
@@ -657,30 +650,30 @@ var GenomeRegion = Backbone.RelationalModel.extend({
             
         // Look at chroms.
         if (first_chrom && second_chrom && first_chrom !== second_chrom) {
-            return this.get('DIF_CHROMS');
+            return GenomeRegion.overlap_results.DIF_CHROMS;
         }
         
         // Look at regions.
         if (first_start < second_start) {
             if (first_end < second_start) {
-                overlap = this.get('BEFORE');
+                overlap = GenomeRegion.overlap_results.BEFORE;
             }
             else if (first_end <= second_end) {
-                overlap = this.get('OVERLAP_START');
+                overlap = GenomeRegion.overlap_results.OVERLAP_START;
             }
             else { // first_end > second_end
-                overlap = this.get('CONTAINS');
+                overlap = GenomeRegion.overlap_results.CONTAINS;
             }
         }
         else { // first_start >= second_start
             if (first_start > second_end) {
-                overlap = this.get('AFTER');
+                overlap = GenomeRegion.overlap_results.AFTER;
             }
             else if (first_end <= second_end) {
-                overlap = this.get('CONTAINED_BY');
+                overlap = GenomeRegion.overlap_results.CONTAINED_BY;
             }
             else {
-                overlap = this.get('OVERLAP_END');
+                overlap = GenomeRegion.overlap_results.OVERLAP_END;
             }
         }
 
@@ -691,7 +684,7 @@ var GenomeRegion = Backbone.RelationalModel.extend({
      * Returns true if this region contains a given region.
      */
     contains: function(a_region) {
-        return this.compute_overlap(a_region) === this.get('CONTAINS');  
+        return this.compute_overlap(a_region) === GenomeRegion.overlap_results.CONTAINS;
     },
 
     /**
@@ -699,7 +692,18 @@ var GenomeRegion = Backbone.RelationalModel.extend({
      */
     overlaps: function(a_region) {
         return _.intersection( [this.compute_overlap(a_region)], 
-                               [this.get('DIF_CHROMS'), this.get('BEFORE'), this.get('AFTER')] ).length === 0;  
+                               [GenomeRegion.overlap_results.DIF_CHROMS, GenomeRegion.overlap_results.BEFORE, GenomeRegion.overlap_results.AFTER] ).length === 0;  
+    }
+},
+{
+    overlap_results: {
+        DIF_CHROMS: 1000,
+        BEFORE: 1001, 
+        CONTAINS: 1002, 
+        OVERLAP_START: 1003, 
+        OVERLAP_END: 1004, 
+        CONTAINED_BY: 1005, 
+        AFTER: 1006
     }
 });
 
