@@ -2421,7 +2421,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             except Exception, e:
                 raw_text = "Error locating and reading this repository's README file '%s': %s" % ( readme_file, str( e ) )
                 log.debug( raw_text )
-            readme_text = translate_string( raw_text, to_html=True )
+            readme_text = raw_text
         else:
             readme_text = ''
         is_malicious = changeset_is_malicious( trans, id, changeset_revision )

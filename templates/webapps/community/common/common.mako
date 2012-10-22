@@ -15,6 +15,7 @@
 </%def>
 
 <%def name="render_readme( readme_text )">
+    <% readme_text = readme_text.replace( '\n', '<br/>' ) %>
     <style type="text/css">
         #readme_table{ table-layout:fixed;
                        width:100%;
@@ -38,6 +39,7 @@
 </%def>
 
 <%def name="render_long_description( description_text )">
+    <% description_text = description_text.replace( '\n', '<br/>' ) %>
     <style type="text/css">
         #description_table{ table-layout:fixed;
                             width:100%;
@@ -51,7 +53,7 @@
     <div class="form-row">
         <label>Detailed description:</label>
         <table id="description_table">
-            <tr><td><pre>${description_text}</pre></td></tr>
+            <tr><td>${description_text}</td></tr>
         </table>
         <div style="clear: both"></div>
     </div>

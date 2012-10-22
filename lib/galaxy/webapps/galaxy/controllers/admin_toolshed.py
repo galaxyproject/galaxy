@@ -1205,7 +1205,7 @@ class AdminToolshed( AdminGalaxy ):
             response = urllib2.urlopen( url )
             raw_text = response.read()
             response.close()
-            readme_text = translate_string( raw_text, to_html=True )
+            readme_text = raw_text
         else:
             readme_text = '' 
         if trans.app.config.tool_dependency_dir is None:
