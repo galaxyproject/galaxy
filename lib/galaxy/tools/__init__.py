@@ -73,6 +73,7 @@ class ToolBox( object ):
         self.workflows_by_id = {}
         # In-memory dictionary that defines the layout of the tool panel.
         self.tool_panel = odict()
+        self.index = 0
         # File that contains the XML section and tool tags from all tool panel config files integrated into a
         # single file that defines the tool panel layout.  This file can be changed by the Galaxy administrator
         # (in a way similar to the single tool_conf.xml file in the past) to alter the layout of the tool panel.
@@ -87,7 +88,14 @@ class ToolBox( object ):
         self.tool_root_dir = tool_root_dir
         self.app = app
         self.init_dependency_manager()
-        for config_filename in listify( config_filenames ):
+        config_filenames = listify( config_filenames )
+        for config_filename in config_filenames:
+            if os.path.isdir( config_filename ):
+                directory_contents = sorted( os.listdir( config_filename ) )
+                directory_config_files = [ config_file for config_file in directory_contents if config_file.endswith( ".xml" ) ]
+                config_filenames.remove( config_filename )
+                config_filenames.extend( directory_config_files )
+        for config_filename in config_filenames:
             try:
                 self.init_tools( config_filename )
             except:
@@ -134,7 +142,9 @@ class ToolBox( object ):
             tool_path = self.tool_root_dir
         # Only load the panel_dict under certain conditions.
         load_panel_dict = not self.integrated_tool_panel_config_has_contents
-        for index, elem in enumerate( root ):
+        for _, elem in enumerate( root ):
+            index = self.index
+            self.index += 1
             if parsing_shed_tool_conf:
                 config_elems.append( elem )
             if elem.tag == 'tool':
