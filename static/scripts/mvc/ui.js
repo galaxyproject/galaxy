@@ -14,6 +14,7 @@ var IconButton = Backbone.Model.extend({
         title: "",
         icon_class: "",
         on_click: null,
+        menu_options: null,
         tooltip_config: {},
         
         isMenuButton : true,
@@ -52,7 +53,7 @@ var IconButtonView = Backbone.View.extend({
         
         this.$el.replaceWith( newElem );
         this.setElement( newElem );
-        
+
         return this;
     },
     
@@ -106,6 +107,13 @@ var IconButtonMenuView = Backbone.View.extend({
             if (button.attributes.tooltip_config) {
                 elt.tooltip(button.attributes.tooltip_config);
             }
+
+            // If there are options, add popup menu to icon.
+            var menu_options = button.get('options');
+            if (menu_options) {
+                make_popupmenu(elt, menu_options);
+            }
+        
         });
         return this;
     }
