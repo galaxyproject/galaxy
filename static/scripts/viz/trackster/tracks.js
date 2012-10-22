@@ -854,34 +854,35 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
 });
 
 /**
- * View object manages complete viz view, including tracks and user interactions.
+ * View object manages a trackster visualization, including tracks and user interactions.
  * Events triggered:
  *      navigate: when browser view changes to a new locations
  */
-var View = function(obj_dict) {
-    extend(obj_dict, {
-        obj_type: "View" 
-    });
-    DrawableCollection.call(this, "View", obj_dict.container, obj_dict);
-    this.chrom = null;
-    this.vis_id = obj_dict.vis_id;
-    this.dbkey = obj_dict.dbkey;
-    this.label_tracks = [];
-    this.tracks_to_be_redrawn = [];
-    this.max_low = 0;
-    this.max_high = 0;
-    this.zoom_factor = 3;
-    this.min_separation = 30;
-    this.has_changes = false;
-    // Deferred object that indicates when view's chrom data has been loaded.
-    this.load_chroms_deferred = null;
-    this.init();
-    this.canvas_manager = new visualization.CanvasManager( this.container.get(0).ownerDocument );
-    this.reset();
-};
-_.extend( View.prototype, Backbone.Events);
-extend( View.prototype, DrawableCollection.prototype, {
-    init: function() {
+var TracksterView = Backbone.View.extend({
+
+    initialize: function(obj_dict) {
+        extend(obj_dict, {
+            obj_type: "View" 
+        });
+        DrawableCollection.call(this, "View", obj_dict.container, obj_dict);
+        this.chrom = null;
+        this.vis_id = obj_dict.vis_id;
+        this.dbkey = obj_dict.dbkey;
+        this.label_tracks = [];
+        this.tracks_to_be_redrawn = [];
+        this.max_low = 0;
+        this.max_high = 0;
+        this.zoom_factor = 3;
+        this.min_separation = 30;
+        this.has_changes = false;
+        // Deferred object that indicates when view's chrom data has been loaded.
+        this.load_chroms_deferred = null;
+        this.render();
+        this.canvas_manager = new visualization.CanvasManager( this.container.get(0).ownerDocument );
+        this.reset();
+    },
+
+    render: function() {
         // Attribute init.
         this.requested_redraw = false;
         
@@ -1101,7 +1102,11 @@ extend( View.prototype, DrawableCollection.prototype, {
         
         this.reset();
         $(window).trigger("resize");
-    },
+    }
+});
+
+// FIXME: need to use this approach to enable inheritance of DrawableCollection functions.
+extend( TracksterView.prototype, DrawableCollection.prototype, {
     changed: function() {
         this.has_changes = true;  
     },
@@ -4178,7 +4183,7 @@ var object_from_template = function(template, view, container) {
 };
 
 return {
-    View: View,
+    TracksterView: TracksterView,
     DrawableGroup: DrawableGroup,
     LineTrack: LineTrack,
     FeatureTrack: FeatureTrack,
