@@ -4156,7 +4156,7 @@ var addable_objects = {
     "FeatureTrack": FeatureTrack,
     "VcfTrack": VcfTrack,
     "ReadTrack": ReadTrack,
-    // "DiagonalHeatmapTrack": DiagonalHeatmapTrack,
+    "DiagonalHeatmapTrack": DiagonalHeatmapTrack,
     "CompositeTrack": CompositeTrack,
     "DrawableGroup": DrawableGroup 
 };

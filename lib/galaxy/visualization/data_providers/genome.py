@@ -1444,7 +1444,7 @@ class ChromatinInteractionsDataProvider( GenomeDataProvider ):
         """
         Provides
         """
-        
+
         rval = []
         message = None
         for count, line in enumerate( iterator ):
@@ -1484,15 +1484,15 @@ class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinIntera
         """
         """
         # Modify start as needed to get earlier interactions with start region.
-        start = max( 0, int( start) - 1000000 )
+        start = max( 0, int( start ) - 1000000 )
         def filter( iter ):
             for line in iter:
                 feature = line.split()
-                s1 = int( feature[1] ), 
-                e1 = int( feature[2] ),
+                s1 = int( feature[1] ) 
+                e1 = int( feature[2] )
                 c = feature[3]
-                s2 = int( feature[4] ),
-                e2 = int( feature[5] ),
+                s2 = int( feature[4] )
+                e2 = int( feature[5] )
                 if ( ( c == chrom ) and ( s1 < end and e1 > start ) and ( s2 < end and e2 > start ) ):
                     yield line
         return filter( TabixDataProvider.get_iterator( self, chrom, start, end ) )
