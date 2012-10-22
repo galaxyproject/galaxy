@@ -59,7 +59,7 @@ class FolderContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrary
         # TODO: Find the API's path to this folder if necessary.
         # This was needed in recursive descent, but it's not needed
         # for "ls"-style content checking:
-        if not folder or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder ) ):
+        if not folder or not ( trans.user_is_admin() or trans.app.security_agent.can_access_library_item( current_user_roles, folder, trans.user ) ):
             trans.response.status = 400
             return "Invalid folder id ( %s ) specified." % str( folder_id )
 
