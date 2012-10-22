@@ -50,7 +50,6 @@ class FoldersController( BaseAPIController, UsesLibraryMixin, UsesLibraryMixinIt
         moved here.
 
         o payload's relevant params:
-          - create_type: "file" or "folder" (required)
           - folder_id: This is the parent folder's id (required)
         """
         log.debug( "FoldersController.create: enter" )
