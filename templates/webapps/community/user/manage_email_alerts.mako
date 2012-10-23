@@ -42,8 +42,8 @@
                 </tr>
                 %for repository in email_alert_repositories:
                     <tr>
-                        <td>${repository.name}</td>
-                        <td>${repository.description}</td>
+                        <td>${repository.name | h}</td>
+                        <td>${repository.description | h}</td>
                     </tr>
                 %endfor
             </table>
