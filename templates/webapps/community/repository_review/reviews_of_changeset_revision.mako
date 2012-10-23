@@ -73,16 +73,16 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Revision reviews of repository '${repository.name}'</div>
+    <div class="toolFormTitle">Revision reviews of repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         <div class="form-row">
             <label>Revision:</label>
-            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label}</a>
+            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label | h}</a>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Revision is installable:</label>
-            ${installable_str}
+            ${installable_str | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
@@ -109,7 +109,7 @@
                         <tr>
                             <td>
                                 <div style="float:left;" class="menubutton split popup" id="${encoded_review_id}-popup">
-                                    <a class="view-info" href="${h.url_for( controller='repository_review', action='repository_reviews_by_user', id=trans.security.encode_id( review.user.id ) )}">${review.user.username}</a>
+                                    <a class="view-info" href="${h.url_for( controller='repository_review', action='repository_reviews_by_user', id=trans.security.encode_id( review.user.id ) )}">${review.user.username | h}</a>
                                 </div>
                                 <div popupmenu="${encoded_review_id}-popup">
                                     %if review.user == trans.user:
@@ -126,7 +126,7 @@
                                     <td><input type="submit" name="approve_repository_review_button" value="Save"/></td>
                                 </form>
                             %else:
-                                <td>${approved_str}</td>
+                                <td>${approved_str | h}</td>
                                 <td></td>
                             %endif
                         </tr>
