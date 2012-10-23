@@ -34,7 +34,7 @@
             <div style="clear: both"></div>
             <div class="form-row">
                 <label>Workflow name:</label>
-                <input name="workflow_name" type="textfield" value="${workflow_name}" size="40"/>
+                <input name="workflow_name" type="textfield" value="${workflow_name | h}" size="40"/>
             </div>
             <div style="clear: both"></div>
             <div class="form-row">
