@@ -1,5 +1,7 @@
 <%def name="escape_html_add_breaks( value )">
     <%
+        from galaxy import eggs
+        eggs.require('markupsafe')
         import markupsafe
         value = str( markupsafe.escape( value ) ).replace( '\n', '<br/>' )
     %>
