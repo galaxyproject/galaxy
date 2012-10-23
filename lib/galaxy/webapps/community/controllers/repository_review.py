@@ -654,7 +654,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
             repo_dir = repository.repo_path
             repo = hg.repository( get_configured_ui(), repo_dir )
             metadata_revision_hashes = [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
-            reviewed_revision_hashes = [ reviewed_revisions.changeset_revision for reviewed_revisions in repository.reviewed_revisions ]
+            reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
             reviews_dict = odict()
             for changeset in get_reversed_changelog_changesets( repo ):
                 ctx = repo.changectx( changeset )
@@ -667,7 +667,10 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
                         # Determine if the current user can add a review to this revision.
                         can_add_review = trans.user not in [ repository_review.user for repository_review in repository_reviews ]
                         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-                        repository_metadata_reviews = util.listify( repository_metadata.reviews )
+                        if repository_metadata:
+                            repository_metadata_reviews = util.listify( repository_metadata.reviews )
+                        else:
+                            repository_metadata_reviews = []
                     else:
                         repository_reviews = []
                         repository_metadata_reviews = []
