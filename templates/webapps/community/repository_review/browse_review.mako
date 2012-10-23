@@ -34,7 +34,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Review of repository '${repository.name}'</div>
+    <div class="toolFormTitle">Review of repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         <div class="form-row">
             <label>Reviewer:</label>
@@ -43,17 +43,17 @@
         </div>
         <div class="form-row">
             <label>Repository revision:</label>
-            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=review.changeset_revision )}">${changeset_revision_label}</a>
+            <a class="action-button" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=review.changeset_revision )}">${changeset_revision_label | h}</a>
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Repository owner:</label>
-            ${repository.user.username}
+            ${repository.user.username | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
             <label>Repository synopsis:</label>
-            ${repository.description}
+            ${repository.description | h}
             <div style="clear: both"></div>
         </div>
         <div class="form-row">
@@ -70,11 +70,10 @@
                             # Initialize star rating.
                             rating_name = '%s%srating' % ( component.name, STRSEP )
                             
-                            review_comment = component_review.comment.replace( '\n', '<br/>' )
                         %>
                         <tr>
-                            <td bgcolor="#D8D8D8"><b>${component.name}</b></td>
-                            <td bgcolor="#D8D8D8">${component.description}</td>
+                            <td bgcolor="#D8D8D8"><b>${component.name | h}</b></td>
+                            <td bgcolor="#D8D8D8">${component.description | h}</td>
                         </tr>
                         <tr>
                             <td colspan="2">
@@ -93,7 +92,7 @@
                                         <tr>
                                             <td>
                                                 <div overflow-wrap:normal;overflow:hidden;word-break:keep-all;word-wrap:break-word;line-break:strict;>
-                                                    ${review_comment}
+                                                    ${ escape_html_add_breaks( component_review.comment ) }
                                                 </div>
                                             </td>
                                         </tr>
@@ -101,7 +100,7 @@
                                     <tr>
                                         <td>
                                             <label>Approved:</label>
-                                            ${component_review.approved}
+                                            ${component_review.approved | h}
                                             <div style="clear: both"></div>
                                         </td>
                                     </tr>
