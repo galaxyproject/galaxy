@@ -3686,17 +3686,14 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
     /**
      * Draw LineTrack tile.
      */
-    draw_tile: function(result, ctx, mode, resolution, tile_index, w_scale) {
+    draw_tile: function(result, ctx, mode, resolution, region, w_scale) {
         // Paint onto canvas.
         var 
             canvas = ctx.canvas,
-            tile_bounds = this._get_tile_bounds(tile_index, resolution),
-            tile_low = tile_bounds[0],
-            tile_high = tile_bounds[1],
-            painter = new painters.DiagonalHeatmapPainter(result.data, tile_low, tile_high, this.prefs, mode);
+            painter = new painters.DiagonalHeatmapPainter(result.data, region.get('start'), region.get('end'), this.prefs, mode);
         painter.draw(ctx, canvas.width, canvas.height, w_scale);
         
-        return new Tile(this, tile_index, resolution, canvas, result.data);
+        return new Tile(this, region, resolution, canvas, result.data);
     }
 });
 
