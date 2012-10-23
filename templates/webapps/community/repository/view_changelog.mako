@@ -78,7 +78,7 @@
 
 %if can_download:
     <div class="toolForm">
-        <div class="toolFormTitle">${repository.name}</div>
+        <div class="toolFormTitle">${repository.name | h}</div>
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Clone this repository:</label>
@@ -95,7 +95,7 @@
         else:
             title_str = '%s changesets' % repository.name
     %>
-    <div class="toolFormTitle">${title_str}</div>
+    <div class="toolFormTitle">${title_str | h}</div>
     <% test_date = None %>
     <div class="toolFormBody">
         <table class="grid">
@@ -128,23 +128,23 @@
                         %endif
                         <div class="form-row">
                             <label>Description:</label>
-                            <a href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_str )}">${changeset[ 'description' ]}</a>
+                            <a href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_str )}">${changeset[ 'description' ] | h}</a>
                         </div>
                         <div class="form-row">
                             <label>Commit:</label>
-                            <a href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_str )}">${changeset_str}</a>
+                            <a href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_str )}">${changeset_str | h}</a>
                         </div>
                         <div class="form-row">
                             <label>Parent:</label>
                             %if ctx_parent_str == 'None':
                                 ${ctx_parent_str}
                             %else:
-                                <a href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_parent )}">${ctx_parent_str}</a>
+                                <a href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_parent )}">${ctx_parent_str | h}</a>
                             %endif
                         </div>
                         <div class="form-row">
                             <label>Commited by:</label>
-                            ${changeset[ 'user' ].split()[0]}
+                            ${changeset[ 'user' ].split()[0] | h}
                         </div>
                         <div class="form-row">
                             <label>Pushed:</label>
