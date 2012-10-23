@@ -156,11 +156,9 @@ def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
 def changeset_revision_reviewed_by_user( trans, user, repository, changeset_revision ):
     """Determine if the current changeset revision has been reviewed by the current user."""
     changeset_revision_reviewed_by_user = False
-    for reviewed_revision in repository.reviewed_revisions:
-        if reviewed_revision.changeset_revision == changeset_revision:
-            for review in repository.reviews:
-                if review.changeset_revision == changeset_revision and review.user == user:
-                    return True
+    for review in repository.reviews:
+        if review.changeset_revision == changeset_revision and review.user == user:
+            return True
     return False
 def check_file_contents( trans ):
     # See if any admin users have chosen to receive email alerts when a repository is updated.
@@ -505,13 +503,15 @@ def get_previous_downloadable_changset_revision( repository, repo, before_change
 def get_previous_repository_reviews( trans, repository, changeset_revision ):
     """Return an ordered dictionary of repository reviews up to and including the received changeset revision."""
     repo = hg.repository( get_configured_ui(), repository.repo_path )
-    reviewed_revision_hashes = [ reviewed_revisions.changeset_revision for reviewed_revisions in repository.reviewed_revisions ]
+    reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
     previous_reviews_dict = odict()
     for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
         previous_changeset_revision = str( repo.changectx( changeset ) )
         if previous_changeset_revision in reviewed_revision_hashes:
             previous_rev, previous_changeset_revision_label = get_rev_label_from_changeset_revision( repo, previous_changeset_revision )
-            revision_reviews = get_reviews_by_repository_id_changeset_revision( trans, trans.security.encode_id( repository.id ), previous_changeset_revision )
+            revision_reviews = get_reviews_by_repository_id_changeset_revision( trans,
+                                                                                trans.security.encode_id( repository.id ),
+                                                                                previous_changeset_revision )
             previous_reviews_dict[ previous_changeset_revision ] = dict( changeset_revision_label=previous_changeset_revision_label,
                                                                          reviews=revision_reviews )
     return previous_reviews_dict
@@ -701,7 +701,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
 def has_previous_repository_reviews( trans, repository, changeset_revision ):
     """Determine if a repository has a changeset revision review prior to the received changeset revision."""
     repo = hg.repository( get_configured_ui(), repository.repo_path )
-    reviewed_revision_hashes = [ reviewed_revisions.changeset_revision for reviewed_revisions in repository.reviewed_revisions ]
+    reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
     for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
         previous_changeset_revision = str( repo.changectx( changeset ) )
         if previous_changeset_revision in reviewed_revision_hashes:

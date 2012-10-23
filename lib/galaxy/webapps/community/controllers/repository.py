@@ -1530,7 +1530,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if current_user:
             # See if the current user owns any repositories that have been reviewed.
             for repository in current_user.active_repositories:
-                if repository.reviewed_revisions:
+                if repository.reviews:
                     has_reviewed_repositories = True
                     break
             # See if the current user has any repositories that have been marked as deprecated.

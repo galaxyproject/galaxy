@@ -239,12 +239,7 @@ assign_mapper( context, Repository, Repository.table,
         reviewers=relation( User,
                             secondary=RepositoryReview.table,
                             primaryjoin=( Repository.table.c.id == RepositoryReview.table.c.repository_id ),
-                            secondaryjoin=( RepositoryReview.table.c.user_id == User.table.c.id ) ),
-        reviewed_revisions=relation( RepositoryMetadata,
-                                     secondary=RepositoryReview.table,
-                                     foreign_keys=[ RepositoryMetadata.table.c.repository_id, RepositoryMetadata.table.c.changeset_revision ],
-                                     primaryjoin=( Repository.table.c.id == RepositoryMetadata.table.c.repository_id ),
-                                     secondaryjoin=( ( RepositoryMetadata.table.c.repository_id == RepositoryReview.table.c.repository_id ) & ( RepositoryMetadata.table.c.changeset_revision == RepositoryReview.table.c.changeset_revision ) ) ) ) )
+                            secondaryjoin=( RepositoryReview.table.c.user_id == User.table.c.id ) ) ) )
 
 assign_mapper( context, RepositoryMetadata, RepositoryMetadata.table,
     properties=dict( repository=relation( Repository ),
