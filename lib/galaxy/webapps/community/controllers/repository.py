@@ -20,6 +20,8 @@ from common import *
 from galaxy import eggs
 eggs.require('mercurial')
 from mercurial import hg, ui, patch, commands
+eggs.require('markupsafe')
+from markupsafe import escape as escape_html
 
 log = logging.getLogger( __name__ )
 
@@ -105,7 +107,7 @@ class ValidCategoryGrid( CategoryGrid ):
 class RepositoryGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
-            return repository.name
+            return escape_html( repository.name )
     class MetadataRevisionColumn( grids.GridColumn ):
         def __init__( self, col_name ):
             grids.GridColumn.__init__( self, col_name )
@@ -137,10 +139,10 @@ class RepositoryGrid( grids.Grid ):
             grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
             """Display the repository tip revision label."""
-            return repository.revision
+            return escape_html( repository.revision )
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
-            return repository.description
+            return escape_html( repository.description )
     class CategoryColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             rval = '<ul>'
@@ -161,7 +163,7 @@ class RepositoryGrid( grids.Grid ):
     class UserColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             if repository.user:
-                return repository.user.username
+                return escape_html( repository.user.username )
             return 'no user'
     class EmailColumn( grids.TextColumn ):
         def filter( self, trans, user, query, column_filter ):
