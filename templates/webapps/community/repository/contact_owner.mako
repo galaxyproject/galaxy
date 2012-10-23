@@ -50,7 +50,7 @@
                 <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
             %endif
             %if can_browse_contents:
-                <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label | h}</a>
             %endif
             %if can_download:
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip, file_type='gz' )}">Download as a .tar.gz file</a>
@@ -66,7 +66,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Contact the owner of the repository named '${repository.name}'</div>
+    <div class="toolFormTitle">Contact the owner of the repository named '${repository.name | h}'</div>
     <div class="toolFormBody">
         <div class="form-row">
             This feature is intended to streamline appropriate communication between
