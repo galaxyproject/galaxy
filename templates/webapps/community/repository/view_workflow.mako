@@ -96,7 +96,7 @@
     ${render_msg( message, status )}
 %endif
 
-<div class="toolFormTitle">${workflow_name}</div>
+<div class="toolFormTitle">${workflow_name | h}</div>
 <div class="form-row">
     <b>Boxes are red when tools are not available in this repository</b>
     <div class="toolParamHelp" style="clear: both;">
