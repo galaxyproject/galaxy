@@ -1313,15 +1313,18 @@ class ChromatinInteractions( Interval ):
     
     file_ext = "chrint"
     
-    column_names = [ 'Chrom', 'Start1', 'End1', 'Start2', 'End2', 'Value' ]
+    column_names = [ 'Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value' ]
     
     """Add metadata elements"""
-    MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
+    MetadataElement( name="chrom1Col", default=1, desc="Chrom1 column", param=metadata.ColumnParameter )
     MetadataElement( name="start1Col", default=2, desc="Start1 column", param=metadata.ColumnParameter )
     MetadataElement( name="end1Col", default=3, desc="End1 column", param=metadata.ColumnParameter )
-    MetadataElement( name="start2Col", default=2, desc="Start2 column", param=metadata.ColumnParameter )
-    MetadataElement( name="end2Col", default=3, desc="End2 column", param=metadata.ColumnParameter )
-    MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
+    MetadataElement( name="chrom2Col", default=4, desc="Chrom2 column", param=metadata.ColumnParameter )
+    MetadataElement( name="start2Col", default=5, desc="Start2 column", param=metadata.ColumnParameter )
+    MetadataElement( name="end2Col", default=6, desc="End2 column", param=metadata.ColumnParameter )
+    MetadataElement( name="valueCol", default=7, desc="Value column", param=metadata.ColumnParameter )
+
+    MetadataElement( name="columns", default=7, desc="Number of columns", readonly=True, visible=False )
     
     def sniff( self, filename ):
         return False
