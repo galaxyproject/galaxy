@@ -118,20 +118,6 @@ class RepositoryGrid( grids.Grid ):
             elif len( select_field.options ) == 1:
                 return select_field.options[ 0 ][ 0 ]
             return ''
-    class WithReviewsRevisionColumn( grids.GridColumn ):
-        def __init__( self, col_name ):
-            grids.GridColumn.__init__( self, col_name )
-        def get_value( self, trans, grid, repository ):
-            # Restrict to revisions that have been reviewed.
-            repository_metadata_revisions = get_repository_metadata_revisions_for_review( repository, reviewed=True )
-            if repository_metadata_revisions:
-                rval = ''
-                for repository_metadata in repository_metadata_revisions:
-                    rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( repository_metadata, repository=repository )
-                    rval += '<a href="manage_repository_reviews_of_revision'
-                    rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
-                return rval
-            return ''
     class WithoutReviewsRevisionColumn( grids.GridColumn ):
         def __init__( self, col_name ):
             grids.GridColumn.__init__( self, col_name )

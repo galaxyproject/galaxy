@@ -119,7 +119,7 @@
                                             <label>Mark private:</label>
                                             ${private_check_box.get_html()}
                                             <div class="toolParamHelp" style="clear: both;">
-                                                A private review can be accessed only by the owner of the repository and the IUC.
+                                                A private review can be accessed only by the owner of the repository and authorized repository reviewers.
                                             </div>
                                             <div style="clear: both"></div>
                                         </td>

@@ -50,6 +50,21 @@ class ComponentGrid( grids.Grid ):
 
 class RepositoriesWithReviewsGrid( RepositoryGrid ):
     # This grid filters out repositories that have been marked as deprecated.
+    class WithReviewsRevisionColumn( grids.GridColumn ):
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
+        def get_value( self, trans, grid, repository ):
+            # Restrict to revisions that have been reviewed.
+            if repository.reviews:
+                rval = ''
+                repo = hg.repository( get_configured_ui(), repository.repo_path )
+                for review in repository.reviews:
+                    changeset_revision = review.changeset_revision
+                    rev, label = get_rev_label_from_changeset_revision( repo, changeset_revision )
+                    rval += '<a href="manage_repository_reviews_of_revision'
+                    rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
+                return rval
+            return ''
     class ReviewersColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             rval = ''
@@ -68,7 +83,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                                     key="name",
                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                     attach_popup=True ),
-        RepositoryGrid.WithReviewsRevisionColumn( "Reviewed revisions" ),
+        WithReviewsRevisionColumn( "Reviewed revisions" ),
         RepositoryGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoryGrid.UserColumn( "Owner", attach_popup=False ),
         ReviewersColumn( "Reviewers", attach_popup=False )
@@ -718,6 +733,10 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
         # The value of the received id is the encoded repository id.
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
+            if operation == "inspect repository revisions":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='manage_repository_reviews',
+                                                                  **kwd ) )
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect( web.url_for( controller='repository_review',
                                                                   action='view_or_manage_repository',
