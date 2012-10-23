@@ -19,6 +19,7 @@ from galaxy.security.validate_user_input import validate_publicname
 from paste.httpexceptions import *
 from galaxy.exceptions import *
 from galaxy.model import NoConverterException, ConverterDependencyException
+from galaxy.datatypes.interval import ChromatinInteractions
 
 from Cheetah.Template import Template
 
@@ -602,7 +603,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
 
         return visualization
 
-    def _get_genome_data( self, trans, dataset, dbkey=None, source='index' ):
+    def _get_genome_data( self, trans, dataset, dbkey=None ):
         """
         Returns genome-wide data for dataset if available; if not, message is returned.
         """
@@ -621,6 +622,11 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         if message:
             rval = message
         else:
+            # HACK: chromatin interactions tracks use data as source.
+            source = 'index'
+            if isinstance( dataset.datatype, ChromatinInteractions ):
+                source = 'data'
+
             data_provider = trans.app.data_provider_registry.get_data_provider( trans, 
                                                                                 original_dataset=dataset, 
                                                                                 source=source )

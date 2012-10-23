@@ -8,7 +8,6 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
-from galaxy.datatypes.interval import ChromatinInteractions
 
 from .library import LibraryListGrid
 
@@ -753,12 +752,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         tracks = viz_config.get( 'tracks', [] )
         for track in tracks:
             dataset = self.get_hda_or_ldda( trans, track[ 'hda_ldda'], track[ 'dataset_id' ] )
-            # HACK: chromatin interactions tracks use data as source.
-            source = 'index'
-            if isinstance( dataset.datatype, ChromatinInteractions ):
-                source = 'data'
 
-            genome_data = self._get_genome_data( trans, dataset, dbkey, source=source )
+            genome_data = self._get_genome_data( trans, dataset, dbkey )
             if not isinstance( genome_data, str ):
                 track[ 'preloaded_data' ] = genome_data
         

@@ -200,31 +200,53 @@ var CircsterView = Backbone.View.extend({
      * Render a single track on the outside of the current visualization.
      */
     add_track: function(new_track) {
-        // Recompute and update track bounds.
-        var new_track_bounds = this.get_tracks_bounds();
-        _.each(this.circular_views, function(track_view, i) {
-            track_view.update_radius_bounds(new_track_bounds[i]);
-        });
+        if (new_track.get('track_type') === 'DiagonalHeatmapTrack') {
+            // Added chords track.
+            var innermost_radius_bounds = this.circular_views[0].radius_bounds,
+                new_view = new CircsterChromInteractionsTrackView({
+                    el: d3.select('g.tracks').append('g')[0],
+                    track: new_track,
+                    radius_bounds: innermost_radius_bounds,
+                    genome: this.genome,
+                    total_gap: this.total_gap
+                });
+                new_view.render();
+                this.chords_views.push(new_view);
+        }
+        else {
+            // Added circular track.
 
-        // Render new track.
-        var track_index = this.circular_views.length,
-            track_view_class = (new_track.get('track_type') === 'LineTrack' ? 
-                                    CircsterBigWigTrackView : 
-                                    CircsterSummaryTreeTrackView ),
-            track_view = new track_view_class({
-                el: d3.select('g.tracks').append('g')[0],
-                track: new_track,
-                radius_bounds: new_track_bounds[track_index],
-                genome: this.genome,
-                total_gap: this.total_gap
+            // Recompute and update track bounds.
+            var new_track_bounds = this.get_tracks_bounds();
+            _.each(this.circular_views, function(track_view, i) {
+                track_view.update_radius_bounds(new_track_bounds[i]);
             });
-        track_view.render();
-        this.circular_views.push(track_view);
 
-        // Update label track.
-        var track_bounds = new_track_bounds[ new_track_bounds.length-1 ];
-        track_bounds[1] = track_bounds[0];
-        this.label_track_view.update_radius_bounds(track_bounds);
+            // Update chords tracks.
+            _.each(this.chords_views, function(track_view) {
+                track_view.update_radius_bounds(new_track_bounds[0]);
+            });            
+
+            // Render new track.
+            var track_index = this.circular_views.length,
+                track_view_class = (new_track.get('track_type') === 'LineTrack' ? 
+                                        CircsterBigWigTrackView : 
+                                        CircsterSummaryTreeTrackView ),
+                track_view = new track_view_class({
+                    el: d3.select('g.tracks').append('g')[0],
+                    track: new_track,
+                    radius_bounds: new_track_bounds[track_index],
+                    genome: this.genome,
+                    total_gap: this.total_gap
+                });
+            track_view.render();
+            this.circular_views.push(track_view);
+
+            // Update label track.
+            var track_bounds = new_track_bounds[ new_track_bounds.length-1 ];
+            track_bounds[1] = track_bounds[0];
+            this.label_track_view.update_radius_bounds(track_bounds);
+        }
     },
 
     /**
@@ -266,6 +288,15 @@ var CircsterTrackView = Backbone.View.extend({
         this.data_bounds = [];
         this.scale = 1;
         this.parent_elt = d3.select(this.$el[0]);
+    },
+
+    /**
+     * Get fill color from config.
+     */
+    get_fill_color: function() {
+        var color = this.track.get('config').get_value('block_color');
+        if (!color) { color = this.track.get('config').get_value('color'); }
+        return color;
     },
 
     /**
@@ -382,10 +413,8 @@ var CircsterTrackView = Backbone.View.extend({
                 });
 
                 // Add new data path and apply preferences.
-                var prefs = self.track.get('prefs'),
-                    block_color = prefs.block_color;
-                if (!block_color) { block_color = prefs.color; }
-                self._render_chrom_data(self.parent_elt, chrom_arc, data).style('stroke', block_color).style('fill', block_color);
+                var color = self.get_fill_color();
+                self._render_chrom_data(self.parent_elt, chrom_arc, data).style('stroke', color).style('fill', color);
             });
         });
 
@@ -463,10 +492,8 @@ var CircsterTrackView = Backbone.View.extend({
             });
 
             // Apply prefs to all track data.
-            var config = track.get('config'),
-                block_color = config.get_value('block_color');
-            if (!block_color) { block_color = config.get_value('color'); }
-            self.parent_elt.selectAll('path.chrom-data').style('stroke', block_color).style('fill', block_color);
+            var color = self.get_fill_color();
+            self.parent_elt.selectAll('path.chrom-data').style('stroke', color).style('fill', color);
 
             rendered_deferred.resolve(svg);
         });
@@ -653,7 +680,7 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
 
         // When data is ready, render track.
         $.when(self.track.get('data_manager').data_is_ready()).then(function() {
-            // Convert genome-wide data in chord data.
+            // When data has been fetched, render track.
             $.when(self.track.get('data_manager').get_genome_wide_data(self.genome)).then(function(genome_wide_data) {
                 var chord_data = [],
                     chroms_info = self.genome.get_chroms_info();
@@ -685,11 +712,16 @@ var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
                     .selectAll("path")
                         .data(chord_data)
                     .enter().append("path")
-                        .style("fill", '000')
+                        .style("fill", self.get_fill_color())
                         .attr("d", d3.svg.chord().radius(self.radius_bounds[0]))
                         .style("opacity", 1);
             });
         });
+    },
+
+    update_radius_bounds: function(radius_bounds) {
+        this.radius_bounds = radius_bounds;
+        this.parent_elt.selectAll("path").transition().attr("d", d3.svg.chord().radius(this.radius_bounds[0]));
     },
 
     /**
