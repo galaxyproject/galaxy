@@ -51,8 +51,6 @@ class ComponentGrid( grids.Grid ):
 class RepositoriesWithReviewsGrid( RepositoryGrid ):
     # This grid filters out repositories that have been marked as deprecated.
     class WithReviewsRevisionColumn( grids.GridColumn ):
-        def __init__( self, col_name ):
-            grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
             # Restrict to revisions that have been reviewed.
             if repository.reviews:
@@ -61,6 +59,18 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                 for review in repository.reviews:
                     changeset_revision = review.changeset_revision
                     rev, label = get_rev_label_from_changeset_revision( repo, changeset_revision )
+                    rval += '<a href="manage_repository_reviews_of_revision'
+                    rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
+                return rval
+            return ''
+    class WithoutReviewsRevisionColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, repository ):
+            # Restrict the options to revisions that have not yet been reviewed.
+            repository_metadata_revisions = get_repository_metadata_revisions_for_review( repository, reviewed=False )
+            if repository_metadata_revisions:
+                rval = ''
+                for repository_metadata in repository_metadata_revisions:
+                    rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( repository_metadata, repository=repository )
                     rval += '<a href="manage_repository_reviews_of_revision'
                     rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
                 return rval
@@ -84,7 +94,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                     attach_popup=True ),
         WithReviewsRevisionColumn( "Reviewed revisions" ),
-        RepositoryGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
+        WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoryGrid.UserColumn( "Owner", attach_popup=False ),
         ReviewersColumn( "Reviewers", attach_popup=False )
     ]
