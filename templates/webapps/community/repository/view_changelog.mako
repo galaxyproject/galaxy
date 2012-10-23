@@ -114,14 +114,14 @@
                         has_metadata_str = '<table border="0"><tr><td  bgcolor="#D8D8D8">Repository metadata is associated with this change set.</td></tr></table>'
                     else:
                         has_metadata_str = ''
+                    display_date = changeset[ 'display_date' ]
                 %>
-                <% display_date = changeset[ 'display_date' ] %>
                 %if test_date != display_date:
                     <tr colspan="2"><td bgcolor="#D8D8D8">${display_date}</td></tr>
                 %endif
                 <tr>
                     <td>
-                        %if is_admin and has_metadata_str:
+                        %if has_metadata_str:
                             <div class="form-row">
                                 ${has_metadata_str}
                             </div>
