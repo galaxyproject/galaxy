@@ -82,7 +82,7 @@
                     <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
                 %endif
                 %if can_browse_contents:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label | h}</a>
                 %endif
                 %if can_contact_owner:
                     <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ) )}">Contact repository owner</a>
@@ -137,7 +137,7 @@
     <p/>
 %endif
 <div class="toolForm">
-    <div class="toolFormTitle">Repository '${repository.name}'</div>
+    <div class="toolFormTitle">Repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         <form name="edit_repository" id="edit_repository" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
             %if can_download:
@@ -151,7 +151,7 @@
                 %if repository.times_downloaded > 0:
                     ${repository.name}
                 %else:
-                    <input name="repo_name" type="textfield" value="${repository.name}" size="40"/>
+                    <input name="repo_name" type="textfield" value="${repository.name | h}" size="40"/>
                 %endif
                 <div class="toolParamHelp" style="clear: both;">
                     Repository names cannot be changed if the repository has been cloned.
@@ -160,13 +160,13 @@
             </div>
             <div class="form-row">
                 <label>Synopsis:</label>
-                <input name="description" type="textfield" value="${description}" size="80"/>
+                <input name="description" type="textfield" value="${description | h}" size="80"/>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Detailed description:</label>
                 %if long_description:
-                    <pre><textarea name="long_description" rows="3" cols="80">${long_description}</textarea></pre>
+                    <pre><textarea name="long_description" rows="3" cols="80">${long_description | h}</textarea></pre>
                 %else:
                     <textarea name="long_description" rows="3" cols="80"></textarea>
                 %endif
@@ -175,27 +175,27 @@
             <div class="form-row">
                 <label>Revision:</label>
                 %if can_view_change_log:
-                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
+                    <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label | h}</a>
                 %else:
-                    ${revision_label}
+                    ${revision_label | h}
                 %endif
             </div>
             <div class="form-row">
                 <label>Owner:</label>
-                ${repository.user.username}
+                ${repository.user.username | h}
             </div>
             <div class="form-row">
                 <label>Times downloaded:</label>
-                ${repository.times_downloaded}
+                ${repository.times_downloaded | h}
             </div>
             %if is_admin:
                 <div class="form-row">
                     <label>Location:</label>
-                    ${repository.repo_path}
+                    ${repository.repo_path | h}
                 </div>
                 <div class="form-row">
                     <label>Deleted:</label>
-                    ${repository.deleted}
+                    ${repository.deleted | h}
                 </div>
             %endif
             <div class="form-row">
@@ -215,9 +215,9 @@ ${render_repository_items( repository_metadata_id, metadata, can_set_metadata=Tr
                 <select name="category_id" multiple>
                     %for category in categories:
                         %if category.id in selected_categories:
-                            <option value="${trans.security.encode_id( category.id )}" selected>${category.name}</option>
+                            <option value="${trans.security.encode_id( category.id )}" selected>${category.name | h}</option>
                         %else:
-                            <option value="${trans.security.encode_id( category.id )}">${category.name}</option>
+                            <option value="${trans.security.encode_id( category.id )}">${category.name | h}</option>
                         %endif
                     %endfor
                 </select>
@@ -258,14 +258,14 @@ ${render_repository_items( repository_metadata_id, metadata, can_set_metadata=Tr
     <div class="toolFormBody">
         <table class="grid">
             <tr>
-                <td>${repository.user.username}</td>
+                <td>${repository.user.username | h}</td>
                 <td>owner</td>
                 <td>&nbsp;</td>
             </tr>
             %for username in current_allow_push_list:
                 %if username != repository.user.username:
                     <tr>
-                        <td>${username}</td>
+                        <td>${username | h}</td>
                         <td>write</td>
                         <td><a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), user_access_button='Remove', remove_auth=username )}">remove</a>
                     </tr>
@@ -295,7 +295,7 @@ ${render_repository_items( repository_metadata_id, metadata, can_set_metadata=Tr
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Times Rated:</label>
-                ${num_ratings}
+                ${num_ratings | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
@@ -329,9 +329,9 @@ ${render_repository_items( repository_metadata_id, metadata, can_set_metadata=Tr
                         %>
                         <tr>
                             <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                            <td><pre>${review.comment}</pre></td>
+                            <td><pre>${review.comment | h}</pre></td>
                             <td>${time_ago( review.update_time )}</td>
-                            <td>${review.user.username}</td>
+                            <td>${review.user.username | h}</td>
                         </tr>
                     %endfor
                 </table>
