@@ -1,3 +1,11 @@
+<%def name="escape_html_add_breaks( value )">
+    <%
+        import markupsafe
+        value = str( markupsafe.escape( value ) ).replace( '\n', '<br/>' )
+    %>
+    ${value}
+</%def>
+
 <%def name="render_star_rating( name, rating, disabled=False )">
     <%
         if disabled:
@@ -15,7 +23,6 @@
 </%def>
 
 <%def name="render_readme( readme_text )">
-    <% readme_text = readme_text.replace( '\n', '<br/>' ) %>
     <style type="text/css">
         #readme_table{ table-layout:fixed;
                        width:100%;
@@ -31,7 +38,7 @@
         <div class="toolFormBody">
             <div class="form-row">
                 <table id="readme_table">
-                    <tr><td>${readme_text}</td></tr>
+                    <tr><td>${ escape_html_add_breaks( readme_text ) }</td></tr>
                 </table>
             </div>
         </div>
@@ -39,7 +46,6 @@
 </%def>
 
 <%def name="render_long_description( description_text )">
-    <% description_text = description_text.replace( '\n', '<br/>' ) %>
     <style type="text/css">
         #description_table{ table-layout:fixed;
                             width:100%;
@@ -53,7 +59,7 @@
     <div class="form-row">
         <label>Detailed description:</label>
         <table id="description_table">
-            <tr><td>${description_text}</td></tr>
+            <tr><td>${ escape_html_add_breaks( description_text ) }</td></tr>
         </table>
         <div style="clear: both"></div>
     </div>

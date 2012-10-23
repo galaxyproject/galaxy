@@ -24,9 +24,9 @@
                                     ${invalid_tool_config}
                                 </a>
                             </td>
-                            <td>${repository_name}</td>
-                            <td>${repository_owner}</td>
-                            <td>${changeset_revision}</td>
+                            <td>${repository_name | h}</td>
+                            <td>${repository_owner | h}</td>
+                            <td>${changeset_revision | h}</td>
                         </tr>
                     %endfor
                 </table>

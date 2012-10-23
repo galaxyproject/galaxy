@@ -20,18 +20,18 @@
         <form name="create_repository_form" id="create_repository_form" action="${h.url_for( controller='repository', action='create_repository' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
-                <input  name="name" type="textfield" value="${name}" size="40"/>
+                <input  name="name" type="textfield" value="${name | h}" size="40"/>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Synopsis:</label>
-                <input  name="description" type="textfield" value="${description}" size="80"/>
+                <input  name="description" type="textfield" value="${description | h}" size="80"/>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Detailed description:</label>
                 %if long_description:
-                    <pre><textarea name="long_description" rows="3" cols="80">${long_description}</textarea></pre>
+                    <pre><textarea name="long_description" rows="3" cols="80">${long_description | h}</textarea></pre>
                 %else:
                     <textarea name="long_description" rows="3" cols="80"></textarea>
                 %endif
@@ -43,9 +43,9 @@
                     <select name="category_id" multiple>
                         %for category in categories:
                             %if category.id in selected_categories:
-                                <option value="${trans.security.encode_id( category.id )}" selected>${category.name}</option>
+                                <option value="${trans.security.encode_id( category.id )}" selected>${category.name | h}</option>
                             %else:
-                                <option value="${trans.security.encode_id( category.id )}">${category.name}</option>
+                                <option value="${trans.security.encode_id( category.id )}">${category.name | h}</option>
                             %endif
                         %endfor
                     </select>

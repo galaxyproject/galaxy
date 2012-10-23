@@ -35,7 +35,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">My review of repository '${repository.name}'</div>
+    <div class="toolFormTitle">My review of repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         <form name="edit_review" action="${h.url_for( controller='repository_review', action='edit_review', id=trans.security.encode_id( review.id ) )}" method="post" >
             <div class="form-row">
@@ -45,12 +45,12 @@
             </div>
             <div class="form-row">
                 <label>Repository owner:</label>
-                ${repository.user.username}
+                ${repository.user.username | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Repository synopsis:</label>
-                ${repository.description}
+                ${repository.description | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
@@ -108,8 +108,8 @@
                             review_button_name = '%s%sreview_button' % ( component_name, STRSEP )
                         %>
                         <tr>
-                            <td bgcolor="#D8D8D8"><b>${component.name}</b></td>
-                            <td bgcolor="#D8D8D8">${component.description}</td>
+                            <td bgcolor="#D8D8D8"><b>${component.name | h}</b></td>
+                            <td bgcolor="#D8D8D8">${component.description | h}</td>
                         </tr>
                         <tr>
                             <td colspan="2">
@@ -128,7 +128,7 @@
                                         <td>
                                             <label>Comments:</label>
                                             %if component_review:
-                                                <pre><textarea name="${comment_name}" rows="3" cols="80">${comment}</textarea></pre>
+                                                <pre><textarea name="${comment_name}" rows="3" cols="80">${comment | h}</textarea></pre>
                                             %else:
                                                 <textarea name="${comment_name}" rows="3" cols="80"></textarea>
                                             %endif

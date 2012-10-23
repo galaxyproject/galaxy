@@ -140,35 +140,35 @@
             %if 'description' in tool_metadata_dict:
                 <div class="form-row">
                     <label>Description:</label>
-                    ${tool_metadata_dict[ 'description' ]}
+                    ${tool_metadata_dict[ 'description' ] | h}
                     <div style="clear: both"></div>
                 </div>
             %endif
             %if 'id' in tool_metadata_dict:
                 <div class="form-row">
                     <label>Id:</label>
-                    ${tool_metadata_dict[ 'id' ]}
+                    ${tool_metadata_dict[ 'id' ] | h}
                     <div style="clear: both"></div>
                 </div>
             %endif
             %if 'guid' in tool_metadata_dict:
                 <div class="form-row">
                     <label>Guid:</label>
-                    ${tool_metadata_dict[ 'guid' ]}
+                    ${tool_metadata_dict[ 'guid' ] | h}
                     <div style="clear: both"></div>
                 </div>
             %endif
             %if 'version' in tool_metadata_dict:
                 <div class="form-row">
                     <label>Version:</label>
-                    ${tool_metadata_dict[ 'version' ]}
+                    ${tool_metadata_dict[ 'version' ] | h}
                     <div style="clear: both"></div>
                 </div>
             %endif
             %if 'version_string_cmd' in tool_metadata_dict:
                 <div class="form-row">
                     <label>Version command string:</label>
-                    ${tool_metadata_dict[ 'version_string_cmd' ]}
+                    ${tool_metadata_dict[ 'version_string_cmd' ] | h}
                     <div style="clear: both"></div>
                 </div>
             %endif
@@ -184,9 +184,9 @@
                             <tr>
                                 <td>
                                     %if guid == tool_metadata_dict[ 'guid' ]:
-                                        ${guid} <b>(this tool)</b>
+                                        ${guid | h} <b>(this tool)</b>
                                     %else:
-                                        ${guid}
+                                        ${guid | h}
                                     %endif
                                 </td>
                             </tr>
@@ -224,9 +224,9 @@
                                 requirement_type = requirement_dict[ 'type' ] or 'not provided'
                             %>
                             <tr>
-                                <td>${requirement_name}</td>
-                                <td>${requirement_version}</td>
-                                <td>${requirement_type}</td>
+                                <td>${requirement_name | h}</td>
+                                <td>${requirement_version | h}</td>
+                                <td>${requirement_type | h}</td>
                             </tr>
                         %endfor
                     </table>
@@ -245,27 +245,27 @@
                 </div>
                 <div class="form-row">
                     <label>Command:</label>
-                    <pre>${tool.command}</pre>
+                    <pre>${tool.command | h}</pre>
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Interpreter:</label>
-                    ${tool.interpreter}
+                    ${tool.interpreter | h}
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Is multi-byte:</label>
-                    ${tool.is_multi_byte}
+                    ${tool.is_multi_byte | h}
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Forces a history refresh:</label>
-                    ${tool.force_history_refresh}
+                    ${tool.force_history_refresh | h}
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
                     <label>Parallelism:</label>
-                    ${tool.parallelism}
+                    ${tool.parallelism | h}
                     <div style="clear: both"></div>
                 </div>
             %endif
@@ -299,17 +299,17 @@
                                 <td>${test_dict[ 'name' ]}</td>
                                 <td>
                                     %for input in inputs:
-                                        <b>${input[0]}:</b> ${input[1]}<br/>
+                                        <b>${input[0]}:</b> ${input[1] | h}<br/>
                                     %endfor
                                 </td>
                                 <td>
                                     %for output in outputs:
-                                        <b>${output[0]}:</b> ${output[1]}<br/>
+                                        <b>${output[0]}:</b> ${output[1] | h}<br/>
                                     %endfor
                                 </td>
                                 <td>
                                     %for required_file in required_files:
-                                        ${required_file}<br/>
+                                        ${required_file | h}<br/>
                                     %endfor
                                 </td>
                             </tr>

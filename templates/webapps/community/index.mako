@@ -39,7 +39,7 @@
 <%def name="left_panel()">
     <% can_review_repositories = trans.app.security_agent.user_can_review_repositories( trans.user ) %>
     <div class="unified-panel-header" unselectable="on">
-        <div class='unified-panel-header-inner'>${trans.app.shed_counter.valid_tools} valid tools on ${trans.app.shed_counter.generation_time}</div>
+        <div class='unified-panel-header-inner'>${trans.app.shed_counter.valid_tools | h} valid tools on ${trans.app.shed_counter.generation_time | h}</div>
     </div>
     <div class="page-container" style="padding: 10px;">
         <div class="toolMenu">

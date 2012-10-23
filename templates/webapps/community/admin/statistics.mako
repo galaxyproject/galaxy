@@ -16,35 +16,35 @@
                     </tr>
                     <tr>
                         <td>Total repositories</td>
-                        <td>${trans.app.shed_counter.repositories}</td>
+                        <td>${trans.app.shed_counter.repositories | h}</td>
                     </tr>
                     <tr>
                         <td>Empty repositories</td>
-                        <td>${trans.app.shed_counter.new_repositories}</td>
+                        <td>${trans.app.shed_counter.new_repositories | h}</td>
                     </tr>
                     <tr>
                         <td>Deleted repositories</td>
-                        <td>${trans.app.shed_counter.deleted_repositories}</td>
+                        <td>${trans.app.shed_counter.deleted_repositories | h}</td>
                     </tr>
                     <tr>
                         <td>Valid tools</td>
-                        <td>${trans.app.shed_counter.valid_tools}</td>
+                        <td>${trans.app.shed_counter.valid_tools | h}</td>
                     </tr>
                     <tr>
                         <td>Invalid tools</td>
-                        <td>${trans.app.shed_counter.invalid_tools}</td>
+                        <td>${trans.app.shed_counter.invalid_tools | h}</td>
                     </tr>
                     <tr>
                         <td>Workflows</td>
-                        <td>${trans.app.shed_counter.workflows}</td>
+                        <td>${trans.app.shed_counter.workflows | h}</td>
                     </tr>
                     <tr>
                         <td>Proprietary datatypes</td>
-                        <td>${trans.app.shed_counter.proprietary_datatypes}</td>
+                        <td>${trans.app.shed_counter.proprietary_datatypes | h}</td>
                     </tr>
                     <tr>
                         <td>Total clones</td>
-                        <td>${trans.app.shed_counter.total_clones}</td>
+                        <td>${trans.app.shed_counter.total_clones | h}</td>
                     </tr>
                 </table>
             </div>

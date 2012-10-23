@@ -91,7 +91,7 @@
                 <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
             %endif
             %if can_browse_contents:
-                <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label}</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label | h}</a>
             %endif
             %if can_contact_owner:
                 <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ) )}">Contact repository owner</a>
@@ -107,7 +107,7 @@
 
 %if repository.user != trans.user:
     <div class="toolForm">
-        <div class="toolFormTitle">${repository.name}</div>
+        <div class="toolFormTitle">${repository.name | h}</div>
         %if can_download:
             <div class="form-row">
                 <label>Clone this repository:</label>
@@ -117,17 +117,17 @@
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Description:</label>
-                ${repository.description}
+                ${repository.description | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Version:</label>
-                ${repository.revision}
+                ${repository.revision | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Owner:</label>
-                ${repository.user.username}
+                ${repository.user.username | h}
                 <div style="clear: both"></div>
             </div>
         </div>
@@ -139,7 +139,7 @@
             <form id="rate_repository" name="rate_repository" action="${h.url_for( controller='repository', action='rate_repository', id=trans.security.encode_id( repository.id ) )}" method="post">
                 <div class="form-row">
                     <label>Times Rated:</label>
-                    ${num_ratings}
+                    ${num_ratings | h}
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
@@ -162,7 +162,7 @@
                     <label>Review:</label>
                     %if rra and rra.comment:
                         <div class="form-row-input">
-                            <pre><textarea name="comment" rows="5" cols="80">${rra.comment}</textarea></pre>
+                            <pre><textarea name="comment" rows="5" cols="80">${rra.comment | h}</textarea></pre>
                         </div>
                     %else:
                         <div class="form-row-input">
@@ -202,9 +202,9 @@
                             %>
                             <tr>
                                 <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td><pre>${review.comment}</pre></td>
+                                <td><pre>${review.comment | h}</pre></td>
                                 <td>${time_ago( review.update_time )}</td>
-                                <td>${review.user.username}</td>
+                                <td>${review.user.username | h}</td>
                             </tr>
                         %endfor
                     </table>

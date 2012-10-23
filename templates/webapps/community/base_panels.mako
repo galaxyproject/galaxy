@@ -50,10 +50,10 @@
                                             ${menu_item[0]}
                                         %elif len ( menu_item ) == 2:
                                             <% name, link = menu_item %>
-                                            <a href="${link}">${name}</a>
+                                            <a href="${link}">${name | h}</a>
                                         %else:
                                             <% name, link, target = menu_item %>
-                                            <a target="${target}" href="${link}">${name}</a>
+                                            <a target="${target}" href="${link}">${name | h}</a>
                                         %endif
                                         </li>
                                     %endif

@@ -82,7 +82,7 @@
 
 %if can_download:
     <div class="toolForm">
-        <div class="toolFormTitle">${repository.name}</div>
+        <div class="toolFormTitle">${repository.name | h}</div>
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Clone this repository:</label>
@@ -99,7 +99,7 @@
         else:
             title_str = '%s changeset %s' % ( repository.name, ctx )
     %>
-    <div class="toolFormTitle">${title_str}</div>
+    <div class="toolFormTitle">${title_str | h}</div>
     <div class="toolFormBody">
         <table class="grid">
             %if modified:
@@ -107,7 +107,7 @@
                     <td>
                         <b>modified:</b>
                         %for item in modified:
-                            <br/><a href="#${item}">${item}</a>
+                            <br/><a href="#${item}">${item | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -117,7 +117,7 @@
                     <td>
                         <b>added:</b>
                         %for item in added:
-                            <br/><a href="#${item}">${item}</a>
+                            <br/><a href="#${item}">${item | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -127,7 +127,7 @@
                     <td>
                         <b>removed:</b>
                         %for item in removed:
-                            <br/><a href="#${item}">${item}</a>
+                            <br/><a href="#${item}">${item | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -137,7 +137,7 @@
                     <td>
                         <b>deleted:</b>
                         %for item in deleted:
-                            <br/><a href="#${item}">${item}</a>
+                            <br/><a href="#${item}">${item | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -147,7 +147,7 @@
                     <td>
                         <b>unknown:</b>
                         %for item in unknown:
-                            <br/><a href="#${item}">${item}</a>
+                            <br/><a href="#${item}">${item | h}</a>
                         %endfor
                     }</td>
                 </tr>
@@ -157,7 +157,7 @@
                     <td>
                         <b>ignored:</b>
                         %for item in ignored:
-                            <br/><a href="#${item}">${item}</a>
+                            <br/><a href="#${item}">${item | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -167,7 +167,7 @@
                     <td>
                         clean:
                         %for item in clean:
-                            <br/><a href="#${item}">${item}</a>
+                            <br/><a href="#${item}">${item | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -177,7 +177,6 @@
                     # Read at most the first 10 lines of diff to determine the anchor
                     ctr = 0
                     lines = diff.split( '\n' )
-                    diff = diff.replace( '\n', '<br/>' )
                     anchor_str = ''
                     for line in lines:
                         if ctr > 9:
@@ -189,7 +188,7 @@
                         ctr += 1
                 %>
                 <tr><td bgcolor="#E0E0E0">${anchor_str}</td></tr>
-                <tr><td>${diff}</td></tr>
+                <tr><td>${ escape_html_add_breaks( diff ) }</td></tr>
             %endfor
         </table>
     </div>

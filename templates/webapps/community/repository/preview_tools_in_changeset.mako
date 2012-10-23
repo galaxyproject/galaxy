@@ -53,7 +53,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Repository ${repository.name}</div>
+    <div class="toolFormTitle">Repository ${repository.name | h}</div>
     <div class="toolFormBody">
         %if len( changeset_revision_select_field.options ) > 1:
             <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='preview_tools_in_changeset', repository_id=trans.security.encode_id( repository.id ) )}" method="post" >
@@ -64,7 +64,7 @@
                         else:
                             tip_str = ''
                     %>
-                    ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
+                    ${changeset_revision_select_field.get_html()} <i>${tip_str | h}</i>
                     <div class="toolParamHelp" style="clear: both;">
                         Select a revision to inspect and download versions of tools from this repository.
                     </div>
@@ -73,7 +73,7 @@
         %else:
             <div class="form-row">
                 <label>Revision:</label>
-                ${revision_label}
+                ${revision_label | h}
             </div>
         %endif
     </div>

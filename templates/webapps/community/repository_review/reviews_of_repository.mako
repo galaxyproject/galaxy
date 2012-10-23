@@ -55,7 +55,7 @@
             <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.security.encode_id( repository.id ) )}">Rate repository</a>
         %endif
         %if can_browse_contents:
-            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">${browse_label}</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">${browse_label | h}</a>
         %endif
         %if can_contact_owner:
             <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ) )}">Contact repository owner</a>
@@ -68,7 +68,7 @@
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">${title}</div>
+    <div class="toolFormTitle">${title | h}</div>
     <div class="toolFormBody">
         <div class="form-row">
             <table class="grid">
@@ -102,7 +102,7 @@
                     <tr>
                         <td>
                             <div style="float:left;" class="menubutton split popup" id="${changeset_revision}-popup">
-                                <a class="view-info" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label}</a>
+                                <a class="view-info" href="${h.url_for( controller='repository_review', action='view_or_manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">${changeset_revision_label | h}</a>
                             </div>
                             <div popupmenu="${changeset_revision}-popup">
                                 %if repository_reviews:
@@ -113,7 +113,7 @@
                             </div>
                         </td>
                         <td>${reviewers_str}</td>
-                        <td>${installable_str}</td>
+                        <td>${installable_str | h}</td>
                     </tr>
                 %endfor
             </table>

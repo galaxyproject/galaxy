@@ -143,12 +143,12 @@
             %if can_browse_contents:
                 <a href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${repository.name}</a>
             %else:
-                ${repository.name}
+                ${repository.name | h}
             %endif
         </div>
         <div class="form-row">
             <label>Synopsis:</label>
-            ${repository.description}
+            ${repository.description | h}
         </div>
         %if repository.long_description:
             ${render_long_description( repository.long_description )}
@@ -158,12 +158,12 @@
             %if can_view_change_log:
                 <a href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">${revision_label}</a>
             %else:
-                ${revision_label}
+                ${revision_label | h}
             %endif
         </div>
         <div class="form-row">
             <label>Owner:</label>
-            ${repository.user.username}
+            ${repository.user.username | h}
         </div>
         <div class="form-row">
             <label>Times downloaded:</label>
@@ -172,7 +172,7 @@
         %if trans.user_is_admin():
             <div class="form-row">
                 <label>Location:</label>
-                ${repository.repo_path}
+                ${repository.repo_path | h}
             </div>
             <div class="form-row">
                 <label>Deleted:</label>
@@ -189,7 +189,7 @@ ${render_repository_items( repository_metadata_id, metadata )}
         <div class="toolFormBody">
             %for rca in repository.categories:
                 <div class="form-row">
-                    ${rca.category.name}
+                    ${rca.category.name | h}
                 </div>
             %endfor
             <div style="clear: both"></div>

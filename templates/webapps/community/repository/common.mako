@@ -126,9 +126,9 @@
                                                 type = requirements_dict[ 'type' ]
                                             %>
                                             <tr>
-                                                <td>${name}</td>
-                                                <td>${version}</td>
-                                                <td>${type}</td>
+                                                <td>${name | h}</td>
+                                                <td>${version | h}</td>
+                                                <td>${type | h}</td>
                                             </tr>
                                         %endif
                                     %endfor
@@ -154,8 +154,8 @@
                                     <% environment_settings = tool_dependencies[ 'set_environment' ] %>
                                     %for requirements_dict in environment_settings:
                                         <tr>
-                                            <td>${requirements_dict[ 'name' ]}</td>
-                                            <td>${requirements_dict[ 'type' ]}</td>
+                                            <td>${requirements_dict[ 'name' ] | h}</td>
+                                            <td>${requirements_dict[ 'type' ] | h}</td>
                                         </tr>
                                     %endfor
                                 </table>
@@ -190,8 +190,8 @@
                                                 <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision, tool_id=tool_dict[ 'id' ] )}">View tool metadata</a>
                                             </div>
                                         </td>
-                                        <td>${tool_dict[ 'description' ]}</td>
-                                        <td>${tool_dict[ 'version' ]}</td>
+                                        <td>${tool_dict[ 'description' ] | h}</td>
+                                        <td>${tool_dict[ 'version' ] | h}</td>
                                         <td>
                                             <%
                                                 if 'requirements' in tool_dict:
@@ -206,7 +206,7 @@
                                                         requirements_str += '%s (%s), ' % ( requirement_dict[ 'name' ], requirement_dict[ 'type' ] )
                                                     requirements_str = requirements_str.rstrip( ', ' )
                                                 %>
-                                                ${requirements_str}
+                                                ${requirements_str | h}
                                             %else:
                                                 none
                                             %endif
@@ -233,7 +233,7 @@
                                     <tr>
                                         <td>
                                             <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( repository.id ), tool_config=invalid_tool_config, changeset_revision=changeset_revision )}">
-                                                ${invalid_tool_config}
+                                                ${invalid_tool_config | h}
                                             </a>
                                         </td>
                                     </tr>
@@ -274,7 +274,7 @@
                                     %>
                                     <tr>
                                         <td>
-                                            <a href="${h.url_for( controller='workflow', action='view_workflow', repository_metadata_id=repository_metadata_id, workflow_name=tool_shed_encode( workflow_name ) )}">${workflow_name}</a>
+                                            <a href="${h.url_for( controller='workflow', action='view_workflow', repository_metadata_id=repository_metadata_id, workflow_name=tool_shed_encode( workflow_name ) )}">${workflow_name | h}</a>
                                         </td>
                                         <td>
                                             %if steps:
@@ -283,8 +283,8 @@
                                                 unknown
                                             %endif
                                         </td>
-                                        <td>${format_version}</td>
-                                        <td>${annotation}</td>
+                                        <td>${format_version | h}</td>
+                                        <td>${annotation | h}</td>
                                     </tr>
                                 %endfor
                             </table>
@@ -317,10 +317,10 @@
                                         subclass = datatypes_dict.get( 'subclass', '&nbsp;' )
                                     %>
                                     <tr>
-                                        <td>${extension}</td>
-                                        <td>${dtype}</td>
-                                        <td>${mimetype}</td>
-                                        <td>${subclass}</td>
+                                        <td>${extension | h}</td>
+                                        <td>${dtype | h}</td>
+                                        <td>${mimetype | h}</td>
+                                        <td>${subclass | h}</td>
                                     </tr>
                                 %endfor
                             </table>

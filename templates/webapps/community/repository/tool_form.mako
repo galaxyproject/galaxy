@@ -177,8 +177,8 @@
         %endif
 
         %if tool:
-            <div class="toolForm" id="${tool.id}">
-                <div class="toolFormTitle">${tool.name} (version ${tool.version})</div>
+            <div class="toolForm" id="${tool.id | h}">
+                <div class="toolFormTitle">${tool.name | h} (version ${tool.version | h})</div>
                 <div class="toolFormBody">
                     <form id="tool_form" name="tool_form" action="" method="get">
                         <input type="hidden" name="tool_state" value="${util.object_to_string( tool_state.encode( tool, app ) )}">
