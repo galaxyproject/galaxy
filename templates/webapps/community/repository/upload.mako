@@ -82,7 +82,7 @@
             <div class="form-row">
                 <label>Url:</label>
                 <div class="form-row-input">
-                    <input name="url" type="textfield" value="${url}" size="40"/>
+                    <input name="url" type="textfield" value="${url | h}" size="40"/>
                 </div>
                 <div class="toolParamHelp" style="clear: both;">
                      Enter a URL to upload your files via http.
@@ -141,7 +141,7 @@
                 <label>Change set commit message:</label>
                 <div class="form-row-input">
                     %if commit_message:
-                        <pre><textarea name="commit_message" rows="3" cols="35">${commit_message}</textarea></pre>
+                        <pre><textarea name="commit_message" rows="3" cols="35">${commit_message | h}</textarea></pre>
                     %else:
                         <textarea name="commit_message" rows="3" cols="35"></textarea>
                     %endif
