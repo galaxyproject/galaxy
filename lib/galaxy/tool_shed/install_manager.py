@@ -50,7 +50,7 @@ class InstallManager( object ):
                         break
             if found:
                 break      
-        full_path = os.path.abspath( os.path.join( root, name ) )
+        full_path = str( os.path.abspath( os.path.join( root, name ) ) )
         tool = self.toolbox.load_tool( full_path )
         return generate_tool_guid( repository_clone_url, tool )
     def get_proprietary_tool_panel_elems( self, latest_tool_migration_script_number ):

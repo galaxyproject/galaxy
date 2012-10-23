@@ -685,7 +685,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                     metadata_dict[ 'readme' ] = relative_path_to_readme
                 # See if we have a tool config.
                 elif name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
-                    full_path = os.path.abspath( os.path.join( root, name ) )
+                    full_path = str( os.path.abspath( os.path.join( root, name ) ) )
                     if os.path.getsize( full_path ) > 0:
                         if not ( check_binary( full_path ) or check_image( full_path ) or check_gzip( full_path )[ 0 ]
                                  or check_bz2( full_path )[ 0 ] or check_zip( full_path ) ):
