@@ -3,8 +3,6 @@ define( ["libs/underscore", "mvc/data", "viz/trackster/util", "utils/config"],
 
 /**
  * Model, view, and controller objects for Galaxy visualization framework.
- * 
- * Required libraries: Backbone, jQuery
  *
  * Models have no references to views, instead using events to indicate state 
  * changes; this is advantageous because multiple views can use the same object 
@@ -16,11 +14,10 @@ define( ["libs/underscore", "mvc/data", "viz/trackster/util", "utils/config"],
  * track definitions are obtained from the server and the success_fn is called with the list of
  * definitions for selected datasets.
  */
-var select_datasets = function(dataset_url, add_track_async_url, dbkey, success_fn) {
+var select_datasets = function(dataset_url, add_track_async_url, filters, success_fn) {
     $.ajax({
         url: dataset_url,
-        // Filter by dbkey if available.
-        data: ( dbkey ? { 'f-dbkey': dbkey } : {} ),
+        data: filters,
         error: function() { alert( "Grid failed" ); },
         success: function(table_html) {
             show_modal(

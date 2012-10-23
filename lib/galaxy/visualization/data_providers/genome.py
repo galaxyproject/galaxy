@@ -347,11 +347,18 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
         
         tabix = ctabix.Tabixfile(bgzip_fname, index_filename=self.converted_dataset.file_name)
         
-        # If chrom not in data, try alternative.
-        if chrom not in tabix.contigs:
+        # Get iterator using either naming scheme.
+        iterator = iter( [] )
+        if chrom in tabix.contigs:
+            iterator = tabix.fetch(reference=chrom, start=start, end=end)
+        else:
+            # Try alternative naming scheme.
             chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
-        
-        return tabix.fetch(reference=chrom, start=start, end=end)
+            if chrom in tabix.contigs:
+                iterator = tabix.fetch(reference=chrom, start=start, end=end)
+
+        return iterator
+
                 
     def write_data_to_file( self, regions, filename ):
         out = open( filename, "w" )
@@ -1457,11 +1464,11 @@ class ChromatinInteractionsDataProvider( GenomeDataProvider ):
             feature = line.split()
             length = len( feature )
             
-            s1 = int( feature[1] ), 
-            e1 = int( feature[2] ),
-            c = feature[3],
-            s2 = int( feature[4] ),
-            e2 = int( feature[5] ),
+            s1 = int( feature[1] )
+            e1 = int( feature[2] )
+            c = feature[3]
+            s2 = int( feature[4] )
+            e2 = int( feature[5] )
             v = float( feature[6] )
 
             # Feature initialization.
@@ -1480,7 +1487,7 @@ class ChromatinInteractionsDataProvider( GenomeDataProvider ):
         return 50000;
     
 class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinInteractionsDataProvider ):
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom, start=0, end=sys.maxint ):
         """
         """
         # Modify start as needed to get earlier interactions with start region.
@@ -1493,7 +1500,7 @@ class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinIntera
                 c = feature[3]
                 s2 = int( feature[4] )
                 e2 = int( feature[5] )
-                if ( ( c == chrom ) and ( s1 < end and e1 > start ) and ( s2 < end and e2 > start ) ):
+                if ( s1 <= end and e1 >= start ) and ( s2 <= end and e2 >= start ):
                     yield line
         return filter( TabixDataProvider.get_iterator( self, chrom, start, end ) )
                

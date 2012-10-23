@@ -48,23 +48,46 @@ var CircsterView = Backbone.View.extend({
         this.track_gap = 5;
         this.label_arc_height = 20;
         this.scale = 1;
-        this.track_views = null;
+        this.circular_views = null;
+        this.chords_views = null;
 
         // When tracks added to/removed from model, update view.
         this.model.get('tracks').on('add', this.add_track, this);
         this.model.get('tracks').on('remove', this.remove_track, this);
+        this.get_circular_tracks();
+    },
+
+    // HACKs: using track_type for circular/chord distinction in the functions below for now.
+
+    /**
+     * Returns tracks to be rendered using circular view.
+     */
+    get_circular_tracks: function() {
+        return this.model.get('tracks').filter(function(track) {
+            return track.get('track_type') !== 'DiagonalHeatmapTrack';
+        });
+    },
+
+    /**
+     * Returns tracks to be rendered using chords view.
+     */
+    get_chord_tracks: function() {
+        return this.model.get('tracks').filter(function(track) {
+            return track.get('track_type') === 'DiagonalHeatmapTrack';
+        });
     },
 
     /**
      * Returns a list of tracks' radius bounds.
      */
     get_tracks_bounds: function() {
-        var dataset_arc_height = this.dataset_arc_height,
+        var circular_tracks = this.get_circular_tracks();
+            dataset_arc_height = this.dataset_arc_height,
             min_dimension = Math.min(this.$el.width(), this.$el.height()),
             // Compute radius start based on model, will be centered 
             // and fit entirely inside element by default.
             radius_start = min_dimension / 2 - 
-                            this.model.get('tracks').length * (this.dataset_arc_height + this.track_gap) -
+                            circular_tracks.length * (this.dataset_arc_height + this.track_gap) -
                             (this.label_arc_height + this.track_gap),
 
             // Compute range of track starting radii.
@@ -77,12 +100,16 @@ var CircsterView = Backbone.View.extend({
         });
     },
     
+    /**
+     * Renders circular tracks, chord tracks, and label tracks.
+     */
     render: function() {
         var self = this,
             dataset_arc_height = this.dataset_arc_height,
             width = self.$el.width(),
             height = self.$el.height(),
-            tracks = this.model.get('tracks'),
+            circular_tracks = this.get_circular_tracks(),
+            chords_tracks = this.get_chord_tracks(),
             tracks_bounds = this.get_tracks_bounds(),
 
             // Set up SVG element.
@@ -108,7 +135,7 @@ var CircsterView = Backbone.View.extend({
                         }
                         self.zoom_drag_timeout = setTimeout(function() {
                             // Render more detail in tracks' visible elements.
-                            _.each(self.track_views, function(view) {
+                            _.each(self.circular_views, function(view) {
                                 view.update_scale(scale);
                             });
                         }, 400);
@@ -117,32 +144,46 @@ var CircsterView = Backbone.View.extend({
                 .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")")
               .append('svg:g').attr('class', 'tracks');
                 
-
-        // -- Render each dataset in the visualization. --
+        // -- Render circular tracks. --
 
         // Create a view for each track in the visualiation and render.
-        this.track_views = tracks.map(function(track, index) {
-            track_view_class = (track.get('track_type') === 'LineTrack' ? 
+        this.circular_views = circular_tracks.map(function(track, index) {
+            var track_view_class = (track.get('track_type') === 'LineTrack' ? 
                                     CircsterBigWigTrackView : 
-                                    CircsterSummaryTreeTrackView );
+                                    CircsterSummaryTreeTrackView ),
+                view = new track_view_class({
+                    el: svg.append('g')[0],
+                    track: track,
+                    radius_bounds: tracks_bounds[index],
+                    genome: self.genome,
+                    total_gap: self.total_gap
+                });
             
-            return new track_view_class({
+            view.render();
+            
+            return view;
+        });
+
+        // -- Render chords tracks. --
+
+        this.chords_views = chords_tracks.map(function(track) {
+            var view = new CircsterChromInteractionsTrackView({
                 el: svg.append('g')[0],
                 track: track,
-                radius_bounds: tracks_bounds[index],
+                radius_bounds: tracks_bounds[0],
                 genome: self.genome,
                 total_gap: self.total_gap
             });
-        });
 
-        _.each(this.track_views, function(view) {
             view.render();
+
+            return view;
         });
 
-        // -- Render chromosome labels. --
+        // -- Render label tracks. --
         
         // Set radius start = end for track bounds.
-        var track_bounds = tracks_bounds[tracks.length];
+        var track_bounds = tracks_bounds[circular_tracks.length];
         track_bounds[1] = track_bounds[0];
         this.label_track_view = new CircsterLabelTrackView({
             el: svg.append('g')[0],
@@ -161,13 +202,12 @@ var CircsterView = Backbone.View.extend({
     add_track: function(new_track) {
         // Recompute and update track bounds.
         var new_track_bounds = this.get_tracks_bounds();
-        _.each(this.track_views, function(track_view, i) {
-            //console.log(self.get_tracks_bounds(), i);
+        _.each(this.circular_views, function(track_view, i) {
             track_view.update_radius_bounds(new_track_bounds[i]);
         });
 
         // Render new track.
-        var track_index = this.track_views.length,
+        var track_index = this.circular_views.length,
             track_view_class = (new_track.get('track_type') === 'LineTrack' ? 
                                     CircsterBigWigTrackView : 
                                     CircsterSummaryTreeTrackView ),
@@ -179,7 +219,7 @@ var CircsterView = Backbone.View.extend({
                 total_gap: this.total_gap
             });
         track_view.render();
-        this.track_views.push(track_view);
+        this.circular_views.push(track_view);
 
         // Update label track.
         var track_bounds = new_track_bounds[ new_track_bounds.length-1 ];
@@ -192,14 +232,13 @@ var CircsterView = Backbone.View.extend({
      */
     remove_track: function(track, tracks, options) {
         // -- Remove track from view. --
-        var track_view = this.track_views[options.index];
-        this.track_views.splice(options.index, 1);
+        var track_view = this.circular_views[options.index];
+        this.circular_views.splice(options.index, 1);
         track_view.$el.remove();
         
         // Recompute and update track bounds.
         var new_track_bounds = this.get_tracks_bounds();
-        _.each(this.track_views, function(track_view, i) {
-            //console.log(self.get_tracks_bounds(), i);
+        _.each(this.circular_views, function(track_view, i) {
             track_view.update_radius_bounds(new_track_bounds[i]);
         });
     }
@@ -581,7 +620,7 @@ var CircsterSummaryTreeTrackView = CircsterQuantitativeTrackView.extend({
 });
 
 /**
- * Bigwig track view in Circster
+ * Bigwig track view in Circster.
  */
 var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
 
@@ -602,6 +641,74 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
 
         return [ _.min(values), _.max(values) ];
     }
+});
+
+/**
+ * Chromosome interactions track view in Circster.
+ */
+var CircsterChromInteractionsTrackView = CircsterTrackView.extend({
+
+    render: function() {
+        var self = this;
+
+        // When data is ready, render track.
+        $.when(self.track.get('data_manager').data_is_ready()).then(function() {
+            // Convert genome-wide data in chord data.
+            $.when(self.track.get('data_manager').get_genome_wide_data(self.genome)).then(function(genome_wide_data) {
+                var chord_data = [],
+                    chroms_info = self.genome.get_chroms_info();
+                // Convert chromosome data into chord data.
+                _.each(genome_wide_data, function(chrom_data, index) {
+                    // Map each interaction into chord data.
+                    var cur_chrom = chroms_info[index].chrom;
+                    var chrom_chord_data = _.map(chrom_data.data, function(datum) {
+                        // Each datum is an interaction/chord.
+                        var source_angle = self._get_region_angle(cur_chrom, datum[1]),
+                            target_angle = self._get_region_angle(datum[3], datum[4]);
+                        return {
+                            source: {
+                                startAngle: source_angle,
+                                endAngle: source_angle + 0.01
+                            },
+                            target: {
+                                startAngle: target_angle,
+                                endAngle: target_angle + 0.01
+                            }
+                        };
+                    });
+
+                    chord_data = chord_data.concat(chrom_chord_data);
+                });
+
+                self.parent_elt.append("g")
+                        .attr("class", "chord")
+                    .selectAll("path")
+                        .data(chord_data)
+                    .enter().append("path")
+                        .style("fill", '000')
+                        .attr("d", d3.svg.chord().radius(self.radius_bounds[0]))
+                        .style("opacity", 1);
+            });
+        });
+    },
+
+    /**
+     * Returns radians for a genomic position.
+     */
+    _get_region_angle: function(chrom, position) {
+        // Find chrom angle data
+        var chrom_angle_data = _.find(this.chroms_layout, function(chrom_layout) {
+            return chrom_layout.data.chrom === chrom;
+        });
+
+        // Return angle at position.
+        return  chrom_angle_data.endAngle - 
+                ( 
+                    (chrom_angle_data.endAngle - chrom_angle_data.startAngle) * 
+                    (chrom_angle_data.data.len - position) / chrom_angle_data.data.len
+                );
+    }
+
 });
 
 // Module exports.

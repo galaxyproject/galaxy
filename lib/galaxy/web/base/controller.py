@@ -602,7 +602,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
 
         return visualization
 
-    def _get_genome_data( self, trans, dataset, dbkey=None ):
+    def _get_genome_data( self, trans, dataset, dbkey=None, source='index' ):
         """
         Returns genome-wide data for dataset if available; if not, message is returned.
         """
@@ -615,7 +615,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             query_dbkey = dbkey
         chroms_info = self.app.genomes.chroms( trans, dbkey=query_dbkey )
 
-        # If there are no messages (messages indicate data is not ready/available), preload data.
+        # If there are no messages (messages indicate data is not ready/available), get data.
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
         message = get_highest_priority_msg( messages_list )
         if message:
@@ -623,7 +623,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         else:
             data_provider = trans.app.data_provider_registry.get_data_provider( trans, 
                                                                                 original_dataset=dataset, 
-                                                                                source='index' )
+                                                                                source=source )
             # HACK: pass in additional params, which are only used for summary tree data, not BBI data.
             rval = data_provider.get_genome_data( chroms_info, level=4, detail_cutoff=0, draw_cutoff=0 )
 
