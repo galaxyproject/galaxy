@@ -12,14 +12,14 @@
             <div class="form-row">
                 <label>Name:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    ${component.name}
+                    ${component.name | h}
                 </div>
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
                 <label>Description:</label>
                 <div style="float: left; width: 250px; margin-right: 10px;">
-                    <input  name="description" type="textfield" value="${component.description}" size=40"/>
+                    <input  name="description" type="textfield" value="${component.description | h}" size=40"/>
                 </div>
                 <div style="clear: both"></div>
             </div>
