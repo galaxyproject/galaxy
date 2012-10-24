@@ -189,6 +189,12 @@ class ToolRunner( BaseUIController ):
             if isinstance( value, UnvalidatedValue ):
                 return str( value )
             if isinstance( input, DataToolParameter ):
+                if isinstance(value,list):
+                    values = []
+                    for val in value:
+                        if val not in history.datasets and val in hda_source_dict:
+                            values.append( hda_source_dict[ val ])
+                    return values
                 if value not in history.datasets and value in hda_source_dict:
                     return hda_source_dict[ value ]
         visit_input_values( tool.inputs, params_objects, rerun_callback )

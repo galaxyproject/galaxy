@@ -1550,6 +1550,10 @@ class DataToolParameter( ToolParameter ):
             return value
         elif isinstance( value, DummyDataset ):
             return None
+        elif isinstance( value, list) and len(value) > 0 and isinstance( value[0], DummyDataset):
+            return None
+        elif isinstance( value, list ):
+            return ",".join( [ val if isinstance( val, str ) else str(val.id) for val in value] )
         return value.id
 
     def to_python( self, value, app ):
@@ -1557,6 +1561,10 @@ class DataToolParameter( ToolParameter ):
         # indicates that the dataset is optional, while '' indicates that it is not.
         if value is None or value == '' or value == 'None':
             return value
+        if isinstance(value, str) and value.find(",") > -1:
+            values = value.split(",")
+            # TODO: Optimize. -John
+            return [app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( val ) ) for val in values]
         return app.model.context.query( app.model.HistoryDatasetAssociation ).get( int( value ) )
 
     def to_param_dict_string( self, value, other_values={} ):

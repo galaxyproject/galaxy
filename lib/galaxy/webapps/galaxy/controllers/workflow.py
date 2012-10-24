@@ -741,12 +741,14 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             }
             # Connections
             input_connections = step.input_connections
+            multiple_input = {} # Boolean value indicating if this can be mutliple
             if step.type is None or step.type == 'tool':
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
                 def callback( input, value, prefixed_name, prefixed_label ):
                     if isinstance( input, DataToolParameter ):
                         data_input_names[ prefixed_name ] = True
+                        multiple_input[input.name] = input.multiple
                 visit_input_values( module.tool.inputs, module.state.inputs, callback )
                 # Filter
                 # FIXME: this removes connection without displaying a message currently!
@@ -766,8 +768,14 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Encode input connections as dictionary
             input_conn_dict = {}
             for conn in input_connections:
-                input_conn_dict[ conn.input_name ] = \
-                    dict( id=conn.output_step.order_index, output_name=conn.output_name )
+                conn_dict = dict( id=conn.output_step.order_index, output_name=conn.output_name )
+                if conn.input_name in multiple_input:
+                    if conn.input_name in input_conn_dict:
+                        input_conn_dict[ conn.input_name ].append( conn_dict )
+                    else:
+                        input_conn_dict[ conn.input_name ] = [ conn_dict ]
+                else:
+                    input_conn_dict[ conn.input_name ] = conn_dict
             step_dict['input_connections'] = input_conn_dict
             # Position
             step_dict['position'] = step.position
@@ -832,13 +840,15 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
-            for input_name, conn_dict in step.temp_input_connections.iteritems():
-                if conn_dict:
-                    conn = model.WorkflowStepConnection()
-                    conn.input_step = step
-                    conn.input_name = input_name
-                    conn.output_name = conn_dict['output_name']
-                    conn.output_step = steps_by_external_id[ conn_dict['id'] ]
+            for input_name, conns in step.temp_input_connections.iteritems():
+                if conns:
+                    conn_dicts = conns if isinstance(conns,list) else [conns]
+                    for conn_dict in conn_dicts: 
+                        conn = model.WorkflowStepConnection()
+                        conn.input_step = step
+                        conn.input_name = input_name
+                        conn.output_name = conn_dict['output_name']
+                        conn.output_step = steps_by_external_id[ conn_dict['id'] ]
             del step.temp_input_connections
         # Order the steps if possible
         attach_ordered_steps( workflow, steps )
@@ -1346,8 +1356,13 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                     for step in workflow.steps:
                         step.upgrade_messages = {}
                         # Connections by input name
-                        step.input_connections_by_name = \
-                            dict( ( conn.input_name, conn ) for conn in step.input_connections )
+                        input_connections_by_name = {}
+                        for conn in step.input_connections:
+                            input_name = conn.input_name
+                            if not input_name in input_connections_by_name:
+                                input_connections_by_name[input_name] = []
+                            input_connections_by_name[input_name].append(conn)
+                        step.input_connections_by_name = input_connections_by_name
                         # Extract just the arguments for this step by prefix
                         p = "%s|" % step.id
                         l = len(p)
@@ -1405,11 +1420,17 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                 tool = trans.app.toolbox.get_tool( step.tool_id )
                                 # Connect up
                                 def callback( input, value, prefixed_name, prefixed_label ):
+                                    replacement = None
                                     if isinstance( input, DataToolParameter ):
                                         if prefixed_name in step.input_connections_by_name:
                                             conn = step.input_connections_by_name[ prefixed_name ]
-                                            return outputs[ conn.output_step.id ][ conn.output_name ]
+                                            if input.multiple:
+                                                replacement = [outputs[ c.output_step.id ][ c.output_name ] for c in conn]
+                                            else:
+                                                replacement = outputs[ conn[0].output_step.id ][ conn[0].output_name ]
+                                    return replacement
                                 try:
+                                    # Replace DummyDatasets with historydatasetassociations
                                     visit_input_values( tool.inputs, step.state.inputs, callback )
                                 except KeyError, k:
                                     error( "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow." % (tool.name, k.message))
@@ -1726,9 +1747,22 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 input_connections = [ conn for conn in input_connections if conn.input_name in data_input_names ]
             # Encode input connections as dictionary
             input_conn_dict = {}
-            for conn in input_connections:
-                input_conn_dict[ conn.input_name ] = \
-                    dict( id=conn.output_step.order_index, output_name=conn.output_name )
+            unique_input_names = set( [conn.input_name for conn in input_connections] )
+            for input_name in unique_input_names:
+                input_conn_dict[ input_name ] = \
+                    [ dict( id=conn.output_step.order_index, output_name=conn.output_name ) for conn in input_connections if conn.input_name == input_name ]
+            # Preserve backward compatability. Previously Galaxy
+            # assumed input connections would be dictionaries not
+            # lists of dictionaries, so replace any singleton list
+            # with just the dictionary so that workflows exported from
+            # newer Galaxy instances can be used with older Galaxy
+            # instances if they do no include multiple input
+            # tools. This should be removed at some point. Mirrored
+            # hack in _workflow_from_dict should never be removed so
+            # existing workflow exports continue to function.
+            for input_name, input_conn in dict(input_conn_dict).iteritems(): 
+                if len(input_conn) == 1:
+                    input_conn_dict[input_name] = input_conn[0]
             step_dict['input_connections'] = input_conn_dict
             # Position
             step_dict['position'] = step.position
@@ -1793,8 +1827,12 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Second pass to deal with connections between steps
         for step in steps:
             # Input connections
-            for input_name, conn_dict in step.temp_input_connections.iteritems():
-                if conn_dict:
+            for input_name, conn_list in step.temp_input_connections.iteritems():
+                if not conn_list:
+                    continue
+                if not isinstance(conn_list, list):  # Older style singleton connection
+                    conn_list = [conn_list]
+                for conn_dict in conn_list:
                     conn = model.WorkflowStepConnection()
                     conn.input_step = step
                     conn.input_name = input_name
@@ -2040,7 +2078,11 @@ def cleanup_param_values( inputs, values ):
                 #       still need to clean them up so we can serialize
                 # if not( prefix ):
                 if tmp: #this is false for a non-set optional dataset
-                    associations.append( ( tmp.hid, prefix + key ) )
+                    if not isinstance(tmp, list):
+                        associations.append( ( tmp.hid, prefix + key ) )
+                    else:
+                        associations.extend( [ (t.hid, prefix + key) for t in tmp] )
+
                 # Cleanup the other deprecated crap associated with datasets
                 # as well. Worse, for nested datasets all the metadata is
                 # being pushed into the root. FIXME: MUST REMOVE SOON

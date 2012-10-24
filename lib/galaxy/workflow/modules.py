@@ -263,6 +263,7 @@ class ToolModule( WorkflowModule ):
                 data_inputs.append( dict(
                     name=prefixed_name,
                     label=prefixed_label,
+                    multiple=input.multiple,
                     extensions=input.extensions ) )
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
         return data_inputs
@@ -336,9 +337,14 @@ class ToolModule( WorkflowModule ):
         # Any connected input needs to have value DummyDataset (these
         # are not persisted so we need to do it every time)
         def callback( input, value, prefixed_name, prefixed_label ):
+            replacement = None
             if isinstance( input, DataToolParameter ):
                 if connections is None or prefixed_name in input_connections_by_name:
-                    return DummyDataset()
+                    if input.multiple:
+                        replacement = [] if not connections else [DummyDataset() for conn in connections]
+                    else:
+                        replacement = DummyDataset()
+            return replacement
         visit_input_values( self.tool.inputs, self.state.inputs, callback ) 
 
 class WorkflowModuleFactory( object ):
