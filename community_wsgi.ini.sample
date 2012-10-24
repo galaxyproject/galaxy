@@ -38,8 +38,20 @@ session_data_dir = %(here)s/database/beaker_sessions
 session_key = galaxysessions
 session_secret = changethisinproduction
 
-# Galaxy session security
+# -- Users and Security
+
+# Galaxy encodes various internal values when these values will be output in
+# some format (for example, in a URL or cookie).  You should set a key to be
+# used by the algorithm that encodes and decodes these values.  It can be any
+# string.  If left unchanged, anyone could construct a cookie that would grant
+# them access to others' sessions.
 id_secret = changethisinproductiontoo
+
+# User authentication can be delegated to an upstream proxy server (usually
+# Apache).  The upstream proxy should set a REMOTE_USER header in the request.
+# Enabling remote user disables regular logins.  For more information, see:
+# http://wiki.g2.bx.psu.edu/Admin/Config/Apache%20Proxy
+#use_remote_user = False
 
 # Configuration for debugging middleware
 debug = true
