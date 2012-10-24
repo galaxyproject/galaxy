@@ -170,6 +170,21 @@ class CommunityRBACAgent( RBACAgent ):
                 repository_reviewer_role = self.get_repository_reviewer_role()
                 return repository_reviewer_role and repository_reviewer_role in roles
         return False
+    def user_can_browse_component_review( self, component_review, user ):
+        if component_review and user:
+            if component_review.private:
+                if self.user_can_review_repositories( user ):
+                    # Reviewers can access private component reviews.
+                    return True
+                repository_review = component_review.repository_review
+                repository = repository_review.repository
+                if repository.user == user:
+                    # The repository owner can access private component reviews.
+                    return True
+                return False
+            # The component_review is not marked private.
+            return True
+        return False
 
 def get_permitted_actions( filter=None ):
     '''Utility method to return a subset of RBACAgent's permitted actions'''
