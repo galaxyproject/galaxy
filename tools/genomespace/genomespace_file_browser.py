@@ -140,11 +140,17 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
         if not filename:
             filename = download_url
         if output_filename is None:
+            original_filename = filename
             filename = ''.join( c in VALID_CHARS and c or '-' for c in filename )
             while filename in used_filenames:
                 filename = "-%s" % filename
             used_filenames.append( filename )
             output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_%s_visible_%s' % ( hda_id, filename, galaxy_ext ) )
+            metadata_parameter_file.write( "%s\n" % simplejson.dumps( dict( type = 'new_primary_dataset',
+                                     base_dataset_id = dataset_id,
+                                     ext = galaxy_ext,
+                                     filename = output_filename,
+                                     name = "GenomeSpace import on %s" % ( original_filename ) ) ) )
         else:
             if dataset_id is not None:
                metadata_parameter_file.write( "%s\n" % simplejson.dumps( dict( type = 'dataset',
