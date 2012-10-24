@@ -61,15 +61,15 @@
                 <table class="grid">
                     %for component_review in review.component_reviews:
                         <%
+                            can_browse = trans.app.security_agent.user_can_browse_component_review( component_review, trans.user )
                             component = component_review.component
-                            
-                            # Initialize Private check box.
-                            private_check_box_name = '%s%sprivate' % ( component.name, STRSEP )
-                            private_check_box = CheckboxField( name=private_check_box_name, checked=component_review.private )
-                            
-                            # Initialize star rating.
-                            rating_name = '%s%srating' % ( component.name, STRSEP )
-                            
+                            if can_browse:
+                                # Initialize Private check box.
+                                private_check_box_name = '%s%sprivate' % ( component.name, STRSEP )
+                                private_check_box = CheckboxField( name=private_check_box_name, checked=component_review.private )
+                                
+                                # Initialize star rating.
+                                rating_name = '%s%srating' % ( component.name, STRSEP )
                         %>
                         <tr>
                             <td bgcolor="#D8D8D8"><b>${component.name | h}</b></td>
@@ -77,41 +77,45 @@
                         </tr>
                         <tr>
                             <td colspan="2">
-                                <table class="grid">
-                                    <tr>
-                                        <td>
-                                            <label>Private:</label>
-                                            ${private_check_box.get_html( disabled=True )}
-                                            <div class="toolParamHelp" style="clear: both;">
-                                                A private review can be accessed only by the owner of the repository and authorized repository reviewers.
-                                            </div>
-                                            <div style="clear: both"></div>
-                                        </td>
-                                    </tr>
-                                    %if component_review.comment:
+                            %if can_browse:
+                                    <table class="grid">
                                         <tr>
                                             <td>
-                                                <div overflow-wrap:normal;overflow:hidden;word-break:keep-all;word-wrap:break-word;line-break:strict;>
-                                                    ${ escape_html_add_breaks( component_review.comment ) }
+                                                <label>Private:</label>
+                                                ${private_check_box.get_html( disabled=True )}
+                                                <div class="toolParamHelp" style="clear: both;">
+                                                    A private review can be accessed only by the owner of the repository and authorized repository reviewers.
                                                 </div>
+                                                <div style="clear: both"></div>
                                             </td>
                                         </tr>
-                                    %endif
-                                    <tr>
-                                        <td>
-                                            <label>Approved:</label>
-                                            ${component_review.approved | h}
-                                            <div style="clear: both"></div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td>
-                                            <label>Rating:</label>
-                                            ${render_star_rating( rating_name, component_review.rating, disabled=True )}
-                                            <div style="clear: both"></div>
-                                        </td>
-                                    </tr>
-                                </table>
+                                        %if component_review.comment:
+                                            <tr>
+                                                <td>
+                                                    <div overflow-wrap:normal;overflow:hidden;word-break:keep-all;word-wrap:break-word;line-break:strict;>
+                                                        ${ escape_html_add_breaks( component_review.comment ) }
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        %endif
+                                        <tr>
+                                            <td>
+                                                <label>Approved:</label>
+                                                ${component_review.approved | h}
+                                                <div style="clear: both"></div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <label>Rating:</label>
+                                                ${render_star_rating( rating_name, component_review.rating, disabled=True )}
+                                                <div style="clear: both"></div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                %else:
+                                    You are not authorized to access the review of this component since it has been marked private.
+                                %endif
                             </td>
                         </tr>
                     %endfor
