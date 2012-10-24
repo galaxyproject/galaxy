@@ -48,13 +48,12 @@ class UploadController( BaseUIController ):
                 message = 'No files were entered on the upload form.'
                 status = 'error'
                 uploaded_file = None
-            elif url and url.startswith("hg"):
-                # Use mercurial clone to fetch repository, contents will then
-                # be copied over.
+            elif url and url.startswith( 'hg' ):
+                # Use mercurial clone to fetch repository, contents will then be copied over.
                 uploaded_directory = tempfile.mkdtemp()
-                repo_url = "http%s" % url[len("hg"):]
-                repo_url = repo_url.encode('ascii', 'replace')
-                commands.clone(get_configured_ui(), repo_url, uploaded_directory)
+                repo_url = 'http%s' % url[ len( 'hg' ): ]
+                repo_url = repo_url.encode( 'ascii', 'replace' )
+                commands.clone( get_configured_ui(), repo_url, uploaded_directory )
             elif url:
                 valid_url = True
                 try:

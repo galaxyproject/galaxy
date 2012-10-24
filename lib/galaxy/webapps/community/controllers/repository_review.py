@@ -51,8 +51,6 @@ class ComponentGrid( grids.Grid ):
 class RepositoriesWithReviewsGrid( RepositoryGrid ):
     # This grid filters out repositories that have been marked as deprecated.
     class WithReviewsRevisionColumn( grids.GridColumn ):
-        def __init__( self, col_name ):
-            grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
             # Restrict to revisions that have been reviewed.
             if repository.reviews:
@@ -61,6 +59,18 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                 for review in repository.reviews:
                     changeset_revision = review.changeset_revision
                     rev, label = get_rev_label_from_changeset_revision( repo, changeset_revision )
+                    rval += '<a href="manage_repository_reviews_of_revision'
+                    rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
+                return rval
+            return ''
+    class WithoutReviewsRevisionColumn( grids.GridColumn ):
+        def get_value( self, trans, grid, repository ):
+            # Restrict the options to revisions that have not yet been reviewed.
+            repository_metadata_revisions = get_repository_metadata_revisions_for_review( repository, reviewed=False )
+            if repository_metadata_revisions:
+                rval = ''
+                for repository_metadata in repository_metadata_revisions:
+                    rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( repository_metadata, repository=repository )
                     rval += '<a href="manage_repository_reviews_of_revision'
                     rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
                 return rval
@@ -84,7 +94,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                     attach_popup=True ),
         WithReviewsRevisionColumn( "Reviewed revisions" ),
-        RepositoryGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
+        WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoryGrid.UserColumn( "Owner", attach_popup=False ),
         ReviewersColumn( "Reviewers", attach_popup=False )
     ]
@@ -644,7 +654,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
             repo_dir = repository.repo_path
             repo = hg.repository( get_configured_ui(), repo_dir )
             metadata_revision_hashes = [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
-            reviewed_revision_hashes = [ reviewed_revisions.changeset_revision for reviewed_revisions in repository.reviewed_revisions ]
+            reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
             reviews_dict = odict()
             for changeset in get_reversed_changelog_changesets( repo ):
                 ctx = repo.changectx( changeset )
@@ -657,7 +667,10 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
                         # Determine if the current user can add a review to this revision.
                         can_add_review = trans.user not in [ repository_review.user for repository_review in repository_reviews ]
                         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-                        repository_metadata_reviews = util.listify( repository_metadata.reviews )
+                        if repository_metadata:
+                            repository_metadata_reviews = util.listify( repository_metadata.reviews )
+                        else:
+                            repository_metadata_reviews = []
                     else:
                         repository_reviews = []
                         repository_metadata_reviews = []
