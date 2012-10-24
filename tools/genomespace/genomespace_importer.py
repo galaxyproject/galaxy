@@ -100,7 +100,7 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
     datasource_params = json_params.get( 'param_dict' )
     assert None not in [ username, token ], "Missing GenomeSpace username or token."
     output_filename = datasource_params.get( "output_file1", None )
-    dataset_id = json_params['output_data'][0]['dataset_id']
+    dataset_id = base_dataset_id = json_params['output_data'][0]['dataset_id']
     hda_id = json_params['output_data'][0]['hda_id']
     url_opener = get_cookie_opener( username, token )
     #load and set genomespace format ids to galaxy exts
@@ -182,12 +182,18 @@ def download_from_genomespace_importer( username, token, json_parameter_file, ge
                                  name = "GenomeSpace importer on %s" % ( filename ) ) ) )
         #if using tmp file, move the file to the new file path dir to get scooped up later
         if using_temp_file:
+            original_filename = filename
             filename = ''.join( c in VALID_CHARS and c or '-' for c in filename )
             while filename in used_filenames:
                 filename = "-%s" % filename
             used_filenames.append( filename )
-            shutil.move( output_filename, os.path.join( datasource_params['__new_file_path__'],  'primary_%i_%s_visible_%s' % ( hda_id, filename, file_type ) ) )
-        
+            target_output_filename = os.path.join( datasource_params['__new_file_path__'],  'primary_%i_%s_visible_%s' % ( hda_id, filename, file_type ) )
+            shutil.move( output_filename, target_output_filename )
+            metadata_parameter_file.write( "%s\n" % simplejson.dumps( dict( type = 'new_primary_dataset',
+                                     base_dataset_id = base_dataset_id,
+                                     ext = file_type,
+                                     filename = target_output_filename,
+                                     name = "GenomeSpace importer on %s" % ( original_filename ) ) ) )
         dataset_id = None #only one primary dataset available
         output_filename = None #only have one filename available
     metadata_parameter_file.close()
