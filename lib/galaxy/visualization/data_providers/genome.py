@@ -1484,14 +1484,15 @@ class ChromatinInteractionsDataProvider( GenomeDataProvider ):
         return { 'data': rval, 'message': message }
 
     def get_default_max_vals( self ):
-        return 50000;
+        return 100000;
     
 class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinInteractionsDataProvider ):
     def get_iterator( self, chrom, start=0, end=sys.maxint ):
         """
         """
         # Modify start as needed to get earlier interactions with start region.
-        start = max( 0, int( start ) - 1000000 )
+        span = int( end ) - int( start )
+        filter_start = max( 0, int( start ) - span - span/2 )
         def filter( iter ):
             for line in iter:
                 feature = line.split()
@@ -1500,9 +1501,10 @@ class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinIntera
                 c = feature[3]
                 s2 = int( feature[4] )
                 e2 = int( feature[5] )
-                if ( s1 <= end and e1 >= start ) and ( s2 <= end and e2 >= start ):
+                #if ( s1 <= filter_end and e1 >= filter_start ) and ( s2 <= filter_end and e2 >= filter_start ) and ( max( s1, s2 ) - min( e1, e2 ) <= span * 2 ):
+                if ( ( s1 + s2 ) / 2 <= end ) and ( ( e1 + e2 ) / 2 >= start ) and ( c == chrom ):
                     yield line
-        return filter( TabixDataProvider.get_iterator( self, chrom, start, end ) )
+        return filter( TabixDataProvider.get_iterator( self, chrom, filter_start, end ) )
                
 #        
 # -- Helper methods. --

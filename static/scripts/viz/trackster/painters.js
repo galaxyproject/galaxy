@@ -1058,6 +1058,10 @@ var Color = function (rgb, a) {
         this.rgb = rgb.match(/.{2}/g).map(function (c) {
             return parseInt(c, 16);
         });
+    } else if (rgb.length == 7) {
+        this.rgb = rgb.substring(1,7).match(/.{2}/g).map(function (c) {
+            return parseInt(c, 16);
+        });
     } else {
         this.rgb = rgb.split('').map(function (c) {
             return parseInt(c + c, 16);
@@ -1207,8 +1211,8 @@ DiagonalHeatmapPainter.prototype.default_prefs = {
     min_value: undefined, 
     max_value: undefined, 
     mode: "Heatmap", 
-    pos_color: "4169E1",
-    neg_color: "FF8C00" 
+    pos_color: "#FF8C00",
+    neg_color: "#4169E1" 
 };
 
 DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
@@ -1222,7 +1226,7 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
         data = this.data,
         invsqrt2 = 1 / Math.sqrt(2);
 
-    var ramp = ( new SplitRamp( this.prefs.neg_color, "FFFFFF", this.prefs.pos_color, min_value, max_value ) );
+    var ramp = ( new SplitRamp( this.prefs.neg_color, "#FFFFFF", this.prefs.pos_color, min_value, max_value ) );
 
     var d, s1, e1, s2, e2, value;
 
@@ -1247,6 +1251,8 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
         s2 = scale( d[4] );
         e2 = scale( d[5] );
         value = d[6];
+
+        //console.log( "!!!", value, ramp.map_value( value ) );
 
         ctx.fillStyle = ( ramp.map_value( value ) );
 

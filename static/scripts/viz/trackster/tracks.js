@@ -3639,9 +3639,9 @@ var DiagonalHeatmapTrack = function (view, container, obj_dict) {
         track: this,
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
-            { key: 'pos_color', label: 'Positive Color', type: 'color', default_value: "4169E1" },
-            { key: 'negative_color', label: 'Negative Color', type: 'color', default_value: "FF8C00" },
-            { key: 'min_value', label: 'Min Value', type: 'float', default_value: 0 },
+            { key: 'pos_color', label: 'Positive Color', type: 'color', default_value: "#FF8C00" },
+            { key: 'neg_color', label: 'Negative Color', type: 'color', default_value: "#4169E1" },
+            { key: 'min_value', label: 'Min Value', type: 'float', default_value: -1 },
             { key: 'max_value', label: 'Max Value', type: 'float', default_value: 1 },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
             { key: 'height', type: 'int', default_value: 500, hidden: true }
@@ -3716,7 +3716,7 @@ var FeatureTrack = function(view, container, obj_dict) {
     // Define and restore track configuration.
     var 
         block_color = util.get_random_color(),
-        reverse_strand_color = util.get_random_color( [ block_color, "#ffffff" ] );
+        reverse_strand_color = util.get_random_color( [ block_color, "#FFFFFF" ] );
     this.config = new DrawableConfig( {
         track: this,
         params: [
