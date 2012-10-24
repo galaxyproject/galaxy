@@ -39,7 +39,8 @@ class CategoryGrid( grids.Grid ):
             if category.repositories:
                 viewable_repositories = 0
                 for rca in category.repositories:
-                    viewable_repositories += 1
+                    if not rca.repository.deleted and not rca.repository.deprecated:
+                        viewable_repositories += 1
                 return viewable_repositories
             return 0
     title = "Categories"
@@ -191,8 +192,6 @@ class RepositoryGrid( grids.Grid ):
                      link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                      attach_popup=False,
                      key="User.username" ),
-        grids.CommunityRatingColumn( "Average Rating", key="rating" ),
-        EmailAlertsColumn( "Alert", attach_popup=False ),
         # Columns that are valid for filtering but are not visible.
         EmailColumn( "Email",
                      model_class=model.User,
@@ -201,11 +200,7 @@ class RepositoryGrid( grids.Grid ):
         RepositoryCategoryColumn( "Category",
                                   model_class=model.Category,
                                   key="Category.name",
-                                  visible=False ),
-        grids.DeletedColumn( "Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced" )
+                                  visible=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[0], columns[1] ],
@@ -222,7 +217,9 @@ class RepositoryGrid( grids.Grid ):
     preserve_state = False
     use_paging = True
     def build_initial_query( self, trans, **kwd ):
-        return trans.sa_session.query( self.model_class ) \
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
                                .join( model.User.table ) \
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
@@ -257,7 +254,8 @@ class RepositoriesIOwnGrid( RepositoryGrid ):
                                         async_compatible=False ) ]
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.user_id == trans.user.id ) \
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.user_id == trans.user.id ) ) \
                                .join( model.User.table ) \
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
@@ -283,7 +281,8 @@ class DeprecatedRepositoriesIOwnGrid( RepositoriesIOwnGrid ):
                                                 filterable="standard" ) )
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
-                               .filter( and_( model.Repository.table.c.user_id == trans.user.id,
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.user_id == trans.user.id,
                                               model.Repository.table.c.deprecated == True ) ) \
                                .join( model.User.table ) \
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
@@ -341,11 +340,7 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
         RepositoryGrid.RepositoryCategoryColumn( "Category",
                                                  model_class=model.Category,
                                                  key="Category.name",
-                                                 visible=False ),
-        grids.DeletedColumn( "Deleted",
-                             key="deleted",
-                             visible=False,
-                             filterable="advanced" )
+                                                 visible=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name", 
                                                 cols_to_filter=[ columns[0] ],
@@ -375,7 +370,8 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
                                    .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                    .outerjoin( model.Category.table )
         # Return an empty query.
-        return []
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.id < 0 )
 
 class ValidRepositoryGrid( RepositoryGrid ):
     # This grid filters out repositories that have been marked as deprecated.
@@ -435,7 +431,8 @@ class ValidRepositoryGrid( RepositoryGrid ):
         if 'id' in kwd:
             # The user is browsing categories of valid repositories, so filter the request by the received id, which is a category id.
             return trans.sa_session.query( model.Repository ) \
-                                   .filter( model.Repository.table.c.deprecated == False ) \
+                                   .filter( and_( model.Repository.table.c.deleted == False,
+                                                  model.Repository.table.c.deprecated == False ) ) \
                                    .join( model.RepositoryMetadata.table ) \
                                    .join( model.User.table ) \
                                    .join( model.RepositoryCategoryAssociation.table ) \
@@ -444,7 +441,8 @@ class ValidRepositoryGrid( RepositoryGrid ):
                                                   model.RepositoryMetadata.table.c.downloadable == True ) )
         # The user performed a free text search on the ValidCategoryGrid.
         return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.deprecated == False ) \
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
                                .join( model.RepositoryMetadata.table ) \
                                .join( model.User.table ) \
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
@@ -501,7 +499,8 @@ class MatchedRepositoryGrid( grids.Grid ):
                                                             changeset_revision ) )
             return trans.sa_session.query( model.RepositoryMetadata ) \
                                    .join( model.Repository ) \
-                                   .filter( model.Repository.table.c.deprecated == False ) \
+                                   .filter( and_( model.Repository.table.c.deleted == False,
+                                                  model.Repository.table.c.deprecated == False ) ) \
                                    .join( model.User.table ) \
                                    .filter( or_( *clause_list ) ) \
                                    .order_by( model.Repository.name )
@@ -556,7 +555,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
             # RepositoryGrid on the grid.mako template for the CategoryGrid.  See ~/templates/webapps/community/category/grid.mako.  Since we
             # are searching repositories and not categories, redirect to browse_repositories().
             if 'id' in kwd and 'f-free-text-search' in kwd and kwd[ 'id' ] == kwd[ 'f-free-text-search' ]:
-                # The value of 'id' has been set to the search string, which is a repository name.  We'll try to get the desired encoded repository id to pass on.
+                # The value of 'id' has been set to the search string, which is a repository name.  We'll try to get the desired encoded repository
+                # id to pass on.
                 try:
                     repository = get_repository_by_name( trans, kwd[ 'id' ] )
                     kwd[ 'id' ] = trans.security.encode_id( repository.id )

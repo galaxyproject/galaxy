@@ -222,7 +222,7 @@ assign_mapper( context, Category, Category.table,
     properties=dict( repositories=relation( RepositoryCategoryAssociation,
                                             secondary=Repository.table,
                                             primaryjoin=( Category.table.c.id == RepositoryCategoryAssociation.table.c.category_id ),
-                                            secondaryjoin=( ( RepositoryCategoryAssociation.table.c.repository_id == Repository.table.c.id ) & ( Repository.table.c.deprecated == False ) ) ) ) )
+                                            secondaryjoin=( RepositoryCategoryAssociation.table.c.repository_id == Repository.table.c.id ) ) ) )
 
 assign_mapper( context, Repository, Repository.table, 
     properties = dict(

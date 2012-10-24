@@ -418,6 +418,13 @@ class BooleanColumn( TextColumn ):
     def sort( self, trans, query, ascending, column_name=None ):
         """Sort query using this column."""
         return GridColumn.sort( self, trans, query, ascending, column_name=column_name )
+    def get_single_filter( self, user, a_filter ):
+        if self.key.find( '.' ) > -1:
+            a_key = self.key.split( '.' )[1]
+        else:
+            a_key = self.key
+        model_class_key_field = getattr( self.model_class, a_key )
+        return model_class_key_field == a_filter
 
 class IntegerColumn( TextColumn ):
     """
