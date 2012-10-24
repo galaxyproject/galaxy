@@ -1,6 +1,17 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
+<script type="text/javascript">
+$().ready(function() {
+%if tool_id:
+    var focus_el = $("input[name=reload_tool_button]");
+%else:
+    var focus_el = $("select[name=tool_id]");
+%endif
+    focus_el.focus();
+});
+</script>
+
 %if message:
     ${render_msg( message, status )}
 %endif
@@ -22,7 +33,11 @@
                         <% section = val %>
                         %for section_key, section_val in section.elems.items():
                             %if section_key.startswith( 'tool' ):
-                                <option value="${section_val.id}">${section_val.name}</option>
+                                <% selected_str = "" %>
+                                %if section_val.id == tool_id:
+                                     <% selected_str = " selected=\"selected\"" %>
+                                %endif
+                                <option value="${section_val.id}"${selected_str}>${section_val.name}</option>
                             %endif
                         %endfor
                     %endif
