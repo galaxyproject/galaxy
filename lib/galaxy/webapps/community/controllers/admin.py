@@ -292,28 +292,25 @@ class ManageCategoryGrid( CategoryGrid ):
     ]
 
 class AdminRepositoryGrid( RepositoryGrid ):
+    class DeletedColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository ):
+            if repository.deleted:
+                return 'yes'
+            return ''
     columns = [ RepositoryGrid.NameColumn( "Name",
                                            key="name",
                                            link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                            attach_popup=True ),
-                RepositoryGrid.DescriptionColumn( "Synopsis",
-                                                  key="description",
-                                                  attach_popup=False ),
-                RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
                 RepositoryGrid.UserColumn( "Owner",
                                            model_class=model.User,
                                            link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                                            attach_popup=False,
                                            key="User.username" ),
-                RepositoryGrid.EmailAlertsColumn( "Alert", attach_popup=False ),
-                RepositoryGrid.DeprecatedColumn( "Deprecated", attach_popup=False ),
+                RepositoryGrid.DeprecatedColumn( "Deprecated", key="deprecated", attach_popup=False ),
                 # Columns that are valid for filtering but are not visible.
-                grids.DeletedColumn( "Deleted",
-                                     key="deleted",
-                                     visible=False,
-                                     filterable="advanced" ) ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
-                                                cols_to_filter=[ columns[0], columns[1] ],
+                DeletedColumn( "Deleted", key="deleted", attach_popup=False ) ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[0] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -327,6 +324,10 @@ class AdminRepositoryGrid( RepositoryGrid ):
                                             condition=( lambda item: item.deleted ),
                                             async_compatible=False ) )
     standard_filters = []
+    default_filter = {}
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( model.Repository ) \
+                               .join( model.User.table )
 
 class RepositoryMetadataGrid( grids.Grid ):
     class IdColumn( grids.IntegerColumn ):
@@ -335,6 +336,9 @@ class RepositoryMetadataGrid( grids.Grid ):
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
             return repository_metadata.repository.name
+    class OwnerColumn( grids.TextColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.repository.user.username
     class RevisionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
@@ -343,42 +347,60 @@ class RepositoryMetadataGrid( grids.Grid ):
             return "%s:%s" % ( str( ctx.rev() ), repository_metadata.changeset_revision )
     class ToolsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
-            tools_str = ''
+            tools_str = '0'
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
                     if 'tools' in metadata:
-                        for tool_metadata_dict in metadata[ 'tools' ]:
-                            tools_str += '%s <b>%s</b><br/>' % ( tool_metadata_dict[ 'id' ], tool_metadata_dict[ 'version' ] )
+                        # We used to display the following, but grid was too cluttered.
+                        #for tool_metadata_dict in metadata[ 'tools' ]:
+                        #    tools_str += '%s <b>%s</b><br/>' % ( tool_metadata_dict[ 'id' ], tool_metadata_dict[ 'version' ] )
+                        return '%d' % len( metadata[ 'tools' ] )
             return tools_str
     class DatatypesColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
-            datatypes_str = ''
+            datatypes_str = '0'
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
                     if 'datatypes' in metadata:
-                        for datatype_metadata_dict in metadata[ 'datatypes' ]:
-                            datatypes_str += '%s<br/>' % datatype_metadata_dict[ 'extension' ]
+                        # We used to display the following, but grid was too cluttered.
+                        #for datatype_metadata_dict in metadata[ 'datatypes' ]:
+                        #    datatypes_str += '%s<br/>' % datatype_metadata_dict[ 'extension' ]
+                        return '%d' % len( metadata[ 'datatypes' ] )
             return datatypes_str
     class WorkflowsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
-            workflows_str = ''
+            workflows_str = '0'
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
                     if 'workflows' in metadata:
-                        workflows_str += '<b>Workflows:</b><br/>'
+                        # We used to display the following, but grid was too cluttered.
+                        #workflows_str += '<b>Workflows:</b><br/>'
                         # metadata[ 'workflows' ] is a list of tuples where each contained tuple is
                         # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
-                        workflow_tups = metadata[ 'workflows' ]
-                        workflow_metadata_dicts = [ workflow_tup[1] for workflow_tup in workflow_tups ]
-                        for workflow_metadata_dict in workflow_metadata_dicts:
-                            workflows_str += '%s<br/>' % workflow_metadata_dict[ 'name' ]
+                        #workflow_tups = metadata[ 'workflows' ]
+                        #workflow_metadata_dicts = [ workflow_tup[1] for workflow_tup in workflow_tups ]
+                        #for workflow_metadata_dict in workflow_metadata_dicts:
+                        #    workflows_str += '%s<br/>' % workflow_metadata_dict[ 'name' ]
+                        return '%d' % len( metadata[ 'workflows' ] )
             return workflows_str
+    class DeletedColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.repository.deleted:
+                return 'yes'
+            return ''
+    class DeprecatedColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.repository.deprecated:
+                return 'yes'
+            return ''
     class MaliciousColumn( grids.BooleanColumn ):
         def get_value( self, trans, grid, repository_metadata ):
-            return repository_metadata.malicious
+            if repository_metadata.malicious:
+                return 'yes'
+            return ''
     # Grid definition
     title = "Repository Metadata"
     model_class = model.RepositoryMetadata
@@ -393,16 +415,14 @@ class RepositoryMetadataGrid( grids.Grid ):
                     model_class=model.Repository,
                     link=( lambda item: dict( operation="view_or_manage_repository_revision", id=item.id ) ),
                     attach_popup=True ),
-        RevisionColumn( "Revision",
-                        attach_popup=False ),
-        ToolsColumn( "Tools",
-                     attach_popup=False ),
-        DatatypesColumn( "Datatypes",
-                         attach_popup=False ),
-        WorkflowsColumn( "Workflows",
-                         attach_popup=False ),
-        MaliciousColumn( "Malicious",
-                         attach_popup=False )
+        OwnerColumn( "Owner", attach_popup=False ),
+        RevisionColumn( "Revision", attach_popup=False ),
+        ToolsColumn( "Tools", attach_popup=False ),
+        DatatypesColumn( "Datatypes", attach_popup=False ),
+        WorkflowsColumn( "Workflows", attach_popup=False ),
+        DeletedColumn( "Deleted", attach_popup=False ),
+        DeprecatedColumn( "Deprecated", attach_popup=False ),
+        MaliciousColumn( "Malicious", attach_popup=False )
     ]
     operations = [ grids.GridOperation( "Delete",
                                         allow_multiple=False,
@@ -416,8 +436,7 @@ class RepositoryMetadataGrid( grids.Grid ):
     use_paging = True
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.RepositoryMetadata ) \
-                               .join( model.Repository.table ) \
-                               .filter( model.Repository.table.c.deprecated == False )
+                               .join( model.Repository.table )
 
 class AdminController( BaseUIController, Admin ):
     
