@@ -335,24 +335,6 @@
    <label text="Filtering" id="filtering" />
       <tool file="ngs_rna/filter_transcripts_via_tracking.xml" />
   </section>
-  <section name="NGS: Picard (beta)" id="picard_beta">
-    <label text="Conversion" id="picard_conversion"/>
-    <tool file="picard/picard_FastqToSam.xml" />
-    <tool file="picard/picard_SamToFastq.xml" />
-    <label text="QC/Metrics for sam/bam" id="qcsambam"/>
-    <tool file="picard/picard_BamIndexStats.xml" />
-    <tool file="picard/rgPicardASMetrics.xml" />
-    <tool file="picard/rgPicardGCBiasMetrics.xml" />
-    <tool file="picard/rgPicardLibComplexity.xml" />
-    <tool file="picard/rgPicardInsertSize.xml" />
-    <tool file="picard/rgPicardHsMetrics.xml" />
-  <label text="bam/sam Cleaning" id="picard-clean" />
-    <tool file="picard/picard_AddOrReplaceReadGroups.xml" />
-    <tool file="picard/picard_ReorderSam.xml" />
-    <tool file="picard/picard_ReplaceSamHeader.xml" />
-    <tool file="picard/rgPicardFixMate.xml" />
-    <tool file="picard/rgPicardMarkDups.xml" />
-  </section>
   <label text="RGENETICS" id="rgenetics" />
   <section name="SNP/WGA: Data; Filters" id="rgdat">
   <label text="Data: Import and upload" id="rgimport" />
