@@ -1443,7 +1443,7 @@ class AdminToolshed( AdminGalaxy ):
             response = urllib2.urlopen( url )
             raw_text = response.read()
             response.close()
-            readme_text = translate_string( raw_text, to_html=True )
+            readme_text = raw_text
         else:
             readme_text = '' 
         return trans.fill_template( '/admin/tool_shed_repository/reselect_tool_panel_section.mako',
@@ -1768,7 +1768,7 @@ class AdminToolshed( AdminGalaxy ):
                 f = open( readme_filename, 'r' )
                 raw_text = f.read()
                 f.close()
-                readme_text = translate_string( raw_text, to_html=True )
+                readme_text = raw_text
             except Exception, e:
                 log.debug( "Error attempting to read README file '%s' defined in metadata for repository '%s', revision '%s': %s" % \
                            ( str( readme_filename ), str( repository.name ), str( repository.changeset_revision ), str( e ) ) )

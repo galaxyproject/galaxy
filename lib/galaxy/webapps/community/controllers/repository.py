@@ -13,7 +13,7 @@ from galaxy.util.shed_util import create_repo_info_dict, get_changectx_for_chang
 from galaxy.util.shed_util import get_repository_file_contents, get_repository_metadata_by_changeset_revision, handle_sample_files_and_load_tool_from_disk
 from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_tmp_config, INITIAL_CHANGELOG_HASH, load_tool_from_config, NOT_TOOL_CONFIGS
 from galaxy.util.shed_util import open_repository_files_folder, reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog, strip_path
-from galaxy.util.shed_util import to_html_escaped, translate_string, update_repository, url_join
+from galaxy.util.shed_util import to_html_escaped, update_repository, url_join
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
