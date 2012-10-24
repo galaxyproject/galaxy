@@ -509,7 +509,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
                         elif component_review_attr == 'comment':
                             comment = str( v )
                         elif component_review_attr == 'private':
-                            private = CheckboxField.is_checked( str( v ) )
+                            private = CheckboxField.is_checked( v )
                         elif component_review_attr == 'approved':
                             approved = str( v )
                         elif component_review_attr == 'rating':
