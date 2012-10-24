@@ -5,6 +5,7 @@ Universe configuration builder.
 import sys, os, tempfile
 import logging, logging.config
 import ConfigParser
+from datetime import timedelta
 from galaxy.util import string_as_bool, listify, parse_xml
 
 from galaxy import eggs
@@ -99,6 +100,10 @@ class Configuration( object ):
         self.output_size_limit = int( kwargs.get( 'output_size_limit', 0 ) )
         self.retry_job_output_collection = int( kwargs.get( 'retry_job_output_collection', 0 ) )
         self.job_walltime = kwargs.get( 'job_walltime', None )
+        self.job_walltime_delta = None
+        if self.job_walltime is not None:
+            h, m, s = [ int( v ) for v in self.job_walltime.split( ':' ) ]
+            self.job_walltime_delta = timedelta( 0, s, 0, 0, m, h )
         self.admin_users = kwargs.get( "admin_users", "" )
         self.mailing_join_addr = kwargs.get('mailing_join_addr',"galaxy-announce-join@bx.psu.edu")
         self.error_email_to = kwargs.get( 'error_email_to', None )

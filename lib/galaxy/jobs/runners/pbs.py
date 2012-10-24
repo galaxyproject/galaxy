@@ -128,10 +128,6 @@ class PBSJobRunner( BaseJobRunner ):
         # set the default server during startup
         self.default_pbs_server = None
         self.determine_pbs_server( 'pbs:///' )
-        self.job_walltime = None
-        if self.app.config.job_walltime is not None:
-            h, m, s = [ int( v ) for v in self.app.config.job_walltime.split( ':' ) ]
-            self.job_walltime = timedelta( 0, s, 0, 0, m, h )
         self.monitor_thread = threading.Thread( target=self.monitor )
         self.monitor_thread.start()
         self.work_queue = Queue()
@@ -422,7 +418,7 @@ class PBSJobRunner( BaseJobRunner ):
                     fail = False
                     for outfile, size in pbs_job_state.job_wrapper.check_output_sizes():
                         if size > self.app.config.output_size_limit:
-                            pbs_job_state.fail_message = 'Job output grew too large (greater than %s), please try different job parameters or' \
+                            pbs_job_state.fail_message = 'Job output grew too large (greater than %s), please try different job parameters' \
                                 % nice_size( self.app.config.output_size_limit )
                             log.warning( '(%s/%s) Dequeueing job due to output %s growing larger than %s limit' \
                                 % ( galaxy_job_id, job_id, os.path.basename( outfile ), nice_size( self.app.config.output_size_limit ) ) )
@@ -432,14 +428,14 @@ class PBSJobRunner( BaseJobRunner ):
                             break
                     if fail:
                         continue
-                if self.job_walltime is not None:
+                if self.app.config.job_walltime_delta is not None:
                     # Check the job's execution time
                     if status.get( 'resources_used', False ):
                         # resources_used may not be in the status for new jobs
                         h, m, s = [ int( i ) for i in status.resources_used.walltime.split( ':' ) ]
                         time_executing = timedelta( 0, s, 0, 0, m, h )
-                        if time_executing > self.job_walltime:
-                            pbs_job_state.fail_message = 'Job ran longer than maximum allowed execution time (%s), please try different job parameters or' \
+                        if time_executing > self.app.config.job_walltime_delta:
+                            pbs_job_state.fail_message = 'Job ran longer than maximum allowed execution time (%s), please try different job parameters' \
                                 % self.app.config.job_walltime
                             log.warning( '(%s/%s) Dequeueing job since walltime has been reached' \
                                 % ( galaxy_job_id, job_id ) )
