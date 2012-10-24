@@ -471,6 +471,7 @@ class DynamicOptions( object ):
     
     def parse_file_fields( self, reader ):
         rval = []
+        field_count = None
         for line in reader:
             if line.startswith( '#' ) or ( self.line_startswith and not line.startswith( self.line_startswith ) ):
                 continue
@@ -478,6 +479,16 @@ class DynamicOptions( object ):
             if line:
                 fields = line.split( self.separator )
                 if self.largest_index < len( fields ):
+                    if not field_count:
+                        field_count = len( fields )
+                    elif field_count != len( fields ):
+                        try:
+                            name = reader.name
+                        except AttributeError:
+                            name = "a configuration file"
+                        # Perhaps this should be an error, but even a warning is useful.
+                        log.warn( "Inconsistent number of fields (%i vs %i) in %s using separator %r, check line: %r" % \
+                                  ( field_count, len( fields ), name, self.separator, line ) )
                     rval.append( fields )
         return rval
     
