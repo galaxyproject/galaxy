@@ -1764,10 +1764,15 @@ class AdminToolshed( AdminGalaxy ):
             readme_filename = metadata[ 'readme' ]
             if tool_path:
                 readme_filename = os.path.join( tool_path, readme_filename )
-            f = open( readme_filename, 'r' )
-            raw_text = f.read()
-            f.close()
-            readme_text = translate_string( raw_text, to_html=True )
+            try:
+                f = open( readme_filename, 'r' )
+                raw_text = f.read()
+                f.close()
+                readme_text = translate_string( raw_text, to_html=True )
+            except Exception, e:
+                log.debug( "Error attempting to read README file '%s' defined in metadata for repository '%s', revision '%s': %s" % \
+                           ( str( readme_filename ), str( repository.name ), str( repository.changeset_revision ), str( e ) ) )
+                readme_text = ''
         else:
             readme_text = ''
         is_malicious = False

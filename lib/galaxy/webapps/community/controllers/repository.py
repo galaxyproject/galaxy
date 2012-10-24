@@ -1333,10 +1333,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
         metadata = repository_metadata.metadata
         if metadata and 'readme' in metadata:
-             f = open( metadata[ 'readme' ], 'r' )
-             text = f.read()
-             f.close()
-             return str( text )
+            try:
+                f = open( metadata[ 'readme' ], 'r' )
+                text = f.read()
+                f.close()
+                return str( text )
+            except Exception, e:
+                log.debug( "Error attempting to read README file '%s' defined in metadata for repository '%s', revision '%s': %s" % \
+                           ( str( metadata[ 'readme' ] ), str( repository_name ), str( changeset_revision ), str( e ) ) )
         return ''
     @web.expose
     def get_tool_dependencies( self, trans, **kwd ):
