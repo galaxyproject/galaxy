@@ -424,6 +424,11 @@ class RepositoryMetadataGrid( grids.Grid ):
         DeprecatedColumn( "Deprecated", attach_popup=False ),
         MaliciousColumn( "Malicious", attach_popup=False )
     ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
     operations = [ grids.GridOperation( "Delete",
                                         allow_multiple=False,
                                         allow_popup=True,
