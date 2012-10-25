@@ -1002,7 +1002,7 @@ class ColumnListParameter( SelectToolParameter ):
         for col in column_list:
             if col != 'None':
                 if type(col) == type(()) and len(col) == 2: # fiddled
-                    options.append((col[1],'c' + col[0],False))
+                    options.append((col[1],col[0],False))
                 else:
                     options.append( ( 'c' + col, col, False ) )
         return options
