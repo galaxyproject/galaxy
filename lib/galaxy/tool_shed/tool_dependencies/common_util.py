@@ -1,18 +1,6 @@
 import os, shutil, tarfile, urllib2, zipfile
 from galaxy.datatypes.checkers import *
 
-def zipfile_ok( path_to_archive ):
-    """
-    This function is a bit pedantic and not functionally necessary.  It checks whether there is no file pointing outside of the extraction, 
-    because ZipFile.extractall() has some potential security holes.  See python zipfile documentation for more details.
-    """
-    basename = os.path.realpath( os.path.dirname( path_to_archive ) )
-    zip_archive = zipfile.ZipFile( path_to_archive )
-    for member in zip_archive.namelist():
-        member_path = os.path.realpath( os.path.join( basename, member ) )
-        if not member_path.startswith( basename ):
-            return False
-    return True
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
     env_var_name = elem.get( 'name', 'PATH' )
     env_var_action = elem.get( 'action', 'prepend_to' )
@@ -103,6 +91,7 @@ def move_file( current_dir, source, destination_dir ):
         os.makedirs( destination_directory )
     shutil.move( source_file, destination_directory )
 def tar_extraction_directory( file_path, file_name ):
+    """Try to return the correct extraction directory."""
     file_name = file_name.strip()
     extensions = [ '.tar.gz', '.tgz', '.tar.bz2', '.zip' ]
     for extension in extensions:
@@ -111,8 +100,8 @@ def tar_extraction_directory( file_path, file_name ):
             if os.path.exists( os.path.abspath( os.path.join( file_path, dir_name ) ) ):
                 return dir_name
     if os.path.exists( os.path.abspath( os.path.join( file_path, file_name ) ) ):
-        return os.path.abspath( os.path.join( file_path, file_name ) )
-    raise ValueError( 'Could not find directory %s' % os.path.abspath( os.path.join( file_path, file_name[ :-len( extension ) ] ) ) )
+        return os.path.abspath( file_path )
+    raise ValueError( 'Could not find path to file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
 def url_download( install_dir, downloaded_file_name, download_url ):
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None
@@ -138,3 +127,15 @@ def zip_extraction_directory( file_path, file_name ):
         if os.path.isdir( os.path.join( file_path, files[ 0 ] ) ):
             return os.path.abspath( os.path.join( file_path, files[ 0 ] ) )
     raise ValueError( 'Could not find directory for the extracted file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
+def zipfile_ok( path_to_archive ):
+    """
+    This function is a bit pedantic and not functionally necessary.  It checks whether there is no file pointing outside of the extraction, 
+    because ZipFile.extractall() has some potential security holes.  See python zipfile documentation for more details.
+    """
+    basename = os.path.realpath( os.path.dirname( path_to_archive ) )
+    zip_archive = zipfile.ZipFile( path_to_archive )
+    for member in zip_archive.namelist():
+        member_path = os.path.realpath( os.path.join( basename, member ) )
+        if not member_path.startswith( basename ):
+            return False
+    return True

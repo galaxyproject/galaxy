@@ -79,7 +79,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                 if not os.path.exists( dir ):
                     os.makedirs( dir )
                 # The package has been down-loaded, so we can now perform all of the actions defined for building it.
-                with lcd( dir ):                
+                with lcd( dir ):
                     for action_tup in actions[ 1: ]:
                         action_type, action_dict = action_tup
                         current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
