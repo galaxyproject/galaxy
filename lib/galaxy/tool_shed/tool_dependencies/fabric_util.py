@@ -49,8 +49,6 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
     sa_session = app.model.context.current
     install_dir = actions_dict[ 'install_dir' ]
     package_name = actions_dict[ 'package_name' ]
-    #download_url = actions_dict.get( 'download_url', None )
-    #clone_cmd = actions_dict.get( 'clone_cmd', None )
     actions = actions_dict.get( 'actions', None )
     if actions:
         with make_tmp_dir() as work_dir:
@@ -59,13 +57,17 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                 # are currently only two supported processes; download_by_url and clone via a "shell_command" action type.
                 action_type, action_dict = actions[ 0 ]
                 if action_type == 'download_by_url':
-                    # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
                     url = action_dict[ 'url' ]
                     downloaded_filename = os.path.split( url )[ -1 ]
                     downloaded_file_path = common_util.url_download( work_dir, downloaded_filename, url )
                     if common_util.istar( downloaded_file_path ):
+                        # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
                         common_util.extract_tar( downloaded_file_path, work_dir )
                         dir = common_util.tar_extraction_directory( work_dir, downloaded_filename )
+                    elif common_util.iszip( downloaded_file_path ):
+                        # <action type="download_by_url">http://downloads.sourceforge.net/project/picard/picard-tools/1.56/picard-tools-1.56.zip</action>
+                        zip_archive_extracted = common_util.extract_zip( downloaded_file_path, work_dir )
+                        dir = common_util.zip_extraction_directory( work_dir, downloaded_filename )
                     else:
                         dir = work_dir
                 elif action_type == 'shell_command':

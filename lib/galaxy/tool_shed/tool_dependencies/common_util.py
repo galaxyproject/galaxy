@@ -1,12 +1,24 @@
-import os, shutil, tarfile, urllib2
+import os, shutil, tarfile, urllib2, zipfile
 from galaxy.datatypes.checkers import *
 
+def zipfile_ok( path_to_archive ):
+    """
+    This function is a bit pedantic and not functionally necessary.  It checks whether there is no file pointing outside of the extraction, 
+    because ZipFile.extractall() has some potential security holes.  See python zipfile documentation for more details.
+    """
+    basename = os.path.realpath( os.path.dirname( path_to_archive ) )
+    zip_archive = zipfile.ZipFile( path_to_archive )
+    for member in zip_archive.namelist():
+        member_path = os.path.realpath( os.path.join( basename, member ) )
+        if not member_path.startswith( basename ):
+            return False
+    return True
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
     env_var_name = elem.get( 'name', 'PATH' )
     env_var_action = elem.get( 'action', 'prepend_to' )
     env_var_text = None
     if elem.text and elem.text.find( 'REPOSITORY_INSTALL_DIR' ) >= 0:
-        if tool_shed_repository_install_dir:
+        if tool_shed_repository_install_dir and elem.text.find( '$REPOSITORY_INSTALL_DIR' ) != -1:
             env_var_text = elem.text.replace( '$REPOSITORY_INSTALL_DIR', tool_shed_repository_install_dir )
             return dict( name=env_var_name, action=env_var_action, value=env_var_text )
         else:
@@ -50,6 +62,20 @@ def extract_tar( file_name, file_path ):
         tar = tarfile.open( file_name )
     tar.extractall( path=file_path )
     tar.close()
+def extract_zip( archive_path, extraction_path ):
+    # TODO: change this method to use zipfile.Zipfile.extractall() when we stop supporting Python 2.5.
+    if not zipfile_ok( archive_path ):
+        return False
+    zip_archive = zipfile.ZipFile( archive_path, 'r' )
+    for name in zip_archive.namelist():
+        uncompressed_path = os.path.join( extraction_path, name )
+        if uncompressed_path.endswith( '/' ):
+            if not os.path.isdir( uncompressed_path ):
+                os.makedirs( uncompressed_path )
+        else:
+            file( uncompressed_path, 'wb' ).write( zip_archive.read( name ) )
+    zip_archive.close()
+    return True
 def isbz2( file_path ):
     return is_bz2( file_path )
 def isgzip( file_path ):
@@ -102,3 +128,13 @@ def url_download( install_dir, downloaded_file_name, download_url ):
         if dst:
             dst.close()
     return os.path.abspath( file_path )
+def zip_extraction_directory( file_path, file_name ):
+    """Try to return the correct extraction directory."""
+    files = [ filename for filename in os.listdir( file_path ) if not filename.endswith( '.zip' ) ]
+    if len( files ) > 1:
+        return os.path.abspath( file_path )
+    elif len( files ) == 1:
+        # If there is only on file it should be a directory.
+        if os.path.isdir( os.path.join( file_path, files[ 0 ] ) ):
+            return os.path.abspath( os.path.join( file_path, files[ 0 ] ) )
+    raise ValueError( 'Could not find directory for the extracted file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
