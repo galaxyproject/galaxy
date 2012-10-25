@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <toolshed name="toolshed.g2.bx.psu.edu">
-    <repository name="picard" description="Galaxy wrappers for captain picard." changeset_revision="1cd7f3b42609">
+    <repository name="picard" description="Galaxy wrappers for the Picard SAM/BAM manipulation tools." changeset_revision="e0232cbac965">
         <tool id="picard_FastqToSam" version="1.56.0" file="picard_FastqToSam.xml" />
         <tool id="picard_SamToFastq" version="1.56.1" file="picard_SamToFastq.xml" />
         <tool id="picard_BamIndexStats" version="1.56.0" file="picard_BamIndexStats.xml" />
