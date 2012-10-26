@@ -353,11 +353,11 @@ class DRMAAJobRunner( BaseJobRunner ):
                 # The exit code should only be 8 bits, but read more anyway 
                 exit_code_str = ecfh.read(32)
                 which_try = (self.app.config.retry_job_output_collection + 1)
-            except:
+            except Exception, e:
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
                     stderr = 'Job output not returned from cluster'
-                    log.debug( stderr )
+                    log.warning( '%s: %s' % ( stderr, str( e ) ) )
                 else:
                     time.sleep(1)
                 which_try += 1
