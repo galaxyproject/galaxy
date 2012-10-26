@@ -51,9 +51,9 @@ class FastQC():
         fastq = os.path.basename(self.opts.input)
         cl = [self.opts.executable,'--outdir=%s' % self.opts.outputdir]
         if self.opts.informat in ['sam','bam']:
-            cl.append('-f %s' % self.opts.informat)
+            cl.append('--f=%s' % self.opts.informat)
         if self.opts.contaminants <> None :
-            cl.append('-c %s' % self.opts.contaminants)
+            cl.append('--contaminants=%s' % self.opts.contaminants)
         # patch suggested by bwlang https://bitbucket.org/galaxy/galaxy-central/pull-request/30
 	# use a symlink in a temporary directory so that the FastQC report reflects the history input file name
         fastqinfilename = re.sub(ur'[^a-zA-Z0-9_\-\.]', '_', os.path.basename(self.opts.inputfilename))

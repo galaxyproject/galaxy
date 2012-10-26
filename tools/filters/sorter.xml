@@ -15,7 +15,7 @@
   </command>
   <inputs>
     <param format="tabular" name="input" type="data" label="Sort Query" />
-    <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true" />
+    <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true"/>
     <param name="style" type="select" label="with flavor">
       <option value="num">Numerical sort</option>
       <option value="alpha">Alphabetical sort</option>

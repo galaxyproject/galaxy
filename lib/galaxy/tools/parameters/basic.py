@@ -911,7 +911,7 @@ class ColumnListParameter( SelectToolParameter ):
         self.ref_input = None
         self.default_value = elem.get( "default_value", None )
         self.is_dynamic = True
-        self.usecolnames = string_as_bool( elem.get( "use_header_names", False ))
+        self.usecolnames = string_as_bool( elem.get( "use_header_names", True )) # much easier for the user - make default if not overridden
 
     def from_html( self, value, trans=None, context={} ):
         """
