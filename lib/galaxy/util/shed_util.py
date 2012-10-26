@@ -3,9 +3,12 @@ import galaxy.tools.data
 from datetime import date, datetime, timedelta
 from time import strftime, gmtime
 from galaxy import util
+from galaxy.web import url_for
+from galaxy.web.form_builder import SelectField
 from galaxy.tools import parameters
 from galaxy.datatypes.checkers import *
 from galaxy.util.json import *
+from galaxy.util import inflector
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tool_shed.tool_dependencies.install_util import create_or_update_tool_dependency, install_package, set_environment
 from galaxy.tool_shed.encoding_util import *
@@ -23,6 +26,7 @@ from elementtree.ElementTree import Element, SubElement
 
 log = logging.getLogger( __name__ )
 
+GALAXY_ADMIN_TOOL_SHED_CONTROLLER = 'GALAXY_ADMIN_TOOL_SHED_CONTROLLER'
 INITIAL_CHANGELOG_HASH = '000000000000'
 # Characters that must be html escaped
 MAPPED_CHARS = { '>' :'&gt;', 
@@ -33,6 +37,7 @@ MAPPED_CHARS = { '>' :'&gt;',
 MAX_CONTENT_SIZE = 32768
 NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'tool_dependencies.xml' ]
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
+TOOL_SHED_ADMIN_CONTROLLER = 'TOOL_SHED_ADMIN_CONTROLLER'
 
 class ShedCounter( object ):
     def __init__( self, model ):
@@ -246,6 +251,27 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
         except:
             pass
     return converter_path, display_path
+def build_repository_ids_select_field( trans, cntrller, name='repository_ids', multiple=True, display='checkboxes' ):
+    """Method called from both Galaxy and the Tool Shed to generate the current list of repositories for resetting metadata."""
+    repositories_select_field = SelectField( name=name, multiple=multiple, display=display )
+    if cntrller == TOOL_SHED_ADMIN_CONTROLLER:
+        for repository in trans.sa_session.query( trans.model.Repository ) \
+                                          .filter( trans.model.Repository.table.c.deleted == False ) \
+                                          .order_by( trans.model.Repository.table.c.name,
+                                                     trans.model.Repository.table.c.user_id ):
+            owner = repository.user.username
+            option_label = '%s (%s)' % ( repository.name, owner )
+            option_value = '%s' % trans.security.encode_id( repository.id )
+            repositories_select_field.add_option( option_label, option_value )
+    elif cntrller == GALAXY_ADMIN_TOOL_SHED_CONTROLLER:
+        for repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
+                                          .filter( trans.model.ToolShedRepository.table.c.uninstalled == False ) \
+                                          .order_by( trans.model.ToolShedRepository.table.c.name,
+                                                     trans.model.ToolShedRepository.table.c.owner ):
+            option_label = '%s (%s)' % ( repository.name, repository.owner )
+            option_value = trans.security.encode_id( repository.id )
+            repositories_select_field.add_option( option_label, option_value )
+    return repositories_select_field
 def can_generate_tool_dependency_metadata( root, metadata_dict ):
     """
     Make sure the combination of name, version and type (the type will be the value of elem.tag) of each root element tag in the tool_dependencies.xml
@@ -339,6 +365,105 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
                         correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
                         invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
     return invalid_files_and_errors_tups
+def clean_repository_metadata( trans, id, changeset_revisions ):
+    # Delete all repository_metadata records associated with the repository that have a changeset_revision that is not in changeset_revisions.
+    # We sometimes see multiple records with the same changeset revision value - no idea how this happens. We'll assume we can delete the older
+    # records, so we'll order by update_time descending and delete records that have the same changeset_revision we come across later..
+    changeset_revisions_checked = []
+    for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                               .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
+                                               .order_by( trans.model.RepositoryMetadata.table.c.changeset_revision,
+                                                          trans.model.RepositoryMetadata.table.c.update_time.desc() ):
+        changeset_revision = repository_metadata.changeset_revision
+        can_delete = changeset_revision in changeset_revisions_checked or changeset_revision not in changeset_revisions
+        if can_delete:
+            trans.sa_session.delete( repository_metadata )
+            trans.sa_session.flush()
+def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_dict, current_changeset_revision, current_metadata_dict ):
+    # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision is an ancestor of
+    # current_changeset_revision which is associated with current_metadata_dict.  A new repository_metadata record will be created only
+    # when this method returns the string 'not equal and not subset'.
+    ancestor_datatypes = ancestor_metadata_dict.get( 'datatypes', [] )
+    ancestor_tools = ancestor_metadata_dict.get( 'tools', [] )
+    ancestor_guids = [ tool_dict[ 'guid' ] for tool_dict in ancestor_tools ]
+    ancestor_guids.sort()
+    ancestor_tool_dependencies = ancestor_metadata_dict.get( 'tool_dependencies', [] )
+    ancestor_workflows = ancestor_metadata_dict.get( 'workflows', [] )
+    current_datatypes = current_metadata_dict.get( 'datatypes', [] )
+    current_tools = current_metadata_dict.get( 'tools', [] )
+    current_guids = [ tool_dict[ 'guid' ] for tool_dict in current_tools ]
+    current_guids.sort()
+    current_tool_dependencies = current_metadata_dict.get( 'tool_dependencies', [] ) 
+    current_workflows = current_metadata_dict.get( 'workflows', [] )
+    # Handle case where no metadata exists for either changeset.
+    if not ancestor_guids and not current_guids and not ancestor_workflows and not current_workflows and not ancestor_datatypes and not current_datatypes:
+        return 'no metadata'
+    workflow_comparison = compare_workflows( ancestor_workflows, current_workflows )
+    datatype_comparison = compare_datatypes( ancestor_datatypes, current_datatypes )
+    # Handle case where all metadata is the same.
+    if ancestor_guids == current_guids and workflow_comparison == 'equal' and datatype_comparison == 'equal':
+        return 'equal'
+    if workflow_comparison in [ 'equal', 'subset' ] and datatype_comparison in [ 'equal', 'subset' ]:
+        is_subset = True
+        for guid in ancestor_guids:
+            if guid not in current_guids:
+                is_subset = False
+                break
+        if is_subset:
+            return 'subset'
+    return 'not equal and not subset'
+def compare_datatypes( ancestor_datatypes, current_datatypes ):
+    # Determine if ancestor_datatypes is the same as current_datatypes
+    # or if ancestor_datatypes is a subset of current_datatypes.  Each
+    # datatype dict looks something like:
+    # {"dtype": "galaxy.datatypes.images:Image", "extension": "pdf", "mimetype": "application/pdf"}
+    if len( ancestor_datatypes ) <= len( current_datatypes ):
+        for ancestor_datatype in ancestor_datatypes:
+            # Currently the only way to differentiate datatypes is by name.
+            ancestor_datatype_dtype = ancestor_datatype[ 'dtype' ]
+            ancestor_datatype_extension = ancestor_datatype[ 'extension' ]
+            ancestor_datatype_mimetype = ancestor_datatype.get( 'mimetype', None )
+            found_in_current = False
+            for current_datatype in current_datatypes:
+                if current_datatype[ 'dtype' ] == ancestor_datatype_dtype and \
+                    current_datatype[ 'extension' ] == ancestor_datatype_extension and \
+                    current_datatype.get( 'mimetype', None ) == ancestor_datatype_mimetype:
+                    found_in_current = True
+                    break
+            if not found_in_current:
+                return 'not equal and not subset'
+        if len( ancestor_datatypes ) == len( current_datatypes ):
+            return 'equal'
+        else:
+            return 'subset'
+    return 'not equal and not subset'
+def compare_workflows( ancestor_workflows, current_workflows ):
+    # Determine if ancestor_workflows is the same as current_workflows
+    # or if ancestor_workflows is a subset of current_workflows.
+    if len( ancestor_workflows ) <= len( current_workflows ):
+        for ancestor_workflow_tup in ancestor_workflows:
+            # ancestor_workflows is a list of tuples where each contained tuple is
+            # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
+            ancestor_workflow_dict = ancestor_workflow_tup[1]
+            # Currently the only way to differentiate workflows is by name.
+            ancestor_workflow_name = ancestor_workflow_dict[ 'name' ]
+            num_ancestor_workflow_steps = len( ancestor_workflow_dict[ 'steps' ] )
+            found_in_current = False
+            for current_workflow_tup in current_workflows:
+                current_workflow_dict = current_workflow_tup[1]
+                # Assume that if the name and number of steps are euqal,
+                # then the workflows are the same.  Of course, this may
+                # not be true...
+                if current_workflow_dict[ 'name' ] == ancestor_workflow_name and len( current_workflow_dict[ 'steps' ] ) == num_ancestor_workflow_steps:
+                    found_in_current = True
+                    break
+            if not found_in_current:
+                return 'not equal and not subset'
+        if len( ancestor_workflows ) == len( current_workflows ):
+            return 'equal'
+        else:
+            return 'subset'
+    return 'not equal and not subset'
 def concat_messages( msg1, msg2 ):
     if msg1:
         if msg2:
@@ -447,6 +572,20 @@ def create_repository_dict_for_proprietary_datatypes( tool_shed, name, owner, in
                  tool_dicts=tool_dicts,
                  converter_path=converter_path,
                  display_path=display_path )
+def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
+    downloadable = is_downloadable( metadata_dict )
+    repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    if repository_metadata:
+        repository_metadata.metadata = metadata_dict
+        repository_metadata.downloadable = downloadable
+    else:
+        repository_metadata = trans.model.RepositoryMetadata( repository_id=repository.id,
+                                                              changeset_revision=changeset_revision,
+                                                              metadata=metadata_dict,
+                                                              downloadable=downloadable )
+    trans.sa_session.add( repository_metadata )
+    trans.sa_session.flush()
+    return repository_metadata
 def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url, metadata_dict,
                                            status, current_changeset_revision=None, owner='', dist_to_shed=False ):
     # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
@@ -546,10 +685,19 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
                                                                         set_status=set_status )
                     tool_dependency_objects.append( tool_dependency )
     return tool_dependency_objects
-def generate_clone_url( trans, repository ):
-    """Generate the URL for cloning a repository."""
+def generate_clone_url_for_installed_repository( trans, repository ):
+    """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
     tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
     return url_join( tool_shed_url, 'repos', repository.owner, repository.name )
+def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
+    """Generate the URL for cloning a repository that is in the tool shed."""
+    base_url = url_for( '/', qualified=True ).rstrip( '/' )
+    if trans.user:
+        protocol, base = base_url.split( '://' )
+        username = '%s@' % trans.user.username
+        return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
+    else:
+        return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
 def generate_datatypes_metadata( datatypes_config, metadata_dict ):
     """Update the received metadata_dict with information from the parsed datatypes_config."""
     tree = ElementTree.parse( datatypes_config )
@@ -750,6 +898,42 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
     app.config.tool_data_path = original_tool_data_path
     app.config.tool_data_table_config_path = original_tool_data_table_config_path
     return metadata_dict, invalid_file_tups
+def generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False ):
+    if as_html:
+        new_line = '<br/>'
+        bold_start = '<b>'
+        bold_end = '</b>'
+    else:
+        new_line = '\n'
+        bold_start = ''
+        bold_end = ''
+    message = ''
+    if not displaying_invalid_tool:
+        if metadata_dict:
+            message += "Metadata was defined for some items in revision '%s'.  " % str( repository.tip )
+            message += "Correct the following problems if necessary and reset metadata.%s" % new_line
+        else:
+            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip )
+            message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.%s" % new_line
+    for itc_tup in invalid_file_tups:
+        tool_file, exception_msg = itc_tup
+        if exception_msg.find( 'No such file or directory' ) >= 0:
+            exception_items = exception_msg.split()
+            missing_file_items = exception_items[ 7 ].split( '/' )
+            missing_file = missing_file_items[ -1 ].rstrip( '\'' )
+            if missing_file.endswith( '.loc' ):
+                sample_ext = '%s.sample' % missing_file
+            else:
+                sample_ext = missing_file
+            correction_msg = "This file refers to a missing file %s%s%s.  " % ( bold_start, str( missing_file ), bold_end )
+            correction_msg += "Upload a file named %s%s%s to the repository to correct this error." % ( bold_start, sample_ext, bold_end )
+        else:
+            if as_html:
+                correction_msg = exception_msg
+            else:
+                correction_msg = exception_msg.replace( '<br/>', new_line ).replace( '<b>', bold_start ).replace( '</b>', bold_end )
+        message += "%s%s%s - %s%s" % ( bold_start, tool_file, bold_end, correction_msg, new_line )
+    return message
 def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
     """The value of package_name must match the value of the "package" type in the tool config's <requirements> tag set."""
     requirements_dict = {}
@@ -1158,6 +1342,9 @@ def get_file_from_changeset_revision( app, repository, repo_files_dir, changeset
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     named_tmp_file = get_named_tmpfile_from_ctx( ctx, file_name, dir )
     return named_tmp_file
+def get_installed_tool_shed_repository( trans, id ):
+    """Get a repository on the Galaxy side from the database via id"""
+    return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
 def get_list_of_copied_sample_files( repo, ctx, dir ):
     """
     Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
@@ -1211,6 +1398,24 @@ def get_named_tmpfile_from_ctx( ctx, filename, dir ):
                 fh.close()
                 return tmp_filename
     return None
+def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
+    parent_id = None
+    # Compare from most recent to oldest.
+    changeset_revisions.reverse()
+    for changeset_revision in changeset_revisions:
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        metadata = repository_metadata.metadata
+        tools_dicts = metadata.get( 'tools', [] )
+        for tool_dict in tools_dicts:
+            if tool_dict[ 'guid' ] == guid:
+                # The tool has not changed between the compared changeset revisions.
+                continue
+            if tool_dict[ 'id' ] == old_id and tool_dict[ 'version' ] != version:
+                # The tool version is different, so we've found the parent.
+                return tool_dict[ 'guid' ]
+    if parent_id is None:
+        # The tool did not change through all of the changeset revisions.
+        return old_id
 def get_repository_file_contents( file_path ):
     if is_gzip( file_path ):
         to_html = to_html_str( '\ngzip compressed file\n' )
@@ -1242,6 +1447,9 @@ def get_repository_files( trans, folder_path ):
     if contents:
         contents.sort()
     return contents
+def get_repository_in_tool_shed( trans, id ):
+    """Get a repository on the tool shed side from the database via id"""
+    return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
 def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database"""
     # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.  Duplicate records were somehow
@@ -1635,6 +1843,8 @@ def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
                                                                              parent_id=tool_version_using_parent_id.id )
                 sa_session.add( tool_version_association )
                 sa_session.flush()
+def is_downloadable( metadata_dict ):
+    return 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
 def load_installed_datatype_converters( app, installed_repository_dict, deactivate=False ):
     # Load or deactivate proprietary datatype converters
     app.datatypes_registry.load_datatype_converters( app.toolbox, installed_repository_dict=installed_repository_dict, deactivate=deactivate )
@@ -1739,6 +1949,12 @@ def pull_repository( repo, repository_clone_url, ctx_rev ):
                    repo,
                    source=repository_clone_url,
                    rev=[ ctx_rev ] )
+def remove_dir( dir ):
+    if os.path.exists( dir ):
+        try:
+            shutil.rmtree( dir )
+        except:
+            pass
 def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     # A tool shed repository is being uninstalled so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have
@@ -1912,6 +2128,188 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
         removed = True
         error_message = ''
     return removed, error_message
+def reset_all_metadata_on_installed_repository( trans, id ):
+    """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
+    repository = get_installed_tool_shed_repository( trans, id )
+    tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
+    repository_clone_url = generate_clone_url_for_installed_repository( trans, repository )
+    tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
+    if relative_install_dir:
+        original_metadata_dict = repository.metadata
+        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                     repository=repository,
+                                                                                     repository_clone_url=repository_clone_url,
+                                                                                     shed_config_dict = repository.get_shed_config_dict( trans.app ),
+                                                                                     relative_install_dir=relative_install_dir,
+                                                                                     repository_files_dir=None,
+                                                                                     resetting_all_metadata_on_repository=False,
+                                                                                     updating_installed_repository=False )
+        repository.metadata = metadata_dict
+        if metadata_dict != original_metadata_dict:
+            update_in_shed_tool_config( trans.app, repository )
+            trans.sa_session.add( repository )
+            trans.sa_session.flush()
+            log.debug( 'Metadata has been reset on repository %s.' % repository.name )
+        else:
+            log.debug( 'Metadata did not need to be reset on repository %s.' % repository.name )
+    else:
+        log.debug( 'Error locating installation directory for repository %s.' % repository.name )
+    return invalid_file_tups, metadata_dict
+def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
+    """Reset all metadata on a single repository in a tool shed."""
+    def reset_all_tool_versions( trans, id, repo ):
+        changeset_revisions = []
+        for changeset in repo.changelog:
+            changeset_revision = str( repo.changectx( changeset ) )
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    if metadata.get( 'tools', None ):
+                        changeset_revisions.append( changeset_revision )
+        # The list of changeset_revisions is now filtered to contain only those that are downloadable and contain tools.
+        # If a repository includes tools, build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in each changeset revision.
+        for index, changeset_revision in enumerate( changeset_revisions ):
+            tool_versions_dict = {}
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+            metadata = repository_metadata.metadata
+            tool_dicts = metadata[ 'tools' ]
+            if index == 0:
+                # The first changset_revision is a special case because it will have no ancestor changeset_revisions in which to match tools.
+                # The parent tool id for tools in the first changeset_revision will be the "old_id" in the tool config.
+                for tool_dict in tool_dicts:
+                    tool_versions_dict[ tool_dict[ 'guid' ] ] = tool_dict[ 'id' ]
+            else:
+                for tool_dict in tool_dicts:
+                    parent_id = get_parent_id( trans,
+                                               id,
+                                               tool_dict[ 'id' ],
+                                               tool_dict[ 'version' ],
+                                               tool_dict[ 'guid' ],
+                                               changeset_revisions[ 0:index ] )
+                    tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
+            if tool_versions_dict:
+                repository_metadata.tool_versions = tool_versions_dict
+                trans.sa_session.add( repository_metadata )
+                trans.sa_session.flush()
+    repository = get_repository_in_tool_shed( trans, id )
+    log.debug( "Resetting all metadata on repository: %s" % repository.name )
+    repo_dir = repository.repo_path
+    repo = hg.repository( get_configured_ui(), repo_dir )
+    repository_clone_url = generate_clone_url_for_repository_in_tool_shed( trans, repository )
+    # The list of changeset_revisions refers to repository_metadata records that have been created or updated.  When the following loop
+    # completes, we'll delete all repository_metadata records for this repository that do not have a changeset_revision value in this list.
+    changeset_revisions = []
+    # When a new repository_metadata record is created, it always uses the values of metadata_changeset_revision and metadata_dict.
+    metadata_changeset_revision = None
+    metadata_dict = None
+    ancestor_changeset_revision = None
+    ancestor_metadata_dict = None
+    invalid_file_tups = []
+    home_dir = os.getcwd()
+    for changeset in repo.changelog:
+        work_dir = tempfile.mkdtemp()
+        current_changeset_revision = str( repo.changectx( changeset ) )
+        ctx = repo.changectx( changeset )
+        log.debug( "Cloning repository revision: %s", str( ctx.rev() ) )
+        cloned_ok, error_message = clone_repository( repository_clone_url, work_dir, str( ctx.rev() ) )
+        if cloned_ok:
+            log.debug( "Generating metadata for changset revision: %s", str( ctx.rev() ) )
+            current_metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                                 repository=repository,
+                                                                                                 repository_clone_url=repository_clone_url,
+                                                                                                 relative_install_dir=repo_dir,
+                                                                                                 repository_files_dir=work_dir,
+                                                                                                 resetting_all_metadata_on_repository=True,
+                                                                                                 updating_installed_repository=False )
+            if current_metadata_dict:
+                if not metadata_changeset_revision and not metadata_dict:
+                    # We're at the first change set in the change log.
+                    metadata_changeset_revision = current_changeset_revision
+                    metadata_dict = current_metadata_dict
+                if ancestor_changeset_revision:
+                    # Compare metadata from ancestor and current.  The value of comparison will be one of:
+                    # 'no metadata' - no metadata for either ancestor or current, so continue from current
+                    # 'equal' - ancestor metadata is equivalent to current metadata, so continue from current
+                    # 'subset' - ancestor metadata is a subset of current metadata, so continue from current
+                    # 'not equal and not subset' - ancestor metadata is neither equal to nor a subset of current metadata, so persist ancestor metadata.
+                    comparison = compare_changeset_revisions( ancestor_changeset_revision,
+                                                              ancestor_metadata_dict,
+                                                              current_changeset_revision,
+                                                              current_metadata_dict )
+                    if comparison in [ 'no metadata', 'equal', 'subset' ]:
+                        ancestor_changeset_revision = current_changeset_revision
+                        ancestor_metadata_dict = current_metadata_dict
+                    elif comparison == 'not equal and not subset':
+                        metadata_changeset_revision = ancestor_changeset_revision
+                        metadata_dict = ancestor_metadata_dict
+                        repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                        changeset_revisions.append( metadata_changeset_revision )
+                        ancestor_changeset_revision = current_changeset_revision
+                        ancestor_metadata_dict = current_metadata_dict
+                else:
+                    # We're at the beginning of the change log.
+                    ancestor_changeset_revision = current_changeset_revision
+                    ancestor_metadata_dict = current_metadata_dict
+                if not ctx.children():
+                    metadata_changeset_revision = current_changeset_revision
+                    metadata_dict = current_metadata_dict
+                    # We're at the end of the change log.
+                    repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                    changeset_revisions.append( metadata_changeset_revision )
+                    ancestor_changeset_revision = None
+                    ancestor_metadata_dict = None
+            elif ancestor_metadata_dict:
+                # We reach here only if current_metadata_dict is empty and ancestor_metadata_dict is not.
+                if not ctx.children():
+                    # We're at the end of the change log.
+                    repository_metadata = create_or_update_repository_metadata( trans, id, repository, metadata_changeset_revision, metadata_dict )
+                    changeset_revisions.append( metadata_changeset_revision )
+                    ancestor_changeset_revision = None
+                    ancestor_metadata_dict = None
+        remove_dir( work_dir )
+    # Delete all repository_metadata records for this repository that do not have a changeset_revision value in changeset_revisions.
+    clean_repository_metadata( trans, id, changeset_revisions )
+    # Set tool version information for all downloadable changeset revisions.  Get the list of changeset revisions from the changelog.
+    reset_all_tool_versions( trans, id, repo )
+    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+    reset_tool_data_tables( trans.app )
+    return invalid_file_tups, metadata_dict
+def reset_metadata_on_selected_repositories( trans, **kwd ):
+    # This method is called from both Galaxy and the Tool Shed, so the cntrller param is required.
+    repository_ids = util.listify( kwd.get( 'repository_ids', None ) )
+    CONTROLLER = kwd[ 'CONTROLLER' ]
+    message = ''
+    status = 'done'
+    if repository_ids:
+        successful_count = 0
+        unsuccessful_count = 0
+        for repository_id in repository_ids:
+            try:
+                if CONTROLLER == 'TOOL_SHED_ADMIN_CONTROLLER':
+                    repository = get_repository_in_tool_shed( trans, repository_id )
+                    invalid_file_tups, metadata_dict = reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
+                elif CONTROLLER == 'GALAXY_ADMIN_TOOL_SHED_CONTROLLER':
+                    repository = get_installed_tool_shed_repository( trans, repository_id )
+                    invalid_file_tups, metadata_dict = reset_all_metadata_on_installed_repository( trans, repository_id )
+                if invalid_file_tups:
+                    message = generate_message_for_invalid_tools( invalid_file_tups, repository, None, as_html=False )
+                    log.debug( message )
+                    unsuccessful_count += 1
+                else:
+                    log.debug( "Successfully reset metadata on repository %s" % repository.name )
+                    successful_count += 1
+            except Exception, e:
+                log.debug( "Error attempting to reset metadata on repository '%s': %s" % ( repository.name, str( e ) ) )
+                unsuccessful_count += 1
+        message = "Successfully reset metadata on %d %s.  " % ( successful_count, inflector.cond_plural( successful_count, "repository" ) )
+        if unsuccessful_count:
+            message += "Error setting metadata on %d %s - see the paster log for details.  " % ( unsuccessful_count,
+                                                                                                 inflector.cond_plural( unsuccessful_count, "repository" ) )
+    else:
+        message = 'Select at least one repository to on which to reset all metadata.'
+        status = 'error'
+    return message, status
 def reset_tool_data_tables( app ):
     # Reset the tool_data_tables to an empty dictionary.
     app.tool_data_tables.data_tables = {}
@@ -2061,7 +2459,7 @@ def update_in_shed_tool_config( app, repository ):
     
     tool_panel_dict = generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
     repository_tools_tups = get_repository_tools_tups( app, repository.metadata )
-    cleaned_repository_clone_url = clean_repository_clone_url( generate_clone_url( trans, repository ) )
+    cleaned_repository_clone_url = clean_repository_clone_url( generate_clone_url_for_installed_repository( trans, repository ) )
     tool_shed = tool_shed_from_repository_clone_url( cleaned_repository_clone_url )
     owner = repository.owner
     if not owner:

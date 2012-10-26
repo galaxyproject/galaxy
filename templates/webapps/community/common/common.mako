@@ -1,3 +1,36 @@
+<%def name="common_misc_javascripts()">
+    <script type="text/javascript">
+        function checkAllFields( name )
+        {
+            var chkAll = document.getElementById( 'checkAll' );
+            var checks = document.getElementsByTagName( 'input' );
+            var boxLength = checks.length;
+            var allChecked = false;
+            var totalChecked = 0;
+            if ( chkAll.checked == true )
+            {
+                for ( i=0; i < boxLength; i++ )
+                {
+                    if ( checks[i].name.indexOf( name ) != -1 )
+                    {
+                       checks[i].checked = true;
+                    }
+                }
+            }
+            else
+            {
+                for ( i=0; i < boxLength; i++ )
+                {
+                    if ( checks[i].name.indexOf( name ) != -1 )
+                    {
+                       checks[i].checked = false
+                    }
+                }
+            }
+        }
+    </script>
+</%def>
+
 <%def name="escape_html_add_breaks( value )">
     <%
         from galaxy import eggs

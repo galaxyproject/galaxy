@@ -5,7 +5,9 @@ from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.web.form_builder import SelectField
 from galaxy.util import inflector
-from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui
+# TODO: re-factor shed_util to eliminate the following restricted imports
+from galaxy.util.shed_util import build_repository_ids_select_field, get_changectx_for_changeset, get_configured_ui, get_repository_in_tool_shed
+from galaxy.util.shed_util import reset_metadata_on_selected_repositories, TOOL_SHED_ADMIN_CONTROLLER
 from common import *
 from repository import RepositoryGrid, CategoryGrid
 
@@ -481,7 +483,7 @@ class AdminController( BaseUIController, Admin ):
                     # The received id is the repository id, so we need to get the id of the user
                     # that uploaded the repository.
                     repository_id = kwd.get( 'id', None )
-                    repository = get_repository( trans, repository_id )
+                    repository = get_repository_in_tool_shed( trans, repository_id )
                     kwd[ 'f-email' ] = repository.user.email
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
@@ -513,7 +515,7 @@ class AdminController( BaseUIController, Admin ):
             changset_revision_str = 'changeset_revision_'
             if k.startswith( changset_revision_str ):
                 repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
-                repository = get_repository( trans, repository_id )
+                repository = get_repository_in_tool_shed( trans, repository_id )
                 if repository.tip != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='browse_repositories',
@@ -586,7 +588,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             deleted_repositories = ""
             for repository_id in ids:
-                repository = get_repository( trans, repository_id )
+                repository = get_repository_in_tool_shed( trans, repository_id )
                 if not repository.deleted:
                     repository.deleted = True
                     trans.sa_session.add( repository )
@@ -715,57 +717,14 @@ class AdminController( BaseUIController, Admin ):
                                     status=status )
     @web.expose
     @web.require_admin
-    def reset_metadata_on_selected_repositories( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        repository_names_by_owner = util.listify( kwd.get( 'repository_names_by_owner', None ) )
+    def reset_metadata_on_selected_repositories_in_tool_shed( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            if repository_names_by_owner:
-                successful_count = 0
-                unsuccessful_count = 0
-                for repository_name_owner_str in repository_names_by_owner:
-                    repository_name_owner_list = repository_name_owner_str.split( STRSEP )
-                    name = repository_name_owner_list[ 0 ]
-                    owner = repository_name_owner_list[ 1 ]
-                    repository = get_repository_by_name_and_owner( trans, name, owner )
-                    try:
-                        invalid_file_tups, metadata_dict = reset_all_metadata_on_repository( trans, trans.security.encode_id( repository.id ) )
-                        if invalid_file_tups:
-                            message = generate_message_for_invalid_tools( invalid_file_tups, repository, None, as_html=False )
-                            log.debug( message )
-                            unsuccessful_count += 1
-                        else:
-                            log.debug( "Successfully reset metadata on repository %s" % repository.name )
-                            successful_count += 1
-                    except Exception, e:
-                        log.debug( "Error attempting to reset metadata on repository '%s': %s" % ( repository.name, str( e ) ) )
-                        unsuccessful_count += 1
-                message = "Successfully reset metadata on %d %s.  " % ( successful_count,
-                                                                        inflector.cond_plural( successful_count, "repository" ) )
-                if unsuccessful_count:
-                    message += "Error setting metadata on %d %s - see the paster log for details.  " % ( unsuccessful_count,
-                                                                                                         inflector.cond_plural( unsuccessful_count,
-                                                                                                                                "repository" ) )
-                trans.response.send_redirect( web.url_for( controller='admin',
-                                                           action='browse_repository_metadata',
-                                                           message=util.sanitize_text( message ),
-                                                           status=status ) )
-            else:
-                'Select at least one repository to on which to reset all metadata.'
-                status = 'error'
-        repositories_select_field = SelectField( name='repository_names_by_owner', 
-                                                 multiple=True,
-                                                 display='checkboxes' )
-        for repository in trans.sa_session.query( trans.model.Repository ) \
-                                          .filter( and_( trans.model.Repository.table.c.deleted == False,
-                                                         trans.model.Repository.table.c.deprecated == False ) ) \
-                                          .order_by( trans.model.Repository.table.c.name,
-                                                     trans.model.Repository.table.c.user_id ):
-            owner = repository.user.username
-            option_label = '%s (%s)' % ( repository.name, owner )
-            option_value = '%s%s%s' % ( repository.name, STRSEP, owner )
-            repositories_select_field.add_option( option_label, option_value )
+            kwd[ 'CONTROLLER' ] = TOOL_SHED_ADMIN_CONTROLLER
+            message, status = reset_metadata_on_selected_repositories( trans, **kwd )
+        else:
+            message = util.restore_text( kwd.get( 'message', ''  ) )
+            status = kwd.get( 'status', 'done' )
+        repositories_select_field = build_repository_ids_select_field( trans, TOOL_SHED_ADMIN_CONTROLLER )
         return trans.fill_template( '/webapps/community/admin/reset_metadata_on_selected_repositories.mako',
                                     repositories_select_field=repositories_select_field,
                                     message=message,
@@ -783,7 +742,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             undeleted_repositories = ""
             for repository_id in ids:
-                repository = get_repository( trans, repository_id )
+                repository = get_repository_in_tool_shed( trans, repository_id )
                 if repository.deleted:
                     repository.deleted = False
                     trans.sa_session.add( repository )

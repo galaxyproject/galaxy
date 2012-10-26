@@ -55,7 +55,7 @@
                             <a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repositories' )}">Browse all repositories</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='reset_metadata_on_selected_repositories' )}">Reset selected metadata</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='admin', action='reset_metadata_on_selected_repositories_in_tool_shed' )}">Reset selected metadata</a>
                         </div>
                         <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='admin', action='browse_repository_metadata' )}">Browse metadata</a>

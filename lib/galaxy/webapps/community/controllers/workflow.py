@@ -10,6 +10,8 @@ from galaxy.tools import DefaultToolState
 from galaxy.webapps.galaxy.controllers.workflow import attach_ordered_steps
 from galaxy.model.orm import *
 from common import *
+# TODO: re-factor shed_util to eliminate the following restricted imports
+from galaxy.util.shed_util import get_repository_in_tool_shed
 from galaxy.tool_shed.encoding_util import *
 
 class RepoInputDataModule( InputDataModule ):
@@ -144,7 +146,7 @@ class WorkflowController( BaseUIController ):
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
-        repository = get_repository( trans, trans.security.encode_id( repository_metadata.repository_id ) )
+        repository = get_repository_in_tool_shed( trans, trans.security.encode_id( repository_metadata.repository_id ) )
         return trans.fill_template( "/webapps/community/repository/view_workflow.mako",
                                     repository=repository,
                                     changeset_revision=repository_metadata.changeset_revision,

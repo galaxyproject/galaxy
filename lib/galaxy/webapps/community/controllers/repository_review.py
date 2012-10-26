@@ -8,7 +8,8 @@ from galaxy.model.orm import *
 from sqlalchemy.sql.expression import func
 from common import *
 from repository import RepositoryGrid
-from galaxy.util.shed_util import get_configured_ui
+# TODO: re-factor shed_util to eliminate the following restricted imports
+from galaxy.util.shed_util import get_configured_ui, get_repository_in_tool_shed
 from galaxy.util.odict import odict
 
 from galaxy import eggs
@@ -381,7 +382,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
                     message = "You have already created a review for revision <b>%s</b> of repository <b>%s</b>." % ( changeset_revision, repository.name )
                     status = "error"
                 else:
-                    repository = get_repository( trans, repository_id )
+                    repository = get_repository_in_tool_shed( trans, repository_id )
                     # See if there are any reviews for previous changeset revisions that the user can copy.
                     if not create_without_copying and not previous_review_id and has_previous_repository_reviews( trans, repository, changeset_revision ):
                         return trans.response.send_redirect( web.url_for( controller='repository_review',
@@ -650,7 +651,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         if repository_id:
-            repository = get_repository( trans, repository_id )
+            repository = get_repository_in_tool_shed( trans, repository_id )
             repo_dir = repository.repo_path
             repo = hg.repository( get_configured_ui(), repo_dir )
             metadata_revision_hashes = [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
@@ -697,7 +698,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository_id = kwd.get( 'id', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
-        repository = get_repository( trans, repository_id )
+        repository = get_repository_in_tool_shed( trans, repository_id )
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
         installable = changeset_revision in [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
@@ -762,7 +763,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        repository = get_repository( trans, kwd[ 'id' ] )
+        repository = get_repository_in_tool_shed( trans, kwd[ 'id' ] )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repo = hg.repository( get_configured_ui(), repository.repo_path )
         previous_reviews_dict = get_previous_repository_reviews( trans, repository, changeset_revision )
@@ -777,7 +778,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
     @web.expose
     @web.require_login( "view or manage repository" )
     def view_or_manage_repository( self, trans, **kwd ):
-        repository = get_repository( trans, kwd[ 'id' ] )
+        repository = get_repository_in_tool_shed( trans, kwd[ 'id' ] )
         if trans.user_is_admin() or repository.user == trans.user:
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='manage_repository',

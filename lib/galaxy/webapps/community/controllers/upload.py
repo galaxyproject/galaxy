@@ -3,7 +3,9 @@ from galaxy.web.base.controller import *
 from galaxy.model.orm import *
 from galaxy.datatypes.checkers import *
 from common import *
-from galaxy.util.shed_util import get_configured_ui, reset_tool_data_tables, handle_sample_tool_data_table_conf_file, update_repository
+# TODO: re-factor shed_util to eliminate the following restricted imports
+from galaxy.util.shed_util import get_configured_ui, get_repository_in_tool_shed, reset_tool_data_tables, handle_sample_tool_data_table_conf_file
+from galaxy.util.shed_util import update_repository
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -28,7 +30,7 @@ class UploadController( BaseUIController ):
         category_ids = util.listify( params.get( 'category_id', '' ) )
         categories = get_categories( trans )
         repository_id = params.get( 'repository_id', '' )
-        repository = get_repository( trans, repository_id )
+        repository = get_repository_in_tool_shed( trans, repository_id )
         repo_dir = repository.repo_path
         repo = hg.repository( get_configured_ui(), repo_dir )
         uncompress_file = util.string_as_bool( params.get( 'uncompress_file', 'true' ) )

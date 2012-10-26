@@ -77,8 +77,8 @@
 
 <%def name="render_clone_str( repository )">
     <%
-        from galaxy.webapps.community.controllers.common import generate_clone_url
-        clone_str = generate_clone_url( trans, trans.security.encode_id( repository.id ) )
+        from galaxy.util.shed_util import generate_clone_url_for_repository_in_tool_shed
+        clone_str = generate_clone_url_for_repository_in_tool_shed( trans, repository )
     %>
     hg clone <a href="${clone_str}">${clone_str}</a>
 </%def>
