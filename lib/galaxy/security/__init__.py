@@ -879,7 +879,7 @@ class GalaxyRBACAgent( RBACAgent ):
 
         # Now get all datasets which have DATASET_ACCESS actions:
         access_data_perms = trans.sa_session.query( trans.app.model.DatasetPermissions ) \
-                                 .filter( and_( trans.app.model.DatasetPermissions.dataset_id in dataset_ids,
+                                 .filter( and_( trans.app.model.DatasetPermissions.dataset_id.in_( dataset_ids ),
                                                 trans.app.model.DatasetPermissions.action == self.permitted_actions.DATASET_ACCESS.action ) ) \
                                  .all()
 
