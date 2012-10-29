@@ -12,22 +12,28 @@ and symbols are sorted in lexigraphical order.
 
 import sys, optparse
 from galaxy import eggs
-from galaxy.datatypes.util.gff_util import read_unordered_gtf, convert_gff_coords_to_bed
+from galaxy.datatypes.util.gff_util import GFFReaderWrapper, read_unordered_gtf, convert_gff_coords_to_bed
 
 def main():
     # Process arguments.
     parser = optparse.OptionParser()
-    parser.add_option( '-B', '--bed', action="store_true", dest="bed_input" )
-    parser.add_option( '-G', '--gff', action="store_true", dest="gff_input" )
+    parser.add_option( '-F', '--format', dest="input_format" )
     (options, args) = parser.parse_args()
     in_fname, out_fname = args
-
+    input_format = options.input_format.lower()
 
     # Create dict of name-location pairings.
     name_loc_dict = {}
-    if options.gff_input:
-        # GFF format
-        for feature in read_unordered_gtf( open( in_fname, 'r' ) ):
+    if input_format in [ 'gff', 'gtf' ]:
+        # GTF/GFF format
+
+        # Create reader.
+        if input_format == 'gff':
+            in_reader = GFFReaderWrapper( open( in_fname, 'r' ) )
+        else: #input_format == 'gtf'
+            in_reader = read_unordered_gtf( open( in_fname, 'r' ) )
+
+        for feature in in_reader:
             for name in feature.attributes:
                 val = feature.attributes[ name ]
                 try:
@@ -50,7 +56,7 @@ def main():
                             loc[ 'start' ] = feature.start
                         if feature.end > loc[ 'end' ]:
                             loc[ 'end' ] = feature.end
-    else:
+    elif input_format == 'bed':
         # BED format.
         for line in open( in_fname, 'r' ):
             # Ignore track lines.

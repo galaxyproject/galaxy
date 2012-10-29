@@ -227,22 +227,20 @@ class GFFReaderWrapper( NiceReaderWrapper ):
                 continue
             
             # Determine if interval is part of feature.
-            part_of = True
+            part_of = False
             group = interval.attributes.get( 'group', None )
             # GFF test:
-            if group and feature_group != group:
-                part_of = False
+            if group and feature_group == group:
+                part_of = True
             # GFF3 test:
             parent_id = interval.attributes.get( 'Parent', None )
             cur_id = interval.attributes.get( 'ID', None )
-            if ( cur_id and cur_id != feature_id ) or ( parent_id and parent_id != feature_id ):
-                part_of = False
+            if ( cur_id and cur_id == feature_id ) or ( parent_id and parent_id == feature_id ):
+                part_of = True
             # GTF test:
-            gene_id = interval.attributes.get( 'gene_id', None )
             transcript_id = interval.attributes.get( 'transcript_id', None )
-            if ( transcript_id and transcript_id != feature_transcript_id ) or \
-               ( gene_id and gene_id != feature_gene_id ):
-                part_of = False
+            if transcript_id and transcript_id == feature_transcript_id:
+                part_of = True
                 
             # If interval is not part of feature, clean up and break.
             if not part_of:
