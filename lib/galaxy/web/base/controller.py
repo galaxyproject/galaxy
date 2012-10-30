@@ -244,20 +244,22 @@ class SharableItemSecurityMixin:
 class UsesHistoryDatasetAssociationMixin:
     """ Mixin for controllers that use HistoryDatasetAssociation objects. """
     
-    def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False ):
+    def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
         """ Get an HDA object by id. """
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
-            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
-            if data is None:
-                raise ValueError( 'Invalid reference dataset id: %s.' % dataset_id )
+            # encoded id?
+            dataset_id = trans.security.decode_id
+
+        except ( AttributeError, TypeError ), err:
+            # unencoded id
+            dataset_id = int( dataset_id )
+
+        try:
+            data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
         except:
-            try:
-                data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( int( dataset_id ) )
-            except:
-                data = None
-        if not data:
             raise HTTPRequestRangeNotSatisfiable( "Invalid dataset id: %s." % str( dataset_id ) )
+
         if check_ownership:
             # Verify ownership.
             user = trans.get_user()
@@ -265,26 +267,30 @@ class UsesHistoryDatasetAssociationMixin:
                 error( "Must be logged in to manage Galaxy items" )
             if data.history.user != user:
                 error( "%s is not owned by current user" % data.__class__.__name__ )
+
         if check_accessible:
             current_user_roles = trans.get_current_user_roles()
-            if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
-                if data.state == trans.model.Dataset.states.UPLOAD:
-                    return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
-            else:
+
+            if not trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
                 error( "You are not allowed to access this dataset" )
+
+            if check_state and data.state == trans.model.Dataset.states.UPLOAD:
+                    return trans.show_error_message( "Please wait until this dataset finishes uploading "
+                                                   + "before attempting to view it." )
         return data
         
-    def get_history_dataset_association( self, trans, history, dataset_id, check_ownership=True, check_accessible=False ):
+    def get_history_dataset_association( self, trans, history, dataset_id,
+                                         check_ownership=True, check_accessible=False, check_state=False ):
         """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
         self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
         hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
         
         if check_accessible:
-            if trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
-                if hda.state == trans.model.Dataset.states.UPLOAD:
-                    error( "Please wait until this dataset finishes uploading before attempting to view it." )
-            else:
+            if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
                 error( "You are not allowed to access this dataset" )
+
+                if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
+                    error( "Please wait until this dataset finishes uploading before attempting to view it." )
         return hda
         
     def get_data( self, dataset, preview=True ):
