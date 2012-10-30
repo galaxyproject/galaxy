@@ -18,7 +18,7 @@
             if (colspan !== undefined){
                 return $('<td>').attr('colspan', colspan).addClass('stringalign').text(cell_contents);
             }
-            else if (COLUMN_TYPES[index] == 'str'){
+            else if (COLUMN_TYPES[index] == 'str' || COLUMN_TYPES[index] == 'list'){
                 /* Left align all str columns, right align the rest */
                 return $('<td>').addClass('stringalign').text(cell_contents);;
             }
