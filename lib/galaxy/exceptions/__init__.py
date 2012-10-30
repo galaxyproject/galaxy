@@ -9,6 +9,8 @@ class MessageException( Exception ):
     def __init__( self, err_msg, type="info" ):
         self.err_msg = err_msg
         self.type = type
+    def __str__( self ):
+        return self.err_msg
 
 class ItemDeletionException( MessageException ):
     pass

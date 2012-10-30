@@ -1484,6 +1484,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
                      model_class = self.__class__.__name__,
                      name = hda.name,
                      deleted = hda.deleted,
+                     purged = hda.purged,
                      visible = hda.visible,
                      state = hda.state,
                      file_size = int( hda.get_size() ),
