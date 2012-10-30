@@ -19,6 +19,10 @@ class InstallManager( object ):
         self.app = app
         self.toolbox = self.app.toolbox
         self.migrated_tools_config = migrated_tools_config
+        # If install_dependencies is True, but tool_dependency_dir is not set, 
+        # do not attempt to install, but print informative error message
+        if install_dependencies and app.config.tool_dependency_dir is None:
+            raise Exception( 'You are attempting to install tool dependencies, but do not have a value for "tool_dependency_dir" set in your ini file. Please set this to the path where you would like to install dependencies and rerun the migration script.' )
         # Get the local non-shed related tool panel configs (there can be more than one, and the default name is tool_conf.xml).
         self.proprietary_tool_confs = self.non_shed_tool_panel_configs
         self.proprietary_tool_panel_elems = self.get_proprietary_tool_panel_elems( latest_migration_script_number )
