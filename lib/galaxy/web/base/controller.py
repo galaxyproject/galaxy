@@ -630,8 +630,10 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             data_provider = trans.app.data_provider_registry.get_data_provider( trans, 
                                                                                 original_dataset=dataset, 
                                                                                 source=source )
-            # HACK: pass in additional params, which are only used for summary tree data, not BBI data.
-            rval = data_provider.get_genome_data( chroms_info, level=4, detail_cutoff=0, draw_cutoff=0 )
+            # HACK: pass in additional params which are used for only some types of data providers;
+            # level, cutoffs used for summary tree, and interchromosomal used for chromatin interactions.
+            rval = data_provider.get_genome_data( chroms_info, level=4, detail_cutoff=0, draw_cutoff=0,
+                                                  interchromosomal=True )
 
         return rval
 

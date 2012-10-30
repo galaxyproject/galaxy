@@ -150,7 +150,7 @@ class GenomeDataProvider( BaseDataProvider ):
         """
         raise Exception( "Unimplemented Function" )
         
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom, start, end, **kwargs ):
         """
         Returns an iterator that provides data in the region chrom:start-end
         """
@@ -172,7 +172,7 @@ class GenomeDataProvider( BaseDataProvider ):
             dataset_type, data
         """
         start, end = int( low ), int( high )
-        iterator = self.get_iterator( chrom, start, end )
+        iterator = self.get_iterator( chrom, start, end, **kwargs )
         return self.process_data( iterator, start_val, max_vals, **kwargs )
 
     def get_genome_data( self, chroms_info, **kwargs ):
@@ -338,7 +338,7 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
     
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
         
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom, start, end, **kwargs ):
         start, end = int(start), int(end)
         if end >= (2<<29):
             end = (2<<29 - 1) # Tabix-enforced maximum
@@ -387,7 +387,7 @@ class IntervalDataProvider( GenomeDataProvider ):
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
     
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom, start, end, **kwargs ):
         raise Exception( "Unimplemented Function" )
             
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
@@ -467,7 +467,7 @@ class BedDataProvider( GenomeDataProvider ):
 
     dataset_type = 'interval_index'
     
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom, start, end, **kwargs ):
         raise Exception( "Unimplemented Method" )
             
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
@@ -562,7 +562,7 @@ class RawBedDataProvider( BedDataProvider ):
     for large datasets.
     """
 
-    def get_iterator( self, chrom=None, start=None, end=None ):
+    def get_iterator( self, chrom=None, start=None, end=None, **kwargs ):
         # Read first line in order to match chrom naming format.
         line = source.readline()
         dataset_chrom = line.split()[0]
@@ -706,7 +706,7 @@ class RawVcfDataProvider( VcfDataProvider ):
     for large datasets.
     """
 
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom, start, end, **kwargs ):
         # Read first line in order to match chrom naming format.
         line = source.readline()
         dataset_chrom = line.split()[0]
@@ -864,7 +864,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         new_bamfile.close()
         bamfile.close()
         
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom, start, end, **kwargs ):
         """
         Returns an iterator that provides data in the region chrom:start-end
         """
@@ -1174,7 +1174,7 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
                     
         out.close()
         
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom, start, end, **kwargs ):
         """
         Returns an array with values: (a) source file and (b) an iterator that
         provides data in the region chrom:start-end
@@ -1233,7 +1233,7 @@ class RawGFFDataProvider( GenomeDataProvider ):
 
     dataset_type = 'interval_index'
     
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom, start, end, **kwargs ):
         """
         Returns an iterator that provides data in the region chrom:start-end as well as
         a file offset.
@@ -1341,7 +1341,7 @@ class ENCODEPeakDataProvider( GenomeDataProvider ):
     Payload format: [ uid (offset), start, end, name, strand, thick_start, thick_end, blocks ]
     """
     
-    def get_iterator( self, chrom, start, end ):
+    def get_iterator( self, chrom, start, end, **kwargs ):
         raise "Unimplemented Method"
             
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
@@ -1487,7 +1487,7 @@ class ChromatinInteractionsDataProvider( GenomeDataProvider ):
         return 100000;
     
 class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinInteractionsDataProvider ):
-    def get_iterator( self, chrom, start=0, end=sys.maxint ):
+    def get_iterator( self, chrom, start=0, end=sys.maxint, interchromosomal=False, **kwargs ):
         """
         """
         # Modify start as needed to get earlier interactions with start region.
@@ -1501,8 +1501,11 @@ class ChromatinInteractionsTabixDataProvider( TabixDataProvider, ChromatinIntera
                 c = feature[3]
                 s2 = int( feature[4] )
                 e2 = int( feature[5] )
-                #if ( s1 <= filter_end and e1 >= filter_start ) and ( s2 <= filter_end and e2 >= filter_start ) and ( max( s1, s2 ) - min( e1, e2 ) <= span * 2 ):
+                # Check for intrachromosal interactions.
                 if ( ( s1 + s2 ) / 2 <= end ) and ( ( e1 + e2 ) / 2 >= start ) and ( c == chrom ):
+                    yield line
+                # Check for interchromosal interactions.
+                if interchromosomal and c != chrom:
                     yield line
         return filter( TabixDataProvider.get_iterator( self, chrom, filter_start, end ) )
                
