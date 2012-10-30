@@ -10,7 +10,7 @@ define([
     "../libs/d3",
     
     "../libs/bootstrap",
-    "../libs/jquery/jquery-ui-1.8.23.custom.min"
+    "../libs/jquery/jquery-ui"
 ], function(){
 
 /* =============================================================================

@@ -5,7 +5,7 @@ ${parent.stylesheets()}
 ${h.css(
     "base",
     "autocomplete_tagging",
-    "jquery-ui/smoothness/jquery-ui-1.8.23.custom"
+    "jquery-ui/smoothness/jquery-ui"
 )}
 
 <style type="text/css">

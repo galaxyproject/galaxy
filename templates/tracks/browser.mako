@@ -23,8 +23,6 @@ ${parent.javascripts()}
 <![endif]-->
 
 ${render_trackster_js_files()}
-${h.js( "libs/jquery/jquery.autocomplete" )}
-
 
 <script type="text/javascript">
 
@@ -107,7 +105,12 @@ ${h.js( "libs/jquery/jquery.autocomplete" )}
                         "Create": function() { $(document).trigger("convert_to_values"); continue_fn(); }
                     });
                     $("#new-title").focus();
-                    replace_big_select_inputs();
+                    $("select[name='dbkey']").combobox({
+                        appendTo: $("#overlay"),
+                        size: 40
+                    });
+                    // To support the large number of options for dbkey, enable scrolling in overlay.
+                    $("#overlay").css("overflow", "auto");
                 }
             });
         %endif

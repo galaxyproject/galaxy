@@ -107,7 +107,7 @@
     ${parent.javascripts()}
 
     ${h.templates( "tool_link", "panel_section", "tool_search", "tool_form" )}
-    ${h.js( "libs/require", "libs/jquery/jquery-ui-1.8.23.custom.min" )}
+    ${h.js( "libs/require", "libs/jquery/jquery-ui" )}
     
     <script type="text/javascript">
         require.config({ 
