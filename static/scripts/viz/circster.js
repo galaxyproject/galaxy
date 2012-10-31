@@ -27,13 +27,7 @@ var SVGUtils = Backbone.Model.extend({
 /**
  * A label track.
  */
-var CircsterLabelTrack = Backbone.Model.extend({
-    defaults: {
-        prefs: {
-            color: '#ccc'
-        }
-    }
-});
+var CircsterLabelTrack = Backbone.Model.extend({});
 
 /**
  * Renders a full circster visualization.
@@ -46,7 +40,7 @@ var CircsterView = Backbone.View.extend({
         this.genome = options.genome;
         this.dataset_arc_height = options.dataset_arc_height;
         this.track_gap = 5;
-        this.label_arc_height = 20;
+        this.label_arc_height = 50;
         this.scale = 1;
         this.circular_views = null;
         this.chords_views = null;
@@ -78,7 +72,7 @@ var CircsterView = Backbone.View.extend({
     },
 
     /**
-     * Returns a list of tracks' radius bounds.
+     * Returns a list of circular tracks' radius bounds.
      */
     get_tracks_bounds: function() {
         var circular_tracks = this.get_circular_tracks();
@@ -93,7 +87,7 @@ var CircsterView = Backbone.View.extend({
             // Compute range of track starting radii.
             tracks_start_radii = d3.range(radius_start, min_dimension / 2, this.dataset_arc_height + this.track_gap);
 
-        // Map from track start to bounds; for label track
+        // Map from track start to bounds.
         var self = this;
         return _.map(tracks_start_radii, function(radius) {
             return [radius, radius + self.dataset_arc_height];
@@ -180,12 +174,17 @@ var CircsterView = Backbone.View.extend({
             return view;
         });
 
-        // -- Render label tracks. --
+        // -- Render label track. --
         
-        // Set radius start = end for track bounds.
-        var track_bounds = tracks_bounds[circular_tracks.length];
-        track_bounds[1] = track_bounds[0];
-        this.label_track_view = new CircsterLabelTrackView({
+        // Track bounds are:
+        // (a) outer radius of last circular track;
+        // (b) 
+        var outermost_radius = this.circular_views[this.circular_views.length-1].radius_bounds[1],
+            track_bounds = [
+                outermost_radius,
+                outermost_radius + this.label_arc_height
+            ];
+        this.label_track_view = new CircsterChromLabelTrackView({
             el: svg.append('g')[0],
             track: new CircsterLabelTrack(),
             radius_bounds: track_bounds,
@@ -534,36 +533,97 @@ var CircsterTrackView = Backbone.View.extend({
 /**
  * Render chromosome labels.
  */
-var CircsterLabelTrackView = CircsterTrackView.extend({
+var CircsterChromLabelTrackView = CircsterTrackView.extend({
 
     initialize: function(options) {
         CircsterTrackView.prototype.initialize.call(this, options);
+        // Use a single arc for rendering data.
+        this.innerRadius = this.radius_bounds[0];
+        this.radius_bounds[0] = this.radius_bounds[1];
         this.bg_stroke = 'fff';
         this.bg_fill = 'fff';
+
+        // Minimum arc distance for labels to be applied.
+        this.min_arc_len = 0.08;
     },
 
     /**
      * Render labels.
      */
     _render_data: function(svg) {
-        // Add chromosome label where it will fit; an alternative labeling mechanism 
-        // would be nice for small chromosomes.
-        var chrom_arcs = svg.selectAll('g');
+        // -- Add chromosome label where it will fit; an alternative labeling mechanism 
+        // would be nice for small chromosomes. --
+        var self = this,
+            chrom_arcs = svg.selectAll('g');
 
         chrom_arcs.selectAll('path')
             .attr('id', function(d) { return 'label-' + d.data.chrom; });
           
         chrom_arcs.append("svg:text")
             .filter(function(d) { 
-                return d.endAngle - d.startAngle > 0.08;
+                return d.endAngle - d.startAngle > self.min_arc_len;
             })
             .attr('text-anchor', 'middle')
           .append("svg:textPath")
             .attr("xlink:href", function(d) { return "#label-" + d.data.chrom; })
             .attr('startOffset', '25%')
+            .attr('font-weight', 'bold')
             .text(function(d) { 
                 return d.data.chrom;
             });
+
+        // -- Add ticks to denote chromosome length. --
+
+        /** Returns an array of tick angles and labels, given a chrom arc. */
+        var chromArcTicks = function(d) {
+            if (d.endAngle - d.startAngle < self.min_arc_len) { return []; }
+            var k = (d.endAngle - d.startAngle) / d.value,
+                ticks = d3.range(0, d.value, 25000000).map(function(v, i) {
+                    return {
+                        angle: v * k + d.startAngle,
+                        label: i === 0 ? 0 : (i % 3 ? null : v / 1000000 + "M")
+                    };
+                });
+
+            // If there are fewer that 4 ticks, label last tick so that at least one non-zero tick is labeled.
+            if (ticks.length < 4) {
+                ticks[ticks.length-1].label = Math.round( 
+                                                ( ticks[ticks.length-1].angle - d.startAngle ) / k / 1000000 
+                                                         ) + "M";
+            }
+
+            return ticks;
+        };
+
+        var ticks = this.parent_elt.append("g")
+                        .selectAll("g")
+                            .data(this.chroms_layout)
+                        .enter().append("g")
+                        .selectAll("g")
+                            .data(chromArcTicks)
+                        .enter().append("g")
+                            .attr("transform", function(d) {
+                                return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")" +
+                                        "translate(" + self.innerRadius + ",0)";
+                            });
+
+        ticks.append("line")
+            .attr("x1", 1)
+            .attr("y1", 0)
+            .attr("x2", 4)
+            .attr("y2", 0)
+            .style("stroke", "#000");
+ 
+        ticks.append("text")
+            .attr("x", 4)
+            .attr("dy", ".35em")
+            .attr("text-anchor", function(d) {
+                return d.angle > Math.PI ? "end" : null;
+        })
+            .attr("transform", function(d) {
+                return d.angle > Math.PI ? "rotate(180)translate(-16)" : null;
+        })
+        .text(function(d) { return d.label; });
     }
 });
 
