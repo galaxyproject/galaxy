@@ -8,6 +8,12 @@ import galaxy.jobs.rules
 
 DYNAMIC_RUNNER_PREFIX = "dynamic:///"
 
+class JobMappingException( Exception ):
+
+    def __init__( self, failure_message ):
+        self.failure_message = failure_message
+
+
 class JobRunnerMapper( object ):
     """
     This class is responsible to managing the mapping of jobs
