@@ -249,7 +249,7 @@ class UsesHistoryDatasetAssociationMixin:
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
             # encoded id?
-            dataset_id = trans.security.decode_id
+            dataset_id = trans.security.decode_id( dataset_id )
 
         except ( AttributeError, TypeError ), err:
             # unencoded id
