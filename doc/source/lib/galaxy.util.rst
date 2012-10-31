@@ -137,3 +137,10 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+    galaxy.util.backports
+

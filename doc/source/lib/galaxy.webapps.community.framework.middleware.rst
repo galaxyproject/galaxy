@@ -17,3 +17,11 @@ middleware Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`remoteuser` Module
+------------------------
+
+.. automodule:: galaxy.webapps.community.framework.middleware.remoteuser
+    :members:
+    :undoc-members:
+    :show-inheritance:
+

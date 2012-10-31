@@ -4,7 +4,7 @@ controllers Package
 :mod:`controllers` Package
 --------------------------
 
-.. automodule:: galaxy.web.controllers
+.. automodule:: galaxy.webapps.galaxy.controllers
     :members:
     :undoc-members:
     :show-inheritance:
@@ -12,7 +12,7 @@ controllers Package
 :mod:`admin` Module
 -------------------
 
-.. automodule:: galaxy.web.controllers.admin
+.. automodule:: galaxy.webapps.galaxy.controllers.admin
     :members:
     :undoc-members:
     :show-inheritance:
@@ -20,7 +20,7 @@ controllers Package
 :mod:`admin_toolshed` Module
 ----------------------------
 
-.. automodule:: galaxy.web.controllers.admin_toolshed
+.. automodule:: galaxy.webapps.galaxy.controllers.admin_toolshed
     :members:
     :undoc-members:
     :show-inheritance:
@@ -28,15 +28,15 @@ controllers Package
 :mod:`async` Module
 -------------------
 
-.. automodule:: galaxy.web.controllers.async
+.. automodule:: galaxy.webapps.galaxy.controllers.async
     :members:
     :undoc-members:
     :show-inheritance:
 
-:mod:`cloud` Module
--------------------
+:mod:`cloudlaunch` Module
+-------------------------
 
-.. automodule:: galaxy.web.controllers.cloud
+.. automodule:: galaxy.webapps.galaxy.controllers.cloudlaunch
     :members:
     :undoc-members:
     :show-inheritance:
@@ -44,7 +44,7 @@ controllers Package
 :mod:`data_admin` Module
 ------------------------
 
-.. automodule:: galaxy.web.controllers.data_admin
+.. automodule:: galaxy.webapps.galaxy.controllers.data_admin
     :members:
     :undoc-members:
     :show-inheritance:
@@ -52,7 +52,7 @@ controllers Package
 :mod:`dataset` Module
 ---------------------
 
-.. automodule:: galaxy.web.controllers.dataset
+.. automodule:: galaxy.webapps.galaxy.controllers.dataset
     :members:
     :undoc-members:
     :show-inheritance:
@@ -60,7 +60,7 @@ controllers Package
 :mod:`error` Module
 -------------------
 
-.. automodule:: galaxy.web.controllers.error
+.. automodule:: galaxy.webapps.galaxy.controllers.error
     :members:
     :undoc-members:
     :show-inheritance:
@@ -68,7 +68,7 @@ controllers Package
 :mod:`external_service` Module
 ------------------------------
 
-.. automodule:: galaxy.web.controllers.external_service
+.. automodule:: galaxy.webapps.galaxy.controllers.external_service
     :members:
     :undoc-members:
     :show-inheritance:
@@ -76,7 +76,7 @@ controllers Package
 :mod:`external_services` Module
 -------------------------------
 
-.. automodule:: galaxy.web.controllers.external_services
+.. automodule:: galaxy.webapps.galaxy.controllers.external_services
     :members:
     :undoc-members:
     :show-inheritance:
@@ -84,7 +84,7 @@ controllers Package
 :mod:`forms` Module
 -------------------
 
-.. automodule:: galaxy.web.controllers.forms
+.. automodule:: galaxy.webapps.galaxy.controllers.forms
     :members:
     :undoc-members:
     :show-inheritance:
@@ -92,7 +92,7 @@ controllers Package
 :mod:`history` Module
 ---------------------
 
-.. automodule:: galaxy.web.controllers.history
+.. automodule:: galaxy.webapps.galaxy.controllers.history
     :members:
     :undoc-members:
     :show-inheritance:
@@ -100,7 +100,7 @@ controllers Package
 :mod:`library` Module
 ---------------------
 
-.. automodule:: galaxy.web.controllers.library
+.. automodule:: galaxy.webapps.galaxy.controllers.library
     :members:
     :undoc-members:
     :show-inheritance:
@@ -108,7 +108,7 @@ controllers Package
 :mod:`library_admin` Module
 ---------------------------
 
-.. automodule:: galaxy.web.controllers.library_admin
+.. automodule:: galaxy.webapps.galaxy.controllers.library_admin
     :members:
     :undoc-members:
     :show-inheritance:
@@ -116,7 +116,7 @@ controllers Package
 :mod:`library_common` Module
 ----------------------------
 
-.. automodule:: galaxy.web.controllers.library_common
+.. automodule:: galaxy.webapps.galaxy.controllers.library_common
     :members:
     :undoc-members:
     :show-inheritance:
@@ -124,7 +124,7 @@ controllers Package
 :mod:`mobile` Module
 --------------------
 
-.. automodule:: galaxy.web.controllers.mobile
+.. automodule:: galaxy.webapps.galaxy.controllers.mobile
     :members:
     :undoc-members:
     :show-inheritance:
@@ -132,7 +132,7 @@ controllers Package
 :mod:`page` Module
 ------------------
 
-.. automodule:: galaxy.web.controllers.page
+.. automodule:: galaxy.webapps.galaxy.controllers.page
     :members:
     :undoc-members:
     :show-inheritance:
@@ -140,7 +140,7 @@ controllers Package
 :mod:`request_type` Module
 --------------------------
 
-.. automodule:: galaxy.web.controllers.request_type
+.. automodule:: galaxy.webapps.galaxy.controllers.request_type
     :members:
     :undoc-members:
     :show-inheritance:
@@ -148,7 +148,7 @@ controllers Package
 :mod:`requests` Module
 ----------------------
 
-.. automodule:: galaxy.web.controllers.requests
+.. automodule:: galaxy.webapps.galaxy.controllers.requests
     :members:
     :undoc-members:
     :show-inheritance:
@@ -156,7 +156,7 @@ controllers Package
 :mod:`requests_admin` Module
 ----------------------------
 
-.. automodule:: galaxy.web.controllers.requests_admin
+.. automodule:: galaxy.webapps.galaxy.controllers.requests_admin
     :members:
     :undoc-members:
     :show-inheritance:
@@ -164,7 +164,7 @@ controllers Package
 :mod:`requests_common` Module
 -----------------------------
 
-.. automodule:: galaxy.web.controllers.requests_common
+.. automodule:: galaxy.webapps.galaxy.controllers.requests_common
     :members:
     :undoc-members:
     :show-inheritance:
@@ -172,7 +172,7 @@ controllers Package
 :mod:`root` Module
 ------------------
 
-.. automodule:: galaxy.web.controllers.root
+.. automodule:: galaxy.webapps.galaxy.controllers.root
     :members:
     :undoc-members:
     :show-inheritance:
@@ -180,7 +180,7 @@ controllers Package
 :mod:`tag` Module
 -----------------
 
-.. automodule:: galaxy.web.controllers.tag
+.. automodule:: galaxy.webapps.galaxy.controllers.tag
     :members:
     :undoc-members:
     :show-inheritance:
@@ -188,15 +188,7 @@ controllers Package
 :mod:`tool_runner` Module
 -------------------------
 
-.. automodule:: galaxy.web.controllers.tool_runner
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-:mod:`tracks` Module
---------------------
-
-.. automodule:: galaxy.web.controllers.tracks
+.. automodule:: galaxy.webapps.galaxy.controllers.tool_runner
     :members:
     :undoc-members:
     :show-inheritance:
@@ -204,7 +196,7 @@ controllers Package
 :mod:`ucsc_proxy` Module
 ------------------------
 
-.. automodule:: galaxy.web.controllers.ucsc_proxy
+.. automodule:: galaxy.webapps.galaxy.controllers.ucsc_proxy
     :members:
     :undoc-members:
     :show-inheritance:
@@ -212,7 +204,7 @@ controllers Package
 :mod:`user` Module
 ------------------
 
-.. automodule:: galaxy.web.controllers.user
+.. automodule:: galaxy.webapps.galaxy.controllers.user
     :members:
     :undoc-members:
     :show-inheritance:
@@ -220,7 +212,7 @@ controllers Package
 :mod:`visualization` Module
 ---------------------------
 
-.. automodule:: galaxy.web.controllers.visualization
+.. automodule:: galaxy.webapps.galaxy.controllers.visualization
     :members:
     :undoc-members:
     :show-inheritance:
@@ -228,7 +220,7 @@ controllers Package
 :mod:`workflow` Module
 ----------------------
 
-.. automodule:: galaxy.web.controllers.workflow
+.. automodule:: galaxy.webapps.galaxy.controllers.workflow
     :members:
     :undoc-members:
     :show-inheritance:

@@ -17,6 +17,14 @@ deferred Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`genome_index` Module
+--------------------------
+
+.. automodule:: galaxy.jobs.deferred.genome_index
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`genome_transfer` Module
 -----------------------------
 

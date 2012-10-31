@@ -216,7 +216,23 @@ API Controllers
 :mod:`datasets` Module
 ----------------------
 
-.. automodule:: galaxy.web.api.datasets
+.. automodule:: galaxy.webapps.galaxy.api.datasets
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`folder_contents` Module
+-----------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.folder_contents
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`folders` Module
+---------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.folders
     :members:
     :undoc-members:
     :show-inheritance:
@@ -224,7 +240,7 @@ API Controllers
 :mod:`forms` Module
 -------------------
 
-.. automodule:: galaxy.web.api.forms
+.. automodule:: galaxy.webapps.galaxy.api.forms
     :members:
     :undoc-members:
     :show-inheritance:
@@ -232,7 +248,31 @@ API Controllers
 :mod:`genomes` Module
 ---------------------
 
-.. automodule:: galaxy.web.api.genomes
+.. automodule:: galaxy.webapps.galaxy.api.genomes
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`group_roles` Module
+-------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.group_roles
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`group_users` Module
+-------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.group_users
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`groups` Module
+--------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.groups
     :members:
     :undoc-members:
     :show-inheritance:
@@ -240,7 +280,7 @@ API Controllers
 :mod:`histories` Module
 -----------------------
 
-.. automodule:: galaxy.web.api.histories
+.. automodule:: galaxy.webapps.galaxy.api.histories
     :members:
     :undoc-members:
     :show-inheritance:
@@ -248,7 +288,7 @@ API Controllers
 :mod:`history_contents` Module
 ------------------------------
 
-.. automodule:: galaxy.web.api.history_contents
+.. automodule:: galaxy.webapps.galaxy.api.history_contents
     :members:
     :undoc-members:
     :show-inheritance:
@@ -256,7 +296,7 @@ API Controllers
 :mod:`libraries` Module
 -----------------------
 
-.. automodule:: galaxy.web.api.libraries
+.. automodule:: galaxy.webapps.galaxy.api.libraries
     :members:
     :undoc-members:
     :show-inheritance:
@@ -264,7 +304,7 @@ API Controllers
 :mod:`library_contents` Module
 ------------------------------
 
-.. automodule:: galaxy.web.api.library_contents
+.. automodule:: galaxy.webapps.galaxy.api.library_contents
     :members:
     :undoc-members:
     :show-inheritance:
@@ -272,7 +312,7 @@ API Controllers
 :mod:`permissions` Module
 -------------------------
 
-.. automodule:: galaxy.web.api.permissions
+.. automodule:: galaxy.webapps.galaxy.api.permissions
     :members:
     :undoc-members:
     :show-inheritance:
@@ -280,7 +320,7 @@ API Controllers
 :mod:`quotas` Module
 --------------------
 
-.. automodule:: galaxy.web.api.quotas
+.. automodule:: galaxy.webapps.galaxy.api.quotas
     :members:
     :undoc-members:
     :show-inheritance:
@@ -288,7 +328,7 @@ API Controllers
 :mod:`request_types` Module
 ---------------------------
 
-.. automodule:: galaxy.web.api.request_types
+.. automodule:: galaxy.webapps.galaxy.api.request_types
     :members:
     :undoc-members:
     :show-inheritance:
@@ -296,7 +336,7 @@ API Controllers
 :mod:`requests` Module
 ----------------------
 
-.. automodule:: galaxy.web.api.requests
+.. automodule:: galaxy.webapps.galaxy.api.requests
     :members:
     :undoc-members:
     :show-inheritance:
@@ -304,7 +344,7 @@ API Controllers
 :mod:`roles` Module
 -------------------
 
-.. automodule:: galaxy.web.api.roles
+.. automodule:: galaxy.webapps.galaxy.api.roles
     :members:
     :undoc-members:
     :show-inheritance:
@@ -312,7 +352,7 @@ API Controllers
 :mod:`samples` Module
 ---------------------
 
-.. automodule:: galaxy.web.api.samples
+.. automodule:: galaxy.webapps.galaxy.api.samples
     :members:
     :undoc-members:
     :show-inheritance:
@@ -320,7 +360,7 @@ API Controllers
 :mod:`tools` Module
 -------------------
 
-.. automodule:: galaxy.web.api.tools
+.. automodule:: galaxy.webapps.galaxy.api.tools
     :members:
     :undoc-members:
     :show-inheritance:
@@ -328,7 +368,7 @@ API Controllers
 :mod:`users` Module
 -------------------
 
-.. automodule:: galaxy.web.api.users
+.. automodule:: galaxy.webapps.galaxy.api.users
     :members:
     :undoc-members:
     :show-inheritance:
@@ -336,7 +376,7 @@ API Controllers
 :mod:`visualizations` Module
 ----------------------------
 
-.. automodule:: galaxy.web.api.visualizations
+.. automodule:: galaxy.webapps.galaxy.api.visualizations
     :members:
     :undoc-members:
     :show-inheritance:
@@ -344,9 +384,8 @@ API Controllers
 :mod:`workflows` Module
 -----------------------
 
-.. automodule:: galaxy.web.api.workflows
+.. automodule:: galaxy.webapps.galaxy.api.workflows
     :members:
     :undoc-members:
     :show-inheritance:
-
 

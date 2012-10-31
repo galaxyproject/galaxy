@@ -113,6 +113,14 @@ converters Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`interval_to_fli` Module
+-----------------------------
+
+.. automodule:: galaxy.datatypes.converters.interval_to_fli
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`interval_to_interval_index_converter` Module
 --------------------------------------------------
 

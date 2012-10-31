@@ -41,10 +41,26 @@ controllers Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`repository_review` Module
+-------------------------------
+
+.. automodule:: galaxy.webapps.community.controllers.repository_review
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`upload` Module
 --------------------
 
 .. automodule:: galaxy.webapps.community.controllers.upload
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`user` Module
+------------------
+
+.. automodule:: galaxy.webapps.community.controllers.user
     :members:
     :undoc-members:
     :show-inheritance:
