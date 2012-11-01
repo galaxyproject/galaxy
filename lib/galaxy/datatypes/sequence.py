@@ -25,11 +25,14 @@ class SequenceSplitLocations( data.Text ):
     """
     Class storing information about a sequence file composed of multiple gzip files concatenated as
     one OR an uncompressed file. In the GZIP case, each sub-file's location is stored in start and end. 
-    The format of the file is JSON:
-    { "sections" : [
-            { "start" : "x", "end" : "y", "sequences" : "z" },
-            ...
-    ]}
+
+    The format of the file is JSON::
+
+      { "sections" : [
+              { "start" : "x", "end" : "y", "sequences" : "z" },
+              ...
+      ]}
+
     """
     def set_peek( self, dataset, is_multi_byte=False ):
         if not dataset.dataset.purged:
@@ -224,12 +227,19 @@ class Fasta( Sequence ):
         For complete details see http://www.ncbi.nlm.nih.gov/blast/fasta.shtml
         
         Rules for sniffing as True:
+
             We don't care about line length (other than empty lines).
+
             The first non-empty line must start with '>' and the Very Next line.strip() must have sequence data and not be a header.
+
                 'sequence data' here is loosely defined as non-empty lines which do not start with '>'
+
                 This will cause Color Space FASTA (csfasta) to be detected as True (they are, after all, still FASTA files - they have a header line followed by sequence data)
+
                     Previously this method did some checking to determine if the sequence data had integers (presumably to differentiate between fasta and csfasta)
+
                     This should be done through sniff order, where csfasta (currently has a null sniff function) is detected for first (stricter definition) followed sometime after by fasta
+
             We will only check that the first purported sequence is correctly formatted.
         
         >>> fname = get_test_fname( 'sequence.maf' )

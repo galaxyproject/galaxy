@@ -67,14 +67,18 @@ class GenomeGraphs( Tabular ):
         """ 
         from the ever-helpful angie hinrichs angie@soe.ucsc.edu
         a genome graphs call looks like this 
+
         http://genome.ucsc.edu/cgi-bin/hgGenome?clade=mammal&org=Human&db=hg18&hgGenome_dataSetName=dname
-        &hgGenome_dataSetDescription=test&hgGenome_formatType=best%20guess&hgGenome_markerType=best%20guess
+        &hgGenome_dataSetDescription=test&hgGenome_formatType=best%20guess&hgGenome_markerType=best%20guess 
         &hgGenome_columnLabels=best%20guess&hgGenome_maxVal=&hgGenome_labelVals=
         &hgGenome_maxGapToFill=25000000&hgGenome_uploadFile=http://galaxy.esphealth.org/datasets/333/display/index
         &hgGenome_doSubmitUpload=submit
-                Galaxy gives this for an interval file
+
+        Galaxy gives this for an interval file
+
         http://genome.ucsc.edu/cgi-bin/hgTracks?db=hg18&position=chr1:1-1000&hgt.customText=
         http%3A%2F%2Fgalaxy.esphealth.org%2Fdisplay_as%3Fid%3D339%26display_app%3Ducsc
+
         """
         ret_val = []
         ggtail = 'hgGenome_doSubmitUpload=submit'

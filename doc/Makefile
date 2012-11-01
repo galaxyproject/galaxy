@@ -14,7 +14,21 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) sou
 # the i18n builder cannot share the environment and doctrees with the others
 I18NSPHINXOPTS  = $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) source
 
+# Galaxy Local variables
+
+TOOLDATASHAREDDIR  = ../tool-data/shared
+TOOLDATABUILDFILES = $(TOOLDATASHAREDDIR)/ensembl/builds.txt \
+                     $(TOOLDATASHAREDDIR)/ncbi/builds.txt \
+                     $(TOOLDATASHAREDDIR)/ucsc/publicbuilds.txt
+
 .PHONY: help clean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest gettext
+
+
+# Sphinx wants the build files to be there;  Copy the sample files into
+# place if we don't already have the build files.
+$(TOOLDATABUILDFILES) : 
+	/bin/cp $@.sample $@
+
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -41,7 +55,7 @@ help:
 clean:
 	-rm -rf $(BUILDDIR)/*
 
-html:
+html: $(TOOLDATABUILDFILES)
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 	@echo
 	@echo "Build finished. The HTML pages are in $(BUILDDIR)/html."
