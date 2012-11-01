@@ -1,9 +1,7 @@
 from galaxy import config, tools, web, util
 from galaxy.web.base.controller import BaseController, BaseAPIController
 from galaxy.util.bunch import Bunch
-
-def is_true ( a_str ):
-    return is_true == True or a_str in [ 'True', 'true', 'T', 't' ]
+from galaxy.web.framework.helpers import is_true
 
 def get_id( base, format ):
     if format:

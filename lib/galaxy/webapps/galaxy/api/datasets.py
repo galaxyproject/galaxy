@@ -11,6 +11,7 @@ from galaxy.visualization.data_providers.genome import *
 from galaxy.visualization.data_providers.basic import ColumnDataProvider
 from galaxy.datatypes.tabular import Vcf
 from galaxy.model import NoConverterException, ConverterDependencyException
+from galaxy.web.framework.helpers import is_true
 
 log = logging.getLogger( __name__ )
 
@@ -42,7 +43,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             if data_type == 'state':
                 rval = self._dataset_state( trans, dataset )
             elif data_type == 'converted_datasets_state':
-                rval = self._converted_datasets_state( trans, dataset, kwd.get( 'chrom', None ) )
+                rval = self._converted_datasets_state( trans, dataset, kwd.get( 'chrom', None ), 
+                                                       is_true( kwd.get( 'retry', False ) ) )
             elif data_type == 'data':
                 rval = self._data( trans, dataset, **kwd )
             elif data_type == 'features':
@@ -72,22 +74,26 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
 
         return msg
         
-    def _converted_datasets_state( self, trans, dataset, chrom=None ):
+    def _converted_datasets_state( self, trans, dataset, chrom=None, retry=False ):
         """
-        Init-like method that returns state of dataset's converted datasets. Returns valid chroms
-        for that dataset as well.
+        Init-like method that returns state of dataset's converted datasets. 
+        Returns valid chroms for that dataset as well.
         """
-
         msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
             
-        # Get datasources and check for messages.
+        # Get datasources and check for messages (which indicate errors). Retry if flag is set.
         data_sources = dataset.get_datasources( trans )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
         msg = get_highest_priority_msg( messages_list )
         if msg:
-            return msg
+            if retry:
+                # Clear datasources and then try again.
+                dataset.clear_associated_files()
+                return self._converted_datasets_state( trans, dataset, chrom )
+            else:
+                return msg
             
         # If there is a chrom, check for data on the chrom.
         if chrom:
