@@ -340,7 +340,7 @@ class Configuration( object ):
 def get_database_engine_options( kwargs ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using
-    the prefix "database_engine_option_".
+    the prefix "database_engine_option".
     """
     conversions =  {
         'convert_unicode': string_as_bool,
