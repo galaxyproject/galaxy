@@ -119,12 +119,13 @@ class GFFReaderWrapper( NiceReaderWrapper ):
     Reader wrapper for GFF files.
     
     Wrapper has two major functions:
-    (1) group entries for GFF file (via group column), GFF3 (via id attribute), 
-        or GTF (via gene_id/transcript id);
-    (2) convert coordinates from GFF format--starting and ending coordinates 
-        are 1-based, closed--to the 'traditional'/BED interval format--0 based, 
-        half-open. This is useful when using GFF files as inputs to tools that 
-        expect traditional interval format.
+
+    1. group entries for GFF file (via group column), GFF3 (via id attribute), 
+       or GTF (via gene_id/transcript id);
+    2. convert coordinates from GFF format--starting and ending coordinates 
+       are 1-based, closed--to the 'traditional'/BED interval format--0 based, 
+       half-open. This is useful when using GFF files as inputs to tools that 
+       expect traditional interval format.
     """
     
     def __init__( self, reader, chrom_col=0, feature_col=2, start_col=3, \
@@ -303,9 +304,13 @@ def parse_gff_attributes( attr_str ):
     """
     Parses a GFF/GTF attribute string and returns a dictionary of name-value 
     pairs. The general format for a GFF3 attributes string is 
+
         name1=value1;name2=value2
+
     The general format for a GTF attribute string is 
+
         name1 "value1" ; name2 "value2"
+
     The general format for a GFF attribute string is a single string that
     denotes the interval's group; in this case, method returns a dictionary 
     with a single key-value pair, and key name is 'group'
