@@ -48,6 +48,7 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+    ${h.js("libs/json2")}
     ${h.js("libs/jquery/jstorage")}
     ${common_javascripts()}
     ${self.grid_javascripts()}
@@ -206,7 +207,7 @@
     </script>
 </%def>
 
-<%def name="render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, parent, row_counter, tracked_datasets, show_deleted=False, simple=False )">
+<%def name="render_dataset( cntrller, ldda, library_dataset, can_modify, can_manage, selected, library, folder, pad, parent, row_counter, tracked_datasets, show_deleted=False, simple=False )">
     <%
         ## The received ldda must always be a LibraryDatasetDatasetAssociation object.  The object id passed to methods
         ## from the drop down menu should be the ldda id to prevent id collision ( which could happen when displaying
@@ -214,22 +215,14 @@
         ## library_dataset, so we display the attributes from the ldda.
         
         from galaxy.webapps.galaxy.controllers.library_common import branch_deleted
-        
+
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
-        
-        if ldda == library_dataset.library_dataset_dataset_association:
-            current_version = True
-            if is_admin:
-                can_modify = can_manage = True
-            elif cntrller in [ 'library', 'requests' ]:
-                can_modify = trans.app.security_agent.can_modify_library_item( current_user_roles, library_dataset )
-                can_manage = trans.app.security_agent.can_manage_library_item( current_user_roles, library_dataset )
-            else:
-                can_modify = can_manage = False
-        else:
-            current_version = False
+        current_version = ( ldda == library_dataset.library_dataset_dataset_association )
         if current_version and ldda.state not in ( 'ok', 'error', 'empty', 'deleted', 'discarded' ):
             tracked_datasets[ldda.id] = ldda.state
+        # SM: This causes a query to be emitted, but it quickly goes down a
+        # rabbit hole of many possible inheritable cases. It may not be 
+        # possible to easily eliminate the extra query from this call.
         info_association, inherited = ldda.get_info_association( restrict=True )
         form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
     %>
@@ -310,9 +303,21 @@
     %endif
 </%def>
 
+<%def name="format_delta( tdelta )">
+    <%
+        from datetime import datetime
+        return "%d.%.6d" % ( tdelta.seconds, tdelta.microseconds )
+     %>
+</%def>
+
 <%def name="render_folder( cntrller, folder, folder_pad, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=False, parent=None, row_counter=None, root_folder=False, simple=False )">
     <%
-        from galaxy.webapps.galaxy.controllers.library_common import active_folders, active_folders_and_library_datasets, activatable_folders_and_library_datasets, branch_deleted
+        from galaxy.webapps.galaxy.controllers.library_common import active_folders, active_folders_and_library_datasets, activatable_folders_and_library_datasets, map_library_datasets_to_lddas, branch_deleted, datasets_for_lddas 
+
+        # SM: DELETEME
+        from datetime import datetime, timedelta
+        import logging
+        log = logging.getLogger( __name__ )
         
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         has_accessible_library_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, folder, trans.user, current_user_roles, search_downward=False )
@@ -325,6 +330,9 @@
             pad = folder_pad + 20
             expander = h.url_for("/static/images/silk/resultset_next.png")
             folder_img = h.url_for("/static/images/silk/folder.png")
+        # SM: If this is a comma-delimited list of LDDAs, then split them up
+        # into a list. For anything else, turn created_ldda_ids into a single
+        # item list.
         if created_ldda_ids:
             created_ldda_ids = util.listify( created_ldda_ids )
         if str( folder.id ) in hidden_folder_ids:
@@ -426,47 +434,39 @@
         %>
     %endif
     <%
+        # TODO: If show_deleted is set to True, then nothing is displayed. Why? This wasn't the case
+        # in the past.
         if show_deleted:
             sub_folders, library_datasets = activatable_folders_and_library_datasets( trans, folder )
         else:
             sub_folders, library_datasets = active_folders_and_library_datasets( trans, folder )
+        # Render all the subfolders: 
+        # TODO: Check permissions first. 
+        for sub_folder in sub_folders:
+            render_folder( cntrller, sub_folder, pad, created_ldda_ids, library, [], tracked_datasets, show_deleted=show_deleted, parent=my_row, row_counter=row_counter, root_folder=False )
+
+        # Map LibraryDatasets to LDDAs, then map LDDAs to Datasets.
+        # Then determine which Datasets are accessible and which are not.
+        # For every LibraryDataset, if there's an LDDA for it and it's 
+        # accessible then display it.
+        if ( len( library_datasets ) > 0 ):
+            lib_dataset_ldda_map = map_library_datasets_to_lddas( trans, library_datasets )
+            dataset_list = datasets_for_lddas( trans, lib_dataset_ldda_map.values() )
+            #can_access_datasets = trans.app.security_agent.dataset_access_mapping( trans, current_user_roles, dataset_list )
+            can_access_datasets = trans.app.security_agent.dataset_permission_map_for_access( trans, current_user_roles, dataset_list )
+            can_modify_datasets = trans.app.security_agent.item_permission_map_for_modify( trans, current_user_roles, dataset_list )
+            can_manage_datasets = trans.app.security_agent.item_permission_map_for_manage( trans, current_user_roles, dataset_list )
+            for library_dataset in library_datasets:
+                ldda = lib_dataset_ldda_map[ library_dataset.id ]
+                if ldda: 
+                    # SMTODO: Fix awkard modify/manage permission checks.
+                    can_access = is_admin or can_access_datasets[ ldda.dataset_id ]
+                    can_modify = is_admin or ( cntrller in ['library', 'requests'] and can_modify_datasets[ ldda.dataset_id ])
+                    can_manage = is_admin or ( cntrller in ['library', 'requests'] and can_manage_datasets[ ldda.dataset_id ])
+                    selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
+                    if can_access:
+                        render_dataset( cntrller, ldda, library_dataset, can_modify, can_manage, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )
     %>
-    %if is_admin:
-        %for sub_folder in sub_folders:
-            ${render_folder( cntrller, sub_folder, pad, created_ldda_ids, library, [], tracked_datasets, show_deleted=show_deleted, parent=my_row, row_counter=row_counter, root_folder=False )}
-        %endfor 
-        %for library_dataset in library_datasets:
-            <%
-                ldda = library_dataset.library_dataset_dataset_association
-                if ldda:
-                    # There should always be an ldda, but some users running their own instances have reported that
-                    # some of their LibraryDatasets have no associated lddas
-                    selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
-            %>
-            %if ldda:
-                ${render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted )}
-            %endif
-        %endfor
-    %else:
-        %for sub_folder in sub_folders:
-            ${render_folder( cntrller, sub_folder, pad, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=my_row, row_counter=row_counter, root_folder=False, simple=simple )}
-        %endfor
-        %for library_dataset in library_datasets:
-            <%
-                ldda = library_dataset.library_dataset_dataset_association
-                if ldda:
-                    # There should always be an ldda, but some users running their own instances have reported that
-                    # some of their LibraryDatasets have no associated lddas
-                    can_access = trans.app.security_agent.can_access_dataset( current_user_roles, ldda.dataset )
-                    selected = created_ldda_ids and str( ldda.id ) in created_ldda_ids
-                else:
-                    can_access = False
-            %>
-            %if can_access:
-                ${render_dataset( cntrller, ldda, library_dataset, selected, library, folder, pad, my_row, row_counter, tracked_datasets, show_deleted=show_deleted, simple=simple )}
-            %endif
-        %endfor
-    %endif
 </%def>
 
 <%def name="render_content(simple=False)">
@@ -474,6 +474,8 @@
         from galaxy import util
         from galaxy.webapps.galaxy.controllers.library_common import branch_deleted
         from time import strftime
+        import logging
+        log = logging.getLogger( __name__ )
         
         is_admin = trans.user_is_admin() and cntrller == 'library_admin'
         
@@ -489,6 +491,8 @@
         info_association, inherited = library.get_info_association()
         form_type = trans.model.FormDefinition.types.LIBRARY_INFO_TEMPLATE
         
+        # SM: These are mostly display-specific; ignore them for now. 
+        # The has_accessible_folders determines if anything can be shown - use it.
         self.has_accessible_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, library.root_folder, trans.user, current_user_roles )
         root_folder_has_accessible_library_datasets = trans.app.security_agent.has_accessible_library_datasets( trans, library.root_folder, trans.user, current_user_roles, search_downward=False )
         has_accessible_folders = is_admin or trans.app.security_agent.has_accessible_folders( trans, library.root_folder, trans.user, current_user_roles )
@@ -581,13 +585,16 @@
                 </tr>
             </thead>
             <% row_counter = RowCounter() %>
+            ## SM: Here is where we render the libraries based on admin/non-admin privileges:
             %if cntrller in [ 'library', 'requests' ]:
                 ${self.render_folder( 'library', library.root_folder, 0, created_ldda_ids, library, hidden_folder_ids, tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True, simple=simple )}
+                ## SM: TODO: WTF?
                 %if not library.deleted and self.has_accessible_datasets and not simple:
                     ${render_actions_on_multiple_items()}
                 %endif
             %elif ( trans.user_is_admin() and cntrller in [ 'library_admin', 'requests_admin' ] ):
                 ${self.render_folder( 'library_admin', library.root_folder, 0, created_ldda_ids, library, [], tracked_datasets, show_deleted=show_deleted, parent=None, row_counter=row_counter, root_folder=True )}
+                ## SM: TODO: WTF?
                 %if not library.deleted and not show_deleted and self.has_accessible_datasets:
                     ${render_actions_on_multiple_items()}
                 %endif
