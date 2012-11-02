@@ -39,18 +39,21 @@ def parse_mime_type(mime_type):
     return (type.strip(), subtype.strip(), params)
 
 def parse_media_range(range):
-    """Carves up a media range and returns a tuple of the
-       (type, subtype, params) where 'params' is a dictionary
-       of all the parameters for the media range.
-       For example, the media range 'application/*;q=0.5' would
-       get parsed into:
+    r"""
+    Carves up a media range and returns a tuple of the
+    (type, subtype, params) where 'params' is a dictionary
+    of all the parameters for the media range.
+    For example, the media range 'application/*;q=0.5' would
+    get parsed into:
 
-       ('application', '*', {'q', '0.5'})
+    .. raw:: text
 
-       In addition this function also guarantees that there 
-       is a value for 'q' in the params dictionary, filling it
-       in with a proper default if necessary.
-       """
+        ('application', '*', {'q', '0.5'})
+
+    In addition this function also guarantees that there 
+    is a value for 'q' in the params dictionary, filling it
+    in with a proper default if necessary.
+    """
     (type, subtype, params) = parse_mime_type(range)
     if not params.has_key('q') or not params['q'] or \
             not float(params['q']) or float(params['q']) > 1\

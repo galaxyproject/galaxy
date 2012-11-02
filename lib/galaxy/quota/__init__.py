@@ -41,6 +41,7 @@ class QuotaAgent( NoQuotaAgent ):
     def get_quota( self, user, nice_size=False ):
         """
         Calculated like so:
+
             1. Anonymous users get the default quota.
             2. Logged in users start with the highest of their associated '='
                quotas or the default quota, if there are no associated '='

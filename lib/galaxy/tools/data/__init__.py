@@ -31,10 +31,11 @@ class ToolDataTableManager( object ):
     def load_from_config_file( self, config_filename, tool_data_path, from_shed_config=False ):
         """
         This method is called under 3 conditions:
-        1) When the ToolDataTableManager is initialized (see __init__ above).
-        2) Just after the ToolDataTableManager is initialized and the additional entries defined by shed_tool_data_table_conf.xml
+
+        1. When the ToolDataTableManager is initialized (see __init__ above).
+        2. Just after the ToolDataTableManager is initialized and the additional entries defined by shed_tool_data_table_conf.xml
            are being loaded into the ToolDataTableManager.data_tables.
-        3) When a tool shed repository that includes a tool_data_table_conf.xml.sample file is being installed into a local
+        3. When a tool shed repository that includes a tool_data_table_conf.xml.sample file is being installed into a local
            Galaxy instance.  In this case, we have 2 entry types to handle, files whose root tag is <tables>, for example:
         """
         tree = util.parse_xml( config_filename )
@@ -57,20 +58,24 @@ class ToolDataTableManager( object ):
     def add_new_entries_from_config_file( self, config_filename, tool_data_path, shed_tool_data_table_config, persist=False ):
         """
         This method is called when a tool shed repository that includes a tool_data_table_conf.xml.sample file is being
-        installed into a local galaxy instance.  We have 2 cases to handle, files whose root tag is <tables>, for example:
-        <tables>
+        installed into a local galaxy instance.  We have 2 cases to handle, files whose root tag is <tables>, for example::
+
+            <tables>
+                <!-- Location of Tmap files -->
+                <table name="tmap_indexes" comment_char="#">
+                    <columns>value, dbkey, name, path</columns>
+                    <file path="tool-data/tmap_index.loc" />
+                </table>
+            </tables>
+
+        and files whose root tag is <table>, for example::
+
             <!-- Location of Tmap files -->
             <table name="tmap_indexes" comment_char="#">
                 <columns>value, dbkey, name, path</columns>
                 <file path="tool-data/tmap_index.loc" />
             </table>
-        </tables>
-        and files whose root tag is <table>, for example:
-        <!-- Location of Tmap files -->
-        <table name="tmap_indexes" comment_char="#">
-            <columns>value, dbkey, name, path</columns>
-            <file path="tool-data/tmap_index.loc" />
-        </table>
+
         """
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
@@ -119,13 +124,14 @@ class ToolDataTable( object ):
 class TabularToolDataTable( ToolDataTable ):
     """
     Data stored in a tabular / separated value format on disk, allows multiple
-    files to be merged but all must have the same column definitions.
+    files to be merged but all must have the same column definitions::
     
-    <table type="tabular" name="test">
-        <column name='...' index = '...' />
-        <file path="..." />
-        <file path="..." />
-    </table>
+        <table type="tabular" name="test">
+            <column name='...' index = '...' />
+            <file path="..." />
+            <file path="..." />
+        </table>
+
     """
     
     type_key = 'tabular'

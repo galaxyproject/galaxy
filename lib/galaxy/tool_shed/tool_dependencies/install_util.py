@@ -250,10 +250,11 @@ def run_subprocess( app, cmd ):
 def set_environment( app, elem, tool_shed_repository ):
     """
     Create a ToolDependency to set an environment variable.  This is different from the process used to set an environment variable that is associated
-    with a package.  An example entry in a tool_dependencies.xml file is:
-    <set_environment version="1.0">
-        <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
-    </set_environment>
+    with a package.  An example entry in a tool_dependencies.xml file is::
+
+        <set_environment version="1.0">
+            <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
+        </set_environment>
     """
     sa_session = app.model.context.current
     tool_dependency = None

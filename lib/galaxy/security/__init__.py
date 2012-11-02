@@ -173,17 +173,21 @@ class GalaxyRBACAgent( RBACAgent ):
         which the request is sent.  We cannot use trans.user_is_admin() because the controller is
         what is important since admin users do not necessarily have permission to do things
         on items outside of the admin view.
+
         If cntrller is from the admin side ( e.g., library_admin ):
-            -if item is public, all roles, including private roles, are legitimate.
-            -if item is restricted, legitimate roles are derived from the users and groups associated
-            with each role that is associated with the access permission ( i.e., DATASET_MANAGE_PERMISSIONS or
-            LIBRARY_MANAGE ) on item.  Legitimate roles will include private roles.
+
+            - if item is public, all roles, including private roles, are legitimate.
+            - if item is restricted, legitimate roles are derived from the users and groups associated
+              with each role that is associated with the access permission ( i.e., DATASET_MANAGE_PERMISSIONS or
+              LIBRARY_MANAGE ) on item.  Legitimate roles will include private roles.
+
         If cntrller is not from the admin side ( e.g., root, library ):
-            -if item is public, all non-private roles, except for the current user's private role,
-            are legitimate.
-            -if item is restricted, legitimate roles are derived from the users and groups associated
-            with each role that is associated with the access permission on item.  Private roles, except
-            for the current user's private role, will be excluded.
+
+            - if item is public, all non-private roles, except for the current user's private role,
+              are legitimate.
+            - if item is restricted, legitimate roles are derived from the users and groups associated
+              with each role that is associated with the access permission on item.  Private roles, except
+              for the current user's private role, will be excluded.
         """
         admin_controller = cntrller in [ 'library_admin' ]
         roles = set()
@@ -1063,9 +1067,10 @@ class GalaxyRBACAgent( RBACAgent ):
         comma-separated string of folder ids.  This method works with the show_library_item()
         method below, and it returns libraries for which the received user has permission to
         perform the received actions.  Here is an example call to this method to return all
-        libraries for which the received user has LIBRARY_ADD permission:
-        libraries = trans.app.security_agent.get_permitted_libraries( trans, user,
-            [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
+        libraries for which the received user has LIBRARY_ADD permission::
+
+            libraries = trans.app.security_agent.get_permitted_libraries( trans, user,
+                [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
         """
         all_libraries = trans.sa_session.query( trans.app.model.Library ) \
                                         .filter( trans.app.model.Library.table.c.deleted == False ) \

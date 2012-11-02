@@ -112,16 +112,20 @@ class ToolBox( object ):
     def init_tools( self, config_filename ):
         """
         Read the configuration file and load each tool.  The following tags are currently supported:
-        <toolbox>
-            <tool file="data_source/upload.xml"/>            # tools outside sections
-            <label text="Basic Tools" id="basic_tools" />    # labels outside sections
-            <workflow id="529fd61ab1c6cc36" />               # workflows outside sections
-            <section name="Get Data" id="getext">            # sections
-                <tool file="data_source/biomart.xml" />      # tools inside sections
-                <label text="In Section" id="in_section" />  # labels inside sections
-                <workflow id="adb5f5c93f827949" />           # workflows inside sections
-            </section>
-        </toolbox>
+
+        .. raw:: xml
+
+            <toolbox>
+                <tool file="data_source/upload.xml"/>            # tools outside sections
+                <label text="Basic Tools" id="basic_tools" />    # labels outside sections
+                <workflow id="529fd61ab1c6cc36" />               # workflows outside sections
+                <section name="Get Data" id="getext">            # sections
+                    <tool file="data_source/biomart.xml" />      # tools inside sections
+                    <label text="In Section" id="in_section" />  # labels inside sections
+                    <workflow id="adb5f5c93f827949" />           # workflows inside sections
+                </section>
+            </toolbox>
+
         """
         if self.app.config.get_bool( 'enable_tool_tags', False ):
             log.info("removing all tool tag associations (" + str( self.sa_session.query( self.app.model.ToolTagAssociation ).count() ) + ")" )
@@ -740,7 +744,8 @@ class DefaultToolState( object ):
 class ToolOutput( object ):
     """
     Represents an output datasets produced by a tool. For backward
-    compatibility this behaves as if it were the tuple:
+    compatibility this behaves as if it were the tuple::
+
       (format, metadata_source, parent)  
     """
 
@@ -1079,7 +1084,7 @@ class Tool:
         else:
             self.trackster_conf = None
     def parse_inputs( self, root ):
-        """
+        r"""
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
         This implementation supports multiple pages and grouping constructs.
         """

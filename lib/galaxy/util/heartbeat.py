@@ -134,7 +134,9 @@ else:
             Scans a given backtrace stack frames, returns a single
             quadraple of [filename, line, function-name, text] of
             the single, deepest, most interesting frame.
-            Interesting being:
+
+            Interesting being::
+
               inside the galaxy source code ("/lib/galaxy"),
               prefreably not an egg.
             """

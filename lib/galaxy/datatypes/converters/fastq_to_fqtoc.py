@@ -6,11 +6,13 @@ from galaxy.datatypes.checkers import is_gzip
 
 def main():
     """
-    The format of the file is JSON:
-    { "sections" : [
-            { "start" : "x", "end" : "y", "sequences" : "z" },
-            ...
-    ]}
+    The format of the file is JSON::
+
+        { "sections" : [
+                { "start" : "x", "end" : "y", "sequences" : "z" },
+                ...
+        ]}
+
     This works only for UNCOMPRESSED fastq files. The Python GzipFile does not provide seekable
     offsets via tell(), so clients just have to split the slow way
     """

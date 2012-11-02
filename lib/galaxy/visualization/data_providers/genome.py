@@ -610,11 +610,16 @@ class VcfDataProvider( GenomeDataProvider ):
     
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
-        Returns a dict with the following attributes:
+        Returns a dict with the following attributes::
+
             data - a list of variants with the format 
+
+            .. raw:: text
+
                 [<guid>, <start>, <end>, <name>, cigar, seq] 
 
             message - error/informative message
+
         """
         rval = []
         message = None
@@ -893,13 +898,17 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
-        Returns a dict with the following attributes:
+        Returns a dict with the following attributes::
+
             data - a list of reads with the format 
-                    [<guid>, <start>, <end>, <name>, <read_1>, <read_2>, [empty], <mapq_scores>]
+                [<guid>, <start>, <end>, <name>, <read_1>, <read_2>, [empty], <mapq_scores>]
+
                 where <read_1> has the format
                     [<start>, <end>, <cigar>, <strand>, <read_seq>]
+
                 and <read_2> has the format
                     [<start>, <end>, <cigar>, <strand>, <read_seq>]
+
                 Field 7 is empty so that mapq scores' location matches that in single-end reads.
                 For single-end reads, read has format:
                     [<guid>, <start>, <end>, <name>, <cigar>, <strand>, <seq>, <mapq_score>]
@@ -910,6 +919,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             max_low - lowest coordinate for the returned reads
             max_high - highest coordinate for the returned reads
             message - error/informative message
+
         """
         # No iterator indicates no reads.
         if iterator is None:

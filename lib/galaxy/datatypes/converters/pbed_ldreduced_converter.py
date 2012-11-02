@@ -78,10 +78,14 @@ def main():
     """
     need to work with rgenetics composite datatypes
     so in and out are html files with data in extrafiles path
-  <command interpreter="python">
-   pbed_ldreduced_converter.py '$input1.extra_files_path/$input1.metadata.base_name' '$winsize' '$winmove' '$r2thresh' 
-   '$output1' '$output1.files_path' 'plink'    
-  </command>
+
+    .. raw:: xml 
+
+        <command interpreter="python">
+            pbed_ldreduced_converter.py '$input1.extra_files_path/$input1.metadata.base_name' '$winsize' '$winmove' '$r2thresh' 
+            '$output1' '$output1.files_path' 'plink'    
+        </command>
+
     """
     nparm = 7
     if len(sys.argv) < nparm:

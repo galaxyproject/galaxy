@@ -624,6 +624,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def handle_user_login( self, user ):
         """
         Login a new user (possibly newly created)
+
            - create a new session
            - associate new session with user
            - if old session had a history and it was not associated with a user, associate it with the new session,

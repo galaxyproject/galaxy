@@ -51,6 +51,7 @@ class ObjectStore(object):
         store, False otherwise.
 
         FIELD DESCRIPTIONS (these apply to all the methods in this class):
+
         :type obj: object
         :param obj: A Galaxy object with an assigned database ID accessible via
                     the .id attribute.
@@ -118,6 +119,7 @@ class ObjectStore(object):
         """
         Deletes the object identified by `obj`.
         See `exists` method for the description of other fields.
+
         :type entire_dir: bool
         :param entire_dir: If True, delete the entire directory pointed to by
                            extra_dir. For safety reasons, this option applies

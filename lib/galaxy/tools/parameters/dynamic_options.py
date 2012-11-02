@@ -64,16 +64,20 @@ class DataMetaFilter( Filter ):
     
     Type: data_meta
     
-    When no 'from_' source has been specified in the <options> tag, this will populate the options list with (meta_value, meta_value, False).
+    When no 'from' source has been specified in the <options> tag, this will populate the options list with (meta_value, meta_value, False).
     Otherwise, options which do not match the metadata value in the column are discarded.
     
     Required Attributes:
-        ref: Name of input dataset
-        key: Metadata key to use for comparison
-        column: column in options to compare with (not required when not associated with input options)
+
+        - ref: Name of input dataset
+        - key: Metadata key to use for comparison
+        - column: column in options to compare with (not required when not associated with input options)
+
     Optional Attributes:
-        multiple: Option values are multiple, split column by separator (True)
-        separator: When multiple split by this (,)
+
+        - multiple: Option values are multiple, split column by separator (True)
+        - separator: When multiple split by this (,)
+
     """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )
@@ -132,12 +136,16 @@ class ParamValueFilter( Filter ):
     Type: param_value
     
     Required Attributes:
-        ref: Name of input value
-        column: column in options to compare with
+
+        - ref: Name of input value
+        - column: column in options to compare with
+
     Optional Attributes:
-        keep: Keep columns matching value (True)
-              Discard columns matching value (False)
-        ref_attribute: Period (.) separated attribute chain of input (ref) to use as value for filter
+
+        - keep: Keep columns matching value (True)
+                Discard columns matching value (False)
+        - ref_attribute: Period (.) separated attribute chain of input (ref) to use as value for filter
+
     """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )
@@ -294,13 +302,15 @@ class RemoveValueFilter( Filter ):
     
     Type: remove_value
     
-    Required Attributes:
+    Required Attributes::
+
         value: value to remove from select list
             or
         ref: param to refer to
             or
         meta_ref: dataset to refer to
         key: metadata key to compare to
+
     """
     def __init__( self, d_option, elem ):
         Filter.__init__( self, d_option, elem )

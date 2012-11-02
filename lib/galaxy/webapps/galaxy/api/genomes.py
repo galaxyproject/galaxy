@@ -48,25 +48,25 @@ class GenomesController( BaseAPIController ):
         POST /api/genomes
         Download and/or index a genome.
         
-        Parameters:
+        Parameters::
         
-        dbkey           DB key of the build to download, ignored unless 'UCSC' is specified as the source
-        ncbi_name       NCBI's genome identifier, ignored unless NCBI is specified as the source
-        ensembl_dbkey   Ensembl's genome identifier, ignored unless Ensembl is specified as the source
-        url_dbkey       DB key to use for this build, ignored unless URL is specified as the source
-        source          Data source for this build. Can be: UCSC, Ensembl, NCBI, URL
-        indexers        POST array of indexers to run after downloading (indexers[] = first, indexers[] = second, ...)
-        func            Allowed values:
-                        'download'  Download and index
-                        'index'     Index only
-                        
-        Returns:
+            dbkey           DB key of the build to download, ignored unless 'UCSC' is specified as the source
+            ncbi_name       NCBI's genome identifier, ignored unless NCBI is specified as the source
+            ensembl_dbkey   Ensembl's genome identifier, ignored unless Ensembl is specified as the source
+            url_dbkey       DB key to use for this build, ignored unless URL is specified as the source
+            source          Data source for this build. Can be: UCSC, Ensembl, NCBI, URL
+            indexers        POST array of indexers to run after downloading (indexers[] = first, indexers[] = second, ...)
+            func            Allowed values:
+                            'download'  Download and index
+                            'index'     Index only
+
+        Returns::
         
-        If no error:
-        dict( status: 'ok', job: <job ID> )
+            If no error:
+            dict( status: 'ok', job: <job ID> )
         
-        If error:
-        dict( status: 'error', error: <error message> )
+            If error:
+            dict( status: 'error', error: <error message> )
         
         """
         params = util.Params( payload )
