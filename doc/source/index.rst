@@ -1,5 +1,5 @@
-Galaxy Documentation
-********************
+Galaxy Code Documentation
+*************************
 
 Galaxy is an open, web-based platform for accessible, reproducible, and
 transparent computational biomedical research.
