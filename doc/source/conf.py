@@ -273,7 +273,7 @@ class Mock(object):
         else:
             return Mock()
 
-# adding pbs_python and DRMAA_python here had no effect.
-MOCK_MODULES = ['tables', 'markupsafe', 'drmaa', 'decorator']
+# adding pbs_python, DRMAA_python. markupsafe, and drmaa here had no effect.
+MOCK_MODULES = ['tables', 'decorator']
 for mod_name in MOCK_MODULES:
     sys.modules[mod_name] = Mock()
