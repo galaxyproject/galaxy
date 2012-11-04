@@ -40,6 +40,7 @@ var UsesTicks = {
                         .selectAll("g")
                             .data(dataHandler)
                         .enter().append("g")
+                            .attr("class", "tick")
                             .attr("transform", function(d) {
                                 return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")" +
                                         "translate(" + d.radius + ",0)";
@@ -214,9 +215,14 @@ var CircsterView = Backbone.View.extend({
                         }
                         self.zoom_drag_timeout = setTimeout(function() {
                             // Render more detail in tracks' visible elements.
+                            // FIXME: do not do this right now; it is not fully implemented--e.g. data bounds
+                            // are not updated when new data is fetched--and fetching more detailed quantitative
+                            // data is not that useful.
+                            /*
                             _.each(self.circular_views, function(view) {
                                 view.update_scale(scale);
                             });
+                            */
                         }, 400);
                     }
                 }))
@@ -452,6 +458,8 @@ var CircsterTrackView = Backbone.View.extend({
         this.parent_elt.selectAll('g>path.chrom-background').transition().duration(1000).attr('d', new_d);
 
         this._transition_chrom_data();
+
+        this._transition_labels();
     },
 
     /**
@@ -545,6 +553,11 @@ var CircsterTrackView = Backbone.View.extend({
             });
         }
     },
+
+    /**
+     * Transition labels to new values (e.g new radius or data bounds).
+     */
+    _transition_labels: function() {},
 
     /**
      * Update data bounds.
@@ -669,7 +682,6 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
 
         /** Returns an array of tick angles and labels, given a chrom arc. */
         var chromArcTicks = function(d) {
-            if (d.endAngle - d.startAngle < self.min_arc_len) { return []; }
             var k = (d.endAngle - d.startAngle) / d.value,
                 ticks = d3.range(0, d.value, 25000000).map(function(v, i) {
                     return {
@@ -694,7 +706,10 @@ var CircsterChromLabelTrackView = CircsterTrackView.extend({
                 return d.angle > Math.PI ? "rotate(180)translate(-16)" : null;
         };
 
-        this.drawTicks(this.parent_elt, this.chroms_layout, chromArcTicks, textTransform);
+        // Filter chroms for only those large enough for display.
+        var visibleChroms = _.filter(this.chroms_layout, function(c) { return c.endAngle - c.startAngle > self.min_arc_len; });
+
+        this.drawTicks(this.parent_elt, visibleChroms, chromArcTicks, textTransform);
     }
 });
 _.extend(CircsterChromLabelTrackView.prototype, UsesTicks);
@@ -755,37 +770,67 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
             .angle(line.angle());
     },
 
+    /**
+     * Render track min, max using ticks.
+     */
     render_labels: function() {
-        // -- Render min and max using ticks. --
         var self = this,
             // Keep counter of visible chroms.
-            visibleChroms = 0,
-            dataBoundsTicks = function(d) {
-                // Do not add ticks to small chroms.
-                if (d.endAngle - d.startAngle < 0.08) { return []; }
-
-                // Only show bounds on every 3rd chromosome; also update visibleChroms count.
-                if (visibleChroms++ % 3 !== 0) { return []; }
-
-                // Set up data to display min, max ticks.
-                return [
-                    {
-                        radius: self.radius_bounds[0],
-                        angle: d.startAngle,
-                        label: self.formatNum(self.data_bounds[0])
-                    },
-                    {
-                        radius: self.radius_bounds[1],
-                        angle: d.startAngle,
-                        label: self.formatNum(self.data_bounds[1])
-                    }
-                ];
-            },
             textTransform = function() {
                 return "rotate(90)";
             };
 
-        this.drawTicks(this.parent_elt, this.chroms_layout, dataBoundsTicks, textTransform, true);
+        // Filter for visible chroms, then for every third chrom so that labels attached to only every
+        // third chrom.
+        var visibleChroms = _.filter(this.chroms_layout, function(c) { return c.endAngle - c.startAngle > 0.08; }),
+            labeledChroms = _.filter(visibleChroms, function(c, i) { return i % 3 === 0; });
+        this.drawTicks(this.parent_elt, labeledChroms, this._data_bounds_ticks_fn(), textTransform, true);
+    },
+
+    /**
+     * Transition labels to new values (e.g new radius or data bounds).
+     */
+    _transition_labels: function() {
+        // FIXME: (a) pull out function for getting labeled chroms? and (b) function used in transition below
+        // is copied from UseTicks mixin, so pull out and make generally available.
+
+        // Transition labels to new radius bounds.
+        var self = this,
+            visibleChroms = _.filter(this.chroms_layout, function(c) { return c.endAngle - c.startAngle > 0.08; }),
+            labeledChroms = _.filter(visibleChroms, function(c, i) { return i % 3 === 0; }),
+            new_data = _.flatten( _.map(labeledChroms, function(c) {
+                return self._data_bounds_ticks_fn()(c);
+            }));
+        this.parent_elt.selectAll('g.tick').data(new_data).transition().attr("transform", function(d) {
+            return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")" +
+                    "translate(" + d.radius + ",0)";
+        });
+    },
+
+    /**
+     * Get function for locating data bounds ticks.
+     */
+    _data_bounds_ticks_fn: function() {
+        // Closure vars.
+        var self = this;
+            visibleChroms = 0;
+
+        // Return function for locating ticks based on chrom arc data.
+        return function(d) {
+            // Set up data to display min, max ticks.
+            return [
+                {
+                    radius: self.radius_bounds[0],
+                    angle: d.startAngle,
+                    label: self.formatNum(self.data_bounds[0])
+                },
+                {
+                    radius: self.radius_bounds[1],
+                    angle: d.startAngle,
+                    label: self.formatNum(self.data_bounds[1])
+                }
+            ];
+        };
     },
 
     /**
