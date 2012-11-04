@@ -359,23 +359,35 @@ def gff_attributes_to_str( attrs, gff_format ):
         attrs_strs.append( format_string % ( name, value ) )
     return " ; ".join( attrs_strs )
     
-def read_unordered_gtf( iterator ):
+def read_unordered_gtf( iterator, strict=False ):
     """
     Returns GTF features found in an iterator. GTF lines need not be ordered
     or clustered for reader to work. Reader returns GFFFeature objects sorted
     by transcript_id, chrom, and start position.
     """
+
+    # -- Get function that generates line/feature key. --
+
+    get_transcript_id = lambda fields: parse_gff_attributes( fields[8] )[ 'transcript_id' ]
+    if strict:
+        # Strict GTF parsing uses transcript_id only to group lines into feature.
+        key_fn = get_transcript_id
+    else:
+        # Use lenient parsing where chromosome + transcript_id is the key. This allows
+        # transcripts with same ID on different chromosomes; this occurs in some popular
+        # datasources, such as RefGenes in UCSC.
+        key_fn = lambda fields: fields[0] + '_' + get_transcript_id( fields )
+
     
     # Aggregate intervals by transcript_id.
     feature_intervals = odict()
     for count, line in enumerate( iterator ):
-        line_attrs = parse_gff_attributes( line.split('\t')[8] )
-        transcript_id = line_attrs[ 'transcript_id' ]
-        if transcript_id in feature_intervals:
-            feature = feature_intervals[ transcript_id ]
+        line_key = key_fn( line.split('\t') )
+        if line_key in feature_intervals:
+            feature = feature_intervals[ line_key ]
         else:
             feature = []
-            feature_intervals[ transcript_id ] = feature
+            feature_intervals[ line_key ] = feature
         feature.append( GFFInterval( None, line.split( '\t' ) ) )
     
     # Create features.
