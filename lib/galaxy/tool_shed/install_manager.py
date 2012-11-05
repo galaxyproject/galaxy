@@ -143,6 +143,8 @@ class InstallManager( object ):
                 tool_panel_dict_for_tool_config = generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=tool_sections )
                 for k, v in tool_panel_dict_for_tool_config.items():
                     tool_panel_dict_for_display[ k ] = v
+            else:
+                print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
         metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=self.app,
                                                                                      repository=tool_shed_repository,
                                                                                      repository_clone_url=repository_clone_url,
