@@ -18,7 +18,7 @@ from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.expression import func
-import os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
+import sys, os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
 
 if sys.version_info[:2] < ( 2, 5 ):
     from sets import Set as set
