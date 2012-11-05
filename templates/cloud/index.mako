@@ -76,7 +76,7 @@
                 }
             });
              //When id_secret and id_key are complete, submit to get_account_info
-            $("#id_secret, #id_key_id").bind("change paste keyup", function(){
+            $("#id_secret, #id_key_id").bind("change paste keyup input propertychange", function(){
                 secret_el = $("#id_secret");
                 key_el = $("#id_key_id");
                 if (secret_el.val().length === 40 && key_el.val().length === 20){
