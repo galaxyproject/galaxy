@@ -6,19 +6,44 @@
 Backbone.js implementation of history panel
 
 TODO:
+    bug:
+        anon, mako:
+            tooltips not rendered
+            anno, tags rendered
+            title editable
+    bug:
+        when over quota history is re-rendered, over quota msg is not displayed
+            bc the quota:over event isn't fired
+                bc the user state hasn't changed
+
+    anon user, mako template init:
+        bug: rename url seems to be wrong url
+
     currently, adding a dataset (via tool execute, etc.) creates a new dataset and refreshes the page
-    from mako template:
+    logged in, mako template:
+        BUG: am able to start upload even if over quota - 'runs' forever
+
+        BUG: from above sit, delete uploading hda - now in state 'discarded'! ...new state to handle
+        bug: quotaMeter bar rendering square in chrome
+        BUG: quotaMsg not showing when 100% (on load)
+        BUG: upload, history size, doesn't change
+            TODO: on hdas state:final, update ONLY the size...from what? histories.py? in js?
         BUG: imported, shared history with unaccessible dataset errs in historycontents when getting history
             (entire history is inaccessible)
-        BUG: anon user, broken updater (upload)
-            added check_state to UsesHistoryDatasetAssocMixin
-        BUG: anon user
-        BUG: historyItem, error'd ds show display, download?
+            ??: still happening?
 
-    from loadFromAPI:
+    from loadFromApi:
         BUG: not showing previous annotations
 
     fixed:
+        BUG: historyItem, error'd ds show display, download?
+            FIXED: removed
+        bug: loading hdas (alt_hist)
+            FIXED: added anon user api request ( trans.user == None and trans.history.id == requested id )
+        bug: quota meter not updating on upload/tool run
+            FIXED: quotaMeter now listens for 'state:final' from glx_history in alternate_history.mako
+        bug: use of new HDACollection with event listener in init doesn't die...keeps reporting
+            FIXED: change getVisible to return an array
         BUG: history, broken intial hist state (running, updater, etc.)
             ??: doesn't seem to happen anymore
         BUG: collapse all should remove all expanded from storage
@@ -40,16 +65,16 @@ TODO:
         HDACollection, meta_files, display_apps, etc.
 
     
-    break this file up
-    localize all
-    ?: render url templates on init or render?
-    ?: history, annotation won't accept unicode
     quota mgr
     show_deleted/hidden:
         use storage
         on/off ui
     move histview fadein/out in render to app?
     don't draw body until it's first expand event
+    localize all
+    break this file up
+    ?: render url templates on init or render?
+    ?: history, annotation won't accept unicode
 
     hierarchy:
         dataset -> hda
@@ -62,6 +87,7 @@ TODO:
         css/html class/id 'item' -> hda
         add classes, ids on empty divs
         events (local/ui and otherwise)
+            list in docs as well
         require.js
         convert function comments to jsDoc style, complete comments
         move inline styles into base.less
@@ -118,7 +144,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
         // based on trans.user (is_admin or security_agent.can_access_dataset( <user_roles>, hda.dataset ))
         accessible          : false,
         
-        // this needs to be removed (it is a function of the view type (e.g. HDAForEditingView))
+        //TODO: this needs to be removed (it is a function of the view type (e.g. HDAForEditingView))
         for_editing         : true
     },
 
@@ -139,22 +165,19 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
             this.set( 'state', HistoryDatasetAssociation.STATES.NOT_VIEWABLE );
         }
 
-        this.on( 'change', function( event, x, y, z ){
-            this.log( this + ' has changed:', event, x, y, z );
+        //this.on( 'change', function( currModel, changedList ){
+        //    this.log( this + ' has changed:', currModel, changedList );
+        //});
+        this.on( 'change:state', function( currModel, newState ){
+            this.log( this + ' has changed state:', currModel, newState );
+            if( this.inFinalState() ){
+                this.trigger( 'state:final', currModel, newState, this.previous( 'state' ) );
+            }
         });
     },
 
     isDeletedOrPurged : function(){
         return ( this.get( 'deleted' ) || this.get( 'purged' ) );
-    },
-
-    // roughly can_edit from history_common.mako - not deleted or purged = editable
-    isEditable : function(){
-        return (
-            //this.get( 'for_editing' )
-            //&& !( this.get( 'deleted' ) || this.get( 'purged' ) )??
-            !this.isDeletedOrPurged()
-        );
     },
 
     // based on show_deleted, show_hidden (gen. from the container control), would this ds show in the list of ds's?
@@ -174,11 +197,15 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
     
     // 'final' states are states where no processing (for the ds) is left to do on the server
     inFinalState : function(){
+        var state = this.get( 'state' );
         return (
-            ( this.get( 'state' ) === HistoryDatasetAssociation.STATES.OK )
-        ||  ( this.get( 'state' ) === HistoryDatasetAssociation.STATES.FAILED_METADATA )
-        ||  ( this.get( 'state' ) === HistoryDatasetAssociation.STATES.EMPTY )
-        ||  ( this.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
+            ( state === HistoryDatasetAssociation.STATES.NEW )
+        ||  ( state === HistoryDatasetAssociation.STATES.OK )
+        ||  ( state === HistoryDatasetAssociation.STATES.EMPTY )
+        ||  ( state === HistoryDatasetAssociation.STATES.FAILED_METADATA )
+        ||  ( state === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        ||  ( state === HistoryDatasetAssociation.STATES.DISCARDED )
+        ||  ( state === HistoryDatasetAssociation.STATES.ERROR )
         );
     },
 
@@ -199,24 +226,32 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
 
 //------------------------------------------------------------------------------
 HistoryDatasetAssociation.STATES = {
-    NOT_VIEWABLE        : 'noPermission',   // not in trans.app.model.Dataset.states
-    NEW                 : 'new',
     UPLOAD              : 'upload',
     QUEUED              : 'queued',
     RUNNING             : 'running',
+    SETTING_METADATA    : 'setting_metadata',
+
+    NEW                 : 'new',
     OK                  : 'ok',
     EMPTY               : 'empty',
-    ERROR               : 'error',
+
+    FAILED_METADATA     : 'failed_metadata',
+    NOT_VIEWABLE        : 'noPermission',   // not in trans.app.model.Dataset.states
     DISCARDED           : 'discarded',
-    SETTING_METADATA    : 'setting_metadata',
-    FAILED_METADATA     : 'failed_metadata'
+    ERROR               : 'error'
 };
 
 //==============================================================================
 var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend({
     model           : HistoryDatasetAssociation,
 
-    logger          : console,
+    //logger          : console,
+
+    initialize : function(){
+        //this.bind( 'all', function( x, y, z ){
+        //    console.info( this + '', x, y, z );
+        //});
+    },
 
     // return the ids of every hda in this collection
     ids : function(){
@@ -225,9 +260,7 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend({
 
     // return an HDA collection containing every 'shown' hda based on show_deleted/hidden
     getVisible : function( show_deleted, show_hidden ){
-        return new HDACollection(
-            this.filter( function( item ){ return item.isVisible( show_deleted, show_hidden ); })
-        );
+        return this.filter( function( item ){ return item.isVisible( show_deleted, show_hidden ); });
     },
 
     // get a map where <possible hda state> : [ <list of hda ids in that state> ]
@@ -241,6 +274,17 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend({
             stateLists[ item.get( 'state' ) ].push( item.get( 'id' ) );
         });
         return stateLists;
+    },
+
+    // returns the id of every hda still running (not in a final state)
+    running : function(){
+        var idList = [];
+        this.each( function( item ){
+            if( !item.inFinalState() ){
+                idList.push( item.get( 'id' ) );
+            }
+        });
+        return idList;
     },
 
     // update (fetch -> render) the hdas with the ids given
@@ -307,13 +351,13 @@ var History = BaseModel.extend( LoggableMixin ).extend({
             this.checkForUpdates();
         }
 
-        this.on( 'change', function( event, x, y, z ){
-            this.log( this + ' has changed:', event, x, y, z );
-        });
+        //this.on( 'change', function( currModel, changedList ){
+        //    this.log( this + ' has changed:', currModel, changedList );
+        //});
     },
 
     // get data via the api (alternative to sending options,hdas to initialize)
-    loadFromAPI : function( historyId, callback ){
+    loadFromApi : function( historyId, callback ){
         var history = this;
 
         // fetch the history AND the user (mainly to see if they're logged in at this point)
@@ -353,39 +397,9 @@ var History = BaseModel.extend( LoggableMixin ).extend({
     // get the history's state from it's cummulative ds states, delay + update if needed
     checkForUpdates : function( datasets ){
         // get overall History state from collection, run updater if History has running/queued hdas
-        this.stateFromStateIds();
-        if( ( this.get( 'state' ) === HistoryDatasetAssociation.STATES.RUNNING )
-        ||  ( this.get( 'state' ) === HistoryDatasetAssociation.STATES.QUEUED ) ){
+        // boiling it down on the client to running/not
+        if( this.hdas.running().length ){
             this.stateUpdater();
-        }
-        return this;
-    },
-
-    // sets history state based on current hdas' states
-    //  ported from api/histories.traverse (with placement of error state changed)
-    stateFromStateIds : function(){
-        var stateIdLists = this.hdas.getStateLists();
-        this.attributes.state_ids = stateIdLists;
-
-        //TODO: make this more concise
-        if( ( stateIdLists.running.length > 0  )
-        ||  ( stateIdLists.upload.length > 0  )
-        ||  ( stateIdLists.setting_metadata.length > 0  ) ){
-            this.set( 'state', HistoryDatasetAssociation.STATES.RUNNING );
-
-        } else if( stateIdLists.queued.length > 0  ){
-            this.set( 'state', HistoryDatasetAssociation.STATES.QUEUED );
-
-        } else if( ( stateIdLists.error.length > 0  )
-        ||         ( stateIdLists.failed_metadata.length > 0  ) ){
-            this.set( 'state', HistoryDatasetAssociation.STATES.ERROR );
-
-        } else if( stateIdLists.ok.length === this.hdas.length ){
-            this.set( 'state', HistoryDatasetAssociation.STATES.OK );
-
-        } else {
-            throw( this + '.stateFromStateDetails: unable to determine '
-                 + 'history state from hda states: ' + this.get( 'state_ids' ) );
         }
         return this;
     },
@@ -407,6 +421,7 @@ var History = BaseModel.extend( LoggableMixin ).extend({
             history.set( response );
             history.log( 'current history state:', history.get( 'state' ), '(was)', oldState );
 
+            //TODO: revisit this - seems too elaborate, need something straightforward
             // for each state, check for the difference between old dataset states and new
             //  the goal here is to check ONLY those datasets that have changed states (not all datasets)
             var changedIds = [];
@@ -451,7 +466,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
     // view for HistoryDatasetAssociation model above
 
     // uncomment this out see log messages
-    logger              : console,
+    //logger              : console,
 
     tagName     : "div",
     className   : "historyItemContainer",
@@ -537,6 +552,9 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
             view.$el.append( itemWrapper ).fadeIn( 'fast', function(){
                 view.log( view + ' rendered:', view.$el );
                 view.trigger( 'rendered' );
+                if( view.model.inFinalState() ){
+                    view.trigger( 'rendered:final' );
+                }
             });
         });
         return this;
@@ -697,7 +715,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         var modelData = _.extend( this.model.toJSON(), { urls: this.urls } );
         // if there's no dbkey and it's editable : pass a flag to the template to render a link to editing in the '?'
         if( this.model.get( 'metadata_dbkey' ) === '?'
-        &&  this.model.isEditable() ){
+        &&  !this.model.isDeletedOrPurged() ){
             _.extend( modelData, { dbkey_unknown_and_editable : true });
         }
         return HDAView.templates.hdaSummary( modelData );
@@ -1290,7 +1308,7 @@ function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
 var HistoryView = BaseView.extend( LoggableMixin ).extend({
     
     // uncomment this out see log messages
-    logger              : console,
+    //logger              : console,
 
     // direct attachment to existing element
     el                  : 'body.historyPage',
@@ -1369,7 +1387,7 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
         // render the main template, tooltips
         //NOTE: this is done before the items, since item views should handle theirs themselves
         newRender.append( HistoryView.templates.historyPanel( modelJson ) );
-        historyView.$el.find( '.tooltip' ).tooltip();
+        newRender.find( '.tooltip' ).tooltip();
 
         // render hda views (if any)
         if( !this.model.hdas.length
@@ -1394,6 +1412,7 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
 
             //TODO: ideally, these would be set up before the fade in (can't because of async save text)
             historyView.setUpBehaviours();
+            
             historyView.trigger( 'rendered' );
             next();
         });
@@ -1410,7 +1429,7 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
             visibleHdas  = this.model.hdas.getVisible( show_deleted, show_hidden );
 
         // only render the shown hdas
-        visibleHdas.each( function( hda ){
+        _.each( visibleHdas, function( hda ){
             var hdaId = hda.get( 'id' ),
                 expanded = historyView.storage.get( 'expandedHdas' ).get( hdaId );
             historyView.hdaViews[ hdaId ] = new HDAView({
@@ -1428,21 +1447,28 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
 
     // set up HistoryView->HDAView listeners
     setUpHdaListeners : function( hdaView ){
-        var history = this;
+        var historyView = this;
 
         // use storage to maintain a list of hdas whose bodies are expanded
         hdaView.bind( 'toggleBodyVisibility', function( id, visible ){
             if( visible ){
-                history.storage.get( 'expandedHdas' ).set( id, true );
+                historyView.storage.get( 'expandedHdas' ).set( id, true );
             } else {
-                history.storage.get( 'expandedHdas' ).deleteKey( id );
+                historyView.storage.get( 'expandedHdas' ).deleteKey( id );
             }
         });
+
+        // rendering listeners
+        //hdaView.bind( 'rendered', function(){});
+        hdaView.bind( 'rendered:final', function(){ historyView.trigger( 'hda:rendered:final' ); });
     },
 
     // set up js/widget behaviours: tooltips,
     //TODO: these should be either sub-MVs, or handled by events
     setUpBehaviours : function(){
+        // anon users shouldn't have access to any of these
+        if( !( this.model.get( 'user' ) && this.model.get( 'user' ).email ) ){ return; }
+
         // annotation slide down
         var historyAnnotationArea = this.$( '#history-annotation-area' );
         this.$( '#history-annotate' ).click( function() {
@@ -1463,6 +1489,20 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
             this.urls.annotate, "new_annotation", 18, true, 4 );
     },
     
+    //TODO: this seems more like a per user message than a history message; IOW, this doesn't belong here
+    showQuotaMessage : function( userData ){
+        var msg = this.$el.find( '#quota-message-container' );
+        //this.log( this + ' showing quota message:', msg, userData );
+        if( msg.is( ':hidden' ) ){ msg.slideDown( 'fast' ); }
+    },
+
+    //TODO: this seems more like a per user message than a history message
+    hideQuotaMessage : function( userData ){
+        var msg = this.$el.find( '#quota-message-container' );
+        //this.log( this + ' hiding quota message:', msg, userData );
+        if( !msg.is( ':hidden' ) ){ msg.slideUp( 'fast' ); }
+    },
+
     events : {
         'click #history-collapse-all'   : 'hideAllHdaBodies',
         'click #history-tag'            : 'loadAndDisplayTags'
@@ -1470,7 +1510,7 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
 
     // collapse all hda bodies
     hideAllHdaBodies : function(){
-        _.each( this.itemViews, function( item ){
+        _.each( this.hdaViews, function( item ){
             item.toggleBodyVisibility( null, false );
         });
         this.storage.set( 'expandedHdas', {} );

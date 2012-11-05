@@ -90,9 +90,12 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 
     hda_class_name      = 'HistoryDatasetAssociation'
     encoded_id_template = '<%= id %>'
-    username_template   = '<%= username %>'
+    #username_template   = '<%= username %>'
     hda_ext_template    = '<%= file_ext %>'
     meta_type_template  = '<%= file_type %>'
+
+    display_app_name_template = '<%= name %>'
+    display_app_link_template = '<%= link %>'
 
     url_dict = {
         # ................................................................ warning message links
@@ -108,6 +111,7 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
         # ................................................................ title actions (display, edit, delete),
         'display' : h.url_for( controller='dataset', action='display',
             dataset_id=encoded_id_template, preview=True, filename='' ),
+        #TODO:
         #'user_display_url' : h.url_for( controller='dataset', action='display_by_username_and_slug',
         #    username=username_template, slug=encoded_id_template, filename='' ),
         'edit' : h.url_for( controller='dataset', action='edit',
@@ -141,8 +145,9 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
                 item_class=hda_class_name, item_id=encoded_id_template ),
         },
         'annotation' : {
+            #TODO: needed? doesn't look like this is used (unless graceful degradation)
             #'annotate_url' : h.url_for( controller='dataset', action='annotate',
-            #    id=encoded_id_template ), # doesn't look like this is used (unless graceful degradation)
+            #    id=encoded_id_template ),
             'get' : h.url_for( controller='dataset', action='get_annotation_async',
                 id=encoded_id_template ),
             'set' : h.url_for( controller='/dataset', action='annotate_async',
@@ -167,33 +172,24 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 
 <%def name="get_current_user()">
 <%
-    if not trans.user:
-        return '{}'
-    return trans.webapp.api_controllers[ 'users' ].show(
-        trans, trans.security.encode_id( trans.user.id ) )
+    return trans.webapp.api_controllers[ 'users' ].show( trans, 'current' )
 %>
 </%def>
 
 <%def name="get_hdas( history_id, hdas )">
 <%
+    #BUG: one inaccessible dataset will error entire list
+
     if not hdas:
         return '[]'
     # rather just use the history.id (wo the datasets), but...
-    #BUG: one inaccessible dataset will error entire list
     return trans.webapp.api_controllers[ 'history_contents' ].index(
+        #trans, trans.security.encode_id( history_id ),
         trans, trans.security.encode_id( history_id ),
         ids=( ','.join([ trans.security.encode_id( hda.id ) for hda in hdas ]) ) )
 %>
 </%def>
 
-<%def name="print_visualizations( datasets )">
-<%
-    for dataset in datasets:
-        print trans.security.encode_id( dataset.id )
-        print dataset.get_visualizations()
-
-%>
-</%def>
 
 ## -----------------------------------------------------------------------------
 <%def name="javascripts()">
@@ -220,13 +216,17 @@ ${h.templates(
     "template-history-annotationArea",
     "template-history-displayApps",
     
-    "template-history-historyPanel"
+    "template-history-historyPanel",
+
+    "template-user-quotaMeter-quota",
+    "template-user-quotaMeter-usage"
 )}
 
 ##TODO: fix: curr hasta be _after_ h.templates - move somehow
 ${h.js(
-    "mvc/history"
-    ##"mvc/tags", "mvc/annotations"
+    "mvc/history",
+    ##"mvc/tags", "mvc/annotations",
+    "mvc/user/user-model", "mvc/user/user-quotameter"
 )}
     
 <script type="text/javascript">
@@ -243,31 +243,65 @@ $(function(){
     if( console && console.debug ){
         //if( console.clear ){ console.clear(); }
         console.debug( 'using backbone.js in history panel' );
+        console.pretty = function( o ){ $( '<pre/>' ).text( JSON.stringify( o, null, ' ' ) ).appendTo( 'body' ); }
     }
 
-    // Navigate to a dataset.
-    console.debug( 'getting data' );
+
+    // load initial data in this page - since we're already sending it...
     var user    = ${ get_current_user() },
         history = ${ get_history( history.id ) },
         hdas    = ${ get_hdas( history.id, datasets ) };
-    //console.debug( 'user:', user );
-    //console.debug( 'history:', history );
-    //console.debug( 'hdas:', hdas );
+    console.debug( 'user:', user );
+    console.debug( 'history:', history );
+    console.debug( 'hdas:', hdas );
 
-    // i don't like this, but user authentication changes views/behaviour
+    // i don't like this relationship, but user authentication changes views/behaviour
     history.user = user;
     history.show_deleted = ${ 'true' if show_deleted else 'false' };
     history.show_hidden  = ${ 'true' if show_hidden  else 'false' };
-        
+
     //console.debug( 'galaxy_paths:', galaxy_paths );
     var glx_history = new History( history, hdas );
-    var glx_history_view = new HistoryView({ model: glx_history, urlTemplates: galaxy_paths.attributes }).render();
+    glx_history.logger = console;
 
+    var glx_history_view = new HistoryView({
+        model: glx_history,
+        urlTemplates: galaxy_paths.attributes,
+        logger: console
+    });
+    glx_history_view.render();
+
+
+    // ...OR load from the api
     //var glx_history = new History().setPaths( galaxy_paths ),
     //    glx_history_view = new HistoryView({ model: glx_history });
     //console.warn( 'fetching' );
-    //glx_history.loadFromAPI( pageData.history.id );
+    //glx_history.loadFromApi( pageData.history.id );
+
     
+    // quota meter is a cross-frame ui element (meter in masthead, over quota message in history)
+    //  create it and join them here for now (via events)
+    window.currUser = new User( user );
+    //window.currUser.logger = console;
+    window.quotaMeter = new UserQuotaMeter({ model: currUser, el: $( top.document ).find( '.quota-meter-container' ) });
+    window.quotaMeter.render();
+    //window.quotaMeter.logger = console;
+
+    // show/hide the 'over quota message' in the history when the meter tells it to
+    quotaMeter.bind( 'quota:over',  glx_history_view.showQuotaMessage, glx_history_view );
+    quotaMeter.bind( 'quota:under', glx_history_view.hideQuotaMessage, glx_history_view );
+    // having to add this to handle re-render of hview while overquota (the above do not fire)
+    glx_history_view.on( 'rendered', function(){
+        if( window.quotaMeter.isOverQuota() ){
+            glx_history_view.showQuotaMessage();
+        }
+    });
+
+    // update the quota meter when any hda reaches a 'final' state
+    //NOTE: use an anon function or update will be passed the hda and think it's the options param
+    glx_history_view.on( 'hda:rendered:final', function(){ window.quotaMeter.update({}) }, window.quotaMeter )
+
+
     if( console && console.debug ){
         window.user = top.user = user;
         window._history = top._history = history;

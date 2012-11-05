@@ -110,9 +110,12 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
     <div id="history-name-container" style="position: relative;">
         {{! TODO: factor out conditional css }}
         <div id="history-size" style="position: absolute; top: 3px; right: 0px;">{{nice_size}}</div>
-        {{#if user}}
+        {{#if user.email}}
             <div id="history-name" style="margin-right: 50px;" class="tooltip editable-text"
                 title="Click to rename history">{{name}}</div>
+        {{else}}
+            <div id="history-name" style="margin-right: 50px;" class="tooltip"
+                title="You must be logged in to edit your history name">{{name}}</div>
         {{/if}}
     </div>                     
 </div>
@@ -123,7 +126,7 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
     <a title='{{#local}}collapse all{{/local}}' id="history-collapse-all"
         class='icon-button toggle tooltip' href='javascript:void(0);'></a>
     <div style="width: 40px; float: right; white-space: nowrap;">
-        {{#if user}}
+        {{#if user.email}}
         <a id="history-tag" title="{{#local}}Edit history tags{{/local}}"
             class="icon-button tags tooltip" target="galaxy_main" href="javascript:void(0)"></a>
         <a id="history-annotate" title="{{#local}}Edit history annotation{{/local}}"
@@ -151,7 +154,7 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
 {{! TODO: move inline styles out }}
 <div style="margin: 0px 5px 10px 5px">
 
-    {{#if user}}
+    {{#if user.email}}
     <div id="history-tag-area" style="display: none">
         <strong>Tags:</strong>
         <div class="tag-elt"></div>
@@ -180,13 +183,10 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
 </div>
 {{/if}}
 
-<div id="quota-message-container">
-    {{#if over_quota}}
+<div id="quota-message-container" style="display: none">
     <div id="quota-message" class="errormessage">
         You are over your disk quota.  Tool execution is on hold until your disk usage drops below your allocated quota.
     </div>
-    <br/>
-    {{/if}}
 </div>
 
 <div id="{{id}}-datasets" class="history-datasets-list"></div>
