@@ -1695,22 +1695,24 @@ extend(Tool.prototype, {
         //
         // Create track for tool's output immediately to provide user feedback.
         //
-        var 
+        var region = new visualization.GenomeRegion({
+                chrom: this.track.view.chrom,
+                start: this.track.view.low,
+                end: this.track.view.high
+            }),
             url_params = 
             { 
                 target_dataset_id: this.track.original_dataset_id,
                 action: 'rerun',
                 tool_id: this.name,
-                regions: [{
-                    chrom: this.track.view.chrom,
-                    start: this.track.view.low,
-                    end: this.track.view.high
-                }]
+                regions: [
+                    region.toJSON()
+                ]
             },
             current_track = this.track,
             // Set name of track to include tool name, parameters, and region used.
             track_name = url_params.tool_id +
-                         current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
+                         current_track.tool_region_and_parameters_str(region),
             container;
             
         // If track not in a group, create a group for it and add new track to group. If track 
@@ -3040,13 +3042,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Utility function that creates a label string describing the region and parameters of a track's tool.
      */
-    tool_region_and_parameters_str: function(chrom, low, high) {
-        // Region is chrom:low-high or 'all.'
-        var 
-            track = this,
-            region = (chrom !== undefined && low !== undefined && high !== undefined ?
-                      chrom + ":" + low + "-" + high : "all");
-        return " - region=[" + region + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
+    tool_region_and_parameters_str: function(region) {
+        var track = this,
+            region_str = (region !== undefined ? region.toString() : "all");
+        return " - region=[" + region_str + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
     },
     /**
      * Returns true if data is compatible with a given mode. Defaults to true because, for many tracks,
