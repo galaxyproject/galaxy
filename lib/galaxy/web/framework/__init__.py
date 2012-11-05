@@ -4,19 +4,19 @@ Galaxy web application framework
 
 import pkg_resources
 
-import os, sys, time, socket, random, string
+import os, time, socket, random, string
 import inspect
 from Cookie import CookieError
 
 pkg_resources.require( "Cheetah" )
 from Cheetah.Template import Template
 import base
-import pickle
 from functools import wraps
 from galaxy import util
 from galaxy.exceptions import MessageException
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.util.backports.importlib import import_module
+from galaxy.util.sanitize_html import sanitize_html
 
 pkg_resources.require( "simplejson" )
 import simplejson
@@ -240,11 +240,11 @@ class WebApplication( base.WebApplication ):
             output_encoding = 'utf-8' )
 
     def handle_controller_exception( self, e, trans, **kwargs ):
-
         if isinstance( e, MessageException ):
-            return trans.show_message( e.err_msg, e.type )
-    def make_body_iterable( self, trans, body ):
+            #In the case of a controller exception, sanitize to make sure unsafe html input isn't reflected back to the user
+            return trans.show_message( sanitize_html(e.err_msg), e.type )
 
+    def make_body_iterable( self, trans, body ):
         if isinstance( body, FormBuilder ):
             body = trans.show_form( body )
         return base.WebApplication.make_body_iterable( self, trans, body )
