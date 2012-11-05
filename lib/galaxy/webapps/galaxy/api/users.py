@@ -26,6 +26,7 @@ class UserAPIController( BaseAPIController ):
             # only admins can see deleted users
             if not trans.user_is_admin():
                 return []
+
         else:
             route = 'user'
             query = query.filter( trans.app.model.User.table.c.deleted == False )
@@ -33,9 +34,13 @@ class UserAPIController( BaseAPIController ):
             if not trans.user_is_admin():
                 item = trans.user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
                 item['url'] = url_for( route, id=item['id'] )
+                item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
                 return [item]
+
         for user in query:
             item = user.get_api_value( value_mapper={ 'id': trans.security.encode_id } )
+            #TODO: move into api_values
+            item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
             item['url'] = url_for( route, id=item['id'] )
             rval.append( item )
         return rval
@@ -50,20 +55,36 @@ class UserAPIController( BaseAPIController ):
         """
         deleted = util.string_as_bool( deleted )
         try:
+            # user is requesting data about themselves
             if id == "current":
-                user = trans.user
+                # ...and is anonymous - return usage and quota (if any)
+                if not trans.user:
+                    item = self.anon_user_api_value( trans )
+                    return item
+
+                # ...and is logged in - return full
+                else:
+                    user = trans.user
             else:
                 user = self.get_user( trans, id, deleted=deleted )
+
+            # check that the user is requesting themselves (and they aren't del'd) unless admin
             if not trans.user_is_admin():
                 assert trans.user == user
                 assert not user.deleted
+
         except:
             if trans.user_is_admin():
                 raise
             else:
                 raise HTTPBadRequest( detail='Invalid user id ( %s ) specified' % id )
+
         item = user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
                                                                   'total_disk_usage': float } )    
+        #TODO: move into api_values (needs trans, tho - can we do that with api_keys/@property??)
+        #TODO: works with other users (from admin)??
+        item['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
+
         return item
     
     @web.expose_api
@@ -93,3 +114,16 @@ class UserAPIController( BaseAPIController ):
     @web.expose_api
     def undelete( self, trans, **kwd ):
         raise HTTPNotImplemented()
+
+    #TODO: move to more basal, common resource than this
+    def anon_user_api_value( self, trans ):
+        """
+        Returns data for an anonymous user, truncated to only usage and quota_percent
+        """
+        usage = trans.app.quota_agent.get_usage( trans )
+        percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
+        return {
+            'total_disk_usage'      : int( usage ),
+            'nice_total_disk_usage' : util.nice_size( usage ),
+            'quota_percent'         : percent
+        }
