@@ -27,7 +27,7 @@ TODO:
         bug: quotaMeter bar rendering square in chrome
         BUG: quotaMsg not showing when 100% (on load)
         BUG: upload, history size, doesn't change
-            TODO: on hdas state:final, update ONLY the size...from what? histories.py? in js?
+            TODO: on hdas state:ready, update ONLY the size...from what? histories.py? in js?
         BUG: imported, shared history with unaccessible dataset errs in historycontents when getting history
             (entire history is inaccessible)
             ??: still happening?
@@ -41,7 +41,7 @@ TODO:
         bug: loading hdas (alt_hist)
             FIXED: added anon user api request ( trans.user == None and trans.history.id == requested id )
         bug: quota meter not updating on upload/tool run
-            FIXED: quotaMeter now listens for 'state:final' from glx_history in alternate_history.mako
+            FIXED: quotaMeter now listens for 'state:ready' from glx_history in alternate_history.mako
         bug: use of new HDACollection with event listener in init doesn't die...keeps reporting
             FIXED: change getVisible to return an array
         BUG: history, broken intial hist state (running, updater, etc.)
@@ -134,6 +134,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
 
         // array of associated file types (eg. [ 'bam_index', ... ])
         meta_files          : [],
+
         misc_blurb          : '', 
         misc_info           : '',
 
@@ -155,25 +156,32 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
     },
     
     // (curr) only handles changing state of non-accessible hdas to STATES.NOT_VIEWABLE
-    //TODO: use initialize (or validate) to check purged AND deleted -> purged XOR deleted
+    //TODO:? use initialize (or validate) to check purged AND deleted -> purged XOR deleted
     initialize : function(){
         this.log( this + '.initialize', this.attributes );
         this.log( '\tparent history_id: ' + this.get( 'history_id' ) );
         
-        //!! this state is not in trans.app.model.Dataset.states - set it here
+        //!! this state is not in trans.app.model.Dataset.states - set it here -
+        //TODO: change to server side.
         if( !this.get( 'accessible' ) ){
             this.set( 'state', HistoryDatasetAssociation.STATES.NOT_VIEWABLE );
         }
 
+        // if the state has changed and the new state is a ready state, fire an event
+        this.on( 'change:state', function( currModel, newState ){
+            this.log( this + ' has changed state:', currModel, newState );
+            if( this.inReadyState() ){
+                this.trigger( 'state:ready', this.get( 'id' ), newState, this.previous( 'state' ), currModel );
+            }
+        });
+
+        // debug on change events
         //this.on( 'change', function( currModel, changedList ){
         //    this.log( this + ' has changed:', currModel, changedList );
         //});
-        this.on( 'change:state', function( currModel, newState ){
-            this.log( this + ' has changed state:', currModel, newState );
-            if( this.inFinalState() ){
-                this.trigger( 'state:final', currModel, newState, this.previous( 'state' ) );
-            }
-        });
+        //this.bind( 'all', function( event ){
+        //    this.log( this + '', arguments );
+        //});
     },
 
     isDeletedOrPurged : function(){
@@ -195,8 +203,8 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
         return isVisible;
     },
     
-    // 'final' states are states where no processing (for the ds) is left to do on the server
-    inFinalState : function(){
+    // 'ready' states are states where no processing (for the ds) is left to do on the server
+    inReadyState : function(){
         var state = this.get( 'state' );
         return (
             ( state === HistoryDatasetAssociation.STATES.NEW )
@@ -248,8 +256,8 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend({
     //logger          : console,
 
     initialize : function(){
-        //this.bind( 'all', function( x, y, z ){
-        //    console.info( this + '', x, y, z );
+        //this.bind( 'all', function( event ){
+        //    this.log( this + '', arguments );
         //});
     },
 
@@ -276,11 +284,11 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend({
         return stateLists;
     },
 
-    // returns the id of every hda still running (not in a final state)
+    // returns the id of every hda still running (not in a ready state)
     running : function(){
         var idList = [];
         this.each( function( item ){
-            if( !item.inFinalState() ){
+            if( !item.inReadyState() ){
                 idList.push( item.get( 'id' ) );
             }
         });
@@ -354,6 +362,9 @@ var History = BaseModel.extend( LoggableMixin ).extend({
         //this.on( 'change', function( currModel, changedList ){
         //    this.log( this + ' has changed:', currModel, changedList );
         //});
+        //this.bind( 'all', function( event ){
+        //    this.log( this + '', arguments );
+        //});
     },
 
     // get data via the api (alternative to sending options,hdas to initialize)
@@ -419,7 +430,9 @@ var History = BaseModel.extend( LoggableMixin ).extend({
         ).success( function( response ){
             //this.log( 'historyApiRequest, response:', response );
             history.set( response );
-            history.log( 'current history state:', history.get( 'state' ), '(was)', oldState );
+            history.log( 'current history state:', history.get( 'state' ),
+                '(was)', oldState,
+                'new size:', history.get( 'nice_size' ) );
 
             //TODO: revisit this - seems too elaborate, need something straightforward
             // for each state, check for the difference between old dataset states and new
@@ -484,6 +497,9 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
 
         // re-render the entire view on any model change
         this.model.bind( 'change', this.render, this );
+        //this.bind( 'all', function( event ){
+        //    this.log( event );
+        //}, this );
     },
    
     // urlTemplates is a map (or nested map) of underscore templates (currently, anyhoo)
@@ -525,7 +541,10 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         var view = this,
             id = this.model.get( 'id' ),
             state = this.model.get( 'state' ),
-            itemWrapper = $( '<div/>' ).attr( 'id', 'historyItem-' + id );
+            itemWrapper = $( '<div/>' ).attr( 'id', 'historyItem-' + id ),
+            initialRender = ( this.$el.children().size() === 0 );
+
+        //console.debug( this + '.render, initial?:', initialRender );
 
         this._clearReferences();
         this.$el.attr( 'id', 'historyItemContainer-' + id );
@@ -551,10 +570,14 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
             view.$el.children().remove();
             view.$el.append( itemWrapper ).fadeIn( 'fast', function(){
                 view.log( view + ' rendered:', view.$el );
-                view.trigger( 'rendered' );
-                if( view.model.inFinalState() ){
-                    view.trigger( 'rendered:final' );
+                var renderedEventName = 'rendered';
+                
+                if( initialRender ){
+                    renderedEventName += ':initial';
+                } else if( view.model.inReadyState() ){
+                    renderedEventName += ':ready';
                 }
+                view.trigger( renderedEventName );
             });
         });
         return this;
@@ -610,8 +633,8 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
     
     // icon-button to display this hda in the galaxy main iframe
     _render_displayButton : function(){
-        // don't show display if not in final state, error'd, or not accessible
-        if( ( !this.model.inFinalState() )
+        // don't show display if not in ready state, error'd, or not accessible
+        if( ( !this.model.inReadyState() )
         ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
         ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
@@ -1335,12 +1358,17 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
             { expandedHdas : {} }
         );
 
-        //this.model.bind( 'change', this.render, this );
-
         // bind events from the model's hda collection
+        //this.model.bind( 'change', this.render, this );
+        this.model.bind( 'change:nice_size', this.updateHistoryDiskSize, this );
+
         this.model.hdas.bind( 'add',   this.add,    this );
         this.model.hdas.bind( 'reset', this.addAll, this );
         this.model.hdas.bind( 'all',   this.all,    this );
+
+        //this.bind( 'all', function(){
+        //    this.log( arguments );
+        //}, this );
 
         // set up instance vars
         this.hdaViews = {};
@@ -1379,7 +1407,10 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
         var historyView = this,
             setUpQueueName = historyView.toString() + '.set-up',
             newRender = $( '<div/>' ),
-            modelJson = this.model.toJSON();
+            modelJson = this.model.toJSON(),
+            initialRender = ( this.$el.children().size() === 0 );
+
+        //console.debug( this + '.render, initialRender:', initialRender );
 
         // render the urls and add them to the model json
         modelJson.urls = this.renderUrls( modelJson );
@@ -1389,7 +1420,7 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
         newRender.append( HistoryView.templates.historyPanel( modelJson ) );
         newRender.find( '.tooltip' ).tooltip();
 
-        // render hda views (if any)
+        // render hda views (if any and any shown (show_deleted/hidden)
         if( !this.model.hdas.length
         ||  !this.renderItems( newRender.find( '#' + this.model.get( 'id' ) + '-datasets' ) ) ){
             // if history is empty or no hdas would be rendered, show the empty message
@@ -1413,7 +1444,12 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
             //TODO: ideally, these would be set up before the fade in (can't because of async save text)
             historyView.setUpBehaviours();
             
-            historyView.trigger( 'rendered' );
+            if( initialRender ){
+                historyView.trigger( 'rendered:initial' );
+
+            } else {
+                historyView.trigger( 'rendered' );
+            }
             next();
         });
         $( historyView ).dequeue( setUpQueueName );
@@ -1459,8 +1495,7 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
         });
 
         // rendering listeners
-        //hdaView.bind( 'rendered', function(){});
-        hdaView.bind( 'rendered:final', function(){ historyView.trigger( 'hda:rendered:final' ); });
+        hdaView.bind( 'rendered:ready', function(){ historyView.trigger( 'hda:rendered:ready' ); });
     },
 
     // set up js/widget behaviours: tooltips,
@@ -1487,6 +1522,11 @@ var HistoryView = BaseView.extend( LoggableMixin ).extend({
 
         async_save_text( "history-annotation-container", "history-annotation",
             this.urls.annotate, "new_annotation", 18, true, 4 );
+    },
+
+    // update the history size display (curr. upper right of panel)
+    updateHistoryDiskSize : function(){
+        this.$el.find( '#history-size' ).text( this.model.get( 'nice_size' ) );
     },
     
     //TODO: this seems more like a per user message than a history message; IOW, this doesn't belong here

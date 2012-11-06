@@ -5,7 +5,7 @@
 // for now, keep the view in the history panel (where the message is), but render ALSO to the masthead
 
 var UserQuotaMeter = BaseView.extend( LoggableMixin ).extend({
-    logger          : console,
+    //logger          : console,
 
     options : {
         warnAtPercent   : 85,

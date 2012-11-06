@@ -251,9 +251,9 @@ $(function(){
     var user    = ${ get_current_user() },
         history = ${ get_history( history.id ) },
         hdas    = ${ get_hdas( history.id, datasets ) };
-    console.debug( 'user:', user );
-    console.debug( 'history:', history );
-    console.debug( 'hdas:', hdas );
+    //console.debug( 'user:', user );
+    //console.debug( 'history:', history );
+    //console.debug( 'hdas:', hdas );
 
     // i don't like this relationship, but user authentication changes views/behaviour
     history.user = user;
@@ -296,10 +296,12 @@ $(function(){
             glx_history_view.showQuotaMessage();
         }
     });
+    //TODO: this _is_ sent to the page (over_quota)...
 
-    // update the quota meter when any hda reaches a 'final' state
-    //NOTE: use an anon function or update will be passed the hda and think it's the options param
-    glx_history_view.on( 'hda:rendered:final', function(){ window.quotaMeter.update({}) }, window.quotaMeter )
+    // update the quota meter when current history changes size
+    glx_history.bind( 'change:nice_size', function(){
+        window.quotaMeter.update()
+    }, window.quotaMeter );
 
 
     if( console && console.debug ){

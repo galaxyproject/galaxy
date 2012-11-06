@@ -116,13 +116,23 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                                               show_deleted=util.string_as_bool( show_deleted ),
                                               show_hidden=util.string_as_bool( show_hidden ) )
         else:
-            show_deleted = show_purged = util.string_as_bool( show_deleted )
+            show_deleted = util.string_as_bool( show_deleted )
             show_hidden = util.string_as_bool( show_hidden )
-            datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden, show_purged )
+            show_purged = util.string_as_bool( show_deleted )
             
+            datasets = []
             history_panel_template = "root/history.mako"
-            # history panel -> backbone
-            #history_panel_template = "root/alternate_history.mako"
+
+            # history panel -> backbone (WIP - uncomment next to use)
+            #USE_ALTERNATE = True
+            if 'USE_ALTERNATE' in locals():
+                datasets = self.get_history_datasets( trans, history,
+                                                      show_deleted=True, show_hidden=True, show_purged=True )
+                history_panel_template = "root/alternate_history.mako"
+
+            else:
+                datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden, show_purged )
+
             return trans.stream_template_mako( history_panel_template,
                                                history = history,
                                                annotation = self.get_item_annotation_str( trans.sa_session, trans.user, history ),
