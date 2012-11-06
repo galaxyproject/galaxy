@@ -93,7 +93,7 @@ def move_file( current_dir, source, destination_dir ):
 def tar_extraction_directory( file_path, file_name ):
     """Try to return the correct extraction directory."""
     file_name = file_name.strip()
-    extensions = [ '.tar.gz', '.tgz', '.tar.bz2', '.zip' ]
+    extensions = [ '.tar.gz', '.tgz', '.tar.bz2', '.tar', '.zip' ]
     for extension in extensions:
         if file_name.find( extension ) > 0:
             dir_name = file_name[ :-len( extension ) ]
