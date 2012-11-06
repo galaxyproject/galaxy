@@ -720,6 +720,14 @@ _.extend(CircsterChromLabelTrackView.prototype, UsesTicks);
 var CircsterQuantitativeTrackView = CircsterTrackView.extend({
 
     /**
+     * Returns quantile for an array of numbers.
+     */
+    _quantile: function(numbers, quantile) {
+        numbers.sort(d3.ascending);
+        return d3.quantile(numbers, quantile);
+    },
+
+    /**
      * Renders quantitative data with the form [x, value] and assumes data is equally spaced across
      * chromosome. Attachs a dict with track and chrom name information to DOM element.
      */
@@ -750,7 +758,8 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
         // Radius scaler.
         var radius = d3.scale.linear()
                        .domain(this.data_bounds)
-                       .range(this.radius_bounds);
+                       .range(this.radius_bounds)
+                       .clamp(true);
 
         // Scaler for placing data points across arc.
         var angle = d3.scale.linear()
@@ -854,7 +863,7 @@ var CircsterSummaryTreeTrackView = CircsterQuantitativeTrackView.extend({
             if (typeof d === 'string' || !d.max) { return 0; }
             return d.max;
         });
-        return [ 0, (max_data && typeof max_data !== 'string' ? _.max(max_data) : 0) ];
+        return [ 0, (max_data && typeof max_data !== 'string' ? this._quantile(values, 0.98) : 0) ];
     }
 });
 
@@ -865,7 +874,7 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
 
     get_data_bounds: function(data) {
         // Set max across dataset by extracting all values, flattening them into a 
-        // single array, and getting the min and max.
+        // single array, and getting third quartile.
         var values = _.flatten( _.map(data, function(d) {
             if (d) {
                 // Each data point has the form [position, value], so return all values.
@@ -878,7 +887,7 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
             }
         }) );
 
-        return [ _.min(values), _.max(values) ];
+        return [ _.min(values), this._quantile(values, 0.98) ];
     }
 });
 
