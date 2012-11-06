@@ -18,7 +18,7 @@ from galaxy.web.form_builder import *
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.expression import func
-import sys, os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
+import os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
 
 if sys.version_info[:2] < ( 2, 5 ):
     from sets import Set as set
@@ -138,6 +138,12 @@ class Job( object ):
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
     # for the mapper defined to the Job table. 
+    def get_external_output_metadata( self ):
+        """
+        The external_output_metadata is currently a reference from Job to 
+        JobExternalOutputMetadata. It exists for a job but not a task.
+        """
+        return self.external_output_metadata 
     def get_session_id( self ):
         return self.session_id
     def get_user_id( self ):
@@ -370,6 +376,13 @@ class Task( object ):
     # (e.g., for a session) or never use the member (e.g., external output
     # metdata). These can be filled in as needed.
     def get_external_output_metadata( self ):
+        """
+        The external_output_metadata is currently a backref to 
+        JobExternalOutputMetadata. It exists for a job but not a task,
+        and when a task is cancelled its corresponding parent Job will
+        be cancelled. So None is returned now, but that could be changed
+        to self.get_job().get_external_output_metadata().
+        """
         return None
     def get_job_runner_name( self ):
         """
