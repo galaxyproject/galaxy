@@ -1731,7 +1731,7 @@ class Tool:
                 callback( "", input, value[input.name] )
             else:
                 input.visit_inputs( "", value[input.name], callback )
-    def handle_input( self, trans, incoming, history=None ):
+    def handle_input( self, trans, incoming, history=None, old_errors=None ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -1766,7 +1766,7 @@ class Tool:
         else:
             # Update state for all inputs on the current page taking new
             # values from `incoming`.
-            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming )
+            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
             # If the tool provides a `validate_input` hook, call it. 
             validate_input = self.get_hook( 'validate_input' )
             if validate_input:
@@ -1895,7 +1895,10 @@ class Tool:
                             any_group_errors = True
                             # Only need to find one that can't be removed due to size, since only 
                             # one removal is processed at # a time anyway
-                            break 
+                            break
+                    elif group_old_errors and group_old_errors[i]:
+                        group_errors[i] = group_old_errors[i]
+                        any_group_errors = True
                 # Update state
                 max_index = -1
                 for i, rep_state in enumerate( group_state ):
@@ -1978,6 +1981,8 @@ class Tool:
                                                       update_only=update_only,
                                                       old_errors=group_old_errors,
                                                       item_callback=item_callback )
+                    if input.test_param.name in group_old_errors and not test_param_error:
+                        test_param_error = group_old_errors[ input.test_param.name ]
                 if test_param_error:
                     group_errors[ input.test_param.name ] = test_param_error
                 if group_errors:
