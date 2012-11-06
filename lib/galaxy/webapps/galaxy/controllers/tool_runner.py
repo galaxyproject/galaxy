@@ -6,6 +6,7 @@ from galaxy.web.base.controller import *
 from galaxy.util.bunch import Bunch
 from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters.basic import UnvalidatedValue
+from galaxy.tools.parameters import params_to_incoming
 from galaxy.tools.actions import upload_common
 
 import logging
@@ -192,25 +193,29 @@ class ToolRunner( BaseUIController ):
                 if isinstance(value,list):
                     values = []
                     for val in value:
-                        if val not in history.datasets and val in hda_source_dict:
+                        if val in history.datasets:
+                            values.append( val )
+                        elif val in hda_source_dict:
                             values.append( hda_source_dict[ val ])
                     return values
                 if value not in history.datasets and value in hda_source_dict:
                     return hda_source_dict[ value ]
         visit_input_values( tool.inputs, params_objects, rerun_callback )
-        # Create a fake tool_state for the tool, with the parameters values 
+        # Create a fake tool_state for the tool, with the parameters values
         state = tool.new_state( trans )
         state.inputs = params_objects
-        tool_state_string = util.object_to_string(state.encode(tool, trans.app))
-        # Setup context for template
-        vars = dict( tool_state=state, errors = upgrade_messages )
+        #create an incoming object from the original job's dataset-modified param objects
+        incoming = {}
+        params_to_incoming( incoming, tool.inputs, params_objects, trans.app )
+        incoming[ "tool_state" ] = util.object_to_string( state.encode( tool, trans.app ) )
+        template, vars = tool.handle_input( trans, incoming, old_errors=upgrade_messages ) #update new state with old parameters
         # Is the "add frame" stuff neccesary here?
         add_frame = AddFrameData()
         add_frame.debug = trans.debug
         if from_noframe is not None:
             add_frame.wiki_url = trans.app.config.wiki_url
             add_frame.from_noframe = True
-        return trans.fill_template( "tool_form.mako",
+        return trans.fill_template( template,
                                     history=history,
                                     toolbox=self.get_toolbox(),
                                     tool_version_select_field=tool_version_select_field,
