@@ -94,3 +94,26 @@ def params_from_strings( params, param_values, app, ignore_errors=False ):
             value = params[key].value_from_basic( value, app, ignore_errors )
         rval[ key ] = value 
     return rval
+
+def params_to_incoming( incoming, inputs, input_values, app, name_prefix="" ):
+    """
+    Given a tool's parameter definition (`inputs`) and a specific set of
+    parameter `input_values` objects, populate `incoming` with the html values.
+    
+    Useful for e.g. the rerun function.
+    """    
+    for input in inputs.itervalues():
+        if isinstance( input, Repeat ) or isinstance( input, UploadDataset ):
+            for i, d in enumerate( input_values[ input.name ] ):
+                index = d['__index__']
+                new_name_prefix = name_prefix + "%s_%d|" % ( input.name, index )
+                params_to_incoming( incoming, input.inputs, d, app, new_name_prefix )
+        elif isinstance( input, Conditional ):
+            values = input_values[ input.name ]
+            current = values["__current_case__"]
+            new_name_prefix = name_prefix + input.name + "|"
+            incoming[ new_name_prefix + input.test_param.name ] = values[ input.test_param.name ]
+            params_to_incoming( incoming, input.cases[current].inputs, values, app, new_name_prefix )
+        else:
+            incoming[ name_prefix + input.name ] = input.to_string( input_values.get( input.name ), app )
+            

@@ -1539,25 +1539,38 @@ class DataToolParameter( ToolParameter ):
         if trans.workflow_building_mode:
             return None
         if not value:
-            raise ValueError( "History does not include a dataset of the required format / build" ) 
+            raise ValueError( "History does not include a dataset of the required format / build" )
         if value in [None, "None"]:
             return None
         if isinstance( value, list ):
-            return [ trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( v ) for v in value ]
+            rval = [ trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( v ) for v in value ]
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
-            return value
+            rval = value
         else:
-            return trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
+            rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
+        if isinstance( rval, list ):
+            values = rval
+        else:
+            values = [ rval ]
+        for v in values:
+            if v:
+                if v.deleted:
+                    raise ValueError( "The previously selected dataset has been previously deleted" )
+                if v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
+                    raise ValueError( "The previously selected dataset has entered an unusable state" )
+        return rval
 
     def to_string( self, value, app ):
-        if value is None or isinstance( value, str ):
+        if value is None or isinstance( value, basestring ):
             return value
+        elif isinstance( value, int ):
+            return str( value )
         elif isinstance( value, DummyDataset ):
             return None
         elif isinstance( value, list) and len(value) > 0 and isinstance( value[0], DummyDataset):
             return None
         elif isinstance( value, list ):
-            return ",".join( [ val if isinstance( val, str ) else str(val.id) for val in value] )
+            return ",".join( [ val if isinstance( val, basestring ) else str(val.id) for val in value] )
         return value.id
 
     def to_python( self, value, app ):
