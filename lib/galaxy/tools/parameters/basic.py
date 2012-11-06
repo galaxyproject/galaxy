@@ -1434,7 +1434,7 @@ class DataToolParameter( ToolParameter ):
                 else:
                     hid = str( hda.hid )
                 if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and \
-                    hda.visible and \
+                    ( hda.visible or ( value and hda in value and not hda.implicitly_converted_parent_datasets ) ) and \
                     trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset ):
                     # If we are sending data to an external application, then we need to make sure there are no roles
                     # associated with the dataset that restrict it's access from "public".
@@ -1444,7 +1444,11 @@ class DataToolParameter( ToolParameter ):
                         continue
                     if isinstance( hda.datatype, self.formats):
                         selected = ( value and ( hda in value ) )
-                        field.add_option( "%s: %s" % ( hid, hda_name ), hda.id, selected )
+                        if hda.visible:
+                            hidden_text = ""
+                        else:
+                            hidden_text = " (hidden)"
+                        field.add_option( "%s:%s %s" % ( hid, hidden_text, hda_name ), hda.id, selected )
                     else:
                         target_ext, converted_dataset = hda.find_conversion_destination( self.formats )
                         if target_ext:
