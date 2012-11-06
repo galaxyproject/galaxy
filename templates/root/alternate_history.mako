@@ -222,96 +222,126 @@ ${h.templates(
     "template-user-quotaMeter-usage"
 )}
 
-##TODO: fix: curr hasta be _after_ h.templates - move somehow
+##TODO: fix: curr hasta be _after_ h.templates bc these use those templates - move somehow
 ${h.js(
-    "mvc/history",
+    "mvc/dataset/hda-model", "mvc/dataset/hda-edit",
+    "mvc/history/history-model", "mvc/history/history-panel",
+
     ##"mvc/tags", "mvc/annotations",
     "mvc/user/user-model", "mvc/user/user-quotameter"
 )}
     
 <script type="text/javascript">
+function galaxyPageSetUp(){
+    // moving global functions, objects into Galaxy namespace
+    top.Galaxy                  = top.Galaxy || {};
+    
+    // bad idea from memleak standpoint?
+    top.Galaxy.mainWindow       = top.Galaxy.mainWindow     || top.frames.galaxy_main;
+    top.Galaxy.toolWindow       = top.Galaxy.toolWindow     || top.frames.galaxy_tools;
+    top.Galaxy.historyWindow    = top.Galaxy.historyWindow  || top.frames.galaxy_history;
+    
+    top.Galaxy.$masthead        = top.Galaxy.$masthead      || $( top.document ).find( 'div#masthead' );
+    top.Galaxy.$messagebox      = top.Galaxy.$messagebox    || $( top.document ).find( 'div#messagebox' );
+    top.Galaxy.$leftPanel       = top.Galaxy.$leftPanel     || $( top.document ).find( 'div#left' );
+    top.Galaxy.$centerPanel     = top.Galaxy.$centerPanel   || $( top.document ).find( 'div#center' );
+    top.Galaxy.$rightPanel      = top.Galaxy.$rightPanel    || $( top.document ).find( 'div#right' );
+
+    //modals
+    // other base functions
+
+    // global backbone models
+    top.Galaxy.currUser         = top.Galaxy.currUser;
+    top.Galaxy.currHistoryPanel = top.Galaxy.currHistoryPanel;
+    top.Galaxy.historyPanels    = top.Galaxy.historyPanels || [];
+
+    top.Galaxy.paths            = galaxy_paths;
+
+    window.Galaxy = top.Galaxy;
+}
+
 // set js localizable strings
 GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
 
 // add needed controller urls to GalaxyPaths
 galaxy_paths.set( 'hda', ${get_hda_url_templates()} );
 galaxy_paths.set( 'history', ${get_history_url_templates()} );
+//console.debug( 'galaxy_paths:', galaxy_paths );
 
 $(function(){
+    galaxyPageSetUp();
+    Galaxy.historyFrame = window;
 
     // ostensibly, this is the App
     if( console && console.debug ){
         //if( console.clear ){ console.clear(); }
-        console.debug( 'using backbone.js in history panel' );
         console.pretty = function( o ){ $( '<pre/>' ).text( JSON.stringify( o, null, ' ' ) ).appendTo( 'body' ); }
+        top.storage = jQuery.jStorage
     }
 
 
-    // load initial data in this page - since we're already sending it...
+    // LOAD INITIAL DATA IN THIS PAGE - since we're already sending it...
+    //  ...use mako to 'bootstrap' the models
     var user    = ${ get_current_user() },
         history = ${ get_history( history.id ) },
         hdas    = ${ get_hdas( history.id, datasets ) };
     //console.debug( 'user:', user );
     //console.debug( 'history:', history );
     //console.debug( 'hdas:', hdas );
+    var currUser = new User( user );
+    if( !Galaxy.currUser ){ Galaxy.currUser = currUser; }
 
-    // i don't like this relationship, but user authentication changes views/behaviour
+    // add user data to history
+    // i don't like this history+user relationship, but user authentication changes views/behaviour
     history.user = user;
+    // is page sending in show settings? if so override history's
+    //TODO: move into historyPanel
     history.show_deleted = ${ 'true' if show_deleted else 'false' };
     history.show_hidden  = ${ 'true' if show_hidden  else 'false' };
 
-    //console.debug( 'galaxy_paths:', galaxy_paths );
-    var glx_history = new History( history, hdas );
-    glx_history.logger = console;
-
-    var glx_history_view = new HistoryView({
-        model: glx_history,
+    var historyPanel = new HistoryPanel({
+        model       : new History( history, hdas ),
         urlTemplates: galaxy_paths.attributes,
-        logger: console
+        logger      : console
     });
-    glx_history_view.render();
-
-
-    // ...OR load from the api
-    //var glx_history = new History().setPaths( galaxy_paths ),
-    //    glx_history_view = new HistoryView({ model: glx_history });
-    //console.warn( 'fetching' );
-    //glx_history.loadFromApi( pageData.history.id );
+    historyPanel.render();
+    if( !Galaxy.currHistoryPanel ){ Galaxy.currHistoryPanel = historyPanel; }
+    if( !( historyPanel in Galaxy.historyPanels ) ){ Galaxy.historyPanels.unshift( historyPanel ); }
 
     
-    // quota meter is a cross-frame ui element (meter in masthead, over quota message in history)
+    // ...or LOAD FROM THE API
+    //historyPanel = new HistoryView({ model: new History().setPaths( galaxy_paths ) });
+    //historyPanel.loadFromApi( pageData.history.id );
+
+    
+    // QUOTA METER is a cross-frame ui element (meter in masthead, over quota message in history)
     //  create it and join them here for now (via events)
-    window.currUser = new User( user );
+    //TODO: this really belongs in the masthead
+
     //window.currUser.logger = console;
-    window.quotaMeter = new UserQuotaMeter({ model: currUser, el: $( top.document ).find( '.quota-meter-container' ) });
-    window.quotaMeter.render();
-    //window.quotaMeter.logger = console;
+    var quotaMeter = new UserQuotaMeter({
+        model   : currUser,
+        el      : $( top.document ).find( '.quota-meter-container' )
+    });
+    //quotaMeter.logger = console; window.quotaMeter = quotaMeter
+    quotaMeter.render();
 
     // show/hide the 'over quota message' in the history when the meter tells it to
-    quotaMeter.bind( 'quota:over',  glx_history_view.showQuotaMessage, glx_history_view );
-    quotaMeter.bind( 'quota:under', glx_history_view.hideQuotaMessage, glx_history_view );
+    quotaMeter.bind( 'quota:over',  historyPanel.showQuotaMessage, historyPanel );
+    quotaMeter.bind( 'quota:under', historyPanel.hideQuotaMessage, historyPanel );
     // having to add this to handle re-render of hview while overquota (the above do not fire)
-    glx_history_view.on( 'rendered', function(){
-        if( window.quotaMeter.isOverQuota() ){
-            glx_history_view.showQuotaMessage();
+    historyPanel.on( 'rendered', function(){
+        if( quotaMeter.isOverQuota() ){
+            historyPanel.showQuotaMessage();
         }
     });
     //TODO: this _is_ sent to the page (over_quota)...
 
     // update the quota meter when current history changes size
-    glx_history.bind( 'change:nice_size', function(){
-        window.quotaMeter.update()
-    }, window.quotaMeter );
+    historyPanel.model.bind( 'change:nice_size', function(){
+        quotaMeter.update()
+    }, quotaMeter );
 
-
-    if( console && console.debug ){
-        window.user = top.user = user;
-        window._history = top._history = history;
-        window.hdas = top.hdas = hdas;
-        window.glx_history = top.glx_history = glx_history;
-        window.glx_history_view = top.glx_history_view = glx_history_view;
-        top.storage = jQuery.jStorage
-    }
 
     return;
 });
