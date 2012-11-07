@@ -26,8 +26,8 @@ if len( non_shed_tool_confs ) == 1:
 else:
     plural = 's'
     file_names = ', '.join( non_shed_tool_confs )
-msg = "\nThe installation process is finished.  You should now remove entries for the installed tools from your file%s named\n" % plural
-msg += "%s and start your Galaxy server.\n" % file_names
+msg = "\nThe installation process is finished.  If any tools associated with this migration were defined in your file%s named\n" % plural
+msg += "%s, then you should remove entries for them and start your Galaxy server.\n" % file_names
 print msg 
 app.shutdown()
 sys.exit( 0 )

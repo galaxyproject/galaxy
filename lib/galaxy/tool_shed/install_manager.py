@@ -7,8 +7,7 @@ from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
 from galaxy.util.odict import odict
-
-REPOSITORY_OWNER = 'devteam'
+from galaxy.tool_shed.common_util import *
 
 class InstallManager( object ):
     def __init__( self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config, install_dependencies ):
@@ -19,10 +18,11 @@ class InstallManager( object ):
         self.app = app
         self.toolbox = self.app.toolbox
         self.migrated_tools_config = migrated_tools_config
-        # If install_dependencies is True, but tool_dependency_dir is not set, 
-        # do not attempt to install, but print informative error message
+        # If install_dependencies is True but tool_dependency_dir is not set, do not attempt to install but print informative error message.
         if install_dependencies and app.config.tool_dependency_dir is None:
-            raise Exception( 'You are attempting to install tool dependencies, but do not have a value for "tool_dependency_dir" set in your ini file. Please set this to the path where you would like to install dependencies and rerun the migration script.' )
+            message = 'You are attempting to install tool dependencies but do not have a value for "tool_dependency_dir" set in your universe_wsgi.ini '
+            message += 'file.  Set this location value to the path where you want tool dependencies installed and rerun the migration script.'
+            raise Exception( message )
         # Get the local non-shed related tool panel configs (there can be more than one, and the default name is tool_conf.xml).
         self.proprietary_tool_confs = self.non_shed_tool_panel_configs
         self.proprietary_tool_panel_elems = self.get_proprietary_tool_panel_elems( latest_migration_script_number )
@@ -38,8 +38,39 @@ class InstallManager( object ):
         self.tool_shed = clean_tool_shed_url( root.get( 'name' ) )
         self.repository_owner = REPOSITORY_OWNER
         index, self.shed_config_dict = get_shed_tool_conf_dict( app, self.migrated_tools_config )
-        for repository_elem in root:
-            self.install_repository( repository_elem, install_dependencies )
+        # Since tool migration scripts can be executed any number of times, we need to make sure the appropriate tools are defined in
+        # tool_conf.xml.  If no tools associated with the migration stage are defined, no repositories will be installed on disk.
+        # The default behavior is that the tool shed is down.
+        tool_shed_accessible = False
+        tool_panel_configs = get_non_shed_tool_panel_configs( app )
+        if tool_panel_configs:
+            # The missing_tool_configs_dict contents are something like:
+            # {'emboss_antigenic.xml': [('emboss', '5.0.0', 'package', '\nreadme blah blah blah\n')]}
+            tool_shed_accessible, missing_tool_configs_dict = check_for_missing_tools( app, tool_panel_configs, latest_migration_script_number )
+        else:
+            # It doesn't matter if the tool shed is accessible since there are no migrated tools defined in the local Galaxy instance, but
+            # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in 
+            # the database.
+            tool_shed_accessible = True
+            missing_tool_configs_dict = odict()
+        if tool_shed_accessible:
+            if len( self.proprietary_tool_confs ) == 1:
+                plural = ''
+                file_names = self.proprietary_tool_confs[ 0 ]
+            else:
+                plural = 's'
+                file_names = ', '.join( self.proprietary_tool_confs )
+            if missing_tool_configs_dict:
+                for repository_elem in root:
+                    self.install_repository( repository_elem, install_dependencies )
+            else:
+                message = "\nNo tools associated with migration stage %s are defined in your " % str( latest_migration_script_number )
+                message += "file%s named %s,\nso no repositories will be installed on disk.\n" % ( plural, file_names )
+                print message
+        else:
+            message = "\nThe main Galaxy tool shed is not currently available, so skipped migration stage %s.\n" % str( latest_migration_script_number )
+            message += "Try again later.\n"
+            print message
     def get_guid( self, repository_clone_url, relative_install_dir, tool_config ):
         if self.shed_config_dict.get( 'tool_path' ):
             relative_install_dir = os.path.join( self.shed_config_dict['tool_path'], relative_install_dir )
@@ -144,7 +175,8 @@ class InstallManager( object ):
                 for k, v in tool_panel_dict_for_tool_config.items():
                     tool_panel_dict_for_display[ k ] = v
             else:
-                print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
+                print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
+                % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
         metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=self.app,
                                                                                      repository=tool_shed_repository,
                                                                                      repository_clone_url=repository_clone_url,
@@ -315,20 +347,9 @@ class InstallManager( object ):
                 update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.INSTALLED )
     @property
     def non_shed_tool_panel_configs( self ):
-        # Get the non-shed related tool panel config file names from the Galaxy config - the default is tool_conf.xml.
-        config_filenames = []
-        for config_filename in self.app.config.tool_configs:
-            # Any config file that includes a tool_path attribute in the root tag set like the following is shed-related.
-            # <toolbox tool_path="../shed_tools">
-            tree = util.parse_xml( config_filename )
-            root = tree.getroot()
-            tool_path = root.get( 'tool_path', None )
-            if tool_path is None:
-                config_filenames.append( config_filename )
-        return config_filenames
+        return get_non_shed_tool_panel_configs( self.app )
     def __get_url_from_tool_shed( self, tool_shed ):
-        # The value of tool_shed is something like: toolshed.g2.bx.psu.edu
-        # We need the URL to this tool shed, which is something like:
+        # The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is something like:
         # http://toolshed.g2.bx.psu.edu/
         for shed_name, shed_url in self.app.tool_shed_registry.tool_sheds.items():
             if shed_url.find( tool_shed ) >= 0:
