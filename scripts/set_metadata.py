@@ -14,9 +14,9 @@ import os, sys, cPickle
 # ensure supported version
 from check_python import check_python
 try:
-   check_python()
+    check_python()
 except:
-   sys.exit(1)
+    sys.exit(1)
 
 new_path = [ os.path.join( os.getcwd(), "lib" ) ]
 new_path.extend( sys.path[1:] ) # remove scripts/ from the path
