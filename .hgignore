@@ -41,6 +41,8 @@ openid_conf.xml
 static/welcome.html.*
 static/welcome.html
 
+doc/build
+
 # Tool data.
 tool-data/annotation_profiler_options.xml
 tool-data/annotation_profiler_valid_builds.txt
