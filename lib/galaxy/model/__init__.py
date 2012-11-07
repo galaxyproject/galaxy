@@ -694,6 +694,9 @@ class History( object, UsesAnnotations ):
     @property
     def get_disk_size_bytes( self ):
         return self.get_disk_size( nice_size=False )
+    def unhide_datasets( self ):
+        for dataset in self.datasets:
+            dataset.mark_unhidden()
     def get_disk_size( self, nice_size=False ):
         # unique datasets only
         db_session = object_session( self )

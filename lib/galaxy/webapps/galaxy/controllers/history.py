@@ -550,6 +550,20 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
 
     @web.expose
+    def unhide_datasets( self, trans, current=False, ids=None ):
+        """Unhide the datasets in the active history -- this does not require a logged in user."""
+        if not ids and util.string_as_bool( current ):
+            histories = [ trans.get_history() ]
+            refresh_frames = ['history']
+        else:
+            raise NotImplementedError( "You can currently only unhide all the datasets of the current history." )
+        for history in histories:
+            history.unhide_datasets()
+            trans.sa_session.add( history )
+        trans.sa_session.flush()
+        return trans.show_ok_message( "Your datasets have been unhidden.", refresh_frames=refresh_frames )
+
+    @web.expose
     @web.require_login( "rate items" )
     @web.json
     def rate_async( self, trans, id, rating ):
