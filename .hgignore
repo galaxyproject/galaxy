@@ -41,8 +41,6 @@ openid_conf.xml
 static/welcome.html.*
 static/welcome.html
 
-doc/build
-
 # Tool data.
 tool-data/annotation_profiler_options.xml
 tool-data/annotation_profiler_valid_builds.txt
@@ -73,6 +71,9 @@ tool-data/shared/jars/
 # CSS build artifacts.
 */variables.less
 static/june_2007_style/blue/base_sprites.less
+
+# Documentation build files.
+doc/build
 
 # Misc
 *.orig
