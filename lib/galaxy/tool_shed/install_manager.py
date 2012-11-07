@@ -184,7 +184,8 @@ class InstallManager( object ):
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
                                                                                      resetting_all_metadata_on_repository=False,
-                                                                                     updating_installed_repository=False )
+                                                                                     updating_installed_repository=False,
+                                                                                     persist=True )
         tool_shed_repository.metadata = metadata_dict
         self.app.sa_session.add( tool_shed_repository )
         self.app.sa_session.flush()

@@ -447,6 +447,12 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def deactivate_or_uninstall_repository( self, trans, **kwd ):
+        """
+        Handle all changes when a tool shed repository is being deactivated or uninstalled.  Notice that if the repository contents include
+        a file named tool_data_table_conf.xml.sample, it's entries are not removed from the defined config.shed_tool_data_table_config.  This
+        is because it becomes a bit complex to determine if other installed repositories include tools that require the same entry.  For now
+        we'll never delete entries from config.shed_tool_data_table_config, but we may choose to do so in the future if it becomes necessary.
+        """
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -753,7 +759,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
                                                                                      resetting_all_metadata_on_repository=False,
-                                                                                     updating_installed_repository=False )
+                                                                                     updating_installed_repository=False,
+                                                                                     persist=True )
         tool_shed_repository.metadata = metadata_dict
         trans.sa_session.add( tool_shed_repository )
         trans.sa_session.flush()
@@ -1491,7 +1498,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                                          relative_install_dir=relative_install_dir,
                                                                                          repository_files_dir=None,
                                                                                          resetting_all_metadata_on_repository=False,
-                                                                                         updating_installed_repository=False )
+                                                                                         updating_installed_repository=False,
+                                                                                         persist=False )
             repository.metadata = metadata_dict
             if metadata_dict != original_metadata_dict:
                 update_in_shed_tool_config( trans.app, repository )
@@ -1675,7 +1683,8 @@ class AdminToolshed( AdminGalaxy ):
                                                                                                  relative_install_dir=relative_install_dir,
                                                                                                  repository_files_dir=None,
                                                                                                  resetting_all_metadata_on_repository=False,
-                                                                                                 updating_installed_repository=True )
+                                                                                                 updating_installed_repository=True,
+                                                                                                 persist=True )
                     repository.metadata = metadata_dict
                     # Update the repository changeset_revision in the database.
                     repository.changeset_revision = latest_changeset_revision

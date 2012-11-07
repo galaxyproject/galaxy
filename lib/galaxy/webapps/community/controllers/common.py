@@ -10,9 +10,8 @@ from galaxy.util.shed_util import check_tool_input_params, clone_repository, con
 from galaxy.util.shed_util import generate_clone_url_for_repository_in_tool_shed, generate_message_for_invalid_tools, generate_metadata_for_changeset_revision
 from galaxy.util.shed_util import get_changectx_for_changeset, get_config_from_disk, get_configured_ui, get_file_context_from_ctx, get_named_tmpfile_from_ctx
 from galaxy.util.shed_util import get_parent_id, get_repository_in_tool_shed, get_repository_metadata_by_changeset_revision
-from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config
-from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH, is_downloadable, load_tool_from_config, remove_dir
-from galaxy.util.shed_util import reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path
+from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config, INITIAL_CHANGELOG_HASH
+from galaxy.util.shed_util import is_downloadable, load_tool_from_config, remove_dir, reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path
 from galaxy.web.base.controller import *
 from galaxy.web.base.controllers.admin import *
 from galaxy.webapps.community import model
@@ -640,7 +639,8 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                                                                                  relative_install_dir=repo_dir,
                                                                                  repository_files_dir=None,
                                                                                  resetting_all_metadata_on_repository=False,
-                                                                                 updating_installed_repository=False )
+                                                                                 updating_installed_repository=False,
+                                                                                 persist=False )
     if metadata_dict:
         downloadable = is_downloadable( metadata_dict )
         repository_metadata = None

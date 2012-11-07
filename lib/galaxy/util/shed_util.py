@@ -753,12 +753,15 @@ def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
                 tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
     return tool_dependencies_dict
 def generate_metadata_for_changeset_revision( app, repository, repository_clone_url, shed_config_dict={}, relative_install_dir=None, repository_files_dir=None,
-                                              resetting_all_metadata_on_repository=False, updating_installed_repository=False ):
+                                              resetting_all_metadata_on_repository=False, updating_installed_repository=False, persist=False ):
     """
     Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
     the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
     disk files, so the value of repository_files_dir will not always be repository.repo_path (it could be an absolute path to a temporary directory
     containing a clone).  If it is an absolute path, the value of relative_install_dir must contain repository.repo_path.
+    
+    The value of persist will be True when the installed repository contains a valid tool_data_table_conf.xml.sample file, in which case the entries
+    should ultimately be persisted to the file referred to by app.config.shed_tool_data_table_config.
     """
     if updating_installed_repository:
         # Keep the original tool shed repository metadata if setting metadata on a repository installed into a local Galaxy instance for which 
@@ -810,9 +813,9 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
         relative_path, filename = os.path.split( sample_file )
         if filename == 'tool_data_table_conf.xml.sample':
             new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( config_filename=sample_file,
-                                                                                     tool_data_path=app.config.tool_data_path,
-                                                                                     tool_data_table_config_path=app.config.tool_data_table_config_path,
-                                                                                     persist=False )
+                                                                                     tool_data_path=original_tool_data_path,
+                                                                                     shed_tool_data_table_config=app.config.shed_tool_data_table_config,
+                                                                                     persist=persist )
     for root, dirs, files in os.walk( files_dir ):
         if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
             if '.hg' in dirs:
@@ -1768,15 +1771,15 @@ def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_re
     return tool, message, sample_files
 def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
     """
-    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary.  If persist is True (should only occur)
-    if call is from the Galaxy side (not the tool shed), the new entries will be appended to Galaxy's tool_data_table_conf.xml file on disk.
+    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary.  If persist is True (should only occur
+    if call is from the Galaxy side, not the tool shed), the new entries will be appended to Galaxy's shed_tool_data_table_conf.xml file on disk.
     """
     error = False
     message = ''
     try:
         new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( config_filename=filename,
                                                                                  tool_data_path=app.config.tool_data_path,
-                                                                                 tool_data_table_config_path=app.config.tool_data_table_config_path,
+                                                                                 shed_tool_data_table_config=app.config.shed_tool_data_table_config,
                                                                                  persist=persist )
     except Exception, e:
         message = str( e )
@@ -2143,7 +2146,8 @@ def reset_all_metadata_on_installed_repository( trans, id ):
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
                                                                                      resetting_all_metadata_on_repository=False,
-                                                                                     updating_installed_repository=False )
+                                                                                     updating_installed_repository=False,
+                                                                                     persist=False )
         repository.metadata = metadata_dict
         if metadata_dict != original_metadata_dict:
             update_in_shed_tool_config( trans.app, repository )
@@ -2221,7 +2225,8 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                                                                                                  relative_install_dir=repo_dir,
                                                                                                  repository_files_dir=work_dir,
                                                                                                  resetting_all_metadata_on_repository=True,
-                                                                                                 updating_installed_repository=False )
+                                                                                                 updating_installed_repository=False,
+                                                                                                 persist=False )
             if current_metadata_dict:
                 if not metadata_changeset_revision and not metadata_dict:
                     # We're at the first change set in the change log.

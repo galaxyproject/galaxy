@@ -149,6 +149,16 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 #enable_tool_shed_check = False
 #hours_between_check = 12
 
+# XML config file that contains data table entries for the ToolDataTableManager. This file is manually
+# maintained by the Galaxy administrator.
+#tool_data_table_config_path = tool_data_table_conf.xml
+
+# XML config file that contains additional data table entries for the ToolDataTableManager.  This file
+# is automatically generated based on the current installed tool shed repositories that contain valid
+# tool_data_table_conf.xml.sample files.  At the time of installation, these entries are automatically
+# added to the following file, which is parsed and applied to the ToolDataTableManager at server start up.
+#shed_tool_data_table_config = shed_tool_data_table_conf.xml
+
 # Directory where data used by tools is located, see the samples in that
 # directory and the wiki for help:
 # http://wiki.g2.bx.psu.edu/Admin/Data%20Integration

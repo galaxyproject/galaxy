@@ -13,6 +13,7 @@ SAMPLES="
     reports_wsgi.ini.sample
     shed_tool_conf.xml.sample
     tool_conf.xml.sample
+    shed_tool_data_table_conf.xml.sample
     tool_data_table_conf.xml.sample
     tool_sheds_conf.xml.sample
     openid_conf.xml.sample

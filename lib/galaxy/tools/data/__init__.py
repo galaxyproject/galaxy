@@ -15,17 +15,28 @@ class ToolDataTableManager( object ):
     """Manages a collection of tool data tables"""
     def __init__( self, tool_data_path, config_filename=None ):
         self.tool_data_path = tool_data_path
-        self.data_tables = {}
-        # Store config elements for on-the-fly persistence.
-        self.data_table_elems = []
+        # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
+        # at server startup. If tool shed repositories are installed that contain a valid file named tool_data_table_conf.xml.sample, entries
+        # from that file are inserted into this dict at the time of installation.
+        self.data_tables = {}        
+        # Store config elements for on-the-fly persistence to the defined shed_tool_data_table_config file name.
+        self.shed_data_table_elems = []
         self.data_table_elem_names = []
         if config_filename:
-            self.load_from_config_file( config_filename, self.tool_data_path )
+            self.load_from_config_file( config_filename, self.tool_data_path, from_shed_config=False )
     def __getitem__( self, key ):
         return self.data_tables.__getitem__( key )
     def __contains__( self, key ):
         return self.data_tables.__contains__( key )
-    def load_from_config_file( self, config_filename, tool_data_path ):
+    def load_from_config_file( self, config_filename, tool_data_path, from_shed_config=False ):
+        """
+        This method is called under 3 conditions:
+        1) When the ToolDataTableManager is initialized (see __init__ above).
+        2) Just after the ToolDataTableManager is initialized and the additional entries defined by shed_tool_data_table_conf.xml
+           are being loaded into the ToolDataTableManager.data_tables.
+        3) When a tool shed repository that includes a tool_data_table_conf.xml.sample file is being installed into a local
+           Galaxy instance.  In this case, we have 2 entry types to handle, files whose root tag is <tables>, for example:
+        """
         tree = util.parse_xml( config_filename )
         root = tree.getroot()
         table_elems = []
@@ -36,13 +47,14 @@ class ToolDataTableManager( object ):
             table_elem_name = table_elem.get( 'name', None )
             if table_elem_name and table_elem_name not in self.data_table_elem_names:
                 self.data_table_elem_names.append( table_elem_name )
-                self.data_table_elems.append( table_elem )
+                if from_shed_config:
+                    self.shed_data_table_elems.append( table_elem )
             table = tool_data_table_types[ type ]( table_elem, tool_data_path )
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
                 log.debug( "Loaded tool data table '%s'", table.name )
         return table_elems
-    def add_new_entries_from_config_file( self, config_filename, tool_data_path, tool_data_table_config_path, persist=False ):
+    def add_new_entries_from_config_file( self, config_filename, tool_data_path, shed_tool_data_table_config, persist=False ):
         """
         This method is called when a tool shed repository that includes a tool_data_table_conf.xml.sample file is being
         installed into a local galaxy instance.  We have 2 cases to handle, files whose root tag is <tables>, for example:
@@ -65,7 +77,9 @@ class ToolDataTableManager( object ):
         # Make a copy of the current list of data_table_elem_names so we can persist later if changes to the config file are necessary.
         original_data_table_elem_names = [ name for name in self.data_table_elem_names ]
         if root.tag == 'tables':
-            table_elems = self.load_from_config_file( config_filename, tool_data_path )
+            table_elems = self.load_from_config_file( config_filename=config_filename,
+                                                      tool_data_path=tool_data_path,
+                                                      from_shed_config=True )
         else:
             table_elems = []
             type = root.get( 'type', 'tabular' )
@@ -74,23 +88,22 @@ class ToolDataTableManager( object ):
             table_elem_name = root.get( 'name', None )
             if table_elem_name and table_elem_name not in self.data_table_elem_names:
                 self.data_table_elem_names.append( table_elem_name )
-                self.data_table_elems.append( root )
+                self.shed_data_table_elems.append( root )
             table = tool_data_table_types[ type ]( root, tool_data_path )
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
                 log.debug( "Added new tool data table '%s'", table.name )
         if persist and self.data_table_elem_names != original_data_table_elem_names:
             # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
-            self.to_xml_file( tool_data_table_config_path )
+            self.to_xml_file( shed_tool_data_table_config )
         return table_elems
-    def to_xml_file( self, tool_data_table_config_path ):
-        """Write the current in-memory version of the tool_data-table_conf.xml file to disk."""
-        full_path = os.path.abspath( tool_data_table_config_path )
+    def to_xml_file( self, shed_tool_data_table_config ):
+        """Write the current in-memory version of the shed_tool_data_table_conf.xml file to disk."""
+        full_path = os.path.abspath( shed_tool_data_table_config )
         fd, filename = tempfile.mkstemp()
         os.write( fd, '<?xml version="1.0"?>\n' )
-        os.write( fd, "<!-- Use the file tool_data_table_conf.xml.oldlocstyle if you don't want to update your loc files as changed in revision 4550:535d276c92bc-->\n" )
         os.write( fd, '<tables>\n' )
-        for elem in self.data_table_elems:
+        for elem in self.shed_data_table_elems:
             os.write( fd, '%s' % util.xml_to_string( elem ) )
         os.write( fd, '</tables>\n' )
         os.close( fd )

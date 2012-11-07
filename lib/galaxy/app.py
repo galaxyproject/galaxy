@@ -76,8 +76,13 @@ class UniverseApplication( object ):
         self.genomes = Genomes( self )
         # Data providers registry.
         self.data_provider_registry = DataProviderRegistry()
-        # Tool data tables
-        self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( self.config.tool_data_path, self.config.tool_data_table_config_path )
+        # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
+        self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( tool_data_path=self.config.tool_data_path,
+                                                                        config_filename=self.config.tool_data_table_config_path )
+        # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
+        self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
+                                                     tool_data_path=self.tool_data_tables.tool_data_path,
+                                                     from_shed_config=True )
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
         if self.config.migrated_tools_config not in tool_configs:
