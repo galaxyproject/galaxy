@@ -1260,7 +1260,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 assert job_id in jobs_by_id, "Attempt to create workflow with job not connected to current history"
                 job = jobs_by_id[ job_id ]
                 tool = trans.app.toolbox.get_tool( job.tool_id )
-                param_values = job.get_param_values( trans.app )
+                param_values = job.get_param_values( trans.app, ignore_errors=True ) #If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
                 associations = cleanup_param_values( tool.inputs, param_values )
                 step = model.WorkflowStep()
                 step.type = 'tool'
