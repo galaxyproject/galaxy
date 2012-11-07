@@ -2,6 +2,7 @@ from galaxy.model.orm import *
 from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import iff
 from galaxy.web import url_for
+from galaxy.util import sanitize_text
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.odict import odict
 from galaxy.web.framework.helpers import to_unicode
@@ -136,7 +137,8 @@ class Grid( object ):
                     # Update query.
                     query = column.filter( trans, trans.user, query, column_filter )
                     # Upate current filter dict.
-                    cur_filter_dict[ column.key ] = column_filter
+                    #Column filters are rendered in various places, sanitize them all here.
+                    cur_filter_dict[ column.key ] = sanitize_text(column_filter)
                     # Carry filter along to newly generated urls; make sure filter is a string so
                     # that we can encode to UTF-8 and thus handle user input to filters.
                     if isinstance( column_filter, list ):
