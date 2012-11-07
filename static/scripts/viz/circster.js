@@ -803,6 +803,9 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
         // FIXME: (a) pull out function for getting labeled chroms? and (b) function used in transition below
         // is copied from UseTicks mixin, so pull out and make generally available.
 
+        // If there are no data bounds, nothing to transition.
+        if (this.data_bounds.length === 0) { return; }
+
         // Transition labels to new radius bounds.
         var self = this,
             visibleChroms = _.filter(this.chroms_layout, function(c) { return c.endAngle - c.startAngle > 0.08; }),
