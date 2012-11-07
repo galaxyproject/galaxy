@@ -116,7 +116,6 @@ class Grid( object ):
                         except ValueError:
                             decoded_list = [ unicode ( item ) ]
                     elif isinstance( item, list):
-                        return_val = []
                         for element in item:
                             a_list = from_json_string_recurse( element )
                             decoded_list = decoded_list + a_list
@@ -247,7 +246,7 @@ class Grid( object ):
             if 'id' in new_kwargs:
                 id = new_kwargs[ 'id' ]
                 if isinstance( id, list ):
-                    new_args[ 'id' ] = [ trans.security.encode_id( i ) for i in id ]
+                    new_kwargs[ 'id' ] = [ trans.security.encode_id( i ) for i in id ]
                 else:
                     new_kwargs[ 'id' ] = trans.security.encode_id( id )
             return url_for( **new_kwargs )
