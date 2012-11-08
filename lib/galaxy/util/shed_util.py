@@ -7,6 +7,7 @@ from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.tools import parameters
 from galaxy.datatypes.checkers import *
+from galaxy.datatypes.sniff import is_column_based
 from galaxy.util.json import *
 from galaxy.util import inflector
 from galaxy.tools.search import ToolBoxSearch
@@ -546,15 +547,20 @@ def copy_sample_file( app, filename, dest_path=None ):
         shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
 def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None ):
     """
-    Copy all files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
-    are contained in sample_files_copied.  The default value for dest_path is ~/tool-data.
+    Copy all appropriate files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
+    are contained in sample_files_copied.  The default value for dest_path is ~/tool-data.  We need to be careful to copy only appropriate
+    files here because tool shed repositories can contain files ending in .sample that should not be copied to the ~/tool-data directory.
     """
+    filenames_not_to_copy = [ 'tool_data_table_conf.xml.sample' ]
     sample_files_copied = util.listify( sample_files_copied )
     for filename in sample_files:
-        if filename not in sample_files_copied:
+        filename_sans_path = os.path.split( filename )[ 1 ]
+        if filename_sans_path not in filenames_not_to_copy and filename not in sample_files_copied:
             if tool_path:
                 filename=os.path.join( tool_path, filename )
-            copy_sample_file( app, filename, dest_path=dest_path )
+            # Attempt to ensure we're copying an appropriate file.
+            if is_data_index_sample_file( filename ):
+                copy_sample_file( app, filename, dest_path=dest_path )
 def create_repo_info_dict( repository, owner, repository_clone_url, changeset_revision, ctx_rev, metadata ):
     repo_info_dict = {}
     repo_info_dict[ repository.name ] = ( repository.description,
@@ -1539,9 +1545,11 @@ def get_shed_tool_conf_dict( app, shed_tool_conf ):
             if shed_tool_conf == file_name:
                 return index, shed_tool_conf_dict
 def get_tool_index_sample_files( sample_files ):
+    """Try to return the list of all appropriate tool data sample files included in the repository."""
     tool_index_sample_files = []
     for s in sample_files:
-        if s.endswith( '.loc.sample' ):
+        # The problem with this is that Galaxy does not follow a standard naming convention for file names.
+        if s.endswith( '.loc.sample' ) or s.endswith( '.xml.sample' ) or s.endswith( '.txt.sample' ):
             tool_index_sample_files.append( s )
     return tool_index_sample_files
 def get_tool_dependency( trans, id ):
@@ -1846,6 +1854,29 @@ def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
                                                                              parent_id=tool_version_using_parent_id.id )
                 sa_session.add( tool_version_association )
                 sa_session.flush()
+def is_data_index_sample_file( file_path ):
+    """
+    Attempt to determine if a .sample file is appropriate for copying to ~/tool-data when a tool shed repository is being installed
+    into a Galaxy instance.
+    """
+    # Currently most data index files are tabular, so check that first.  We'll assume that if the file is tabular, it's ok to copy.
+    if is_column_based( file_path ):
+        return True
+    # If the file is any of the following, don't copy it.
+    if check_html( file_path ):
+        return False
+    if check_image( file_path ):
+        return False
+    if check_binary( name=file_path ):
+        return False
+    if is_bz2( file_path ):
+        return False
+    if is_gzip( file_path ):
+        return False
+    if check_zip( file_path ):
+        return False
+    # Default to copying the file if none of the above are true.
+    return True
 def is_downloadable( metadata_dict ):
     return 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
 def load_installed_datatype_converters( app, installed_repository_dict, deactivate=False ):
