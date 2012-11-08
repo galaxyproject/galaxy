@@ -169,6 +169,7 @@ def main():
         tool_data_table_config_path = 'tool_data_table_conf.test.xml'
     else:    
         tool_data_table_config_path = 'tool_data_table_conf.xml'
+    shed_tool_data_table_config = 'shed_tool_data_table_conf.xml'
     tool_dependency_dir = os.environ.get( 'GALAXY_TOOL_DEPENDENCY_DIR', None )
     use_distributed_object_store = os.environ.get( 'GALAXY_USE_DISTRIBUTED_OBJECT_STORE', False )
     
@@ -266,6 +267,7 @@ def main():
                                    tool_parse_help = False,
                                    test_conf = "test.conf",
                                    tool_data_table_config_path = tool_data_table_config_path,
+                                   shed_tool_data_table_config = shed_tool_data_table_config,
                                    log_destination = "stdout",
                                    use_heartbeat = False,
                                    allow_user_creation = True,
