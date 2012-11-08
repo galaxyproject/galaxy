@@ -9,7 +9,7 @@ var History = BaseModel.extend( LoggableMixin ).extend({
     //TODO: bind change events from items and collection to this (itemLengths, states)
 
     // uncomment this out see log messages
-    //logger              : console,
+    logger              : console,
 
     // values from api (may need more)
     defaults : {
@@ -17,19 +17,14 @@ var History = BaseModel.extend( LoggableMixin ).extend({
         name            : '',
         state           : '',
 
-        ////TODO: wire these to items (or this)
-        //show_deleted     : false,
-        //show_hidden      : false,
-        //
         diskSize : 0,
         deleted : false,
 
-        tags        : [],
+        //tags        : [],
         annotation  : null,
 
-        //TODO: quota msg and message? how to get those over the api?
-        message     : null,
-        quotaMsg    : false
+        //TODO: message? how to get over the api?
+        message     : null
     },
 
     url : function(){
@@ -52,36 +47,43 @@ var History = BaseModel.extend( LoggableMixin ).extend({
         //this.on( 'change', function( currModel, changedList ){
         //    this.log( this + ' has changed:', currModel, changedList );
         //});
-        //this.bind( 'all', function( event ){
-        //    this.log( this + '', arguments );
-        //});
+        this.bind( 'all', function( event ){
+            //this.log( this + '', arguments );
+            console.info( this + '', arguments );
+        });
     },
 
     // get data via the api (alternative to sending options,hdas to initialize)
-    loadFromApi : function( historyId, callback ){
+    //TODO: this needs work - move to more straightforward deferred
+    loadFromApi : function( historyId, success ){
         var history = this;
 
         // fetch the history AND the user (mainly to see if they're logged in at this point)
         history.attributes.id = historyId;
         //TODO:?? really? fetch user here?
-        jQuery.when( jQuery.ajax( 'api/users/current' ), history.fetch()
+        jQuery.when(
+                jQuery.ajax( 'api/users/current' ),
+                history.fetch()
 
             ).then( function( userResponse, historyResponse ){
-                //console.warn( 'fetched user, history: ', userResponse, historyResponse );
+                console.warn( 'fetched user: ', userResponse[0] );
+                console.warn( 'fetched history: ', historyResponse[0] );
                 history.attributes.user = userResponse[0]; //? meh.
+                history.trigger( 'loaded', historyResponse );
                 history.log( history );
 
             }).then( function(){
                 // ...then the hdas (using contents?ids=...)
                 jQuery.ajax( history.url() + '/contents?' + jQuery.param({
-                    ids : history.itemIdsFromStateIds().join( ',' )
+                    ids : history.hdaIdsFromStateIds().join( ',' )
 
                 // reset the collection to the hdas returned
                 })).success( function( hdas ){
-                    //console.warn( 'fetched hdas' );
+                    //console.warn( 'fetched hdas', hdas );
                     history.hdas.reset( hdas );
                     history.checkForUpdates();
-                    callback();
+                    history.trigger( 'loaded:hdas', hdas );
+                    if( success ){ callback( history ); }
                 });
             });
     },

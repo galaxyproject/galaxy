@@ -289,24 +289,31 @@ $(function(){
     // i don't like this history+user relationship, but user authentication changes views/behaviour
     history.user = user;
 
-    var historyPanel = new HistoryPanel({
-        model           : new History( history, hdas ),
+    //var historyPanel = new HistoryPanel({
+    //    model           : new History( history, hdas ),
+    //    urlTemplates    : galaxy_paths.attributes,
+    //    logger          : console,
+    //    // is page sending in show settings? if so override history's
+    //    show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
+    //    show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
+    //});
+    //historyPanel.render();
+
+    // ...or LOAD FROM THE API
+    historyPanel = new HistoryPanel({
+        model: new History(),
         urlTemplates    : galaxy_paths.attributes,
         logger          : console,
         // is page sending in show settings? if so override history's
         show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
         show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
     });
-    historyPanel.render();
+    historyPanel.model.loadFromApi( history.id, historyPanel.show_deleted );
+
     if( !Galaxy.currHistoryPanel ){ Galaxy.currHistoryPanel = historyPanel; }
     if( !( historyPanel in Galaxy.historyPanels ) ){ Galaxy.historyPanels.unshift( historyPanel ); }
-
     
-    // ...or LOAD FROM THE API
-    //historyPanel = new HistoryView({ model: new History().setPaths( galaxy_paths ) });
-    //historyPanel.loadFromApi( pageData.history.id );
 
-    
     // QUOTA METER is a cross-frame ui element (meter in masthead, over quota message in history)
     //  create it and join them here for now (via events)
     //TODO: this really belongs in the masthead
@@ -387,6 +394,10 @@ $(function(){
         #history-size {
         }
         #history-secondary-links {
+        }
+
+        #history-tag-area, #history-annotation-area {
+            margin-top: 10px;
         }
 
     </style>

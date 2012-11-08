@@ -20,7 +20,8 @@ TODO:
             ??: still happening?
 
     from loadFromApi:
-        BUG: not showing previous annotations
+        BUG: not loading deleted datasets
+            FIXED: history_contents, show: state_ids returns all ids now (incl. deleted)
 
     fixed:
         BUG: upload, history size, doesn't change
@@ -217,6 +218,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         this.setUpActionButton( newRender.find( '#history-action-popup' ) );
 
         // render hda views (if any and any shown (show_deleted/hidden)
+        //TODO: this seems too elaborate
         if( !this.model.hdas.length
         ||  !this.renderItems( newRender.find( '#' + this.model.get( 'id' ) + '-datasets' ) ) ){
             // if history is empty or no hdas would be rendered, show the empty message
@@ -268,24 +270,27 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
     renderItems : function( $whereTo ){
         this.hdaViews = {};
         var historyView = this,
+            // only render the shown hdas
+            //TODO: switch to more general filtered pattern
             visibleHdas  = this.model.hdas.getVisible(
                 this.storage.get( 'show_deleted' ),
                 this.storage.get( 'show_hidden' )
             );
 
-        // only render the shown hdas
         _.each( visibleHdas, function( hda ){
             var hdaId = hda.get( 'id' ),
                 expanded = historyView.storage.get( 'expandedHdas' ).get( hdaId );
+
             historyView.hdaViews[ hdaId ] = new HDAView({
                     model           : hda,
                     expanded        : expanded,
                     urlTemplates    : historyView.hdaUrlTemplates
                 });
             historyView.setUpHdaListeners( historyView.hdaViews[ hdaId ] );
+
             // render it (NOTE: reverse order, newest on top (prepend))
             //TODO: by default send a reverse order list (although this may be more efficient - it's more confusing)
-            $whereTo.prepend(  historyView.hdaViews[ hdaId ].render().$el );
+            $whereTo.prepend( historyView.hdaViews[ hdaId ].render().$el );
         });
         return visibleHdas.length;
     },
