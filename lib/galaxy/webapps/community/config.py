@@ -48,6 +48,7 @@ class Configuration( object ):
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.tool_data_path = resolve_path( kwargs.get( "tool_data_path", "shed-tool-data" ), os.getcwd() )
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
+        self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
         # Location for dependencies
         if 'tool_dependency_dir' in kwargs:
