@@ -98,7 +98,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
         return trans.fill_template_mako( "/my_data.mako" )
 
     @web.expose
-    def history( self, trans, as_xml=False, show_deleted=False, show_hidden=False, hda_id=None, **kwd ):
+    #def history( self, trans, as_xml=False, show_deleted=False, show_hidden=False, hda_id=None, **kwd ):
+    def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
         """
         Display the current history, creating a new history if necessary.
         NOTE: No longer accepts "id" or "template" options for security reasons.
@@ -116,9 +117,9 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                                               show_deleted=util.string_as_bool( show_deleted ),
                                               show_hidden=util.string_as_bool( show_hidden ) )
         else:
-            show_deleted = util.string_as_bool( show_deleted )
-            show_hidden = util.string_as_bool( show_hidden )
-            show_purged = util.string_as_bool( show_deleted )
+            show_deleted = util.string_as_bool_or_none( show_deleted )
+            show_purged  = show_deleted
+            show_hidden  = util.string_as_bool_or_none( show_hidden )
             
             datasets = []
             history_panel_template = "root/history.mako"
@@ -128,6 +129,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
             if 'USE_ALTERNATE' in locals():
                 datasets = self.get_history_datasets( trans, history,
                                                       show_deleted=True, show_hidden=True, show_purged=True )
+                #datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden, show_purged )
                 history_panel_template = "root/alternate_history.mako"
 
             else:

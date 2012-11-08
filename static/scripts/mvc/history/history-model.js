@@ -17,10 +17,10 @@ var History = BaseModel.extend( LoggableMixin ).extend({
         name            : '',
         state           : '',
 
-        //TODO: wire these to items (or this)
-        show_deleted     : false,
-        show_hidden      : false,
-
+        ////TODO: wire these to items (or this)
+        //show_deleted     : false,
+        //show_hidden      : false,
+        //
         diskSize : 0,
         deleted : false,
 

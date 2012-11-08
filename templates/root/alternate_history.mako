@@ -42,9 +42,9 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
             'No data: ',
             'format: ',
             'database: ',
-            # localized data.dbkey?? - localize in the datasetup above
+            #TODO localized data.dbkey??
             'Info: ',
-            # localized display_app.display_name?? - localize above
+            #TODO localized display_app.display_name??
             # _( link_app.name )
             # localized peek...ugh
             'Error: unknown dataset state',
@@ -63,12 +63,6 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     encoded_id_template     = '<%= id %>'
 
     url_dict = {
-        # TODO:?? next 3 needed?
-        'base'          : h.url_for( controller="/history" ),
-        ##TODO: move these into the historyMV
-        'hide_deleted'  : h.url_for( controller="/history", show_deleted=False ),
-        'hide_hidden'   : h.url_for( controller="/history", show_hidden=False ),
-
         ##TODO: into their own MVs
         'rename'        : h.url_for( controller="/history", action="rename_async",
                             id=encoded_id_template ),
@@ -294,15 +288,14 @@ $(function(){
     // add user data to history
     // i don't like this history+user relationship, but user authentication changes views/behaviour
     history.user = user;
-    // is page sending in show settings? if so override history's
-    //TODO: move into historyPanel
-    history.show_deleted = ${ 'true' if show_deleted else 'false' };
-    history.show_hidden  = ${ 'true' if show_hidden  else 'false' };
 
     var historyPanel = new HistoryPanel({
-        model       : new History( history, hdas ),
-        urlTemplates: galaxy_paths.attributes,
-        logger      : console
+        model           : new History( history, hdas ),
+        urlTemplates    : galaxy_paths.attributes,
+        logger          : console,
+        // is page sending in show settings? if so override history's
+        show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
+        show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
     });
     historyPanel.render();
     if( !Galaxy.currHistoryPanel ){ Galaxy.currHistoryPanel = historyPanel; }
@@ -317,6 +310,7 @@ $(function(){
     // QUOTA METER is a cross-frame ui element (meter in masthead, over quota message in history)
     //  create it and join them here for now (via events)
     //TODO: this really belongs in the masthead
+    //TODO: and the quota message (curr. in the history panel) belongs somewhere else
 
     //window.currUser.logger = console;
     var quotaMeter = new UserQuotaMeter({
@@ -351,30 +345,50 @@ $(function(){
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css("base", "history", "autocomplete_tagging" )}
+    ${h.css(
+        "base",
+        "history",
+        "autocomplete_tagging"
+    )}
     <style>
         ## TODO: move to base.less
         .historyItemBody {
             display: none;
         }
-        div.form-row {
-            padding: 5px 5px 5px 0px;
+
+        #history-controls {
+            /*border: 1px solid white;*/
+            margin-bottom: 5px;
+            padding: 5px;
         }
-        #top-links {
-            margin-bottom: 15px;
-        }
-        #history-name-container {
-            color: gray;
-            font-weight: bold;
+
+        #history-title-area {
+            margin: 0px 0px 5px 0px;
+            /*border: 1px solid red;*/
         }
         #history-name {
             word-wrap: break-word;
+            font-weight: bold;
+            color: black;
         }
         .editable-text {
             border: solid transparent 1px;
-            padding: 3px;
-            margin: -4px;
         }
+        #history-name-container input {
+            width: 90%;
+            margin: -2px 0px -3px -4px;
+            font-weight: bold;
+            color: black;
+        }
+
+        #history-subtitle-area {
+            /*border: 1px solid green;*/
+        }
+        #history-size {
+        }
+        #history-secondary-links {
+        }
+
     </style>
     
     <noscript>

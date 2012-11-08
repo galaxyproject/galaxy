@@ -8,6 +8,8 @@ TODO:
     anon user, mako template init:
         bug: rename url seems to be wrong url
 
+        BUG: shouldn't have tag/anno buttons (on hdas)
+
     logged in, mako template:
         BUG: meter is not updating RELIABLY on change:nice_size
         BUG: am able to start upload even if over quota - 'runs' forever
@@ -54,6 +56,8 @@ TODO:
         show_deleted/hidden:
             use storage
             on/off ui
+                need urls
+                change template
         move histview fadein/out in render to app?
         don't draw body until it's first expand event
         localize all
@@ -124,10 +128,30 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
 
         // data that needs to be persistant over page refreshes
         //  (note the key function which uses the history id as well)
-        this.storage = new PersistantStorage(
-            'HistoryView.' + this.model.get( 'id' ),
-            { expandedHdas : {} }
-        );
+        this.storage = new PersistantStorage( 'HistoryView.' + this.model.get( 'id' ), {
+            expandedHdas : {},
+            show_deleted : false,
+            show_hidden  : false
+        });
+        this.log( 'this.storage:', this.storage.get() );
+
+        // get the show_deleted/hidden settings giving priority to values passed into initialize, but
+        //  using web storage otherwise
+        this.log( 'show_deleted:', attributes.show_deleted, 'show_hidden', attributes.show_hidden );
+        // if the page has specifically requested show_deleted/hidden, these will be either true or false
+        //  (as opposed to undefined, null) - and we give priority to that setting
+        if( ( attributes.show_deleted === true ) || ( attributes.show_deleted === false ) ){
+            // save them to web storage
+            this.storage.set( 'show_deleted', attributes.show_deleted );
+        }
+        if( ( attributes.show_hidden === true ) || ( attributes.show_hidden === false ) ){
+            this.storage.set( 'show_hidden', attributes.show_hidden );
+        }
+        // pull show_deleted/hidden from the web storage  if the page hasn't specified whether to show_deleted/hidden,
+        this.show_deleted = this.storage.get( 'show_deleted' );
+        this.show_hidden  = this.storage.get( 'show_hidden' );
+        this.log( 'this.show_deleted:', this.show_deleted, 'show_hidden', this.show_hidden );
+        this.log( '(now) this.storage:', this.storage.get() );
 
         // bind events from the model's hda collection
         //this.model.bind( 'change', this.render, this );
@@ -189,7 +213,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         // render the main template, tooltips
         //NOTE: this is done before the items, since item views should handle theirs themselves
         newRender.append( HistoryPanel.templates.historyPanel( modelJson ) );
-        newRender.find( '.tooltip' ).tooltip();
+        newRender.find( '.tooltip' ).tooltip({ placement: 'bottom' });
+        this.setUpActionButton( newRender.find( '#history-action-popup' ) );
 
         // render hda views (if any and any shown (show_deleted/hidden)
         if( !this.model.hdas.length
@@ -227,13 +252,26 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         return this;
     },
 
+    setUpActionButton : function( $button ){
+        var historyPanel = this,
+            show_deletedText = ( this.storage.get( 'show_deleted' ) )?( 'Hide deleted' ):( 'Show deleted' ),
+            show_hiddenText  = ( this.storage.get( 'show_hidden' )  )?( 'Hide hidden'  ):( 'Show hidden' ),
+            menuActions  = {};
+        menuActions[ _l( 'refresh' ) ]          = function(){ window.location.reload(); };
+        menuActions[ _l( 'collapse all' ) ]     = function(){ historyPanel.hideAllHdaBodies(); };
+        menuActions[ _l( show_deletedText ) ]   = function(){ historyPanel.toggleShowDeleted(); };
+        menuActions[ _l( show_hiddenText  ) ]   = function(){ historyPanel.toggleShowHidden(); };
+        make_popupmenu( $button, menuActions );
+    },
+
     // set up a view for each item to be shown, init with model and listeners, cache to map ( model.id : view )
     renderItems : function( $whereTo ){
         this.hdaViews = {};
         var historyView = this,
-            show_deleted = this.model.get( 'show_deleted' ),
-            show_hidden  = this.model.get( 'show_hidden' ),
-            visibleHdas  = this.model.hdas.getVisible( show_deleted, show_hidden );
+            visibleHdas  = this.model.hdas.getVisible(
+                this.storage.get( 'show_deleted' ),
+                this.storage.get( 'show_hidden' )
+            );
 
         // only render the shown hdas
         _.each( visibleHdas, function( hda ){
@@ -293,6 +331,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
 
         async_save_text( "history-annotation-container", "history-annotation",
             this.urls.annotate, "new_annotation", 18, true, 4 );
+
+        //this.$( 'button' ).button();
     },
 
     // update the history size display (curr. upper right of panel)
@@ -300,6 +340,10 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         this.$el.find( '#history-size' ).text( this.model.get( 'nice_size' ) );
     },
     
+    events : {
+        'click #history-tag'            : 'loadAndDisplayTags'
+    },
+
     //TODO: this seems more like a per user message than a history message; IOW, this doesn't belong here
     showQuotaMessage : function( userData ){
         var msg = this.$el.find( '#quota-message-container' );
@@ -314,9 +358,14 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         if( !msg.is( ':hidden' ) ){ msg.slideUp( 'fast' ); }
     },
 
-    events : {
-        'click #history-collapse-all'   : 'hideAllHdaBodies',
-        'click #history-tag'            : 'loadAndDisplayTags'
+    toggleShowDeleted : function( x, y, z ){
+        this.storage.set( 'show_deleted', !this.storage.get( 'show_deleted' ) );
+        this.render();
+    },
+
+    toggleShowHidden : function(){
+        this.storage.set( 'show_hidden', !this.storage.get( 'show_hidden' ) );
+        this.render();
     },
 
     // collapse all hda bodies
