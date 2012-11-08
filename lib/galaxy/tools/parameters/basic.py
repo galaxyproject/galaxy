@@ -106,6 +106,10 @@ class ToolParameter( object ):
         """
         return value
         
+    def to_html_value( self, value, app ):
+        """Convert an object value to the value expected from an html post"""
+        return self.to_string( value, app )
+        
     def to_string( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
         return str( value )
@@ -370,6 +374,11 @@ class BooleanToolParameter( ToolParameter ):
         return form_builder.CheckboxField( self.name, checked, refresh_on_change = self.refresh_on_change )
     def from_html( self, value, trans=None, other_values={} ):
         return form_builder.CheckboxField.is_checked( value )  
+    def to_html_value( self, value, app ):
+        if value:
+            return [ 'true', 'true' ]
+        else:
+            return [ 'true' ]
     def to_python( self, value, app ):
         return ( value == 'True' )
     def get_initial_value( self, trans, context ):

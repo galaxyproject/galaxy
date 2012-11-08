@@ -115,5 +115,5 @@ def params_to_incoming( incoming, inputs, input_values, app, name_prefix="" ):
             incoming[ new_name_prefix + input.test_param.name ] = values[ input.test_param.name ]
             params_to_incoming( incoming, input.cases[current].inputs, values, app, new_name_prefix )
         else:
-            incoming[ name_prefix + input.name ] = input.to_string( input_values.get( input.name ), app )
+            incoming[ name_prefix + input.name ] = input.to_html_value( input_values.get( input.name ), app )
             
