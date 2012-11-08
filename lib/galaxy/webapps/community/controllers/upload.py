@@ -160,6 +160,7 @@ class UploadController( BaseUIController ):
                     # Get the new repository tip.
                     if tip == repository.tip:
                         message = 'No changes to repository.  '
+                        status = 'warning'
                     else:
                         if ( isgzip or isbz2 ) and uncompress_file:
                             uncompress_str = ' uncompressed and '
@@ -182,6 +183,16 @@ class UploadController( BaseUIController ):
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
                         kwd[ 'message' ] = message
                         set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
+                    #provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to e.g. a requirement tag mismatch
+                    if get_config_from_disk( 'tool_dependencies.xml', repo_dir ):
+                        if repository.metadata_revisions:
+                            metadata_dict = repository.metadata_revisions[0].metadata
+                        else:
+                            metadata_dict = {}
+                        if 'tool_dependencies' not in metadata_dict:
+                            message += 'Name, version and type from a tool requirement tag does not match the information in the "tool_dependencies.xml".  '
+                            status = 'warning'
+                            log.debug( 'Error in tool dependencies for repository %s: %s.' % ( repository.id, repository.name ) )
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                     reset_tool_data_tables( trans.app )
                     trans.response.send_redirect( web.url_for( controller='repository',
