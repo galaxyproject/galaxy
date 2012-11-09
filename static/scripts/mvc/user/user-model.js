@@ -1,9 +1,10 @@
 var User = BaseModel.extend( LoggableMixin ).extend({
     //logger : console,
+    urlRoot : 'api/users',
 
     defaults : {
         id                      : null,
-        username                : "(anonymous user)",
+        username                : '(' + _l( "anonymous user" ) + ')',
         email                   : "",
         total_disk_usage        : 0,
         nice_total_disk_usage   : "0 bytes"
@@ -16,7 +17,7 @@ var User = BaseModel.extend( LoggableMixin ).extend({
         this.on( 'change', function( model, data ){ this.log( this + ' has changed:', model, data.changes ); });
     },
 
-    urlRoot : 'api/users',
+    // events: loaded
     loadFromApi : function( idOrCurrent, options ){
         idOrCurrent = idOrCurrent || User.CURRENT_ID_STR;
         options = options || {};
@@ -26,6 +27,8 @@ var User = BaseModel.extend( LoggableMixin ).extend({
             model.trigger( 'loaded', newModel, response );
             if( userFn ){ userFn( newModel, response ); }
         };
+
+        // requests for the current user must have a sep. constructed url (fetch don't work, ma)
         if( idOrCurrent === User.CURRENT_ID_STR ){
             options.url = this.urlRoot + '/' + User.CURRENT_ID_STR;
         }
@@ -55,6 +58,6 @@ User.getCurrentUserFromApi = function( options ){
 // (stub) collection for users (shouldn't be common unless admin UI)
 var UserCollection = Backbone.Collection.extend( LoggableMixin ).extend({
     model   : User,
-    logger  : console,
     urlRoot : 'api/users'
+    //logger  : console,
 });

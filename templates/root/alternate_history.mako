@@ -15,6 +15,37 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     ## a list of localized strings used in the backbone views, etc. (to be loaded and cached)
     ##! change on per page basis
     <%
+        ## havent been localized
+        ##[
+        ##    "anonymous user",
+        ##    "Click to rename history",
+        ##    "Click to see more actions",
+        ##    "Edit history tags",
+        ##    "Edit history annotation",
+        ##    "Tags",
+        ##    "Annotation",
+        ##    "Click to edit annotation",
+        ##    "You are over your disk ...w your allocated quota.",
+        ##    "Show deleted",
+        ##    "Show hidden",
+        ##    "Display data in browser",
+        ##    "Edit Attributes",
+        ##    "Download",
+        ##    "View details",
+        ##    "Run this job again",
+        ##    "Visualize",
+        ##    "Edit dataset tags",
+        ##    "Edit dataset annotation",
+        ##    "Trackster",
+        ##    "Circster",
+        ##    "Scatterplot",
+        ##    "GeneTrack",
+        ##    "Local",
+        ##    "Web",
+        ##    "Current",
+        ##    "main",
+        ##    "Using"
+        ##]
         strings_to_localize = [
             
             # from history.mako
@@ -193,6 +224,7 @@ ${h.js(
     "libs/jquery/jstorage",
     "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging",
     "libs/json2",
+    ##"libs/bootstrap",
     "libs/backbone/backbone-relational",
     "mvc/base-mvc", "mvc/ui"
 )}
@@ -220,7 +252,6 @@ ${h.templates(
 ${h.js(
     "mvc/dataset/hda-model", "mvc/dataset/hda-edit",
     "mvc/history/history-model", "mvc/history/history-panel",
-
     ##"mvc/tags", "mvc/annotations",
     "mvc/user/user-model", "mvc/user/user-quotameter"
 )}
@@ -251,6 +282,7 @@ function galaxyPageSetUp(){
 
     top.Galaxy.paths            = galaxy_paths;
 
+    top.Galaxy.localization     = GalaxyLocalization;
     window.Galaxy = top.Galaxy;
 }
 
@@ -289,30 +321,27 @@ $(function(){
     // i don't like this history+user relationship, but user authentication changes views/behaviour
     history.user = user;
 
-    //var historyPanel = new HistoryPanel({
-    //    model           : new History( history, hdas ),
-    //    urlTemplates    : galaxy_paths.attributes,
-    //    logger          : console,
-    //    // is page sending in show settings? if so override history's
-    //    show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
-    //    show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
-    //});
-    //historyPanel.render();
-
-    // ...or LOAD FROM THE API
-    historyPanel = new HistoryPanel({
-        model: new History(),
+    var historyPanel = new HistoryPanel({
+        model           : new History( history, hdas ),
         urlTemplates    : galaxy_paths.attributes,
         logger          : console,
         // is page sending in show settings? if so override history's
         show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
         show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
     });
-    historyPanel.model.loadFromApi( history.id, historyPanel.show_deleted );
+    historyPanel.render();
 
-    if( !Galaxy.currHistoryPanel ){ Galaxy.currHistoryPanel = historyPanel; }
-    if( !( historyPanel in Galaxy.historyPanels ) ){ Galaxy.historyPanels.unshift( historyPanel ); }
-    
+    // ...or LOAD FROM THE API
+    //historyPanel = new HistoryPanel({
+    //    model: new History(),
+    //    urlTemplates    : galaxy_paths.attributes,
+    //    logger          : console,
+    //    // is page sending in show settings? if so override history's
+    //    show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
+    //    show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
+    //});
+    //historyPanel.model.loadFromApi( history.id );
+
 
     // QUOTA METER is a cross-frame ui element (meter in masthead, over quota message in history)
     //  create it and join them here for now (via events)
@@ -331,7 +360,7 @@ $(function(){
     quotaMeter.bind( 'quota:over',  historyPanel.showQuotaMessage, historyPanel );
     quotaMeter.bind( 'quota:under', historyPanel.hideQuotaMessage, historyPanel );
     // having to add this to handle re-render of hview while overquota (the above do not fire)
-    historyPanel.on( 'rendered', function(){
+    historyPanel.on( 'rendered rendered:initial', function(){
         if( quotaMeter.isOverQuota() ){
             historyPanel.showQuotaMessage();
         }
@@ -343,6 +372,9 @@ $(function(){
         quotaMeter.update()
     }, quotaMeter );
 
+
+    if( !Galaxy.currHistoryPanel ){ Galaxy.currHistoryPanel = historyPanel; }
+    if( !( historyPanel in Galaxy.historyPanels ) ){ Galaxy.historyPanels.unshift( historyPanel ); }
 
     return;
 });
@@ -388,6 +420,13 @@ $(function(){
             color: black;
         }
 
+        #quota-message-container {
+            margin: 8px 0px 5px 0px;
+        }
+        #quota-message {
+            margin: 0px;
+        }
+
         #history-subtitle-area {
             /*border: 1px solid green;*/
         }
@@ -397,7 +436,7 @@ $(function(){
         }
 
         #history-tag-area, #history-annotation-area {
-            margin-top: 10px;
+            margin: 10px 0px 10px 0px;
         }
 
     </style>

@@ -7,14 +7,15 @@ Backbone.js implementation of history panel
 TODO:
     anon user, mako template init:
         bug: rename url seems to be wrong url
-
         BUG: shouldn't have tag/anno buttons (on hdas)
+            Check for user in hdaView somehow
 
     logged in, mako template:
+        BUG: quotaMsg not showing when 100% (on load)
+        bug: rename not being changed locally - render() shows old name, refresh: new name
         BUG: meter is not updating RELIABLY on change:nice_size
         BUG: am able to start upload even if over quota - 'runs' forever
         bug: quotaMeter bar rendering square in chrome
-        BUG: quotaMsg not showing when 100% (on load)
         BUG: imported, shared history with unaccessible dataset errs in historycontents when getting history
             (entire history is inaccessible)
             ??: still happening?
@@ -199,6 +200,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
     },
 
     // render urls, historyView body, and hdas (if any are shown), fade out, swap, fade in, set up behaviours
+    // events: rendered, rendered:initial
     render : function(){
         var historyView = this,
             setUpQueueName = historyView.toString() + '.set-up',
@@ -298,7 +300,6 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
     // set up HistoryView->HDAView listeners
     setUpHdaListeners : function( hdaView ){
         var historyView = this;
-
         // use storage to maintain a list of hdas whose bodies are expanded
         hdaView.bind( 'toggleBodyVisibility', function( id, visible ){
             if( visible ){
@@ -307,9 +308,6 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
                 historyView.storage.get( 'expandedHdas' ).deleteKey( id );
             }
         });
-
-        // rendering listeners
-        hdaView.bind( 'rendered:ready', function(){ historyView.trigger( 'hda:rendered:ready' ); });
     },
 
     // set up js/widget behaviours: tooltips,
@@ -336,8 +334,6 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
 
         async_save_text( "history-annotation-container", "history-annotation",
             this.urls.annotate, "new_annotation", 18, true, 4 );
-
-        //this.$( 'button' ).button();
     },
 
     // update the history size display (curr. upper right of panel)
@@ -397,7 +393,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
                 $.ajax({
                     //TODO: the html from this breaks a couple of times
                     url: view.urls.tag,
-                    error: function() { alert( "Tagging failed" ); },
+                    error: function() { alert( _l( "Tagging failed" ) ); },
                     success: function(tag_elt_html) {
                         //view.log( view + ' tag elt html (ajax)', tag_elt_html );
                         tagElt.html(tag_elt_html);

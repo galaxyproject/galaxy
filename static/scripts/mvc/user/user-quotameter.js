@@ -9,31 +9,11 @@ var UserQuotaMeter = BaseView.extend( LoggableMixin ).extend({
 
     options : {
         warnAtPercent   : 85,
-        errorAtPercent  : 100,
-
-        // the quota/usage bar is in the masthead
-        meterDocument   : window.top.document,
-        containerSelector : '.quota-meter-container',
-        meterSelector   : '#quota-meter',
-        barSelector     : '#quota-meter-bar',
-        textSelector    : '#quota-meter-text',
-
-        // the quota message currently displays in the history panel
-        msgDocument     : ( top.frames.galaxy_history )?( top.frames.galaxy_history.document )
-                                                       :( top.document ),
-        msgSelector     : '#quota-message-container',
-
-        warnClass       : 'quota-meter-bar-warn',
-        errorClass      : 'quota-meter-bar-error',
-        usageTemplate   : 'Using <%= nice_total_disk_usage %>',
-        quotaTemplate   : 'Using <%= quota_percent %>%',
-        meterTemplate   : '', // see where I'm going?
-        animationSpeed  : 'fast'
+        errorAtPercent  : 100
     },
 
     initialize : function( options ){
         this.log( this + '.initialize:', options );
-        
         _.extend( this.options, options );
         
         //this.bind( 'all', function( event, data ){ this.log( this + ' event:', event, data ); }, this );
@@ -51,6 +31,7 @@ var UserQuotaMeter = BaseView.extend( LoggableMixin ).extend({
               && this.model.get( 'quota_percent' ) >= this.options.errorAtPercent );
     },
 
+    // events: quota:over, quota:under, quota:under:approaching, quota:under:ok
     _render_quota : function(){
         var modelJson = this.model.toJSON(),
             //prevPercent = this.model.previous( 'quota_percent' ),

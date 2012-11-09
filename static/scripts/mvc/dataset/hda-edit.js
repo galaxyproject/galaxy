@@ -68,6 +68,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
     },
 
     // ................................................................................ RENDER MAIN
+    // events: rendered, rendered:ready, rendered:initial, rendered:ready:initial
     render : function(){
         var view = this,
             id = this.model.get( 'id' ),
@@ -101,8 +102,8 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
             view.$el.children().remove();
             view.$el.append( itemWrapper ).fadeIn( 'fast', function(){
                 view.log( view + ' rendered:', view.$el );
-                var renderedEventName = 'rendered';
                 
+                var renderedEventName = 'rendered';
                 if( initialRender ){
                     renderedEventName += ':initial';
                 } else if( view.model.inReadyState() ){
@@ -179,10 +180,10 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         // show a disabled display if the data's been purged
         if( this.model.get( 'purged' ) ){
             displayBtnData.enabled = false;
-            displayBtnData.title = 'Cannot display datasets removed from disk';
+            displayBtnData.title = _l( 'Cannot display datasets removed from disk' );
             
         } else {
-            displayBtnData.title = 'Display data in browser';
+            displayBtnData.title = _l( 'Display data in browser' );
             displayBtnData.href  = this.urls.display;
         }
         
@@ -208,7 +209,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         var purged = this.model.get( 'purged' ),
             deleted = this.model.get( 'deleted' ),
             editBtnData = {
-                title       : 'Edit attributes',
+                title       : _l( 'Edit Attributes' ),
                 href        : this.urls.edit,
                 target      : 'galaxy_main',
                 icon_class  : 'edit'
@@ -219,9 +220,9 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         if( deleted || purged ){
             editBtnData.enabled = false;
             if( purged ){
-                editBtnData.title = 'Cannot edit attributes of datasets removed from disk';
+                editBtnData.title = _l( 'Cannot edit attributes of datasets removed from disk' );
             } else if( deleted ){
-                editBtnData.title = 'Undelete dataset to edit attributes';
+                editBtnData.title = _l( 'Undelete dataset to edit attributes' );
             }
         }
         
@@ -239,14 +240,14 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         }
         
         var deleteBtnData = {
-            title       : 'Delete',
+            title       : _l( 'Delete' ),
             href        : this.urls[ 'delete' ],
             id          : 'historyItemDeleter-' + this.model.get( 'id' ),
             icon_class  : 'delete'
         };
         if( this.model.get( 'deleted' ) || this.model.get( 'purged' ) ){
             deleteBtnData = {
-                title       : 'Dataset is already deleted',
+                title       : _l( 'Dataset is already deleted' ),
                 icon_class  : 'delete',
                 enabled     : false
             };
@@ -306,7 +307,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         ||  ( !this.model.get( 'for_editing' ) ) ){ return null; }
         
         this.errButton = new IconButtonView({ model : new IconButton({
-            title       : 'View or report this error',
+            title       : _l( 'View or report this error' ),
             href        : this.urls.report_error,
             target      : 'galaxy_main',
             icon_class  : 'bug'
@@ -318,7 +319,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
     _render_showParamsButton : function(){
         // gen. safe to show in all cases
         this.showParamsButton = new IconButtonView({ model : new IconButton({
-            title       : 'View details',
+            title       : _l( 'View details' ),
             href        : this.urls.show_params,
             target      : 'galaxy_main',
             icon_class  : 'information'
@@ -330,7 +331,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
     _render_rerunButton : function(){
         if( !this.model.get( 'for_editing' ) ){ return null; }
         this.rerunButton = new IconButtonView({ model : new IconButton({
-            title       : 'Run this job again',
+            title       : _l( 'Run this job again' ),
             href        : this.urls.rerun,
             target      : 'galaxy_main',
             icon_class  : 'arrow-circle'
@@ -360,7 +361,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         
         // render the icon from template
         this.visualizationsButton = new IconButtonView({ model : new IconButton({
-            title       : 'Visualize',
+            title       : _l( 'Visualize' ),
             href        : visualization_url,
             icon_class  : 'chart_curve'
         })});
@@ -395,7 +396,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
             _.each( visualizations, function( visualization ) {
                 //TODO: move to utils
                 var titleCaseVisualization = visualization.charAt( 0 ).toUpperCase() + visualization.slice( 1 );
-                popup_menu_dict[ titleCaseVisualization ] = create_viz_action( visualization );
+                popup_menu_dict[ _l( titleCaseVisualization ) ] = create_viz_action( visualization );
             });
             make_popupmenu( $icon, popup_menu_dict );
         }
@@ -426,7 +427,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         ||   ( !this.urls.tags.get ) ){ return null; }
         
         this.tagButton = new IconButtonView({ model : new IconButton({
-            title       : 'Edit dataset tags',
+            title       : _l( 'Edit dataset tags' ),
             target      : 'galaxy_main',
             href        : this.urls.tags.get,
             icon_class  : 'tags'
@@ -442,7 +443,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         ||   ( !this.urls.annotation.get ) ){ return null; }
 
         this.annotateButton = new IconButtonView({ model : new IconButton({
-            title       : 'Edit dataset annotation',
+            title       : _l( 'Edit dataset annotation' ),
             target      : 'galaxy_main',
             icon_class  : 'annotate'
         })});
@@ -509,15 +510,15 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
     //TODO: only render these on expansion (or already expanded)
     _render_body_not_viewable : function( parent ){
         //TODO: revisit - still showing display, edit, delete (as common) - that CAN'T be right
-        parent.append( $( '<div>You do not have permission to view dataset.</div>' ) );
+        parent.append( $( '<div>' + _l( 'You do not have permission to view dataset' ) + '.</div>' ) );
     },
     
     _render_body_uploading : function( parent ){
-        parent.append( $( '<div>Dataset is uploading</div>' ) );
+        parent.append( $( '<div>' + _l( 'Dataset is uploading' ) + '</div>' ) );
     },
         
     _render_body_queued : function( parent ){
-        parent.append( $( '<div>Job is waiting to run.</div>' ) );
+        parent.append( $( '<div>' + _l( 'Job is waiting to run' ) + '.</div>' ) );
         parent.append( this._render_primaryActionButtons([
             this._render_showParamsButton,
             this._render_rerunButton
@@ -525,7 +526,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
     },
         
     _render_body_running : function( parent ){
-        parent.append( '<div>Job is currently running.</div>' );
+        parent.append( '<div>' + _l( 'Job is currently running' ) + '.</div>' );
         parent.append( this._render_primaryActionButtons([
             this._render_showParamsButton,
             this._render_rerunButton
@@ -536,7 +537,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
         if( !this.model.get( 'purged' ) ){
             parent.append( $( '<div>' + this.model.get( 'misc_blurb' ) + '</div>' ) );
         }
-        parent.append( ( 'An error occurred running this job: '
+        parent.append( ( _l( 'An error occurred running this job' ) + ': '
                        + '<i>' + $.trim( this.model.get( 'misc_info' ) ) + '</i>' ) );
         parent.append( this._render_primaryActionButtons([
             this._render_downloadButton,
@@ -547,7 +548,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
     },
         
     _render_body_discarded : function( parent ){
-        parent.append( '<div>The job creating this dataset was cancelled before completion.</div>' );
+        parent.append( '<div>' + _l( 'The job creating this dataset was cancelled before completion' ) + '.</div>' );
         parent.append( this._render_primaryActionButtons([
             this._render_showParamsButton,
             this._render_rerunButton
@@ -555,13 +556,13 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
     },
         
     _render_body_setting_metadata : function( parent ){
-        parent.append( $( '<div>Metadata is being auto-detected.</div>' ) );
+        parent.append( $( '<div>' + _l( 'Metadata is being auto-detected' ) + '.</div>' ) );
     },
     
     _render_body_empty : function( parent ){
         //TODO: replace i with dataset-misc-info class 
         //?? why are we showing the file size when we know it's zero??
-        parent.append( $( '<div>No data: <i>' + this.model.get( 'misc_blurb' ) + '</i></div>' ) );
+        parent.append( $( '<div>' + _l( 'No data' ) + ': <i>' + this.model.get( 'misc_blurb' ) + '</i></div>' ) );
         parent.append( this._render_primaryActionButtons([
             this._render_showParamsButton,
             this._render_rerunButton
@@ -700,7 +701,7 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
                 $.ajax({
                     //TODO: the html from this breaks a couple of times
                     url: this.urls.tags.get,
-                    error: function() { alert( "Tagging failed" ); },
+                    error: function() { alert( _l( "Tagging failed" ) ); },
                     success: function(tag_elt_html) {
                         tagElt.html(tag_elt_html);
                         tagElt.find(".tooltip").tooltip();
@@ -733,10 +734,10 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
                 // Need to fill annotation element.
                 $.ajax({
                     url: this.urls.annotation.get,
-                    error: function(){ alert( "Annotations failed" ); },
+                    error: function(){ alert( _l( "Annotations failed" ) ); },
                     success: function( htmlFromAjax ){
                         if( htmlFromAjax === "" ){
-                            htmlFromAjax = "<em>Describe or add notes to dataset</em>";
+                            htmlFromAjax = "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
                         }
                         annotationElem.html( htmlFromAjax );
                         annotationArea.find(".tooltip").tooltip();
@@ -761,18 +762,22 @@ var HDAView = BaseView.extend( LoggableMixin ).extend({
     },
 
     // expand/collapse body
-    //side effect: trigger event
+    // event: body-visible, body-hidden
     toggleBodyVisibility : function( event, expanded ){
-        var $body = this.$el.find( '.historyItemBody' );
+        var hdaView = this,
+            $body = this.$el.find( '.historyItemBody' );
         expanded = ( expanded === undefined )?( !$body.is( ':visible' ) ):( expanded );
         //this.log( 'toggleBodyVisibility, expanded:', expanded, '$body:', $body );
 
         if( expanded ){
-            $body.slideDown( 'fast' );
+            $body.slideDown( 'fast', function(){
+                hdaView.trigger( 'body-visible', hdaView.model.get( 'id' ) );
+            });
         } else {
-            $body.slideUp( 'fast' );
+            $body.slideUp( 'fast', function(){
+                hdaView.trigger( 'body-hidden', hdaView.model.get( 'id' ) );
+            });
         }
-        this.trigger( 'toggleBodyVisibility', this.model.get( 'id' ), expanded );
     },
 
     // ................................................................................ UTILTIY
@@ -823,17 +828,17 @@ function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
         $.ajax({
             url: vis_url + '/list_tracks?f-' + $.param(params),
             dataType: "html",
-            error: function() { alert( "Could not add this dataset to browser." ); },
+            error: function() { alert( _l( "Could not add this dataset to browser" ) + '.' ); },
             success: function(table_html) {
                 var parent = window.parent;
 
-                parent.show_modal("View Data in a New or Saved Visualization", "", {
+                parent.show_modal( _l( "View Data in a New or Saved Visualization" ), "", {
                     "Cancel": function() {
                         parent.hide_modal();
                     },
                     "View in saved visualization": function() {
                         // Show new modal with saved visualizations.
-                        parent.show_modal("Add Data to Saved Visualization", table_html, {
+                        parent.show_modal( _l( "Add Data to Saved Visualization" ), table_html, {
                             "Cancel": function() {
                                 parent.hide_modal();
                             },

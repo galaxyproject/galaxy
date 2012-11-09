@@ -9,7 +9,7 @@ var History = BaseModel.extend( LoggableMixin ).extend({
     //TODO: bind change events from items and collection to this (itemLengths, states)
 
     // uncomment this out see log messages
-    logger              : console,
+    //logger              : console,
 
     // values from api (may need more)
     defaults : {
@@ -47,14 +47,15 @@ var History = BaseModel.extend( LoggableMixin ).extend({
         //this.on( 'change', function( currModel, changedList ){
         //    this.log( this + ' has changed:', currModel, changedList );
         //});
-        this.bind( 'all', function( event ){
-            //this.log( this + '', arguments );
-            console.info( this + '', arguments );
-        });
+        //this.bind( 'all', function( event ){
+        //    //this.log( this + '', arguments );
+        //    console.info( this + '', arguments );
+        //});
     },
 
     // get data via the api (alternative to sending options,hdas to initialize)
     //TODO: this needs work - move to more straightforward deferred
+    // events: loaded, loaded:user, loaded:hdas
     loadFromApi : function( historyId, success ){
         var history = this;
 
@@ -66,11 +67,12 @@ var History = BaseModel.extend( LoggableMixin ).extend({
                 history.fetch()
 
             ).then( function( userResponse, historyResponse ){
-                console.warn( 'fetched user: ', userResponse[0] );
-                console.warn( 'fetched history: ', historyResponse[0] );
+                //console.warn( 'fetched user: ', userResponse[0] );
+                //console.warn( 'fetched history: ', historyResponse[0] );
                 history.attributes.user = userResponse[0]; //? meh.
-                history.trigger( 'loaded', historyResponse );
-                history.log( history );
+
+                history.trigger( 'loaded:user', userResponse[0] );
+                history.trigger( 'loaded', historyResponse[0] );
 
             }).then( function(){
                 // ...then the hdas (using contents?ids=...)
@@ -82,6 +84,7 @@ var History = BaseModel.extend( LoggableMixin ).extend({
                     //console.warn( 'fetched hdas', hdas );
                     history.hdas.reset( hdas );
                     history.checkForUpdates();
+
                     history.trigger( 'loaded:hdas', hdas );
                     if( success ){ callback( history ); }
                 });
@@ -98,17 +101,22 @@ var History = BaseModel.extend( LoggableMixin ).extend({
     },
 
     // get the history's state from it's cummulative ds states, delay + update if needed
+    // events: ready
     checkForUpdates : function( datasets ){
         // get overall History state from collection, run updater if History has running/queued hdas
         // boiling it down on the client to running/not
         if( this.hdas.running().length ){
             this.stateUpdater();
+
+        } else {
+            this.trigger( 'ready' );
         }
         return this;
     },
 
     // update this history, find any hda's running/queued, update ONLY those that have changed states,
     //  set up to run this again in some interval of time
+    // events: ready
     stateUpdater : function(){
         var history = this,
             oldState = this.get( 'state' ),
@@ -148,13 +156,17 @@ var History = BaseModel.extend( LoggableMixin ).extend({
                 setTimeout( function(){
                     history.stateUpdater();
                 }, 4000 );
+
+            // otherwise, we're now in a 'ready' state (no hdas running)
+            } else {
+                history.trigger( 'ready' );
             }
 
         }).error( function( xhr, status, error ){
             if( console && console.warn ){
                 console.warn( 'Error getting history updates from the server:', xhr, status, error );
             }
-            alert( 'Error getting history updates from the server.\n' + error );
+            alert( _l( 'Error getting history updates from the server.' ) + '\n' + error );
         });
     },
 
@@ -172,7 +184,7 @@ var History = BaseModel.extend( LoggableMixin ).extend({
 var HistoryCollection = Backbone.Collection.extend( LoggableMixin ).extend({
     model   : History,
     urlRoot : 'api/histories',
-    logger  : console
+    //logger  : console
 });
 
 //==============================================================================

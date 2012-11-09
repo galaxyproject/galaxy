@@ -1,8 +1,9 @@
 <script type="text/template" class="template-history" id="template-history-warning-messages">
 {{#if deleted}}{{#unless purged}}
 {{#warningmessagesmall}}
-    This dataset has been deleted.
+    {{#local}}This dataset has been deleted.{{/local}}
     {{#if urls.undelete}}
+        {{! how in the hell would you localize this? }}
         Click <a href="{{ urls.undelete }}" class="historyItemUndelete" id="historyItemUndeleter-{{ id }}"
                  target="galaxy_history">here</a> to undelete it
         {{#if urls.purge}}
@@ -14,11 +15,11 @@
 {{/unless}}{{/if}}
 
 {{#if purged}}{{#warningmessagesmall}}
-    This dataset has been deleted and removed from disk.
+    {{#local}}This dataset has been deleted and removed from disk.{{/local}}
 {{/warningmessagesmall}}{{/if}}
 
 {{#unless visible}}{{#warningmessagesmall}}
-    This dataset has been hidden.
+    {{#local}}This dataset has been hidden.{{/local}}
     {{#if urls.unhide}}
         Click <a href="{{ urls.unhide }}" class="historyItemUnhide" id="historyItemUnhider-{{ id }}"
                  target="galaxy_history">here</a> to unhide it
@@ -48,7 +49,7 @@
 
 <script type="text/template" class="template-history" id="template-history-failedMetaData">
 {{#warningmessagesmall}}
-An error occurred setting the metadata for this dataset.
+{{#local}}An error occurred setting the metadata for this dataset.{{/local}}
 You may be able to <a href="{{ urls.edit }}" target="galaxy_main">set it manually or retry auto-detection</a>.
 {{/warningmessagesmall}}
 </script>
@@ -57,25 +58,25 @@ You may be able to <a href="{{ urls.edit }}" target="galaxy_main">set it manuall
 {{#if urls.meta_download}}
 {{! this will be built using a popupmenu }}
 <div popupmenu="dataset-{{ id }}-popup">
-    <a class="action-button" href="{{ urls.download }}">Download Dataset</a>
-    <a>Additional Files</a>
+    <a class="action-button" href="{{ urls.download }}">{{#local}}Download Dataset{{/local}}</a>
+    <a>{{#local}}Additional Files{{/local}}</a>
     {{#each urls.meta_download}}
-    <a class="action-button" href="{{ url }}">Download {{ file_type }}</a>
+    <a class="action-button" href="{{ url }}">{{#local}}Download{{/local}} {{ file_type }}</a>
     {{/each}}
 </div>
 <div style="float:left;" class="menubutton split popup" id="dataset-{{ id }}-popup">
-    <a href="{{ urls.download }}" title="Download" class="icon-button disk tooltip"></a>
+    <a href="{{ urls.download }}" title="{{#local}}Download{{/local}}" class="icon-button disk tooltip"></a>
 </div>
 {{else}}
 {{! otherwise a simple icon button }}
-<a href="{{ urls.download }}" title="Download" class="icon-button disk tooltip"></a>
+<a href="{{ urls.download }}" title="{{#local}}Download{{/local}}" class="icon-button disk tooltip"></a>
 {{/if}}
 </script>
 
 <script type="text/template" class="template-history" id="template-history-tagArea">
 {{! TODO: move to mvc/tag.js templates }}
 <div class="tag-area" style="display: none;">
-    <strong>Tags:</strong>
+    <strong>{{#local}}Tags{{/local}}:</strong>
     <div class="tag-elt">
     </div>
 </div>
@@ -84,9 +85,9 @@ You may be able to <a href="{{ urls.edit }}" target="galaxy_main">set it manuall
 <script type="text/template" class="template-history" id="template-history-annotationArea">
 {{! TODO: move to mvc/annotations.js templates, editable-text }}
 <div id="{{ id }}-annotation-area" class="annotation-area" style="display: none;">
-    <strong>Annotation:</strong>
+    <strong>{{#local}}Annotation{{/local}}:</strong>
     <div id="{{ id }}-anotation-elt" class="annotation-elt tooltip editable-text"
-         style="margin: 1px 0px 1px 0px" title="Edit dataset annotation">
+         style="margin: 1px 0px 1px 0px" title="{{#local}}Edit dataset annotation{{/local}}">
     </div>
 </div>
 </script>
@@ -95,7 +96,7 @@ You may be able to <a href="{{ urls.edit }}" target="galaxy_main">set it manuall
 {{#each displayApps}}
     {{label}}
     {{#each links}}
-        <a target="{{target}}" href="{{href}}">{{text}}</a>
+        <a target="{{target}}" href="{{href}}">{{#local}}{{text}}{{/local}}</a>
     {{/each}}
     <br />
 {{/each}}
@@ -113,10 +114,10 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
             {{! TODO: factor out conditional css }}
             {{#if user.email}}
             <div id="history-name" class="tooltip editable-text"
-                title="Click to rename history">{{name}}</div>
+                title="{{#local}}Click to rename history{{/local}}">{{name}}</div>
             {{else}}
             <div id="history-name" class="tooltip"
-                title="You must be logged in to edit your history name">{{name}}</div>
+                title="{{#local}}You must be logged in to edit your history name{{/local}}">{{name}}</div>
             {{/if}}
         </div>
 
@@ -150,18 +151,19 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
     <div id="history-tag-annotation">
 
         <div id="history-tag-area" style="display: none">
-            <strong>Tags:</strong>
+            <strong>{{#local}}Tags{{/local}}:</strong>
             <div class="tag-elt"></div>
         </div>
 
         <div id="history-annotation-area" style="display: none">
-            <strong>Annotation / Notes:</strong>
+            <strong>{{#local}}Annotation{{/local}}:</strong>
             <div id="history-annotation-container">
-            <div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">
+            <div id="history-annotation" class="tooltip editable-text"
+                title="{{#local}}Click to edit annotation{{/local}}">
                 {{#if annotation}}
                     {{annotation}}
                 {{else}}
-                    <em>Describe or add notes to history</em>
+                    <em>{{#local}}Describe or add notes to history{{/local}}</em>
                 {{/if}}
             </div>
             </div>
@@ -179,7 +181,8 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
 
     <div id="quota-message-container" style="display: none">
         <div id="quota-message" class="errormessage">
-            You are over your disk quota.  Tool execution is on hold until your disk usage drops below your allocated quota.
+            {{#local}}You are over your disk quota.
+            Tool execution is on hold until your disk usage drops below your allocated quota.{{/local}}
         </div>
     </div>
 </div>
