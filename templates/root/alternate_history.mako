@@ -233,27 +233,33 @@ ${h.templates(
     "helpers-common-templates",
     "template-warningmessagesmall",
     
-    "template-history-warning-messages",
-    "template-history-titleLink",
-    "template-history-failedMetadata",
-    "template-history-hdaSummary",
-    "template-history-downloadLinks",
-    "template-history-tagArea",
-    "template-history-annotationArea",
-    "template-history-displayApps",
-    
     "template-history-historyPanel",
 
+    "template-hda-warning-messages",
+    "template-hda-titleLink",
+    "template-hda-failedMetadata",
+    "template-hda-hdaSummary",
+    "template-hda-downloadLinks",
+    "template-hda-tagArea",
+    "template-hda-annotationArea",
+    "template-hda-displayApps",
+    
     "template-user-quotaMeter-quota",
     "template-user-quotaMeter-usage"
 )}
 
 ##TODO: fix: curr hasta be _after_ h.templates bc these use those templates - move somehow
 ${h.js(
-    "mvc/dataset/hda-model", "mvc/dataset/hda-edit",
-    "mvc/history/history-model", "mvc/history/history-panel",
-    ##"mvc/tags", "mvc/annotations",
-    "mvc/user/user-model", "mvc/user/user-quotameter"
+    "mvc/user/user-model", "mvc/user/user-quotameter",
+
+    "mvc/dataset/hda-model",
+    "mvc/dataset/hda-base",
+    "mvc/dataset/hda-edit",
+    ##"mvc/dataset/hda-readonly",
+
+    ##"mvc/tags", "mvc/annotations"
+
+    "mvc/history/history-model", "mvc/history/history-panel"
 )}
     
 <script type="text/javascript">
@@ -417,6 +423,7 @@ $(function(){
             width: 90%;
             margin: -2px 0px -3px -4px;
             font-weight: bold;
+            font-size: 110%;
             color: black;
         }
 
@@ -437,6 +444,17 @@ $(function(){
 
         #history-tag-area, #history-annotation-area {
             margin: 10px 0px 10px 0px;
+        }
+
+        .historyItemTitle {
+            text-decoration: none;
+            cursor: pointer;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -khtml-user-select: none;
+        }
+        .historyItemTitle:hover {
+            text-decoration: underline;
         }
 
     </style>

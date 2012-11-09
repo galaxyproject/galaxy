@@ -1,13 +1,13 @@
 (function() {
   var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
-templates['template-history-hdaSummary'] = template(function (Handlebars,depth0,helpers,partials,data) {
+templates['template-hda-hdaSummary'] = template(function (Handlebars,depth0,helpers,partials,data) {
   helpers = helpers || Handlebars.helpers;
   var buffer = "", stack1, foundHelper, functionType="function", escapeExpression=this.escapeExpression, self=this;
 
 function program1(depth0,data) {
   
   var buffer = "", stack1, foundHelper;
-  buffer += "\n        <a href=\"";
+  buffer += "\n        <a class=\"metadata-dbkey\" href=\"";
   stack1 = depth0.urls;
   stack1 = stack1 == null || stack1 === false ? stack1 : stack1.edit;
   stack1 = typeof stack1 === functionType ? stack1() : stack1;
@@ -21,7 +21,7 @@ function program1(depth0,data) {
 function program3(depth0,data) {
   
   var buffer = "", stack1, foundHelper;
-  buffer += "\n        <span class=\"";
+  buffer += "\n        <span class=\"metadata-dbkey ";
   foundHelper = helpers.metadata_dbkey;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
   else { stack1 = depth0.metadata_dbkey; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
@@ -35,11 +35,11 @@ function program3(depth0,data) {
 function program5(depth0,data) {
   
   var buffer = "", stack1, foundHelper;
-  buffer += "\n<div class=\"hda-info\">";
+  buffer += "\n<div class=\"hda-info\"> ";
   foundHelper = helpers.misc_info;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
   else { stack1 = depth0.misc_info; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  buffer += escapeExpression(stack1) + "</div>\n";
+  buffer += escapeExpression(stack1) + " </div>\n";
   return buffer;}
 
   buffer += "<div class=\"hda-summary\">\n    ";

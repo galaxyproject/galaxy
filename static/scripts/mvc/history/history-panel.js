@@ -5,26 +5,26 @@
 Backbone.js implementation of history panel
 
 TODO:
+    refactoring on for_editing:
+        uhoh: purge link in warning message in history_common.mako conditional on trans.app.config.allow_user_dataset_purge
+        bug: rerun still doesn't take encoded ids
+
     anon user, mako template init:
-        bug: rename url seems to be wrong url
         BUG: shouldn't have tag/anno buttons (on hdas)
             Check for user in hdaView somehow
 
     logged in, mako template:
-        BUG: quotaMsg not showing when 100% (on load)
         bug: rename not being changed locally - render() shows old name, refresh: new name
+            TODO: editable text to MV, might also just use REST.update on history
         BUG: meter is not updating RELIABLY on change:nice_size
         BUG: am able to start upload even if over quota - 'runs' forever
         bug: quotaMeter bar rendering square in chrome
-        BUG: imported, shared history with unaccessible dataset errs in historycontents when getting history
-            (entire history is inaccessible)
-            ??: still happening?
 
     from loadFromApi:
-        BUG: not loading deleted datasets
-            FIXED: history_contents, show: state_ids returns all ids now (incl. deleted)
 
     fixed:
+        BUG: not loading deleted datasets
+            FIXED: history_contents, show: state_ids returns all ids now (incl. deleted)
         BUG: upload, history size, doesn't change
             FIXED: using change:nice_size to trigger re-render of history size
         BUG: delete uploading hda - now in state 'discarded'! ...new state to handle
@@ -112,6 +112,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
 
     // direct attachment to existing element
     el                  : 'body.historyPage',
+    //HDAView             : HDABaseView,
+    HDAView             : HDAEditView,
 
     // init with the model, urlTemplates, set up storage, bind HDACollection events
     //NOTE: this will create or load PersistantStorage keyed under 'HistoryView.<id>'
@@ -122,9 +124,9 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         // set up url templates
         //TODO: prob. better to put this in class scope (as the handlebars templates), but...
         //  they're added to GalaxyPaths on page load (after this file is loaded)
-        if( !attributes.urlTemplates ){         throw( 'HDAView needs urlTemplates on initialize' ); }
-        if( !attributes.urlTemplates.history ){ throw( 'HDAView needs urlTemplates.history on initialize' ); }
-        if( !attributes.urlTemplates.hda ){     throw( 'HDAView needs urlTemplates.hda on initialize' ); }
+        if( !attributes.urlTemplates ){         throw( this + ' needs urlTemplates on initialize' ); }
+        if( !attributes.urlTemplates.history ){ throw( this + ' needs urlTemplates.history on initialize' ); }
+        if( !attributes.urlTemplates.hda ){     throw( this + ' needs urlTemplates.hda on initialize' ); }
         this.urlTemplates = attributes.urlTemplates.history;
         this.hdaUrlTemplates = attributes.urlTemplates.hda;
 
@@ -283,7 +285,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
             var hdaId = hda.get( 'id' ),
                 expanded = historyView.storage.get( 'expandedHdas' ).get( hdaId );
 
-            historyView.hdaViews[ hdaId ] = new HDAView({
+            historyView.hdaViews[ hdaId ] = new historyView.HDAView({
                     model           : hda,
                     expanded        : expanded,
                     urlTemplates    : historyView.hdaUrlTemplates
@@ -301,12 +303,11 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
     setUpHdaListeners : function( hdaView ){
         var historyView = this;
         // use storage to maintain a list of hdas whose bodies are expanded
-        hdaView.bind( 'toggleBodyVisibility', function( id, visible ){
-            if( visible ){
-                historyView.storage.get( 'expandedHdas' ).set( id, true );
-            } else {
-                historyView.storage.get( 'expandedHdas' ).deleteKey( id );
-            }
+        hdaView.bind( 'body-visible', function( id ){
+            historyView.storage.get( 'expandedHdas' ).set( id, true );
+        });
+        hdaView.bind( 'body-hidden', function( id ){
+            historyView.storage.get( 'expandedHdas' ).deleteKey( id );
         });
     },
 

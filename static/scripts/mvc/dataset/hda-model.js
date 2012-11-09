@@ -43,10 +43,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
         // aka. !hidden
         visible             : false,
         // based on trans.user (is_admin or security_agent.can_access_dataset( <user_roles>, hda.dataset ))
-        accessible          : false,
-        
-        //TODO: this needs to be removed (it is a function of the view type (e.g. HDAForEditingView))
-        for_editing         : true
+        accessible          : false
     },
 
     // fetch location of this history in the api
