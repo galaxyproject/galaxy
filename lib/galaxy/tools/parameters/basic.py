@@ -1371,24 +1371,25 @@ class DataToolParameter( ToolParameter ):
         # Add metadata validator
         if not string_as_bool( elem.get( 'no_validation', False ) ):
             self.validators.append( validation.MetadataValidator() )
+        # Find datatypes_registry
+        if tool is None:
+            if trans:
+                # Must account for "Input Dataset" types, which while not a tool still need access to the real registry.
+                # A handle to the transaction (and thus app) will be given by the module.
+                datatypes_registry = trans.app.datatypes_registry
+            else:
+                #This occurs for things such as unit tests
+                import galaxy.datatypes.registry
+                datatypes_registry = galaxy.datatypes.registry.Registry()
+                datatypes_registry.load_datatypes()
+        else:
+            datatypes_registry = tool.app.datatypes_registry
         # Build tuple of classes for supported data formats
         formats = []
         self.extensions = elem.get( 'format', 'data' ).split( "," )
         for extension in self.extensions:
             extension = extension.strip()
-            if tool is None:
-                if trans:
-                    # Must account for "Input Dataset" types, which while not a tool still need access to the real registry.
-                    # A handle to the transaction (and thus app) will be given by the module.
-                    formats.append( trans.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
-                else:
-                    #This occurs for things such as unit tests
-                    import galaxy.datatypes.registry
-                    datatypes_registry = galaxy.datatypes.registry.Registry()
-                    datatypes_registry.load_datatypes()
-                    formats.append( datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
-            else:
-                formats.append( tool.app.datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
+            formats.append( datatypes_registry.get_datatype_by_extension( extension.lower() ).__class__ )
         self.formats = tuple( formats )
         self.multiple = string_as_bool( elem.get( 'multiple', False ) )
         # TODO: Enhance dynamic options for DataToolParameters. Currently,
