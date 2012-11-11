@@ -28,6 +28,7 @@ universe_wsgi.ini
 reports_wsgi.ini
 community_wsgi.ini
 
+# Config files.
 datatypes_conf.xml
 tool_conf.xml
 external_service_types_conf.xml
@@ -37,6 +38,7 @@ tool_data_table_conf.xml
 tool_sheds_conf.xml
 integrated_tool_panel.xml
 openid_conf.xml
+shed_tool_data_table_conf.xml
 
 static/welcome.html.*
 static/welcome.html
