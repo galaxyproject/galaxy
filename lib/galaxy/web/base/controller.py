@@ -1493,9 +1493,57 @@ class SharableMixin:
     def set_slug_async( self, trans, id, new_slug ):
         item = self.get_item( trans, id )
         if item:
-            item.slug = new_slug
-            trans.sa_session.flush()
-            return item.slug
+            # Only update slug if slug is not already in use.
+            if trans.sa_session.query( item.__class__ ).filter_by( user=item.user, slug=new_slug, importable=True ).count() == 0: 
+                item.slug = new_slug
+                trans.sa_session.flush()
+
+        return item.slug
+
+    def _make_item_accessible( self, sa_session, item ):
+        """ Makes item accessible--viewable and importable--and sets item's slug.
+            Does not flush/commit changes, however. Item must have name, user, 
+            importable, and slug attributes. """
+        item.importable = True
+        self.create_item_slug( sa_session, item )
+    
+    def create_item_slug( self, sa_session, item ):
+        """ Create/set item slug. Slug is unique among user's importable items 
+            for item's class. Returns true if item's slug was set/changed; false 
+            otherwise. 
+        """
+        cur_slug = item.slug
+
+        # Setup slug base.
+        if cur_slug is None or cur_slug == "":
+            # Item can have either a name or a title.
+            if hasattr( item, 'name' ):
+                item_name = item.name
+            elif hasattr( item, 'title' ):
+                item_name = item.title
+            # Replace whitespace with '-'
+            slug_base = re.sub( "\s+", "-", item_name.lower() )
+            # Remove all non-alphanumeric characters.
+            slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
+            # Remove trailing '-'.
+            if slug_base.endswith('-'):
+                slug_base = slug_base[:-1]
+        else:
+            slug_base = cur_slug
+
+        # Using slug base, find a slug that is not taken. If slug is taken, 
+        # add integer to end.
+        new_slug = slug_base
+        count = 1
+        while sa_session.query( item.__class__ ).filter_by( user=item.user, slug=new_slug, importable=True ).count() != 0:
+            # Slug taken; choose a new slug based on count. This approach can
+            # handle numerous items with the same name gracefully.
+            new_slug = '%s-%i' % ( slug_base, count )
+            count += 1
+        
+        # Set slug and return.
+        item.slug = new_slug
+        return item.slug == cur_slug
         
     # -- Abstract methods. -- 
     
@@ -1527,39 +1575,6 @@ class SharableMixin:
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
         raise "Unimplemented Method"
-        
-    # -- Helper methods. --
-    
-    def _make_item_accessible( self, sa_session, item ):
-        """ Makes item accessible--viewable and importable--and sets item's slug. Does not flush/commit changes, however. Item must have name, user, importable, and slug attributes. """
-        item.importable = True
-        self.create_item_slug( sa_session, item )
-    
-    def create_item_slug( self, sa_session, item ):
-        """ Create item slug. Slug is unique among user's importable items for item's class. Returns true if item's slug was set; false otherwise. """
-        if item.slug is None or item.slug == "":
-            # Item can have either a name or a title.
-            if hasattr( item, 'name' ):
-                item_name = item.name
-            elif hasattr( item, 'title' ):
-                item_name = item.title
-            # Replace whitespace with '-'
-            slug_base = re.sub( "\s+", "-", item_name.lower() )
-            # Remove all non-alphanumeric characters.
-            slug_base = re.sub( "[^a-zA-Z0-9\-]", "", slug_base )
-            # Remove trailing '-'.
-            if slug_base.endswith('-'):
-                slug_base = slug_base[:-1]
-            # Make sure that slug is not taken; if it is, add a number to it.
-            slug = slug_base
-            count = 1
-            while sa_session.query( item.__class__ ).filter_by( user=item.user, slug=slug, importable=True ).count() != 0:
-                # Slug taken; choose a new slug based on count. This approach can handle numerous items with the same name gracefully.
-                slug = '%s-%i' % ( slug_base, count )
-                count += 1
-            item.slug = slug
-            return True
-        return False
     
     def get_item( self, trans, id ):
         """ Return item based on id. """
