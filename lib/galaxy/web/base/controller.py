@@ -1487,15 +1487,18 @@ class SharableMixin:
         user.username = username
         trans.sa_session.flush
         return self.sharing( trans, id, **kwargs )
-        
-    # -- Abstract methods. -- 
-    
+
     @web.expose
     @web.require_login( "modify Galaxy items" )
     def set_slug_async( self, trans, id, new_slug ):
-        """ Set item slug asynchronously. """
-        raise "Unimplemented Method"
-
+        item = self.get_item( trans, id )
+        if item:
+            item.slug = new_slug
+            trans.sa_session.flush()
+            return item.slug
+        
+    # -- Abstract methods. -- 
+    
     @web.expose
     @web.require_login( "share Galaxy items" )
     def sharing( self, trans, id, **kwargs ):

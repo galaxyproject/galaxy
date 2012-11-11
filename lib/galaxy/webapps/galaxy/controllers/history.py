@@ -725,15 +725,6 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return
 
     @web.expose
-    @web.require_login( "modify Galaxy items" )
-    def set_slug_async( self, trans, id, new_slug ):
-        history = self.get_history( trans, id )
-        if history:
-            history.slug = new_slug
-            trans.sa_session.flush()
-            return history.slug
-
-    @web.expose
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
 

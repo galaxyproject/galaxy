@@ -468,15 +468,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return
 
     @web.expose
-    @web.require_login( "modify Galaxy items" )
-    def set_slug_async( self, trans, id, new_slug ):
-        stored = self.get_stored_workflow( trans, id )
-        if stored:
-            stored.slug = new_slug
-            trans.sa_session.flush()
-            return stored.slug
-
-    @web.expose
     def get_embed_html_async( self, trans, id ):
         """ Returns HTML for embedding a workflow in a page. """
 
