@@ -71,12 +71,13 @@ class TaskedJobRunner( object ):
             try:
                 job_wrapper.change_state( model.Job.states.RUNNING )
                 self.sa_session.flush()
-                # Split with the tool-defined method.
+                # Split with the defined method.
+                parallelism = job_wrapper.get_parallelism()
                 try:
-                    splitter = getattr(__import__('galaxy.jobs.splitters',  globals(),  locals(),  [job_wrapper.tool.parallelism.method]),  job_wrapper.tool.parallelism.method)
+                    splitter = getattr(__import__('galaxy.jobs.splitters',  globals(),  locals(),  [parallelism.method]),  parallelism.method)
                 except:
                     job_wrapper.change_state( model.Job.states.ERROR )
-                    job_wrapper.fail("Job Splitting Failed, no match for '%s'" % job_wrapper.tool.parallelism)
+                    job_wrapper.fail("Job Splitting Failed, no match for '%s'" % parallelism)
                     return
                 tasks = splitter.do_split(job_wrapper)
                 # Not an option for now.  Task objects don't *do* anything 

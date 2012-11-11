@@ -96,6 +96,9 @@ class JobWrapper( object ):
     def get_job_runner_url( self ):
         return self.job_runner_mapper.get_job_runner_url( self.params )
 
+    def get_parallelism(self):
+        return self.tool.parallelism
+
     # legacy naming
     get_job_runner = get_job_runner_url
 

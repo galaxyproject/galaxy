@@ -8,7 +8,7 @@ def do_split (job_wrapper):
     parent_job = job_wrapper.get_job()
     working_directory = os.path.abspath(job_wrapper.working_directory)
 
-    parallel_settings = job_wrapper.tool.parallelism.attributes
+    parallel_settings = job_wrapper.get_parallelism().attributes
     # Syntax: split_inputs="input1,input2" shared_inputs="genome"
     # Designates inputs to be split or shared
     split_inputs=parallel_settings.get("split_inputs")
@@ -91,7 +91,7 @@ def do_split (job_wrapper):
 
 
 def do_merge( job_wrapper,  task_wrappers):
-    parallel_settings = job_wrapper.tool.parallelism.attributes
+    parallel_settings = job_wrapper.get_parallelism().attributes
     # Syntax: merge_outputs="export" pickone_outputs="genomesize"
     # Designates outputs to be merged, or selected from as a representative
     merge_outputs = parallel_settings.get("merge_outputs")
