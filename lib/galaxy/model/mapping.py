@@ -323,7 +323,24 @@ LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_associa
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "visible", Boolean ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "message", TrimmedString( 255 ) ) )
+    Column( "message", TrimmedString( 255 ) ),
+    Column( "extended_metadata_id", Integer,
+        ForeignKey( "extended_metadata.id" ), index=True )
+    )
+
+
+ExtendedMetadata.table = Table("extended_metadata", metadata,
+    Column( "id", Integer, primary_key=True ), 
+    Column( "data", JSONType ) )
+
+ExtendedMetadataIndex.table = Table("extended_metadata_index", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "extended_metadata_id", Integer, ForeignKey("extended_metadata.id",
+                                                        onupdate="CASCADE",
+                                                        ondelete="CASCADE" ),
+                                             index=True ),
+    Column( "path", String( 255 )),
+    Column( "value", TEXT))
 
 Library.table = Table( "library", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1436,6 +1453,28 @@ assign_mapper( context, Library, Library.table,
     )
 )
 
+assign_mapper(context, ExtendedMetadata, ExtendedMetadata.table,
+    properties=dict(
+        children=relation( 
+            ExtendedMetadataIndex,
+            primaryjoin=( ExtendedMetadataIndex.table.c.extended_metadata_id == ExtendedMetadata.table.c.id ),
+            backref=backref("parent",
+                primaryjoin=( ExtendedMetadataIndex.table.c.extended_metadata_id == ExtendedMetadata.table.c.id )
+            )
+        )
+    )
+)
+
+assign_mapper(context, ExtendedMetadataIndex, ExtendedMetadataIndex.table,
+    properties=dict(
+        extended_metadata=relation(
+            ExtendedMetadata,
+            primaryjoin=( ( ExtendedMetadataIndex.table.c.extended_metadata_id == ExtendedMetadata.table.c.id ) )     
+        )
+    )
+)
+
+
 assign_mapper( context, LibraryInfoAssociation, LibraryInfoAssociation.table,
                properties=dict( library=relation( Library,
                                                   primaryjoin=( ( LibraryInfoAssociation.table.c.library_id == Library.table.c.id ) & ( not_( LibraryInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
@@ -1515,8 +1554,12 @@ assign_mapper( context, LibraryDatasetDatasetAssociation, LibraryDatasetDatasetA
             backref=backref( "parent", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
         visible_children=relation( 
             LibraryDatasetDatasetAssociation, 
-            primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible == True ) ) )
-        ) )
+            primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible == True ) ) ),
+        extended_metadata=relation(
+            ExtendedMetadata,
+            primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == ExtendedMetadata.table.c.id ) )     
+        )
+    ))
 
 assign_mapper( context, LibraryDatasetDatasetInfoAssociation, LibraryDatasetDatasetInfoAssociation.table,
                properties=dict( library_dataset_dataset_association=relation( LibraryDatasetDatasetAssociation,
