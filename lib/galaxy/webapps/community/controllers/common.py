@@ -25,25 +25,23 @@ from mercurial import hg, ui, commands
 log = logging.getLogger( __name__ )
 
 new_repo_email_alert_template = """
-GALAXY TOOL SHED NEW REPOSITORY ALERT
------------------------------------------------------------------------------
-You received this alert because you registered to receive email when
-new repositories were created in the Galaxy tool shed named "${host}".
------------------------------------------------------------------------------
-
-Repository name:       ${repository_name}
-Date content uploaded: ${display_date}
-Uploaded by:           ${username}
-
-Revision: ${revision}
+Revision:              ${revision}
 Change description:
 ${description}
+
+Repository name:       ${repository_name}
+Uploaded by:           ${username}
+Date content uploaded: ${display_date}
 
 ${content_alert_str}
 
 -----------------------------------------------------------------------------
 This change alert was sent from the Galaxy tool shed hosted on the server
 "${host}"
+-----------------------------------------------------------------------------
+You received this alert because you registered to receive email when
+new repositories were created in the Galaxy tool shed named "${host}".
+-----------------------------------------------------------------------------
 """
 
 email_alert_template = """
@@ -497,7 +495,8 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
         admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
         frm = email_from
         if new_repo_alert:
-            subject = "New Galaxy tool shed repository alert"
+            subject = "Galaxy tool shed alert for new repository named %s" % str( repository.name )
+            subject = subject[ :80 ]
             email_alerts = []
             for user in trans.sa_session.query( trans.model.User ) \
                                         .filter( and_( trans.model.User.table.c.deleted == False,
