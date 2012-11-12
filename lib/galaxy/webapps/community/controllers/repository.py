@@ -1577,7 +1577,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'error' )
-        repository_clone_url = generate_clone_url( trans, repository_id )
+        repository_clone_url = generate_clone_url_for_repository_in_tool_shed( trans, repository_id )
         repository, tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
