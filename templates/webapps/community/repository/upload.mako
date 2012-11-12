@@ -3,7 +3,7 @@
 
 <%
     is_admin = trans.user_is_admin()
-    is_new = repository.is_new
+    is_new = repository.is_new( trans.app )
     can_browse_contents = not is_new
     can_browse_contents = not is_new
     can_rate = repository.user != trans.user
@@ -48,9 +48,9 @@
     <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
     <div popupmenu="repository-${repository.id}-popup">
         %if can_manage:
-            <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">Manage repository</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">Manage repository</a>
         %else:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">View repository</a>
+            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View repository</a>
         %endif
         %if can_view_change_log:
             <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
@@ -154,7 +154,7 @@
                 </div>
                 <div style="clear: both"></div>
             </div>
-            %if not repository.is_new:
+            %if not repository.is_new( trans.app ):
                 <div class="form-row" >
                     <label>Contents:</label>
                     <div id="tree" >

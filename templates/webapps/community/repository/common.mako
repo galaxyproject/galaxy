@@ -22,7 +22,7 @@
                 // initAjax is hard to fake, so we pass the children as object array:
                 initAjax: {url: "${h.url_for( controller='repository', action='open_folder' )}",
                            dataType: "json", 
-                           data: { folder_path: "${repository.repo_path}" },
+                           data: { folder_path: "${repository.repo_path( trans.app )}" },
                 },
                 onLazyRead: function(dtnode){
                     dtnode.appendAjax({
@@ -51,7 +51,7 @@
                     var cell = $("#file_contents");
                     var selected_value;
                      if (dtnode.data.key == 'root') {
-                        selected_value = "${repository.repo_path}/";
+                        selected_value = "${repository.repo_path( trans.app )}/";
                     } else {
                         selected_value = dtnode.data.key;
                     };

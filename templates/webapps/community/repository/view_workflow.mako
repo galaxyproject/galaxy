@@ -9,10 +9,10 @@
 
     in_tool_shed = trans.webapp.name == 'community'
     is_admin = trans.user_is_admin()
-    is_new = repository.is_new
+    is_new = repository.is_new( trans.app )
     can_manage = is_admin or trans.user == repository.user
     can_contact_owner = in_tool_shed and trans.user and trans.user != repository.user
-    can_push = in_tool_shed and trans.app.security_agent.can_push( trans.user, repository )
+    can_push = in_tool_shed and trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_upload = can_push
     can_download = in_tool_shed and not is_new and ( not is_malicious or can_push )
     can_browse_contents = in_tool_shed and not is_new
@@ -51,9 +51,9 @@
                     <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
                 %endif
                 %if can_manage:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">Manage repository</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">Manage repository</a>
                 %else:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">View repository</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View repository</a>
                 %endif
                 %if has_readme:
                     <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">View README</a>

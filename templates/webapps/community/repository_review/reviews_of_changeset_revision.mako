@@ -7,11 +7,11 @@
     from galaxy.webapps.community.controllers.repository_review import build_approved_select_field
     from galaxy.webapps.community.controllers.common import STRSEP
     is_admin = trans.user_is_admin()
-    is_new = repository.is_new
+    is_new = repository.is_new( trans.app )
     can_browse_contents = not is_new
     can_contact_owner = trans.user and trans.user != repository.user
     can_manage = is_admin or repository.user == trans.user
-    can_push = trans.app.security_agent.can_push( trans.user, repository )
+    can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_rate = not is_new and trans.user and repository.user != trans.user
     can_view_change_log = not is_new
     if can_push:

@@ -159,9 +159,9 @@ class CommunityRBACAgent( RBACAgent ):
                     self.associate_components( user=user, role=role )
             for group in groups:
                 self.associate_components( user=user, group=group )
-    def can_push( self, user, repository ):
+    def can_push( self, app, user, repository ):
         if user:
-            return user.username in listify( repository.allow_push )
+            return user.username in listify( repository.allow_push( app ) )
         return False
     def user_can_review_repositories( self, user ):
         if user:

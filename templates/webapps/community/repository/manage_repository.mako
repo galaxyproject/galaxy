@@ -6,10 +6,10 @@
 <%
     from galaxy.web.framework.helpers import time_ago
     is_admin = trans.user_is_admin()
-    is_new = repository.is_new
+    is_new = repository.is_new( trans.app )
     is_deprecated = repository.deprecated
     can_contact_owner = trans.user and trans.user != repository.user
-    can_push = not is_deprecated and trans.app.security_agent.can_push( trans.user, repository )
+    can_push = not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_upload = can_push
     can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
@@ -20,14 +20,14 @@
         browse_label = 'Browse or delete repository tip files'
     else:
         browse_label = 'Browse repository tip files'
-    can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip
+    can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip( trans.app )
     can_deprecate = not is_new and trans.user and ( is_admin or repository.user == trans.user ) and not is_deprecated
     can_undeprecate = trans.user and ( is_admin or repository.user == trans.user ) and is_deprecated
     can_reset_all_metadata = not is_deprecated and is_admin and len( repo ) > 0
     has_readme = metadata and 'readme' in metadata
     can_review_repository = not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
     reviewing_repository = cntrller and cntrller == 'repository_review'
-    if changeset_revision == repository.tip:
+    if changeset_revision == repository.tip( trans.app ):
         tip_str = 'repository tip'
     else:
         tip_str = ''
@@ -191,7 +191,7 @@
             %if is_admin:
                 <div class="form-row">
                     <label>Location:</label>
-                    ${repository.repo_path | h}
+                    ${repository.repo_path( trans.app ) | h}
                 </div>
                 <div class="form-row">
                     <label>Deleted:</label>

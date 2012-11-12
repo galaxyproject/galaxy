@@ -6,6 +6,7 @@ the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 import os.path, os, errno, sys, codecs, operator, logging, tarfile, mimetypes, ConfigParser
 from galaxy import util
+from galaxy.util.shed_util import get_hgweb_config
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
@@ -15,7 +16,7 @@ eggs.require('mercurial')
 from mercurial import hg, ui
 
 log = logging.getLogger( __name__ )
-
+    
 class User( object ):
     def __init__( self, email=None, password=None ):
         self.email = email
@@ -109,6 +110,10 @@ class Repository( object ):
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
+    # Handle to the hgweb.config file on disk.
+    hgweb_config_file = None
+    # This repository's entry in the hgweb.config file on disk.
+    hgweb_path = None
     def __init__( self, name=None, description=None, long_description=None, user_id=None, private=False, email_alerts=None, times_downloaded=0,
                   deprecated=False ):
         self.name = name or "Unnamed repository"
@@ -119,42 +124,43 @@ class Repository( object ):
         self.email_alerts = email_alerts
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
-    @property
-    def repo_path( self ):
-        # Repository locations on disk are defined in the hgweb.config file
-        # in the Galaxy install directory.  An entry looks something like:
-        # repos/test/mira_assembler = database/community_files/000/repo_123
-        # TODO: handle this using the mercurial api.
-        lhs = "repos/%s/%s" % ( self.user.username, self.name )
-        hgweb_config = "%s/hgweb.config" %  os.getcwd()
-        if not os.path.exists( hgweb_config ):
-            raise Exception( "Required file hgweb.config does not exist in directory %s" % os.getcwd() )
-        config = ConfigParser.ConfigParser()
-        config.read( hgweb_config )
-        for option in config.options( "paths" ):
-            if option == lhs:
-                return config.get( "paths", option )
-        raise Exception( "Entry for repository %s missing in %s/hgweb.config file." % ( lhs, os.getcwd() ) )
-    @property
-    def revision( self ):
-        repo = hg.repository( ui.ui(), self.repo_path )
+    def get_hgweb_config_file( self, app ):
+        if self.hgweb_config_file is None:
+            self.hgweb_config_file = get_hgweb_config( app )
+        return self.hgweb_config_file
+    def get_hgweb_path( self, app ):
+        # TODO: If possible, handle this using the mercurial api.
+        if self.hgweb_path is None:
+            lhs = os.path.join( "repos", self.user.username, self.name )
+            config = ConfigParser.ConfigParser()
+            config.read( self.get_hgweb_config_file( app ) )
+            for option in config.options( "paths" ):
+                if option == lhs:
+                    self.hgweb_path = config.get( "paths", option )
+                    break
+            if self.hgweb_path is None:
+                raise Exception( "Entry for repository %s missing in file %s." % ( lhs, hgweb_config ) )
+        return self.hgweb_path
+    def repo_path( self, app ):
+        # Repository locations on disk are stored in the hgweb.config file located in the directory defined by the config setting hgweb_config_dir.
+        # An entry looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
+        return self.get_hgweb_path( app )
+    def revision( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return "%s:%s" % ( str( tip_ctx.rev() ), str( repo.changectx( repo.changelog.tip() ) ) )
-    @property
-    def tip( self ):
-        repo = hg.repository( ui.ui(), self.repo_path )
+    def tip( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
         return str( repo.changectx( repo.changelog.tip() ) )
-    @property
-    def is_new( self ):
-        repo = hg.repository( ui.ui(), self.repo_path )
+    def is_new( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return tip_ctx.rev() < 0
-    @property
-    def allow_push( self ):
-        repo = hg.repository( ui.ui(), self.repo_path )
+    def allow_push( self, app ):
+        repo = hg.repository( ui.ui(), self.repo_path( app ) )
         return repo.ui.config( 'web', 'allow_push' )
-    def set_allow_push( self, usernames, remove_auth='' ):
-        allow_push = util.listify( self.allow_push )
+    def set_allow_push( self, app, usernames, remove_auth='' ):
+        allow_push = util.listify( self.allow_push( app ) )
         if remove_auth:
             allow_push.remove( remove_auth )
         else:

@@ -92,6 +92,8 @@ class Configuration( object ):
         self.job_handlers = []
         self.tool_handlers = []
         self.tool_runners = []
+        # Where the tool shed hgweb.config file is stored - the default is the Galaxy installation directory.
+        self.hgweb_config_dir = resolve_path( kwargs.get( 'hgweb_config_dir', '' ), self.root )
         # Proxy features
         self.apache_xsendfile = kwargs.get( 'apache_xsendfile', False )
         self.nginx_x_accel_redirect_base = kwargs.get( 'nginx_x_accel_redirect_base', False )
@@ -112,7 +114,7 @@ class Configuration( object ):
             return default
     def check( self ):
         # Check that required directories exist.
-        paths_to_check = [ self.root, self.file_path, self.tool_data_path, self.template_path ]
+        paths_to_check = [ self.root, self.file_path, self.hgweb_config_dir, self.tool_data_path, self.template_path ]
         for path in paths_to_check:
             if path not in [ None, False ] and not os.path.isdir( path ):
                 try:

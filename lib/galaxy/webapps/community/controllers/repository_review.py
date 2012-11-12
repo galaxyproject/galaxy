@@ -56,7 +56,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
             # Restrict to revisions that have been reviewed.
             if repository.reviews:
                 rval = ''
-                repo = hg.repository( get_configured_ui(), repository.repo_path )
+                repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
                 for review in repository.reviews:
                     changeset_revision = review.changeset_revision
                     rev, label = get_rev_label_from_changeset_revision( repo, changeset_revision )
@@ -71,7 +71,9 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
             if repository_metadata_revisions:
                 rval = ''
                 for repository_metadata in repository_metadata_revisions:
-                    rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( repository_metadata, repository=repository )
+                    rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( trans,
+                                                                                                                repository_metadata,
+                                                                                                                repository=repository )
                     rval += '<a href="manage_repository_reviews_of_revision'
                     rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
                 return rval
@@ -309,7 +311,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         review = get_review( trans, kwd[ 'id' ] )
         repository = review.repository
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
         rev, changeset_revision_label = get_rev_label_from_changeset_revision( repo, review.changeset_revision )
         return trans.fill_template( '/webapps/community/repository_review/browse_review.mako',
                                     repository=repository,
@@ -468,7 +470,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
         for component in get_components( trans ):
             components_dict[ component.name ] = dict( component=component, component_review=None )
         repository = review.repository
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
         for component_review in review.component_reviews:
             if component_review and component_review.component:
                 component_name = component_review.component.name
@@ -652,7 +654,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
         repository_id = kwd.get( 'id', None )
         if repository_id:
             repository = get_repository_in_tool_shed( trans, repository_id )
-            repo_dir = repository.repo_path
+            repo_dir = repository.repo_path( trans.app )
             repo = hg.repository( get_configured_ui(), repo_dir )
             metadata_revision_hashes = [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
             reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
@@ -699,7 +701,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
         repository_id = kwd.get( 'id', None )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repository = get_repository_in_tool_shed( trans, repository_id )
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         installable = changeset_revision in [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
         rev, changeset_revision_label = get_rev_label_from_changeset_revision( repo, changeset_revision )
@@ -765,7 +767,7 @@ class RepositoryReviewController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository = get_repository_in_tool_shed( trans, kwd[ 'id' ] )
         changeset_revision = kwd.get( 'changeset_revision', None )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
         previous_reviews_dict = get_previous_repository_reviews( trans, repository, changeset_revision )
         rev, changeset_revision_label = get_rev_label_from_changeset_revision( repo, changeset_revision )
         return trans.fill_template( '/webapps/community/repository_review/select_previous_review.mako',

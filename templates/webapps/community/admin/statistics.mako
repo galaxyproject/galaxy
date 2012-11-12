@@ -18,10 +18,10 @@
                         <td>Total repositories</td>
                         <td>${trans.app.shed_counter.repositories | h}</td>
                     </tr>
-                    <tr>
-                        <td>Empty repositories</td>
-                        <td>${trans.app.shed_counter.new_repositories | h}</td>
-                    </tr>
+                    ##<tr>
+                    ##    <td>Empty repositories</td>
+                    ##    <td>${trans.app.shed_counter.new_repositories | h}</td>
+                    ##</tr>
                     <tr>
                         <td>Deleted repositories</td>
                         <td>${trans.app.shed_counter.deleted_repositories | h}</td>

@@ -315,7 +315,7 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     result.engine = engine
     result.session = Session
     result.create_tables = create_tables
-    #load local galaxy security policy
+    # Load local tool shed security policy
     result.security_agent = CommunityRBACAgent( result )
     result.shed_counter = ShedCounter( result )
     return result

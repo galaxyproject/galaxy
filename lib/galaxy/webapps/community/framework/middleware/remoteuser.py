@@ -53,8 +53,7 @@ class RemoteUser( object ):
             if host in self.display_servers:
                 environ[ 'HTTP_REMOTE_USER' ] = 'remote_display_server@%s' % ( self.maildomain or 'example.org' )
                 return self.app( environ, start_response )
-        # Apache sets REMOTE_USER to the string '(null)' when using the
-        # Rewrite* method for passing REMOTE_USER and a user is
+        # Apache sets REMOTE_USER to the string '(null)' when using the Rewrite* method for passing REMOTE_USER and a user is
         # un-authenticated.  Any other possible values need to go here as well.
         path_info = environ.get('PATH_INFO', '')
         if environ.has_key( 'HTTP_REMOTE_USER' ) and environ[ 'HTTP_REMOTE_USER' ] != '(null)':
@@ -62,16 +61,14 @@ class RemoteUser( object ):
                 if self.maildomain is not None:
                     environ[ 'HTTP_REMOTE_USER' ] += '@' + self.maildomain
                 else:
-                    title = "Access to Galaxy is denied"
+                    title = "Access to this Galaxy tool shed is denied"
                     message = """
-                        Galaxy is configured to authenticate users via an external
-                        method (such as HTTP authentication in Apache), but only a
-                        username (not an email address) was provided by the
-                        upstream (proxy) server.  Since Galaxy usernames are email
-                        addresses, a default mail domain must be set.</p>
-                        <p>Please contact your local Galaxy administrator.  The
-                        variable <code>remote_user_maildomain</code> must be set
-                        before you may access Galaxy.
+                        This Galaxy tool shed is configured to authenticate users via an external
+                        method (such as HTTP authentication in Apache), but only a username (not
+                        an email address) was provided by the upstream (proxy) server.  Since tool
+                        shed usernames are email addresses, a default mail domain must be set.</[>
+                        <p>The variable <code>remote_user_maildomain</code> must be set before you
+                        can access this tool shed.  Contact your local tool shed administrator.  
                     """
                     return self.error( start_response, title, message )
             return self.app( environ, start_response )
@@ -79,15 +76,15 @@ class RemoteUser( object ):
             # The API handles its own authentication via keys
             return self.app( environ, start_response )
         else:
-            title = "Access to Galaxy is denied"
+            title = "Access to this Galaxy tool shed is denied"
             message = """
-                Galaxy is configured to authenticate users via an external
-                method (such as HTTP authentication in Apache), but a username
-                was not provided by the upstream (proxy) server.  This is
-                generally due to a misconfiguration in the upstream server.</p>
-                <p>Please contact your local Galaxy administrator.
+                This Galaxy tool shed is configured to authenticate users via an external
+                method (such as HTTP authentication in Apache), but a username was not
+                provided by the upstream (proxy) server.  This is generally due to a
+                misconfiguration in the upstream server.</p>
+                <p>Contact your local Galaxy tool shed administrator.
             """
             return self.error( start_response, title, message )
-    def error( self, start_response, title="Access denied", message="Please contact your local Galaxy administrator." ):
+    def error( self, start_response, title="Access denied", message="Contact your local Galaxy tool shed administrator." ):
         start_response( '403 Forbidden', [('Content-type', 'text/html')] )
         return [errorpage % (title, message)]
