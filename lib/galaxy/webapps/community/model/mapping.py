@@ -13,7 +13,7 @@ from galaxy.model.orm import *
 from galaxy.model.orm.ext.assignmapper import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
-from galaxy.util.shed_util import ShedCounter
+from galaxy.webapps.community.util.shed_statistics import *
 from galaxy.webapps.community.util.hgweb_config import *
 from galaxy.webapps.community.security import CommunityRBACAgent
 
