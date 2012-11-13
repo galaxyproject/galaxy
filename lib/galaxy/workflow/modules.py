@@ -255,7 +255,10 @@ class ToolModule( WorkflowModule ):
     def get_errors( self ):
         return self.errors
     def get_tooltip( self, static_path='' ):
-        return self.tool.help.render( static_path=static_path )
+        if self.tool.help:
+            return self.tool.help.render( static_path=static_path )
+        else:
+            return None
     def get_data_inputs( self ):
         data_inputs = []
         def callback( input, value, prefixed_name, prefixed_label ):
