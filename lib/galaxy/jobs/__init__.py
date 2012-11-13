@@ -81,7 +81,7 @@ class JobWrapper( object ):
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
-        self.job_runner_mapper = JobRunnerMapper( self )
+        self.job_runner_mapper = JobRunnerMapper( self, job.job_runner_name )
         self.params = None
         if job.params:
             self.params = from_json_string( job.params )

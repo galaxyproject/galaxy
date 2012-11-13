@@ -8,7 +8,7 @@ import logging
 import threading
 from Queue import Queue, Empty
 
-from sqlalchemy.sql.expression import and_, or_
+from sqlalchemy.sql.expression import and_, or_, select, func
 
 from galaxy import util, model
 from galaxy.jobs import Sleeper, JobWrapper, TaskWrapper
@@ -16,7 +16,7 @@ from galaxy.jobs import Sleeper, JobWrapper, TaskWrapper
 log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
-JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED = 'wait', 'error', 'input_error', 'input_deleted', 'ready', 'deleted', 'admin_deleted'
+JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED, JOB_USER_OVER_QUOTA = 'wait', 'error', 'input_error', 'input_deleted', 'ready', 'deleted', 'admin_deleted', 'user_over_quota'
 
 class JobHandler( object ):
     """
@@ -126,9 +126,32 @@ class JobHandlerQueue( object ):
             # Clear the session so we get fresh states for job and all datasets
             self.sa_session.expunge_all()
             # Fetch all new jobs
-            jobs_to_check = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
-                                .filter( ( model.Job.state == model.Job.states.NEW ) \
-                                         & ( model.Job.handler == self.app.config.server_name ) ).all()
+            hda_not_ready = self.sa_session.query(model.Job.id).enable_eagerloads(False) \
+                    .join(model.JobToInputDatasetAssociation) \
+                    .join(model.HistoryDatasetAssociation) \
+                    .join(model.Dataset) \
+                    .filter(and_((model.Job.state == model.Job.states.NEW),
+                                 or_((model.HistoryDatasetAssociation._state != None),
+                                     (model.HistoryDatasetAssociation.deleted == True ),
+                                     (model.Dataset.state != model.Dataset.states.OK ),
+                                     (model.Dataset.deleted == True)))).subquery()
+            ldda_not_ready = self.sa_session.query(model.Job.id).enable_eagerloads(False) \
+                    .join(model.JobToInputLibraryDatasetAssociation) \
+                    .join(model.LibraryDatasetDatasetAssociation) \
+                    .join(model.Dataset) \
+                    .filter(and_((model.Job.state == model.Job.states.NEW),
+                                 or_((model.LibraryDatasetDatasetAssociation._state != None),
+                                     (model.LibraryDatasetDatasetAssociation.deleted == True),
+                                     (model.Dataset.state != model.Dataset.states.OK),
+                                     (model.Dataset.deleted == True)))).subquery()
+            jobs_to_check = self.sa_session.query(model.Job).enable_eagerloads(False) \
+                    .filter(and_((model.Job.state == model.Job.states.NEW),
+                                 (model.Job.handler == self.app.config.server_name),
+                                 ~model.Job.table.c.id.in_(hda_not_ready),
+                                 ~model.Job.table.c.id.in_(ldda_not_ready))) \
+                    .order_by(model.Job.id).all()
+            # Ensure that we get new job counts on each iteration
+            self.__clear_user_job_count()
         else:
             # Get job objects and append to watch queue for any which were
             # previously waiting
@@ -150,7 +173,8 @@ class JobHandlerQueue( object ):
         new_waiting_jobs = []
         for job in jobs_to_check:
             try:
-                # Check the job's dependencies, requeue if they're not done
+                # Check the job's dependencies, requeue if they're not done.
+                # Some of these states will only happen when using the in-memory job queue
                 job_state = self.__check_if_ready_to_run( job )
                 if job_state == JOB_WAIT:
                     if not self.track_jobs_in_database:
@@ -166,6 +190,10 @@ class JobHandlerQueue( object ):
                     log.info( "(%d) Job deleted by user while still queued" % job.id )
                 elif job_state == JOB_ADMIN_DELETED:
                     log.info( "(%d) Job deleted by admin while still queued" % job.id )
+                elif job_state == JOB_USER_OVER_QUOTA:
+                    log.info( "(%d) User (%s) is over quota: job paused" % ( job.id, job.user_id ) )
+                    job.state = model.Job.states.PAUSED
+                    self.sa_session.add( job )
                 else:
                     log.error( "(%d) Job in unknown state '%s'" % ( job.id, job_state ) )
                     if not self.track_jobs_in_database:
@@ -174,6 +202,8 @@ class JobHandlerQueue( object ):
                 log.exception( "failure running job %d" % job.id )
         # Update the waiting list
         self.waiting_jobs = new_waiting_jobs
+        # Flush, if we updated the state
+        self.sa_session.flush()
         # Done with the session
         self.sa_session.remove()
 
@@ -187,57 +217,88 @@ class JobHandlerQueue( object ):
         job can be dispatched. Otherwise, return JOB_WAIT indicating that input
         datasets are still being prepared.
         """
-        if job.state == model.Job.states.DELETED:
-            return JOB_DELETED
-        elif job.state == model.Job.states.ERROR:
-            return JOB_ADMIN_DELETED
-        elif self.app.config.enable_quotas:
+        # If tracking in the database, job.state is guaranteed to be NEW and the inputs are guaranteed to be OK
+        if not self.track_jobs_in_database:
+            if job.state == model.Job.states.DELETED:
+                return JOB_DELETED
+            elif job.state == model.Job.states.ERROR:
+                return JOB_ADMIN_DELETED
+            for dataset_assoc in job.input_datasets + job.input_library_datasets:
+                idata = dataset_assoc.dataset
+                if not idata:
+                    continue
+                # don't run jobs for which the input dataset was deleted
+                if idata.deleted:
+                    JobWrapper( job, self ).fail( "input data %s (file: %s) was deleted before the job started" % ( idata.hid, idata.file_name ) )
+                    return JOB_INPUT_DELETED
+                # an error in the input data causes us to bail immediately
+                elif idata.state == idata.states.ERROR:
+                    JobWrapper( job, self ).fail( "input data %s is in error state" % ( idata.hid ) )
+                    return JOB_INPUT_ERROR
+                elif idata.state == idata.states.FAILED_METADATA:
+                    JobWrapper( job, self ).fail( "input data %s failed to properly set metadata" % ( idata.hid ) )
+                    return JOB_INPUT_ERROR
+                elif idata.state != idata.states.OK and not ( idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id ):
+                    # need to requeue
+                    return JOB_WAIT
+        state = self.__check_user_jobs( job )
+        if state == JOB_READY and self.app.config.enable_quotas:
             quota = self.app.quota_agent.get_quota( job.user )
             if quota is not None:
                 try:
                     usage = self.app.quota_agent.get_usage( user=job.user, history=job.history )
                     if usage > quota:
-                        return JOB_WAIT
+                        return JOB_USER_OVER_QUOTA
                 except AssertionError, e:
                     pass # No history, should not happen with an anon user
-        for dataset_assoc in job.input_datasets + job.input_library_datasets:
-            idata = dataset_assoc.dataset
-            if not idata:
-                continue
-            # don't run jobs for which the input dataset was deleted
-            if idata.deleted:
-                JobWrapper( job, self ).fail( "input data %s (file: %s) was deleted before the job started" % ( idata.hid, idata.file_name ) )
-                return JOB_INPUT_DELETED
-            # an error in the input data causes us to bail immediately
-            elif idata.state == idata.states.ERROR:
-                JobWrapper( job, self ).fail( "input data %s is in error state" % ( idata.hid ) )
-                return JOB_INPUT_ERROR
-            elif idata.state == idata.states.FAILED_METADATA:
-                JobWrapper( job, self ).fail( "input data %s failed to properly set metadata" % ( idata.hid ) )
-                return JOB_INPUT_ERROR
-            elif idata.state != idata.states.OK and not ( idata.state == idata.states.SETTING_METADATA and job.tool_id is not None and job.tool_id == self.app.datatypes_registry.set_external_metadata_tool.id ):
-                # need to requeue
-                return JOB_WAIT
-        return self.__check_user_jobs( job )
+        return state
+
+    def __clear_user_job_count( self ):
+        self.user_job_count = {}
+        self.user_job_count_per_runner = {}
 
     def __check_user_jobs( self, job ):
-        if not self.app.config.user_job_limit:
-            return JOB_READY
         if job.user:
-            count = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
-                        .filter( and_( model.Job.user_id == job.user.id,
-                                       or_( model.Job.state == model.Job.states.RUNNING,
-                                            model.Job.state == model.Job.states.QUEUED ) ) ).count()
+            # Check the hard limit first
+            if self.app.config.registered_user_job_limit:
+                # Cache the job count if necessary
+                if not self.user_job_count:
+                    query = self.sa_session.execute(select([model.Job.table.c.user_id, func.count(model.Job.table.c.user_id)]) \
+                            .where(and_(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING)), (model.Job.table.c.user_id is not None))) \
+                            .group_by(model.Job.table.c.user_id))
+                    for row in query:
+                        self.user_job_count[row[0]] = row[1]
+                if self.user_job_count.get(job.user_id, 0) >= self.app.config.registered_user_job_limit:
+                    return JOB_WAIT
+            # If we pass the hard limit, also check the per-runner count
+            if job.job_runner_name in self.app.config.job_limits:
+                # Cache the job count if necessary
+                if job.job_runner_name not in self.user_job_count_per_runner:
+                    self.user_job_count_per_runner[job.job_runner_name] = {}
+                    query_url, limit = self.app.config.job_limits[job.job_runner_name]
+                    base_query = select([model.Job.table.c.user_id, model.Job.table.c.job_runner_name, func.count(model.Job.table.c.user_id).label('job_count')]) \
+                                .where(model.Job.table.c.state.in_((model.Job.states.QUEUED, model.Job.states.RUNNING))) \
+                                .group_by(model.Job.table.c.user_id, model.Job.table.c.job_runner_name)
+                    if '%' in query_url or '_' in query_url:
+                        subq = base_query.having(model.Job.table.c.job_runner_name.like(query_url)).alias('subq')
+                        query = self.sa_session.execute(select([subq.c.user_id, func.sum(subq.c.job_count).label('job_count')]).group_by(subq.c.user_id))
+                    else:
+                        query = self.sa_session.execute(base_query.having(model.Job.table.c.job_runner_name == query_url))
+                    for row in query:
+                        self.user_job_count_per_runner[job.job_runner_name][row['user_id']] = row['job_count']
+                if self.user_job_count_per_runner[job.job_runner_name].get(job.user_id, 0) >= self.app.config.job_limits[job.job_runner_name][1]:
+                    return JOB_WAIT
         elif job.galaxy_session:
-            count = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
-                        .filter( and_( model.Job.session_id == job.galaxy_session.id,
-                                       or_( model.Job.state == model.Job.states.RUNNING,
-                                            model.Job.state == model.Job.states.QUEUED ) ) ).count()
+            # Anonymous users only get the hard limit
+            if self.app.config.anonymous_user_job_limit:
+                count = self.sa_session.query( model.Job ).enable_eagerloads( False ) \
+                            .filter( and_( model.Job.session_id == job.galaxy_session.id,
+                                           or_( model.Job.state == model.Job.states.RUNNING,
+                                                model.Job.state == model.Job.states.QUEUED ) ) ).count()
+                if count >= self.app.config.anonymous_user_job_limit:
+                    return JOB_WAIT
         else:
             log.warning( 'Job %s is not associated with a user or session so job concurrency limit cannot be checked.' % job.id )
-            return JOB_READY
-        if count >= self.app.config.user_job_limit:
-            return JOB_WAIT
         return JOB_READY
 
     def put( self, job_id, tool_id ):

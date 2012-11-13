@@ -146,6 +146,7 @@ class JobManagerQueue( object ):
 
         for job in jobs_to_check:
             job.handler = self.__get_handler( job )
+            job.job_runner_name = self.__get_runner_url( job )
             log.debug( "(%s) Job assigned to handler '%s'" % ( job.id, job.handler ) )
             self.sa_session.add( job )
 
@@ -167,6 +168,14 @@ class JobManagerQueue( object ):
         except:
             log.exception( "(%s) Caught exception attempting to get tool-specific job handler for tool '%s', selecting at random from available handlers instead:" % ( job.id, job.tool_id ) )
             return random.choice( self.app.config.job_handlers )
+
+    def __get_runner_url( self, job ):
+        """This fetches the raw runner URL, and does not perform any computation e.g. for the dynamic runner"""
+        try:
+            return self.app.toolbox.tools_by_id.get( job.tool_id, None ).get_job_runner_url( job.params )
+        except Exception, e:
+            log.warning( 'Unable to determine job runner URL for job %s: %s' % (job.id, str(e)) )
+        return None
 
     def put( self, job_id, tool ):
         """Add a job to the queue (by job identifier)"""

@@ -112,6 +112,7 @@ class Job( object ):
                     RUNNING = 'running',
                     OK = 'ok',
                     ERROR = 'error',
+                    PAUSED = 'paused',
                     DELETED = 'deleted',
                     DELETED_NEW = 'deleted_new' )
     # Please include an accessor (get/set pair) for any new columns/members.

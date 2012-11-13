@@ -659,12 +659,6 @@ use_interactive = True
 # bytes).  0 for no limit.
 #output_size_limit = 0
 
-# Jobs can be held back from submission to a runner if a user already has more
-# jobs queued or running than the number specified below.  This prevents a
-# single user from stuffing the queue and preventing other users from being
-# able to run jobs.
-#user_job_limit = None
-
 # Clustering Galaxy is not a straightforward process and requires some
 # pre-configuration.  See the the wiki before attempting to set any of these
 # options:
@@ -716,6 +710,36 @@ use_interactive = True
 # This option allows users to see the full path of datasets via the "View
 # Details" option in the history.  Administrators can always see this.
 #expose_dataset_path = False
+
+# -- Job Limiting
+
+# A hard limit on the total number of jobs a user can have running across all
+# configured job destinations can be configured here.
+#registered_user_job_limit = None
+#anonymous_user_job_limit = None
+
+# Additionally, jobs can be limited based on runner URLs (or matching of runner
+# URLs).  Matching is via SQL's 'LIKE' operator, so the wildcard characters are
+# '_' and '%' (regex is not supported).  Since the job runner code often
+# rewrites the URL once the job has been submitted to the cluster, you will
+# need to define how to match the runner URL stored in the database.  When in
+# doubt, you can run a job and then examine the stored value of
+# 'job_runner_name' in the 'job' table of the database to see what you'll need
+# to match.
+#
+# For example, if default_cluster_job_runner is set to pbs:/// and the default
+# Torque cluster happens to be pbs.example.org, the job_runner_name is likely
+# to be stored as 'pbs://pbs.example.org/'.  To limit the number of jobs a user
+# can run on this cluster to 4, use the following:
+#
+#   pbs:/// = pbs://pbs.example.org/ 4
+#
+# An example that uses matching (if, for example, your runner URL contains
+# native options):
+#
+#   drmaa:/// = drmaa://sge.example.org/% 4
+
+[galaxy:job_limits]
 
 # ---- Per-Tool Job Management ----------------------------------------------
 

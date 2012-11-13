@@ -14,8 +14,9 @@ class JobRunnerMapper( object ):
     (in the form of job_wrappers) to job runner url strings.
     """
 
-    def __init__( self, job_wrapper ):
+    def __init__( self, job_wrapper, job_runner_name=None ):
         self.job_wrapper = job_wrapper
+        self.job_runner_name = job_runner_name
         self.rule_modules = self.__get_rule_modules( )
 
     def __get_rule_modules( self ):
@@ -114,7 +115,11 @@ class JobRunnerMapper( object ):
             raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
 
     def __cache_job_runner_url( self, params ):
-        raw_job_runner_url = self.job_wrapper.tool.get_job_runner_url( params )
+        # If there's already a runner set in the Job object, don't overwrite from the tool
+        if self.job_runner_name is not None:
+            raw_job_runner_url = self.job_runner_name
+        else:
+            raw_job_runner_url = self.job_wrapper.tool.get_job_runner_url( params )
         if raw_job_runner_url.startswith( DYNAMIC_RUNNER_PREFIX ):
             job_runner_url = self.__expand_dynamic_job_runner_url( raw_job_runner_url[ len( DYNAMIC_RUNNER_PREFIX ) : ] )
         else:
