@@ -1,4 +1,4 @@
-import os, logging, tempfile, shutil
+import os, logging, tempfile, shutil, ConfigParser
 from time import strftime
 from datetime import date, datetime
 from galaxy import util
@@ -11,7 +11,7 @@ from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 # TODO: re-factor shed_util to eliminate the following restricted imports
 from galaxy.util.shed_util import create_repo_info_dict, generate_clone_url_for_repository_in_tool_shed, generate_message_for_invalid_tools
-from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, get_file_from_changeset_revision, get_hgweb_config
+from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, get_file_from_changeset_revision
 from galaxy.util.shed_util import get_repository_file_contents, get_repository_in_tool_shed, get_repository_metadata_by_changeset_revision
 from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config
 from galaxy.util.shed_util import INITIAL_CHANGELOG_HASH, load_tool_from_config, NOT_TOOL_CONFIGS, open_repository_files_folder, remove_dir
@@ -530,26 +530,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
     repositories_i_own_grid = RepositoriesIOwnGrid()
     deprecated_repositories_i_own_grid = DeprecatedRepositoriesIOwnGrid()
 
-    def __add_hgweb_config_entry( self, trans, repository, repository_path ):
-        # Add an entry in the hgweb.config file for a new repository.  An entry looks something like:
-        # repos/test/mira_assembler = database/community_files/000/repo_123.
-        hgweb_config = get_hgweb_config( trans.app )
-        if repository_path.startswith( './' ):
-            repository_path = repository_path.replace( './', '', 1 )
-        entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path )
-        tmp_fd, tmp_fname = tempfile.mkstemp()
-        if os.path.exists( hgweb_config ):
-            # Make a backup of the hgweb.config file since we're going to be changing it.
-            self.__make_hgweb_config_copy( trans, hgweb_config )
-            new_hgweb_config = open( tmp_fname, 'wb' )
-            for i, line in enumerate( open( hgweb_config ) ):
-                new_hgweb_config.write( line )
-        else:
-            new_hgweb_config = open( tmp_fname, 'wb' )
-            new_hgweb_config.write( '[paths]\n' )
-        new_hgweb_config.write( "%s\n" % entry )
-        new_hgweb_config.flush()
-        shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     @web.expose
     def browse_categories( self, trans, **kwd ):
         # The request came from the tool shed.
@@ -824,25 +804,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                    selected_value=selected_value,
                                    refresh_on_change=False,
                                    multiple=True )
-    def __change_hgweb_config_entry( self, trans, repository, old_repository_name, new_repository_name ):
-        # Change an entry in the hgweb.config file for a repository.  This only happens when
-        # the owner changes the name of the repository.  An entry looks something like:
-        # repos/test/mira_assembler = database/community_files/000/repo_123.
-        hgweb_config = get_hgweb_config( trans.app )
-        # Make a backup of the hgweb.config file since we're going to be changing it.
-        self.__make_hgweb_config_copy( trans, hgweb_config )
-        repo_dir = repository.repo_path( trans.app )
-        old_lhs = "repos/%s/%s" % ( repository.user.username, old_repository_name )
-        new_entry = "repos/%s/%s = %s\n" % ( repository.user.username, new_repository_name, repo_dir )
-        tmp_fd, tmp_fname = tempfile.mkstemp()
-        new_hgweb_config = open( tmp_fname, 'wb' )
-        for i, line in enumerate( open( hgweb_config ) ):
-            if line.startswith( old_lhs ):
-                new_hgweb_config.write( new_entry )
-            else:
-                new_hgweb_config.write( line )
-        new_hgweb_config.flush()
-        shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
+    def __change_repository_name_in_hgrc_file( self, hgrc_file, new_name ):
+        config = ConfigParser.ConfigParser()
+        config.read( hgrc_file )
+        config.read( hgrc_file )
+        config.set( 'web', 'name', new_name )
+        new_file = open( hgrc_file, 'wb' )
+        config.write( new_file )
+        new_file.close()
     @web.expose
     def check_for_updates( self, trans, **kwd ):
         """Handle a request from a local Galaxy instance."""
@@ -1001,8 +970,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     os.makedirs( repository_path )
                 # Create the local repository
                 repo = hg.repository( get_configured_ui(), repository_path, create=True )
-                # Add an entry in the hgweb.config file for the local repository, enabling calls to repository.repo_path( trans.app )
-                self.__add_hgweb_config_entry( trans, repository, repository_path )
+                # Add an entry in the hgweb.config file for the local repository.
+                lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
+                trans.app.hgweb_config_manager.add_entry( lhs, repository_path )
                 # Create a .hg/hgrc file for the local repository
                 self.__create_hgrc_file( trans, repository )
                 flush_needed = False
@@ -1616,13 +1586,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                           changeset_revision=changeset_revision,
                                                           message=message,
                                                           status='error' ) )
-    def __make_hgweb_config_copy( self, trans, hgweb_config ):
-        # Make a backup of the hgweb.config file
-        today = date.today()
-        backup_date = today.strftime( "%Y_%m_%d" )
-        hgweb_config_backup_filename = 'hgweb.config_%s_backup' % backup_date
-        hgweb_config_copy = os.path.join( trans.app.config.hgweb_config_dir, hgweb_config_backup_filename )
-        shutil.copy( os.path.abspath( hgweb_config ), os.path.abspath( hgweb_config_copy ) )
     def __make_same_length( self, list1, list2 ):
         # If either list is 1 item, we'll append to it until its length is the same as the other.
         if len( list1 ) == 1:
@@ -1710,7 +1673,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 if message:
                     error = True
                 else:
-                    self.__change_hgweb_config_entry( trans, repository, repository.name, repo_name )
+                    # Change the entry in the hgweb.config file for the repository.
+                    old_lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
+                    new_lhs = "repos/%s/%s" % ( repository.user.username, repo_name )
+                    new_rhs = "%s\n" % repo_dir
+                    trans.app.hgweb_config_manager.change_entry( old_lhs, new_lhs, new_rhs )
+                    # Change the entry in the repository's hgrc file.
+                    hgrc_file = os.path.join( repo_dir, '.hg', 'hgrc' )
+                    self.__change_repository_name_in_hgrc_file( hgrc_file, repo_name )
                     repository.name = repo_name
                     flush_needed = True
             elif repository.times_downloaded != 0 and repo_name != repository.name:

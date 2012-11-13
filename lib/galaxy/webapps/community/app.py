@@ -46,5 +46,8 @@ class UniverseApplication( object ):
         # TODO: Add OpenID support
         self.openid_providers = OpenIDProviders()
         self.shed_counter = self.model.shed_counter
+        # Let the HgwebConfigManager know where the hgweb.config file is located.
+        self.hgweb_config_manager = self.model.hgweb_config_manager
+        self.hgweb_config_manager.hgweb_config_dir = self.config.hgweb_config_dir
     def shutdown( self ):
         pass

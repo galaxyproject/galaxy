@@ -118,6 +118,7 @@ class ShedCounter( object ):
                                 self.workflows += 1
                                 processed_relative_workflow_paths.append( relative_path )
         self.generation_time = strftime( "%b %d, %Y", gmtime() )
+
 def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
     # A tool shed repository is being installed so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have
@@ -1353,11 +1354,6 @@ def get_file_from_changeset_revision( app, repository, repo_files_dir, changeset
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     named_tmp_file = get_named_tmpfile_from_ctx( ctx, file_name, dir )
     return named_tmp_file
-def get_hgweb_config( app ):
-    hgweb_config = os.path.join( app.config.hgweb_config_dir, 'hgweb.config' )
-    if not os.path.exists( hgweb_config ):
-        raise Exception( "Required file %s does not exist - check config setting for hgweb_config_dir." % hgweb_config )
-    return hgweb_config
 def get_installed_tool_shed_repository( trans, id ):
     """Get a repository on the Galaxy side from the database via id"""
     return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )

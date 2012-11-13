@@ -1,7 +1,6 @@
 import os, logging
 from galaxy.web.base.controller import *
 from galaxy.webapps.community.controllers.common import *
-from galaxy.util.shed_util import get_hgweb_config
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -18,9 +17,7 @@ class HgController( BaseUIController ):
         # hg clone http://test@127.0.0.1:9009/repos/test/convert_characters1
         hg_version = mercurial.__version__.version
         cmd = kwd.get( 'cmd', None )
-        hgweb_config = get_hgweb_config( trans.app )
-        if not os.path.exists( hgweb_config ):
-            raise Exception( "Required file %s does not exist." % str( hgweb_config ) )
+        hgweb_config = trans.app.hgweb_config_manager.hgweb_config
         def make_web_app():
             hgwebapp = hgwebdir( hgweb_config )
             return hgwebapp

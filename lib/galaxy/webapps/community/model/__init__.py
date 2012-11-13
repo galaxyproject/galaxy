@@ -6,7 +6,6 @@ the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 import os.path, os, errno, sys, codecs, operator, logging, tarfile, mimetypes, ConfigParser
 from galaxy import util
-from galaxy.util.shed_util import get_hgweb_config
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import *
 from galaxy.web.form_builder import *
@@ -110,12 +109,7 @@ class Repository( object ):
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
-    # Handle to the hgweb.config file on disk.
-    hgweb_config_file = None
-    # This repository's entry in the hgweb.config file on disk.
-    hgweb_path = None
-    def __init__( self, name=None, description=None, long_description=None, user_id=None, private=False, email_alerts=None, times_downloaded=0,
-                  deprecated=False ):
+    def __init__( self, name=None, description=None, long_description=None, user_id=None, private=False, email_alerts=None, times_downloaded=0, deprecated=False ):
         self.name = name or "Unnamed repository"
         self.description = description
         self.long_description = long_description
@@ -124,27 +118,8 @@ class Repository( object ):
         self.email_alerts = email_alerts
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
-    def get_hgweb_config_file( self, app ):
-        if self.hgweb_config_file is None:
-            self.hgweb_config_file = get_hgweb_config( app )
-        return self.hgweb_config_file
-    def get_hgweb_path( self, app ):
-        # TODO: If possible, handle this using the mercurial api.
-        if self.hgweb_path is None:
-            lhs = os.path.join( "repos", self.user.username, self.name )
-            config = ConfigParser.ConfigParser()
-            config.read( self.get_hgweb_config_file( app ) )
-            for option in config.options( "paths" ):
-                if option == lhs:
-                    self.hgweb_path = config.get( "paths", option )
-                    break
-            if self.hgweb_path is None:
-                raise Exception( "Entry for repository %s missing in file %s." % ( lhs, hgweb_config ) )
-        return self.hgweb_path
     def repo_path( self, app ):
-        # Repository locations on disk are stored in the hgweb.config file located in the directory defined by the config setting hgweb_config_dir.
-        # An entry looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
-        return self.get_hgweb_path( app )
+        return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )
     def revision( self, app ):
         repo = hg.repository( ui.ui(), self.repo_path( app ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
