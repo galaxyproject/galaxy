@@ -4,6 +4,11 @@ from datetime import date
 
 log = logging.getLogger( __name__ )
 
+new_hgweb_config_template = """
+[paths]
+
+"""
+
 class HgWebConfigManager( object ):
     def __init__( self ):
         self.hgweb_config_dir = None
@@ -41,7 +46,13 @@ class HgWebConfigManager( object ):
     def hgweb_config( self ):
         hgweb_config = os.path.join( self.hgweb_config_dir, 'hgweb.config' )
         if not os.path.exists( hgweb_config ):
-            raise Exception( "Required file %s does not exist - check config setting for hgweb_config_dir." % hgweb_config )
+            # We used to raise an exception here...
+            # raise Exception( "Required file %s does not exist - check config setting for hgweb_config_dir." % hgweb_config )
+            # ...but now we just log the missing file and create a new empty one.
+            log.debug( "Required file %s does not exist, so creating a new, empty file.  Check your config setting for hgweb_config_dir." % hgweb_config )
+            hgweb_config_file = open( hgweb_config, 'wb' )
+            hgweb_config_file.write( new_hgweb_config_template )
+            hgweb_config_file.close()
         return os.path.abspath( hgweb_config )
     def make_backup( self ):
         # Make a backup of the hgweb.config file.
