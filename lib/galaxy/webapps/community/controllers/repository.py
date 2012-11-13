@@ -1676,8 +1676,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     # Change the entry in the hgweb.config file for the repository.
                     old_lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
                     new_lhs = "repos/%s/%s" % ( repository.user.username, repo_name )
-                    new_rhs = "%s\n" % repo_dir
-                    trans.app.hgweb_config_manager.change_entry( old_lhs, new_lhs, new_rhs )
+                    trans.app.hgweb_config_manager.change_entry( old_lhs, new_lhs, repo_dir )
                     # Change the entry in the repository's hgrc file.
                     hgrc_file = os.path.join( repo_dir, '.hg', 'hgrc' )
                     self.__change_repository_name_in_hgrc_file( hgrc_file, repo_name )
