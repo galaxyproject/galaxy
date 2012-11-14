@@ -84,6 +84,11 @@ var UsesTicks = {
      * Format number for display at a tick.
      */
     formatNum: function(num, sigDigits) {
+        // Use default of 2 sig. digits.
+        if (sigDigits === undefined) {
+            sigDigits = 2;
+        }
+
         var rval = null;
         if (num < 1) {
             rval = num.toPrecision(sigDigits);
@@ -866,7 +871,7 @@ var CircsterSummaryTreeTrackView = CircsterQuantitativeTrackView.extend({
             if (typeof d === 'string' || !d.max) { return 0; }
             return d.max;
         });
-        return [ 0, (max_data && typeof max_data !== 'string' ? this._quantile(values, 0.98) : 0) ];
+        return [ 0, (max_data && typeof max_data !== 'string' ? this._quantile(max_data, 0.98) : 0) ];
     }
 });
 
