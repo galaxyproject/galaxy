@@ -37,6 +37,9 @@
             "${_("Dataset Security")}": function() {
                 galaxy_main.location = "${h.url_for( controller='root', action='history_set_default_permissions' )}";
             },
+            "${_("Resume Paused Jobs")}": function() {
+                galaxy_history.location = "${h.url_for( controller='history', action='resume_paused_jobs', current=True)}";
+            },
             "${_("Show Deleted Datasets")}": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
             },

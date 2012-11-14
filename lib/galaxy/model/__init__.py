@@ -698,6 +698,11 @@ class History( object, UsesAnnotations ):
     def unhide_datasets( self ):
         for dataset in self.datasets:
             dataset.mark_unhidden()
+    def resume_paused_jobs( self ):
+        for dataset in self.datasets:
+            job = dataset.creating_job
+            if job.state == Job.states.PAUSED:
+                job.set_state(Job.states.QUEUED)
     def get_disk_size( self, nice_size=False ):
         # unique datasets only
         db_session = object_session( self )

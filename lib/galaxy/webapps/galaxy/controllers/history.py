@@ -564,6 +564,20 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.show_ok_message( "Your datasets have been unhidden.", refresh_frames=refresh_frames )
 
     @web.expose
+    def resume_paused_jobs( self, trans, current=False, ids=None ):
+        """Resume paused jobs the active history -- this does not require a logged in user."""
+        if not ids and util.string_as_bool( current ):
+            histories = [ trans.get_history() ]
+            refresh_frames = ['history']
+        else:
+            raise NotImplementedError( "You can currently only resume all the datasets of the current history." )
+        for history in histories:
+            history.resume_paused_jobs()
+            trans.sa_session.add( history )
+        trans.sa_session.flush()
+        return trans.show_ok_message( "Your jobs have been resumed.", refresh_frames=refresh_frames )
+
+    @web.expose
     @web.require_login( "rate items" )
     @web.json
     def rate_async( self, trans, id, rating ):
