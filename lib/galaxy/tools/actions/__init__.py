@@ -145,6 +145,12 @@ class DefaultToolAction( object ):
                     values = input_values[ input.name ]
                     current = values[ "__current_case__" ]
                     wrap_values( input.cases[current].inputs, values, skip_missing_values = skip_missing_values )
+                elif isinstance( input, DataToolParameter ) and input.multiple:
+                    input_values[ input.name ] = \
+                        galaxy.tools.DatasetListWrapper( input_values[ input.name ],
+                                                         datatypes_registry = trans.app.datatypes_registry,
+                                                         tool = tool,
+                                                         name = input.name )
                 elif isinstance( input, DataToolParameter ):
                     input_values[ input.name ] = \
                         galaxy.tools.DatasetFilenameWrapper( input_values[ input.name ],

@@ -2256,12 +2256,11 @@ class Tool:
                     current = values["__current_case__"]
                     wrap_values( input.cases[current].inputs, values )
                 elif isinstance( input, DataToolParameter ) and input.multiple:
-                    values = input_values[ input.name ]
                     input_values[ input.name ] = \
-                        [DatasetFilenameWrapper( value,
-                                                 datatypes_registry = self.app.datatypes_registry,
-                                                 tool = self,
-                                                 name = input.name ) for value in values]
+                        DatasetListWrapper( input_values[ input.name ],
+                                            datatypes_registry = self.app.datatypes_registry,
+                                            tool = self,
+                                            name = input.name )                    
                 elif isinstance( input, DataToolParameter ):
                     ## FIXME: We're populating param_dict with conversions when 
                     ##        wrapping values, this should happen as a separate 
@@ -2333,10 +2332,13 @@ class Tool:
         # but this should be considered DEPRECATED, instead use:
         #   $dataset.get_child( 'name' ).filename
         for name, data in input_datasets.items():
-            param_dict[name] = DatasetFilenameWrapper( data, 
-                                                       datatypes_registry = self.app.datatypes_registry, 
-                                                       tool = self, 
-                                                       name = name )
+            param_dict_value = param_dict.get(name, None)
+            if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
+                param_dict[name] = DatasetFilenameWrapper( data,
+                                                           datatypes_registry = self.app.datatypes_registry,
+                                                           tool = self,
+                                                           name = name )
+
             if data:
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
@@ -3102,7 +3104,16 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
             return getattr( self.dataset, key )
     def __nonzero__( self ):
         return bool( self.dataset )
-        
+
+class DatasetListWrapper( list ):
+    """
+    """
+    def __init__( self, datasets, **kwargs ):
+        if not isinstance(datasets, list):
+            datasets = [datasets]
+        list.__init__( self, [DatasetFilenameWrapper(dataset, **kwargs) for dataset in datasets] )
+
+
 def json_fix( val ):
     if isinstance( val, list ):
         return [ json_fix( v ) for v in val ]
