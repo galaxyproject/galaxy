@@ -30,7 +30,7 @@ ${h.js(
 
 <script type="text/javascript">
 
-<% TERMINAL_STATES = ["ok", "error", "empty", "deleted", "discarded", "failed_metadata"] %>
+<% TERMINAL_STATES = ["ok", "error", "empty", "deleted", "discarded", "failed_metadata", "paused"] %>
 TERMINAL_STATES = ${ h.to_json_string(TERMINAL_STATES) };
 
 // Tag handling.
