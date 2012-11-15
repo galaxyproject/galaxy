@@ -13,6 +13,10 @@ import pkg_resources
 pkg_resources.require( 'mercurial' )
 from mercurial import hg, ui, commands
 
+pkg_resources.require( 'elementtree' )
+from elementtree import ElementTree, ElementInclude
+from elementtree.ElementTree import Element, SubElement
+
 log = logging.getLogger( __name__ )
 
 INITIAL_CHANGELOG_HASH = '000000000000'
@@ -592,8 +596,8 @@ def generate_repository_dependency_metadata( repository_dependencies_config, met
     try:
         # Make sure we're looking at a valid repository_dependencies.xml file.
         tree = util.parse_xml( repository_dependencies_config )
-        root = element_tree.getroot()
-        is_valid = element_tree_root.tag == 'repositories'
+        root = tree.getroot()
+        is_valid = root.tag == 'repositories'
     except Exception, e:
         log.debug( "Error parsing %s, exception: %s" % ( repository_dependencies_config, str( e ) ) )
         is_valid = False
