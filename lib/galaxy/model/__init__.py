@@ -870,6 +870,7 @@ class Dataset( object ):
                     EMPTY = 'empty',
                     ERROR = 'error',
                     DISCARDED = 'discarded',
+                    PAUSED = 'paused',
                     SETTING_METADATA = 'setting_metadata',
                     FAILED_METADATA = 'failed_metadata' )
     permitted_actions = get_permitted_actions( filter='DATASET' )

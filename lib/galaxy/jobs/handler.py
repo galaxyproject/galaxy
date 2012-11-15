@@ -193,6 +193,10 @@ class JobHandlerQueue( object ):
                 elif job_state == JOB_USER_OVER_QUOTA:
                     log.info( "(%d) User (%s) is over quota: job paused" % ( job.id, job.user_id ) )
                     job.state = model.Job.states.PAUSED
+                    for dataset_assoc in job.output_datasets + job.output_library_datasets:
+                        dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
+                        dataset_assoc.dataset.blurb = "Execution of this dataset's job is paused because you were over your disk quota at the time it was ready to run"
+                        self.sa_session.add( dataset_assoc.dataset.dataset )
                     self.sa_session.add( job )
                 else:
                     log.error( "(%d) Job in unknown state '%s'" % ( job.id, job_state ) )

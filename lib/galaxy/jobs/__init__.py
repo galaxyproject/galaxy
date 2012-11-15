@@ -245,6 +245,9 @@ class JobWrapper( object ):
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
                     self.app.object_store.update_from_file(dataset.dataset, create=True)
+                # Pause any dependent jobs (and those jobs' outputs)
+                for dep_job_assoc in dataset.dependent_jobs:
+                    self.pause( dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state." )
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
             job.state = job.states.ERROR
@@ -274,6 +277,19 @@ class JobWrapper( object ):
             self.tool.job_failed( self, message, exception )
         if self.app.config.cleanup_job == 'always' or (self.app.config.cleanup_job == 'onsuccess' and job.state == job.states.DELETED):
             self.cleanup()
+
+    def pause( self, job=None, message=None ):
+        if job is None:
+            job = self.get_job()
+        if message is None:
+            message = "Execution of this dataset's job is paused"
+        if job.state == job.states.NEW:
+            for dataset_assoc in job.output_datasets + job.output_library_datasets:
+                dataset_assoc.dataset.dataset.state = dataset_assoc.dataset.dataset.states.PAUSED
+                dataset_assoc.dataset.info = message
+                self.sa_session.add( dataset_assoc.dataset )
+            job.state = job.states.PAUSED
+            self.sa_session.add( job )
 
     def change_state( self, state, info = False ):
         job = self.get_job()
@@ -437,6 +453,9 @@ class JobWrapper( object ):
                 log.debug( "setting dataset state to ERROR" )
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
+                # Pause any dependent jobs (and those jobs' outputs)
+                for dep_job_assoc in dataset_assoc.dataset.dependent_jobs:
+                    self.pause( dep_job_assoc.job, "Execution of this dataset's job is paused because its input datasets are in an error state." )
             else:
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
             # If any of the rest of the finish method below raises an
