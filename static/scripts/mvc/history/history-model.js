@@ -2,13 +2,21 @@
 //    "../mvc/base-mvc"
 //], function(){
 //==============================================================================
-/**
+/** @class Model for a Galaxy history resource - both a record of user
+ *      tool use and a collection of the datasets those tools produced.
+ *  @name History
  *
+ *  @augments BaseModel
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
  */
-var History = BaseModel.extend( LoggableMixin ).extend({
+var History = BaseModel.extend( LoggableMixin ).extend(
+/** @lends History.prototype */{
     //TODO: bind change events from items and collection to this (itemLengths, states)
 
-    // uncomment this out see log messages
+    ///** logger used to record this.log messages, commonly set to console */
+    //// comment this out to suppress log output
     //logger              : console,
 
     // values from api (may need more)
@@ -27,15 +35,23 @@ var History = BaseModel.extend( LoggableMixin ).extend({
         message     : null
     },
 
+    //TODO: hardcoded
+    urlRoot: 'api/histories/',
+    /** url for fetch */
     url : function(){
         // api location of history resource
-        //TODO: hardcoded
         return 'api/histories/' + this.get( 'id' );
     },
 
+    /** Set up the hdas collection
+     *  @param {Object} initialSettings model data for this History
+     *  @param {Object[]} initialHdas array of model data for this History's HDAs
+     *  @see BaseModel#initialize
+     */
     initialize : function( initialSettings, initialHdas ){
         this.log( this + ".initialize:", initialSettings, initialHdas );
 
+        /** HDACollection of the HDAs contained in this history. */
         this.hdas = new HDACollection();
 
         // if we've got hdas passed in the constructor, load them and set up updates if needed
@@ -44,6 +60,7 @@ var History = BaseModel.extend( LoggableMixin ).extend({
             this.checkForUpdates();
         }
 
+        // events
         //this.on( 'change', function( currModel, changedList ){
         //    this.log( this + ' has changed:', currModel, changedList );
         //});
@@ -53,7 +70,11 @@ var History = BaseModel.extend( LoggableMixin ).extend({
         //});
     },
 
-    // get data via the api (alternative to sending options,hdas to initialize)
+    /** get data via the api (alternative to sending options, hdas to initialize)
+     *  @param {String} historyId encoded id 
+     *  @param {Object[]} success 
+     *  @see BaseModel#initialize
+     */
     //TODO: this needs work - move to more straightforward deferred
     // events: loaded, loaded:user, loaded:hdas
     loadFromApi : function( historyId, success ){
@@ -178,13 +199,22 @@ var History = BaseModel.extend( LoggableMixin ).extend({
 });
 
 //==============================================================================
-/** A collection of histories (per user or admin)
- *      (stub) currently unused
+/** @class A collection of histories (per user).
+ *      (stub) currently unused.
+ *  @name HistoryCollection
+ *
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
  */
-var HistoryCollection = Backbone.Collection.extend( LoggableMixin ).extend({
+var HistoryCollection = Backbone.Collection.extend( LoggableMixin ).extend(
+/** @lends HistoryCollection.prototype */{
     model   : History,
-    urlRoot : 'api/histories',
-    //logger  : console
+    urlRoot : 'api/histories'
+    
+    ///** logger used to record this.log messages, commonly set to console */
+    //// comment this out to suppress log output
+    //logger              : console,
 });
 
 //==============================================================================

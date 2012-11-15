@@ -423,7 +423,6 @@ $(function(){
             width: 90%;
             margin: -2px 0px -3px -4px;
             font-weight: bold;
-            font-size: 110%;
             color: black;
         }
 
