@@ -284,7 +284,6 @@ function galaxyPageSetUp(){
     // global backbone models
     top.Galaxy.currUser         = top.Galaxy.currUser;
     top.Galaxy.currHistoryPanel = top.Galaxy.currHistoryPanel;
-    top.Galaxy.historyPanels    = top.Galaxy.historyPanels || [];
 
     top.Galaxy.paths            = galaxy_paths;
 
@@ -327,6 +326,7 @@ $(function(){
     // i don't like this history+user relationship, but user authentication changes views/behaviour
     history.user = user;
 
+    // create the history panel
     var historyPanel = new HistoryPanel({
         model           : new History( history, hdas ),
         urlTemplates    : galaxy_paths.attributes,
@@ -380,7 +380,6 @@ $(function(){
 
 
     if( !Galaxy.currHistoryPanel ){ Galaxy.currHistoryPanel = historyPanel; }
-    if( !( historyPanel in Galaxy.historyPanels ) ){ Galaxy.historyPanels.unshift( historyPanel ); }
 
     return;
 });

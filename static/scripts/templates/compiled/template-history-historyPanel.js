@@ -47,7 +47,7 @@ function program5(depth0,data) {
 function program7(depth0,data) {
   
   
-  return "Click to see more actions";}
+  return "Click to see more actions for this history";}
 
 function program9(depth0,data) {
   
