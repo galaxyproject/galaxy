@@ -586,7 +586,7 @@ class Registry( object ):
     def find_conversion_destination_for_dataset_by_extensions( self, dataset, accepted_formats, converter_safe = True ):
         """Returns ( target_ext, existing converted dataset )"""
         for convert_ext in self.get_converters_by_datatype( dataset.ext ):
-            if isinstance( self.get_datatype_by_extension( convert_ext ), accepted_formats ):
+            if self.get_datatype_by_extension( convert_ext ).matches_any( accepted_formats ):
                 converted_dataset = dataset.get_converted_files_by_type( convert_ext )
                 if converted_dataset:
                     ret_data = converted_dataset

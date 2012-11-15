@@ -529,7 +529,13 @@ class Data( object ):
     def has_resolution(self):
         return False
 
-
+    def matches_any( self, target_datatypes ):
+        """
+        Check if this datatype is of any of the target_datatypes or is
+        a subtype thereof.
+        """
+        datatype_classes = tuple( [ datatype.__class__ for datatype in target_datatypes ] )
+        return isinstance( self, datatype_classes )
 
     def merge( split_files, output_file):
         """
