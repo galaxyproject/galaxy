@@ -5,13 +5,7 @@ from galaxy.datatypes.checkers import *
 from galaxy.tools import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
-# TODO: re-factor shed_util to eliminate the following restricted imports
-from galaxy.util.shed_util import check_tool_input_params, clone_repository, concat_messages, copy_sample_file, create_or_update_repository_metadata
-from galaxy.util.shed_util import generate_clone_url_for_repository_in_tool_shed, generate_message_for_invalid_tools, generate_metadata_for_changeset_revision
-from galaxy.util.shed_util import get_changectx_for_changeset, get_config_from_disk, get_configured_ui, get_file_context_from_ctx, get_named_tmpfile_from_ctx
-from galaxy.util.shed_util import get_parent_id, get_repository_in_tool_shed, get_repository_metadata_by_changeset_revision
-from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config, INITIAL_CHANGELOG_HASH
-from galaxy.util.shed_util import is_downloadable, load_tool_from_config, remove_dir, reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path
+from galaxy.util.shed_util_common import *
 from galaxy.web.base.controller import *
 from galaxy.web.base.controllers.admin import *
 from galaxy.webapps.community import model

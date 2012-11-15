@@ -8,8 +8,7 @@ from galaxy.model.orm import *
 from sqlalchemy.sql.expression import func
 from common import *
 from repository import RepositoryGrid
-# TODO: re-factor shed_util to eliminate the following restricted imports
-from galaxy.util.shed_util import get_configured_ui, get_repository_in_tool_shed
+from galaxy.util.shed_util_common import *
 from galaxy.util.odict import odict
 
 from galaxy import eggs

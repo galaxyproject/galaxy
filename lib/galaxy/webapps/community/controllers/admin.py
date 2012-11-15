@@ -5,9 +5,7 @@ from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.web.form_builder import SelectField
 from galaxy.util import inflector
-# TODO: re-factor shed_util to eliminate the following restricted imports
-from galaxy.util.shed_util import build_repository_ids_select_field, get_changectx_for_changeset, get_configured_ui, get_repository_in_tool_shed
-from galaxy.util.shed_util import reset_metadata_on_selected_repositories, TOOL_SHED_ADMIN_CONTROLLER
+from galaxy.util.shed_util_common import *
 from common import *
 from repository import RepositoryGrid, CategoryGrid
 
