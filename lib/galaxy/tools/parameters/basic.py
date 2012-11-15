@@ -1387,9 +1387,9 @@ class DataToolParameter( ToolParameter ):
         # Build tuple of classes for supported data formats
         formats = []
         self.extensions = elem.get( 'format', 'data' ).split( "," )
-        for extension in self.extensions:
-            extension = extension.strip()
-            formats.append( datatypes_registry.get_datatype_by_extension( extension.lower() ) )
+        normalized_extensions = [extension.strip().lower() for extension in self.extensions]
+        for extension in normalized_extensions:
+            formats.append( datatypes_registry.get_datatype_by_extension( extension ) )
         self.formats = formats
         self.multiple = string_as_bool( elem.get( 'multiple', False ) )
         # TODO: Enhance dynamic options for DataToolParameters. Currently,
