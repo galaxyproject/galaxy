@@ -83,7 +83,7 @@
     hg clone <a href="${clone_str}">${clone_str}</a>
 </%def>
 
-<%def name="render_repository_items( repository_metadata_id, metadata, can_set_metadata=False )">
+<%def name="render_repository_items( repository_metadata_id, changeset_revision, metadata, can_set_metadata=False )">
     <% from galaxy.tool_shed.encoding_util import tool_shed_encode %>
     %if metadata or can_set_metadata:
         <p/>
@@ -91,6 +91,28 @@
             <div class="toolFormTitle">Preview tools and inspect metadata by tool version</div>
             <div class="toolFormBody">
                 %if metadata:
+                    %if 'repository_dependencies' in metadata:
+                        <div class="form-row">
+                            <table class="grid">
+                                <tr>
+                                    <td><b>tool shed</b></td>
+                                    <td><b>name</b></td>
+                                    <td><b>version</b></td>
+                                    <td><b>type</b></td>
+                                </tr>
+                                %for repository_dependency_tup in metadata[ 'repository_dependencies' ]:
+                                    <% toolshed, name, owner, changeset_revision = repository_dependency_tup %>
+                                    <tr>
+                                        <td>${toolshed | h}</td>
+                                        <td>${name | h}</td>
+                                        <td>${owner | h}</td>
+                                        <td>${changeset_revision | h}</td>
+                                    </tr>
+                                %endfor
+                            </table>
+                        </div>
+                        <div style="clear: both"></div>
+                    %endif
                     %if 'tool_dependencies' in metadata:
                         <%
                             # See if tool dependencies are packages, environment settings or both.

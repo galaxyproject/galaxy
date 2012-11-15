@@ -157,154 +157,6 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
         except:
             pass
     return converter_path, display_path
-def can_generate_tool_dependency_metadata( root, metadata_dict ):
-    """
-    Make sure the combination of name, version and type (the type will be the value of elem.tag) of each root element tag in the tool_dependencies.xml
-    file is defined in the <requirement> tag for at least one tool in the repository.
-    """
-    can_generate_dependency_metadata = False
-    for elem in root:
-        tool_dependency_type = elem.tag
-        tool_dependency_version = elem.get( 'version', None )
-        if tool_dependency_type == 'package':
-            can_generate_dependency_metadata = False
-            tool_dependency_name = elem.get( 'name', None )
-            if tool_dependency_name and tool_dependency_version:
-                for tool_dict in metadata_dict.get( 'tools', [] ):
-                    requirements = tool_dict.get( 'requirements', [] )
-                    for requirement_dict in requirements:
-                        req_name = requirement_dict.get( 'name', None )
-                        req_version = requirement_dict.get( 'version', None )
-                        req_type = requirement_dict.get( 'type', None )
-                        if req_name==tool_dependency_name and req_version==tool_dependency_version and req_type==tool_dependency_type:
-                            can_generate_dependency_metadata = True
-                            break
-                    if requirements and not can_generate_dependency_metadata:
-                        # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
-                        # tag for any tool in the repository.
-                        break
-                if not can_generate_dependency_metadata:
-                    break
-        elif tool_dependency_type == 'set_environment':
-            # Here elem is something like: <set_environment version="1.0">
-            for env_var_elem in elem:
-                can_generate_dependency_metadata = False
-                # <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
-                env_var_name = env_var_elem.get( 'name', None )
-                if env_var_name:
-                    for tool_dict in metadata_dict.get( 'tools', [] ):
-                        requirements = tool_dict.get( 'requirements', [] )
-                        for requirement_dict in requirements:
-                            # {"name": "R_SCRIPT_PATH", "type": "set_environment", "version": null}
-                            req_name = requirement_dict.get( 'name', None )
-                            req_type = requirement_dict.get( 'type', None )
-                            if req_name==env_var_name and req_type==tool_dependency_type:
-                                can_generate_dependency_metadata = True
-                                break
-                        if requirements and not can_generate_dependency_metadata:
-                            # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
-                            # tag for any tool in the repository.
-                            break
-    return can_generate_dependency_metadata
-def clean_repository_metadata( trans, id, changeset_revisions ):
-    # Delete all repository_metadata records associated with the repository that have a changeset_revision that is not in changeset_revisions.
-    # We sometimes see multiple records with the same changeset revision value - no idea how this happens. We'll assume we can delete the older
-    # records, so we'll order by update_time descending and delete records that have the same changeset_revision we come across later..
-    changeset_revisions_checked = []
-    for repository_metadata in trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                                               .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) ) \
-                                               .order_by( trans.model.RepositoryMetadata.table.c.changeset_revision,
-                                                          trans.model.RepositoryMetadata.table.c.update_time.desc() ):
-        changeset_revision = repository_metadata.changeset_revision
-        can_delete = changeset_revision in changeset_revisions_checked or changeset_revision not in changeset_revisions
-        if can_delete:
-            trans.sa_session.delete( repository_metadata )
-            trans.sa_session.flush()
-def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_dict, current_changeset_revision, current_metadata_dict ):
-    # The metadata associated with ancestor_changeset_revision is ancestor_metadata_dict.  This changeset_revision is an ancestor of
-    # current_changeset_revision which is associated with current_metadata_dict.  A new repository_metadata record will be created only
-    # when this method returns the string 'not equal and not subset'.
-    ancestor_datatypes = ancestor_metadata_dict.get( 'datatypes', [] )
-    ancestor_tools = ancestor_metadata_dict.get( 'tools', [] )
-    ancestor_guids = [ tool_dict[ 'guid' ] for tool_dict in ancestor_tools ]
-    ancestor_guids.sort()
-    ancestor_tool_dependencies = ancestor_metadata_dict.get( 'tool_dependencies', [] )
-    ancestor_workflows = ancestor_metadata_dict.get( 'workflows', [] )
-    current_datatypes = current_metadata_dict.get( 'datatypes', [] )
-    current_tools = current_metadata_dict.get( 'tools', [] )
-    current_guids = [ tool_dict[ 'guid' ] for tool_dict in current_tools ]
-    current_guids.sort()
-    current_tool_dependencies = current_metadata_dict.get( 'tool_dependencies', [] ) 
-    current_workflows = current_metadata_dict.get( 'workflows', [] )
-    # Handle case where no metadata exists for either changeset.
-    if not ancestor_guids and not current_guids and not ancestor_workflows and not current_workflows and not ancestor_datatypes and not current_datatypes:
-        return 'no metadata'
-    workflow_comparison = compare_workflows( ancestor_workflows, current_workflows )
-    datatype_comparison = compare_datatypes( ancestor_datatypes, current_datatypes )
-    # Handle case where all metadata is the same.
-    if ancestor_guids == current_guids and workflow_comparison == 'equal' and datatype_comparison == 'equal':
-        return 'equal'
-    if workflow_comparison in [ 'equal', 'subset' ] and datatype_comparison in [ 'equal', 'subset' ]:
-        is_subset = True
-        for guid in ancestor_guids:
-            if guid not in current_guids:
-                is_subset = False
-                break
-        if is_subset:
-            return 'subset'
-    return 'not equal and not subset'
-def compare_datatypes( ancestor_datatypes, current_datatypes ):
-    # Determine if ancestor_datatypes is the same as current_datatypes
-    # or if ancestor_datatypes is a subset of current_datatypes.  Each
-    # datatype dict looks something like:
-    # {"dtype": "galaxy.datatypes.images:Image", "extension": "pdf", "mimetype": "application/pdf"}
-    if len( ancestor_datatypes ) <= len( current_datatypes ):
-        for ancestor_datatype in ancestor_datatypes:
-            # Currently the only way to differentiate datatypes is by name.
-            ancestor_datatype_dtype = ancestor_datatype[ 'dtype' ]
-            ancestor_datatype_extension = ancestor_datatype[ 'extension' ]
-            ancestor_datatype_mimetype = ancestor_datatype.get( 'mimetype', None )
-            found_in_current = False
-            for current_datatype in current_datatypes:
-                if current_datatype[ 'dtype' ] == ancestor_datatype_dtype and \
-                    current_datatype[ 'extension' ] == ancestor_datatype_extension and \
-                    current_datatype.get( 'mimetype', None ) == ancestor_datatype_mimetype:
-                    found_in_current = True
-                    break
-            if not found_in_current:
-                return 'not equal and not subset'
-        if len( ancestor_datatypes ) == len( current_datatypes ):
-            return 'equal'
-        else:
-            return 'subset'
-    return 'not equal and not subset'
-def compare_workflows( ancestor_workflows, current_workflows ):
-    # Determine if ancestor_workflows is the same as current_workflows
-    # or if ancestor_workflows is a subset of current_workflows.
-    if len( ancestor_workflows ) <= len( current_workflows ):
-        for ancestor_workflow_tup in ancestor_workflows:
-            # ancestor_workflows is a list of tuples where each contained tuple is
-            # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
-            ancestor_workflow_dict = ancestor_workflow_tup[1]
-            # Currently the only way to differentiate workflows is by name.
-            ancestor_workflow_name = ancestor_workflow_dict[ 'name' ]
-            num_ancestor_workflow_steps = len( ancestor_workflow_dict[ 'steps' ] )
-            found_in_current = False
-            for current_workflow_tup in current_workflows:
-                current_workflow_dict = current_workflow_tup[1]
-                # Assume that if the name and number of steps are euqal,
-                # then the workflows are the same.  Of course, this may
-                # not be true...
-                if current_workflow_dict[ 'name' ] == ancestor_workflow_name and len( current_workflow_dict[ 'steps' ] ) == num_ancestor_workflow_steps:
-                    found_in_current = True
-                    break
-            if not found_in_current:
-                return 'not equal and not subset'
-        if len( ancestor_workflows ) == len( current_workflows ):
-            return 'equal'
-        else:
-            return 'subset'
-    return 'not equal and not subset'
 def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     # Persist the current in-memory list of config_elems to a file named by the value of config_filename.  
     fd, filename = tempfile.mkstemp()
@@ -326,20 +178,6 @@ def copy_disk_sample_files_to_dir( trans, repo_files_dir, dest_path ):
                     copy_sample_file( trans.app, relative_path, dest_path=dest_path )
                     sample_files.append( name )
     return sample_files
-def clean_repository_clone_url( repository_clone_url ):
-    if repository_clone_url.find( '@' ) > 0:
-        # We have an url that includes an authenticated user, something like:
-        # http://test@bx.psu.edu:9009/repos/some_username/column
-        items = repository_clone_url.split( '@' )
-        tmp_url = items[ 1 ]
-    elif repository_clone_url.find( '//' ) > 0:
-        # We have an url that includes only a protocol, something like:
-        # http://bx.psu.edu:9009/repos/some_username/column
-        items = repository_clone_url.split( '//' )
-        tmp_url = items[ 1 ]
-    else:
-        tmp_url = repository_clone_url
-    return tmp_url
 def clean_tool_shed_url( tool_shed_url ):
     if tool_shed_url.find( ':' ) > 0:
         # Eliminate the port, if any, since it will result in an invalid directory name.
@@ -472,166 +310,6 @@ def generate_clone_url_for_installed_repository( trans, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
     tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
     return url_join( tool_shed_url, 'repos', repository.owner, repository.name )
-def generate_datatypes_metadata( datatypes_config, metadata_dict ):
-    """Update the received metadata_dict with information from the parsed datatypes_config."""
-    tree = ElementTree.parse( datatypes_config )
-    root = tree.getroot()
-    ElementInclude.include( root )
-    repository_datatype_code_files = []
-    datatype_files = root.find( 'datatype_files' )
-    if datatype_files:
-        for elem in datatype_files.findall( 'datatype_file' ):
-            name = elem.get( 'name', None )
-            repository_datatype_code_files.append( name )
-        metadata_dict[ 'datatype_files' ] = repository_datatype_code_files
-    datatypes = []
-    registration = root.find( 'registration' )
-    if registration:
-        for elem in registration.findall( 'datatype' ):
-            datatypes_dict = {}
-            display_in_upload = elem.get( 'display_in_upload', None )
-            if display_in_upload:
-                datatypes_dict[ 'display_in_upload' ] = display_in_upload
-            dtype = elem.get( 'type', None )
-            if dtype:
-                datatypes_dict[ 'dtype' ] = dtype
-            extension = elem.get( 'extension', None )
-            if extension:
-                datatypes_dict[ 'extension' ] = extension
-            max_optional_metadata_filesize = elem.get( 'max_optional_metadata_filesize', None )
-            if max_optional_metadata_filesize:
-                datatypes_dict[ 'max_optional_metadata_filesize' ] = max_optional_metadata_filesize
-            mimetype = elem.get( 'mimetype', None )
-            if mimetype:
-                datatypes_dict[ 'mimetype' ] = mimetype
-            subclass = elem.get( 'subclass', None )
-            if subclass:
-                datatypes_dict[ 'subclass' ] = subclass
-            if datatypes_dict:
-                datatypes.append( datatypes_dict )
-        if datatypes:
-            metadata_dict[ 'datatypes' ] = datatypes
-    return metadata_dict
-def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
-    """The value of env_var_name must match the value of the "set_environment" type in the tool config's <requirements> tag set."""
-    requirements_dict = {}
-    for env_elem in elem:
-        env_name = env_elem.get( 'name', None )
-        if env_name:
-            requirements_dict [ 'name' ] = env_name
-            requirements_dict [ 'type' ] = 'environment variable'
-        if requirements_dict:
-            if 'set_environment' in tool_dependencies_dict:
-                tool_dependencies_dict[ 'set_environment' ].append( requirements_dict )
-            else:
-                tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
-    return tool_dependencies_dict
-def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
-    """The value of package_name must match the value of the "package" type in the tool config's <requirements> tag set."""
-    requirements_dict = {}
-    package_name = elem.get( 'name', None )
-    package_version = elem.get( 'version', None )
-    if package_name and package_version:
-        dependency_key = '%s/%s' % ( package_name, package_version )
-        requirements_dict [ 'name' ] = package_name
-        requirements_dict [ 'version' ] = package_version
-        requirements_dict [ 'type' ] = 'package'
-        for sub_elem in elem:
-            if sub_elem.tag == 'readme':
-                requirements_dict[ 'readme' ] = sub_elem.text
-    if requirements_dict:
-        tool_dependencies_dict[ dependency_key ] = requirements_dict
-    return tool_dependencies_dict
-def generate_tool_dependency_metadata( app, repository, tool_dependencies_config, metadata_dict, original_repository_metadata=None ):
-    """
-    If the combination of name, version and type of each element is defined in the <requirement> tag for at least one tool in the repository,
-    then update the received metadata_dict with information from the parsed tool_dependencies_config.
-    """
-    if original_repository_metadata:
-        # Keep a copy of the original tool dependencies dictionary in the metadata.
-        original_tool_dependencies_dict = original_repository_metadata.get( 'tool_dependencies', None )
-    else:
-        original_tool_dependencies_dict = None
-    try:
-        tree = ElementTree.parse( tool_dependencies_config )
-    except Exception, e:
-        log.debug( "Exception attempting to parse tool_dependencies.xml: %s" %str( e ) )
-        return metadata_dict
-    root = tree.getroot()
-    ElementInclude.include( root )
-    tool_dependencies_dict = {}
-    if can_generate_tool_dependency_metadata( root, metadata_dict ):
-        for elem in root:
-            if elem.tag == 'package':
-                tool_dependencies_dict = generate_package_dependency_metadata( elem, tool_dependencies_dict )
-            elif elem.tag == 'set_environment':
-                tool_dependencies_dict = generate_environment_dependency_metadata( elem, tool_dependencies_dict )
-            # Handle tool dependency installation via other means here (future).
-        if tool_dependencies_dict:
-            metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
-    else:
-        log.debug( "Name, version and type from the <requirement> tag does not match the information in the tool_dependencies.xml file. Tool dependencies will be ignored." )
-    if tool_dependencies_dict:
-        if original_tool_dependencies_dict:
-            # We're generating metadata on an update pulled to a tool shed repository installed into a Galaxy instance, so handle changes to
-            # tool dependencies appropriately.
-            handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_tool_dependencies_dict, tool_dependencies_dict )
-        metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
-    return metadata_dict
-def generate_tool_guid( repository_clone_url, tool ):
-    """
-    Generate a guid for the installed tool.  It is critical that this guid matches the guid for
-    the tool in the Galaxy tool shed from which it is being installed.  The form of the guid is    
-    <tool shed host>/repos/<repository owner>/<repository name>/<tool id>/<tool version>
-    """
-    tmp_url = clean_repository_clone_url( repository_clone_url )
-    return '%s/%s/%s' % ( tmp_url, tool.id, tool.version )
-def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict ):
-    """Update the received metadata_dict with changes that have been applied to the received tool."""
-    # Generate the guid
-    guid = generate_tool_guid( repository_clone_url, tool )
-    # Handle tool.requirements.
-    tool_requirements = []
-    for tr in tool.requirements:
-        requirement_dict = dict( name=tr.name,
-                                 type=tr.type,
-                                 version=tr.version )
-        tool_requirements.append( requirement_dict )
-    # Handle tool.tests.
-    tool_tests = []
-    if tool.tests:
-        for ttb in tool.tests:
-            required_files = []
-            for required_file in ttb.required_files:
-                value, extra = required_file
-                required_files.append( ( value ) )
-            inputs = []
-            for input in ttb.inputs:
-                name, value, extra = input
-                inputs.append( ( name, value ) )
-            outputs = []
-            for output in ttb.outputs:
-                name, file_name, extra = output
-                outputs.append( ( name, strip_path( file_name ) if file_name else None ) )
-            test_dict = dict( name=ttb.name,
-                              required_files=required_files,
-                              inputs=inputs,
-                              outputs=outputs )
-            tool_tests.append( test_dict )
-    tool_dict = dict( id=tool.id,
-                      guid=guid,
-                      name=tool.name,
-                      version=tool.version,
-                      description=tool.description,
-                      version_string_cmd = tool.version_string_cmd,
-                      tool_config=tool_config,
-                      requirements=tool_requirements,
-                      tests=tool_tests )
-    if 'tools' in metadata_dict:
-        metadata_dict[ 'tools' ].append( tool_dict )
-    else:
-        metadata_dict[ 'tools' ] = [ tool_dict ]
-    return metadata_dict
 def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section ):
     if tool_section is not None:
         tool_elem = SubElement( tool_section, 'tool' )
@@ -652,7 +330,6 @@ def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, t
     version_elem = SubElement( tool_elem, 'version' )
     version_elem.text = tool.version
     return tool_elem
-    
 def generate_tool_panel_elem_list( repository_name, repository_clone_url, changeset_revision, tool_panel_dict, repository_tools_tups, owner='' ):
     """Generate a list of ElementTree Element objects for each section or tool."""
     elem_list = []
@@ -958,34 +635,6 @@ def get_repository_tools_tups( app, metadata_dict ):
             if tool:
                 repository_tools_tups.append( ( relative_path, guid, tool ) )
     return repository_tools_tups
-def get_sample_files_from_disk( repository_files_dir, tool_path = None, relative_install_dir=None, resetting_all_metadata_on_repository=False ):
-    if resetting_all_metadata_on_repository:
-        # Keep track of the location where the repository is temporarily cloned so that we can strip it when setting metadata.
-        work_dir = repository_files_dir
-    sample_file_metadata_paths = []
-    sample_file_copy_paths = []
-    for root, dirs, files in os.walk( repository_files_dir ):
-            if root.find( '.hg' ) < 0:
-                for name in files:
-                    if name.endswith( '.sample' ):
-                        if resetting_all_metadata_on_repository:
-                            full_path_to_sample_file = os.path.join( root, name )
-                            stripped_path_to_sample_file = full_path_to_sample_file.replace( work_dir, '' )
-                            if stripped_path_to_sample_file.startswith( '/' ):
-                                stripped_path_to_sample_file = stripped_path_to_sample_file[ 1: ]
-                            relative_path_to_sample_file = os.path.join( relative_install_dir, stripped_path_to_sample_file )
-                            if os.path.exists( relative_path_to_sample_file ):
-                                sample_file_copy_paths.append( relative_path_to_sample_file )
-                            else:
-                                sample_file_copy_paths.append( full_path_to_sample_file )
-                        else:
-                            relative_path_to_sample_file = os.path.join( root, name )
-                            sample_file_copy_paths.append( relative_path_to_sample_file )
-                            if tool_path and relative_install_dir:
-                                if relative_path_to_sample_file.startswith( os.path.join( tool_path, relative_install_dir ) ):
-                                    relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
-                        sample_file_metadata_paths.append( relative_path_to_sample_file )
-    return sample_file_metadata_paths, sample_file_copy_paths
 def get_shed_tool_conf_dict( app, shed_tool_conf ):
     """
     Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
@@ -1120,13 +769,6 @@ def get_url_from_repository_tool_shed( app, repository ):
             return shed_url
     # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
     return None
-def get_readme_file_names( repository_name ):
-    readme_files = [ 'readme', 'read_me', 'install' ]
-    valid_filenames = [ r for r in readme_files ]
-    for r in readme_files:
-        valid_filenames.append( '%s.txt' % r )
-    valid_filenames.append( '%s.txt' % repository_name )
-    return valid_filenames
 def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the
@@ -1522,34 +1164,6 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
         removed = True
         error_message = ''
     return removed, error_message
-def reset_all_metadata_on_installed_repository( trans, id ):
-    """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
-    repository = get_installed_tool_shed_repository( trans, id )
-    tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-    repository_clone_url = generate_clone_url_for_installed_repository( trans, repository )
-    tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
-    if relative_install_dir:
-        original_metadata_dict = repository.metadata
-        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
-                                                                                     repository=repository,
-                                                                                     repository_clone_url=repository_clone_url,
-                                                                                     shed_config_dict = repository.get_shed_config_dict( trans.app ),
-                                                                                     relative_install_dir=relative_install_dir,
-                                                                                     repository_files_dir=None,
-                                                                                     resetting_all_metadata_on_repository=False,
-                                                                                     updating_installed_repository=False,
-                                                                                     persist=False )
-        repository.metadata = metadata_dict
-        if metadata_dict != original_metadata_dict:
-            update_in_shed_tool_config( trans.app, repository )
-            trans.sa_session.add( repository )
-            trans.sa_session.flush()
-            log.debug( 'Metadata has been reset on repository %s.' % repository.name )
-        else:
-            log.debug( 'Metadata did not need to be reset on repository %s.' % repository.name )
-    else:
-        log.debug( 'Error locating installation directory for repository %s.' % repository.name )
-    return invalid_file_tups, metadata_dict
 def to_html_str( text ):
     """Translates the characters in text to an html string"""
     translated = []
