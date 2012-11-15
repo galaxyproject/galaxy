@@ -116,7 +116,7 @@ class JobRunnerMapper( object ):
 
     def __cache_job_runner_url( self, params ):
         # If there's already a runner set in the Job object, don't overwrite from the tool
-        if self.job_runner_name is not None:
+        if self.job_runner_name is not None and not self.job_runner_name.startswith('tasks'):
             raw_job_runner_url = self.job_runner_name
         else:
             raw_job_runner_url = self.job_wrapper.tool.get_job_runner_url( params )
