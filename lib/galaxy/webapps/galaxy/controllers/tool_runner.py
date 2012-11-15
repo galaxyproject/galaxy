@@ -117,8 +117,14 @@ class ToolRunner( BaseUIController ):
             error( "'id' parameter is required" );
         try:
             id = int( id )
+
         except:
-            error( "Invalid value for 'id' parameter" )
+            # it's not an un-encoded id, try to parse as encoded
+            try:
+                id = trans.security.decode_id( id )
+            except:
+                error( "Invalid value for 'id' parameter" )
+
         # Get the dataset object
         data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( id )
         #only allow rerunning if user is allowed access to the dataset.

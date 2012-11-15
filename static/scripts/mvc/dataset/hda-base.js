@@ -523,7 +523,7 @@ HDABaseView.templates = {
     titleLink           : Handlebars.templates[ 'template-hda-titleLink' ],
     hdaSummary          : Handlebars.templates[ 'template-hda-hdaSummary' ],
     downloadLinks       : Handlebars.templates[ 'template-hda-downloadLinks' ],
-    failedMetadata      : Handlebars.templates[ 'template-hda-failedMetaData' ],
+    failedMetadata      : Handlebars.templates[ 'template-hda-failedMetadata' ],
     displayApps         : Handlebars.templates[ 'template-hda-displayApps' ]
 };
 

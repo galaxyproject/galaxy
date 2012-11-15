@@ -440,6 +440,15 @@ $(function(){
         #history-secondary-links {
         }
 
+        /*why this is getting underlined is beyond me*/
+        #history-secondary-links #history-refresh {
+            text-decoration: none;
+        }
+        /*too tweaky*/
+        #history-annotate {
+            margin-right: 3px;
+        }
+
         #history-tag-area, #history-annotation-area {
             margin: 10px 0px 10px 0px;
         }

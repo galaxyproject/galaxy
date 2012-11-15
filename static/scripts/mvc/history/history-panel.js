@@ -127,6 +127,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     /** event map
      */
     events : {
+        'click #history-refresh'        : function(){ window.location.reload(); },
         'click #history-tag'            : 'loadAndDisplayTags'
     },
 
@@ -313,7 +314,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             show_deletedText = ( this.storage.get( 'show_deleted' ) )?( 'Hide deleted' ):( 'Show deleted' ),
             show_hiddenText  = ( this.storage.get( 'show_hidden' )  )?( 'Hide hidden'  ):( 'Show hidden' ),
             menuActions  = {};
-        menuActions[ _l( 'refresh' ) ]          = function(){ window.location.reload(); };
+        //menuActions[ _l( 'refresh' ) ]          = function(){ window.location.reload(); };
         menuActions[ _l( 'collapse all' ) ]     = function(){ historyPanel.hideAllHdaBodies(); };
         menuActions[ _l( show_deletedText ) ]   = function(){ historyPanel.toggleShowDeleted(); };
         menuActions[ _l( show_hiddenText  ) ]   = function(){ historyPanel.toggleShowHidden(); };
