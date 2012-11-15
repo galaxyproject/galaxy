@@ -1153,3 +1153,20 @@ class NoopQueue( object ):
         return
     def shutdown( self ):
         return
+
+class ParallelismInfo(object):
+    """
+    Stores the information (if any) for running multiple instances of the tool in parallel
+    on the same set of inputs.
+    """
+    def __init__(self, tag):
+        self.method = tag.get('method')
+        if isinstance(tag, dict):
+            items = tag.iteritems()
+        else:
+            items = tag.attrib.items()
+        self.attributes = dict([item for item in items if item[0] != 'method' ])
+        if len(self.attributes) == 0:
+            # legacy basic mode - provide compatible defaults
+            self.attributes['split_size'] = 20
+            self.attributes['split_mode'] = 'number_of_parts'

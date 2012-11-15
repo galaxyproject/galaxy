@@ -15,6 +15,7 @@ from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
 from galaxy.util.template import fill_template
 from galaxy import util, jobs, model
+from galaxy.jobs import ParallelismInfo
 from elementtree import ElementTree
 from parameters import *
 from parameters.grouping import *
@@ -797,19 +798,6 @@ class ToolRequirement( object ):
         self.type = type
         self.version = version
 
-class ToolParallelismInfo(object):
-    """
-    Stores the information (if any) for running multiple instances of the tool in parallel
-    on the same set of inputs.
-    """
-    def __init__(self, tag):
-        self.method = tag.get('method')
-        self.attributes = dict([item for item in tag.attrib.items() if item[0] != 'method' ])
-        if len(self.attributes) == 0:
-            # legacy basic mode - provide compatible defaults
-            self.attributes['split_size'] = 20
-            self.attributes['split_mode'] = 'number_of_parts'
-
 class Tool:
     """
     Represents a computational tool that can be executed through Galaxy. 
@@ -989,7 +977,7 @@ class Tool:
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
-            self.parallelism = ToolParallelismInfo(parallelism)
+            self.parallelism = ParallelismInfo(parallelism)
         else:
             self.parallelism = None
         # Set job handler(s). Each handler is a dict with 'url' and, optionally, 'params'.
