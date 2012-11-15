@@ -6,6 +6,7 @@ import urllib2, tempfile
 from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
+from galaxy.util.shed_util_common import *
 from galaxy.util.odict import odict
 from galaxy.tool_shed.common_util import *
 
