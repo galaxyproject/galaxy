@@ -7,6 +7,7 @@ from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
+from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex
 
 log = logging.getLogger( __name__ )
 
@@ -114,6 +115,13 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
             return str( e )
         # The rest of the security happens in the library_common controller.
         real_folder_id = trans.security.encode_id( parent.id )
+
+        #check for extended metadata, store it and pop it out of the param 
+        #otherwise sanitize_param will have a fit
+        ex_meta_payload = None
+        if 'extended_metadata' in payload:
+            ex_meta_payload = payload.pop('extended_metadata')
+
         # Now create the desired content object, either file or folder.
         if create_type == 'file':
             status, output = trans.webapp.controllers['library_common'].upload_library_dataset( trans, 'api', library_id, real_folder_id, **payload )
@@ -125,6 +133,19 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         else:
             rval = []
             for k, v in output.items():
+                if ex_meta_payload is not None:
+                    """
+                    If there is extended metadata, store it, attach it to the dataset, and index it
+                    """
+                    ex_meta = ExtendedMetadata(ex_meta_payload)
+                    trans.sa_session.add( ex_meta )
+                    v.extended_metadata = ex_meta
+                    trans.sa_session.add(v)
+                    trans.sa_session.flush()
+                    for path, value in self._scan_json_block(ex_meta_payload):
+                        meta_i = ExtendedMetadataIndex(ex_meta, path, value)
+                        trans.sa_session.add(meta_i)
+                    trans.sa_session.flush()
                 if type( v ) == trans.app.model.LibraryDatasetDatasetAssociation:
                     v = v.library_dataset
                 encoded_id = trans.security.encode_id( v.id )
@@ -134,6 +155,33 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
                                    name = v.name,
                                    url = url_for( 'library_content', library_id=library_id, id=encoded_id ) ) )
             return rval
+
+    def _scan_json_block(self, meta, prefix=""):
+        """
+        Scan a json style data structure, and emit all fields and their values.
+        Example paths
+
+        Data
+        { "data" : [ 1, 2, 3 ] }
+
+        Path:
+        /data == [1,2,3]
+
+        /data/[0] == 1
+
+        """
+        if isinstance(meta, dict):
+            for a in meta:
+                for path, value in self._scan_json_block(meta[a], prefix + "/" + a):
+                    yield path, value
+        elif isinstance(meta, list):
+            for i, a in enumerate(meta):
+                for path, value in self._scan_json_block(a, prefix + "[%d]" % (i)):
+                    yield path, value
+        else:
+            #BUG: Everything is cast to string, which can lead to false positives
+            #for cross type comparisions, ie "True" == True
+            yield prefix, str(meta)
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):

@@ -366,17 +366,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # Display the management page
         trans.set_message( 'Copy created with name "%s"' % cloned_visualization.title )
         return self.list( trans )
-            
-    @web.expose
-    @web.require_login( "modify Galaxy visualizations" )
-    def set_slug_async( self, trans, id, new_slug ):
-        """ Set item slug asynchronously. """
-        visualization = self.get_visualization( trans, id )
-        if visualization:
-            visualization.slug = new_slug
-            trans.sa_session.flush()
-            return visualization.slug
-            
+                    
     @web.expose
     @web.require_login( "use Galaxy visualizations" )
     def set_accessible_async( self, trans, id=None, accessible=False ):

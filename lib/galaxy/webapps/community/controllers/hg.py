@@ -1,7 +1,6 @@
 import os, logging
 from galaxy.web.base.controller import *
 from galaxy.webapps.community.controllers.common import *
-from galaxy.util.shed_util import update_repository
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -14,10 +13,14 @@ log = logging.getLogger(__name__)
 class HgController( BaseUIController ):
     @web.expose
     def handle_request( self, trans, **kwd ):
-        # The os command that results in this method being called will look something like
+        # The os command that results in this method being called will look something like:
         # hg clone http://test@127.0.0.1:9009/repos/test/convert_characters1
         hg_version = mercurial.__version__.version
         cmd = kwd.get( 'cmd', None )
+        hgweb_config = trans.app.hgweb_config_manager.hgweb_config
+        def make_web_app():
+            hgwebapp = hgwebdir( hgweb_config )
+            return hgwebapp
         wsgi_app = wsgiapplication( make_web_app )
         if hg_version >= '2.2.3' and cmd == 'pushkey':                
             # When doing an "hg push" from the command line, the following commands, in order, will be retrieved from environ, depending
@@ -33,15 +36,8 @@ class HgController( BaseUIController ):
                     if hg_version >= '2.2.3':
                         # Set metadata using the repository files on disk.
                         error_message, status = set_repository_metadata( trans, repository )
-                        if status not in [ 'ok' ] and error_message:
-                            log.debug( "Error resetting metadata on repository '%s': %s" % ( str( repository.name ), str( error_message ) ) )
-                        elif status in [ 'ok' ] and error_message:
-                            log.debug( "Successfully reset metadata on repository %s, but encountered problem: %s" % ( str( repository.name ), str( error_message ) ) )
+                        if status == 'ok' and error_message:
+                            log.debug( "Successfully reset metadata on repository %s, but encountered problem: %s" % ( repository.name, error_message ) )
+                        elif status != 'ok' and error_message:
+                            log.debug( "Error resetting metadata on repository %s: %s" % ( repository.name, error_message ) )
         return wsgi_app
-
-def make_web_app():
-    hgweb_config = "%s/hgweb.config" %  os.getcwd()
-    if not os.path.exists( hgweb_config ):
-        raise Exception( "Required file hgweb.config does not exist in directory %s" % os.getcwd() )
-    hgwebapp = hgwebdir( hgweb_config )
-    return hgwebapp

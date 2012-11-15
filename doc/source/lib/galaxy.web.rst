@@ -38,9 +38,7 @@ Subpackages
 
 .. toctree::
 
-    galaxy.web.api
     galaxy.web.base
-    galaxy.web.controllers
     galaxy.web.framework
     galaxy.web.security
 

@@ -22,5 +22,7 @@ Subpackages
 
 .. toctree::
 
+    galaxy.visualization.data_providers
+    galaxy.visualization.genome
     galaxy.visualization.tracks
 

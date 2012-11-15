@@ -183,8 +183,9 @@ class LocalJobRunner( BaseJobRunner ):
 
     def stop_job( self, job ):
         #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
-        if job.get_external_output_metadata():
-            pid = job.get_external_output_metadata()[0].job_runner_external_pid #every JobExternalOutputMetadata has a pid set, we just need to take from one of them
+        job_ext_output_metadata = job.get_external_output_metadata()
+        if job_ext_output_metadata: 
+            pid = job_ext_output_metadata[0].job_runner_external_pid #every JobExternalOutputMetadata has a pid set, we just need to take from one of them
         else:
             pid = job.get_job_runner_external_id()
         if pid in [ None, '' ]:

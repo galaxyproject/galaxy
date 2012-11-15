@@ -1,5 +1,9 @@
 define(["libs/underscore", "libs/d3", "viz/visualization"], function(_, d3, visualization) {
 
+/**
+ * Utility class for working with SVG.
+ */
+// TODO: make into a mixin.
 var SVGUtils = Backbone.Model.extend({
 
     /**
@@ -21,19 +25,100 @@ var SVGUtils = Backbone.Model.extend({
         }
         return true;
     }
-
 });
+
+/**
+ * Mixin for using ticks.
+ */
+var UsesTicks = {
+    drawTicks: function(parent_elt, data, dataHandler, textTransform, horizontal) {
+        // Set up group elements for chroms and for each tick.
+        var ticks = parent_elt.append("g")
+                        .selectAll("g")
+                            .data(data)
+                        .enter().append("g")
+                        .selectAll("g")
+                            .data(dataHandler)
+                        .enter().append("g")
+                            .attr("class", "tick")
+                            .attr("transform", function(d) {
+                                return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")" +
+                                        "translate(" + d.radius + ",0)";
+                            });
+
+        // Add line + text for ticks.
+        var tick_coords = [],
+            text_coords = [],
+            text_anchor = function(d) {
+                return d.angle > Math.PI ? "end" : null;
+            };
+        if (horizontal) {
+            tick_coords = [0, 0, 0, -4];
+            text_coords = [4, 0, "", ".35em"];
+            text_anchor = null;
+        }
+        else {
+            tick_coords = [1, 0, 4, 0];
+            text_coords = [0, 4, ".35em", ""];
+            
+        }
+
+        ticks.append("line")
+             .attr("x1", tick_coords[0])
+             .attr("y1", tick_coords[1])
+             .attr("x2", tick_coords[2])
+             .attr("y1", tick_coords[3])
+             .style("stroke", "#000");
+        
+        ticks.append("text")
+            .attr("x", text_coords[0])
+            .attr("y", text_coords[1])
+            .attr("dx", text_coords[2])
+            .attr("dy", text_coords[3])
+            .attr("text-anchor", text_anchor)
+            .attr("transform", textTransform)
+        .text(function(d) { return d.label; });
+    },
+
+    /**
+     * Format number for display at a tick.
+     */
+    formatNum: function(num, sigDigits) {
+        // Use default of 2 sig. digits.
+        if (sigDigits === undefined) {
+            sigDigits = 2;
+        }
+
+        var rval = null;
+        if (num < 1) {
+            rval = num.toPrecision(sigDigits);
+        }
+        else {
+            // Use round to turn string from toPrecision() back into a number.
+            var roundedNum = Math.round(num.toPrecision(sigDigits));
+
+            // Use abbreviations.
+            if (num < 1000) {
+                rval = roundedNum;
+            }
+            else if (num < 1000000) {
+                // Use K.
+                rval = Math.round((roundedNum/1000).toPrecision(3)).toFixed(0) + 'K';
+            }
+            else if (num < 1000000000) {
+                // Use M.
+                rval = Math.round((roundedNum/1000000).toPrecision(3)).toFixed(0) + 'M';
+            }
+        }
+
+        return rval;
+    }
+};
 
 /**
  * A label track.
  */
-var CircsterLabelTrack = Backbone.Model.extend({
-    defaults: {
-        prefs: {
-            color: '#ccc'
-        }
-    }
-});
+var CircsterLabelTrack = Backbone.Model.extend({});
 
 /**
  * Renders a full circster visualization.
@@ -45,8 +130,8 @@ var CircsterView = Backbone.View.extend({
         this.total_gap = options.total_gap;
         this.genome = options.genome;
         this.dataset_arc_height = options.dataset_arc_height;
-        this.track_gap = 5;
-        this.label_arc_height = 20;
+        this.track_gap = 10;
+        this.label_arc_height = 50;
         this.scale = 1;
         this.circular_views = null;
         this.chords_views = null;
@@ -78,7 +163,7 @@ var CircsterView = Backbone.View.extend({
     },
 
     /**
-     * Returns a list of tracks' radius bounds.
+     * Returns a list of circular tracks' radius bounds.
      */
     get_tracks_bounds: function() {
         var circular_tracks = this.get_circular_tracks();
@@ -93,7 +178,7 @@ var CircsterView = Backbone.View.extend({
             // Compute range of track starting radii.
             tracks_start_radii = d3.range(radius_start, min_dimension / 2, this.dataset_arc_height + this.track_gap);
 
-        // Map from track start to bounds; for label track
+        // Map from track start to bounds.
         var self = this;
         return _.map(tracks_start_radii, function(radius) {
             return [radius, radius + self.dataset_arc_height];
@@ -135,9 +220,14 @@ var CircsterView = Backbone.View.extend({
                         }
                         self.zoom_drag_timeout = setTimeout(function() {
                             // Render more detail in tracks' visible elements.
+                            // FIXME: do not do this right now; it is not fully implemented--e.g. data bounds
+                            // are not updated when new data is fetched--and fetching more detailed quantitative
+                            // data is not that useful.
+                            /*
                             _.each(self.circular_views, function(view) {
                                 view.update_scale(scale);
                             });
+                            */
                         }, 400);
                     }
                 }))
@@ -180,12 +270,17 @@ var CircsterView = Backbone.View.extend({
             return view;
         });
 
-        // -- Render label tracks. --
+        // -- Render label track. --
         
-        // Set radius start = end for track bounds.
-        var track_bounds = tracks_bounds[circular_tracks.length];
-        track_bounds[1] = track_bounds[0];
-        this.label_track_view = new CircsterLabelTrackView({
+        // Track bounds are:
+        // (a) outer radius of last circular track;
+        // (b) 
+        var outermost_radius = this.circular_views[this.circular_views.length-1].radius_bounds[1],
+            track_bounds = [
+                outermost_radius,
+                outermost_radius + this.label_arc_height
+            ];
+        this.label_track_view = new CircsterChromLabelTrackView({
             el: svg.append('g')[0],
             track: new CircsterLabelTrack(),
             radius_bounds: track_bounds,
@@ -341,9 +436,17 @@ var CircsterTrackView = Backbone.View.extend({
         $.when(data_ready_deferred).then(function() {
             $.when(self._render_data(track_parent_elt)).then(function() {
                 chroms_paths.style("fill", self.bg_fill);
+
+                // Render labels after data is available so that data attributes are available.
+                self.render_labels();
             });
         });
     },
+
+    /**
+     * Render track labels.
+     */
+    render_labels: function() {},
 
     /**
      * Update radius bounds.
@@ -360,6 +463,8 @@ var CircsterTrackView = Backbone.View.extend({
         this.parent_elt.selectAll('g>path.chrom-background').transition().duration(1000).attr('d', new_d);
 
         this._transition_chrom_data();
+
+        this._transition_labels();
     },
 
     /**
@@ -455,6 +560,11 @@ var CircsterTrackView = Backbone.View.extend({
     },
 
     /**
+     * Transition labels to new values (e.g new radius or data bounds).
+     */
+    _transition_labels: function() {},
+
+    /**
      * Update data bounds.
      */
     _update_data_bounds: function() {
@@ -534,43 +644,93 @@ var CircsterTrackView = Backbone.View.extend({
 /**
  * Render chromosome labels.
  */
-var CircsterLabelTrackView = CircsterTrackView.extend({
+var CircsterChromLabelTrackView = CircsterTrackView.extend({
 
     initialize: function(options) {
         CircsterTrackView.prototype.initialize.call(this, options);
+        // Use a single arc for rendering data.
+        this.innerRadius = this.radius_bounds[0];
+        this.radius_bounds[0] = this.radius_bounds[1];
         this.bg_stroke = 'fff';
         this.bg_fill = 'fff';
+
+        // Minimum arc distance for labels to be applied.
+        this.min_arc_len = 0.08;
     },
 
     /**
      * Render labels.
      */
     _render_data: function(svg) {
-        // Add chromosome label where it will fit; an alternative labeling mechanism 
-        // would be nice for small chromosomes.
-        var chrom_arcs = svg.selectAll('g');
+        // -- Add chromosome label where it will fit; an alternative labeling mechanism 
+        // would be nice for small chromosomes. --
+        var self = this,
+            chrom_arcs = svg.selectAll('g');
 
         chrom_arcs.selectAll('path')
             .attr('id', function(d) { return 'label-' + d.data.chrom; });
           
         chrom_arcs.append("svg:text")
             .filter(function(d) { 
-                return d.endAngle - d.startAngle > 0.08;
+                return d.endAngle - d.startAngle > self.min_arc_len;
             })
             .attr('text-anchor', 'middle')
           .append("svg:textPath")
             .attr("xlink:href", function(d) { return "#label-" + d.data.chrom; })
             .attr('startOffset', '25%')
+            .attr('font-weight', 'bold')
             .text(function(d) { 
                 return d.data.chrom;
             });
+
+        // -- Add ticks to denote chromosome length. --
+
+        /** Returns an array of tick angles and labels, given a chrom arc. */
+        var chromArcTicks = function(d) {
+            var k = (d.endAngle - d.startAngle) / d.value,
+                ticks = d3.range(0, d.value, 25000000).map(function(v, i) {
+                    return {
+                        radius: self.innerRadius,
+                        angle: v * k + d.startAngle,
+                        label: i === 0 ? 0 : (i % 3 ? null : self.formatNum(v))
+                    };
+                });
+
+            // If there are fewer that 4 ticks, label last tick so that at least one non-zero tick is labeled.
+            if (ticks.length < 4) {
+                ticks[ticks.length-1].label = self.formatNum(
+                    Math.round( ( ticks[ticks.length-1].angle - d.startAngle ) / k )
+                );
+            }
+
+            return ticks;
+        };
+
+        /** Rotate and move text as needed. */
+        var textTransform = function(d) {
+                return d.angle > Math.PI ? "rotate(180)translate(-16)" : null;
+        };
+
+        // Filter chroms for only those large enough for display.
+        var visibleChroms = _.filter(this.chroms_layout, function(c) { return c.endAngle - c.startAngle > self.min_arc_len; });
+
+        this.drawTicks(this.parent_elt, visibleChroms, chromArcTicks, textTransform);
     }
 });
+_.extend(CircsterChromLabelTrackView.prototype, UsesTicks);
 
 /**
  * View for quantitative track in Circster.
  */
 var CircsterQuantitativeTrackView = CircsterTrackView.extend({
+
+    /**
+     * Returns quantile for an array of numbers.
+     */
+    _quantile: function(numbers, quantile) {
+        numbers.sort(d3.ascending);
+        return d3.quantile(numbers, quantile);
+    },
 
     /**
      * Renders quantitative data with the form [x, value] and assumes data is equally spaced across
@@ -603,7 +763,8 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
         // Radius scaler.
         var radius = d3.scale.linear()
                        .domain(this.data_bounds)
-                       .range(this.radius_bounds);
+                       .range(this.radius_bounds)
+                       .clamp(true);
 
         // Scaler for placing data points across arc.
         var angle = d3.scale.linear()
@@ -624,12 +785,80 @@ var CircsterQuantitativeTrackView = CircsterTrackView.extend({
     },
 
     /**
+     * Render track min, max using ticks.
+     */
+    render_labels: function() {
+        var self = this,
+            // Keep counter of visible chroms.
+            textTransform = function() {
+                return "rotate(90)";
+            };
+
+        // Filter for visible chroms, then for every third chrom so that labels attached to only every
+        // third chrom.
+        var visibleChroms = _.filter(this.chroms_layout, function(c) { return c.endAngle - c.startAngle > 0.08; }),
+            labeledChroms = _.filter(visibleChroms, function(c, i) { return i % 3 === 0; });
+        this.drawTicks(this.parent_elt, labeledChroms, this._data_bounds_ticks_fn(), textTransform, true);
+    },
+
+    /**
+     * Transition labels to new values (e.g new radius or data bounds).
+     */
+    _transition_labels: function() {
+        // FIXME: (a) pull out function for getting labeled chroms? and (b) function used in transition below
+        // is copied from UseTicks mixin, so pull out and make generally available.
+
+        // If there are no data bounds, nothing to transition.
+        if (this.data_bounds.length === 0) { return; }
+
+        // Transition labels to new radius bounds.
+        var self = this,
+            visibleChroms = _.filter(this.chroms_layout, function(c) { return c.endAngle - c.startAngle > 0.08; }),
+            labeledChroms = _.filter(visibleChroms, function(c, i) { return i % 3 === 0; }),
+            new_data = _.flatten( _.map(labeledChroms, function(c) {
+                return self._data_bounds_ticks_fn()(c);
+            }));
+        this.parent_elt.selectAll('g.tick').data(new_data).transition().attr("transform", function(d) {
+            return "rotate(" + (d.angle * 180 / Math.PI - 90) + ")" +
+                    "translate(" + d.radius + ",0)";
+        });
+    },
+
+    /**
+     * Get function for locating data bounds ticks.
+     */
+    _data_bounds_ticks_fn: function() {
+        // Closure vars.
+        var self = this;
+            visibleChroms = 0;
+
+        // Return function for locating ticks based on chrom arc data.
+        return function(d) {
+            // Set up data to display min, max ticks.
+            return [
+                {
+                    radius: self.radius_bounds[0],
+                    angle: d.startAngle,
+                    label: self.formatNum(self.data_bounds[0])
+                },
+                {
+                    radius: self.radius_bounds[1],
+                    angle: d.startAngle,
+                    label: self.formatNum(self.data_bounds[1])
+                }
+            ];
+        };
+    },
+
+    /**
      * Returns an array with two values denoting the minimum and maximum
      * values for the track.
      */
     get_data_bounds: function(data) {}
 
 });
+_.extend(CircsterQuantitativeTrackView.prototype, UsesTicks);
+
 
 /**
  * Layout for summary tree data in a circster visualization.
@@ -642,7 +871,7 @@ var CircsterSummaryTreeTrackView = CircsterQuantitativeTrackView.extend({
             if (typeof d === 'string' || !d.max) { return 0; }
             return d.max;
         });
-        return [ 0, (max_data && typeof max_data !== 'string' ? _.max(max_data) : 0) ];
+        return [ 0, (max_data && typeof max_data !== 'string' ? this._quantile(max_data, 0.98) : 0) ];
     }
 });
 
@@ -653,7 +882,7 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
 
     get_data_bounds: function(data) {
         // Set max across dataset by extracting all values, flattening them into a 
-        // single array, and getting the min and max.
+        // single array, and getting third quartile.
         var values = _.flatten( _.map(data, function(d) {
             if (d) {
                 // Each data point has the form [position, value], so return all values.
@@ -666,7 +895,7 @@ var CircsterBigWigTrackView = CircsterQuantitativeTrackView.extend({
             }
         }) );
 
-        return [ _.min(values), _.max(values) ];
+        return [ _.min(values), this._quantile(values, 0.98) ];
     }
 });
 

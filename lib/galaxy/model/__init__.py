@@ -112,6 +112,7 @@ class Job( object ):
                     RUNNING = 'running',
                     OK = 'ok',
                     ERROR = 'error',
+                    PAUSED = 'paused',
                     DELETED = 'deleted',
                     DELETED_NEW = 'deleted_new' )
     # Please include an accessor (get/set pair) for any new columns/members.
@@ -138,6 +139,12 @@ class Job( object ):
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
     # for the mapper defined to the Job table. 
+    def get_external_output_metadata( self ):
+        """
+        The external_output_metadata is currently a reference from Job to 
+        JobExternalOutputMetadata. It exists for a job but not a task.
+        """
+        return self.external_output_metadata 
     def get_session_id( self ):
         return self.session_id
     def get_user_id( self ):
@@ -370,6 +377,13 @@ class Task( object ):
     # (e.g., for a session) or never use the member (e.g., external output
     # metdata). These can be filled in as needed.
     def get_external_output_metadata( self ):
+        """
+        The external_output_metadata is currently a backref to 
+        JobExternalOutputMetadata. It exists for a job but not a task,
+        and when a task is cancelled its corresponding parent Job will
+        be cancelled. So None is returned now, but that could be changed
+        to self.get_job().get_external_output_metadata().
+        """
         return None
     def get_job_runner_name( self ):
         """
@@ -681,6 +695,14 @@ class History( object, UsesAnnotations ):
     @property
     def get_disk_size_bytes( self ):
         return self.get_disk_size( nice_size=False )
+    def unhide_datasets( self ):
+        for dataset in self.datasets:
+            dataset.mark_unhidden()
+    def resume_paused_jobs( self ):
+        for dataset in self.datasets:
+            job = dataset.creating_job
+            if job.state == Job.states.PAUSED:
+                job.set_state(Job.states.QUEUED)
     def get_disk_size( self, nice_size=False ):
         # unique datasets only
         db_session = object_session( self )
@@ -977,7 +999,7 @@ class DatasetInstance( object ):
     permitted_actions = Dataset.permitted_actions
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
-                  parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None ):
+                  parent_id=None, validation_errors=None, visible=True, create_dataset=False, sa_session=None, extended_metadata=None ):
         self.name = name or "Unnamed dataset"
         self.id = id
         self.info = info
@@ -987,6 +1009,7 @@ class DatasetInstance( object ):
         self.extension = extension
         self.designation = designation
         self.metadata = metadata or dict()
+        self.extended_metadata = extended_metadata
         if dbkey: #dbkey is stored in metadata, only set if non-zero, or else we could clobber one supplied by input 'metadata'
             self.dbkey = dbkey
         self.deleted = deleted
@@ -1891,6 +1914,18 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         if isinstance( ldda_name, str ):
             ldda_name = unicode( ldda_name, 'utf-8' )
         return ldda_name
+
+class ExtendedMetadata( object ):
+    def __init__(self, data):
+        self.data = data
+
+
+class ExtendedMetadataIndex( object ):
+    def __init__( self, extended_metadata, path, value):
+        self.extended_metadata = extended_metadata
+        self.path = path
+        self.value = value
+
 
 class LibraryInfoAssociation( object ):
     def __init__( self, library, form_definition, info, inheritable=False ):

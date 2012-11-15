@@ -173,17 +173,21 @@ class GalaxyRBACAgent( RBACAgent ):
         which the request is sent.  We cannot use trans.user_is_admin() because the controller is
         what is important since admin users do not necessarily have permission to do things
         on items outside of the admin view.
+
         If cntrller is from the admin side ( e.g., library_admin ):
-            -if item is public, all roles, including private roles, are legitimate.
-            -if item is restricted, legitimate roles are derived from the users and groups associated
-            with each role that is associated with the access permission ( i.e., DATASET_MANAGE_PERMISSIONS or
-            LIBRARY_MANAGE ) on item.  Legitimate roles will include private roles.
+
+            - if item is public, all roles, including private roles, are legitimate.
+            - if item is restricted, legitimate roles are derived from the users and groups associated
+              with each role that is associated with the access permission ( i.e., DATASET_MANAGE_PERMISSIONS or
+              LIBRARY_MANAGE ) on item.  Legitimate roles will include private roles.
+
         If cntrller is not from the admin side ( e.g., root, library ):
-            -if item is public, all non-private roles, except for the current user's private role,
-            are legitimate.
-            -if item is restricted, legitimate roles are derived from the users and groups associated
-            with each role that is associated with the access permission on item.  Private roles, except
-            for the current user's private role, will be excluded.
+
+            - if item is public, all non-private roles, except for the current user's private role,
+              are legitimate.
+            - if item is restricted, legitimate roles are derived from the users and groups associated
+              with each role that is associated with the access permission on item.  Private roles, except
+              for the current user's private role, will be excluded.
         """
         admin_controller = cntrller in [ 'library_admin' ]
         roles = set()
@@ -275,11 +279,12 @@ class GalaxyRBACAgent( RBACAgent ):
         # then the returned permissions will not carry an entry for the dataset.
         ret_permissions = {} 
         if ( len( permission_items ) > 0 ): 
+            # SM: NB: LibraryDatasets became Datasets for some odd reason. 
             if ( isinstance( permission_items[0], trans.model.LibraryDataset ) ):
                 ids = [ item.library_dataset_id for item in permission_items ]
                 permissions = trans.sa_session.query( trans.model.LibraryDatasetPermissions ) \
                                    .filter( and_( trans.model.LibraryDatasetPermissions.library_dataset_id.in_( ids ),
-                                                  trans.model.LibraryDatasetPermissions.action == action ) ) \
+                                                  trans.model.LibraryDatasetPermissions.action == action.action ) ) \
                                    .all()
 
                 # Massage the return data. We will return a list of permissions
@@ -292,6 +297,23 @@ class GalaxyRBACAgent( RBACAgent ):
                     ret_permissions[ item.library_dataset_id ] = [] 
                 for permission in permissions:
                     ret_permissions[ permission.library_dataset_id ].append( permission )
+            elif ( isinstance( permission_items[0], trans.model.Dataset ) ):
+                ids = [ item.id for item in permission_items ]
+                permissions = trans.sa_session.query( trans.model.DatasetPermissions ) \
+                                   .filter( and_( trans.model.DatasetPermissions.dataset_id.in_( ids ),
+                                                  trans.model.DatasetPermissions.action == action.action ) ) \
+                                   .all()
+
+                # Massage the return data. We will return a list of permissions
+                # for each library dataset. So we initialize the return list to
+                # have an empty list for each dataset. Then each permission is 
+                # appended to the right lib dataset.
+                # TODO: Consider eliminating the initialization and just return
+                # empty values for each library dataset id.
+                for item in permission_items:
+                    ret_permissions[ item.id ] = [] 
+                for permission in permissions:
+                    ret_permissions[ permission.dataset_id ].append( permission )
 
         # Test that we get the same response from get_item_actions each item:
         test_code = False 
@@ -333,14 +355,13 @@ class GalaxyRBACAgent( RBACAgent ):
         LDDAs.
         """
         all_items_actions = self.get_actions_for_items( trans, action, items )
-
         ret_allow_action = {}
+
         # Change item to lib_dataset or vice-versa.
         for item in items:
             if all_items_actions.has_key( item.id ):
                 item_actions = all_items_actions[ item.id ] 
 
-                # For access, all of the dataset's 
                 if self.permitted_actions.DATASET_ACCESS == action: 
                     ret_allow_action[ item.id ] = True
                     for item_action in item_actions: 
@@ -1046,9 +1067,10 @@ class GalaxyRBACAgent( RBACAgent ):
         comma-separated string of folder ids.  This method works with the show_library_item()
         method below, and it returns libraries for which the received user has permission to
         perform the received actions.  Here is an example call to this method to return all
-        libraries for which the received user has LIBRARY_ADD permission:
-        libraries = trans.app.security_agent.get_permitted_libraries( trans, user,
-            [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
+        libraries for which the received user has LIBRARY_ADD permission::
+
+            libraries = trans.app.security_agent.get_permitted_libraries( trans, user,
+                [ trans.app.security_agent.permitted_actions.LIBRARY_ADD ] )
         """
         all_libraries = trans.sa_session.query( trans.app.model.Library ) \
                                         .filter( trans.app.model.Library.table.c.deleted == False ) \

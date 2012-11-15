@@ -41,6 +41,7 @@ class QuotaAgent( NoQuotaAgent ):
     def get_quota( self, user, nice_size=False ):
         """
         Calculated like so:
+
             1. Anonymous users get the default quota.
             2. Logged in users start with the highest of their associated '='
                quotas or the default quota, if there are no associated '='
@@ -122,20 +123,26 @@ class QuotaAgent( NoQuotaAgent ):
             dqa = self.model.DefaultQuotaAssociation( default_type, quota )
         self.sa_session.add( dqa )
         self.sa_session.flush()
+        
     def get_percent( self, trans=None, user=False, history=False, usage=False, quota=False ):
+        """
+        Return the percentage of any storage quota applicable to the user/transaction.
+        """
+        # if trans passed, use it to get the user, history (instead of/override vals passed)
         if trans:
             user = trans.user
             history = trans.history
+        # if quota wasn't passed, attempt to get the quota
         if quota is False:
             quota = self.get_quota( user )
+        # return none if no applicable quotas or quotas disabled
         if quota is None:
             return None
+        # get the usage, if it wasn't passed
         if usage is False:
             usage = self.get_usage( trans, user, history )
-        percent = int( float( usage ) / quota * 100 )
-        if percent > 100:
-            percent = 100
-        return percent
+        return min( ( int( float( usage ) / quota * 100 ), 100 ) )
+
     def set_entity_quota_associations( self, quotas=[], users=[], groups=[], delete_existing_assocs=True ):
         for quota in quotas:
             if delete_existing_assocs:

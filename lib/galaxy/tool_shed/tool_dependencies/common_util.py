@@ -19,6 +19,14 @@ def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repos
         else:
             env_var_text = elem.text.replace( '$INSTALL_DIR', tool_shed_repository_install_dir )
             return dict( name=env_var_name, action=env_var_action, value=env_var_text )
+    if elem.text:
+        # Allow for environment variables that contain neither REPOSITORY_INSTALL_DIR nor INSTALL_DIR since there may be command line
+        # parameters that are tuned for a Galaxy instance.  Allowing them to be set in one location rather than being hard coded into
+        # each tool config is the best approach.  For example:
+        # <environment_variable name="GATK2_SITE_OPTIONS" action="set_to">
+        #    "--num_threads 4 --num_cpu_threads_per_data_thread 3 --phone_home STANDARD"
+        # </environment_variable>
+        return dict( name=env_var_name, action=env_var_action, value=elem.text)
     return None
 def create_or_update_env_shell_file( install_dir, env_var_dict ):
     env_var_name = env_var_dict[ 'name' ]
@@ -93,7 +101,7 @@ def move_file( current_dir, source, destination_dir ):
 def tar_extraction_directory( file_path, file_name ):
     """Try to return the correct extraction directory."""
     file_name = file_name.strip()
-    extensions = [ '.tar.gz', '.tgz', '.tar.bz2', '.zip' ]
+    extensions = [ '.tar.gz', '.tgz', '.tar.bz2', '.tar', '.zip' ]
     for extension in extensions:
         if file_name.find( extension ) > 0:
             dir_name = file_name[ :-len( extension ) ]

@@ -344,7 +344,7 @@ class RepositoryMetadataGrid( grids.Grid ):
     class RevisionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
-            repo = hg.repository( get_configured_ui(), repository.repo_path )
+            repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
             ctx = get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
             return "%s:%s" % ( str( ctx.rev() ), repository_metadata.changeset_revision )
     class ToolsColumn( grids.TextColumn ):
@@ -516,7 +516,7 @@ class AdminController( BaseUIController, Admin ):
             if k.startswith( changset_revision_str ):
                 repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
                 repository = get_repository_in_tool_shed( trans, repository_id )
-                if repository.tip != v:
+                if repository.tip( trans.app ) != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='browse_repositories',
                                                                       operation='view_or_manage_repository',

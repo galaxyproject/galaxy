@@ -9,18 +9,24 @@ mean that x <= y wrt some abstract partial ordering.  The return
 value is a list, representing a total ordering that respects all
 the input constraints.
 E.g.,
+
    topsort( [(1,2), (3,3)] )
+
 may return any of (but nothing other than)
+
    [3, 1, 2]
    [1, 3, 2]
    [1, 2, 3]
+
 because those are the permutations of the input elements that
 respect the "1 precedes 2" and "3 precedes 3" input constraints.
 Note that a constraint of the form (x, x) is really just a trick
 to make sure x appears *somewhere* in the output list.
 
 If there's a cycle in the constraints, say
+
    topsort( [(1,2), (2,1)] )
+
 then CycleError is raised, and the exception object supports
 many methods to help analyze and break the cycles.  This requires
 a good deal more code than topsort itself!

@@ -37,11 +37,19 @@
             "${_("Dataset Security")}": function() {
                 galaxy_main.location = "${h.url_for( controller='root', action='history_set_default_permissions' )}";
             },
+            "${_("Resume Paused Jobs")}": function() {
+                galaxy_history.location = "${h.url_for( controller='history', action='resume_paused_jobs', current=True)}";
+            },
             "${_("Show Deleted Datasets")}": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
             },
             "${_("Show Hidden Datasets")}": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history', show_hidden=True)}";
+            },
+            "${_("Unhide Hidden Datasets")}": function() {
+                if ( confirm( "Really unhide all hidden datasets?" ) ) {
+                    galaxy_main.location = "${h.url_for( controller='history', action='unhide_datasets', current=True )}";
+                }
             },
             "${_("Purge Deleted Datasets")}": function() {
                 if ( confirm( "Really delete all deleted datasets permanently? This cannot be undone." ) ) {

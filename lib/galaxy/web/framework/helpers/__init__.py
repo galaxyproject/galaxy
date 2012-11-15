@@ -90,4 +90,11 @@ def to_unicode( a_string ):
         return unicode( a_string, 'utf-8' )
     elif a_string_type is unicode:
         return a_string
+
+def is_true ( val ):
+    """
+    Returns true if input is a boolean and true or is a string and looks like a true value.
+    """
+    return val == True or val in [ 'True', 'true', 'T', 't' ]
+
     

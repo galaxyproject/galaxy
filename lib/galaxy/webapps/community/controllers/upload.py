@@ -31,19 +31,19 @@ class UploadController( BaseUIController ):
         categories = get_categories( trans )
         repository_id = params.get( 'repository_id', '' )
         repository = get_repository_in_tool_shed( trans, repository_id )
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         uncompress_file = util.string_as_bool( params.get( 'uncompress_file', 'true' ) )
         remove_repo_files_not_in_tar = util.string_as_bool( params.get( 'remove_repo_files_not_in_tar', 'true' ) )
         uploaded_file = None
         upload_point = self.__get_upload_point( repository, **kwd )
-        tip = repository.tip
+        tip = repository.tip( trans.app )
         file_data = params.get( 'file_data', '' )
         url = params.get( 'url', '' )
         # Part of the upload process is sending email notification to those that have registered to
         # receive them.  One scenario occurs when the first change set is produced for the repository.
         # See the handle_email_alerts() method for the definition of the scenarios.
-        new_repo_alert = repository.is_new
+        new_repo_alert = repository.is_new( trans.app )
         uploaded_directory = None
         if params.get( 'upload_button', False ):
             if file_data == '' and url == '':
@@ -158,8 +158,9 @@ class UploadController( BaseUIController ):
                     # Update the repository files for browsing.
                     update_repository( repo )
                     # Get the new repository tip.
-                    if tip == repository.tip:
+                    if tip == repository.tip( trans.app ):
                         message = 'No changes to repository.  '
+                        status = 'warning'
                     else:
                         if ( isgzip or isbz2 ) and uncompress_file:
                             uncompress_str = ' uncompressed and '
@@ -182,6 +183,16 @@ class UploadController( BaseUIController ):
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
                         kwd[ 'message' ] = message
                         set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
+                    #provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to e.g. a requirement tag mismatch
+                    if get_config_from_disk( 'tool_dependencies.xml', repo_dir ):
+                        if repository.metadata_revisions:
+                            metadata_dict = repository.metadata_revisions[0].metadata
+                        else:
+                            metadata_dict = {}
+                        if 'tool_dependencies' not in metadata_dict:
+                            message += 'Name, version and type from a tool requirement tag does not match the information in the "tool_dependencies.xml".  '
+                            status = 'warning'
+                            log.debug( 'Error in tool dependencies for repository %s: %s.' % ( repository.id, repository.name ) )
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                     reset_tool_data_tables( trans.app )
                     trans.response.send_redirect( web.url_for( controller='repository',
@@ -204,7 +215,7 @@ class UploadController( BaseUIController ):
                                     message=message,
                                     status=status )
     def upload_directory( self, trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert ):
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
@@ -240,7 +251,7 @@ class UploadController( BaseUIController ):
         return self.__handle_directory_changes(trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed)
     def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert ):
         # Upload a tar archive of files.
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
@@ -273,12 +284,12 @@ class UploadController( BaseUIController ):
             uploaded_file.close()
             return self.__handle_directory_changes(trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed)
     def __handle_directory_changes( self, trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed ):    
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         content_alert_str = ''
         files_to_remove = []
         filenames_in_archive = [ os.path.join( full_path, name ) for name in filenames_in_archive ]
-        if remove_repo_files_not_in_tar and not repository.is_new:
+        if remove_repo_files_not_in_tar and not repository.is_new( trans.app ):
             # We have a repository that is not new (it contains files), so discover
             # those files that are in the repository, but not in the uploaded archive.
             for root, dirs, files in os.walk( full_path ):

@@ -1,192 +1,86 @@
-<script type="text/template" class="template-history" id="template-history-warning-messages">
-{{#if deleted}}{{#unless purged}}
-{{#warningmessagesmall}}
-    This dataset has been deleted.
-    {{#if urls.undelete}}
-        Click <a href="{{ urls.undelete }}" class="historyItemUndelete" id="historyItemUndeleter-{{ id }}"
-                 target="galaxy_history">here</a> to undelete it
-        {{#if urls.purge}}
-        or <a href="{{ urls.purge }}" class="historyItemPurge" id="historyItemPurger-{{ id }}"
-           target="galaxy_history">here</a> to immediately remove it from disk
-        {{/if}}
-    {{/if}}
-{{/warningmessagesmall}}
-{{/unless}}{{/if}}
-
-{{#if purged}}{{#warningmessagesmall}}
-    This dataset has been deleted and removed from disk.
-{{/warningmessagesmall}}{{/if}}
-
-{{#unless visible}}{{#warningmessagesmall}}
-    This dataset has been hidden.
-    {{#if urls.unhide}}
-        Click <a href="{{ urls.unhide }}" class="historyItemUnhide" id="historyItemUnhider-{{ id }}"
-                 target="galaxy_history">here</a> to unhide it
-    {{/if}}
-{{/warningmessagesmall}}{{/unless}}
-</script>
-
-<script type="text/template" class="template-history" id="template-history-titleLink">
-<a href="javascript:void(0);"><span class="historyItemTitle">{{ hid }}: {{ name }}</span></a>
-</script>
-
-<script type="text/template" class="template-history" id="template-history-hdaSummary">
-<div class="hda-summary">
-    {{ misc_blurb }}<br />
-    format: <span class="{{ data_type }}">{{ data_type }}</span>,
-    database:
-    {{#if dbkey_unknown_and_editable }}
-        <a href="{{ urls.edit }}" target="galaxy_main">{{ metadata_dbkey }}</a>
-    {{else}}
-        <span class="{{ metadata_dbkey }}">{{ metadata_dbkey }}</span>
-    {{/if}}
-</div>
-{{#if misc_info}}
-<div class="hda-info">{{ misc_info }}</div>
-{{/if}}
-</script>
-
-<script type="text/template" class="template-history" id="template-history-failedMetaData">
-{{#warningmessagesmall}}
-An error occurred setting the metadata for this dataset.
-You may be able to <a href="{{ urls.edit }}" target="galaxy_main">set it manually or retry auto-detection</a>.
-{{/warningmessagesmall}}
-</script>
-
-<script type="text/template" class="template-history" id="template-history-downloadLinks">
-{{#if urls.meta_download}}
-{{! this will be built using a popupmenu }}
-<div popupmenu="dataset-{{ id }}-popup">
-    <a class="action-button" href="{{ urls.download }}">Download Dataset</a>
-    <a>Additional Files</a>
-    {{#each urls.meta_download}}
-    <a class="action-button" href="{{ url }}">Download {{ file_type }}</a>
-    {{/each}}
-</div>
-<div style="float:left;" class="menubutton split popup" id="dataset-{{ id }}-popup">
-    <a href="{{ urls.download }}" title="Download" class="icon-button disk tooltip"></a>
-</div>
-{{else}}
-{{! otherwise a simple icon button }}
-<a href="{{ urls.download }}" title="Download" class="icon-button disk tooltip"></a>
-{{/if}}
-</script>
-
-<script type="text/template" class="template-history" id="template-history-tagArea">
-{{! TODO: move to mvc/tag.js templates }}
-<div class="tag-area" style="display: none;">
-    <strong>Tags:</strong>
-    <div class="tag-elt">
-    </div>
-</div>
-</script>
-
-<script type="text/template" class="template-history" id="template-history-annotationArea">
-{{! TODO: move to mvc/annotations.js templates, editable-text }}
-<div id="{{ id }}-annotation-area" class="annotation-area" style="display: none;">
-    <strong>Annotation:</strong>
-    <div id="{{ id }}-anotation-elt" class="annotation-elt tooltip editable-text"
-         style="margin: 1px 0px 1px 0px" title="Edit dataset annotation">
-    </div>
-</div>
-</script>
-
-<script type="text/template" class="template-history" id="template-history-displayApps">
-{{#each displayApps}}
-    {{label}}
-    {{#each links}}
-        <a target="{{target}}" href="{{href}}">{{text}}</a>
-    {{/each}}
-    <br />
-{{/each}}
-</script>
-
 <!--
 History panel/page - the main container for hdas (gen. on the left hand of the glx page)
 -->
 <script type="text/template" class="template-history" id="template-history-historyPanel">
-{{! history name (if any) }}
-<div id="history-name-area" class="historyLinks">
-    <div id="history-name-container" style="position: relative;">
-        {{! TODO: factor out conditional css }}
-        <div id="history-size" style="position: absolute; top: 3px; right: 0px;">{{nice_size}}</div>
-        {{#if user}}
-            <div id="history-name" style="margin-right: 50px;" class="tooltip editable-text"
-                title="Click to rename history">{{name}}</div>
-        {{/if}}
-    </div>                     
-</div>
-<div style="clear: both;"></div>
+<div id="history-controls">
+    <div id="history-title-area" class="historyLinks">
 
-<div id="top-links" class="historyLinks">
-    <a title="{{#local}}refresh{{/local}}" class="icon-button arrow-circle tooltip" href="{{urls.base}}"></a>
-    <a title='{{#local}}collapse all{{/local}}' id="history-collapse-all"
-        class='icon-button toggle tooltip' href='javascript:void(0);'></a>
-    <div style="width: 40px; float: right; white-space: nowrap;">
-        {{#if user}}
-        <a id="history-tag" title="{{#local}}Edit history tags{{/local}}"
-            class="icon-button tags tooltip" target="galaxy_main" href="javascript:void(0)"></a>
-        <a id="history-annotate" title="{{#local}}Edit history annotation{{/local}}"
-            class="icon-button annotate tooltip" target="galaxy_main" href="javascript:void(0)"></a>
-        {{/if}}
-    </div>
-</div>
-<div style="clear: both;"></div>
-
-{{! TODO: move to js with no reload - use each with historyLinks }}
-<div class="historyLinks">
-    {{#if show_deleted}}
-    <a href="{{urls.hide_deleted}}">{{#local}}hide deleted{{/local}}</a>
-    {{/if}}
-    {{#if show_hidden}}
-    <a href="{{urls.hide_hidden}}">{{#local}}hide hidden{{/local}}</a>
-    {{/if}}
-</div>
-
-{{#if deleted}}
-{{#warningmessagesmall}}{{#local}}You are currently viewing a deleted history!{{/local}}{{/warningmessagesmall}}
-{{/if}}
-
-{{! tags and annotations }}
-{{! TODO: move inline styles out }}
-<div style="margin: 0px 5px 10px 5px">
-
-    {{#if user}}
-    <div id="history-tag-area" style="display: none">
-        <strong>Tags:</strong>
-        <div class="tag-elt"></div>
-    </div>
-
-    <div id="history-annotation-area" style="display: none">
-        <strong>Annotation / Notes:</strong>
-        <div id="history-annotation-container">
-        <div id="history-annotation" class="tooltip editable-text" title="Click to edit annotation">
-            {{#if annotation}}
-                {{annotation}}
+        {{! history name (if any) }}
+        <div id="history-name-container" style="float: left;">
+            {{! TODO: factor out conditional css }}
+            {{#if user.email}}
+            <div id="history-name" class="tooltip editable-text"
+                title="{{#local}}Click to rename history{{/local}}">{{name}}</div>
             {{else}}
-                <em>Describe or add notes to history</em>
+            <div id="history-name" class="tooltip"
+                title="{{#local}}You must be logged in to edit your history name{{/local}}">{{name}}</div>
             {{/if}}
         </div>
+
+        <a id="history-action-popup" class="tooltip" title="{{#local}}Click to see more actions{{/local}}"
+            href="javascript:void(0);" style="float: right;">
+            <span class="ficon cog large"></span>
+        </a>
+        <div style="clear: both;"></div>
+    </div>
+
+    <div id="history-subtitle-area">
+        <div id="history-size" style="float:left;">{{nice_size}}</div>
+        {{#if user.email}}
+        <div id="history-secondary-links" style="float: right;">
+            <a id="history-tag" title="{{#local}}Edit history tags{{/local}}"
+                class="icon-button tags tooltip" target="galaxy_main" href="javascript:void(0)"></a>
+            <a id="history-annotate" title="{{#local}}Edit history annotation{{/local}}"
+                class="icon-button annotate tooltip" target="galaxy_main" href="javascript:void(0)"></a>
+        </div>
+        {{/if}}
+        <div style="clear: both;"></div>
+    </div>
+
+    {{#if deleted}}
+    {{#warningmessagesmall}}{{#local}}You are currently viewing a deleted history!{{/local}}{{/warningmessagesmall}}
+    {{/if}}
+
+    {{! tags and annotations }}
+    {{! TODO: move inline styles out }}
+    {{#if user.email}}
+    <div id="history-tag-annotation">
+
+        <div id="history-tag-area" style="display: none">
+            <strong>{{#local}}Tags{{/local}}:</strong>
+            <div class="tag-elt"></div>
+        </div>
+
+        <div id="history-annotation-area" style="display: none">
+            <strong>{{#local}}Annotation{{/local}}:</strong>
+            <div id="history-annotation-container">
+            <div id="history-annotation" class="tooltip editable-text"
+                title="{{#local}}Click to edit annotation{{/local}}">
+                {{#if annotation}}
+                    {{annotation}}
+                {{else}}
+                    <em>{{#local}}Describe or add notes to history{{/local}}</em>
+                {{/if}}
+            </div>
+            </div>
         </div>
     </div>
     {{/if}}
-</div>
 
-{{#if message}}
-<div id="message-container">
-    <div class="{{status}}message">
-    {{message}}
-    </div><br />
-</div>
-{{/if}}
-
-<div id="quota-message-container">
-    {{#if over_quota}}
-    <div id="quota-message" class="errormessage">
-        You are over your disk quota.  Tool execution is on hold until your disk usage drops below your allocated quota.
+    {{#if message}}
+    <div id="message-container">
+        <div class="{{status}}message">
+        {{message}}
+        </div><br />
     </div>
-    <br/>
     {{/if}}
+
+    <div id="quota-message-container" style="display: none">
+        <div id="quota-message" class="errormessage">
+            {{#local}}You are over your disk quota.
+            Tool execution is on hold until your disk usage drops below your allocated quota.{{/local}}
+        </div>
+    </div>
 </div>
 
 <div id="{{id}}-datasets" class="history-datasets-list"></div>

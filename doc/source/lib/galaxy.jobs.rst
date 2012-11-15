@@ -25,6 +25,14 @@ jobs Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`mapper` Module
+--------------------
+
+.. automodule:: galaxy.jobs.mapper
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`transfer_manager` Module
 ------------------------------
 

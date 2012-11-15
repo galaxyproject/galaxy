@@ -797,6 +797,7 @@ def get_test_fname( fname ):
     path, name = os.path.split(__file__)
     full_path = os.path.join( path, 'test', fname )
     return full_path
+
 def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skipchars=[] ):
     """
     Returns the first LINE_COUNT lines wrapped to WIDTH
@@ -804,6 +805,7 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
     ## >>> fname = get_test_fname('4.bed')
     ## >>> get_file_peek(fname)
     ## 'chr22    30128507    31828507    uc003bnx.1_cds_2_0_chr22_29227_f    0    +\n'
+
     """
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very

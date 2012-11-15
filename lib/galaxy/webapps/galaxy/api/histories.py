@@ -80,7 +80,8 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
                 if not dataset_dict['deleted']:
                     state_counts[ item_state ] = state_counts[ item_state ] + 1
-                    state_ids[ item_state ].append( trans.security.encode_id( dataset_dict[ 'id' ] ) )
+
+                state_ids[ item_state ].append( trans.security.encode_id( dataset_dict[ 'id' ] ) )
 
             return ( state_counts, state_ids )
 
@@ -114,7 +115,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 state = states.NEW
 
             else:
-
                 if( ( state_counts[ states.RUNNING ] > 0 )
                 or    ( state_counts[ states.SETTING_METADATA ] > 0 )
                 or    ( state_counts[ states.UPLOAD ] > 0 ) ):
@@ -131,12 +131,9 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                     state = states.OK
 
             history_data[ 'state' ] = state
-
             history_data[ 'state_details' ] = state_counts
             history_data[ 'state_ids' ] = state_ids
-
             history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
-
 
         except Exception, e:
             msg = "Error in history API at showing history detail: %s" % ( str( e ) )

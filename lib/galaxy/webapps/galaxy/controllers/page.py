@@ -621,15 +621,6 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
         return
 
     @web.expose
-    @web.require_login( "modify Galaxy items" )
-    def set_slug_async( self, trans, id, new_slug ):
-        page = self.get_page( trans, id )
-        if page:
-            page.slug = new_slug
-            trans.sa_session.flush()
-            return page.slug
-            
-    @web.expose
     @web.require_login( "rate items" )
     @web.json
     def rate_async( self, trans, id, rating ):

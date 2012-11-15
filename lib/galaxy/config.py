@@ -66,6 +66,7 @@ class Configuration( object ):
             tcf = 'tool_conf.xml'
         self.tool_configs = [ resolve_path( p, self.root ) for p in listify( tcf ) ]
         self.tool_data_table_config_path = resolve_path( kwargs.get( 'tool_data_table_config_path', 'tool_data_table_conf.xml' ), self.root )
+        self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
         try:
             self.hours_between_check = int( kwargs.get( 'hours_between_check', 12 ) )
@@ -123,6 +124,9 @@ class Configuration( object ):
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
         # Per-user Job concurrency limitations
         self.user_job_limit = int( kwargs.get( 'user_job_limit', 0 ) )
+        # user_job_limit for backwards-compatibility
+        self.registered_user_job_limit = int( kwargs.get( 'registered_user_job_limit', self.user_job_limit ) )
+        self.anonymous_user_job_limit = int( kwargs.get( 'anonymous_user_job_limit', self.user_job_limit ) )
         self.default_cluster_job_runner = kwargs.get( 'default_cluster_job_runner', 'local:///' )
         self.pbs_application_server = kwargs.get('pbs_application_server', "" )
         self.pbs_dataset_server = kwargs.get('pbs_dataset_server', "" )
@@ -215,6 +219,19 @@ class Configuration( object ):
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
         self.default_job_handlers = [ x.strip() for x in kwargs.get('default_job_handlers', ','.join( self.job_handlers ) ).split(',') ]
+        # parse the [galaxy:job_limits] section
+        self.job_limits = {}
+        try:
+            job_limits = global_conf_parser.items( 'galaxy:job_limits' )
+            for k, v in job_limits:
+                # ConfigParser considers the first colon to be the delimiter, undo this behavior
+                more_k, v = v.split('=', 1)
+                k = '%s:%s' % (k, more_k.strip())
+                v = v.strip().rsplit(None, 1)
+                v[1] = int(v[1])
+                self.job_limits[k] = v
+        except ConfigParser.NoSectionError:
+            pass
         # Use database for IPC unless this is a standalone server (or multiple servers doing self dispatching in memory)
         if self.track_jobs_in_database is None or self.track_jobs_in_database == "None":
             self.track_jobs_in_database = True
@@ -340,7 +357,7 @@ class Configuration( object ):
 def get_database_engine_options( kwargs ):
     """
     Allow options for the SQLAlchemy database engine to be passed by using
-    the prefix "database_engine_option_".
+    the prefix "database_engine_option".
     """
     conversions =  {
         'convert_unicode': string_as_bool,

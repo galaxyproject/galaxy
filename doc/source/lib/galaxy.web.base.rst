@@ -9,3 +9,10 @@ base Package
     :undoc-members:
     :show-inheritance:
 
+Subpackages
+-----------
+
+.. toctree::
+
+    galaxy.web.base.controllers
+

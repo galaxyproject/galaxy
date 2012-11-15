@@ -468,15 +468,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return
 
     @web.expose
-    @web.require_login( "modify Galaxy items" )
-    def set_slug_async( self, trans, id, new_slug ):
-        stored = self.get_stored_workflow( trans, id )
-        if stored:
-            stored.slug = new_slug
-            trans.sa_session.flush()
-            return stored.slug
-
-    @web.expose
     def get_embed_html_async( self, trans, id ):
         """ Returns HTML for embedding a workflow in a page. """
 
@@ -1260,7 +1251,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 assert job_id in jobs_by_id, "Attempt to create workflow with job not connected to current history"
                 job = jobs_by_id[ job_id ]
                 tool = trans.app.toolbox.get_tool( job.tool_id )
-                param_values = job.get_param_values( trans.app )
+                param_values = job.get_param_values( trans.app, ignore_errors=True ) #If a tool was updated and e.g. had a text value changed to an integer, we don't want a traceback here
                 associations = cleanup_param_values( tool.inputs, param_values )
                 step = model.WorkflowStep()
                 step.type = 'tool'
@@ -1980,8 +1971,8 @@ def attach_ordered_steps( workflow, steps ):
 
 def edgelist_for_workflow_steps( steps ):
     """
-    Create a list of tuples representing edges between `WorkflowSteps` based
-    on associated `WorkflowStepConnection`s
+    Create a list of tuples representing edges between ``WorkflowSteps`` based
+    on associated ``WorkflowStepConnection``s
     """
     edges = []
     steps_to_index = dict( ( step, i ) for i, step in enumerate( steps ) )

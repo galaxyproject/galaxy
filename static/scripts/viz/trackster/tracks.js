@@ -170,7 +170,7 @@ var
     DEFAULT_DATA_QUERY_WAIT = 5000,
     // Maximum number of chromosomes that are selectable at any one time.
     MAX_CHROMS_SELECTABLE = 100,
-    DATA_ERROR = "There was an error in indexing this dataset. ",
+    DATA_ERROR = "Cannot display dataset due to an error. ",
     DATA_NOCONVERTER = "A converter for this dataset is not installed. Please check your datatypes_conf.xml file.",
     DATA_NONE = "No data for this chrom/contig.",
     DATA_PENDING = "Preparing data. This can take a while for a large dataset. " + 
@@ -1695,22 +1695,24 @@ extend(Tool.prototype, {
         //
         // Create track for tool's output immediately to provide user feedback.
         //
-        var 
+        var region = new visualization.GenomeRegion({
+                chrom: this.track.view.chrom,
+                start: this.track.view.low,
+                end: this.track.view.high
+            }),
             url_params = 
             { 
                 target_dataset_id: this.track.original_dataset_id,
                 action: 'rerun',
                 tool_id: this.name,
-                regions: [{
-                    chrom: this.track.view.chrom,
-                    start: this.track.view.low,
-                    end: this.track.view.high
-                }]
+                regions: [
+                    region.toJSON()
+                ]
             },
             current_track = this.track,
             // Set name of track to include tool name, parameters, and region used.
             track_name = url_params.tool_id +
-                         current_track.tool_region_and_parameters_str(url_params.chrom, url_params.low, url_params.high),
+                         current_track.tool_region_and_parameters_str(region),
             container;
             
         // If track not in a group, create a group for it and add new track to group. If track 
@@ -2513,7 +2515,7 @@ extend(Track.prototype, Drawable.prototype, {
     /**
      * Initialize and draw the track.
      */
-    init: function() {
+    init: function(retry) {
         var track = this;
         track.enabled = false;
         track.tile_cache.clear();    
@@ -2525,7 +2527,7 @@ extend(Track.prototype, Drawable.prototype, {
         }
         */
         // Remove old track content (e.g. tiles, messages).
-        track.tiles_div.children().remove();
+        track.tiles_div.text('').children().remove();
         track.container_div.removeClass("nodata error pending");
         
         //
@@ -2542,16 +2544,27 @@ extend(Track.prototype, Drawable.prototype, {
             params = { 
                 hda_ldda: track.hda_ldda, 
                 data_type: this.dataset_check_type,
-                chrom: track.view.chrom };
+                chrom: track.view.chrom,
+                retry: retry
+            };
         $.getJSON(this.dataset.url(), params, function (result) {
             if (!result || result === "error" || result.kind === "error") {
+                // Dataset is in error state.
                 track.container_div.addClass("error");
                 track.tiles_div.text(DATA_ERROR);
                 if (result.message) {
-                    var error_link = $(" <a href='javascript:void(0);'></a>").text("View error").click(function() {
-                        show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
-                    });
-                    track.tiles_div.append(error_link);
+                    // Add links to (a) show error and (b) try again.
+                    track.tiles_div.append(
+                        $("<a href='javascript:void(0);'></a>").text("View error").click(function() {
+                            show_modal( "Trackster Error", "<pre>" + result.message + "</pre>", { "Close" : hide_modal } );
+                        })
+                    );
+                    track.tiles_div.append( $('<span/>').text(' ') );
+                    track.tiles_div.append(
+                        $("<a href='javascript:void(0);'></a>").text("Try again").click(function() {
+                            track.init(true);
+                        })
+                    );
                 }
             } else if (result === "no converter") {
                 track.container_div.addClass("error");
@@ -3029,13 +3042,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Utility function that creates a label string describing the region and parameters of a track's tool.
      */
-    tool_region_and_parameters_str: function(chrom, low, high) {
-        // Region is chrom:low-high or 'all.'
-        var 
-            track = this,
-            region = (chrom !== undefined && low !== undefined && high !== undefined ?
-                      chrom + ":" + low + "-" + high : "all");
-        return " - region=[" + region + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
+    tool_region_and_parameters_str: function(region) {
+        var track = this,
+            region_str = (region !== undefined ? region.toString() : "all");
+        return " - region=[" + region_str + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
     },
     /**
      * Returns true if data is compatible with a given mode. Defaults to true because, for many tracks,

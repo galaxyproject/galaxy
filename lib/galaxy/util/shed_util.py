@@ -1,12 +1,12 @@
 import sys, os, tempfile, shutil, logging, string, urllib2
 import galaxy.tools.data
 from datetime import date, datetime, timedelta
-from time import strftime, gmtime
 from galaxy import util
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.tools import parameters
 from galaxy.datatypes.checkers import *
+from galaxy.datatypes.sniff import is_column_based
 from galaxy.util.json import *
 from galaxy.util import inflector
 from galaxy.tools.search import ToolBoxSearch
@@ -39,82 +39,6 @@ NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'tool_dependencies.xml' ]
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 TOOL_SHED_ADMIN_CONTROLLER = 'TOOL_SHED_ADMIN_CONTROLLER'
 
-class ShedCounter( object ):
-    def __init__( self, model ):
-        self.model = model
-        self.generation_time = strftime( "%b %d, %Y", gmtime() )
-        self.repositories = 0
-        self.new_repositories = 0
-        self.deleted_repositories = 0
-        self.invalid_tools = 0
-        self.valid_tools = 0
-        self.workflows = 0
-        self.proprietary_datatypes = 0
-        self.total_clones = 0
-        self.generate_statistics()
-    @property
-    def sa_session( self ):
-        """Returns a SQLAlchemy session"""
-        return self.model.context
-    def generate_statistics( self ):
-        self.repositories = 0
-        self.new_repositories = 0
-        self.deleted_repositories = 0
-        self.invalid_tools = 0
-        self.valid_tools = 0
-        self.workflows = 0
-        self.proprietary_datatypes = 0
-        self.total_clones = 0
-        for repository in self.sa_session.query( self.model.Repository ):
-            self.repositories += 1
-            self.total_clones += repository.times_downloaded
-            is_deleted = repository.deleted
-            is_new = repository.is_new
-            if is_deleted and is_new:
-                self.deleted_repositories += 1
-                self.new_repositories += 1
-            elif is_deleted:
-                self.deleted_repositories += 1
-            elif is_new:
-                self.new_repositories += 1
-            else:
-                processed_guids = []
-                processed_invalid_tool_configs = []
-                processed_relative_workflow_paths = []
-                processed_datatypes = []
-                # A repository's metadata_revisions are those that ignore the value of the repository_metadata.downloadable column.
-                for metadata_revision in repository.metadata_revisions:
-                    metadata = metadata_revision.metadata
-                    if 'tools' in metadata:
-                        tool_dicts = metadata[ 'tools' ]
-                        for tool_dict in tool_dicts:
-                            if 'guid' in tool_dict:
-                                guid = tool_dict[ 'guid' ]
-                                if guid not in processed_guids:
-                                    self.valid_tools += 1
-                                    processed_guids.append( guid )
-                    if 'invalid_tools' in metadata:
-                        invalid_tool_configs = metadata[ 'invalid_tools' ]
-                        for invalid_tool_config in invalid_tool_configs:
-                            if invalid_tool_config not in processed_invalid_tool_configs:
-                                self.invalid_tools += 1
-                                processed_invalid_tool_configs.append( invalid_tool_config )
-                    if 'datatypes' in metadata:
-                        datatypes = metadata[ 'datatypes' ]
-                        for datatypes_dict in datatypes:
-                            if 'extension' in datatypes_dict:
-                                extension = datatypes_dict[ 'extension' ]
-                                if extension not in processed_datatypes:
-                                    self.proprietary_datatypes += 1
-                                    processed_datatypes.append( extension )
-                    if 'workflows' in metadata:
-                        workflows = metadata[ 'workflows' ]
-                        for workflow_tup in workflows:
-                            relative_path, exported_workflow_dict = workflow_tup
-                            if relative_path not in processed_relative_workflow_paths:
-                                self.workflows += 1
-                                processed_relative_workflow_paths.append( relative_path )
-        self.generation_time = strftime( "%b %d, %Y", gmtime() )
 def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
     # A tool shed repository is being installed so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have
@@ -546,15 +470,20 @@ def copy_sample_file( app, filename, dest_path=None ):
         shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
 def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None ):
     """
-    Copy all files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
-    are contained in sample_files_copied.  The default value for dest_path is ~/tool-data.
+    Copy all appropriate files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
+    are contained in sample_files_copied.  The default value for dest_path is ~/tool-data.  We need to be careful to copy only appropriate
+    files here because tool shed repositories can contain files ending in .sample that should not be copied to the ~/tool-data directory.
     """
+    filenames_not_to_copy = [ 'tool_data_table_conf.xml.sample' ]
     sample_files_copied = util.listify( sample_files_copied )
     for filename in sample_files:
-        if filename not in sample_files_copied:
+        filename_sans_path = os.path.split( filename )[ 1 ]
+        if filename_sans_path not in filenames_not_to_copy and filename not in sample_files_copied:
             if tool_path:
                 filename=os.path.join( tool_path, filename )
-            copy_sample_file( app, filename, dest_path=dest_path )
+            # Attempt to ensure we're copying an appropriate file.
+            if is_data_index_sample_file( filename ):
+                copy_sample_file( app, filename, dest_path=dest_path )
 def create_repo_info_dict( repository, owner, repository_clone_url, changeset_revision, ctx_rev, metadata ):
     repo_info_dict = {}
     repo_info_dict[ repository.name ] = ( repository.description,
@@ -753,12 +682,15 @@ def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
                 tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
     return tool_dependencies_dict
 def generate_metadata_for_changeset_revision( app, repository, repository_clone_url, shed_config_dict={}, relative_install_dir=None, repository_files_dir=None,
-                                              resetting_all_metadata_on_repository=False, updating_installed_repository=False ):
+                                              resetting_all_metadata_on_repository=False, updating_installed_repository=False, persist=False ):
     """
     Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
     the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
-    disk files, so the value of repository_files_dir will not always be repository.repo_path (it could be an absolute path to a temporary directory
-    containing a clone).  If it is an absolute path, the value of relative_install_dir must contain repository.repo_path.
+    disk files, so the value of repository_files_dir will not always be repository.repo_path( app ) (it could be an absolute path to a temporary
+    directory containing a clone).  If it is an absolute path, the value of relative_install_dir must contain repository.repo_path( app ).
+    
+    The value of persist will be True when the installed repository contains a valid tool_data_table_conf.xml.sample file, in which case the entries
+    should ultimately be persisted to the file referred to by app.config.shed_tool_data_table_config.
     """
     if updating_installed_repository:
         # Keep the original tool shed repository metadata if setting metadata on a repository installed into a local Galaxy instance for which 
@@ -775,7 +707,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
     original_tool_data_table_config_path = app.config.tool_data_table_config_path
     if resetting_all_metadata_on_repository:
         if not relative_install_dir:
-            raise Exception( "The value of repository.repo_path must be sent when resetting all metadata on a repository." )
+            raise Exception( "The value of repository.repo_path( app ) must be sent when resetting all metadata on a repository." )
         # Keep track of the location where the repository is temporarily cloned so that we can strip the path when setting metadata.  The value of
         # repository_files_dir is the full path to the temporary directory to which the repository was cloned.
         work_dir = repository_files_dir
@@ -810,9 +742,9 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
         relative_path, filename = os.path.split( sample_file )
         if filename == 'tool_data_table_conf.xml.sample':
             new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( config_filename=sample_file,
-                                                                                     tool_data_path=app.config.tool_data_path,
-                                                                                     tool_data_table_config_path=app.config.tool_data_table_config_path,
-                                                                                     persist=False )
+                                                                                     tool_data_path=original_tool_data_path,
+                                                                                     shed_tool_data_table_config=app.config.shed_tool_data_table_config,
+                                                                                     persist=persist )
     for root, dirs, files in os.walk( files_dir ):
         if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
             if '.hg' in dirs:
@@ -898,7 +830,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
     app.config.tool_data_path = original_tool_data_path
     app.config.tool_data_table_config_path = original_tool_data_table_config_path
     return metadata_dict, invalid_file_tups
-def generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False ):
+def generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False ):
     if as_html:
         new_line = '<br/>'
         bold_start = '<b>'
@@ -910,10 +842,10 @@ def generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_
     message = ''
     if not displaying_invalid_tool:
         if metadata_dict:
-            message += "Metadata was defined for some items in revision '%s'.  " % str( repository.tip )
+            message += "Metadata was defined for some items in revision '%s'.  " % str( repository.tip( trans.app ) )
             message += "Correct the following problems if necessary and reset metadata.%s" % new_line
         else:
-            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip )
+            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip( trans.app ) )
             message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.%s" % new_line
     for itc_tup in invalid_file_tups:
         tool_file, exception_msg = itc_tup
@@ -1536,9 +1468,11 @@ def get_shed_tool_conf_dict( app, shed_tool_conf ):
             if shed_tool_conf == file_name:
                 return index, shed_tool_conf_dict
 def get_tool_index_sample_files( sample_files ):
+    """Try to return the list of all appropriate tool data sample files included in the repository."""
     tool_index_sample_files = []
     for s in sample_files:
-        if s.endswith( '.loc.sample' ):
+        # The problem with this is that Galaxy does not follow a standard naming convention for file names.
+        if s.endswith( '.loc.sample' ) or s.endswith( '.xml.sample' ) or s.endswith( '.txt.sample' ):
             tool_index_sample_files.append( s )
     return tool_index_sample_files
 def get_tool_dependency( trans, id ):
@@ -1768,15 +1702,15 @@ def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_re
     return tool, message, sample_files
 def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
     """
-    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary.  If persist is True (should only occur)
-    if call is from the Galaxy side (not the tool shed), the new entries will be appended to Galaxy's tool_data_table_conf.xml file on disk.
+    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary.  If persist is True (should only occur
+    if call is from the Galaxy side, not the tool shed), the new entries will be appended to Galaxy's shed_tool_data_table_conf.xml file on disk.
     """
     error = False
     message = ''
     try:
         new_table_elems = app.tool_data_tables.add_new_entries_from_config_file( config_filename=filename,
                                                                                  tool_data_path=app.config.tool_data_path,
-                                                                                 tool_data_table_config_path=app.config.tool_data_table_config_path,
+                                                                                 shed_tool_data_table_config=app.config.shed_tool_data_table_config,
                                                                                  persist=persist )
     except Exception, e:
         message = str( e )
@@ -1843,6 +1777,29 @@ def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
                                                                              parent_id=tool_version_using_parent_id.id )
                 sa_session.add( tool_version_association )
                 sa_session.flush()
+def is_data_index_sample_file( file_path ):
+    """
+    Attempt to determine if a .sample file is appropriate for copying to ~/tool-data when a tool shed repository is being installed
+    into a Galaxy instance.
+    """
+    # Currently most data index files are tabular, so check that first.  We'll assume that if the file is tabular, it's ok to copy.
+    if is_column_based( file_path ):
+        return True
+    # If the file is any of the following, don't copy it.
+    if check_html( file_path ):
+        return False
+    if check_image( file_path ):
+        return False
+    if check_binary( name=file_path ):
+        return False
+    if is_bz2( file_path ):
+        return False
+    if is_gzip( file_path ):
+        return False
+    if check_zip( file_path ):
+        return False
+    # Default to copying the file if none of the above are true.
+    return True
 def is_downloadable( metadata_dict ):
     return 'datatypes' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
 def load_installed_datatype_converters( app, installed_repository_dict, deactivate=False ):
@@ -2143,7 +2100,8 @@ def reset_all_metadata_on_installed_repository( trans, id ):
                                                                                      relative_install_dir=relative_install_dir,
                                                                                      repository_files_dir=None,
                                                                                      resetting_all_metadata_on_repository=False,
-                                                                                     updating_installed_repository=False )
+                                                                                     updating_installed_repository=False,
+                                                                                     persist=False )
         repository.metadata = metadata_dict
         if metadata_dict != original_metadata_dict:
             update_in_shed_tool_config( trans.app, repository )
@@ -2194,7 +2152,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                 trans.sa_session.flush()
     repository = get_repository_in_tool_shed( trans, id )
     log.debug( "Resetting all metadata on repository: %s" % repository.name )
-    repo_dir = repository.repo_path
+    repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( get_configured_ui(), repo_dir )
     repository_clone_url = generate_clone_url_for_repository_in_tool_shed( trans, repository )
     # The list of changeset_revisions refers to repository_metadata records that have been created or updated.  When the following loop
@@ -2221,7 +2179,8 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                                                                                                  relative_install_dir=repo_dir,
                                                                                                  repository_files_dir=work_dir,
                                                                                                  resetting_all_metadata_on_repository=True,
-                                                                                                 updating_installed_repository=False )
+                                                                                                 updating_installed_repository=False,
+                                                                                                 persist=False )
             if current_metadata_dict:
                 if not metadata_changeset_revision and not metadata_dict:
                     # We're at the first change set in the change log.
@@ -2293,7 +2252,7 @@ def reset_metadata_on_selected_repositories( trans, **kwd ):
                     repository = get_installed_tool_shed_repository( trans, repository_id )
                     invalid_file_tups, metadata_dict = reset_all_metadata_on_installed_repository( trans, repository_id )
                 if invalid_file_tups:
-                    message = generate_message_for_invalid_tools( invalid_file_tups, repository, None, as_html=False )
+                    message = generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
                     log.debug( message )
                     unsuccessful_count += 1
                 else:
@@ -2392,11 +2351,13 @@ def translate_string( raw_text, to_html=True ):
 def update_existing_tool_dependency( app, repository, original_dependency_dict, new_dependencies_dict ):
     """
     Update an exsiting tool dependency whose definition was updated in a change set pulled by a Galaxy administrator when getting updates 
-    to an installed tool shed repository.  The original_dependency_dict is a single tool dependency definition, an example of which is:
-    {"name": "bwa", 
-     "readme": "\\nCompiling BWA requires zlib and libpthread to be present on your system.\\n        ", 
-     "type": "package", 
-     "version": "0.6.2"}
+    to an installed tool shed repository.  The original_dependency_dict is a single tool dependency definition, an example of which is::
+
+        {"name": "bwa", 
+         "readme": "\\nCompiling BWA requires zlib and libpthread to be present on your system.\\n        ", 
+         "type": "package", 
+         "version": "0.6.2"}
+
     The new_dependencies_dict is the dictionary generated by the generate_tool_dependency_metadata method.
     """
     new_tool_dependency = None

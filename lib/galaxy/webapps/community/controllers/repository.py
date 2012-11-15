@@ -1,4 +1,4 @@
-import os, logging, tempfile, shutil
+import os, logging, tempfile, shutil, ConfigParser
 from time import strftime
 from datetime import date, datetime
 from galaxy import util
@@ -11,12 +11,12 @@ from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
 # TODO: re-factor shed_util to eliminate the following restricted imports
 from galaxy.util.shed_util import create_repo_info_dict, generate_clone_url_for_repository_in_tool_shed, generate_message_for_invalid_tools
-from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, get_file_from_changeset_revision, get_repository_file_contents
-from galaxy.util.shed_util import get_repository_in_tool_shed, get_repository_metadata_by_changeset_revision, handle_sample_files_and_load_tool_from_disk
-from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_tmp_config, INITIAL_CHANGELOG_HASH, load_tool_from_config, NOT_TOOL_CONFIGS
-from galaxy.util.shed_util import open_repository_files_folder, remove_dir, reset_all_metadata_on_repository_in_tool_shed
-from galaxy.util.shed_util import reversed_lower_upper_bounded_changelog, reversed_upper_bounded_changelog, strip_path, to_html_escaped
-from galaxy.util.shed_util import update_repository, url_join
+from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, get_file_from_changeset_revision
+from galaxy.util.shed_util import get_repository_file_contents, get_repository_in_tool_shed, get_repository_metadata_by_changeset_revision
+from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config
+from galaxy.util.shed_util import INITIAL_CHANGELOG_HASH, load_tool_from_config, NOT_TOOL_CONFIGS, open_repository_files_folder, remove_dir
+from galaxy.util.shed_util import reset_all_metadata_on_repository_in_tool_shed, reversed_lower_upper_bounded_changelog
+from galaxy.util.shed_util import reversed_upper_bounded_changelog, strip_path, to_html_escaped, update_repository, url_join
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -129,7 +129,7 @@ class RepositoryGrid( grids.Grid ):
             grids.GridColumn.__init__( self, col_name )
         def get_value( self, trans, grid, repository ):
             """Display the repository tip revision label."""
-            return escape_html( repository.revision )
+            return escape_html( repository.revision( trans.app ) )
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             return escape_html( repository.description )
@@ -361,7 +361,7 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
         for repository in trans.sa_session.query( model.Repository ) \
                                           .filter( and_( model.Repository.table.c.deprecated == False,
                                                          model.Repository.table.c.deleted == False ) ):
-            allow_push = repository.allow_push
+            allow_push = repository.allow_push( trans.app )
             if allow_push:
                 allow_push_usernames = allow_push.split( ',' )
                 if username in allow_push_usernames:
@@ -530,26 +530,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
     repositories_i_own_grid = RepositoriesIOwnGrid()
     deprecated_repositories_i_own_grid = DeprecatedRepositoriesIOwnGrid()
 
-    def __add_hgweb_config_entry( self, trans, repository, repository_path ):
-        # Add an entry in the hgweb.config file for a new repository.  An entry looks something like:
-        # repos/test/mira_assembler = database/community_files/000/repo_123.
-        hgweb_config = "%s/hgweb.config" %  trans.app.config.root
-        if repository_path.startswith( './' ):
-            repository_path = repository_path.replace( './', '', 1 )
-        entry = "repos/%s/%s = %s" % ( repository.user.username, repository.name, repository_path )
-        tmp_fd, tmp_fname = tempfile.mkstemp()
-        if os.path.exists( hgweb_config ):
-            # Make a backup of the hgweb.config file since we're going to be changing it.
-            self.__make_hgweb_config_copy( trans, hgweb_config )
-            new_hgweb_config = open( tmp_fname, 'wb' )
-            for i, line in enumerate( open( hgweb_config ) ):
-                new_hgweb_config.write( line )
-        else:
-            new_hgweb_config = open( tmp_fname, 'wb' )
-            new_hgweb_config.write( '[paths]\n' )
-        new_hgweb_config.write( "%s\n" % entry )
-        new_hgweb_config.flush()
-        shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
     @web.expose
     def browse_categories( self, trans, **kwd ):
         # The request came from the tool shed.
@@ -700,7 +680,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if k.startswith( changset_revision_str ):
                 repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
                 repository = get_repository_in_tool_shed( trans, repository_id )
-                if repository.tip != v:
+                if repository.tip( trans.app ) != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='browse_repositories',
                                                                       operation='view_or_manage_repository',
@@ -714,11 +694,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository_in_tool_shed( trans, id )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
         # Update repository files for browsing.
         update_repository( repo )
-        is_malicious = changeset_is_malicious( trans, id, repository.tip )
-        metadata = self.get_metadata( trans, id, repository.tip )
+        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
+        metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repository=repository,
                                     metadata=metadata,
@@ -799,7 +779,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if k.startswith( changset_revision_str ):
                 repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
                 repository = get_repository_in_tool_shed( trans, repository_id )
-                if repository.tip != v:
+                if repository.tip( trans.app ) != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='preview_tools_in_changeset',
                                                                       repository_id=trans.security.encode_id( repository.id ),
@@ -824,25 +804,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                    selected_value=selected_value,
                                    refresh_on_change=False,
                                    multiple=True )
-    def __change_hgweb_config_entry( self, trans, repository, old_repository_name, new_repository_name ):
-        # Change an entry in the hgweb.config file for a repository.  This only happens when
-        # the owner changes the name of the repository.  An entry looks something like:
-        # repos/test/mira_assembler = database/community_files/000/repo_123.
-        hgweb_config = "%s/hgweb.config" % trans.app.config.root
-        # Make a backup of the hgweb.config file since we're going to be changing it.
-        self.__make_hgweb_config_copy( trans, hgweb_config )
-        repo_dir = repository.repo_path
-        old_lhs = "repos/%s/%s" % ( repository.user.username, old_repository_name )
-        new_entry = "repos/%s/%s = %s\n" % ( repository.user.username, new_repository_name, repo_dir )
-        tmp_fd, tmp_fname = tempfile.mkstemp()
-        new_hgweb_config = open( tmp_fname, 'wb' )
-        for i, line in enumerate( open( hgweb_config ) ):
-            if line.startswith( old_lhs ):
-                new_hgweb_config.write( new_entry )
-            else:
-                new_hgweb_config.write( line )
-        new_hgweb_config.flush()
-        shutil.move( tmp_fname, os.path.abspath( hgweb_config ) )
+    def __change_repository_name_in_hgrc_file( self, hgrc_file, new_name ):
+        config = ConfigParser.ConfigParser()
+        config.read( hgrc_file )
+        config.read( hgrc_file )
+        config.set( 'web', 'name', new_name )
+        new_file = open( hgrc_file, 'wb' )
+        config.write( new_file )
+        new_file.close()
     @web.expose
     def check_for_updates( self, trans, **kwd ):
         """Handle a request from a local Galaxy instance."""
@@ -855,7 +824,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
         repository = get_repository_by_name_and_owner( trans, name, owner )
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         # Default to the current changeset revision.
         update_to_ctx = get_changectx_for_changeset( repo, changeset_revision )
@@ -869,7 +838,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             url = url_join( galaxy_url,
                             'admin_toolshed/update_to_changeset_revision?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
                             ( url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
-        if changeset_revision == repository.tip:
+        if changeset_revision == repository.tip( trans.app ):
             # If changeset_revision is the repository tip, there are no additional updates.
             if from_update_manager:
                 return no_update
@@ -894,7 +863,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     changeset_hash = str( repo.changectx( changeset ) )
                     ctx = get_changectx_for_changeset( repo, changeset_hash )
                     if update_to_changeset_hash:
-                        if changeset_hash == repository.tip:
+                        if changeset_hash == repository.tip( trans.app ):
                             update_to_ctx = get_changectx_for_changeset( repo, changeset_hash )
                             latest_changeset_revision = changeset_hash
                             break
@@ -926,7 +895,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository_in_tool_shed( trans, id )
-        metadata = self.get_metadata( trans, id, repository.tip )
+        metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         if trans.user and trans.user.email:
             return trans.fill_template( "/webapps/community/repository/contact_owner.mako",
                                         repository=repository,
@@ -936,12 +905,12 @@ class RepositoryController( BaseUIController, ItemRatings ):
         else:
             # Do all we can to eliminate spam.
             return trans.show_error_message( "You must be logged in to contact the owner of a repository." )
-    def __create_hgrc_file( self, repository ):
-        # At this point, an entry for the repository is required to be in the hgweb.config file so we can call repository.repo_path.
-        # Since we support both http and https, we set push_ssl to False to override the default (which is True) in the mercurial api.
-        # The hg purge extension purges all files and directories not being tracked by mercurial in the current repository.  It'll
-        # remove unknown files and empty directories.  This is not currently used because it is not supported in the mercurial API.
-        repo = hg.repository( get_configured_ui(), path=repository.repo_path )
+    def __create_hgrc_file( self, trans, repository ):
+        # At this point, an entry for the repository is required to be in the hgweb.config file so we can call repository.repo_path( trans.app ).
+        # Since we support both http and https, we set push_ssl to False to override the default (which is True) in the mercurial api.  The hg
+        # purge extension purges all files and directories not being tracked by mercurial in the current repository.  It'll remove unknown files
+        # and empty directories.  This is not currently used because it is not supported in the mercurial API.
+        repo = hg.repository( get_configured_ui(), path=repository.repo_path( trans.app ) )
         fp = repo.opener( 'hgrc', 'wb' )
         fp.write( '[paths]\n' )
         fp.write( 'default = .\n' )
@@ -1001,11 +970,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     os.makedirs( repository_path )
                 # Create the local repository
                 repo = hg.repository( get_configured_ui(), repository_path, create=True )
-                # Add an entry in the hgweb.config file for the local repository
-                # This enables calls to repository.repo_path
-                self.__add_hgweb_config_entry( trans, repository, repository_path )
+                # Add an entry in the hgweb.config file for the local repository.
+                lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
+                trans.app.hgweb_config_manager.add_entry( lhs, repository_path )
                 # Create a .hg/hgrc file for the local repository
-                self.__create_hgrc_file( repository )
+                self.__create_hgrc_file( trans, repository )
                 flush_needed = False
                 if category_ids:
                     # Create category associations
@@ -1057,7 +1026,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         repository, tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
-        is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
+        is_malicious = changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, repository_id, changeset_revision )
         try:
             return trans.fill_template( "/webapps/community/repository/tool_form.mako",
@@ -1284,7 +1253,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
         repository = get_repository_by_name_and_owner( trans, repository_name, repository_owner )
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         ctx = get_changectx_for_changeset( repo, changeset_revision )
         if ctx:
@@ -1320,7 +1289,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 includes_tools = True
             if not includes_tool_dependencies and 'tool_dependencies' in metadata:
                 includes_tool_dependencies = True
-            repo_dir = repository.repo_path
+            repo_dir = repository.repo_path( trans.app )
             repo = hg.repository( get_configured_ui(), repo_dir )
             ctx = get_changectx_for_changeset( repo, changeset_revision )
             repo_info_dict = create_repo_info_dict( repository, repository.user.username, repository_clone_url, changeset_revision, str( ctx.rev() ), metadata )
@@ -1378,7 +1347,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
         repository = get_repository_by_name_and_owner( trans, name, owner )
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         tool_version_dicts = []
         for changeset in repo.changelog:
@@ -1402,14 +1371,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
         repository = get_repository_by_name_and_owner( trans, name, owner )
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         # Default to the received changeset revision and ctx_rev.
         update_to_ctx = get_changectx_for_changeset( repo, changeset_revision )
         ctx_rev = str( update_to_ctx.rev() )
         latest_changeset_revision = changeset_revision
         update_dict = dict( changeset_revision=changeset_revision, ctx_rev=ctx_rev )
-        if changeset_revision == repository.tip:
+        if changeset_revision == repository.tip( trans.app ):
             # If changeset_revision is the repository tip, there are no additional updates.
             return tool_shed_encode( update_dict )
         else:
@@ -1429,7 +1398,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     if update_to_changeset_hash:
                         if get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_hash ):
                             # We found a RepositoryMetadata record.
-                            if changeset_hash == repository.tip:
+                            if changeset_hash == repository.tip( trans.app ):
                                 # The current ctx is the repository tip, so use it.
                                 update_to_ctx = get_changectx_for_changeset( repo, changeset_hash )
                                 latest_changeset_revision = changeset_hash
@@ -1446,7 +1415,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
     def get_versions_of_tool( self, trans, repository, repository_metadata, guid ):
         """Return the tool lineage in descendant order for the received guid contained in the received repsitory_metadata.tool_versions."""
         encoded_id = trans.security.encode_id( repository.id )
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         # Initialize the tool lineage
         tool_guid_lineage = [ guid ]
@@ -1462,7 +1431,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     current_child_guid = parent_guid
         # Get all descendant guids of the received guid.
         current_parent_guid = guid
-        for changeset in reversed_lower_upper_bounded_changelog( repo, repository_metadata.changeset_revision, repository.tip ):
+        for changeset in reversed_lower_upper_bounded_changelog( repo, repository_metadata.changeset_revision, repository.tip( trans.app ) ):
             ctx = repo.changectx( changeset )
             rm = get_repository_metadata_by_changeset_revision( trans, encoded_id, str( ctx ) )
             if rm:
@@ -1578,19 +1547,18 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'error' )
-        repository_clone_url = generate_clone_url( trans, repository_id )
         repository, tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
-        is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
+        is_malicious = changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         invalid_file_tups = []
         if tool:
             invalid_file_tups = check_tool_input_params( trans.app,
-                                                         repository.repo_path,
+                                                         repository.repo_path( trans.app ),
                                                          tool_config,
                                                          tool,
                                                          [] )
         if invalid_file_tups:
-            message = generate_message_for_invalid_tools( invalid_file_tups, repository, {}, as_html=True, displaying_invalid_tool=True )
+            message = generate_message_for_invalid_tools( trans, invalid_file_tups, repository, {}, as_html=True, displaying_invalid_tool=True )
         elif error_message:
             message = error_message
         try:
@@ -1618,12 +1586,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                           changeset_revision=changeset_revision,
                                                           message=message,
                                                           status='error' ) )
-    def __make_hgweb_config_copy( self, trans, hgweb_config ):
-        # Make a backup of the hgweb.config file
-        today = date.today()
-        backup_date = today.strftime( "%Y_%m_%d" )
-        hgweb_config_copy = '%s/hgweb.config_%s_backup' % ( trans.app.config.root, backup_date )
-        shutil.copy( os.path.abspath( hgweb_config ), os.path.abspath( hgweb_config_copy ) )
     def __make_same_length( self, list1, list2 ):
         # If either list is 1 item, we'll append to it until its length is the same as the other.
         if len( list1 ) == 1:
@@ -1672,10 +1634,10 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         cntrller = params.get( 'cntrller', 'repository' )
         repository = get_repository_in_tool_shed( trans, id )
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         repo_name = util.restore_text( params.get( 'repo_name', repository.name ) )
-        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip( trans.app ) ) )
         description = util.restore_text( params.get( 'description', repository.description ) )
         long_description = util.restore_text( params.get( 'long_description', repository.long_description ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
@@ -1711,7 +1673,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 if message:
                     error = True
                 else:
-                    self.__change_hgweb_config_entry( trans, repository, repository.name, repo_name )
+                    # Change the entry in the hgweb.config file for the repository.
+                    old_lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
+                    new_lhs = "repos/%s/%s" % ( repository.user.username, repo_name )
+                    trans.app.hgweb_config_manager.change_entry( old_lhs, new_lhs, repo_dir )
+                    # Change the entry in the repository's hgrc file.
+                    hgrc_file = os.path.join( repo_dir, '.hg', 'hgrc' )
+                    self.__change_repository_name_in_hgrc_file( hgrc_file, repo_name )
                     repository.name = repo_name
                     flush_needed = True
             elif repository.times_downloaded != 0 and repo_name != repository.name:
@@ -1746,7 +1714,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         user = trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( user_id ) )
                         usernames.append( user.username )
                     usernames = ','.join( usernames )
-                repository.set_allow_push( usernames, remove_auth=remove_auth )
+                repository.set_allow_push( trans.app, usernames, remove_auth=remove_auth )
             message = "The repository information has been updated."
         elif params.get( 'receive_email_alerts_button', False ):
             flush_needed = False
@@ -1766,8 +1734,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
             message = "The repository information has been updated."
         if error:
             status = 'error'
-        if repository.allow_push:
-            current_allow_push_list = repository.allow_push.split( ',' )
+        current_allow_push = repository.allow_push( trans.app )
+        if current_allow_push:
+            current_allow_push_list = current_allow_push.split( ',' )
         else:
             current_allow_push_list = []
         allow_push_select_field = self.__build_allow_push_select_field( trans, current_allow_push_list )
@@ -1778,7 +1747,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
-        revision_label = get_revision_label( trans, repository, repository.tip )
+        revision_label = get_revision_label( trans, repository, repository.tip( trans.app ) )
         repository_metadata_id = None
         metadata = None
         is_malicious = False
@@ -1800,7 +1769,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         metadata = repository_metadata.metadata
                         is_malicious = repository_metadata.malicious
         if is_malicious:
-            if trans.app.security_agent.can_push( trans.user, repository ):
+            if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push
             else:
                 message += malicious_error
@@ -1896,7 +1865,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
         repository = get_repository_in_tool_shed( trans, repository_id )
-        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip( trans.app ) ) )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
@@ -1935,7 +1904,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
         repository = get_repository_by_name_and_owner( trans, name, owner )
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         # Get the lower bound changeset revision 
         lower_bound_changeset_revision = get_previous_downloadable_changset_revision( repository, repo, changeset_revision )
@@ -1961,7 +1930,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                               message='Select a repository to rate',
                                                               status='error' ) )
         repository = get_repository_in_tool_shed( trans, id )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
         if repository.user == trans.user:
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='browse_repositories',
@@ -1974,8 +1943,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
-        is_malicious = changeset_is_malicious( trans, id, repository.tip )
-        metadata = self.get_metadata( trans, id, repository.tip )
+        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
+        metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/community/repository/rate_repository.mako', 
                                     repository=repository,
                                     metadata=metadata,
@@ -1993,7 +1962,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         invalid_file_tups, metadata_dict = reset_all_metadata_on_repository_in_tool_shed( trans, id, **kwd )
         if invalid_file_tups:
             repository = get_repository_in_tool_shed( trans, id )
-            message = generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_dict )
+            message = generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
             status = 'error'
         else:
             message = "All repository metadata has been reset."
@@ -2099,14 +2068,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         commit_message = util.restore_text( params.get( 'commit_message', 'Deleted selected files' ) )
         repository = get_repository_in_tool_shed( trans, id )
-        repo_dir = repository.repo_path
+        repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_dir )
         selected_files_to_delete = util.restore_text( params.get( 'selected_files_to_delete', '' ) )
         if params.get( 'select_files_to_delete_button', False ):
             if selected_files_to_delete:
                 selected_files_to_delete = selected_files_to_delete.split( ',' )
                 # Get the current repository tip.
-                tip = repository.tip
+                tip = repository.tip( trans.app )
                 for selected_file in selected_files_to_delete:
                     try:
                         commands.remove( repo.ui, repo, selected_file, force=True )
@@ -2139,7 +2108,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 update_repository( repo )
                 # Get the new repository tip.
                 repo = hg.repository( get_configured_ui(), repo_dir )
-                if tip == repository.tip:
+                if tip == repository.tip( trans.app ):
                     message += 'No changes to repository.  '
                     kwd[ 'message' ] = message
                     
@@ -2150,7 +2119,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
-        is_malicious = changeset_is_malicious( trans, id, repository.tip )
+        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -2283,7 +2252,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository_in_tool_shed( trans, id )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
         changesets = []
         for changeset in repo.changelog:
             ctx = repo.changectx( changeset )
@@ -2305,8 +2274,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             'has_metadata' : has_metadata }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
-        is_malicious = changeset_is_malicious( trans, id, repository.tip )
-        metadata = self.get_metadata( trans, id, repository.tip )
+        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
+        metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/community/repository/view_changelog.mako', 
                                     repository=repository,
                                     metadata=metadata,
@@ -2320,7 +2289,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository_in_tool_shed( trans, id )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
         ctx = get_changectx_for_changeset( repo, ctx_str )
         if ctx is None:
             message = "Repository does not include changeset revision '%s'." % str( ctx_str )
@@ -2336,7 +2305,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
             diffs.append( to_html_escaped( diff ) )
-        is_malicious = changeset_is_malicious( trans, id, repository.tip )
+        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, ctx_str )
         return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
                                     repository=repository,
@@ -2379,7 +2348,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             metadata = None
         if metadata and 'readme' in metadata:
             readme_file = str( metadata[ 'readme' ] )
-            repo_files_dir = repository.repo_path
+            repo_files_dir = repository.repo_path( trans.app )
             try:
                 f = open( readme_file, 'r' )
                 raw_text = f.read()
@@ -2423,9 +2392,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
         status = params.get( 'status', 'done' )
         cntrller = params.get( 'cntrller', 'repository' )
         repository = get_repository_in_tool_shed( trans, id )
-        repo = hg.repository( get_configured_ui(), repository.repo_path )
+        repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
-        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip ) )
+        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip( trans.app ) ) )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         alerts = params.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
@@ -2464,9 +2433,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
         else:
             repository_metadata_id = None
             metadata = None
-        is_malicious = changeset_is_malicious( trans, id, repository.tip )
+        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         if is_malicious:
-            if trans.app.security_agent.can_push( trans.user, repository ):
+            if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push
             else:
                 message += malicious_error
@@ -2505,7 +2474,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository = get_repository_in_tool_shed( trans, repository_id )
-        repo_files_dir = repository.repo_path
+        repo_files_dir = repository.repo_path( trans.app )
         repo = hg.repository( get_configured_ui(), repo_files_dir )
         tool_metadata_dict = {}
         tool_lineage = []
@@ -2547,7 +2516,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
         else:
             metadata = None
-        is_malicious = changeset_is_malicious( trans, repository_id, repository.tip )
+        is_malicious = changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
@@ -2611,7 +2580,7 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         # Restrict the options to all revisions that have associated metadata.
         repository_metadata_revisions = repository.metadata_revisions
     for repository_metadata in repository_metadata_revisions:
-        rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( repository_metadata, repository=repository )
+        rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=repository )
         changeset_tups.append( ( rev, label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
     # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,

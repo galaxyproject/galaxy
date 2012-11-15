@@ -60,6 +60,8 @@
     <script type="text/javascript">
         var ACCOUNT_URL = "${h.url_for( controller='/cloudlaunch', action='get_account_info')}";
         var PKEY_DL_URL = "${h.url_for( controller='/cloudlaunch', action='get_pkey')}";
+        var cloudlaunch_clusters = [];
+
         $(document).ready(function(){
             $('#id_existing_instance').change(function(){
                 var ei_name = $(this).val();
@@ -74,7 +76,7 @@
                 }
             });
              //When id_secret and id_key are complete, submit to get_account_info
-            $("#id_secret, #id_key_id").bind("change paste keyup", function(){
+            $("#id_secret, #id_key_id").bind("change paste keyup input propertychange", function(){
                 secret_el = $("#id_secret");
                 key_el = $("#id_key_id");
                 if (secret_el.val().length === 40 && key_el.val().length === 20){
@@ -82,6 +84,7 @@
                     $.getJSON(ACCOUNT_URL,
                                 {key_id: key_el.val(),secret:secret_el.val()},
                                 function(result){
+                                    cloudlaunch_clusters = result.clusters;
                                     var kplist = $("#id_keypair");
                                     var clusterlist = $("#id_existing_instance");
                                     kplist.find('option').remove();
@@ -112,48 +115,52 @@
             $('form').ajaxForm({
                     type: 'POST',
                     dataType: 'json',
-                    beforeSubmit: function(data){
+                    beforeSubmit: function(data, form){
                         if ($('#id_password').val() != $('#id_password_confirm').val()){
                             //Passwords don't match.
-                            $('#cloudlaunch_form').prepend('<div class="errormessage">Passwords do not match</div>');
+                            form.prepend('<div class="errormessage">Passwords do not match</div>');
                             return false;
                         }else{
+                            //Clear errors
                             $('.errormessage').remove()
                             //Hide the form, show pending box with spinner.
                             $('#launchFormContainer').hide('fast');
                             $('#responsePanel').show('fast');
                         }
+                        //Dig up zone info for selected cluster, set hidden input.
+                        //This is not necessary to present to the user though the interface may prove useful.
+                        var ei_val = _.find(data, function(f_obj){return f_obj.name === 'existing_instance'});
+                        if( ei_val.value !== "New Cluster"){
+                            var cluster = _.find(cloudlaunch_clusters, function(cluster){return cluster.name === ei_val.value});
+                            var zdata = _.find(data, function(f_obj){return f_obj.name === 'zone'});
+                            zdata.value = cluster.zone;
+                        }
                     },
                     success: function(data){
                         //Success Message, link to key download if required, link to server itself.
                         $('#launchPending').hide('fast');
-                        //Check for success/error.
-                        if (data.error){
-                            //Apologize profusely.
-                            $("launchPending").hide();
-                            $("#launchError").show();
-                        }else{
-                            //Set appropriate fields (dns, key, ami) and then display.
-                            if(data.kp_material_tag){
-                                var kp_download_link = $('<a/>').attr('href', PKEY_DL_URL + '?kp_material_tag=' + data.kp_material_tag)
-                                                                .attr('target','_blank')
-                                                                .text("Download your key now");
-                                $('#keypairInfo').append(kp_download_link);
-                                $('#keypairInfo').show();
-                            }
-                            $('.kp_name').text(data.kp_name);
-                            $('#instance_id').text(data.instance_id);
-                            $('#image_id').text(data.image_id);
-                            $('#instance_link').html($('<a/>')
-                                .attr('href', 'http://' + data.public_dns_name + '/cloud')
-                                .attr('target','_blank')
-                                .text(data.public_dns_name + '/cloud'));
-                            $('#instance_dns').text(data.public_dns_name);
-                            $('#launchSuccess').show('fast');
+                        //Set appropriate fields (dns, key, ami) and then display.
+                        if(data.kp_material_tag){
+                            var kp_download_link = $('<a/>').attr('href', PKEY_DL_URL + '?kp_material_tag=' + data.kp_material_tag)
+                                                            .attr('target','_blank')
+                                                            .text("Download your key now");
+                            $('#keypairInfo').append(kp_download_link);
+                            $('#keypairInfo').show();
                         }
+                        $('.kp_name').text(data.kp_name);
+                        $('#instance_id').text(data.instance_id);
+                        $('#image_id').text(data.image_id);
+                        $('#instance_link').html($('<a/>')
+                            .attr('href', 'http://' + data.public_dns_name + '/cloud')
+                            .attr('target','_blank')
+                            .text(data.public_dns_name + '/cloud'));
+                        $('#instance_dns').text(data.public_dns_name);
+                        $('#launchSuccess').show('fast');
                     },
-                    error: function(data){
-                        $('#cloudlaunch_form').prepend('<div class="errormessage">' + data.responseText + '</div>');
+                    error: function(jqXHR, textStatus, errorThrown){
+                       $('#launchFormContainer').prepend('<div class="errormessage">' + errorThrown + " : " + jqXHR.responseText + '</div>');
+                       $('#responsePanel').hide('fast');
+                       $('#launchFormContainer').show('fast');
                     }
             });
         });
@@ -196,6 +203,7 @@ Credentials section of the AWS Console</a>.  </div>
                                 <label for="id_existing_instance">Instances in your account</label>
                                 <select name="existing_instance" id="id_existing_instance">
                                 </select>
+                                <input id='id_zone' type='hidden' name='zone' value=''/>
                         </div>
                         <div id='cluster_name_wrapper' class="form-row">
                             <label for="id_cluster_name">Cluster Name</label>
@@ -253,7 +261,6 @@ Credentials section of the AWS Console</a>.  </div>
                 </div>
                 <div id="responsePanel" class="toolForm" style="display:none;">
                         <div id="launchPending">Launch Pending, please be patient.</div>
-                        <div id="launchError" style="display:none;">ERROR</div>
                         <div id="launchSuccess" style="display:none;">
                             <div id="keypairInfo" style="display:none;margin-bottom:20px;">
                                 <h3>Very Important Key Pair Information</h3>

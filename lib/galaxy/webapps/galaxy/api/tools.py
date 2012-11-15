@@ -13,12 +13,15 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     @web.expose_api
     def index( self, trans, **kwds ):
         """
-        GET /api/tools: returns a list of tools defined by parameters
+        GET /api/tools: returns a list of tools defined by parameters::
+
             parameters:
+
                 in_panel  - if true, tools are returned in panel structure, 
                             including sections and labels
                 trackster - if true, only tools that are compatible with 
                             Trackster are returned
+
         """
         
         # Read params.

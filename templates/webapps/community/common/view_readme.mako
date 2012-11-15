@@ -5,9 +5,9 @@
 <%
     if trans.webapp.name == 'community':
         is_admin = trans.user_is_admin()
-        is_new = repository.is_new
+        is_new = repository.is_new( trans.app )
         can_contact_owner = trans.user and trans.user != repository.user
-        can_push = trans.app.security_agent.can_push( trans.user, repository )
+        can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
         can_rate = not is_new and trans.user and repository.user != trans.user
         can_upload = can_push
         can_download = not is_new and ( not is_malicious or can_push )
@@ -26,9 +26,9 @@
         <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
         <div popupmenu="repository-${repository.id}-popup">
             %if can_manage:
-                <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">Manage repository</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">Manage repository</a>
             %else:
-                <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip )}">View repository</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View repository</a>
             %endif
             %if can_upload:
                 <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>

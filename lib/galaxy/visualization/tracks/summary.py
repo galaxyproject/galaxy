@@ -110,5 +110,8 @@ class SummaryTree:
         cPickle.dump( self, open( filename, 'wb' ), 2 )
         
 def summary_tree_from_file( filename ):
-    return cPickle.load( open( filename, "rb" ) )
+    st_file = open( filename, "rb" )
+    st = cPickle.load( st_file )
+    st_file.close()
+    return st
     

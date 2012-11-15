@@ -9,6 +9,22 @@ runners Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`cli` Module
+-----------------
+
+.. automodule:: galaxy.jobs.runners.cli
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`condor` Module
+--------------------
+
+.. automodule:: galaxy.jobs.runners.condor
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`drmaa` Module
 -------------------
 
@@ -56,4 +72,12 @@ runners Package
     :members:
     :undoc-members:
     :show-inheritance:
+
+Subpackages
+-----------
+
+.. toctree::
+
+    galaxy.jobs.runners.cli_job
+    galaxy.jobs.runners.cli_shell
 

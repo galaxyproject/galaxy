@@ -112,16 +112,20 @@ class ToolBox( object ):
     def init_tools( self, config_filename ):
         """
         Read the configuration file and load each tool.  The following tags are currently supported:
-        <toolbox>
-            <tool file="data_source/upload.xml"/>            # tools outside sections
-            <label text="Basic Tools" id="basic_tools" />    # labels outside sections
-            <workflow id="529fd61ab1c6cc36" />               # workflows outside sections
-            <section name="Get Data" id="getext">            # sections
-                <tool file="data_source/biomart.xml" />      # tools inside sections
-                <label text="In Section" id="in_section" />  # labels inside sections
-                <workflow id="adb5f5c93f827949" />           # workflows inside sections
-            </section>
-        </toolbox>
+
+        .. raw:: xml
+
+            <toolbox>
+                <tool file="data_source/upload.xml"/>            # tools outside sections
+                <label text="Basic Tools" id="basic_tools" />    # labels outside sections
+                <workflow id="529fd61ab1c6cc36" />               # workflows outside sections
+                <section name="Get Data" id="getext">            # sections
+                    <tool file="data_source/biomart.xml" />      # tools inside sections
+                    <label text="In Section" id="in_section" />  # labels inside sections
+                    <workflow id="adb5f5c93f827949" />           # workflows inside sections
+                </section>
+            </toolbox>
+
         """
         if self.app.config.get_bool( 'enable_tool_tags', False ):
             log.info("removing all tool tag associations (" + str( self.sa_session.query( self.app.model.ToolTagAssociation ).count() ) + ")" )
@@ -740,7 +744,8 @@ class DefaultToolState( object ):
 class ToolOutput( object ):
     """
     Represents an output datasets produced by a tool. For backward
-    compatibility this behaves as if it were the tuple:
+    compatibility this behaves as if it were the tuple::
+
       (format, metadata_source, parent)  
     """
 
@@ -1079,7 +1084,7 @@ class Tool:
         else:
             self.trackster_conf = None
     def parse_inputs( self, root ):
-        """
+        r"""
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
         This implementation supports multiple pages and grouping constructs.
         """
@@ -1731,7 +1736,7 @@ class Tool:
                 callback( "", input, value[input.name] )
             else:
                 input.visit_inputs( "", value[input.name], callback )
-    def handle_input( self, trans, incoming, history=None ):
+    def handle_input( self, trans, incoming, history=None, old_errors=None ):
         """
         Process incoming parameters for this tool from the dict `incoming`,
         update the tool state (or create if none existed), and either return
@@ -1766,7 +1771,7 @@ class Tool:
         else:
             # Update state for all inputs on the current page taking new
             # values from `incoming`.
-            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming )
+            errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
             # If the tool provides a `validate_input` hook, call it. 
             validate_input = self.get_hook( 'validate_input' )
             if validate_input:
@@ -1895,7 +1900,10 @@ class Tool:
                             any_group_errors = True
                             # Only need to find one that can't be removed due to size, since only 
                             # one removal is processed at # a time anyway
-                            break 
+                            break
+                    elif group_old_errors and group_old_errors[i]:
+                        group_errors[i] = group_old_errors[i]
+                        any_group_errors = True
                 # Update state
                 max_index = -1
                 for i, rep_state in enumerate( group_state ):
@@ -1978,6 +1986,8 @@ class Tool:
                                                       update_only=update_only,
                                                       old_errors=group_old_errors,
                                                       item_callback=item_callback )
+                    if input.test_param.name in group_old_errors and not test_param_error:
+                        test_param_error = group_old_errors[ input.test_param.name ]
                 if test_param_error:
                     group_errors[ input.test_param.name ] = test_param_error
                 if group_errors:

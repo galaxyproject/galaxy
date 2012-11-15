@@ -119,12 +119,13 @@ class GFFReaderWrapper( NiceReaderWrapper ):
     Reader wrapper for GFF files.
     
     Wrapper has two major functions:
-    (1) group entries for GFF file (via group column), GFF3 (via id attribute), 
-        or GTF (via gene_id/transcript id);
-    (2) convert coordinates from GFF format--starting and ending coordinates 
-        are 1-based, closed--to the 'traditional'/BED interval format--0 based, 
-        half-open. This is useful when using GFF files as inputs to tools that 
-        expect traditional interval format.
+
+    1. group entries for GFF file (via group column), GFF3 (via id attribute), 
+       or GTF (via gene_id/transcript id);
+    2. convert coordinates from GFF format--starting and ending coordinates 
+       are 1-based, closed--to the 'traditional'/BED interval format--0 based, 
+       half-open. This is useful when using GFF files as inputs to tools that 
+       expect traditional interval format.
     """
     
     def __init__( self, reader, chrom_col=0, feature_col=2, start_col=3, \
@@ -303,9 +304,13 @@ def parse_gff_attributes( attr_str ):
     """
     Parses a GFF/GTF attribute string and returns a dictionary of name-value 
     pairs. The general format for a GFF3 attributes string is 
+
         name1=value1;name2=value2
+
     The general format for a GTF attribute string is 
+
         name1 "value1" ; name2 "value2"
+
     The general format for a GFF attribute string is a single string that
     denotes the interval's group; in this case, method returns a dictionary 
     with a single key-value pair, and key name is 'group'
@@ -359,23 +364,35 @@ def gff_attributes_to_str( attrs, gff_format ):
         attrs_strs.append( format_string % ( name, value ) )
     return " ; ".join( attrs_strs )
     
-def read_unordered_gtf( iterator ):
+def read_unordered_gtf( iterator, strict=False ):
     """
     Returns GTF features found in an iterator. GTF lines need not be ordered
     or clustered for reader to work. Reader returns GFFFeature objects sorted
     by transcript_id, chrom, and start position.
     """
+
+    # -- Get function that generates line/feature key. --
+
+    get_transcript_id = lambda fields: parse_gff_attributes( fields[8] )[ 'transcript_id' ]
+    if strict:
+        # Strict GTF parsing uses transcript_id only to group lines into feature.
+        key_fn = get_transcript_id
+    else:
+        # Use lenient parsing where chromosome + transcript_id is the key. This allows
+        # transcripts with same ID on different chromosomes; this occurs in some popular
+        # datasources, such as RefGenes in UCSC.
+        key_fn = lambda fields: fields[0] + '_' + get_transcript_id( fields )
+
     
     # Aggregate intervals by transcript_id.
     feature_intervals = odict()
     for count, line in enumerate( iterator ):
-        line_attrs = parse_gff_attributes( line.split('\t')[8] )
-        transcript_id = line_attrs[ 'transcript_id' ]
-        if transcript_id in feature_intervals:
-            feature = feature_intervals[ transcript_id ]
+        line_key = key_fn( line.split('\t') )
+        if line_key in feature_intervals:
+            feature = feature_intervals[ line_key ]
         else:
             feature = []
-            feature_intervals[ transcript_id ] = feature
+            feature_intervals[ line_key ] = feature
         feature.append( GFFInterval( None, line.split( '\t' ) ) )
     
     # Create features.

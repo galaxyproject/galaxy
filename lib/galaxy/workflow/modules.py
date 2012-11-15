@@ -3,7 +3,6 @@ from elementtree.ElementTree import Element
 from galaxy import web
 from galaxy.tools.parameters import DataToolParameter, DummyDataset, RuntimeValue, check_param, visit_input_values
 from galaxy.tools import DefaultToolState
-from galaxy.tools.parameters.grouping import Repeat, Conditional
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.jobs.actions.post import ActionBox
@@ -13,12 +12,12 @@ import logging
 log = logging.getLogger( __name__ )
 
 class WorkflowModule( object ):
-    
+
     def __init__( self, trans ):
         self.trans = trans
-    
+
     ## ---- Creating modules from various representations ---------------------
-    
+
     @classmethod
     def new( Class, trans, tool_id=None ):
         """
@@ -37,12 +36,12 @@ class WorkflowModule( object ):
         return Class( trans )
 
     ## ---- Saving in various forms ------------------------------------------
-    
+
     def save_to_step( self, step ):
         step.type = self.type
-        
+
     ## ---- General attributes -----------------------------------------------
-    
+
     def get_type( self ):
         return self.type
     def get_name( self ):
@@ -51,9 +50,9 @@ class WorkflowModule( object ):
         return None
     def get_tooltip( self, static_path='' ):
         return None
-    
+
     ## ---- Configuration time -----------------------------------------------
-    
+
     def get_state( self ):
         return None
     def get_errors( self ):
@@ -66,16 +65,16 @@ class WorkflowModule( object ):
         pass
     def get_config_form( self ):
         raise TypeError( "Abstract method" )
-        
+
     def check_and_update_state( self ):
         """
         If the state is not in sync with the current implementation of the
         module, try to update. Returns a list of messages to be displayed
         """
         pass
-    
+
     ## ---- Run time ---------------------------------------------------------
-    
+
     def get_runtime_inputs( self ):
         raise TypeError( "Abstract method" )
     def get_runtime_state( self ):
@@ -86,7 +85,7 @@ class WorkflowModule( object ):
         raise TypeError( "Abstract method" )
     def update_runtime_state( self, trans, state, values ):
         raise TypeError( "Abstract method" )
-    
+
     def execute( self, trans, state ):
         raise TypeError( "Abstract method" )
 
@@ -112,6 +111,7 @@ class InputDataModule( WorkflowModule ):
         if step.tool_inputs and "name" in step.tool_inputs:
             module.state['name'] = step.tool_inputs[ 'name' ]
         return module
+
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = None
@@ -119,8 +119,10 @@ class InputDataModule( WorkflowModule ):
 
     def get_data_inputs( self ):
         return []
+
     def get_data_outputs( self ):
         return [ dict( name='output', extensions=['input'] ) ]
+
     def get_config_form( self ):
         form = web.FormBuilder( title=self.name ) \
             .add_text( "name", "Name", value=self.state['name'] )
@@ -128,25 +130,29 @@ class InputDataModule( WorkflowModule ):
                                          module=self, form=form )
     def get_state( self, secure=True ):
         return to_json_string( self.state )
-    
+
     def update_state( self, incoming ):
         self.state['name'] = incoming.get( 'name', 'Input Dataset' )
-    
+
     def get_runtime_inputs( self, filter_set=['data'] ):
         label = self.state.get( "name", "Input Dataset" )
         return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=True, type="data", format=', '.join(filter_set) ), self.trans ) )
+
     def get_runtime_state( self ):
         state = DefaultToolState()
         state.inputs = dict( input=None )
         return state
+
     def encode_runtime_state( self, trans, state ):
         fake_tool = Bunch( inputs = self.get_runtime_inputs() )
         return state.encode( fake_tool, trans.app )
+
     def decode_runtime_state( self, trans, string ):
         fake_tool = Bunch( inputs = self.get_runtime_inputs() )
         state = DefaultToolState()
         state.decode( string, fake_tool, trans.app )
         return state
+
     def update_runtime_state( self, trans, state, values ):
         errors = {}
         for name, param in self.get_runtime_inputs().iteritems():
@@ -155,14 +161,14 @@ class InputDataModule( WorkflowModule ):
             if error:
                 errors[ name ] = error
         return errors
-    
+
     def execute( self, trans, state ):
         return None, dict( output=state.inputs['input'])
-    
+
 class ToolModule( WorkflowModule ):
-    
+
     type = "tool"
-    
+
     def __init__( self, trans, tool_id ):
         self.trans = trans
         self.tool_id = tool_id
@@ -175,11 +181,13 @@ class ToolModule( WorkflowModule ):
         else:
             self.errors = {}
             self.errors[ tool_id ] = 'Tool unavailable'
+
     @classmethod
     def new( Class, trans, tool_id=None ):
         module = Class( trans, tool_id )
         module.state = module.tool.new_state( trans, all_pages=True )
         return module
+
     @classmethod
     def from_dict( Class, trans, d, secure=True ):
         tool_id = d[ 'tool_id' ]
@@ -191,6 +199,7 @@ class ToolModule( WorkflowModule ):
         module.post_job_actions = d.get( "post_job_actions", {} )
         module.workflow_outputs = d.get( "workflow_outputs", [] )
         return module
+
     @classmethod
     def from_workflow_step( Class, trans, step ):
         tool_id = step.tool_id
@@ -215,12 +224,14 @@ class ToolModule( WorkflowModule ):
             module.post_job_actions = pjadict
             return module
         return None
+
     @classmethod
     def __get_tool_version( cls, trans, tool_id ):
         # Return a ToolVersion if one exists for tool_id.
         return trans.sa_session.query( trans.app.model.ToolVersion ) \
                                .filter( trans.app.model.ToolVersion.table.c.tool_id == tool_id ) \
                                .first()
+
     def save_to_step( self, step ):
         step.type = self.type
         step.tool_id = self.tool_id
@@ -241,21 +252,31 @@ class ToolModule( WorkflowModule ):
                 action_arguments = v['action_arguments']
             else:
                 action_arguments = None
-            n_p = PostJobAction(v['action_type'], step, output_name, action_arguments)
+            self.trans.sa_session.add(PostJobAction(v['action_type'], step, output_name, action_arguments))
+
     def get_name( self ):
         if self.tool:
             return self.tool.name
         return 'unavailable'
+
     def get_tool_id( self ):
         return self.tool_id
+
     def get_tool_version( self ):
         return self.tool.version
+
     def get_state( self, secure=True ):
         return self.state.encode( self.tool, self.trans.app, secure=secure )
+
     def get_errors( self ):
         return self.errors
+
     def get_tooltip( self, static_path='' ):
-        return self.tool.help.render( static_path=static_path )
+        if self.tool.help:
+            return self.tool.help.render( static_path=static_path )
+        else:
+            return None
+
     def get_data_inputs( self ):
         data_inputs = []
         def callback( input, value, prefixed_name, prefixed_label ):
@@ -267,6 +288,7 @@ class ToolModule( WorkflowModule ):
                     extensions=input.extensions ) )
         visit_input_values( self.tool.inputs, self.state.inputs, callback )
         return data_inputs
+
     def get_data_outputs( self ):
         data_outputs = []
         data_inputs = None
@@ -290,20 +312,23 @@ class ToolModule( WorkflowModule ):
                         formats.append( format )
             data_outputs.append( dict( name=name, extensions=formats ) )
         return data_outputs
+
     def get_post_job_actions( self ):
         return self.post_job_actions
+
     def get_config_form( self ):
         self.add_dummy_datasets()
-        return self.trans.fill_template( "workflow/editor_tool_form.mako", 
+        return self.trans.fill_template( "workflow/editor_tool_form.mako",
             tool=self.tool, values=self.state.inputs, errors=( self.errors or {} ) )
-    def update_state( self, incoming ):       
+
+    def update_state( self, incoming ):
         # Build a callback that handles setting an input to be required at
         # runtime. We still process all other parameters the user might have
         # set. We also need to make sure all datasets have a dummy value
         # for dependencies to see
-        
+
         self.post_job_actions = ActionBox.handle_incoming(incoming)
-        
+
         make_runtime_key = incoming.get( 'make_runtime', None )
         make_buildtime_key = incoming.get( 'make_buildtime', None )
         def item_callback( trans, key, input, value, error, old_value, context ):
@@ -325,8 +350,10 @@ class ToolModule( WorkflowModule ):
         # Update state using incoming values
         errors = self.tool.update_state( self.trans, self.tool.inputs, self.state.inputs, incoming, item_callback=item_callback )
         self.errors = errors or None
+
     def check_and_update_state( self ):
         return self.tool.check_and_update_param_values( self.state.inputs, self.trans )
+
     def add_dummy_datasets( self, connections=None):
         if connections:
             # Store onnections by input name
@@ -345,11 +372,12 @@ class ToolModule( WorkflowModule ):
                     else:
                         replacement = DummyDataset()
             return replacement
-        visit_input_values( self.tool.inputs, self.state.inputs, callback ) 
+        visit_input_values( self.tool.inputs, self.state.inputs, callback )
 
 class WorkflowModuleFactory( object ):
     def __init__( self, module_types ):
         self.module_types = module_types
+
     def new( self, trans, type, tool_id=None ):
         """
         Return module for type and (optional) tool_id intialized with
@@ -357,18 +385,20 @@ class WorkflowModuleFactory( object ):
         """
         assert type in self.module_types
         return self.module_types[type].new( trans, tool_id )
+
     def from_dict( self, trans, d, **kwargs ):
         """
         Return module initialized from the data in dictionary `d`.
         """
         type = d['type']
         assert type in self.module_types
-        return self.module_types[type].from_dict( trans, d, **kwargs )    
+        return self.module_types[type].from_dict( trans, d, **kwargs )
+
     def from_workflow_step( self, trans, step ):
         """
         Return module initializd from the WorkflowStep object `step`.
         """
         type = step.type
         return self.module_types[type].from_workflow_step( trans, step )
-    
+
 module_factory = WorkflowModuleFactory( dict( data_input=InputDataModule, tool=ToolModule ) )

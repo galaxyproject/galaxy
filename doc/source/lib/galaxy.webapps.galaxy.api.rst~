@@ -1,0 +1,179 @@
+api Package
+===========
+
+:mod:`datasets` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.datasets
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`folder_contents` Module
+-----------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.folder_contents
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`folders` Module
+---------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.folders
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`forms` Module
+-------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.forms
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`genomes` Module
+---------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.genomes
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`group_roles` Module
+-------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.group_roles
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`group_users` Module
+-------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.group_users
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`groups` Module
+--------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.groups
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`histories` Module
+-----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.histories
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`history_contents` Module
+------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.history_contents
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`libraries` Module
+-----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.libraries
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`library_contents` Module
+------------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.library_contents
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`permissions` Module
+-------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.permissions
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`quotas` Module
+--------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.quotas
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`request_types` Module
+---------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.request_types
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`requests` Module
+----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.requests
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`roles` Module
+-------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.roles
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`samples` Module
+---------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.samples
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`tools` Module
+-------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.tools
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`users` Module
+-------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.users
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`visualizations` Module
+----------------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.visualizations
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+:mod:`workflows` Module
+-----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.workflows
+    :members:
+    :undoc-members:
+    :show-inheritance:
+

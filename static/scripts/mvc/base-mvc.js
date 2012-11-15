@@ -79,15 +79,17 @@ var LoggableMixin = {
  *          GalaxyLocalization.setLocalizedString( original, localized )
  *          GalaxyLocalization.setLocalizedString({ original1 : localized1, original2 : localized2 })
  *      get with either:
- *          _l( original )
+ *          GalaxyLocalization.localize( string )
+ *          _l( string )
  */
 //TODO: move to Galaxy.Localization (maybe galaxy.base.js)
 var GalaxyLocalization = jQuery.extend( {}, {
     ALIAS_NAME : '_l',
     localizedStrings : {},
-    
+
+    // Set a single English string -> localized string association, or set an entire map of those associations
+    // Pass in either two strings (english, localized) or just an obj (map) of english : localized
     setLocalizedString : function( str_or_obj, localizedString ){
-        // pass in either two strings (english, translated) or an obj (map) of english : translated attributes
         //console.debug( this + '.setLocalizedString:', str_or_obj, localizedString );
         var self = this;
         
@@ -115,16 +117,19 @@ var GalaxyLocalization = jQuery.extend( {}, {
         }
     },
     
+    // Attempt to get a localized string for strToLocalize. If not found, return the original strToLocalize
     localize : function( strToLocalize ){
         //console.debug( this + '.localize:', strToLocalize );
+
+        //// uncomment this section to cache strings that need to be localized but haven't been
+        //if( !_.has( this.localizedStrings, strToLocalize ) ){
+        //    //console.debug( 'localization NOT found:', strToLocalize );
+        //    if( !this.nonLocalized ){ this.nonLocalized = {}; }
+        //    this.nonLocalized[ strToLocalize ] = false;
+        //}
+
         // return the localized version if it's there, the strToLocalize if not
-        var retStr = strToLocalize;
-        if( _.has( this.localizedStrings, strToLocalize ) ){
-            //console.debug( 'found' );
-            retStr = this.localizedStrings[ strToLocalize ];
-        }
-        //console.debug( 'returning:', retStr );
-        return retStr;
+        return this.localizedStrings[ strToLocalize ] || strToLocalize;
     },
     
     toString : function(){ return 'GalaxyLocalization'; }
@@ -247,4 +252,3 @@ var PersistantStorage = function( storageKey, storageDefaults ){
     
     return returnedStorage;
 };
-

@@ -46,6 +46,7 @@ class Tabular( data.Text ):
         process all data lines.
 
         Items of interest:
+
         1. We treat 'overwrite' as always True (we always want to set tabular metadata when called).
         2. If a tabular file has no data, it will have one column of type 'str'.
         3. We used to check only the first 100 lines when setting metadata and this class's
@@ -356,15 +357,18 @@ class Sam( Tabular ):
         Determines whether the file is in SAM format
 
         A file in SAM format consists of lines of tab-separated data.
-        The following header line may be the first line:
-        @QNAME  FLAG    RNAME   POS     MAPQ    CIGAR   MRNM    MPOS    ISIZE   SEQ     QUAL
-        or
-        @QNAME  FLAG    RNAME   POS     MAPQ    CIGAR   MRNM    MPOS    ISIZE   SEQ     QUAL    OPT
+        The following header line may be the first line::
+
+          @QNAME  FLAG    RNAME   POS     MAPQ    CIGAR   MRNM    MPOS    ISIZE   SEQ     QUAL
+          or
+          @QNAME  FLAG    RNAME   POS     MAPQ    CIGAR   MRNM    MPOS    ISIZE   SEQ     QUAL    OPT
+
         Data in the OPT column is optional and can consist of tab-separated data
 
         For complete details see http://samtools.sourceforge.net/SAM1.pdf
 
-        Rules for sniffing as True:
+        Rules for sniffing as True::
+
             There must be 11 or more columns of data on each line
             Columns 2 (FLAG), 4(POS), 5 (MAPQ), 8 (MPOS), and 9 (ISIZE) must be numbers (9 can be negative)
             We will only check that up to the first 5 alignments are correctly formatted.
@@ -579,10 +583,11 @@ class Eland( Tabular ):
         A file in ELAND export format consists of lines of tab-separated data.
         There is no header.
 
-        Rules for sniffing as True:
-            There must be 22 columns on each line
-            LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
-            We will only check that up to the first 5 alignments are correctly formatted.
+        Rules for sniffing as True::
+
+            - There must be 22 columns on each line
+            - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
+            - We will only check that up to the first 5 alignments are correctly formatted.
         """
         import gzip
         try:

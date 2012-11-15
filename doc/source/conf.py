@@ -52,7 +52,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Galaxy'
+project = u'Galaxy Code'
 copyright = u'2012, Galaxy Team'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -195,7 +195,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-  ('index', 'Galaxy.tex', u'Galaxy Documentation',
+  ('index', 'Galaxy.tex', u'Galaxy Code Documentation',
    u'Galaxy Team', 'manual'),
 ]
 
@@ -225,7 +225,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    ('index', 'galaxy', u'Galaxy Documentation',
+    ('index', 'galaxy', u'Galaxy Code Documentation',
      [u'Galaxy Team'], 1)
 ]
 
@@ -239,7 +239,7 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  ('index', 'Galaxy', u'Galaxy Documentation',
+  ('index', 'Galaxy', u'Galaxy Code Documentation',
    u'Galaxy Team', 'Galaxy', 'Data intensive biology for everyone.',
    'Miscellaneous'),
 ]
@@ -252,3 +252,28 @@ texinfo_documents = [
 
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
+
+# -- ReadTheDocs.org Settings ------------------------------------------------
+
+class Mock(object):
+    def __init__(self, *args, **kwargs):
+        pass
+
+    def __call__(self, *args, **kwargs):
+        return Mock()
+
+    @classmethod
+    def __getattr__(cls, name):
+        if name in ('__file__', '__path__'):
+            return '/dev/null'
+        elif name[0] == name[0].upper():
+            mockType = type(name, (), {})
+            mockType.__module__ = __name__
+            return mockType
+        else:
+            return Mock()
+
+# adding pbs_python, DRMAA_python, markupsafe, and drmaa here had no effect.
+MOCK_MODULES = ['tables', 'decorator']
+for mod_name in MOCK_MODULES:
+    sys.modules[mod_name] = Mock()

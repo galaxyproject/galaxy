@@ -25,25 +25,26 @@ class Amos( data.Text ):
         # It should call get_headers() like other sniff methods.
         """
         Determines whether the file is an amos assembly file format
-        Example:
-        {CTG
-        iid:1
-        eid:1
-        seq:
-        CCTCTCCTGTAGAGTTCAACCGA-GCCGGTAGAGTTTTATCA
-        .
-        qlt:
-        DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
-        .
-        {TLE
-        src:1027
-        off:0
-        clr:618,0
-        gap:
-        250 612
-        .
-        }
-        }
+        Example::
+
+          {CTG
+          iid:1
+          eid:1
+          seq:
+          CCTCTCCTGTAGAGTTCAACCGA-GCCGGTAGAGTTTTATCA
+          .
+          qlt:
+          DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD
+          .
+          {TLE
+          src:1027
+          off:0
+          clr:618,0
+          gap:
+          250 612
+          .
+          }
+          }
         """
         isAmos = False
         try:
@@ -68,7 +69,8 @@ class Sequences( sequence.Fasta ):
     def sniff( self, filename ):
         """
         Determines whether the file is a velveth produced  fasta format
-        The id line has 3 fields separated by tabs: sequence_name  sequence_index cataegory
+        The id line has 3 fields separated by tabs: sequence_name  sequence_index cataegory::
+
           >SEQUENCE_0_length_35   1       1
           GGATATAGGGCCAACCCAACTCAACGGCCTGTCTT
           >SEQUENCE_1_length_35   2       1
@@ -103,7 +105,7 @@ class Roadmaps( data.Text ):
 
     def sniff( self, filename ):
         """
-        Determines whether the file is a velveth produced RoadMap
+        Determines whether the file is a velveth produced RoadMap::
           142858  21      1
           ROADMAP 1
           ROADMAP 2

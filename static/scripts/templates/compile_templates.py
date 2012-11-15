@@ -210,9 +210,11 @@ def main( options, args ):
     # delete multi template intermediate files
     print "\nCleaning up intermediate multi-template template files:"
     for filename in multi_template_template_filenames:
-        print 'removing', filename
-        os.remove( filename )
-    
+        try:
+            print 'removing', filename
+            os.remove( filename )
+        except Exception, exc:
+            print exc
 
 # ------------------------------------------------------------------------------
 if __name__ == '__main__':

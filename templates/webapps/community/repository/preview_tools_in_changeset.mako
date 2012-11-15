@@ -4,9 +4,9 @@
 <%namespace file="/webapps/community/repository/common.mako" import="*" />
 
 <%
-    is_new = repository.is_new
+    is_new = repository.is_new( trans.app )
     can_contact_owner = trans.user and trans.user != repository.user
-    can_push = trans.app.security_agent.can_push( trans.user, repository )
+    can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_rate = not is_new and trans.user and repository.user != trans.user
     can_upload = can_push
     can_download = not is_new and ( not is_malicious or can_push )
@@ -59,7 +59,7 @@
             <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='preview_tools_in_changeset', repository_id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
                     <%
-                        if changeset_revision == repository.tip:
+                        if changeset_revision == repository.tip( trans.app ):
                             tip_str = 'repository tip'
                         else:
                             tip_str = ''

@@ -1,12 +1,16 @@
 '''
 Creates a feature location index (FLI) for a given BED/GFF file.
-FLI index has the form:
+FLI index has the form::
+
     [line_length]
     <symbol1_in_lowercase><tab><symbol1><tab><location>
     <symbol2_in_lowercase><tab><symbol2><tab><location>
     ...
+
 where location is formatted as:
+
     contig:start-end
+
 and symbols are sorted in lexigraphical order.
 '''
 

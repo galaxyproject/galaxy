@@ -106,6 +106,10 @@ class ToolParameter( object ):
         """
         return value
         
+    def to_html_value( self, value, app ):
+        """Convert an object value to the value expected from an html post"""
+        return self.to_string( value, app )
+        
     def to_string( self, value, app ):
         """Convert a value to a string representation suitable for persisting"""
         return str( value )
@@ -370,6 +374,11 @@ class BooleanToolParameter( ToolParameter ):
         return form_builder.CheckboxField( self.name, checked, refresh_on_change = self.refresh_on_change )
     def from_html( self, value, trans=None, other_values={} ):
         return form_builder.CheckboxField.is_checked( value )  
+    def to_html_value( self, value, app ):
+        if value:
+            return [ 'true', 'true' ]
+        else:
+            return [ 'true' ]
     def to_python( self, value, app ):
         return ( value == 'True' )
     def get_initial_value( self, trans, context ):
@@ -1434,7 +1443,7 @@ class DataToolParameter( ToolParameter ):
                 else:
                     hid = str( hda.hid )
                 if not hda.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED] and \
-                    hda.visible and \
+                    ( hda.visible or ( value and hda in value and not hda.implicitly_converted_parent_datasets ) ) and \
                     trans.app.security_agent.can_access_dataset( current_user_roles, hda.dataset ):
                     # If we are sending data to an external application, then we need to make sure there are no roles
                     # associated with the dataset that restrict it's access from "public".
@@ -1444,7 +1453,11 @@ class DataToolParameter( ToolParameter ):
                         continue
                     if isinstance( hda.datatype, self.formats):
                         selected = ( value and ( hda in value ) )
-                        field.add_option( "%s: %s" % ( hid, hda_name ), hda.id, selected )
+                        if hda.visible:
+                            hidden_text = ""
+                        else:
+                            hidden_text = " (hidden)"
+                        field.add_option( "%s:%s %s" % ( hid, hidden_text, hda_name ), hda.id, selected )
                     else:
                         target_ext, converted_dataset = hda.find_conversion_destination( self.formats )
                         if target_ext:
@@ -1535,25 +1548,38 @@ class DataToolParameter( ToolParameter ):
         if trans.workflow_building_mode:
             return None
         if not value:
-            raise ValueError( "History does not include a dataset of the required format / build" ) 
+            raise ValueError( "History does not include a dataset of the required format / build" )
         if value in [None, "None"]:
             return None
         if isinstance( value, list ):
-            return [ trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( v ) for v in value ]
+            rval = [ trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( v ) for v in value ]
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
-            return value
+            rval = value
         else:
-            return trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
+            rval = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( value )
+        if isinstance( rval, list ):
+            values = rval
+        else:
+            values = [ rval ]
+        for v in values:
+            if v:
+                if v.deleted:
+                    raise ValueError( "The previously selected dataset has been previously deleted" )
+                if v.dataset.state in [galaxy.model.Dataset.states.ERROR, galaxy.model.Dataset.states.DISCARDED ]:
+                    raise ValueError( "The previously selected dataset has entered an unusable state" )
+        return rval
 
     def to_string( self, value, app ):
-        if value is None or isinstance( value, str ):
+        if value is None or isinstance( value, basestring ):
             return value
+        elif isinstance( value, int ):
+            return str( value )
         elif isinstance( value, DummyDataset ):
             return None
         elif isinstance( value, list) and len(value) > 0 and isinstance( value[0], DummyDataset):
             return None
         elif isinstance( value, list ):
-            return ",".join( [ val if isinstance( val, str ) else str(val.id) for val in value] )
+            return ",".join( [ val if isinstance( val, basestring ) else str(val.id) for val in value] )
         return value.id
 
     def to_python( self, value, app ):

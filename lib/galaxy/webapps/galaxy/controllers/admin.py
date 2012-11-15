@@ -763,3 +763,9 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         message = util.restore_text( kwd.get( 'message', '' ) )
         status = util.restore_text( kwd.get( 'status', 'done' ) )
         return trans.fill_template( 'admin/view_datatypes_registry.mako', message=message, status=status )
+    @web.expose
+    @web.require_admin
+    def view_tool_data_tables( self, trans, **kwd ):
+        message = util.restore_text( kwd.get( 'message', '' ) )
+        status = util.restore_text( kwd.get( 'status', 'done' ) )
+        return trans.fill_template( 'admin/view_data_tables_registry.mako', message=message, status=status )

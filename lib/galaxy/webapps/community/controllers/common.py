@@ -10,9 +10,8 @@ from galaxy.util.shed_util import check_tool_input_params, clone_repository, con
 from galaxy.util.shed_util import generate_clone_url_for_repository_in_tool_shed, generate_message_for_invalid_tools, generate_metadata_for_changeset_revision
 from galaxy.util.shed_util import get_changectx_for_changeset, get_config_from_disk, get_configured_ui, get_file_context_from_ctx, get_named_tmpfile_from_ctx
 from galaxy.util.shed_util import get_parent_id, get_repository_in_tool_shed, get_repository_metadata_by_changeset_revision
-from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config
-from galaxy.util.shed_util import handle_sample_tool_data_table_conf_file, INITIAL_CHANGELOG_HASH, is_downloadable, load_tool_from_config, remove_dir
-from galaxy.util.shed_util import reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path
+from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config, INITIAL_CHANGELOG_HASH
+from galaxy.util.shed_util import is_downloadable, load_tool_from_config, remove_dir, reset_tool_data_tables, reversed_upper_bounded_changelog, strip_path
 from galaxy.web.base.controller import *
 from galaxy.web.base.controllers.admin import *
 from galaxy.webapps.community import model
@@ -26,25 +25,23 @@ from mercurial import hg, ui, commands
 log = logging.getLogger( __name__ )
 
 new_repo_email_alert_template = """
-GALAXY TOOL SHED NEW REPOSITORY ALERT
------------------------------------------------------------------------------
-You received this alert because you registered to receive email when
-new repositories were created in the Galaxy tool shed named "${host}".
------------------------------------------------------------------------------
-
-Repository name:       ${repository_name}
-Date content uploaded: ${display_date}
-Uploaded by:           ${username}
-
-Revision: ${revision}
+Revision:              ${revision}
 Change description:
 ${description}
+
+Repository name:       ${repository_name}
+Uploaded by:           ${username}
+Date content uploaded: ${display_date}
 
 ${content_alert_str}
 
 -----------------------------------------------------------------------------
 This change alert was sent from the Galaxy tool shed hosted on the server
 "${host}"
+-----------------------------------------------------------------------------
+You received this alert because you registered to receive email when
+new repositories were created in the Galaxy tool shed named "${host}".
+-----------------------------------------------------------------------------
 """
 
 email_alert_template = """
@@ -140,7 +137,7 @@ def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset
     if not file_path or not os.path.exists( file_path ):
         # The file no longer exists on disk, so it must have been deleted at some previous point in the change log.
         return False
-    if changeset_revision == repository.tip:
+    if changeset_revision == repository.tip( trans.app ):
         return True
     file_name = strip_path( file_path )
     latest_version_of_file = get_latest_tool_config_revision_from_repository_manifest( repo, file_name, changeset_revision )
@@ -328,7 +325,7 @@ def get_previous_downloadable_changset_revision( repository, repo, before_change
             previous_changeset_revision = current_changeset_revision
 def get_previous_repository_reviews( trans, repository, changeset_revision ):
     """Return an ordered dictionary of repository reviews up to and including the received changeset revision."""
-    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
     reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
     previous_reviews_dict = odict()
     for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
@@ -341,10 +338,10 @@ def get_previous_repository_reviews( trans, repository, changeset_revision ):
             previous_reviews_dict[ previous_changeset_revision ] = dict( changeset_revision_label=previous_changeset_revision_label,
                                                                          reviews=revision_reviews )
     return previous_reviews_dict
-def get_rev_label_changeset_revision_from_repository_metadata( repository_metadata, repository=None ):
+def get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=None ):
     if repository is None:
         repository = repository_metadata.repository
-    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
     changeset_revision = repository_metadata.changeset_revision
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
@@ -425,7 +422,7 @@ def get_revision_label( trans, repository, changeset_revision ):
     Return a string consisting of the human read-able 
     changeset rev and the changeset revision string.
     """
-    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         return "%s:%s" % ( str( ctx.rev() ), changeset_revision )
@@ -455,7 +452,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
     # 4. A regular user checks the "Receive email alerts" check box on the manage repository page.  Since the
     #    user is not an admin user, the email will not include any information about both HTML and image content
     #    that was included in the change set.
-    repo_dir = repository.repo_path
+    repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( get_configured_ui(), repo_dir )
     smtp_server = trans.app.config.smtp_server
     if smtp_server and ( new_repo_alert or repository.email_alerts ):
@@ -498,7 +495,8 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
         admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
         frm = email_from
         if new_repo_alert:
-            subject = "New Galaxy tool shed repository alert"
+            subject = "Galaxy tool shed alert for new repository named %s" % str( repository.name )
+            subject = subject[ :80 ]
             email_alerts = []
             for user in trans.sa_session.query( trans.model.User ) \
                                         .filter( and_( trans.model.User.table.c.deleted == False,
@@ -523,7 +521,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
 def has_previous_repository_reviews( trans, repository, changeset_revision ):
     """Determine if a repository has a changeset revision review prior to the received changeset revision."""
-    repo = hg.repository( get_configured_ui(), repository.repo_path )
+    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
     reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
     for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
         previous_changeset_revision = str( repo.changectx( changeset ) )
@@ -538,7 +536,7 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     """
     original_tool_data_path = trans.app.config.tool_data_path
     repository = get_repository_in_tool_shed( trans, repository_id )
-    repo_files_dir = repository.repo_path
+    repo_files_dir = repository.repo_path( trans.app )
     repo = hg.repository( get_configured_ui(), repo_files_dir )
     message = ''
     tool = None
@@ -556,7 +554,8 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                                                                      tool,
                                                                      sample_files )
             if invalid_files_and_errors_tups:
-                message2 = generate_message_for_invalid_tools( invalid_files_and_errors_tups,
+                message2 = generate_message_for_invalid_tools( trans,
+                                                               invalid_files_and_errors_tups,
                                                                repository,
                                                                metadata_dict=None,
                                                                as_html=True,
@@ -632,7 +631,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     status = 'done'
     encoded_id = trans.security.encode_id( repository.id )
     repository_clone_url = generate_clone_url_for_repository_in_tool_shed( trans, repository )
-    repo_dir = repository.repo_path
+    repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( get_configured_ui(), repo_dir )
     metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
                                                                                  repository=repository,
@@ -640,7 +639,8 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                                                                                  relative_install_dir=repo_dir,
                                                                                  repository_files_dir=None,
                                                                                  resetting_all_metadata_on_repository=False,
-                                                                                 updating_installed_repository=False )
+                                                                                 updating_installed_repository=False,
+                                                                                 persist=False )
     if metadata_dict:
         downloadable = is_downloadable( metadata_dict )
         repository_metadata = None
@@ -649,7 +649,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
             repository_metadata = create_or_update_repository_metadata( trans,
                                                                         encoded_id,
                                                                         repository,
-                                                                        repository.tip,
+                                                                        repository.tip( trans.app ),
                                                                         metadata_dict )
             # If this is the first record stored for this repository, see if we need to send any email alerts.
             if len( repository.downloadable_revisions ) == 1:
@@ -659,7 +659,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
             if repository_metadata:
                 downloadable = is_downloadable( metadata_dict )
                 # Update the last saved repository_metadata table row.
-                repository_metadata.changeset_revision = repository.tip
+                repository_metadata.changeset_revision = repository.tip( trans.app )
                 repository_metadata.metadata = metadata_dict
                 repository_metadata.downloadable = downloadable
                 trans.sa_session.add( repository_metadata )
@@ -669,7 +669,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                 repository_metadata = create_or_update_repository_metadata( trans,
                                                                             encoded_id,
                                                                             repository,
-                                                                            repository.tip,
+                                                                            repository.tip( trans.app ),
                                                                             metadata_dict )
         if 'tools' in metadata_dict and repository_metadata and status != 'error':
             # Set tool versions on the new downloadable change set.  The order of the list of changesets is critical, so we use the repo's changelog.
@@ -680,11 +680,11 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                     changeset_revisions.append( changeset_revision )
             add_tool_versions( trans, encoded_id, repository_metadata, changeset_revisions )
     elif len( repo ) == 1 and not invalid_file_tups:
-        message = "Revision '%s' includes no tools, datatypes or exported workflows for which metadata can " % str( repository.tip )
+        message = "Revision '%s' includes no tools, datatypes or exported workflows for which metadata can " % str( repository.tip( trans.app ) )
         message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
         status = "error"
     if invalid_file_tups:
-        message = generate_message_for_invalid_tools( invalid_file_tups, repository, metadata_dict )
+        message = generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
         status = 'error'
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     reset_tool_data_tables( trans.app )
@@ -704,7 +704,7 @@ def update_for_browsing( trans, repository, current_working_dir, commit_message=
     # is not supported by the mercurial API.
     # Make a copy of a repository's files for browsing, remove from disk all files that are not tracked, and commit all
     # added, modified or removed files that have not yet been committed.
-    repo_dir = repository.repo_path
+    repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( get_configured_ui(), repo_dir )
     # The following will delete the disk copy of only the files in the repository.
     #os.system( 'hg update -r null > /dev/null 2>&1' )

@@ -112,9 +112,12 @@ class Newick_Parser(Base_Parser):
     def parseNode(self, string, depth):
         """ Recursive method for parsing newick string, works by stripping down the string into substring
         of newick contained with brackers, which is used to call itself.
-            Eg ... ( A, B, (D, E)C, F, G ) ...
+
+        Eg ... ( A, B, (D, E)C, F, G ) ...
+
         We will make the preceeding nodes first A, B, then the internal node C, its children D, E,
-        and finally the succeeding nodes F, G"""
+        and finally the succeeding nodes F, G
+        """
 
         # Base case where there is only an empty string
         if string == "":

@@ -22,14 +22,14 @@
 %>
 
 <div class="toolForm">
-    <div class="toolFormTitle">Current datatypes registry contains ${len( sorted_datatypes )} datatypes</div>
+    <div class="toolFormTitle">Current data types registry contains ${len( sorted_datatypes )} data types</div>
     <div class="toolFormBody">
         <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
             <tr>
-                <th>Extension</th>
-                <th>Type</th>
-                <th>Mimetype</th>
-                <th>Display in upload</th>
+                <th bgcolor="#D8D8D8">Extension</th>
+                <th bgcolor="#D8D8D8">Type</th>
+                <th bgcolor="#D8D8D8">Mimetype</th>
+                <th bgcolor="#D8D8D8">Display in upload</th>
             </tr>
             %for datatype in sorted_datatypes:
                 %if ctr % 2 == 1:

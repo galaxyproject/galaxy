@@ -127,7 +127,12 @@
                 %endif
             %endif
         </div>
-        <span class="state-icon"></span>
+        ## Hack, do it in css
+        %if data_state == "paused":
+            <span class="ficon pause"></span>
+        %else:
+            <span class="state-icon"></span>
+        %endif
         <span class="historyItemTitle">${hid}: ${data.display_name()}</span>
     </div>
         
@@ -140,6 +145,15 @@
             <div>Dataset is uploading</div>
         %elif data_state == "queued":
             <div>${_('Job is waiting to run')}</div>
+            <div>
+                <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title='${_("View Details")}' class="icon-button information tooltip"></a>
+                %if for_editing:
+                    <a href="${h.url_for( controller='tool_runner', action='rerun', id=data.id )}" target="galaxy_main" title='${_("Run this job again")}' class="icon-button arrow-circle tooltip"></a>
+                %endif
+            </div>
+        %elif data_state == "paused":
+            <div>
+            ${_('Job is currently paused.  Check your quota and parent jobs for failure, use the history menu to resume.')}</div>
             <div>
                 <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title='${_("View Details")}' class="icon-button information tooltip"></a>
                 %if for_editing:

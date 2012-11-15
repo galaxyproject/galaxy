@@ -7,6 +7,7 @@ class BaseJobRunner( object ):
         """
         Compose the sequence of commands necessary to execute a job. This will
         currently include:
+
             - environment settings corresponding to any requirement tags
             - preparing input files
             - command line taken from job wrapper

@@ -339,6 +339,24 @@ def string_as_bool( string ):
     else:
         return False
 
+def string_as_bool_or_none( string ):
+    """
+    Returns True, None or False based on the argument:
+        True if passed True, 'True', 'Yes', or 'On'
+        None if passed None or 'None'
+        False otherwise
+
+    Note: string comparison is case-insensitive so lowecase versions of those
+    function equivalently.
+    """
+    string = str( string ).lower()
+    if string in ( 'true', 'yes', 'on' ):
+        return True
+    elif string == 'none':
+        return None
+    else:
+        return False
+
 def listify( item ):
     """
     Make a single item a single item list, or return a list if passed a

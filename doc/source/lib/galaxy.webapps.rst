@@ -16,5 +16,6 @@ Subpackages
 
     galaxy.webapps.community
     galaxy.webapps.demo_sequencer
+    galaxy.webapps.galaxy
     galaxy.webapps.reports
 

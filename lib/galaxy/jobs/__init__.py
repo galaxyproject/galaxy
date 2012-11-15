@@ -81,7 +81,7 @@ class JobWrapper( object ):
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
-        self.job_runner_mapper = JobRunnerMapper( self )
+        self.job_runner_mapper = JobRunnerMapper( self, job.job_runner_name )
         self.params = None
         if job.params:
             self.params = from_json_string( job.params )
@@ -400,7 +400,6 @@ class JobWrapper( object ):
                     # the state or whether the tool used exit codes and regular
                     # expressions to do so. So we use 
                     # job.state == job.states.ERROR to replace this same test.
-                    #elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and not context['stderr']:
                     elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != job.state: 
                         dataset._state = model.Dataset.states.FAILED_METADATA
                     else:

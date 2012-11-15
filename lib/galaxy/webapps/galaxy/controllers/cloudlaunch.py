@@ -59,14 +59,34 @@ class CloudController(BaseUIController):
             if pd:
                 # This is a cloudman bucket.
                 # We need to get persistent data, and the cluster name.
+                # DBTODO: Add pyyaml egg, and rewrite this.
+                # This will also allow for much more sophisticated rendering of existing clusters
+                # Currently, this zone detection is a hack.
+                pd_contents = pd.get_contents_as_string()
+                zone = ''
+                try:
+                    for line in pd_contents.split('\n'):
+                        if 'vol_id' in line:
+                            vol_id = line.split(':')[1].strip()
+                            v = ec2_conn.get_all_volumes(volume_ids = [vol_id])
+                            if v:
+                                zone = v[0].zone
+                            else:
+                                zone = ''
+                except:
+                    #If anything goes wrong with zone detection, use the default selection.
+                    zone = ''
                 for key in bucket.list():
                     if key.name.endswith('.clusterName'):
-                        clusters.append({'name': key.name.split('.clusterName')[0], 'persistent_data': pd.get_contents_as_string()})
+                        clusters.append({'name': key.name.split('.clusterName')[0],
+                                         'persistent_data': pd_contents,
+                                         'zone':zone})
         account_info['clusters'] = clusters
+        account_info['zones'] = [z.name for z in ec2_conn.get_all_zones()]
         return to_json_string(account_info)
 
     @web.expose
-    def launch_instance(self, trans, cluster_name, password, key_id, secret, instance_type, share_string, keypair, **kwargs):
+    def launch_instance(self, trans, cluster_name, password, key_id, secret, instance_type, share_string, keypair, zone=None, **kwargs):
         ec2_error = None
         try:
             # Create security group & key pair used when starting an instance
@@ -90,7 +110,8 @@ class CloudController(BaseUIController):
             rs = run_instance(ec2_conn=ec2_conn,
                       user_provided_data=user_provided_data,
                       key_name=kp_name,
-                      security_groups=[sg_name])
+                      security_groups=[sg_name],
+                      placement=zone)
             if rs:
                 instance = rs.instances[0]
                 ct = 0
@@ -241,7 +262,7 @@ def create_key_pair(ec2_conn, key_name=DEFAULT_KEYPAIR):
 
 def run_instance(ec2_conn, user_provided_data, image_id=DEFAULT_AMI,
                  kernel_id=None, ramdisk_id=None, key_name=DEFAULT_KEYPAIR,
-                 security_groups=['CloudMan']):
+                 placement=None, security_groups=['CloudMan']):
     """ Start an instance. If instance start was OK, return the ResultSet object
         else return None.
     """
@@ -257,7 +278,8 @@ def run_instance(ec2_conn, user_provided_data, image_id=DEFAULT_AMI,
                                     security_groups=security_groups,
                                     user_data=ud,
                                     kernel_id=kernel_id,
-                                    ramdisk_id=ramdisk_id)
+                                    ramdisk_id=ramdisk_id,
+                                    placement=placement)
     except EC2ResponseError, e:
         log.error("Problem starting an instance: %s\n%s" % (e, e.body))
     if rs:

@@ -130,6 +130,11 @@ class GenomeDataProvider( BaseDataProvider ):
                                                     original_dataset=original_dataset,
                                                     dependencies=dependencies,
                                                     error_max_vals=error_max_vals )
+
+        # File/pointer where data is obtained from. It is useful to set this for repeated
+        # queries, such as is necessary for genome-wide data.
+        # TODO: add functions to (a) create data_file and (b) clean up data_file.
+        self.data_file = None
         
     def write_data_to_file( self, regions, filename ):
         """
@@ -345,17 +350,18 @@ class TabixDataProvider( FilterableMixin, GenomeDataProvider ):
                     
         bgzip_fname = self.dependencies['bgzip'].file_name
         
-        tabix = ctabix.Tabixfile(bgzip_fname, index_filename=self.converted_dataset.file_name)
+        if not self.data_file:
+            self.data_file = ctabix.Tabixfile(bgzip_fname, index_filename=self.converted_dataset.file_name)
         
         # Get iterator using either naming scheme.
         iterator = iter( [] )
-        if chrom in tabix.contigs:
-            iterator = tabix.fetch(reference=chrom, start=start, end=end)
+        if chrom in self.data_file.contigs:
+            iterator = self.data_file.fetch(reference=chrom, start=start, end=end)
         else:
             # Try alternative naming scheme.
             chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
-            if chrom in tabix.contigs:
-                iterator = tabix.fetch(reference=chrom, start=start, end=end)
+            if chrom in self.data_file.contigs:
+                iterator = self.data_file.fetch(reference=chrom, start=start, end=end)
 
         return iterator
 
@@ -604,11 +610,16 @@ class VcfDataProvider( GenomeDataProvider ):
     
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
-        Returns a dict with the following attributes:
+        Returns a dict with the following attributes::
+
             data - a list of variants with the format 
+
+            .. raw:: text
+
                 [<guid>, <start>, <end>, <name>, cigar, seq] 
 
             message - error/informative message
+
         """
         rval = []
         message = None
@@ -887,13 +898,17 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
-        Returns a dict with the following attributes:
+        Returns a dict with the following attributes::
+
             data - a list of reads with the format 
-                    [<guid>, <start>, <end>, <name>, <read_1>, <read_2>, [empty], <mapq_scores>]
+                [<guid>, <start>, <end>, <name>, <read_1>, <read_2>, [empty], <mapq_scores>]
+
                 where <read_1> has the format
                     [<start>, <end>, <cigar>, <strand>, <read_seq>]
+
                 and <read_2> has the format
                     [<start>, <end>, <cigar>, <strand>, <read_seq>]
+
                 Field 7 is empty so that mapq scores' location matches that in single-end reads.
                 For single-end reads, read has format:
                     [<guid>, <start>, <end>, <name>, <cigar>, <strand>, <seq>, <mapq_score>]
@@ -904,6 +919,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             max_low - lowest coordinate for the returned reads
             max_high - highest coordinate for the returned reads
             message - error/informative message
+
         """
         # No iterator indicates no reads.
         if iterator is None:
