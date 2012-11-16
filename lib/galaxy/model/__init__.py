@@ -702,7 +702,7 @@ class History( object, UsesAnnotations ):
         for dataset in self.datasets:
             job = dataset.creating_job
             if job is not None and job.state == Job.states.PAUSED:
-                job.set_state(Job.states.QUEUED)
+                job.set_state(Job.states.NEW)
     def get_disk_size( self, nice_size=False ):
         # unique datasets only
         db_session = object_session( self )
