@@ -328,34 +328,37 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         switch( this.model.get( 'state' ) ){
             case HistoryDatasetAssociation.STATES.NOT_VIEWABLE :
                 this._render_body_not_viewable( body );
-				break;
+                break;
             case HistoryDatasetAssociation.STATES.UPLOAD :
-				this._render_body_uploading( body );
-				break;
+                this._render_body_uploading( body );
+                break;
+            case HistoryDatasetAssociation.STATES.PAUSED:
+                this._render_body_paused( body );
+                break;
             case HistoryDatasetAssociation.STATES.QUEUED :
-				this._render_body_queued( body );
-				break;
+                this._render_body_queued( body );
+                break;
             case HistoryDatasetAssociation.STATES.RUNNING :
-				this._render_body_running( body );
-				break;
+                this._render_body_running( body );
+                break;
             case HistoryDatasetAssociation.STATES.ERROR :
-				this._render_body_error( body );
-				break;
+                this._render_body_error( body );
+                break;
             case HistoryDatasetAssociation.STATES.DISCARDED :
-				this._render_body_discarded( body );
-				break;
+                this._render_body_discarded( body );
+                break;
             case HistoryDatasetAssociation.STATES.SETTING_METADATA :
-				this._render_body_setting_metadata( body );
-				break;
+                this._render_body_setting_metadata( body );
+                break;
             case HistoryDatasetAssociation.STATES.EMPTY :
-				this._render_body_empty( body );
-				break;
+                this._render_body_empty( body );
+                break;
             case HistoryDatasetAssociation.STATES.FAILED_METADATA :
-				this._render_body_failed_metadata( body );
-				break;
+                this._render_body_failed_metadata( body );
+                break;
             case HistoryDatasetAssociation.STATES.OK :
-				this._render_body_ok( body );
-				break;
+                this._render_body_ok( body );
+                break;
             default:
                 //??: no body?
                 body.append( $( '<div>Error: unknown dataset state "' + state + '".</div>' ) );
@@ -390,6 +393,14 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      */
     _render_body_queued : function( parent ){
         parent.append( $( '<div>' + _l( 'Job is waiting to run' ) + '.</div>' ) );
+        parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
+    },
+
+    /** Render an HDA whose job is paused.
+     *  @param {jQuery} parent DOM to which to append this body
+     */
+    _render_body_paused: function( parent ){
+        parent.append( $( '<div>' + _l( 'Job is paused.  Use the history menu to unpause' ) + '.</div>' ) );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
     },
         

@@ -164,6 +164,8 @@ HistoryDatasetAssociation.STATES = {
     UPLOAD              : 'upload',
     /** the job that will produce the dataset queued in the runner */
     QUEUED              : 'queued',
+    /** the job that will produce the dataset paused */
+    PAUSED              : 'paused',
     /** the job that will produce the dataset is running */
     RUNNING             : 'running',
     /** metadata for the dataset is being discovered/set */
