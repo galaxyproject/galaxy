@@ -368,11 +368,15 @@ class CondorJobRunner( BaseJobRunner ):
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         # TODO Check if we need any changes here
+        job_id = job.get_job_runner_external_id()
+        if job_id is None:
+            self.put( job_wrapper )
+            return
         drm_job_state = CondorJobState()
         drm_job_state.ofile = "%s/database/pbs/%s.o" % (os.getcwd(), job.id)
         drm_job_state.efile = "%s/database/pbs/%s.e" % (os.getcwd(), job.id)
         drm_job_state.job_file = "%s/database/pbs/galaxy_%s.sh" % (os.getcwd(), job.id)
-        drm_job_state.job_id = str( job.job_runner_external_id )
+        drm_job_state.job_id = str( job_id )
         drm_job_state.runner_url = job_wrapper.get_job_runner()
         job_wrapper.command_line = job.command_line
         drm_job_state.job_wrapper = job_wrapper

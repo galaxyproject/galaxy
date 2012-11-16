@@ -640,12 +640,16 @@ class PBSJobRunner( BaseJobRunner ):
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
+        job_id = job.get_job_runner_external_id()
+        if job_id is None:
+            self.put( job_wrapper )
+            return
         pbs_job_state = PBSJobState()
         pbs_job_state.ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.ecfile = "%s/%s.ec" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job.id)
-        pbs_job_state.job_id = str( job.get_job_runner_external_id() )
+        pbs_job_state.job_id = str( job_id )
         pbs_job_state.runner_url = job_wrapper.get_job_runner_url()
         job_wrapper.command_line = job.command_line
         pbs_job_state.job_wrapper = job_wrapper

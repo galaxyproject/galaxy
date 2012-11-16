@@ -359,12 +359,16 @@ class ShellJobRunner( BaseJobRunner ):
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
+        job_id = job.get_job_runner_external_id()
+        if job_id is None:
+            self.put( job_wrapper )
+            return
         runner_job_state = RunnerJobState()
         runner_job_state.ofile = "%s.gjout" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
         runner_job_state.efile = "%s.gjerr" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
         runner_job_state.ecfile = "%s.gjec" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
         runner_job_state.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
-        runner_job_state.external_job_id = str( job.job_runner_external_id )
+        runner_job_state.external_job_id = str( job_id )
         job_wrapper.command_line = job.command_line
         runner_job_state.job_wrapper = job_wrapper
         runner_job_state.runner_url = job.job_runner_name

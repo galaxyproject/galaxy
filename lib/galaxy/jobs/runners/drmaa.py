@@ -411,12 +411,16 @@ class DRMAAJobRunner( BaseJobRunner ):
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
+        job_id = job.get_job_runner_external_id()
+        if job_id is None:
+            self.put( job_wrapper )
+            return
         drm_job_state = DRMAAJobState()
         drm_job_state.ofile = "%s.drmout" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         drm_job_state.efile = "%s.drmerr" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         drm_job_state.ecfile = "%s.drmec" % os.path.join(os.getcwd(), job_wrapper.working_directory, job_wrapper.get_id_tag())
         drm_job_state.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job.get_id())
-        drm_job_state.job_id = str( job.get_job_runner_external_id() )
+        drm_job_state.job_id = str( job_id )
         drm_job_state.runner_url = job_wrapper.get_job_runner_url()
         job_wrapper.command_line = job.get_command_line()
         drm_job_state.job_wrapper = job_wrapper
