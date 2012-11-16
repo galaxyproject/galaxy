@@ -1640,6 +1640,12 @@ div.historyItem-noPermission {
 div.historyItem-paused {
     // border-color: @history_paused_border;
     background: @history_paused_bg;
+    .state-icon {
+        .ficon();
+        &:before {
+            content: "\f04c";
+        }
+    }
 }
 
 // Special case for showing the spinner but not changing the background
