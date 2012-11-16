@@ -701,7 +701,7 @@ class History( object, UsesAnnotations ):
     def resume_paused_jobs( self ):
         for dataset in self.datasets:
             job = dataset.creating_job
-            if job.state == Job.states.PAUSED:
+            if job is not None and job.state == Job.states.PAUSED:
                 job.set_state(Job.states.QUEUED)
     def get_disk_size( self, nice_size=False ):
         # unique datasets only
