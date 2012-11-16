@@ -768,6 +768,19 @@ def get_repository_file_contents( file_path ):
                 to_html = '%s%s' % ( to_html, to_html_str( large_str ) )
                 break
     return to_html
+def get_repository_files( trans, folder_path ):
+    contents = []
+    for item in os.listdir( folder_path ):
+        # Skip .hg directories
+        if str( item ).startswith( '.hg' ):
+            continue
+        if os.path.isdir( os.path.join( folder_path, item ) ):
+            # Append a '/' character so that our jquery dynatree will function properly.
+            item = '%s/' % item
+        contents.append( item )
+    if contents:
+        contents.sort()
+    return contents
 def get_repository_in_tool_shed( trans, id ):
     """Get a repository on the tool shed side from the database via id"""
     return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )

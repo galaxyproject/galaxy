@@ -596,19 +596,6 @@ def get_list_of_copied_sample_files( repo, ctx, dir ):
                     fh.write( fctx.data() )
                     fh.close()
     return sample_files, deleted_sample_files
-def get_repository_files( trans, folder_path ):
-    contents = []
-    for item in os.listdir( folder_path ):
-        # Skip .hg directories
-        if str( item ).startswith( '.hg' ):
-            continue
-        if os.path.isdir( os.path.join( folder_path, item ) ):
-            # Append a '/' character so that our jquery dynatree will function properly.
-            item = '%s/' % item
-        contents.append( item )
-    if contents:
-        contents.sort()
-    return contents
 def get_repository_owner( cleaned_repository_url ):
     items = cleaned_repository_url.split( 'repos' )
     repo_path = items[ 1 ]
