@@ -4,24 +4,22 @@ Galaxy data model classes
 Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
-import pkg_resources
+
+import pkg_resources, os, errno, codecs, operator, socket, pexpect, logging, time
 pkg_resources.require( "simplejson" )
 import simplejson
-import galaxy.datatypes
-from galaxy.util.bunch import Bunch
-from galaxy import util
-import galaxy.datatypes.registry
-from galaxy.datatypes.metadata import MetadataCollection
-from galaxy.security import RBACAgent, get_permitted_actions
-from galaxy.util.hash_util import *
-from galaxy.web.form_builder import *
-from galaxy.model.item_attrs import UsesAnnotations, APIItem
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.expression import func
-import os.path, os, errno, codecs, operator, socket, pexpect, logging, time, shutil
-
-if sys.version_info[:2] < ( 2, 5 ):
-    from sets import Set as set
+import galaxy.datatypes
+import galaxy.datatypes.registry
+from galaxy.datatypes.metadata import MetadataCollection
+from galaxy.security import get_permitted_actions
+from galaxy import util
+from galaxy.util.bunch import Bunch
+from galaxy.util.hash_util import new_secure_hash
+from galaxy.web.form_builder import (AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField,
+                                    WorkflowField, WorkflowMappingField, HistoryField)
+from galaxy.model.item_attrs import UsesAnnotations, APIItem
 
 log = logging.getLogger( __name__ )
 
@@ -138,13 +136,13 @@ class Job( object ):
         self.exit_code = None
 
     # TODO: Add accessors for members defined in SQL Alchemy for the Job table and
-    # for the mapper defined to the Job table. 
+    # for the mapper defined to the Job table.
     def get_external_output_metadata( self ):
         """
-        The external_output_metadata is currently a reference from Job to 
+        The external_output_metadata is currently a reference from Job to
         JobExternalOutputMetadata. It exists for a job but not a task.
         """
-        return self.external_output_metadata 
+        return self.external_output_metadata
     def get_session_id( self ):
         return self.session_id
     def get_user_id( self ):
@@ -177,7 +175,7 @@ class Job( object ):
         # runner_name is not the same thing.
         return self.job_runner_name
     def get_job_runner_external_id( self ):
-        # This is different from the Task just in the member accessed: 
+        # This is different from the Task just in the member accessed:
         return self.job_runner_external_id
     def get_post_job_actions( self ):
         return self.post_job_actions
@@ -197,10 +195,10 @@ class Job( object ):
         # The tasks member is pert of a reference in the SQL Alchemy schema:
         return self.tasks
     def get_id_tag( self ):
-        """ 
-        Return a tag that can be useful in identifying a Job. 
+        """
+        Return a tag that can be useful in identifying a Job.
         This returns the Job's get_id
-        """ 
+        """
         return "%s" % self.id;
 
     def set_session_id( self, session_id ):
@@ -324,8 +322,8 @@ class Task( object ):
         self.task_runner_name = None
         self.task_runner_external_id = None
         self.job = job
-        self.stdout = "" 
-        self.stderr = "" 
+        self.stdout = ""
+        self.stderr = ""
         self.exit_code = None
         self.prepare_input_files_cmd = prepare_files_cmd
 
@@ -340,8 +338,8 @@ class Task( object ):
         return param_dict
 
     def get_id( self ):
-        # This is defined in the SQL Alchemy schema: 
-        return self.id 
+        # This is defined in the SQL Alchemy schema:
+        return self.id
     def get_id_tag( self ):
         """
         Return an id tag suitable for identifying the task.
@@ -378,7 +376,7 @@ class Task( object ):
     # metdata). These can be filled in as needed.
     def get_external_output_metadata( self ):
         """
-        The external_output_metadata is currently a backref to 
+        The external_output_metadata is currently a backref to
         JobExternalOutputMetadata. It exists for a job but not a task,
         and when a task is cancelled its corresponding parent Job will
         be cancelled. So None is returned now, but that could be changed
@@ -395,13 +393,13 @@ class Task( object ):
         """
         Runners will use the same methods to get information about the Task
         class as they will about the Job class, so this method just returns
-        the task's external id. 
+        the task's external id.
         """
         # TODO: Merge into get_runner_external_id.
         return self.task_runner_external_id
     def get_session_id( self ):
         # The Job's galaxy session is equal to the Job's session, so the
-        # Job's session is the same as the Task's session. 
+        # Job's session is the same as the Task's session.
         return self.get_job().get_session_id()
 
     def set_id( self, id ):
@@ -424,7 +422,7 @@ class Task( object ):
         # This method is available for runners that do not want/need to
         # differentiate between the kinds of Runnable things (Jobs and Tasks)
         # that they're using.
-        log.debug( "Task %d: Set external id to %s" 
+        log.debug( "Task %d: Set external id to %s"
                  % ( self.id, task_runner_external_id ) )
         self.task_runner_external_id = task_runner_external_id
     def set_task_runner_external_id( self, task_runner_external_id ):
@@ -954,7 +952,7 @@ class Dataset( object ):
             return False
         try:
             return util.is_multi_byte( codecs.open( self.file_name, 'r', 'utf-8' ).read( 100 ) )
-        except UnicodeDecodeError, e:
+        except UnicodeDecodeError:
             return False
     # FIXME: sqlalchemy will replace this
     def _delete(self):
@@ -1136,7 +1134,6 @@ class DatasetInstance( object ):
         """
         Returns dict of { "dependency" => HDA }
         """
-        converted_dataset = self.get_converted_files_by_type( target_ext )
         # List of string of dependencies
         try:
             depends_list = trans.app.datatypes_registry.converter_deps[self.extension][target_ext]
@@ -1307,7 +1304,7 @@ class DatasetInstance( object ):
         """
         Returns datasources for dataset; if datasources are not available
         due to indexing, indexing is started. Return value is a dictionary
-        with entries of type 
+        with entries of type
         (<datasource_type> : {<datasource_name>, <indexing_message>}).
         """
         track_type, data_sources = self.datatype.get_track_type()
@@ -1320,17 +1317,17 @@ class DatasetInstance( object ):
             else:
                 # Convert.
                 msg = self.convert_dataset( trans, data_source )
-            
+
             # Store msg.
             data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
-        
+
         return data_sources_dict
 
     def convert_dataset( self, trans, target_type ):
         """
-        Converts a dataset to the target_type and returns a message indicating 
+        Converts a dataset to the target_type and returns a message indicating
         status of the conversion. None is returned to indicate that dataset
-        was converted successfully. 
+        was converted successfully.
         """
 
         # FIXME: copied from controller.py
@@ -1402,7 +1399,7 @@ class HistoryDatasetAssociation( DatasetInstance ):
         hda.metadata = self.metadata
         if copy_children:
             for child in self.children:
-                child_copy = child.copy( copy_children = copy_children, parent_id = hda.id )
+                child.copy( copy_children = copy_children, parent_id = hda.id )
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             hda.set_peek()
@@ -1454,11 +1451,11 @@ class HistoryDatasetAssociation( DatasetInstance ):
         object_session( self ).add( library_dataset )
         object_session( self ).flush()
         for child in self.children:
-            child_copy = child.to_library_dataset_dataset_association( trans,
-                                                                       target_folder=target_folder,
-                                                                       replace_dataset=replace_dataset,
-                                                                       parent_id=ldda.id,
-                                                                       user=ldda.user )
+            child.to_library_dataset_dataset_association( trans,
+                                                          target_folder=target_folder,
+                                                          replace_dataset=replace_dataset,
+                                                          parent_id=ldda.id,
+                                                          user=ldda.user )
         if not self.datatype.copy_safe_peek:
             # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
@@ -1808,7 +1805,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         if add_to_history and target_history:
             target_history.add_dataset( hda )
         for child in self.children:
-            child_copy = child.to_history_dataset_association( target_history = target_history, parent_id = hda.id, add_to_history = False )
+            child.to_history_dataset_association( target_history = target_history, parent_id = hda.id, add_to_history = False )
         if not self.datatype.copy_safe_peek:
             hda.set_peek() #in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
         object_session( self ).flush()
@@ -1833,7 +1830,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         ldda.metadata = self.metadata
         if copy_children:
             for child in self.children:
-                child_copy = child.copy( copy_children = copy_children, parent_id = ldda.id )
+                child.copy( copy_children = copy_children, parent_id = ldda.id )
         if not self.datatype.copy_safe_peek:
              # In some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
             ldda.set_peek()
@@ -2640,7 +2637,7 @@ class Sample( object, APIItem ):
                                   events={ '.ssword:*': scp_configs['password']+'\r\n',
                                            pexpect.TIMEOUT:print_ticks},
                                   timeout=10 )
-        except Exception, e:
+        except Exception:
             return error_msg
         # cleanup the output to get just the file size
         return  output.replace( filepath, '' )\
@@ -3280,7 +3277,6 @@ class ToolVersion( object ):
                              .first()
         return None
     def get_versions( self, app ):
-        sa_session = app.model.context.current
         tool_versions = []
         # Prepend ancestors.
         def __ancestors( app, tool_version ):
