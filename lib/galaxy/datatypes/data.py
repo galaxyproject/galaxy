@@ -69,6 +69,9 @@ class Data( object ):
     <class 'galaxy.datatypes.metadata.MetadataParameter'>
 
     """
+    #: dictionary of metadata fields for this datatype::
+    metadata_spec = None
+
     __metaclass__ = DataMeta
     # Add metadata elements
     MetadataElement( name="dbkey", desc="Database/Build", default="?", param=metadata.DBKeyParameter, multiple=False, no_value="?" )
@@ -849,4 +852,3 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
         except UnicodeDecodeError:
             text = "binary/unknown file"
     return text
-

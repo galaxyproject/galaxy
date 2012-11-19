@@ -225,4 +225,3 @@ class Velvet( Html ):
 if __name__ == '__main__':
     import doctest, sys
     doctest.testmod(sys.modules[__name__])
-
