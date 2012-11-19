@@ -5,9 +5,10 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import pkg_resources, os, errno, codecs, operator, socket, pexpect, logging, time
-pkg_resources.require( "simplejson" )
-import simplejson
+import pkg_resources
+pkg_resources.require("simplejson")
+pkg_resources.require("pexpect")
+import simplejson, os, errno, codecs, operator, socket, pexpect, logging, time
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.expression import func
 import galaxy.datatypes
