@@ -1,10 +1,10 @@
-<tool id="hgv_master2pgSnp" name="Convert CG MasterVar" version="1.0.0">
-  <description>file to pgSnp format</description>
+<tool id="master2pgSnp" name="MasterVar to pgSnp" hidden="false">
+  <description>Convert from MasterVar to pgSnp format</description>
   <command interpreter="perl">
     master2pg.pl $indel $input1 > $out_file1
   </command>
   <inputs>
-    <param format="tab" name="input1" type="data" label="Complete Genomics MasterVar file" />
+    <param format="tab" name="input1" type="data" label="Complete Genomics MasterVar dataset" />
     <param name="indel" type="select" label="Convert indels">
       <option value="" selected="true">no</option>
       <option value="indel">yes</option>
@@ -22,11 +22,26 @@
   </tests>
 
   <help>
+**Dataset formats**
+
+The input dataset is in the MasterVar_ format provided by the Complete Genomics 
+analysis process (Galaxy considers this to be tabular_, but it must have the 
+columns specified for MasterVar).
+The output dataset is in pgSnp_ format.  (`Dataset missing?`_)
+
+.. _Dataset missing?: ./static/formatHelp.html
+.. _pgSnp: ./static/formatHelp.html#pgSnp
+.. _MasterVar: ./static/formatHelp.html#mastervar
+.. _tabular: ./static/formatHelp.html#tab
+
+-----
+
 **What it does**
 
-This converts from a Complete Genomics MasterVar file to a pgSnp format file 
-which can be viewed in browsers or used with other human variation and bed 
-operations tools.
+This converts a Complete Genomics MasterVar file to pgSnp format, 
+so it can be viewed in browsers or used with the phenotype association and 
+interval operations tools.
+Positions homozygous for the reference are skipped.
 
 -----
 

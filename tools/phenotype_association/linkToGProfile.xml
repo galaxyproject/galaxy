@@ -68,7 +68,10 @@ corrections are applied to extract only statistically important
 results.
 
 The g:GOSt form is pre-filled with gene, protein, or microarray probe
-IDs from the selected column of a tabular Galaxy dataset.  To follow
+IDs from the selected column of a tabular Galaxy dataset.  Or you
+can chose to use the genomic coordinates (must be lastest build used by
+Ensembl).  The coordinates don't have to be genes they can be for
+SNPs, and g:GOst will map to the gene ID.  To follow
 the created link, click on the eye icon when the Galaxy tool has
 finished running.  Once at the g:Profiler site, scroll down to see
 the g:GOSt results.  You can also adjust the options in the g:GOSt
