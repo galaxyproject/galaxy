@@ -412,14 +412,14 @@ function TwoVarScatterplot( config ){
         }
 
         // titles
-        newDatapoints.attr( 'title', function( d, i ){
-            return (( ids )?( ids[ i ] + ': ' ):( '' )) + newXCol[ i ] + ', ' + newYCol[ i ];
-        });
+        //newDatapoints.attr( 'title', function( d, i ){
+        //    return (( ids )?( ids[ i ] + ': ' ):( '' )) + newXCol[ i ] + ', ' + newYCol[ i ];
+        //});
         
         // events
         newDatapoints
             //TODO: remove magic numbers
-            .on( 'mouseover', function(){
+            .on( 'mouseover', function( d, i ){
                 var datapoint = d3.select( this );
                 datapoint
                     .style( 'fill', 'red' )
@@ -438,12 +438,24 @@ function TwoVarScatterplot( config ){
                     .attr( 'x1', datapoint.attr( 'cx' ) ).attr( 'y1', datapoint.attr( 'cy' ) )
                     .attr( 'x2', datapoint.attr( 'cx' ) ).attr( 'y2', plot.config.height )
                     .classed( 'hoverline', true );
+
+                //var datapointWindowPos = $( this ).position();
+                var datapointWindowPos = $( this ).offset();
+                window.dot = this;
+                console.debug( 'datapointWindowPos:', datapointWindowPos );
+                console.debug( 'datapoint r:', datapoint.attr( 'r' ) );
+                //this.popup = make_abs_box( datapointWindowPos.top, datapointWindowPos.left + datapoint.attr( 'r' ),
+                this.popup = make_abs_box( datapointWindowPos.top, datapointWindowPos.left,
+                                           newXCol[ i ], newYCol[ i ], ( ids )?( ids[ i ] ):( undefined ) );
+                $( 'body' ).append( this.popup );
             })
             .on( 'mouseout', function(){
                 d3.select( this )
                     .style( 'fill', 'black' )
                     .style( 'fill-opacity', 0.2 );
-                    
+                if( this.popup ){
+                    this.popup.remove();
+                }
                 d3.selectAll( '.hoverline' ).remove();
             });
         
@@ -499,7 +511,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     loadingIndicatorImage : 'loading_large_white_bg.gif',
     
     initialize : function( attributes ){
-        if( this.logger ){ window.form = this; }
+        console.debug( this + '.initialize, attributes:', attributes );
         
         this.dataset = null;
         this.chartConfig = null;
@@ -517,7 +529,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     },
 
     initializeFromAttributes : function( attributes ){
-        // ensure certain vars we need are passed in attributes
+        // required settings: ensure certain vars we need are passed in attributes
         if( !attributes || !attributes.dataset ){
             throw( "ScatterplotView requires a dataset" );
         } else {
@@ -586,9 +598,9 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
                 loadingIndicatorImagePath : galaxy_paths.get( 'image_path' ) + '/' + this.loadingIndicatorImage
             };
         
+        //TODO: isNumericColumn
         // gather column indeces (from metadata_column_types) and names (from metadata_columnnames)
         _.each( this.dataset.metadata_column_types, function( type, index ){
-            //TODO: using 0-based indeces
             // label with the name if available (fall back on 'column <index>')
             var name = 'column ' + ( index + 1 );
             if( view.dataset.metadata_column_names ){
@@ -597,23 +609,46 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
             
             // filter numeric columns to their own list
             if( type === 'int' || type === 'float' ){
-                formData.numericColumns.push({ index: index, name: name });
+                formData.numericColumns.push({ index: ( index + 1 ), name: name });
             }
-            formData.allColumns.push({ index: index, name: name });
+            formData.allColumns.push({ index: ( index + 1 ), name: name });
         });
-        
         //TODO: other vals: max_vals, start_val, pagination (plot-settings)
         
         // render template and set up panels, store refs
         this.$el.append( ScatterplotControlForm.templates.form( formData ) );
+
         this.$dataSettingsPanel  = this.$el.find( '.tab-pane#data-settings' );
         this.$chartSettingsPanel = this._render_chartSettings();
         this.$statsPanel         = this.$el.find( '.tab-pane#chart-stats' );
-        
+
+        // preset to column selectors if they were passed in the config
+        this.$dataSettingsPanel.find( '#X-select' ).val( this.chartConfig.xColumn );
+        this.$dataSettingsPanel.find( '#Y-select' ).val( this.chartConfig.yColumn );
+        if( this.chartConfig.idColumn !== undefined ){
+            this.$dataSettingsPanel.find( '#include-id-checkbox' )
+                .attr( 'checked', true ).trigger( 'change' );
+            this.$dataSettingsPanel.find( '#ID-select' ).val( this.chartConfig.idColumn );
+        }
+
         //this.$el.find( 'ul.nav' ).find( 'a[href="#chart-settings"]' ).tab( 'show' );
+
+        //TODO:?? add autoRender=1 to query maybe?
+        if( this.chartConfig.xColumn && this.chartConfig.yColumn ){
+            this.renderPlot();
+        }
         return this;
     },
-
+    
+    //TODO: seems like a function of dataset or metadata
+    isColumnNumeric : function( index ){
+        if( ( index >= 0 ) && ( index < this.dataset.metadata_column_types.length ) ){
+            var columnType = this.dataset.metadata_column_types[ index ];
+            return ( columnType === 'int' || columnType === 'float' );
+        }
+        return false;
+    },
+    
     _render_chartSettings : function(){
         // chart settings panel
         var chartControl = this,
@@ -658,7 +693,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     
     // ------------------------------------------------------------------------- EVENTS
     events : {
-        'click #include-id-checkbox'            : 'toggleThirdColumnSelector',
+        'change #include-id-checkbox'            : 'toggleThirdColumnSelector',
         'click #data-settings #render-button'   : 'renderPlot',
         'click #chart-settings #render-button'  : 'changeChartSettings'
     },
@@ -948,7 +983,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     },
 
     toString : function(){
-        return 'ScatterplotControlForm(' + this.dataset.id + ')';
+        return 'ScatterplotControlForm(' + (( this.dataset )?( this.dataset.id ):( '' )) + ')';
     }
 });
 

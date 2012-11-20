@@ -193,6 +193,15 @@ svg .glyph {
     fill-opacity: 0.2;
 }
     
+/* -------------------------------------------- info box */
+.zero-dimensions {
+    width: 0;
+    height: 0;
+    border-top: 8px solid transparent;
+    border-bottom: 8px solid transparent;
+    border-right: 8px solid grey;
+}
+
 </style>
     
 </%def>
@@ -207,20 +216,87 @@ require.config({ baseUrl : "${h.url_for( '/static/scripts' )}", });
 require([ "viz/scatterplot" ], function( scatterplot ){
     
     var hda             = ${h.to_json_string( hda )},
-        historyID       = '${historyID}';
-        
-    settingsForm = new scatterplot.ScatterplotControlForm({
-        dataset    : hda,
-        el         : $( '#chart-settings-form' ),
-        apiDatasetsURL : "${h.url_for( controller='/api/datasets' )}",
-
-        chartConfig : {
+        historyID       = '${historyID}',
+        querySettings   = ${h.to_json_string( kwargs )},
+        chartConfig     = _.extend( querySettings, {
             containerSelector : '#chart-holder',
-            marginTop : 20,
-        }
+            //TODO: move to ScatterplotControlForm.initialize
+            marginTop   : ( querySettings.marginTop > 20 )?( querySettings.marginTop ):( 20 ),
+
+            xColumn     : querySettings.xColumn,
+            yColumn     : querySettings.yColumn,
+            idColumn    : querySettings.idColumn
+        });
+    console.debug( querySettings );
+
+    var settingsForm = new scatterplot.ScatterplotControlForm({
+        dataset         : hda,
+        apiDatasetsURL  : "${h.url_for( controller='/api/datasets' )}",
+        el              : $( '#chart-settings-form' ),
+        chartConfig     : chartConfig
     }).render();
 
 });
+
+
+function make_abs_box( top, left, x, y, id ){
+    console.debug( top, left, x, y, id );
+    var ARROW_SIZE = 8,
+        ARROW_COLOR = 'grey',
+        DIST_TO_POINT = 4,
+        halfArrowSize = ARROW_SIZE / 2;
+
+    var boxContainer = $( '<div />' )
+        .attr( 'id', 'abs-box-container' )
+        // top left arrow
+        .css({
+            'position'  : 'absolute',
+            'top'       : top - halfArrowSize,
+            'left'      : left + ARROW_SIZE + DIST_TO_POINT,
+            'background-color': 'transparent',
+        });
+    window.boxContainer = boxContainer;
+
+    var arrowLeft = $( '<div />' )
+        .attr( 'id', 'abs-box-arrow' )
+        .addClass( 'zero-dimensions' )
+        .css({
+            'border-top'    : ARROW_SIZE + 'px solid transparent',
+            'border-bottom' : ARROW_SIZE + 'px solid transparent',
+            'border-right'  : ARROW_SIZE + 'px solid ' + ARROW_COLOR,
+        });
+    boxContainer.append( arrowLeft );
+    window.arrow = arrowLeft;
+
+    console.debug( 'arrow height:', arrowLeft.height() );
+    var boxInfo = $( '<div />' )
+        .attr( 'id', 'abs-box' )
+        .css({
+            'position'  : 'relative',
+            //TODO: 4 here is the border-radius
+            'top'       : -( 2 * ARROW_SIZE + 6 ),
+            'left'      : ARROW_SIZE,
+            'border'    : '2px solid grey',
+            'border-radius' : '4px',
+            'padding'   : '4px',
+            'background-color': 'white',
+            'box-shadow'    : '4px 4px 4px black'
+        });
+
+    // remove
+    if( id ){
+        $( '<div />' ).addClass( 'abs-box-id' ).css( 'font-weight', 'bold' ).text( id ).appendTo( boxInfo );
+    }
+    $( '<div />' ).addClass( 'abs-box-x' ).text( x ).appendTo( boxInfo );
+    $( '<div />' ).addClass( 'abs-box-y' ).text( y ).appendTo( boxInfo );
+    boxContainer.append( boxInfo );
+    boxContainer.append( '<div style="clear:both"></div>' );
+    window.boxInfo = boxContainer;
+
+    //console.debug( boxContainer );
+    return boxContainer;
+}
+
 
 </script>
 </%def>

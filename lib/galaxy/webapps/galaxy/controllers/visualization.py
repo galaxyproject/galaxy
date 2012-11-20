@@ -786,6 +786,9 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
     @web.expose    
     def scatterplot( self, trans, dataset_id, **kwargs ):
+        """
+        Returns a page that controls and renders a scatteplot graph.
+        """
         # Get HDA.
         hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         hda_dict = hda.get_api_value()
@@ -793,6 +796,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         if( hda_dict[ 'metadata_column_names' ] == None
         and hasattr( hda.datatype, 'column_names' ) ):
             hda_dict[ 'metadata_column_names' ] = hda.datatype.column_names
+
         history_id = trans.security.encode_id( hda.history.id )
         
         #TODO: add column data
@@ -845,4 +849,3 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                     name = fields[4]
                 rows.append( [location, name] )
         return { 'data': rows }
-    
