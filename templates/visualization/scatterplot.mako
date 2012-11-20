@@ -227,7 +227,7 @@ require([ "viz/scatterplot" ], function( scatterplot ){
             yColumn     : querySettings.yColumn,
             idColumn    : querySettings.idColumn
         });
-    console.debug( querySettings );
+    //console.debug( querySettings );
 
     var settingsForm = new scatterplot.ScatterplotControlForm({
         dataset         : hda,

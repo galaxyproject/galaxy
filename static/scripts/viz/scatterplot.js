@@ -412,9 +412,9 @@ function TwoVarScatterplot( config ){
         }
 
         // titles
-        //newDatapoints.attr( 'title', function( d, i ){
-        //    return (( ids )?( ids[ i ] + ': ' ):( '' )) + newXCol[ i ] + ', ' + newYCol[ i ];
-        //});
+        newDatapoints.attr( 'title', function( d, i ){
+            return (( ids )?( ids[ i ] + ': ' ):( '' )) + newXCol[ i ] + ', ' + newYCol[ i ];
+        });
         
         // events
         newDatapoints
@@ -440,23 +440,21 @@ function TwoVarScatterplot( config ){
                     .classed( 'hoverline', true );
 
                 //var datapointWindowPos = $( this ).position();
-                var datapointWindowPos = $( this ).offset();
-                window.dot = this;
-                console.debug( 'datapointWindowPos:', datapointWindowPos );
-                console.debug( 'datapoint r:', datapoint.attr( 'r' ) );
-                //this.popup = make_abs_box( datapointWindowPos.top, datapointWindowPos.left + datapoint.attr( 'r' ),
-                this.popup = make_abs_box( datapointWindowPos.top, datapointWindowPos.left,
-                                           newXCol[ i ], newYCol[ i ], ( ids )?( ids[ i ] ):( undefined ) );
-                $( 'body' ).append( this.popup );
+                //var datapointWindowPos = $( this ).offset();
+                //window.dot = this;
+                ////this.popup = make_abs_box( datapointWindowPos.top, datapointWindowPos.left + datapoint.attr( 'r' ),
+                //this.popup = make_abs_box( datapointWindowPos.top, datapointWindowPos.left,
+                //                           newXCol[ i ], newYCol[ i ], ( ids )?( ids[ i ] ):( undefined ) );
+                //$( 'body' ).append( this.popup );
             })
             .on( 'mouseout', function(){
                 d3.select( this )
                     .style( 'fill', 'black' )
                     .style( 'fill-opacity', 0.2 );
-                if( this.popup ){
-                    this.popup.remove();
-                }
                 d3.selectAll( '.hoverline' ).remove();
+                //if( this.popup ){
+                //    this.popup.remove();
+                //}
             });
         
         return newDatapoints;
@@ -511,7 +509,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     loadingIndicatorImage : 'loading_large_white_bg.gif',
     
     initialize : function( attributes ){
-        console.debug( this + '.initialize, attributes:', attributes );
+        this.log( this + '.initialize, attributes:', attributes );
         
         this.dataset = null;
         this.chartConfig = null;
