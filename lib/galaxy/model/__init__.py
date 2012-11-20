@@ -9,8 +9,6 @@ import pkg_resources
 pkg_resources.require("simplejson")
 pkg_resources.require("pexpect")
 import simplejson, os, errno, codecs, operator, socket, pexpect, logging, time
-from sqlalchemy.orm import object_session
-from sqlalchemy.sql.expression import func
 import galaxy.datatypes
 import galaxy.datatypes.registry
 from galaxy.datatypes.metadata import MetadataCollection
@@ -21,6 +19,8 @@ from galaxy.util.hash_util import new_secure_hash
 from galaxy.web.form_builder import (AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField,
                                     WorkflowField, WorkflowMappingField, HistoryField)
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
+from sqlalchemy.orm import object_session
+from sqlalchemy.sql.expression import func
 
 log = logging.getLogger( __name__ )
 
