@@ -939,7 +939,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         var selections = {};
         this.$dataSettingsPanel.find( 'div.column-select select' ).each( function(){
             var $this   = $( this ),
-                val     = $this.val();
+                val     = parseInt( $this.val(), 10 ) - 1;
             selections[ $this.attr( 'name' ) ] = {
                 colIndex : val,
                 colName  : $this.children( '[value="' + val + '"]' ).text()
