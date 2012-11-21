@@ -284,6 +284,28 @@ def concat_messages( msg1, msg2 ):
     else:
         message = ''
     return message
+def copy_disk_sample_files_to_dir( trans, repo_files_dir, dest_path ):
+    sample_files = []
+    for root, dirs, files in os.walk( repo_files_dir ):
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name.endswith( '.sample' ):
+                    relative_path = os.path.join( root, name )
+                    copy_sample_file( trans.app, relative_path, dest_path=dest_path )
+                    sample_files.append( name )
+    return sample_files
+def copy_file_from_manifest( repo, ctx, filename, dir ):
+    """Copy the latest version of the file named filename from the repository manifest to the directory to which dir refers."""
+    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
+        changeset_ctx = repo.changectx( changeset )
+        fctx = get_file_context_from_ctx( changeset_ctx, filename )
+        if fctx and fctx not in [ 'DELETED' ]:
+            file_path = os.path.join( dir, filename )
+            fh = open( file_path, 'wb' )
+            fh.write( fctx.data() )
+            fh.close()
+            return file_path
+    return None
 def copy_sample_file( app, filename, dest_path=None ):
     """Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path is ~/tool-data."""
     if dest_path is None:
@@ -603,10 +625,12 @@ def generate_repository_dependency_metadata( repository_dependencies_config, met
         is_valid = False
     if is_valid:
         for repository_elem in root.findall( 'repository' ):
-            repository_dependencies_tups.append( ( repository_elem.attrib[ 'toolshed' ],
-                                                   repository_elem.attrib[ 'name' ],
-                                                   repository_elem.attrib[ 'owner'],
-                                                   repository_elem.attrib[ 'changeset_revision' ] ) )
+            repository_dependencies_tup = ( repository_elem.attrib[ 'toolshed' ],
+                                            repository_elem.attrib[ 'name' ],
+                                            repository_elem.attrib[ 'owner'],
+                                            repository_elem.attrib[ 'changeset_revision' ] )
+            if repository_dependencies_tup not in repository_dependencies_tups:
+                repository_dependencies_tups.append( repository_dependencies_tup )
         if repository_dependencies_tups:
             metadata_dict[ 'repository_dependencies' ] = repository_dependencies_tups
     return metadata_dict
@@ -723,6 +747,17 @@ def get_configured_ui():
     # quiet = True
     _ui.setconfig( 'ui', 'quiet', True )
     return _ui
+def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
+    """Get the ctx file path for the latest revision of filename from the repository manifest up to the value of changeset_revision."""
+    stripped_filename = strip_path( filename )
+    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+        manifest_changeset_revision = str( repo.changectx( changeset ) )
+        manifest_ctx = repo.changectx( changeset )
+        for ctx_file in manifest_ctx.files():
+            ctx_file_name = strip_path( ctx_file )
+            if ctx_file_name == stripped_filename:
+                return manifest_ctx, ctx_file
+    return None, None
 def get_file_context_from_ctx( ctx, filename ):
     # We have to be careful in determining if we found the correct file because multiple files with the same name may be in different directories
     # within ctx if the files were moved within the change set.  For example, in the following ctx.files() list, the former may have been moved to
@@ -743,6 +778,77 @@ def get_file_context_from_ctx( ctx, filename ):
     if deleted:
         return 'DELETED'
     return None
+def get_list_of_copied_sample_files( repo, ctx, dir ):
+    """
+    Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
+    each discovered file to dir and return the list of filenames.  If a .sample file was added in a changeset and then deleted in a later
+    changeset, it will be returned in the deleted_sample_files list.  The caller will set the value of app.config.tool_data_path to dir in
+    order to load the tools and generate metadata for them.
+    """
+    deleted_sample_files = []
+    sample_files = []
+    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
+        changeset_ctx = repo.changectx( changeset )
+        for ctx_file in changeset_ctx.files():
+            ctx_file_name = strip_path( ctx_file )
+            # If we decide in the future that files deleted later in the changelog should not be used, we can use the following if statement.
+            # if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
+            if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files:
+                fctx = get_file_context_from_ctx( changeset_ctx, ctx_file )
+                if fctx in [ 'DELETED' ]:
+                    # Since the possibly future used if statement above is commented out, the same file that was initially added will be
+                    # discovered in an earlier changeset in the change log and fall through to the else block below.  In other words, if
+                    # a file named blast2go.loc.sample was added in change set 0 and then deleted in changeset 3, the deleted file in changeset
+                    # 3 will be handled here, but the later discovered file in changeset 0 will be handled in the else block below.  In this
+                    # way, the file contents will always be found for future tools even though the file was deleted.
+                    if ctx_file_name not in deleted_sample_files:
+                        deleted_sample_files.append( ctx_file_name )
+                else:
+                    sample_files.append( ctx_file_name )
+                    tmp_ctx_file_name = os.path.join( dir, ctx_file_name.replace( '.sample', '' ) )
+                    fh = open( tmp_ctx_file_name, 'wb' )
+                    fh.write( fctx.data() )
+                    fh.close()
+    return sample_files, deleted_sample_files
+def get_named_tmpfile_from_ctx( ctx, filename, dir ):
+    filename = strip_path( filename )
+    for ctx_file in ctx.files():
+        ctx_file_name = strip_path( ctx_file )
+        if filename == ctx_file_name:
+            try:
+                # If the file was moved, its destination file contents will be returned here.
+                fctx = ctx[ ctx_file ]
+            except LookupError, e:
+                # Continue looking in case the file was moved.
+                fctx = None
+                continue
+            if fctx:
+                fh = tempfile.NamedTemporaryFile( 'wb', dir=dir )
+                tmp_filename = fh.name
+                fh.close()
+                fh = open( tmp_filename, 'wb' )
+                fh.write( fctx.data() )
+                fh.close()
+                return tmp_filename
+    return None
+def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
+    parent_id = None
+    # Compare from most recent to oldest.
+    changeset_revisions.reverse()
+    for changeset_revision in changeset_revisions:
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+        metadata = repository_metadata.metadata
+        tools_dicts = metadata.get( 'tools', [] )
+        for tool_dict in tools_dicts:
+            if tool_dict[ 'guid' ] == guid:
+                # The tool has not changed between the compared changeset revisions.
+                continue
+            if tool_dict[ 'id' ] == old_id and tool_dict[ 'version' ] != version:
+                # The tool version is different, so we've found the parent.
+                return tool_dict[ 'guid' ]
+    if parent_id is None:
+        # The tool did not change through all of the changeset revisions.
+        return old_id
 def get_readme_file_names( repository_name ):
     readme_files = [ 'readme', 'read_me', 'install' ]
     valid_filenames = [ r for r in readme_files ]
@@ -803,27 +909,20 @@ def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision
     elif all_metadata_records:
         return all_metadata_records[ 0 ]
     return None
-def get_named_tmpfile_from_ctx( ctx, filename, dir ):
-    filename = strip_path( filename )
-    for ctx_file in ctx.files():
-        ctx_file_name = strip_path( ctx_file )
-        if filename == ctx_file_name:
-            try:
-                # If the file was moved, its destination file contents will be returned here.
-                fctx = ctx[ ctx_file ]
-            except LookupError, e:
-                # Continue looking in case the file was moved.
-                fctx = None
-                continue
-            if fctx:
-                fh = tempfile.NamedTemporaryFile( 'wb', dir=dir )
-                tmp_filename = fh.name
-                fh.close()
-                fh = open( tmp_filename, 'wb' )
-                fh.write( fctx.data() )
-                fh.close()
-                return tmp_filename
-    return None
+def get_relative_path_to_repository_file( root, name, relative_install_dir, work_dir, shed_config_dict, resetting_all_metadata_on_repository ):
+    if resetting_all_metadata_on_repository:
+        full_path_to_file = os.path.join( root, name )
+        stripped_path_to_file = full_path_to_file.replace( work_dir, '' )
+        if stripped_path_to_file.startswith( '/' ):
+            stripped_path_to_file = stripped_path_to_file[ 1: ]
+        relative_path_to_file = os.path.join( relative_install_dir, stripped_path_to_file )
+    else:
+        relative_path_to_file = os.path.join( root, name )
+        if relative_install_dir and \
+            shed_config_dict.get( 'tool_path' ) and \
+            relative_path_to_file.startswith( os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir ) ):
+            relative_path_to_file = relative_path_to_file[ len( shed_config_dict.get( 'tool_path' ) ) + 1: ]
+    return relative_path_to_file
 def get_sample_files_from_disk( repository_files_dir, tool_path = None, relative_install_dir=None, resetting_all_metadata_on_repository=False ):
     if resetting_all_metadata_on_repository:
         # Keep track of the location where the repository is temporarily cloned so that we can strip it when setting metadata.
@@ -852,38 +951,6 @@ def get_sample_files_from_disk( repository_files_dir, tool_path = None, relative
                                     relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
     return sample_file_metadata_paths, sample_file_copy_paths
-def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
-    parent_id = None
-    # Compare from most recent to oldest.
-    changeset_revisions.reverse()
-    for changeset_revision in changeset_revisions:
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
-        metadata = repository_metadata.metadata
-        tools_dicts = metadata.get( 'tools', [] )
-        for tool_dict in tools_dicts:
-            if tool_dict[ 'guid' ] == guid:
-                # The tool has not changed between the compared changeset revisions.
-                continue
-            if tool_dict[ 'id' ] == old_id and tool_dict[ 'version' ] != version:
-                # The tool version is different, so we've found the parent.
-                return tool_dict[ 'guid' ]
-    if parent_id is None:
-        # The tool did not change through all of the changeset revisions.
-        return old_id
-def get_relative_path_to_repository_file( root, name, relative_install_dir, work_dir, shed_config_dict, resetting_all_metadata_on_repository ):
-    if resetting_all_metadata_on_repository:
-        full_path_to_file = os.path.join( root, name )
-        stripped_path_to_file = full_path_to_file.replace( work_dir, '' )
-        if stripped_path_to_file.startswith( '/' ):
-            stripped_path_to_file = stripped_path_to_file[ 1: ]
-        relative_path_to_file = os.path.join( relative_install_dir, stripped_path_to_file )
-    else:
-        relative_path_to_file = os.path.join( root, name )
-        if relative_install_dir and \
-            shed_config_dict.get( 'tool_path' ) and \
-            relative_path_to_file.startswith( os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir ) ):
-            relative_path_to_file = relative_path_to_file[ len( shed_config_dict.get( 'tool_path' ) ) + 1: ]
-    return relative_path_to_file
 def handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_dependency_dict, new_dependency_dict ):
     """
     This method is called when a Galaxy admin is getting updates for an installed tool shed repository in order to cover the case where an
@@ -969,6 +1036,31 @@ def load_tool_from_config( app, full_path ):
         valid = False
         error_message = str( e )
     return tool, valid, error_message
+def load_tool_from_tmp_config( trans, repo, ctx, ctx_file, work_dir ):
+    tool = None
+    message = ''
+    tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
+    if tmp_tool_config:
+        element_tree = util.parse_xml( tmp_tool_config )
+        element_tree_root = element_tree.getroot()
+        # Look for code files required by the tool config.
+        tmp_code_files = []
+        for code_elem in element_tree_root.findall( 'code' ):
+            code_file_name = code_elem.get( 'file' )
+            tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
+            if tmp_code_file_name:
+                tmp_code_files.append( tmp_code_file_name )
+        tool, valid, message = load_tool_from_config( trans.app, tmp_tool_config )
+        for tmp_code_file in tmp_code_files:
+            try:
+                os.unlink( tmp_code_file )
+            except:
+                pass
+        try:
+            os.unlink( tmp_tool_config )
+        except:
+            pass
+    return tool, message
 def open_repository_files_folder( trans, folder_path ):
     try:
         files_list = get_repository_files( trans, folder_path )

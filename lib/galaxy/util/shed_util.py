@@ -168,16 +168,6 @@ def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     os.close( fd )
     shutil.move( filename, os.path.abspath( config_filename ) )
     os.chmod( config_filename, 0644 )
-def copy_disk_sample_files_to_dir( trans, repo_files_dir, dest_path ):
-    sample_files = []
-    for root, dirs, files in os.walk( repo_files_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name.endswith( '.sample' ):
-                    relative_path = os.path.join( root, name )
-                    copy_sample_file( trans.app, relative_path, dest_path=dest_path )
-                    sample_files.append( name )
-    return sample_files
 def clean_tool_shed_url( tool_shed_url ):
     if tool_shed_url.find( ':' ) > 0:
         # Eliminate the port, if any, since it will result in an invalid directory name.
@@ -544,17 +534,6 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
         if converter_path and display_path:
             break
     return converter_path, display_path
-def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
-    """Get the ctx file path for the latest revision of filename from the repository manifest up to the value of changeset_revision."""
-    stripped_filename = strip_path( filename )
-    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
-        manifest_changeset_revision = str( repo.changectx( changeset ) )
-        manifest_ctx = repo.changectx( changeset )
-        for ctx_file in manifest_ctx.files():
-            ctx_file_name = strip_path( ctx_file )
-            if ctx_file_name == stripped_filename:
-                return manifest_ctx, ctx_file
-    return None, None
 def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
     url = url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
     response = urllib2.urlopen( url )
@@ -564,38 +543,6 @@ def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
 def get_installed_tool_shed_repository( trans, id ):
     """Get a repository on the Galaxy side from the database via id"""
     return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
-def get_list_of_copied_sample_files( repo, ctx, dir ):
-    """
-    Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
-    each discovered file to dir and return the list of filenames.  If a .sample file was added in a changeset and then deleted in a later
-    changeset, it will be returned in the deleted_sample_files list.  The caller will set the value of app.config.tool_data_path to dir in
-    order to load the tools and generate metadata for them.
-    """
-    deleted_sample_files = []
-    sample_files = []
-    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
-        changeset_ctx = repo.changectx( changeset )
-        for ctx_file in changeset_ctx.files():
-            ctx_file_name = strip_path( ctx_file )
-            # If we decide in the future that files deleted later in the changelog should not be used, we can use the following if statement.
-            # if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
-            if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files:
-                fctx = get_file_context_from_ctx( changeset_ctx, ctx_file )
-                if fctx in [ 'DELETED' ]:
-                    # Since the possibly future used if statement above is commented out, the same file that was initially added will be
-                    # discovered in an earlier changeset in the change log and fall through to the else block below.  In other words, if
-                    # a file named blast2go.loc.sample was added in change set 0 and then deleted in changeset 3, the deleted file in changeset
-                    # 3 will be handled here, but the later discovered file in changeset 0 will be handled in the else block below.  In this
-                    # way, the file contents will always be found for future tools even though the file was deleted.
-                    if ctx_file_name not in deleted_sample_files:
-                        deleted_sample_files.append( ctx_file_name )
-                else:
-                    sample_files.append( ctx_file_name )
-                    tmp_ctx_file_name = os.path.join( dir, ctx_file_name.replace( '.sample', '' ) )
-                    fh = open( tmp_ctx_file_name, 'wb' )
-                    fh.write( fctx.data() )
-                    fh.close()
-    return sample_files, deleted_sample_files
 def get_repository_owner( cleaned_repository_url ):
     items = cleaned_repository_url.split( 'repos' )
     repo_path = items[ 1 ]
@@ -916,31 +863,6 @@ def load_installed_datatypes( app, repository, relative_install_dir, deactivate=
 def load_installed_display_applications( app, installed_repository_dict, deactivate=False ):
     # Load or deactivate proprietary datatype display applications
     app.datatypes_registry.load_display_applications( installed_repository_dict=installed_repository_dict, deactivate=deactivate )
-def load_tool_from_tmp_config( trans, repo, ctx, ctx_file, work_dir ):
-    tool = None
-    message = ''
-    tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
-    if tmp_tool_config:
-        element_tree = util.parse_xml( tmp_tool_config )
-        element_tree_root = element_tree.getroot()
-        # Look for code files required by the tool config.
-        tmp_code_files = []
-        for code_elem in element_tree_root.findall( 'code' ):
-            code_file_name = code_elem.get( 'file' )
-            tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
-            if tmp_code_file_name:
-                tmp_code_files.append( tmp_code_file_name )
-        tool, valid, message = load_tool_from_config( trans.app, tmp_tool_config )
-        for tmp_code_file in tmp_code_files:
-            try:
-                os.unlink( tmp_code_file )
-            except:
-                pass
-        try:
-            os.unlink( tmp_tool_config )
-        except:
-            pass
-    return tool, message
 def panel_entry_per_tool( tool_section_dict ):
     # Return True if tool_section_dict looks like this.
     # {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
