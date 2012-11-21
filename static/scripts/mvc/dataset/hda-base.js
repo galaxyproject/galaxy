@@ -181,7 +181,8 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_displayButton : function(){
-        // don't show display if not in ready state, error'd, or not accessible
+        // don't show display if not in ready state or not accessible
+        // DO show if in error (ala previous history panel)
         if( ( !this.model.inReadyState() )
         //||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
         ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )

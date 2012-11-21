@@ -64,8 +64,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_editButton : function(){
-        // don't show edit while uploading
-        //TODO??: error?
+        // don't show edit while uploading, in-accessible
+        // DO show if in error (ala previous history panel)
         //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
         if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD )
         //||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
