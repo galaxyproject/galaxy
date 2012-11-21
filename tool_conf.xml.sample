@@ -331,9 +331,9 @@
     <tool file="ngs_rna/tophat_color_wrapper.xml" />
     <tool file="ngs_rna/cufflinks_wrapper.xml" />
     <tool file="ngs_rna/cuffcompare_wrapper.xml" />
-    <tool file="ngs_rna/express_wrapper.xml" />
- 	  <tool file="ngs_rna/cuffmerge_wrapper.xml" />
+    <tool file="ngs_rna/cuffmerge_wrapper.xml" />
     <tool file="ngs_rna/cuffdiff_wrapper.xml" />
+    <tool file="ngs_rna/express_wrapper.xml" />
     <!-- Trinity is very memory-intensive and should only be enabled/run
     on instances with sufficient resources. 
     <label text="De novo Assembly" id="de_novo_assembly "/>
