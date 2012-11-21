@@ -73,82 +73,72 @@ function program10(depth0,data) {
 
 function program12(depth0,data) {
   
-  
-  return "Refresh this display";}
-
-function program14(depth0,data) {
-  
-  
-  return "Click to see more actions for this history";}
-
-function program16(depth0,data) {
-  
   var buffer = "", stack1, foundHelper;
   buffer += "\n    ";
   foundHelper = helpers.warningmessagesmall;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(17, program17, data)}); }
+  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(13, program13, data)}); }
   else { stack1 = depth0.warningmessagesmall; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  if (!helpers.warningmessagesmall) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(17, program17, data)}); }
+  if (!helpers.warningmessagesmall) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(13, program13, data)}); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n    ";
   return buffer;}
-function program17(depth0,data) {
+function program13(depth0,data) {
   
   var stack1, foundHelper;
   foundHelper = helpers.local;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(18, program18, data)}); }
+  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(14, program14, data)}); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(18, program18, data)}); }
+  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(14, program14, data)}); }
   if(stack1 || stack1 === 0) { return stack1; }
   else { return ''; }}
-function program18(depth0,data) {
+function program14(depth0,data) {
   
   
   return "You are currently viewing a deleted history!";}
 
-function program20(depth0,data) {
+function program16(depth0,data) {
   
   var buffer = "", stack1, foundHelper;
   buffer += "\n    <div id=\"history-tag-annotation\">\n\n        <div id=\"history-tag-area\" style=\"display: none\">\n            <strong>";
+  foundHelper = helpers.local;
+  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(17, program17, data)}); }
+  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
+  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(17, program17, data)}); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += ":</strong>\n            <div class=\"tag-elt\"></div>\n        </div>\n\n        <div id=\"history-annotation-area\" style=\"display: none\">\n            <strong>";
+  foundHelper = helpers.local;
+  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(19, program19, data)}); }
+  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
+  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(19, program19, data)}); }
+  if(stack1 || stack1 === 0) { buffer += stack1; }
+  buffer += ":</strong>\n            <div id=\"history-annotation-container\">\n            <div id=\"history-annotation\" class=\"tooltip editable-text\"\n                title=\"";
   foundHelper = helpers.local;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(21, program21, data)}); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
   if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(21, program21, data)}); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += ":</strong>\n            <div class=\"tag-elt\"></div>\n        </div>\n\n        <div id=\"history-annotation-area\" style=\"display: none\">\n            <strong>";
-  foundHelper = helpers.local;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(23, program23, data)}); }
-  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(23, program23, data)}); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += ":</strong>\n            <div id=\"history-annotation-container\">\n            <div id=\"history-annotation\" class=\"tooltip editable-text\"\n                title=\"";
-  foundHelper = helpers.local;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(25, program25, data)}); }
-  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(25, program25, data)}); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\">\n                ";
   stack1 = depth0.annotation;
-  stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.program(29, program29, data),fn:self.program(27, program27, data)});
+  stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.program(25, program25, data),fn:self.program(23, program23, data)});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n            </div>\n            </div>\n        </div>\n    </div>\n    ";
   return buffer;}
-function program21(depth0,data) {
+function program17(depth0,data) {
   
   
   return "Tags";}
 
-function program23(depth0,data) {
+function program19(depth0,data) {
   
   
   return "Annotation";}
 
-function program25(depth0,data) {
+function program21(depth0,data) {
   
   
   return "Click to edit annotation";}
 
-function program27(depth0,data) {
+function program23(depth0,data) {
   
   var buffer = "", stack1, foundHelper;
   buffer += "\n                    ";
@@ -158,23 +148,23 @@ function program27(depth0,data) {
   buffer += escapeExpression(stack1) + "\n                ";
   return buffer;}
 
-function program29(depth0,data) {
+function program25(depth0,data) {
   
   var buffer = "", stack1, foundHelper;
   buffer += "\n                    <em>";
   foundHelper = helpers.local;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(30, program30, data)}); }
+  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(26, program26, data)}); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(30, program30, data)}); }
+  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(26, program26, data)}); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "</em>\n                ";
   return buffer;}
-function program30(depth0,data) {
+function program26(depth0,data) {
   
   
   return "Describe or add notes to history";}
 
-function program32(depth0,data) {
+function program28(depth0,data) {
   
   var buffer = "", stack1, foundHelper;
   buffer += "\n    <div id=\"message-container\">\n        <div class=\"";
@@ -188,12 +178,12 @@ function program32(depth0,data) {
   buffer += escapeExpression(stack1) + "\n        </div><br />\n    </div>\n    ";
   return buffer;}
 
-function program34(depth0,data) {
+function program30(depth0,data) {
   
   
   return "You are over your disk quota.\n            Tool execution is on hold until your disk usage drops below your allocated quota.";}
 
-function program36(depth0,data) {
+function program32(depth0,data) {
   
   
   return "Your history is empty. Click 'Get Data' on the left pane to start";}
@@ -214,38 +204,26 @@ function program36(depth0,data) {
   stack1 = stack1 == null || stack1 === false ? stack1 : stack1.email;
   stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(7, program7, data)});
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\n            <a id=\"history-refresh\" class=\"tooltip\" title=\"";
-  foundHelper = helpers.local;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(12, program12, data)}); }
-  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(12, program12, data)}); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\"\n                href=\"javascript:void(0);\">\n                <span class=\"ficon refresh large\"></span>\n            </a>\n            <a id=\"history-action-popup\" class=\"tooltip\" title=\"";
-  foundHelper = helpers.local;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(14, program14, data)}); }
-  else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(14, program14, data)}); }
-  if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += "\"\n                href=\"javascript:void(0);\">\n                <span class=\"ficon cogs large\"></span>\n            </a>\n        </div>\n        <div style=\"clear: both;\"></div>\n    </div>\n\n    ";
+  buffer += "\n        </div>\n        <div style=\"clear: both;\"></div>\n    </div>\n\n    ";
   stack1 = depth0.deleted;
-  stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(16, program16, data)});
+  stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(12, program12, data)});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n\n    ";
   buffer += "\n    ";
   buffer += "\n    ";
   stack1 = depth0.user;
   stack1 = stack1 == null || stack1 === false ? stack1 : stack1.email;
-  stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(20, program20, data)});
+  stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(16, program16, data)});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n\n    ";
   stack1 = depth0.message;
-  stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(32, program32, data)});
+  stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(28, program28, data)});
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n\n    <div id=\"quota-message-container\" style=\"display: none\">\n        <div id=\"quota-message\" class=\"errormessage\">\n            ";
   foundHelper = helpers.local;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(34, program34, data)}); }
+  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(30, program30, data)}); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(34, program34, data)}); }
+  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(30, program30, data)}); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n        </div>\n    </div>\n</div>\n\n<div id=\"";
   foundHelper = helpers.id;
@@ -253,9 +231,9 @@ function program36(depth0,data) {
   else { stack1 = depth0.id; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
   buffer += escapeExpression(stack1) + "-datasets\" class=\"history-datasets-list\"></div>\n\n<div class=\"infomessagesmall\" id=\"emptyHistoryMessage\" style=\"display: none;\">\n    ";
   foundHelper = helpers.local;
-  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(36, program36, data)}); }
+  if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{},inverse:self.noop,fn:self.program(32, program32, data)}); }
   else { stack1 = depth0.local; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(36, program36, data)}); }
+  if (!helpers.local) { stack1 = blockHelperMissing.call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(32, program32, data)}); }
   if(stack1 || stack1 === 0) { buffer += stack1; }
   buffer += "\n</div>";
   return buffer;});

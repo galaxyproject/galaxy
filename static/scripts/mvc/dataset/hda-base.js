@@ -183,7 +183,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
     _render_displayButton : function(){
         // don't show display if not in ready state, error'd, or not accessible
         if( ( !this.model.inReadyState() )
-        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
+        //||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
         ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.displayButton = null;

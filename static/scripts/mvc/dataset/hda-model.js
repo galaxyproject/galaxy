@@ -125,6 +125,8 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
      */
     inReadyState : function(){
         var state = this.get( 'state' );
+        //TODO: to list inclusion test
+        //TODO: class level readyStates list
         return (
             ( state === HistoryDatasetAssociation.STATES.NEW )
         ||  ( state === HistoryDatasetAssociation.STATES.OK )

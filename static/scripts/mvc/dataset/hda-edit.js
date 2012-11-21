@@ -68,7 +68,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //TODO??: error?
         //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
         if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD )
-        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
+        //||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
         ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.editButton = null;

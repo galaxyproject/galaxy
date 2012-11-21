@@ -46,7 +46,7 @@ function program5(depth0,data) {
   buffer += escapeExpression(stack1) + "</option>\n        ";
   return buffer;}
 
-  buffer += "\n\n<ul class=\"nav nav-tabs\">\n    <li class=\"active\">\n        <a data-toggle=\"tab\" href=\"#data-settings\">Data Controls</a>\n    </li>\n    <li><a data-toggle=\"tab\" href=\"#chart-settings\">Plot Controls</a></li>\n    <li><a data-toggle=\"tab\" href=\"#chart-stats\">Statistics</a></li>\n</ul>\n\n";
+  buffer += "\n\n<ul class=\"nav nav-tabs\">\n    <li class=\"active\"><a data-toggle=\"tab\" href=\"#data-settings\">Data Controls</a></li>\n    <li><a data-toggle=\"tab\" href=\"#chart-settings\">Plot Controls</a></li>\n    <li><a data-toggle=\"tab\" href=\"#chart-stats\">Statistics</a></li>\n    <li><a data-toggle=\"tab\" href=\"#chart\">Chart</a></li>\n</ul>\n\n";
   buffer += "\n<div class=\"tab-content\">\n<div id=\"data-settings\" class=\"tab-pane active\">\n\n    <p class=\"help-text\">\n        Use the following controls to change the data used by the chart.\n        Use the 'Draw' button to render (or re-render) the chart with the current settings.\n    </p>\n        \n    ";
   buffer += "\n    <div class=\"column-select\">\n        <label for=\"X-select\">Data column for X: </label>\n        <select name=\"X\" id=\"X-select\">\n        ";
   stack1 = depth0.numericColumns;

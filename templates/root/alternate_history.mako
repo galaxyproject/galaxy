@@ -378,8 +378,9 @@ $(function(){
         quotaMeter.update()
     }, quotaMeter );
 
-
-    if( !Galaxy.currHistoryPanel ){ Galaxy.currHistoryPanel = historyPanel; }
+    // set it up to be accessible across iframes
+    //TODO:?? mem leak
+    top.Galaxy.currHistoryPanel = historyPanel;
 
     return;
 });
@@ -413,7 +414,7 @@ $(function(){
         #history-name {
             word-wrap: break-word;
             font-weight: bold;
-            color: black;
+            /*color: gray;*/
         }
         .editable-text {
             border: solid transparent 1px;
@@ -422,7 +423,7 @@ $(function(){
             width: 90%;
             margin: -2px 0px -3px -4px;
             font-weight: bold;
-            color: black;
+            /*color: gray;*/
         }
 
         #quota-message-container {

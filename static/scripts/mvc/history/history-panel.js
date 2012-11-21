@@ -127,7 +127,6 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     /** event map
      */
     events : {
-        'click #history-refresh'        : function(){ window.location.reload(); },
         'click #history-tag'            : 'loadAndDisplayTags'
     },
 
@@ -253,7 +252,6 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         //NOTE: this is done before the items, since item views should handle theirs themselves
         newRender.append( HistoryPanel.templates.historyPanel( modelJson ) );
         newRender.find( '.tooltip' ).tooltip({ placement: 'bottom' });
-        this._setUpActionButton( newRender.find( '#history-action-popup' ) );
 
         // render hda views (if any and any shown (show_deleted/hidden)
         //TODO: this seems too elaborate
@@ -303,22 +301,6 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             historyView.urls[ urlKey ] = _.template( urlTemplate, modelJson );
         });
         return historyView.urls;
-    },
-
-    /** Set up history actions popup menu
-     *  @param {jQuery} $button jQuery dom object to turn into the 'button' that activates the menu
-     *  @see make_popupmenu (galaxy-base.js)
-     */
-    _setUpActionButton : function( $button ){
-        var historyPanel = this,
-            show_deletedText = ( this.storage.get( 'show_deleted' ) )?( 'Hide deleted' ):( 'Show deleted' ),
-            show_hiddenText  = ( this.storage.get( 'show_hidden' )  )?( 'Hide hidden'  ):( 'Show hidden' ),
-            menuActions  = {};
-        //menuActions[ _l( 'refresh' ) ]          = function(){ window.location.reload(); };
-        menuActions[ _l( 'collapse all' ) ]     = function(){ historyPanel.hideAllHdaBodies(); };
-        menuActions[ _l( show_deletedText ) ]   = function(){ historyPanel.toggleShowDeleted(); };
-        menuActions[ _l( show_hiddenText  ) ]   = function(){ historyPanel.toggleShowHidden(); };
-        make_popupmenu( $button, menuActions );
     },
 
     /** Set up/render a view for each HDA to be shown, init with model and listeners.
@@ -441,7 +423,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
 
     /** Collapse all hda bodies and clear expandedHdas in the storage
      */
-    hideAllHdaBodies : function(){
+    collapseAllHdaBodies : function(){
         _.each( this.hdaViews, function( item ){
             item.toggleBodyVisibility( null, false );
         });
