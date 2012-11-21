@@ -30,6 +30,11 @@ class ShedTwillTestCase( TwillTestCase ):
         if strings_not_displayed:
             for string in strings_not_displayed:
                 self.check_string_not_in_page( string )
+    def check_for_tool_metadata(self, repository, changeset_revision, tool_id, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/view_tool_metadata?repository_id=%s&changeset_revision=%s&tool_id=%s' % \
+              ( self.security.encode_id( repository.id ), changeset_revision, tool_id )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def check_for_valid_tools( self, repository ):
         self.manage_repository( repository )
         self.check_page_for_string( '<b>Valid tools</b><i> - click the name to preview the tool' )
@@ -117,6 +122,14 @@ class ShedTwillTestCase( TwillTestCase ):
         for username in usernames:
             tc.fv( "3", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def load_display_tool_page( self, repository, tool_xml_filename, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
+        repository_id = self.security.encode_id( repository.id )
+        repo_subdirectory = '%03d' % int( repository.id / 1000 )
+        tool_xml_path = '%2f'.join( [ 'database', 'community_files', repo_subdirectory, 'repo_%d' % repository.id, tool_xml_filename ] )
+        url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
+              ( repository_id, tool_xml_path, changeset_revision )
+        self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def manage_repository( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )

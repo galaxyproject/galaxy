@@ -69,11 +69,18 @@ class TestCreateRepository( ShedTwillTestCase ):
                      strings_displayed=[ "The file '%s' has been successfully uploaded to the repository." % filter_filename ], \
                      commit_message="Uploaded filtering 1.1.0" )
         self.check_for_valid_tools( repository )
-        latest_changeset_revision = self.get_latest_repository_metadata_for_repository( repository )
+        latest_repository_metadata = self.get_latest_repository_metadata_for_repository( repository )
+        changeset_revision = latest_repository_metadata.changeset_revision
         self.check_repository_changelog( repository, strings_displayed=[ 'Repository metadata is associated with this change set.' ] )
         self.set_repository_malicious( repository, strings_displayed=[ 'The repository tip has been defined as malicious.' ] )
         self.unset_repository_malicious( repository, strings_displayed=[ 'The repository tip has been defined as <b>not</b> malicious.' ] )
-#        self.check_tool_metadata( repository, latest_changeset_revision, strings_displayed=[ 'Filter1' ] )
+        self.load_display_tool_page( repository, tool_xml_filename='filtering.xml', \
+                                     changeset_revision=changeset_revision, \
+                                     strings_displayed=[ 'Filter (version 1.1.0)', "c1=='chr1'" ], \
+                                     strings_not_displayed=[] )
+        tool = latest_repository_metadata.metadata[ 'tools' ][0]
+        metadata_strings_displayed = [ tool[ 'guid' ], tool[ 'version' ], tool[ 'id' ], tool[ 'name' ], tool[ 'description' ], changeset_revision ]
+        self.check_for_tool_metadata( repository, changeset_revision, 'Filter1', strings_displayed=metadata_strings_displayed )
     def test_0035_repository_browse_page( self ):
         '''Visit the repository browse page'''
         repository = get_repository_by_name( repository_name, admin_username )
