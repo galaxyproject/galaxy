@@ -2,6 +2,7 @@ import sys, os, ConfigParser
 import galaxy.config
 import galaxy.datatypes.registry
 from galaxy import tools
+from galaxy.tools.data import *
 import galaxy.model.mapping
 import galaxy.tools.search
 from galaxy.objectstore import build_object_store_from_config
@@ -42,8 +43,8 @@ class MigrateToolsApplication( object ):
         # Load the data types in the Galaxy distribution, which are defined in self.config.datatypes_config.
         self.datatypes_registry.load_datatypes( self.config.root, self.config.datatypes_config )
         # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        self.tool_data_tables = galaxy.tools.data.ToolDataTableManager( tool_data_path=self.config.tool_data_path,
-                                                                        config_filename=self.config.tool_data_table_config_path )
+        self.tool_data_tables = ToolDataTableManager( tool_data_path=self.config.tool_data_path,
+                                                      config_filename=self.config.tool_data_table_config_path )
         # Load additional entries defined by self.config.shed_tool_data_table_config into tool data tables.
         self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
                                                      tool_data_path=self.tool_data_tables.tool_data_path,

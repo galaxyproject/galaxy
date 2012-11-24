@@ -2,6 +2,7 @@ import os, shutil, tempfile, logging, string
 from galaxy import util
 from galaxy.tools import parameters
 from galaxy.util import inflector
+from galaxy.util.json import *
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.datatypes.checkers import *
@@ -723,6 +724,13 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
         metadata_dict[ 'tools' ].append( tool_dict )
     else:
         metadata_dict[ 'tools' ] = [ tool_dict ]
+    return metadata_dict
+def generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict ):
+    """Update the received metadata_dict with changes that have been applied to the received exported_workflow_dict."""
+    if 'workflows' in metadata_dict:
+        metadata_dict[ 'workflows' ].append( ( relative_path, exported_workflow_dict ) )
+    else:
+        metadata_dict[ 'workflows' ] = [ ( relative_path, exported_workflow_dict ) ]
     return metadata_dict
 def get_changectx_for_changeset( repo, changeset_revision, **kwd ):
     """Retrieve a specified changectx from a repository"""

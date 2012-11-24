@@ -1,7 +1,6 @@
 import os, tempfile, shutil, logging, urllib2
 from galaxy import util
 from galaxy.datatypes.checkers import *
-from galaxy.datatypes.sniff import is_column_based
 from galaxy.util.json import *
 from galaxy.util.shed_util_common import *
 from galaxy.tools.search import ToolBoxSearch
@@ -475,13 +474,6 @@ def generate_tool_section_element_from_dict( tool_section_dict ):
     else:
         tool_section = None
     return tool_section
-def generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict ):
-    """Update the received metadata_dict with changes that have been applied to the received exported_workflow_dict."""
-    if 'workflows' in metadata_dict:
-        metadata_dict[ 'workflows' ].append( ( relative_path, exported_workflow_dict ) )
-    else:
-        metadata_dict[ 'workflows' ] = [ ( relative_path, exported_workflow_dict ) ]
-    return metadata_dict
 def get_config( config_file, repo, ctx, dir ):
     """Return the latest version of config_filename from the repository manifest."""
     config_file = strip_path( config_file )
@@ -817,6 +809,24 @@ def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
                                                                              parent_id=tool_version_using_parent_id.id )
                 sa_session.add( tool_version_association )
                 sa_session.flush()
+def is_column_based( fname, sep='\t', skip=0, is_multi_byte=False ):
+    """See if the file is column based with respect to a separator."""
+    headers = get_headers( fname, sep, is_multi_byte=is_multi_byte )
+    count = 0
+    if not headers:
+        return False
+    for hdr in headers[ skip: ]:
+        if hdr and hdr[ 0 ] and not hdr[ 0 ].startswith( '#' ):
+            if len( hdr ) > 1:
+                count = len( hdr )
+            break
+    if count < 2:
+        return False
+    for hdr in headers[ skip: ]:
+        if hdr and hdr[ 0 ] and not hdr[ 0 ].startswith( '#' ):
+            if len( hdr ) != count:
+                return False
+    return True
 def is_data_index_sample_file( file_path ):
     """
     Attempt to determine if a .sample file is appropriate for copying to ~/tool-data when a tool shed repository is being installed
