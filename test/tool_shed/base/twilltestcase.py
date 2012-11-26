@@ -1,5 +1,4 @@
 from base.twilltestcase import *
-from tool_shed.base.test_db_util import *
 
 class ShedTwillTestCase( TwillTestCase ):
     def setUp( self ):
@@ -37,7 +36,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def check_for_valid_tools( self, repository ):
         self.manage_repository( repository )
-        self.check_page_for_string( '<b>Valid tools</b><i> - click the name to preview the tool' )
+        self.check_page_for_string( 'Valid tools' )
     def check_repository_changelog( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/view_changelog?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -149,6 +148,6 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( '/upload/upload?repository_id=%s' % self.security.encode_id( repository.id ) )
         for key in kwargs:
             tc.fv( "1", key, kwargs[ key ] )
-        tc.formfile( "1", "file_data", filename )
+        tc.formfile( "1", "file_data", self.get_filename( filename ) )
         tc.submit( "upload_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )

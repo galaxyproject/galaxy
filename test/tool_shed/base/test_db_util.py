@@ -1,9 +1,6 @@
 import galaxy.webapps.community.model as model
 from galaxy.model.orm import *
 from galaxy.webapps.community.model.mapping import context as sa_session
-from base.twilltestcase import *
-from sqlalchemy import desc
-import sys
 
 def delete_obj( obj ):
     sa_session.delete( obj )

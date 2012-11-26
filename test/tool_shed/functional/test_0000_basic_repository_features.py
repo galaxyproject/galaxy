@@ -1,8 +1,3 @@
-import tempfile, time, re, tempfile, os, shutil
-import galaxy.webapps.community.model
-from galaxy.util import parse_xml, string_as_bool
-from galaxy.util.shed_util import clean_tool_shed_url
-from galaxy.model.orm import *
 from tool_shed.base.twilltestcase import *
 from tool_shed.base.test_db_util import *
 
@@ -19,8 +14,6 @@ regular_username = 'user1'
 repository_name = 'filter'
 repository_description = "Galaxy's filter tool"
 repository_long_description = "Long description of Galaxy's filter tool"
-files_path = os.path.abspath( os.path.join( "test", "tool_shed", "test_data" ) )
-filter_filename = os.path.join( files_path, "filtering_1.1.0.tar" )
 
 class TestCreateRepository( ShedTwillTestCase ):
  
@@ -65,8 +58,9 @@ class TestCreateRepository( ShedTwillTestCase ):
     def test_0030_upload_tarball( self ):
         """Upload filtering_1.1.0.tar to the repository"""
         repository = get_repository_by_name( repository_name, admin_username )
-        self.upload( repository, filter_filename, \
-                     strings_displayed=[ "The file '%s' has been successfully uploaded to the repository." % filter_filename ], \
+        self.upload( repository,
+                     'filtering_1.1.0.tar',
+                     strings_displayed=[ "has been successfully uploaded to the repository." ],
                      commit_message="Uploaded filtering 1.1.0" )
         self.check_for_valid_tools( repository )
         latest_repository_metadata = self.get_latest_repository_metadata_for_repository( repository )
