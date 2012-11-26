@@ -1748,9 +1748,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
         revision_label = get_revision_label( trans, repository, repository.tip( trans.app ) )
+        repository_metadata = None
         repository_metadata_id = None
         metadata = None
         is_malicious = False
+        repository_dependencies = []
         if changeset_revision != INITIAL_CHANGELOG_HASH:
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
             if repository_metadata:
@@ -1768,6 +1770,15 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         repository_metadata_id = trans.security.encode_id( repository_metadata.id )
                         metadata = repository_metadata.metadata
                         is_malicious = repository_metadata.malicious
+            if repository_metadata:
+                # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+                repository_dependencies = get_repository_dependencies_for_changeset_revision( trans,
+                                                                                              repo,
+                                                                                              repository,
+                                                                                              repository_metadata,
+                                                                                              str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                              repository_dependencies=None,
+                                                                                              all_repository_dependencies=None )
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push
@@ -1787,6 +1798,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
+        containers_dict = build_repository_containers( repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
                                     cntrller=cntrller,
                                     repo_name=repo_name,
@@ -1796,6 +1808,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
                                     repository=repository,
+                                    containers_dict=containers_dict,
                                     repository_metadata_id=repository_metadata_id,
                                     changeset_revision=changeset_revision,
                                     reviewed_by_user=reviewed_by_user,
@@ -1865,22 +1878,35 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
         repository = get_repository_in_tool_shed( trans, repository_id )
+        repo_dir = repository.repo_path( trans.app )
+        repo = hg.repository( get_configured_ui(), repo_dir )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip( trans.app ) ) )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
             metadata = repository_metadata.metadata
+            # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+            repository_dependencies = get_repository_dependencies_for_changeset_revision( trans,
+                                                                                          repo,
+                                                                                          repository,
+                                                                                          repository_metadata,
+                                                                                          str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                          repository_dependencies=None,
+                                                                                          all_repository_dependencies=None )
         else:
             repository_metadata_id = None
             metadata = None
+            repository_dependencies = None
         revision_label = get_revision_label( trans, repository, changeset_revision )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
+        containers_dict = build_repository_containers( repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
+                                    containers_dict=containers_dict,
                                     repository_metadata_id=repository_metadata_id,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
@@ -2408,6 +2434,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             email_alerts = from_json_string( repository.email_alerts )
         else:
             email_alerts = []
+        repository_dependencies = []
         user = trans.user
         if user and params.get( 'receive_email_alerts_button', False ):
             flush_needed = False
@@ -2434,8 +2461,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
-            repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
+            repository_metadata_id = trans.security.encode_id( repository_metadata.id )
             metadata = repository_metadata.metadata
+            # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+            repository_dependencies = get_repository_dependencies_for_changeset_revision( trans,
+                                                                                          repo,
+                                                                                          repository,
+                                                                                          repository_metadata,
+                                                                                          str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                          repository_dependencies=None,
+                                                                                          all_repository_dependencies=None )
         else:
             repository_metadata_id = None
             metadata = None
@@ -2456,12 +2491,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
+        containers_dict = build_repository_containers( repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     cntrller=cntrller,
                                     repo=repo,
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
                                     metadata=metadata,
+                                    containers_dict=containers_dict,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,

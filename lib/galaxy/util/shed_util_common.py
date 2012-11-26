@@ -1331,6 +1331,23 @@ def strip_path( fpath ):
     except:
         file_name = fpath
     return file_name
+def to_html_str( text ):
+    """Translates the characters in text to an html string"""
+    translated = []
+    for c in text:
+        if c in VALID_CHARS:
+            translated.append( c )
+        elif c in MAPPED_CHARS:
+            translated.append( MAPPED_CHARS[ c ] )
+        elif c == ' ':
+            translated.append( '&nbsp;' )
+        elif c == '\t':
+            translated.append( '&nbsp;&nbsp;&nbsp;&nbsp;' )
+        elif c == '\n':
+            translated.append( '<br/>' )
+        elif c not in [ '\r' ]:
+            translated.append( '' )
+    return ''.join( translated )
 def update_existing_tool_dependency( app, repository, original_dependency_dict, new_dependencies_dict ):
     """
     Update an exsiting tool dependency whose definition was updated in a change set pulled by a Galaxy administrator when getting updates 

@@ -7,6 +7,7 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
 from sqlalchemy.sql.expression import func
 from common import *
+from galaxy.webapps.community.util.container_util import STRSEP
 from repository import RepositoryGrid
 from galaxy.util.shed_util_common import *
 from galaxy.util.odict import odict

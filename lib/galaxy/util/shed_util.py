@@ -1050,23 +1050,6 @@ def remove_tool_dependency( trans, tool_dependency ):
         trans.sa_session.add( tool_dependency )
         trans.sa_session.flush()
     return removed, error_message
-def to_html_str( text ):
-    """Translates the characters in text to an html string"""
-    translated = []
-    for c in text:
-        if c in VALID_CHARS:
-            translated.append( c )
-        elif c in MAPPED_CHARS:
-            translated.append( MAPPED_CHARS[ c ] )
-        elif c == ' ':
-            translated.append( '&nbsp;' )
-        elif c == '\t':
-            translated.append( '&nbsp;&nbsp;&nbsp;&nbsp;' )
-        elif c == '\n':
-            translated.append( '<br/>' )
-        elif c not in [ '\r' ]:
-            translated.append( '' )
-    return ''.join( translated )
 def tool_shed_from_repository_clone_url( repository_clone_url ):
     return clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
 def translate_string( raw_text, to_html=True ):

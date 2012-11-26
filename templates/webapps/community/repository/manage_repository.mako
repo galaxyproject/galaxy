@@ -16,10 +16,6 @@
     can_set_metadata = not is_new and not is_deprecated
     can_rate = not is_new and not is_deprecated and trans.user and repository.user != trans.user
     can_view_change_log = not is_new
-    if can_push:
-        browse_label = 'Browse or delete repository tip files'
-    else:
-        browse_label = 'Browse repository tip files'
     can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip( trans.app )
     can_deprecate = not is_new and trans.user and ( is_admin or repository.user == trans.user ) and not is_deprecated
     can_undeprecate = trans.user and ( is_admin or repository.user == trans.user ) and is_deprecated
@@ -27,6 +23,11 @@
     has_readme = metadata and 'readme' in metadata
     can_review_repository = not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
     reviewing_repository = cntrller and cntrller == 'repository_review'
+
+    if can_push:
+        browse_label = 'Browse or delete repository tip files'
+    else:
+        browse_label = 'Browse repository tip files'
     if changeset_revision == repository.tip( trans.app ):
         tip_str = 'repository tip'
     else:
@@ -42,10 +43,15 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css( "library" )}
+</%def>
+
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.rating" )}
-    ${common_javascripts(repository)}
+    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
+    ${dependency_javascripts()}
 </%def>
 
 <br/><br/>
@@ -204,7 +210,7 @@
         </form>
     </div>
 </div>
-${render_repository_items( repository_metadata_id, changeset_revision, metadata, can_set_metadata=True )}
+${render_repository_items( repository_metadata_id, changeset_revision, metadata, containers_dict, can_set_metadata=True )}
 <p/>
 <div class="toolForm">
     <div class="toolFormTitle">Manage categories</div>

@@ -5,7 +5,7 @@
 
 <%
     from galaxy.webapps.community.controllers.repository_review import build_approved_select_field
-    from galaxy.webapps.community.controllers.common import STRSEP
+    from galaxy.webapps.community.util.container_util import STRSEP
     is_admin = trans.user_is_admin()
     is_new = repository.is_new( trans.app )
     can_browse_contents = not is_new
