@@ -135,6 +135,8 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
             if action_elem.text:
                 action_dict[ 'url' ] = action_elem.text
+                if 'target_filename' in action_elem.attrib:
+                    action_dict[ 'target_filename' ] = action_elem.attrib[ 'target_filename' ]
             else:
                 continue
         elif action_type == 'make_directory':

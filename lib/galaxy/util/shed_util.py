@@ -484,6 +484,18 @@ def get_config( config_file, repo, ctx, dir ):
             if ctx_file_name == config_file:
                 return get_named_tmpfile_from_ctx( changeset_ctx, ctx_file, dir )
     return None
+def get_headers( fname, sep, count=60, is_multi_byte=False ):
+    """Returns a list with the first 'count' lines split by 'sep'."""
+    headers = []
+    for idx, line in enumerate( file( fname ) ):
+        line = line.rstrip( '\n\r' )
+        if is_multi_byte:
+            line = unicode( line, 'utf-8' )
+            sep = sep.encode( 'utf-8' )
+        headers.append( line.split( sep ) )
+        if idx == count:
+            break
+    return headers
 def get_converter_and_display_paths( registration_elem, relative_install_dir ):
     """Find the relative path to data type converters and display applications included in installed tool shed repositories."""
     converter_path = None

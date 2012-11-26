@@ -305,11 +305,7 @@
   </section>
   -->
   <section name="NGS: Mapping" id="solexa_tools">
-    <tool file="sr_mapping/lastz_wrapper.xml" />
-    <tool file="sr_mapping/lastz_paired_reads_wrapper.xml" />
-    <tool file="sr_mapping/bowtie_wrapper.xml" />
     <tool file="sr_mapping/bowtie2_wrapper.xml" />
-    <tool file="sr_mapping/bowtie_color_wrapper.xml" />
     <tool file="sr_mapping/bfast_wrapper.xml" />
     <tool file="metag_tools/megablast_wrapper.xml" />
     <tool file="metag_tools/megablast_xml_parser.xml" />
