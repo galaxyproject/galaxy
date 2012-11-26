@@ -564,7 +564,6 @@
                     // HACK: use a simple string to separate the elements in the
                     // response: (1) table body; (2) number of pages in table; and (3) message.
                     var parsed_response_text = response_text.split("*****");
-                    console.log(parsed_response_text);
                     
                     // Update grid body and footer.
                     $('#grid-table-body').html(parsed_response_text[0]);
