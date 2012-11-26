@@ -90,8 +90,18 @@
         </div>
     </div>
     <div style="clear: both"></div>
-    <div class="form-row">    
-        <table class="grid">
+    <div class="form-row">
+        <style type="text/css">
+            #dependency_table{ table-layout:fixed;
+                               width:100%;
+                               overflow-wrap:normal;
+                               overflow:hidden;
+                               border:0px; 
+                               word-break:keep-all;
+                               word-wrap:break-word;
+                               line-break:strict; }
+        </style>
+        <table class="grid" id="dependency_table">
             <tr><td colspan="4" bgcolor="#D8D8D8"><b>Tool dependencies</b></td></tr>
             <%
                 env_settings_heaader_row_displayed = False
