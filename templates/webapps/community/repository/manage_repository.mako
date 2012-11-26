@@ -21,7 +21,7 @@
     can_undeprecate = trans.user and ( is_admin or repository.user == trans.user ) and is_deprecated
     can_reset_all_metadata = not is_deprecated and is_admin and len( repo ) > 0
     has_readme = metadata and 'readme' in metadata
-    can_review_repository = not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
+    can_review_repository = not is_new and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
     reviewing_repository = cntrller and cntrller == 'repository_review'
 
     if can_push:

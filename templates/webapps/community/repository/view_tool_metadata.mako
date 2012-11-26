@@ -8,6 +8,7 @@
     from urllib import quote_plus
     is_admin = trans.user_is_admin()
     is_new = repository.is_new( trans.app )
+    is_deprecated = repository.deprecated
     can_contact_owner = trans.user and trans.user != repository.user
     can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_upload = can_push
@@ -21,7 +22,7 @@
     else:
         browse_label = 'Browse repository tip files'
     has_readme = metadata and 'readme' in metadata
-    can_review_repository = trans.app.security_agent.user_can_review_repositories( trans.user )
+    can_review_repository = not is_new and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
 %>
 
 <%!
