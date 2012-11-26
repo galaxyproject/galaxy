@@ -20,6 +20,7 @@ class Grid( object ):
     title = ""
     exposed = True
     model_class = None
+    show_item_checkboxes = False
     template = "grid_base.mako"
     async_template = "grid_base_async.mako"
     use_async = False
@@ -273,7 +274,8 @@ class Grid( object ):
                                     message = message,
                                     use_panels=self.use_panels,
                                     webapp=webapp,
-                                    show_item_checkboxes = ( kwargs.get( 'show_item_checkboxes', '' ) in ['True', 'true'] ),
+                                    show_item_checkboxes = ( self.show_item_checkboxes or 
+                                                             kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ] ),
                                     # Pass back kwargs so that grid template can set and use args without
                                     # grid explicitly having to pass them.
                                     kwargs=kwargs )

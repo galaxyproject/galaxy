@@ -91,6 +91,7 @@ class ItemSelectionGrid( grids.Grid ):
                 return item.name
 
     # Grid definition.
+    show_item_checkboxes = True
     template = "/page/select_items_grid.mako"
     async_template = "/page/select_items_grid_async.mako" 
     default_filter = { "deleted" : "False" , "sharing" : "All" }

@@ -564,10 +564,13 @@
                     // HACK: use a simple string to separate the elements in the
                     // response: (1) table body; (2) number of pages in table; and (3) message.
                     var parsed_response_text = response_text.split("*****");
+                    console.log(parsed_response_text);
                     
                     // Update grid body and footer.
                     $('#grid-table-body').html(parsed_response_text[0]);
-                    $('#grid-table-footer').html(parsed_response_text[1]);
+                    // FIXME: this does not work at all; what's needed is a function
+                    // that updates page links when number of pages changes.
+                    //$('#grid-table-footer').html(parsed_response_text[1]);
                     
                     // Trigger custom event to indicate grid body has changed.
                     $('#grid-table-body').trigger('update');
@@ -906,7 +909,7 @@
                     %>
                     Page:
                     % if min_page > 1:
-                        <span class='page-link'><a href="${url( page=1 )}" page_num="1">1</a></span> ...
+                        <span class='page-link' id="page-link-1"><a href="${url( page=1 )}" page_num="1">1</a></span> ...
                     % endif
                     %for page_index in range(min_page, max_page + 1):
                         %if page_index == cur_page_num:
@@ -918,7 +921,7 @@
                     %endfor
                     %if max_page < num_pages:
                         ...
-                        <span class='page-link'><a href="${url( page=num_pages )}" page_num="${num_pages}">${num_pages}</a></span>
+                        <span class='page-link' id="page-link-${num_pages}"><a href="${url( page=num_pages )}" page_num="${num_pages}">${num_pages}</a></span>
                     %endif
                 </span>
                 
