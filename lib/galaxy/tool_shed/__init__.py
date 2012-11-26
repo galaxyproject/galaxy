@@ -2,7 +2,7 @@
 Classes encapsulating the management of repositories installed from Galaxy tool sheds.
 """
 import os
-from galaxy.util.shed_util import *
+import galaxy.util.shed_util
 from galaxy.model.orm import *
 
 from galaxy import eggs
@@ -27,7 +27,7 @@ class InstalledRepositoryManager( object ):
             ElementInclude.include( root )
             tool_path = root.get( 'tool_path', None )
             if tool_path:
-                tool_shed = clean_tool_shed_url( tool_shed_repository.tool_shed )
+                tool_shed = galaxy.util.shed_util.clean_tool_shed_url( tool_shed_repository.tool_shed )
                 relative_path = os.path.join( tool_path,
                                               tool_shed,
                                               'repos',
@@ -44,13 +44,13 @@ class InstalledRepositoryManager( object ):
                                                    .order_by( self.model.ToolShedRepository.table.c.id ):
             relative_install_dir = self.get_repository_install_dir( tool_shed_repository )
             if relative_install_dir:
-                installed_repository_dict = load_installed_datatypes( self.app, tool_shed_repository, relative_install_dir )
+                installed_repository_dict = galaxy.util.shed_util.load_installed_datatypes( self.app, tool_shed_repository, relative_install_dir )
                 if installed_repository_dict:
                     self.installed_repository_dicts.append( installed_repository_dict )
     def load_proprietary_converters_and_display_applications( self, deactivate=False ):
         for installed_repository_dict in self.installed_repository_dicts:
             if installed_repository_dict[ 'converter_path' ]:
-                load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=deactivate )
+                galaxy.util.shed_util.load_installed_datatype_converters( self.app, installed_repository_dict, deactivate=deactivate )
             if installed_repository_dict[ 'display_path' ]:
-                load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )
+                galaxy.util.shed_util.load_installed_display_applications( self.app, installed_repository_dict, deactivate=deactivate )
            
