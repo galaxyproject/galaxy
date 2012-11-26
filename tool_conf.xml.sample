@@ -305,11 +305,7 @@
   </section>
   -->
   <section name="NGS: Mapping" id="solexa_tools">
-    <tool file="sr_mapping/lastz_wrapper.xml" />
-    <tool file="sr_mapping/lastz_paired_reads_wrapper.xml" />
-    <tool file="sr_mapping/bowtie_wrapper.xml" />
     <tool file="sr_mapping/bowtie2_wrapper.xml" />
-    <tool file="sr_mapping/bowtie_color_wrapper.xml" />
     <tool file="sr_mapping/bfast_wrapper.xml" />
     <tool file="metag_tools/megablast_wrapper.xml" />
     <tool file="metag_tools/megablast_xml_parser.xml" />
@@ -331,9 +327,9 @@
     <tool file="ngs_rna/tophat_color_wrapper.xml" />
     <tool file="ngs_rna/cufflinks_wrapper.xml" />
     <tool file="ngs_rna/cuffcompare_wrapper.xml" />
-    <tool file="ngs_rna/express_wrapper.xml" />
- 	  <tool file="ngs_rna/cuffmerge_wrapper.xml" />
+    <tool file="ngs_rna/cuffmerge_wrapper.xml" />
     <tool file="ngs_rna/cuffdiff_wrapper.xml" />
+    <tool file="ngs_rna/express_wrapper.xml" />
     <!-- Trinity is very memory-intensive and should only be enabled/run
     on instances with sufficient resources. 
     <label text="De novo Assembly" id="de_novo_assembly "/>

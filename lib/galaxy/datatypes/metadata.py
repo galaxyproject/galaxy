@@ -123,6 +123,7 @@ class MetadataCollection( object ):
     def __getstate__( self ):
         return None #cannot pickle a weakref item (self._parent), when data._metadata_collection is None, it will be recreated on demand
 
+
 class MetadataSpecCollection( odict ):
     """
     A simple extension of dict which allows cleaner access to items
@@ -132,12 +133,20 @@ class MetadataSpecCollection( odict ):
     """
     def __init__( self, dict = None ):
         odict.__init__( self, dict = None )
+
     def append( self, item ):
         self[item.name] = item
+
     def iter( self ):
         return self.itervalues()
+
     def __getattr__( self, name ):
         return self.get( name )
+
+    def __repr__( self ):
+        # force elements to draw with __str__ for sphinx-apidoc
+        return ', '.join([ item.__str__() for item in self.iter() ])
+
 
 class MetadataParameter( object ):
     def __init__( self, spec ):
@@ -185,7 +194,6 @@ class MetadataParameter( object ):
         """
         pass
 
-
     def unwrap( self, form_value ):
         """
         Turns a value into its storable form.
@@ -205,19 +213,22 @@ class MetadataParameter( object ):
         Turns a value read from an external dict into its value to be pushed directly into the metadata dict.
         """
         return value
+
     def to_external_value( self, value ):
         """
         Turns a value read from a metadata into its value to be pushed directly into the external dict.
         """
         return value
 
+
 class MetadataElementSpec( object ):
     """
     Defines a metadata element and adds it to the metadata_spec (which
     is a MetadataSpecCollection) of datatype.
     """
-
-    def __init__( self, datatype, name=None, desc=None, param=MetadataParameter, default=None, no_value = None, visible=True, set_in_upload = False, **kwargs ):
+    def __init__( self, datatype,
+                  name=None, desc=None, param=MetadataParameter, default=None, no_value = None,
+                  visible=True, set_in_upload = False, **kwargs ):
         self.name = name
         self.desc = desc or name
         self.default = default
@@ -226,23 +237,36 @@ class MetadataElementSpec( object ):
         self.set_in_upload = set_in_upload
         # Catch-all, allows for extra attributes to be set
         self.__dict__.update(kwargs)
-        #set up param last, as it uses values set above
+        # set up param last, as it uses values set above
         self.param = param( self )
-        datatype.metadata_spec.append( self ) #add spec element to the spec
+        # add spec element to the spec
+        datatype.metadata_spec.append( self )
+
     def get( self, name, default=None ):
         return self.__dict__.get(name, default)
+
     def wrap( self, value ):
         """
         Turns a stored value into its usable form.
         """
         return self.param.wrap( value )
+
     def unwrap( self, value ):
         """
         Turns an incoming value into its storable form.
         """
         return self.param.unwrap( value )
 
+    def __str__( self ):
+        #TODO??: assuming param is the class of this MetadataElementSpec - add the plain class name for that
+        spec_dict = dict( param_class=self.param.__class__.__name__ )
+        spec_dict.update( self.__dict__ )
+        return ( "{name} ({param_class}): {desc}, defaults to '{default}'".format( **spec_dict ) )
+
+# create a statement class that, when called,
+#   will add a new MetadataElementSpec to a class's metadata_spec
 MetadataElement = Statement( MetadataElementSpec )
+
 
 """
 MetadataParameter sub-classes.

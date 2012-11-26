@@ -11,26 +11,42 @@
 </style>
 
 <%def name="inputs_recursive( input_params, param_values, depth=1 )">
-  %for input_index, input in enumerate( input_params.itervalues() ):
-    %if input.type == "repeat":
-      %for i in range( len(param_values[input.name]) ):
-        ${ inputs_recursive(input.inputs, param_values[input.name][i], depth=depth+1) }
-      %endfor
-    %elif input.type == "conditional":
-      <% current_case = param_values[input.name]['__current_case__'] %>
-        <tr>
-          ${ inputs_recursive_indent( text=input.test_param.label,depth=depth )}
-          <!-- Get the value of the current Conditonal parameter -->
-          <td>${input.cases[current_case].value}</td>
-        </tr>
-        ${ inputs_recursive(input.cases[current_case].inputs, param_values[input.name], depth=depth+1) }
-    %elif getattr(input, "label", None):
-      <tr>
-        ${inputs_recursive_indent( text=input.label,depth=depth )}
-        <td>${input.value_to_display_text(param_values[input.name], trans.app)}</td>
-      </tr>
-    %endif
-  %endfor
+    %for input_index, input in enumerate( input_params.itervalues() ):
+        %if input.name in param_values:
+            %if input.type == "repeat":
+                %for i in range( len(param_values[input.name]) ):
+                    ${ inputs_recursive(input.inputs, param_values[input.name][i], depth=depth+1) }
+                %endfor
+            %elif input.type == "conditional":
+                <% current_case = param_values[input.name]['__current_case__'] %>
+                <tr>
+                    ${ inputs_recursive_indent( text=input.test_param.label, depth=depth )}
+                    <!-- Get the value of the current Conditonal parameter -->
+                    <td>${input.cases[current_case].value}</td>
+                </tr>
+                ${ inputs_recursive(input.cases[current_case].inputs, param_values[input.name], depth=depth+1) }
+            %elif getattr(input, "label", None):
+                <tr>
+                    ${inputs_recursive_indent( text=input.label, depth=depth )}
+                    <td>${input.value_to_display_text(param_values[input.name], trans.app)}</td>
+                </tr>
+            %endif
+        %else:
+            ## Parameter does not have a stored value.
+            <tr>
+                <%
+                    # Get parameter label.  
+                    if input.type == "conditional":
+                        label = input.test_param.label
+                    else:
+                        label = input.label
+                %>
+                ${inputs_recursive_indent( text=label, depth=depth )}
+                <td><em>not used (parameter was added after this job was run)</em></td>
+            </tr>
+        %endif
+        
+    %endfor
 </%def>
 
  ## function to add a indentation depending on the depth in a <tr>

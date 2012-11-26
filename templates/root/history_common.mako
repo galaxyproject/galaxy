@@ -153,7 +153,7 @@
             </div>
         %elif data_state == "paused":
             <div>
-            ${_('Job is currently paused.  Check your quota and parent jobs for failure, use the history menu to resume.')}</div>
+            ${_('Job is currently paused:')} <i>${data.display_info().strip().rstrip('.')}.</i>  ${_('Use the history menu to resume.')}</div>
             <div>
                 <a href="${h.url_for( controller='dataset', action='show_params', dataset_id=dataset_id )}" target="galaxy_main" title='${_("View Details")}' class="icon-button information tooltip"></a>
                 %if for_editing:

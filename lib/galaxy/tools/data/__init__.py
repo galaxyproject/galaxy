@@ -118,6 +118,14 @@ class ToolDataTableManager( object ):
 class ToolDataTable( object ):
     def __init__( self, config_element, tool_data_path ):
         self.name = config_element.get( 'name' )
+        self.comment_char = config_element.get( 'comment_char' )
+        for file_elem in config_element.findall( 'file' ):
+            # There should only be one file_elem.
+            if 'path' in file_elem.attrib:
+                tool_data_file_path = file_elem.get( 'path' )
+                self.tool_data_file = os.path.split( tool_data_file_path )[1]
+            else:
+                self.tool_data_file = None
         self.tool_data_path = tool_data_path
         self.missing_index_file = None
     

@@ -9,14 +9,7 @@ from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import *
-# TODO: re-factor shed_util to eliminate the following restricted imports
-from galaxy.util.shed_util import create_repo_info_dict, generate_clone_url_for_repository_in_tool_shed, generate_message_for_invalid_tools
-from galaxy.util.shed_util import get_changectx_for_changeset, get_configured_ui, get_file_from_changeset_revision
-from galaxy.util.shed_util import get_repository_file_contents, get_repository_in_tool_shed, get_repository_metadata_by_changeset_revision
-from galaxy.util.shed_util import handle_sample_files_and_load_tool_from_disk, handle_sample_files_and_load_tool_from_tmp_config
-from galaxy.util.shed_util import INITIAL_CHANGELOG_HASH, load_tool_from_config, NOT_TOOL_CONFIGS, open_repository_files_folder, remove_dir
-from galaxy.util.shed_util import reset_all_metadata_on_repository_in_tool_shed, reversed_lower_upper_bounded_changelog
-from galaxy.util.shed_util import reversed_upper_bounded_changelog, strip_path, to_html_escaped, update_repository, url_join
+from galaxy.util.shed_util_common import *
 from galaxy.tool_shed.encoding_util import *
 from common import *
 
@@ -1265,6 +1258,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
         return get_repository_file_contents( file_path )
+    def get_file_from_changeset_revision( self, repo_files_dir, changeset_revision, file_name, dir ):
+        """Return file_name from the received changeset_revision of the repository manifest."""
+        stripped_file_name = strip_path( file_name )
+        repo = hg.repository( get_configured_ui(), repo_files_dir )
+        ctx = get_changectx_for_changeset( repo, changeset_revision )
+        named_tmp_file = get_named_tmpfile_from_ctx( ctx, file_name, dir )
+        return named_tmp_file
     def get_metadata( self, trans, repository_id, changeset_revision ):
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata and repository_metadata.metadata:
@@ -1748,9 +1748,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
         revision_label = get_revision_label( trans, repository, repository.tip( trans.app ) )
+        repository_metadata = None
         repository_metadata_id = None
         metadata = None
         is_malicious = False
+        repository_dependencies = []
         if changeset_revision != INITIAL_CHANGELOG_HASH:
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
             if repository_metadata:
@@ -1768,6 +1770,15 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         repository_metadata_id = trans.security.encode_id( repository_metadata.id )
                         metadata = repository_metadata.metadata
                         is_malicious = repository_metadata.malicious
+            if repository_metadata:
+                # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+                repository_dependencies = get_repository_dependencies_for_changeset_revision( trans,
+                                                                                              repo,
+                                                                                              repository,
+                                                                                              repository_metadata,
+                                                                                              str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                              repository_dependencies=None,
+                                                                                              all_repository_dependencies=None )
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push
@@ -1787,6 +1798,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
+        containers_dict = build_repository_containers( repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
                                     cntrller=cntrller,
                                     repo_name=repo_name,
@@ -1796,6 +1808,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     allow_push_select_field=allow_push_select_field,
                                     repo=repo,
                                     repository=repository,
+                                    containers_dict=containers_dict,
                                     repository_metadata_id=repository_metadata_id,
                                     changeset_revision=changeset_revision,
                                     reviewed_by_user=reviewed_by_user,
@@ -1865,22 +1878,35 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
         repository = get_repository_in_tool_shed( trans, repository_id )
+        repo_dir = repository.repo_path( trans.app )
+        repo = hg.repository( get_configured_ui(), repo_dir )
         changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip( trans.app ) ) )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
             metadata = repository_metadata.metadata
+            # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+            repository_dependencies = get_repository_dependencies_for_changeset_revision( trans,
+                                                                                          repo,
+                                                                                          repository,
+                                                                                          repository_metadata,
+                                                                                          str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                          repository_dependencies=None,
+                                                                                          all_repository_dependencies=None )
         else:
             repository_metadata_id = None
             metadata = None
+            repository_dependencies = None
         revision_label = get_revision_label( trans, repository, changeset_revision )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
+        containers_dict = build_repository_containers( repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
+                                    containers_dict=containers_dict,
                                     repository_metadata_id=repository_metadata_id,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
@@ -2231,6 +2257,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if list:
             return ','.join( list )
         return ''
+    def to_html_escaped( self, text ):
+        """Translates the characters in text to html values"""
+        translated = []
+        for c in text:
+            if c in [ '\r\n', '\n', ' ', '\t' ] or c in VALID_CHARS:
+                translated.append( c )
+            elif c in MAPPED_CHARS:
+                translated.append( MAPPED_CHARS[ c ] )
+            else:
+                translated.append( '' )
+        return ''.join( translated )
     def __validate_repository_name( self, name, user ):
         # Repository names must be unique for each user, must be at least four characters
         # in length and must contain only lower-case letters, numbers, and the '_' character.
@@ -2304,7 +2341,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         anchors = modified + added + removed + deleted + unknown + ignored + clean
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
-            diffs.append( to_html_escaped( diff ) )
+            diffs.append( self.to_html_escaped( diff ) )
         is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, ctx_str )
         return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
@@ -2356,12 +2393,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             except IOError:
                 work_dir = tempfile.mkdtemp()
                 try:
-                    manifest_readme_file = get_file_from_changeset_revision( trans.app,
-                                                                             repository,
-                                                                             repo_files_dir,
-                                                                             changeset_revision,
-                                                                             readme_file,
-                                                                             work_dir )
+                    manifest_readme_file = self.get_file_from_changeset_revision( repo_files_dir, changeset_revision, readme_file, work_dir )
                     f = open( manifest_readme_file, 'r' )
                     raw_text = f.read()
                     f.close()
@@ -2402,6 +2434,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             email_alerts = from_json_string( repository.email_alerts )
         else:
             email_alerts = []
+        repository_dependencies = []
         user = trans.user
         if user and params.get( 'receive_email_alerts_button', False ):
             flush_needed = False
@@ -2428,8 +2461,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
         revision_label = get_revision_label( trans, repository, changeset_revision )
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
-            repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
+            repository_metadata_id = trans.security.encode_id( repository_metadata.id )
             metadata = repository_metadata.metadata
+            # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
+            repository_dependencies = get_repository_dependencies_for_changeset_revision( trans,
+                                                                                          repo,
+                                                                                          repository,
+                                                                                          repository_metadata,
+                                                                                          str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                          repository_dependencies=None,
+                                                                                          all_repository_dependencies=None )
         else:
             repository_metadata_id = None
             metadata = None
@@ -2450,12 +2491,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
+        containers_dict = build_repository_containers( repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     cntrller=cntrller,
                                     repo=repo,
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
                                     metadata=metadata,
+                                    containers_dict=containers_dict,
                                     avg_rating=avg_rating,
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,

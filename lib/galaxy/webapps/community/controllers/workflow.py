@@ -10,8 +10,7 @@ from galaxy.tools import DefaultToolState
 from galaxy.webapps.galaxy.controllers.workflow import attach_ordered_steps
 from galaxy.model.orm import *
 from common import *
-# TODO: re-factor shed_util to eliminate the following restricted imports
-from galaxy.util.shed_util import get_repository_in_tool_shed
+from galaxy.util.shed_util_common import *
 from galaxy.tool_shed.encoding_util import *
 
 class RepoInputDataModule( InputDataModule ):
@@ -152,7 +151,7 @@ class WorkflowController( BaseUIController ):
                                     changeset_revision=repository_metadata.changeset_revision,
                                     repository_metadata_id=repository_metadata_id,
                                     workflow_name=workflow_name,
-                                    metadata=repository_metadata,
+                                    metadata=repository_metadata.metadata,
                                     message=message,
                                     status=status )
     @web.expose

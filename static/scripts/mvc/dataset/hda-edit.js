@@ -2,25 +2,42 @@
 //    "../mvc/base-mvc"
 //], function(){
 //==============================================================================
-/** editing view for HistoryDatasetAssociations
+/** @class Editing view for HistoryDatasetAssociation.
+ *  @name HDAEditView
  *
+ *  @augments HDABaseView
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
  */
-var HDAEditView = HDABaseView.extend({
+var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
+/** @lends HDAEditView.prototype */{
 
-    // ................................................................................ SET UP
+    // ......................................................................... SET UP
+    /** Set up the view, cache url templates, bind listeners.
+     *      Overrides HDABaseView.initialize to change default actions (adding re-run).
+     *  @param {Object} attributes
+     *  @config {Object} urlTemplates nested object containing url templates for this view
+     *  @throws 'needs urlTemplates' if urlTemplates isn't present
+     *  @see HDABaseView#initialize
+     */
     initialize  : function( attributes ){
         HDABaseView.prototype.initialize.call( this, attributes );
 
-        // which buttons go in most states (ok/failed meta are more complicated)
-        // HDAEdit gets the rerun button on almost all states
+        /** list of rendering functions for the default, primary icon-buttons. */
         this.defaultPrimaryActionButtonRenderers = [
             this._render_showParamsButton,
+            // HDAEdit gets the rerun button on almost all states
             this._render_rerunButton
         ];
     },
 
-    // ................................................................................ RENDER WARNINGS
-    // hda warnings including: is deleted, is purged, is hidden (including links to further actions (undelete, etc.))
+    // ......................................................................... RENDER WARNINGS
+    /** Render any hda warnings including: is deleted, is purged, is hidden.
+     *      Overrides _render_warnings to include links to further actions (undelete, etc.)).
+     *  @returns {Object} the templated urls
+     *  @see HDABaseView#_render_warnings
+     */
     _render_warnings : function(){
         // jQ errs on building dom with whitespace - if there are no messages, trim -> ''
         return $( jQuery.trim( HDABaseView.templates.messages(
@@ -28,9 +45,12 @@ var HDAEditView = HDABaseView.extend({
         )));
     },
     
-    // ................................................................................ display, edit attr, delete
-    // icon-button group for the common, most easily accessed actions
-    //NOTE: these are generally displayed for almost every hda state (tho poss. disabled)
+    // ......................................................................... edit attr, delete
+    /** Render icon-button group for the common, most easily accessed actions.
+     *      Overrides _render_titleButtons to include edit and delete buttons.
+     *  @see HDABaseView#_render_titleButtons
+     *  @returns {jQuery} rendered DOM
+     */
     _render_titleButtons : function(){
         // render the display, edit attr and delete icon-buttons
         var buttonDiv = $( '<div class="historyItemButtons"></div>' );
@@ -40,13 +60,15 @@ var HDAEditView = HDABaseView.extend({
         return buttonDiv;
     },
     
-    // icon-button to edit the attributes (format, permissions, etc.) this hda
+    /** Render icon-button to edit the attributes (format, permissions, etc.) this hda.
+     *  @returns {jQuery} rendered DOM
+     */
     _render_editButton : function(){
-        // don't show edit while uploading
-        //TODO??: error?
+        // don't show edit while uploading, in-accessible
+        // DO show if in error (ala previous history panel)
         //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
         if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD )
-        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
+        //||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
         ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.editButton = null;
@@ -76,7 +98,9 @@ var HDAEditView = HDABaseView.extend({
         return this.editButton.render().$el;
     },
     
-    // icon-button to delete this hda
+    /** Render icon-button to delete this hda.
+     *  @returns {jQuery} rendered DOM
+     */
     _render_deleteButton : function(){
         // don't show delete if...
         //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
@@ -103,8 +127,12 @@ var HDAEditView = HDABaseView.extend({
         return this.deleteButton.render().$el;
     },
 
-    // ................................................................................ RENDER BODY
-    // render the data/metadata summary (format, size, misc info, etc.)
+    // ......................................................................... RENDER BODY
+    /** Render the data/metadata summary (format, size, misc info, etc.).
+     *      Overrides _render_hdaSummary to include edit link in dbkey.
+     *  @see HDABaseView#_render_hdaSummary
+     *  @returns {jQuery} rendered DOM
+     */
     _render_hdaSummary : function(){
         var modelData = _.extend( this.model.toJSON(), { urls: this.urls } );
         // if there's no dbkey and it's editable : pass a flag to the template to render a link to editing in the '?'
@@ -116,8 +144,10 @@ var HDAEditView = HDABaseView.extend({
         return HDABaseView.templates.hdaSummary( modelData );
     },
 
-    // ................................................................................ primary actions
-    // icon-button to show the input and output (stdout/err) for the job that created this hda
+    // ......................................................................... primary actions
+    /** Render icon-button to report an error on this hda to the galaxy admin.
+     *  @returns {jQuery} rendered DOM
+     */
     _render_errButton : function(){
         if( this.model.get( 'state' ) !== HistoryDatasetAssociation.STATES.ERROR ){
             this.errButton = null;
@@ -133,7 +163,9 @@ var HDAEditView = HDABaseView.extend({
         return this.errButton.render().$el;
     },
     
-    // icon-button to re run the job that created this hda
+    /** Render icon-button to re-run the job that created this hda.
+     *  @returns {jQuery} rendered DOM
+     */
     _render_rerunButton : function(){
         this.rerunButton = new IconButtonView({ model : new IconButton({
             title       : _l( 'Run this job again' ),
@@ -144,8 +176,10 @@ var HDAEditView = HDABaseView.extend({
         return this.rerunButton.render().$el;
     },
     
-    // build an icon-button or popupmenu based on the number of applicable visualizations
-    //  also map button/popup clicks to viz setup functions
+    /** Render an icon-button or popupmenu based on the number of applicable visualizations
+     *      and map button/popup clicks to viz setup functions.
+     *  @returns {jQuery} rendered DOM
+     */
     _render_visualizationsButton : function(){
         var dbkey = this.model.get( 'dbkey' ),
             visualizations = this.model.get( 'visualizations' ),
@@ -179,6 +213,7 @@ var HDAEditView = HDABaseView.extend({
         // Add dbkey to params if it exists.
         if( dbkey ){ params.dbkey = dbkey; }
 
+        /** @inner */
         function create_viz_action( visualization ) {
             switch( visualization ){
                 case 'trackster':
@@ -208,8 +243,11 @@ var HDAEditView = HDABaseView.extend({
         return $icon;
     },
     
-    // ................................................................................ secondary actions
-    // secondary actions: currently tagging and annotation (if user is allowed)
+    // ......................................................................... secondary actions
+    /** Render secondary actions: currently tagging and annotation (if user is allowed).
+     *  @param {Array} buttonRenderingFuncs array of rendering functions appending the results in order
+     *  @returns {jQuery} rendered DOM
+     */
     _render_secondaryActionButtons : function( buttonRenderingFuncs ){
         // move to the right (same level as primary)
         var secondaryActionButtons = $( '<div/>' ),
@@ -224,7 +262,9 @@ var HDAEditView = HDABaseView.extend({
         return secondaryActionButtons;
     },
 
-    // icon-button to load and display tagging html
+    /** Render icon-button to load and display tagging html.
+     *  @returns {jQuery} rendered DOM
+     */
     //TODO: these should be a sub-MV
     _render_tagButton : function(){
         //TODO: check for User
@@ -243,7 +283,9 @@ var HDAEditView = HDABaseView.extend({
         return this.tagButton.render().$el;
     },
 
-    // icon-button to load and display annotation html
+    /** Render icon-button to load and display annotation html.
+     *  @returns {jQuery} rendered DOM
+     */
     //TODO: these should be a sub-MV
     _render_annotateButton : function(){
         //TODO: check for User
@@ -261,10 +303,12 @@ var HDAEditView = HDABaseView.extend({
         return this.annotateButton.render().$el;
     },
     
-    // ................................................................................ other elements
+    // ......................................................................... other elements
+    /** Render area to display tags.
+     *  @returns {jQuery} rendered DOM
+     */
     //TODO: into sub-MV
     //TODO: check for User
-    // render the area used to load tag display
     _render_tagArea : function(){
         if( !this.urls.tags.set ){ return null; }
         //TODO: move to mvc/tags.js
@@ -273,9 +317,11 @@ var HDAEditView = HDABaseView.extend({
         ));
     },
 
+    /** Render area to display annotation.
+     *  @returns {jQuery} rendered DOM
+     */
     //TODO: into sub-MV
     //TODO: check for User
-    // render the area used to load annotation display
     _render_annotationArea : function(){
         if( !this.urls.annotation.get ){ return null; }
         //TODO: move to mvc/annotations.js
@@ -284,14 +330,23 @@ var HDAEditView = HDABaseView.extend({
         ));
     },
     
-    // ................................................................................ state body renderers
+    // ......................................................................... state body renderers
+    /** Render an HDA whose job has failed.
+     *      Overrides _render_body_error to prepend error report button to primary actions strip.
+     *  @param {jQuery} parent DOM to which to append this body
+     *  @see HDABaseView#_render_body_error
+     */
     _render_body_error : function( parent ){
-        // overridden to prepend error report button to primary actions strip
         HDABaseView.prototype._render_body_error.call( this, parent );
         var primaryActions = parent.find( '#primary-actions-' + this.model.get( 'id' ) );
         primaryActions.prepend( this._render_errButton() );
     },
         
+    /** Render an HDA that's done running and where everything worked.
+     *      Overrides _render_body_ok to add tag/annotation functionality and additional primary actions
+     *  @param {jQuery} parent DOM to which to append this body
+     *  @see HDABaseView#_render_body_ok
+     */
     _render_body_ok : function( parent ){
         // most common state renderer and the most complicated
         parent.append( this._render_hdaSummary() );
@@ -327,15 +382,17 @@ var HDAEditView = HDABaseView.extend({
         parent.append( this._render_peek() );
     },
 
-    // ................................................................................ EVENTS
+    // ......................................................................... EVENTS
+    /** event map */
     events : {
         'click .historyItemTitle'           : 'toggleBodyVisibility',
         'click a.icon-button.tags'          : 'loadAndDisplayTags',
         'click a.icon-button.annotate'      : 'loadAndDisplayAnnotation'
     },
     
-    // ................................................................................ STATE CHANGES / MANIPULATION
-    // find the tag area and, if initial: (via ajax) load the html for displaying them; otherwise, unhide/hide
+    // ......................................................................... STATE CHANGES / MANIPULATION
+    /** Find the tag area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
+     */
     //TODO: into sub-MV
     loadAndDisplayTags : function( event ){
         //BUG: broken with latest
@@ -369,7 +426,8 @@ var HDAEditView = HDABaseView.extend({
         return false;        
     },
     
-    // find the annotation area and, if initial: (via ajax) load the html for displaying it; otherwise, unhide/hide
+    /** Find the annotation area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
+     */
     //TODO: into sub-MV
     loadAndDisplayAnnotation : function( event ){
         //TODO: this is a drop in from history.mako - should use MV as well
@@ -411,7 +469,8 @@ var HDAEditView = HDABaseView.extend({
         return false;        
     },
 
-    // ................................................................................ UTILTIY
+    // ......................................................................... UTILTIY
+    /** string rep */
     toString : function(){
         var modelString = ( this.model )?( this.model + '' ):( '(no model)' );
         return 'HDAView(' + modelString + ')';
@@ -427,8 +486,12 @@ HDAEditView.templates = {
 //==============================================================================
 //TODO: these belong somewhere else
 
-//TODO: should be imported from scatterplot.js
-//TODO: OR abstracted to 'load this in the galaxy_main frame'
+/** Create scatterplot loading/set up function for use with the visualizations popupmenu.
+ *  @param {String} url url (gen. 'visualizations') to which to append 'scatterplot' and params
+ *  @param {Object} params parameters to convert to query string for splot page
+ *  @returns function that loads the scatterplot
+ */
+//TODO: should be imported from scatterplot.js OR abstracted to 'load this in the galaxy_main frame'
 function create_scatterplot_action_fn( url, params ){
     action = function() {
         var galaxy_main = $( window.parent.document ).find( 'iframe#galaxy_main' ),
@@ -442,7 +505,12 @@ function create_scatterplot_action_fn( url, params ){
 }
 
 // -----------------------------------------------------------------------------
-// Create trackster action function.
+/** Create trackster loading/set up function for use with the visualizations popupmenu.
+ *      Shows modal dialog for load old/create new.
+ *  @param {String} vis_url visualizations url (gen. 'visualizations')
+ *  @param {Object} dataset_params parameters to pass to trackster in the query string.
+ *  @returns function that displays modal, loads trackster
+ */
 //TODO: should be imported from trackster.js
 function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
     return function() {

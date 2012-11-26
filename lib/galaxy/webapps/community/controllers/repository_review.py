@@ -7,9 +7,9 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.model.orm import *
 from sqlalchemy.sql.expression import func
 from common import *
+from galaxy.webapps.community.util.container_util import STRSEP
 from repository import RepositoryGrid
-# TODO: re-factor shed_util to eliminate the following restricted imports
-from galaxy.util.shed_util import get_configured_ui, get_repository_in_tool_shed
+from galaxy.util.shed_util_common import *
 from galaxy.util.odict import odict
 
 from galaxy import eggs

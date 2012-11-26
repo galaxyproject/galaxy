@@ -1,8 +1,6 @@
 import galaxy.webapps.community.model as model
 from galaxy.model.orm import *
 from galaxy.webapps.community.model.mapping import context as sa_session
-from base.twilltestcase import *
-import sys
 
 def delete_obj( obj ):
     sa_session.delete( obj )
@@ -31,9 +29,20 @@ def get_user( email ):
     return sa_session.query( model.User ) \
                      .filter( model.User.table.c.email==email ) \
                      .first()
+def get_user_by_name( username ):
+    return sa_session.query( model.User ) \
+                     .filter( model.User.table.c.username==username ) \
+                     .first()
 def mark_obj_deleted( obj ):
     obj.deleted = True
     sa_session.add( obj )
     sa_session.flush()
 def refresh( obj ):
     sa_session.refresh( obj )
+def get_repository_by_name( name, owner_username ):
+    owner = get_user_by_name( owner_username )
+    repository = sa_session.query( model.Repository ) \
+                           .filter( model.Repository.table.c.name==name ) \
+                           .filter( model.Repository.table.c.user_id==owner.id ) \
+                           .first()
+    return repository

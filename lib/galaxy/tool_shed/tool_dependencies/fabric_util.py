@@ -58,7 +58,10 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                 action_type, action_dict = actions[ 0 ]
                 if action_type == 'download_by_url':
                     url = action_dict[ 'url' ]
-                    downloaded_filename = os.path.split( url )[ -1 ]
+                    if 'target_filename' in action_dict:
+                        downloaded_filename = action_dict[ 'target_filename' ]
+                    else:
+                        downloaded_filename = os.path.split( url )[ -1 ]
                     downloaded_file_path = common_util.url_download( work_dir, downloaded_filename, url )
                     if common_util.istar( downloaded_file_path ):
                         # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>

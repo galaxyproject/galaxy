@@ -259,13 +259,10 @@
   </section>
   <section name="NGS: Mapping" id="ngs_mapping">
     <label text="Illumina" id="illumina"/>
-    <tool file="sr_mapping/bowtie_wrapper.xml" />
     <label text="Roche-454" id="roche_454"/>
-    <tool file="sr_mapping/lastz_wrapper.xml" />
     <tool file="metag_tools/megablast_wrapper.xml" />
     <tool file="metag_tools/megablast_xml_parser.xml" />
     <label text="AB-SOLiD" id="ab_solid"/>
-    <tool file="sr_mapping/bowtie_color_wrapper.xml" />
   </section>
   <section name="NGS: SAM Tools" id="samtools">
    <tool file="samtools/sam_bitwise_flag_filter.xml" />
@@ -330,8 +327,9 @@
       <tool file="ngs_rna/tophat_wrapper.xml" />
       <tool file="ngs_rna/cufflinks_wrapper.xml" />
       <tool file="ngs_rna/cuffcompare_wrapper.xml" />
- 	  <tool file="ngs_rna/cuffmerge_wrapper.xml" />
+ 	    <tool file="ngs_rna/cuffmerge_wrapper.xml" />
       <tool file="ngs_rna/cuffdiff_wrapper.xml" />
+      <tool file="ngs_rna/express_wrapper.xml" />
    <label text="Filtering" id="filtering" />
       <tool file="ngs_rna/filter_transcripts_via_tracking.xml" />
   </section>

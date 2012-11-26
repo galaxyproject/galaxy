@@ -284,7 +284,6 @@ function galaxyPageSetUp(){
     // global backbone models
     top.Galaxy.currUser         = top.Galaxy.currUser;
     top.Galaxy.currHistoryPanel = top.Galaxy.currHistoryPanel;
-    top.Galaxy.historyPanels    = top.Galaxy.historyPanels || [];
 
     top.Galaxy.paths            = galaxy_paths;
 
@@ -327,6 +326,7 @@ $(function(){
     // i don't like this history+user relationship, but user authentication changes views/behaviour
     history.user = user;
 
+    // create the history panel
     var historyPanel = new HistoryPanel({
         model           : new History( history, hdas ),
         urlTemplates    : galaxy_paths.attributes,
@@ -378,9 +378,9 @@ $(function(){
         quotaMeter.update()
     }, quotaMeter );
 
-
-    if( !Galaxy.currHistoryPanel ){ Galaxy.currHistoryPanel = historyPanel; }
-    if( !( historyPanel in Galaxy.historyPanels ) ){ Galaxy.historyPanels.unshift( historyPanel ); }
+    // set it up to be accessible across iframes
+    //TODO:?? mem leak
+    top.Galaxy.currHistoryPanel = historyPanel;
 
     return;
 });
@@ -414,7 +414,7 @@ $(function(){
         #history-name {
             word-wrap: break-word;
             font-weight: bold;
-            color: black;
+            /*color: gray;*/
         }
         .editable-text {
             border: solid transparent 1px;
@@ -423,8 +423,7 @@ $(function(){
             width: 90%;
             margin: -2px 0px -3px -4px;
             font-weight: bold;
-            font-size: 110%;
-            color: black;
+            /*color: gray;*/
         }
 
         #quota-message-container {
@@ -440,6 +439,15 @@ $(function(){
         #history-size {
         }
         #history-secondary-links {
+        }
+
+        /*why this is getting underlined is beyond me*/
+        #history-secondary-links #history-refresh {
+            text-decoration: none;
+        }
+        /*too tweaky*/
+        #history-annotate {
+            margin-right: 3px;
         }
 
         #history-tag-area, #history-annotation-area {

@@ -160,7 +160,7 @@ while(<FH>) {
             undef @g2;
             last; #not same chrom
          }else {
-            while ($s[$col1] > $g2[2] && $k <= $#genes) {
+            while ($s[$col1] > $g2[2] && $k < $#genes) {
                $k++;
                @g2 = split(/\t/, $genes[$k]);
                if ($s[$col0] ne $g2[0]) { last; } #end of chrom

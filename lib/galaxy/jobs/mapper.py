@@ -8,6 +8,12 @@ import galaxy.jobs.rules
 
 DYNAMIC_RUNNER_PREFIX = "dynamic:///"
 
+class JobMappingException( Exception ):
+
+    def __init__( self, failure_message ):
+        self.failure_message = failure_message
+
+
 class JobRunnerMapper( object ):
     """
     This class is responsible to managing the mapping of jobs
@@ -116,7 +122,7 @@ class JobRunnerMapper( object ):
 
     def __cache_job_runner_url( self, params ):
         # If there's already a runner set in the Job object, don't overwrite from the tool
-        if self.job_runner_name is not None:
+        if self.job_runner_name is not None and not self.job_runner_name.startswith('tasks'):
             raw_job_runner_url = self.job_runner_name
         else:
             raw_job_runner_url = self.job_wrapper.tool.get_job_runner_url( params )

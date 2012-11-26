@@ -1199,15 +1199,25 @@ class TwillTestCase( unittest.TestCase ):
         tc.fv( 2, "hgta_doGalaxyQuery", "Send query to Galaxy" )
         self.submit_form( button="Send query to Galaxy" )#, **output_params ) #AssertionError: Attempting to set field 'fbQual' to value '['whole']' in form 'None' threw exception: no matching forms! control: <RadioControl(fbQual=[whole, upstreamAll, endAll])>
 
+    def get_running_datasets( self ):
+        self.visit_url( '/api/histories' )
+        history_id = from_json_string( self.last_page() )[0][ 'id' ]
+        self.visit_url( '/api/histories/%s/contents' % history_id )
+        jsondata = from_json_string( self.last_page() )
+        for history_item in jsondata:
+            self.visit_url( history_item[ 'url' ] )
+            item_json = from_json_string( self.last_page() )
+            if item_json[ 'state' ] in [ 'queued', 'running', 'paused' ]:
+                return True
+        return False
+
     def wait( self, maxseconds=120 ):
         """Waits for the tools to finish"""
         sleep_amount = 0.1
         slept = 0
         self.home()
         while slept <= maxseconds:
-            self.visit_page( "history" )
-            page = tc.browser.get_html()
-            if page.find( '<!-- running: do not change this comment, used by TwillTestCase.wait -->' ) > -1:
+            if self.get_running_datasets():
                 time.sleep( sleep_amount )
                 slept += sleep_amount
                 sleep_amount *= 2

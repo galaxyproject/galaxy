@@ -122,18 +122,17 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
             show_hidden  = util.string_as_bool_or_none( show_hidden )
             
             datasets = []
-            history_panel_template = "root/history.mako"
+            history_panel_template = "root/alternate_history.mako"
 
-            # history panel -> backbone (WIP - uncomment next to use)
-            #USE_ALTERNATE = True
-            if 'USE_ALTERNATE' in locals():
-                datasets = self.get_history_datasets( trans, history,
-                                                      show_deleted=True, show_hidden=True, show_purged=True )
-                #datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden, show_purged )
-                history_panel_template = "root/alternate_history.mako"
+            # keeping this switch here for a while - uncomment the next line to use the original mako history panel
+            #USE_ORIGINAL = True
+            if 'USE_ORIGINAL' in locals():
+                datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden, show_purged )
+                history_panel_template = "root/history.mako"
 
             else:
-                datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden, show_purged )
+                datasets = self.get_history_datasets( trans, history,
+                                                      show_deleted=True, show_hidden=True, show_purged=True )
 
             return trans.stream_template_mako( history_panel_template,
                                                history = history,

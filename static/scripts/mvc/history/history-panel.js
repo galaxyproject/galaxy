@@ -102,22 +102,43 @@ TODO:
         sorting, re-shuffling
     
 ============================================================================= */
-/** view for the HDACollection (as per current right hand panel)
+/** @class View/Controller for the history model as used in the history
+ *      panel (current right hand panel).
+ *  @name HistoryPanel
  *
+ *  @augments BaseView
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
  */
-var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
+var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
+/** @lends HistoryPanel.prototype */{
     
-    // uncomment this out see log messages
+    ///** logger used to record this.log messages, commonly set to console */
+    //// comment this out to suppress log output
     //logger              : console,
 
     // direct attachment to existing element
     el                  : 'body.historyPage',
+    /** which class to use for constructing the HDA views */
     //HDAView             : HDABaseView,
     HDAView             : HDAEditView,
 
-    // init with the model, urlTemplates, set up storage, bind HDACollection events
-    //NOTE: this will create or load PersistantStorage keyed under 'HistoryView.<id>'
-    //pre: you'll need to pass in the urlTemplates (urlTemplates : { history : {...}, hda : {...} })
+    /** event map
+     */
+    events : {
+        'click #history-tag'            : 'loadAndDisplayTags'
+    },
+
+    // ......................................................................... SET UP
+    /** Set up the view, set up storage, bind listeners to HDACollection events
+     *  @param {Object} attributes
+     *  @config {Object} urlTemplates.history nested object containing url templates for this view
+     *  @config {Object} urlTemplates.hda nested object containing url templates for HDAViews
+     *  @throws 'needs urlTemplates' if urlTemplates.history or urlTemplates.hda aren't present
+     *  @see PersistantStorage
+     *  @see Backbone.View#initialize
+     */
     initialize : function( attributes ){
         this.log( this + '.initialize:', attributes );
 
@@ -128,81 +149,93 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         if( !attributes.urlTemplates.history ){ throw( this + ' needs urlTemplates.history on initialize' ); }
         if( !attributes.urlTemplates.hda ){     throw( this + ' needs urlTemplates.hda on initialize' ); }
         this.urlTemplates = attributes.urlTemplates.history;
+        /** map web controller urls for history related actions */
         this.hdaUrlTemplates = attributes.urlTemplates.hda;
+
+        this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
+
+        // bind events from the model's hda collection
+        // don't need to re-render entire model on all changes, just render disk size when it changes
+        //this.model.bind( 'change', this.render, this );
+        this.model.bind( 'change:nice_size', this.updateHistoryDiskSize, this );
+        this.model.hdas.bind( 'add',   this.add,    this );
+        this.model.hdas.bind( 'reset', this.addAll, this );
+        //this.bind( 'all', function(){
+        //    this.log( arguments );
+        //}, this );
+
+        // set up instance vars
+        /** map of hda model ids to hda views */
+        this.hdaViews = {};
+        /** map web controller urls for history related actions */
+        this.urls = {};
+    },
+
+    /** Set up client side storage. Currently PersistanStorage keyed under 'HistoryPanel.<id>'
+     *  @param {Object} initiallyExpanded
+     *  @param {Boolean} show_deleted whether to show deleted HDAs (overrides stored)
+     *  @param {Boolean} show_hidden
+     *  @see PersistantStorage
+     */
+    _setUpWebStorage : function( initiallyExpanded, show_deleted, show_hidden ){
 
         // data that needs to be persistant over page refreshes
         //  (note the key function which uses the history id as well)
         this.storage = new PersistantStorage( 'HistoryView.' + this.model.get( 'id' ), {
+            //TODOL initiallyExpanded only works on first load right now
             expandedHdas : {},
             show_deleted : false,
             show_hidden  : false
         });
         this.log( 'this.storage:', this.storage.get() );
 
-        // get the show_deleted/hidden settings giving priority to values passed into initialize, but
+        // expanded Hdas is a map of hda.ids -> a boolean rep'ing whether this hda's body is expanded
+        // store any pre-expanded ids passed in
+        if( initiallyExpanded ){
+            this.storage.set( 'exandedHdas', initiallyExpanded );
+        }
+
+        // get the show_deleted/hidden settings giving priority to values passed in,
         //  using web storage otherwise
-        this.log( 'show_deleted:', attributes.show_deleted, 'show_hidden', attributes.show_hidden );
+        //this.log( 'show_deleted:', show_deleted, 'show_hidden', show_hidden );
         // if the page has specifically requested show_deleted/hidden, these will be either true or false
         //  (as opposed to undefined, null) - and we give priority to that setting
-        if( ( attributes.show_deleted === true ) || ( attributes.show_deleted === false ) ){
+        if( ( show_deleted === true ) || ( show_deleted === false ) ){
             // save them to web storage
-            this.storage.set( 'show_deleted', attributes.show_deleted );
+            this.storage.set( 'show_deleted', show_deleted );
         }
-        if( ( attributes.show_hidden === true ) || ( attributes.show_hidden === false ) ){
-            this.storage.set( 'show_hidden', attributes.show_hidden );
+        if( ( show_hidden === true ) || ( show_hidden === false ) ){
+            this.storage.set( 'show_hidden', show_hidden );
         }
-        // pull show_deleted/hidden from the web storage  if the page hasn't specified whether to show_deleted/hidden,
+        // if the page hasn't specified whether to show_deleted/hidden, pull show_deleted/hidden from the web storage
         this.show_deleted = this.storage.get( 'show_deleted' );
         this.show_hidden  = this.storage.get( 'show_hidden' );
-        this.log( 'this.show_deleted:', this.show_deleted, 'show_hidden', this.show_hidden );
-        this.log( '(now) this.storage:', this.storage.get() );
-
-        // bind events from the model's hda collection
-        //this.model.bind( 'change', this.render, this );
-        this.model.bind( 'change:nice_size', this.updateHistoryDiskSize, this );
-
-        this.model.hdas.bind( 'add',   this.add,    this );
-        this.model.hdas.bind( 'reset', this.addAll, this );
-        this.model.hdas.bind( 'all',   this.all,    this );
-
-        //this.bind( 'all', function(){
-        //    this.log( arguments );
-        //}, this );
-
-        // set up instance vars
-        this.hdaViews = {};
-        this.urls = {};
+        //this.log( 'this.show_deleted:', this.show_deleted, 'show_hidden', this.show_hidden );
+        this.log( '(init\'d) this.storage:', this.storage.get() );
     },
 
+    /** Add an hda to this history's collection
+     *  @param {HistoryDatasetAssociation} hda hda to add to the collection
+     */
     add : function( hda ){
         //console.debug( 'add.' + this, hda );
         //TODO
     },
 
+    /** Event hander to respond when hdas are reset
+     */
     addAll : function(){
         //console.debug( 'addAll.' + this );
         // re render when all hdas are reset
         this.render();
     },
 
-    all : function( event ){
-        //console.debug( 'allItemEvents.' + this, event );
-        //...for which to do the debuggings
-    },
-
-    // render the urls for this view using urlTemplates and the model data
-    renderUrls : function( modelJson ){
-        var historyView = this;
-
-        historyView.urls = {};
-        _.each( this.urlTemplates, function( urlTemplate, urlKey ){
-            historyView.urls[ urlKey ] = _.template( urlTemplate, modelJson );
-        });
-        return historyView.urls;
-    },
-
-    // render urls, historyView body, and hdas (if any are shown), fade out, swap, fade in, set up behaviours
-    // events: rendered, rendered:initial
+    // ......................................................................... RENDERING
+    /** Render urls, historyPanel body, and hdas (if any are shown)
+     *  @see Backbone.View#render
+     */
+    /** event rendered triggered when the panel rendering is complete */
+    /** event rendered:initial triggered when the FIRST panel rendering is complete */
     render : function(){
         var historyView = this,
             setUpQueueName = historyView.toString() + '.set-up',
@@ -213,13 +246,12 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         //console.debug( this + '.render, initialRender:', initialRender );
 
         // render the urls and add them to the model json
-        modelJson.urls = this.renderUrls( modelJson );
+        modelJson.urls = this._renderUrls( modelJson );
 
         // render the main template, tooltips
         //NOTE: this is done before the items, since item views should handle theirs themselves
         newRender.append( HistoryPanel.templates.historyPanel( modelJson ) );
         newRender.find( '.tooltip' ).tooltip({ placement: 'bottom' });
-        this.setUpActionButton( newRender.find( '#history-action-popup' ) );
 
         // render hda views (if any and any shown (show_deleted/hidden)
         //TODO: this seems too elaborate
@@ -244,7 +276,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
             this.log( historyView + ' rendered:', historyView.$el );
 
             //TODO: ideally, these would be set up before the fade in (can't because of async save text)
-            historyView.setUpBehaviours();
+            historyView._setUpBehaviours();
             
             if( initialRender ){
                 historyView.trigger( 'rendered:initial' );
@@ -258,19 +290,24 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         return this;
     },
 
-    setUpActionButton : function( $button ){
-        var historyPanel = this,
-            show_deletedText = ( this.storage.get( 'show_deleted' ) )?( 'Hide deleted' ):( 'Show deleted' ),
-            show_hiddenText  = ( this.storage.get( 'show_hidden' )  )?( 'Hide hidden'  ):( 'Show hidden' ),
-            menuActions  = {};
-        menuActions[ _l( 'refresh' ) ]          = function(){ window.location.reload(); };
-        menuActions[ _l( 'collapse all' ) ]     = function(){ historyPanel.hideAllHdaBodies(); };
-        menuActions[ _l( show_deletedText ) ]   = function(){ historyPanel.toggleShowDeleted(); };
-        menuActions[ _l( show_hiddenText  ) ]   = function(){ historyPanel.toggleShowHidden(); };
-        make_popupmenu( $button, menuActions );
+    /** Render the urls for this view using urlTemplates and the model data
+     *  @param {Object} modelJson data from the model used to fill templates
+     */
+    _renderUrls : function( modelJson ){
+        var historyView = this;
+
+        historyView.urls = {};
+        _.each( this.urlTemplates, function( urlTemplate, urlKey ){
+            historyView.urls[ urlKey ] = _.template( urlTemplate, modelJson );
+        });
+        return historyView.urls;
     },
 
-    // set up a view for each item to be shown, init with model and listeners, cache to map ( model.id : view )
+    /** Set up/render a view for each HDA to be shown, init with model and listeners.
+     *      HDA views are cached to the map this.hdaViews (using the model.id as key).
+     *  @param {jQuery} $whereTo what dom element to prepend the HDA views to
+     *  @returns the number of visible hda views
+     */
     renderItems : function( $whereTo ){
         this.hdaViews = {};
         var historyView = this,
@@ -290,7 +327,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
                     expanded        : expanded,
                     urlTemplates    : historyView.hdaUrlTemplates
                 });
-            historyView.setUpHdaListeners( historyView.hdaViews[ hdaId ] );
+            historyView._setUpHdaListeners( historyView.hdaViews[ hdaId ] );
 
             // render it (NOTE: reverse order, newest on top (prepend))
             //TODO: by default send a reverse order list (although this may be more efficient - it's more confusing)
@@ -299,21 +336,25 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         return visibleHdas.length;
     },
 
-    // set up HistoryView->HDAView listeners
-    setUpHdaListeners : function( hdaView ){
+    /** Set up HistoryPanel listeners for HDAView events. Currently binds:
+     *      HDAView#body-visible, HDAView#body-hidden to store expanded states
+     *  @param {HDAView} hdaView HDAView (base or edit) to listen to
+     */
+    _setUpHdaListeners : function( hdaView ){
         var historyView = this;
-        // use storage to maintain a list of hdas whose bodies are expanded
-        hdaView.bind( 'body-visible', function( id ){
+        // maintain a list of hdas whose bodies are expanded
+        hdaView.bind( 'body-expanded', function( id ){
             historyView.storage.get( 'expandedHdas' ).set( id, true );
         });
-        hdaView.bind( 'body-hidden', function( id ){
+        hdaView.bind( 'body-collapsed', function( id ){
             historyView.storage.get( 'expandedHdas' ).deleteKey( id );
         });
     },
 
-    // set up js/widget behaviours: tooltips,
+    /** Set up HistoryPanel js/widget behaviours
+     */
     //TODO: these should be either sub-MVs, or handled by events
-    setUpBehaviours : function(){
+    _setUpBehaviours : function(){
         // anon users shouldn't have access to any of these
         if( !( this.model.get( 'user' ) && this.model.get( 'user' ).email ) ){ return; }
 
@@ -337,48 +378,60 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
             this.urls.annotate, "new_annotation", 18, true, 4 );
     },
 
-    // update the history size display (curr. upper right of panel)
+    // ......................................................................... EVENTS
+    /** Update the history size display (curr. upper right of panel).
+     */
     updateHistoryDiskSize : function(){
         this.$el.find( '#history-size' ).text( this.model.get( 'nice_size' ) );
     },
     
-    events : {
-        'click #history-tag'            : 'loadAndDisplayTags'
-    },
-
+    /** Show the over quota message (which happens to be in the history panel).
+     */
     //TODO: this seems more like a per user message than a history message; IOW, this doesn't belong here
-    showQuotaMessage : function( userData ){
+    showQuotaMessage : function(){
         var msg = this.$el.find( '#quota-message-container' );
         //this.log( this + ' showing quota message:', msg, userData );
         if( msg.is( ':hidden' ) ){ msg.slideDown( 'fast' ); }
     },
 
+    /** Hide the over quota message (which happens to be in the history panel).
+     */
     //TODO: this seems more like a per user message than a history message
-    hideQuotaMessage : function( userData ){
+    hideQuotaMessage : function(){
         var msg = this.$el.find( '#quota-message-container' );
         //this.log( this + ' hiding quota message:', msg, userData );
         if( !msg.is( ':hidden' ) ){ msg.slideUp( 'fast' ); }
     },
 
-    toggleShowDeleted : function( x, y, z ){
+    /** Handle the user toggling the deleted visibility by:
+     *      (1) storing the new value in the persistant storage
+     *      (2) re-rendering the history
+     */
+    toggleShowDeleted : function(){
         this.storage.set( 'show_deleted', !this.storage.get( 'show_deleted' ) );
         this.render();
     },
 
+    /** Handle the user toggling the deleted visibility by:
+     *      (1) storing the new value in the persistant storage
+     *      (2) re-rendering the history
+     */
     toggleShowHidden : function(){
         this.storage.set( 'show_hidden', !this.storage.get( 'show_hidden' ) );
         this.render();
     },
 
-    // collapse all hda bodies
-    hideAllHdaBodies : function(){
+    /** Collapse all hda bodies and clear expandedHdas in the storage
+     */
+    collapseAllHdaBodies : function(){
         _.each( this.hdaViews, function( item ){
             item.toggleBodyVisibility( null, false );
         });
         this.storage.set( 'expandedHdas', {} );
     },
 
-    // find the tag area and, if initial: (via ajax) load the html for displaying them; otherwise, unhide/hide
+    /** Find the tag area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
+     */
     //TODO: into sub-MV
     loadAndDisplayTags : function( event ){
         this.log( this + '.loadAndDisplayTags', event );
@@ -414,13 +467,16 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend({
         return false;
     },
     
+    // ......................................................................... MISC
+    /** Return a string rep of the history
+     */
     toString    : function(){
         var nameString = this.model.get( 'name' ) || '';
-        return 'HistoryView(' + nameString + ')';
+        return 'HistoryPanel(' + nameString + ')';
     }
 });
 
-//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------ TEMPLATES
 HistoryPanel.templates = {
     historyPanel : Handlebars.templates[ 'template-history-historyPanel' ]
 };

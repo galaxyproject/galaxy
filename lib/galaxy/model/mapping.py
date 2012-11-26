@@ -1571,13 +1571,13 @@ assign_mapper( context, LibraryDatasetDatasetInfoAssociation, LibraryDatasetData
                               ) )
 
 assign_mapper( context, JobToInputDatasetAssociation, JobToInputDatasetAssociation.table,
-    properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False ) ) )
+    properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False, backref="dependent_jobs" ) ) )
 
 assign_mapper( context, JobToOutputDatasetAssociation, JobToOutputDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( HistoryDatasetAssociation, lazy=False ) ) )
 
 assign_mapper( context, JobToInputLibraryDatasetAssociation, JobToInputLibraryDatasetAssociation.table,
-    properties=dict( job=relation( Job ), dataset=relation( LibraryDatasetDatasetAssociation, lazy=False ) ) )
+    properties=dict( job=relation( Job ), dataset=relation( LibraryDatasetDatasetAssociation, lazy=False, backref="dependent_jobs" ) ) )
 
 assign_mapper( context, JobToOutputLibraryDatasetAssociation, JobToOutputLibraryDatasetAssociation.table,
     properties=dict( job=relation( Job ), dataset=relation( LibraryDatasetDatasetAssociation, lazy=False ) ) )

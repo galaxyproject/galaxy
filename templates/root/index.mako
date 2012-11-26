@@ -40,11 +40,17 @@
             "${_("Resume Paused Jobs")}": function() {
                 galaxy_history.location = "${h.url_for( controller='history', action='resume_paused_jobs', current=True)}";
             },
-            "${_("Show Deleted Datasets")}": function() {
-                galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
+            "${_("Collapse Expanded Datasets")}": function() {
+                Galaxy.currHistoryPanel.collapseAllHdaBodies();
+                //galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
             },
-            "${_("Show Hidden Datasets")}": function() {
-                galaxy_history.location = "${h.url_for( controller='root', action='history', show_hidden=True)}";
+            "${_("Show/Hide Deleted Datasets")}": function() {
+                Galaxy.currHistoryPanel.toggleShowDeleted();
+                //galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
+            },
+            "${_("Show/Hide Hidden Datasets")}": function() {
+                Galaxy.currHistoryPanel.toggleShowHidden();
+                //galaxy_history.location = "${h.url_for( controller='root', action='history', show_hidden=True)}";
             },
             "${_("Unhide Hidden Datasets")}": function() {
                 if ( confirm( "Really unhide all hidden datasets?" ) ) {
@@ -136,7 +142,14 @@
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner">
             <div style="float: right">
-                <a id="history-options-button" class='panel-header-button' href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main"><span class="ficon large cog"></span></a>
+                <a id="history-refresh-button" class='panel-header-button'
+                   href="${h.url_for( controller='root', action='history' )}" target="galaxy_history">
+                    <span class="ficon large refresh"></span>
+                </a>
+                <a id="history-options-button" class='panel-header-button'
+                   href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main">
+                    <span class="ficon large cog"></span>
+                </a>
             </div>
             <div class="panel-header-text">${_('History')}</div>
         </div>

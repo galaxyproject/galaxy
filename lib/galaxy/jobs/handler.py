@@ -17,6 +17,7 @@ log = logging.getLogger( __name__ )
 
 # States for running a job. These are NOT the same as data states
 JOB_WAIT, JOB_ERROR, JOB_INPUT_ERROR, JOB_INPUT_DELETED, JOB_READY, JOB_DELETED, JOB_ADMIN_DELETED, JOB_USER_OVER_QUOTA = 'wait', 'error', 'input_error', 'input_deleted', 'ready', 'deleted', 'admin_deleted', 'user_over_quota'
+DEFAULT_JOB_PUT_FAILURE_MESSAGE = 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.'
 
 class JobHandler( object ):
     """
@@ -41,6 +42,7 @@ class JobHandlerQueue( object ):
     a JobRunner.
     """
     STOP_SIGNAL = object()
+
     def __init__( self, app, dispatcher ):
         """Start the job manager"""
         self.app = app
@@ -193,6 +195,10 @@ class JobHandlerQueue( object ):
                 elif job_state == JOB_USER_OVER_QUOTA:
                     log.info( "(%d) User (%s) is over quota: job paused" % ( job.id, job.user_id ) )
                     job.state = model.Job.states.PAUSED
+                    for dataset_assoc in job.output_datasets + job.output_library_datasets:
+                        dataset_assoc.dataset.dataset.state = model.Dataset.states.PAUSED
+                        dataset_assoc.dataset.info = "Execution of this dataset's job is paused because you were over your disk quota at the time it was ready to run"
+                        self.sa_session.add( dataset_assoc.dataset.dataset )
                     self.sa_session.add( job )
                 else:
                     log.error( "(%d) Job in unknown state '%s'" % ( job.id, job_state ) )
@@ -458,6 +464,15 @@ class DefaultJobDispatcher( object ):
     def put( self, job_wrapper ):
         try:
             runner_name = self.__get_runner_name( job_wrapper )
+        except Exception, e:
+            failure_message = getattr(e, 'failure_message', DEFAULT_JOB_PUT_FAILURE_MESSAGE )
+            if failure_message == DEFAULT_JOB_PUT_FAILURE_MESSAGE:
+                log.exception( 'Failed to generate job runner name' )
+            else:
+                log.debug( "Intentionally failing job with message (%s)" % failure_message )
+            job_wrapper.fail( failure_message )
+            return
+        try:
             if isinstance(job_wrapper, TaskWrapper):
                 #DBTODO Refactor
                 log.debug( "dispatching task %s, of job %d, to %s runner" %( job_wrapper.task_id, job_wrapper.job_id, runner_name ) )
@@ -466,7 +481,7 @@ class DefaultJobDispatcher( object ):
             self.job_runners[runner_name].put( job_wrapper )
         except KeyError:
             log.error( 'put(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
-            job_wrapper.fail( 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.' )
+            job_wrapper.fail( DEFAULT_JOB_PUT_FAILURE_MESSAGE )
 
     def stop( self, job ):
         """
@@ -508,7 +523,7 @@ class DefaultJobDispatcher( object ):
             self.job_runners[runner_name].recover( job, job_wrapper )
         except KeyError:
             log.error( 'recover(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
-            job_wrapper.fail( 'Unable to run job due to a misconfiguration of the Galaxy job running system.  Please contact a site administrator.' )
+            job_wrapper.fail( DEFAULT_JOB_PUT_FAILURE_MESSAGE )
 
     def shutdown( self ):
         for runner in self.job_runners.itervalues():

@@ -2,15 +2,23 @@
 //    "../mvc/base-mvc"
 //], function(){
 //==============================================================================
-/**
+/** @class (HDA) model for a Galaxy dataset
+ *      related to a history.
+ *  @name HistoryDatasetAssociation
  *
+ *  @augments BaseModel
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
  */
-var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
-    // a single HDA model
+var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
+/** @lends HistoryDatasetAssociation.prototype */{
     
-    // uncomment this out see log messages
+    ///** logger used to record this.log messages, commonly set to console */
+    //// comment this out to suppress log output
     //logger              : console,
     
+    /** default attributes for a model */
     defaults : {
         // ---these are part of an HDA proper:
 
@@ -46,18 +54,22 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
         accessible          : false
     },
 
-    // fetch location of this history in the api
+    /** fetch location of this history in the api */
+    urlRoot: 'api/histories/',
     url : function(){
         //TODO: get this via url router
         return 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
     },
     
-    // (curr) only handles changing state of non-accessible hdas to STATES.NOT_VIEWABLE
+    /** Set up the model, determine if accessible, bind listeners
+     *  @see Backbone.Model#initialize
+     */
     //TODO:? use initialize (or validate) to check purged AND deleted -> purged XOR deleted
     initialize : function(){
         this.log( this + '.initialize', this.attributes );
         this.log( '\tparent history_id: ' + this.get( 'history_id' ) );
         
+        // (curr) only handles changing state of non-accessible hdas to STATES.NOT_VIEWABLE
         //!! this state is not in trans.app.model.Dataset.states - set it here -
         //TODO: change to server side.
         if( !this.get( 'accessible' ) ){
@@ -81,12 +93,18 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
         //});
     },
 
+    /** Is this hda deleted or purged?
+     */
     isDeletedOrPurged : function(){
         return ( this.get( 'deleted' ) || this.get( 'purged' ) );
     },
 
-    // based on show_deleted, show_hidden (gen. from the container control), would this ds show in the list of ds's?
-    //TODO: too many visibles
+    /** based on show_deleted, show_hidden (gen. from the container control),
+     *      would this ds show in the list of ds's?
+     *  @param {Boolean} show_deleted are we showing deleted hdas?
+     *  @param {Boolean} show_hidden are we showing hidden hdas?
+     */
+    //TODO: too many 'visible's
     isVisible : function( show_deleted, show_hidden ){
         var isVisible = true;
         if( ( !show_deleted )
@@ -100,9 +118,15 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
         return isVisible;
     },
     
-    // 'ready' states are states where no processing (for the ds) is left to do on the server
+    /** Is this HDA in a 'ready' state; where 'Ready' states are states where no
+     *      processing (for the ds) is left to do on the server.
+     *      Currently: NEW, OK, EMPTY, FAILED_METADATA, NOT_VIEWABLE, DISCARDED,
+     *      and ERROR
+     */
     inReadyState : function(){
         var state = this.get( 'state' );
+        //TODO: to list inclusion test
+        //TODO: class level readyStates list
         return (
             ( state === HistoryDatasetAssociation.STATES.NEW )
         ||  ( state === HistoryDatasetAssociation.STATES.OK )
@@ -114,12 +138,15 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
         );
     },
 
-    // convenience fn to match hda.has_data
+    /** Convenience function to match hda.has_data.
+     */
     hasData : function(){
         //TODO:?? is this equivalent to all possible hda.has_data calls?
         return ( this.get( 'file_size' ) > 0 );
     },
 
+    /** String representation
+     */
     toString : function(){
         var nameAndId = this.get( 'id' ) || '';
         if( this.get( 'name' ) ){
@@ -130,48 +157,85 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend({
 });
 
 //------------------------------------------------------------------------------
+/** Class level map of possible HDA states to their string equivalents.
+ *      A port of galaxy.model.Dataset.states.
+ */
 HistoryDatasetAssociation.STATES = {
+    // NOT ready states
+    /** is uploading and not ready */
     UPLOAD              : 'upload',
+    /** the job that will produce the dataset queued in the runner */
     QUEUED              : 'queued',
+    /** the job that will produce the dataset paused */
+    PAUSED              : 'paused',
+    /** the job that will produce the dataset is running */
     RUNNING             : 'running',
+    /** metadata for the dataset is being discovered/set */
     SETTING_METADATA    : 'setting_metadata',
 
+    // ready states
+    /** was created without a tool */
     NEW                 : 'new',
-    OK                  : 'ok',
+    /** has no data */
     EMPTY               : 'empty',
+    /** has successfully completed running */
+    OK                  : 'ok',
 
+    /** metadata discovery/setting failed or errored (but otherwise ok) */
     FAILED_METADATA     : 'failed_metadata',
+    /** not accessible to the current user (i.e. due to permissions) */
     NOT_VIEWABLE        : 'noPermission',   // not in trans.app.model.Dataset.states
+    /** deleted while uploading */
     DISCARDED           : 'discarded',
+    /** the tool producing this dataset failed */
     ERROR               : 'error'
 };
 
 //==============================================================================
-/**
+/** @class Backbone collection of (HDA) models
  *
+ *  @borrows LoggableMixin#logger as #logger
+ *  @borrows LoggableMixin#log as #log
+ *  @constructs
  */
-var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend({
+var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
+/** @lends HDACollection.prototype */{
     model           : HistoryDatasetAssociation,
 
-    //logger          : console,
+    ///** logger used to record this.log messages, commonly set to console */
+    //// comment this out to suppress log output
+    //logger              : console,
 
+    /** Set up.
+     *  @see Backbone.Collection#initialize
+     */
     initialize : function(){
         //this.bind( 'all', function( event ){
         //    this.log( this + '', arguments );
         //});
     },
 
-    // return the ids of every hda in this collection
+    /** Get the ids of every hda in this collection
+     *  @returns array of encoded ids 
+     */
     ids : function(){
         return this.map( function( item ){ return item.id; });
     },
 
-    // return an HDA collection containing every 'shown' hda based on show_deleted/hidden
+    /** Get every 'shown' hda in this collection based on show_deleted/hidden
+     *  @param {Boolean} show_deleted are we showing deleted hdas?
+     *  @param {Boolean} show_hidden are we showing hidden hdas?
+     *  @returns array of hda models
+     *  @see HistoryDatasetAssociation#isVisible
+     */
     getVisible : function( show_deleted, show_hidden ){
         return this.filter( function( item ){ return item.isVisible( show_deleted, show_hidden ); });
     },
 
-    // get a map where <possible hda state> : [ <list of hda ids in that state> ]
+    /** For each possible hda state, get an array of all hda ids in that state
+     *  @returns a map of states -> hda ids
+     *  @see HistoryDatasetAssociation#STATES
+     */
     getStateLists : function(){
         var stateLists = {};
         _.each( _.values( HistoryDatasetAssociation.STATES ), function( state ){
@@ -184,7 +248,10 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend({
         return stateLists;
     },
 
-    // returns the id of every hda still running (not in a ready state)
+    /** Get the id of every hda in this collection not in a 'ready' state (running).
+     *  @returns an array of hda ids
+     *  @see HistoryDatasetAssociation#inReadyState
+     */
     running : function(){
         var idList = [];
         this.each( function( item ){
@@ -195,7 +262,10 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend({
         return idList;
     },
 
-    // update (fetch -> render) the hdas with the ids given
+    /** Update (fetch) the data of the hdas with the given ids.
+     *  @param {String[]} ids an array of hda ids to update
+     *  @see HistoryDatasetAssociation#fetch
+     */
     update : function( ids ){
         this.log( this + 'update:', ids );
 
@@ -208,6 +278,7 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend({
         });
     },
 
+    /** String representation. */
     toString : function(){
          return ( 'HDACollection(' + this.ids().join(',') + ')' );
     }

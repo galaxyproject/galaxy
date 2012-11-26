@@ -28,10 +28,15 @@
 %>
 <%inherit file="${inherit(context)}"/>
 
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css( "library" )}
+</%def>
+
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.rating" )}
-    ${common_javascripts(repository)}
+    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
+    ${dependency_javascripts()}
 </%def>
 
 <br/><br/>
@@ -79,4 +84,4 @@
     </div>
 </div>
 <p/>
-${render_repository_items( repository_metadata_id, metadata )}
+${render_repository_items( repository_metadata_id, changeset_revision, metadata, containers_dict, can_set_metadata=False )}

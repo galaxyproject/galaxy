@@ -1,18 +1,37 @@
-<tool id="hgv_snpFreq" name="snpFreq" version="1.0.0">
+<tool id="hgv_snpFreq" name="snpFreq" version="1.0.1">
   <description>significant SNPs in case-control data</description>
 
   <command interpreter="perl">
-    snpFreq2.pl $input $group1_1 $group1_2 $group1_3 $group2_1 $group2_2 $group2_3 0.05 $output
+    snpFreq2.pl $inTypeCond.inType 0.05 $input $output
+    #if $inTypeCond.inType == "tab" 
+       $inTypeCond.group1_1 $inTypeCond.group1_2 $inTypeCond.group1_3 
+       $inTypeCond.group2_1 $inTypeCond.group2_2 $inTypeCond.group2_3 0.05
+    #else if $inTypeCond.inType == "snp" 
+       $group1 $group2
+    #end if
   </command>
 
   <inputs>
-    <param format="tabular" name="input" type="data" label="Dataset" />
-    <param name="group1_1" label="Column with genotype 1 count for group 1" type="data_column" data_ref="input" />
-    <param name="group1_2" label="Column with genotype 2 count for group 1" type="data_column" data_ref="input" />
-    <param name="group1_3" label="Column with genotype 3 count for group 1" type="data_column" data_ref="input" />
-    <param name="group2_1" label="Column with genotype 1 count for group 2" type="data_column" data_ref="input" />
-    <param name="group2_2" label="Column with genotype 2 count for group 2" type="data_column" data_ref="input" />
-    <param name="group2_3" label="Column with genotype 3 count for group 2" type="data_column" data_ref="input" />
+    <conditional name="inTypeCond">
+       <param name="inType" type="select" label="Format of input" >
+          <option value="tab">Alleles pre-counted</option>
+          <option value="snp">SNP table</option>
+       </param>
+       <when value="tab">
+       <param format="tabular" name="input" type="data" label="Dataset" />
+       <param name="group1_1" label="Column with genotype 1 count for group 1" type="data_column" data_ref="input" />
+       <param name="group1_2" label="Column with genotype 2 count for group 1" type="data_column" data_ref="input" />
+       <param name="group1_3" label="Column with genotype 3 count for group 1" type="data_column" data_ref="input" />
+       <param name="group2_1" label="Column with genotype 1 count for group 2" type="data_column" data_ref="input" />
+       <param name="group2_2" label="Column with genotype 2 count for group 2" type="data_column" data_ref="input" />
+       <param name="group2_3" label="Column with genotype 3 count for group 2" type="data_column" data_ref="input" />
+       </when>
+       <when value="snp">
+       <param format="snp" name="input" type="data" label="SNP Dataset" />
+       <param format="ind" name="group1" type="data" label="Group 1" />
+       <param format="ind" name="group2" type="data" label="Group 2" />
+       </when>
+    </conditional>
   </inputs>
 
   <outputs>

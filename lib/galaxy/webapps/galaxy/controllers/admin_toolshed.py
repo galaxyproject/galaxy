@@ -2,6 +2,7 @@ import urllib2, tempfile
 from admin import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
+from galaxy.util.shed_util_common import *
 from galaxy.tool_shed.encoding_util import *
 from galaxy import eggs, tools
 
