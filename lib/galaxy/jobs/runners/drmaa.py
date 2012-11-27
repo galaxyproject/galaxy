@@ -293,6 +293,7 @@ class DRMAAJobRunner( BaseJobRunner ):
             galaxy_job_id = drm_job_state.job_wrapper.job_id
             old_state = drm_job_state.old_state
             try:
+                assert job_id not in ( None, 'None' ), 'Invalid job id: %s' % job_id
                 state = self.ds.jobStatus( job_id )
             # InternalException was reported to be necessary on some DRMs, but
             # this could cause failures to be detected as completion!  Please
@@ -308,7 +309,7 @@ class DRMAAJobRunner( BaseJobRunner ):
                 continue
             except Exception, e:
                 # so we don't kill the monitor thread
-                log.exception("(%s/%s) Unable to check job status" % ( galaxy_job_id, job_id ) )
+                log.exception("(%s/%s) Unable to check job status: %s" % ( galaxy_job_id, job_id, str( e ) ) )
                 log.warning("(%s/%s) job will now be errored" % ( galaxy_job_id, job_id ) )
                 drm_job_state.fail_message = "Cluster could not complete job"
                 self.work_queue.put( ( 'fail', drm_job_state ) )
