@@ -224,8 +224,8 @@ class Configuration( object ):
         try:
             job_limits = global_conf_parser.items( 'galaxy:job_limits' )
             for k, v in job_limits:
-                # ConfigParser considers the first colon to be the delimiter, undo this behavior
-                more_k, v = v.split('=', 1)
+                # Since the URL contains a colon and possibly an equals sign, consider ' = ' the delimiter
+                more_k, v = v.split(' = ', 1)
                 k = '%s:%s' % (k, more_k.strip())
                 v = v.strip().rsplit(None, 1)
                 v[1] = int(v[1])
