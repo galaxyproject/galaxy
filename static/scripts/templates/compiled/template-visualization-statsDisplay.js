@@ -1,6 +1,6 @@
 (function() {
   var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
-templates['template-visualization-statsTable'] = template(function (Handlebars,depth0,helpers,partials,data) {
+templates['template-visualization-statsDisplay'] = template(function (Handlebars,depth0,helpers,partials,data) {
   helpers = helpers || Handlebars.helpers;
   var buffer = "", stack1, functionType="function", escapeExpression=this.escapeExpression, self=this;
 

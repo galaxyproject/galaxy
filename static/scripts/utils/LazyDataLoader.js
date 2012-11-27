@@ -1,3 +1,4 @@
+//==============================================================================
 /*
 TODO:
     ?? superclass dataloader, subclass lazydataloader??
@@ -213,3 +214,5 @@ function LazyDataLoader( config ){
     loader.initialize( config );
     return loader;
 }
+
+//==============================================================================

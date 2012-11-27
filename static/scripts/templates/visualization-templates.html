@@ -1,22 +1,59 @@
 <script type="text/template" class="template-visualization" id="template-visualization-scatterplotControlForm">
-{{! main controls }}
+{{! main layout }}
 
-<ul class="nav nav-tabs">
-    <li class="active"><a data-toggle="tab" href="#data-settings">Data Controls</a></li>
-    <li><a data-toggle="tab" href="#chart-settings">Plot Controls</a></li>
-    <li><a data-toggle="tab" href="#chart-stats">Statistics</a></li>
-    <li><a data-toggle="tab" href="#chart">Chart</a></li>
-</ul>
+<div class="scatterplot-container chart-container tabbable tabs-left">
+    {{! tab buttons/headers using Bootstrap }}
+    <ul class="nav nav-tabs">
+        {{! start with the data controls as the displayed tab }}
+        <li class="active"><a href="#data-control" data-toggle="tab" class="tooltip"
+            title="Use this tab to change which data are used">Data Controls</a></li>
+        <li><a href="#chart-control" data-toggle="tab" class="tooltip"
+            title="Use this tab to change how the chart is drawn">Chart Controls</a></li>
+        <li><a href="#stats-display" data-toggle="tab" class="tooltip"
+            title="This tab will display overall statistics for your data">Statistics</a></li>
+        <li><a href="#chart-display" data-toggle="tab" class="tooltip"
+            title="This tab will display the chart">Chart</a>
+            {{! loading indicator - initially hidden }}
+            <div id="loading-indicator" style="display: none;">
+                <img class="loading-img" src="{{loadingIndicatorImagePath}}" />
+                <span class="loading-message">{{message}}</span>
+            </div>
+        </li>
+    </ul>
 
-{{! data settings }}
-<div class="tab-content">
-<div id="data-settings" class="tab-pane active">
+    {{! data form, chart config form, stats, and chart all get their own tab }}
+    <div class="tab-content">
+        {{! ---------------------------- tab for data settings form }}
+        <div id="data-control" class="tab-pane active">
+            {{! rendered separately }}
+        </div>
+    
+        {{! ---------------------------- tab for chart graphics control form }}
+        <div id="chart-control" class="tab-pane">
+            {{! rendered separately }}
+        </div>
+
+        {{! ---------------------------- tab for data statistics }}
+        <div id="stats-display" class="tab-pane">
+            {{! rendered separately }}
+        </div>
+
+        {{! ---------------------------- tab for actual chart }}
+        <div id="chart-display" class="tab-pane">
+            {{! chart rendered separately }}
+        </div>
+
+    </div>{{! end .tab-content }}
+</div>{{! end .chart-control }}
+</script>
+
+<script type="text/template" class="template-visualization" id="template-visualization-dataControl">
 
     <p class="help-text">
         Use the following controls to change the data used by the chart.
         Use the 'Draw' button to render (or re-render) the chart with the current settings.
     </p>
-        
+
     {{! column selector containers }}
     <div class="column-select">
         <label for="X-select">Data column for X: </label>
@@ -34,7 +71,7 @@
         {{/each}}
         </select>
     </div>
-    
+
     {{! optional id column }}
     <div id="include-id">
         <label for="include-id-checkbox">Include a third column as data point IDs?</label>
@@ -52,47 +89,19 @@
         {{/each}}
         </select>
     </div>
-    
+
     <input id="render-button" type="button" value="Draw" />
-    <input id="save-button" type="button" value="Download Plot as SVG" style="display: none;" />
     <div class="clear"></div>
-</div>
-
-<div id="chart-settings" class="tab-pane">
-</div>
-
-<div id="chart-stats" class="tab-pane">
-</div>
-</div>{{! class="tab-content" }}
-
-{{! loading indicator - initially hidden }}
-<div id="loading-indicator" style="display: none;">
-    <img class="loading-img" src="{{loadingIndicatorImagePath}}" />
-    <span class="loading-message">{{message}}</span>
-</div>
-
 </script>
 
-<script type="text/template" class="template-visualization" id="template-visualization-statsTable">
-    <p class="help-text">By column:</p>
-    <table id="chart-stats-table">
-        <thead><th></th><th>X</th><th>Y</th></thead>
-        {{#each stats}}
-        <tr><td>{{name}}</td><td>{{xval}}</td><td>{{yval}}</td></tr>
-        </tr>
-        {{/each}}
-    </table>
-</script>
-
-<script type="text/template" class="template-visualization" id="template-visualization-chartSettings">
-
+<script type="text/template" class="template-visualization" id="template-visualization-chartControl">
     <p class="help-text">
         Use the following controls to how the chart is displayed.
         The slide controls can be moved by the mouse or, if the 'handle' is in focus, your keyboard's arrow keys.
         Move the focus between controls by using the tab or shift+tab keys on your keyboard.
         Use the 'Draw' button to render (or re-render) the chart with the current settings.
     </p>
-        
+
     <div id="datapointSize" class="form-input numeric-slider-input">
         <label for="datapointSize">Size of data point: </label>
         <div class="slider-output">{{datapointSize}}</div>
@@ -142,4 +151,19 @@
     </div>
 
     <input id="render-button" type="button" value="Draw" />
+</script>
+
+<script type="text/template" class="template-visualization" id="template-visualization-statsDisplay">
+    <p class="help-text">By column:</p>
+    <table id="chart-stats-table">
+        <thead><th></th><th>X</th><th>Y</th></thead>
+        {{#each stats}}
+        <tr><td>{{name}}</td><td>{{xval}}</td><td>{{yval}}</td></tr>
+        </tr>
+        {{/each}}
+    </table>
+</script>
+
+<script type="text/template" class="template-visualization" id="template-visualization-chartDisplay">
+    <svg width="{{width}}" height="{{height}}"></svg>
 </script>

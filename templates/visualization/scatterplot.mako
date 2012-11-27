@@ -12,21 +12,7 @@ ${h.css(
 /*TODO: use/move into base.less*/
 * { margin: 0px; padding: 0px; }
 
-/* -------------------------------------------- layout */
-.column {
-    position:relative;
-    overflow: auto;
-}
-
-.left-column {
-    float: left;
-    width: 40%;
-}
-
-.right-column {
-    margin-left: 41%;
-}
-
+/* -------------------------------------------- general layout */
 div.tab-pane {
     padding: 8px;
 }
@@ -39,6 +25,7 @@ div.tab-pane {
 #chart-header {
     padding : 8px;
     background-color: #ebd9b2;
+    margin-bottom: 16px;
 }
 
 #chart-header .subtitle {
@@ -48,90 +35,98 @@ div.tab-pane {
     font-size: small;
 }
 
-/* -------------------------------------------- all controls */
-#chart-settings-form {
+/* -------------------------------------------- main layout */
+#scatterplot {
     /*from width + margin of chart?*/
-    padding-top: 1em;
 }
 
-#chart-settings-form input[type=button],
-#chart-settings-form select {
+.scatterplot-container .tab-pane {
+}
+
+/* -------------------------------------------- all controls */
+
+#scatterplot input[type=button],
+#scatterplot select {
     width: 100%;
     max-width: 256px;
     margin-bottom: 8px;
 }
 
-#chart-settings-form .help-text,
-#chart-settings-form .help-text-small {
+#scatterplot .help-text,
+#scatterplot .help-text-small {
     color: grey;
 }
 
-#chart-settings-form .help-text {
+#scatterplot .help-text {
     padding-bottom: 16px;
 }
 
-#chart-settings-form .help-text-small {
+#scatterplot .help-text-small {
     padding: 4px;
     font-size: smaller;
 }
 
-#chart-settings-form > * {
+#scatterplot > * {
 }
 
-#chart-settings-form input[value=Draw] {
+#scatterplot input[value=Draw] {
     display: block;
     margin-top: 16px;
+}
+
+#scatterplot .numeric-slider-input {
+    max-width: 70%;
 }
 
 /* -------------------------------------------- data controls */
 
 /* -------------------------------------------- chart controls */
-#chart-settings .form-input {
+#chart-control .form-input {
     /*display: table-row;*/
 }
 
-#chart-settings label {
+#chart-control label {
     /*text-align: right;*/
     margin-bottom: 8px;
     /*display: table-cell;*/
 }
 
-#chart-settings .slider {
+#chart-control .slider {
     /*display: table-cell;*/
     height: 8px;
     display: block;
     margin: 8px 0px 0px 8px;
 }
 
-#chart-settings .slider-output {
+#chart-control .slider-output {
     /*display: table-cell;*/
     float: right;
 }
 
-#chart-settings input[type="text"] {
+#chart-control input[type="text"] {
     border: 1px solid lightgrey;
 }
 
 
 /* -------------------------------------------- statistics */
-#chart-stats table#chart-stats-table {
+#stats-display table#chart-stats-table {
     width: 100%;
 }
 
-#chart-stats #chart-stats-table th {
+#stats-display #chart-stats-table th {
     width: 30%;
     padding: 4px;
     font-weight: bold;
     color: grey;
 }
 
-#chart-stats #chart-stats-table td {
+#stats-display #chart-stats-table td {
     border: solid lightgrey;
     border-width: 1px 0px 0px 1px;
     padding: 4px;
 }
 
-#chart-stats #chart-stats-table td:nth-child(1) {
+#stats-display #chart-stats-table td:nth-child(1) {
     border-width: 1px 0px 0px 0px;
     padding-right: 1em;
     text-align: right;
@@ -141,19 +136,12 @@ div.tab-pane {
 
 /* -------------------------------------------- load indicators */
 #loading-indicator {
-    z-index: 2;
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background-color: white;
-    padding: 32px 0 0 32px;
+    margin: 12px 0px 0px 8px;
 }
 
-#chart-settings-form #loading-indicator .loading-message {
-    margin-left: 10px;
+#scatterplot #loading-indicator .loading-message {
     font-style: italic;
+    font-size: smaller;
     color: grey;
 }
 
@@ -208,18 +196,37 @@ svg .glyph {
 
 <%def name="javascripts()">
 ${parent.javascripts()}
-${h.js( "libs/require" )}
+${h.js(
+
+    "libs/underscore",
+    "libs/jquery/jquery-ui",
+    "libs/d3",
+
+    "mvc/base-mvc",
+    "utils/LazyDataLoader",
+    "viz/scatterplot"
+)}
+
+${h.templates(
+    "../../templates/compiled/template-visualization-scatterplotControlForm",
+    "../../templates/compiled/template-visualization-dataControl",
+    "../../templates/compiled/template-visualization-chartControl",
+    "../../templates/compiled/template-visualization-chartDisplay",
+    "../../templates/compiled/template-visualization-statsDisplay"
+)}
+
+${h.js(
+    "mvc/visualizations/scatterplotControlForm",
+)}
 
 <script type="text/javascript">
-require.config({ baseUrl : "${h.url_for( '/static/scripts' )}", });
+$(function(){
 
-require([ "viz/scatterplot" ], function( scatterplot ){
-    
     var hda             = ${h.to_json_string( hda )},
         historyID       = '${historyID}',
         querySettings   = ${h.to_json_string( kwargs )},
         chartConfig     = _.extend( querySettings, {
-            containerSelector : '#chart-holder',
+            containerSelector : '#chart',
             //TODO: move to ScatterplotControlForm.initialize
             marginTop   : ( querySettings.marginTop > 20 )?( querySettings.marginTop ):( 20 ),
 
@@ -229,18 +236,29 @@ require([ "viz/scatterplot" ], function( scatterplot ){
         });
     //console.debug( querySettings );
 
-    var settingsForm = new scatterplot.ScatterplotControlForm({
+    var settingsForm = new ScatterplotControlForm({
         dataset         : hda,
         apiDatasetsURL  : "${h.url_for( controller='/api/datasets' )}",
-        el              : $( '#chart-settings-form' ),
+        el              : $( '#scatterplot' ),
         chartConfig     : chartConfig
     }).render();
 
 });
+</script>
+</%def>
+
+<%def name="body()">
+    <!--dataset info-->
+    <div id="chart-header" class="header">
+        <h2 class="title">Scatterplot of '${hda['name']}'</h2>
+        <p class="subtitle">${hda['misc_info']}</p>
+    </div>
+    <div id="scatterplot" class="scatterplot-control-form"></div>
+</%def>
 
 
+<script type="text/javascript">
 function make_abs_box( top, left, x, y, id ){
-    console.debug( top, left, x, y, id );
     var ARROW_SIZE = 8,
         ARROW_COLOR = 'grey',
         DIST_TO_POINT = 4,
@@ -296,26 +314,4 @@ function make_abs_box( top, left, x, y, id ){
     //console.debug( boxContainer );
     return boxContainer;
 }
-
-
 </script>
-</%def>
-
-<%def name="body()">
-    <!--dataset info-->
-    <div id="chart-header" class="header">
-        <h2 class="title">Scatterplot of '${hda['name']}'</h2>
-        <p class="subtitle">${hda['misc_info']}</p>
-    </div>
-    <div class="outer-container">
-        <!--plot controls-->
-        <div id="chart-settings-form" class="column left-column"></div>
-        <!--plot-->
-        <div class="column right-column">
-            <div id="chart-holder" class="inner-container"></div>
-        </div>
-        <div style="clear: both;"></div>
-    </div>
-    <div id="test"></div>
-
-</%def>

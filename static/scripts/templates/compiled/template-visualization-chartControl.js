@@ -1,6 +1,6 @@
 (function() {
   var template = Handlebars.template, templates = Handlebars.templates = Handlebars.templates || {};
-templates['template-visualization-chartSettings'] = template(function (Handlebars,depth0,helpers,partials,data) {
+templates['template-visualization-chartControl'] = template(function (Handlebars,depth0,helpers,partials,data) {
   helpers = helpers || Handlebars.helpers;
   var buffer = "", stack1, foundHelper, functionType="function", escapeExpression=this.escapeExpression, self=this;
 
@@ -9,7 +9,7 @@ function program1(depth0,data) {
   
   return " checked=\"true\"";}
 
-  buffer += "<p class=\"help-text\">\n        Use the following controls to how the chart is displayed.\n        The slide controls can be moved by the mouse or, if the 'handle' is in focus, your keyboard's arrow keys.\n        Move the focus between controls by using the tab or shift+tab keys on your keyboard.\n        Use the 'Draw' button to render (or re-render) the chart with the current settings.\n    </p>\n        \n    <div id=\"datapointSize\" class=\"form-input numeric-slider-input\">\n        <label for=\"datapointSize\">Size of data point: </label>\n        <div class=\"slider-output\">";
+  buffer += "<p class=\"help-text\">\n        Use the following controls to how the chart is displayed.\n        The slide controls can be moved by the mouse or, if the 'handle' is in focus, your keyboard's arrow keys.\n        Move the focus between controls by using the tab or shift+tab keys on your keyboard.\n        Use the 'Draw' button to render (or re-render) the chart with the current settings.\n    </p>\n\n    <div id=\"datapointSize\" class=\"form-input numeric-slider-input\">\n        <label for=\"datapointSize\">Size of data point: </label>\n        <div class=\"slider-output\">";
   foundHelper = helpers.datapointSize;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
   else { stack1 = depth0.datapointSize; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
