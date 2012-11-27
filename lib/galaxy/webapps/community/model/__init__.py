@@ -143,7 +143,7 @@ class Repository( object ):
                 if username not in allow_push:
                     allow_push.append( username )
         allow_push = '%s\n' % ','.join( allow_push )
-        repo = hg.repository( ui.ui(), path=self.repo_path )
+        repo = hg.repository( ui.ui(), path=self.repo_path( app ) )
         # Why doesn't the following work?
         #repo.ui.setconfig( 'web', 'allow_push', allow_push )
         lines = repo.opener( 'hgrc', 'rb' ).readlines()
