@@ -793,9 +793,23 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         hda = self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         hda_dict = hda.get_api_value()
         hda_dict[ 'id' ] = dataset_id
-        if( hda_dict[ 'metadata_column_names' ] == None
-        and hasattr( hda.datatype, 'column_names' ) ):
-            hda_dict[ 'metadata_column_names' ] = hda.datatype.column_names
+
+        if( ( hda_dict[ 'metadata_column_names' ] == None )
+        and ( hasattr( hda.datatype, 'column_names' ) ) ):
+                hda_dict[ 'metadata_column_names' ] = hda.datatype.column_names
+
+        # try to get the first line (assuming it's a header)
+        #TODO: doesn't belong here
+        try:
+            with open( hda.file_name ) as infile:
+                for index, line in enumerate( infile ):
+                    if 'comment_lines' not in hda_dict:
+                        hda_dict[ 'comment_lines' ] = []
+                    hda_dict[ 'comment_lines' ].append( line )
+                    if index >= 3:
+                        break
+        except Exception, exc:
+            log.error( str( exc ) )
 
         history_id = trans.security.encode_id( hda.history.id )
         

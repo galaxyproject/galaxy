@@ -187,7 +187,6 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         when the dataset is not yet indexed and hence using data would
         be slow because indexes need to be created.
         """
-        
         # Dataset check.
         msg = self.check_dataset_state( trans, dataset )
         if msg:

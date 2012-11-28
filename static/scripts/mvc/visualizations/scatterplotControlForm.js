@@ -67,8 +67,9 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     //logger      : console,
     className   : 'scatterplot-control-form',
     
-    dataLoadDelay : 500,
-    dataLoadSize  : 3001,
+    //NOTE: should include time needed to render
+    dataLoadDelay : 4000,
+    dataLoadSize  : 5000,
 
     loadingIndicatorImage : 'loading_small_white_bg.gif',
     fetchMsg    : 'Fetching data...',
@@ -106,6 +107,16 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
             this.dataset.metadata_column_types = this.dataset.metadata_column_types.split( ', ' );
         }
         this.log( '\t dataset:', this.dataset );
+
+        // attempt to get possible headers from the data's first line
+        if( this.dataset.comment_lines && this.dataset.comment_lines.length ){
+            //TODO:??
+            var firstLine = this.dataset.comment_lines[0],
+                possibleHeaders = firstLine.split( '\t' );
+            if( possibleHeaders.length === this.dataset.metadata_column_types.length ){
+                this.possibleHeaders = possibleHeaders;
+            }
+        }
 
         // passed from mako helper
         //TODO: integrate to galaxyPaths
@@ -194,16 +205,24 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         // controls for which columns are used to plot datapoints (and ids/additional info to attach if desired)
         var view = this,
             allColumns = [],
-            numericColumns = [];
-        
+            numericColumns = [],
+            usePossibleHeaders = ( this.possibleHeaders && this.$dataControl )?
+                ( this.$dataControl.find( '#first-line-header-checkbox' ).is( ':checked' ) ):( false );
+
         // gather column indeces (from metadata_column_types) and names (from metadata_columnnames)
         _.each( this.dataset.metadata_column_types, function( type, index ){
             // use a 1 based index in names/values within the form (will be dec. when parsed out)
             var oneBasedIndex = index + 1,
-                // label with the name if available (fall back on 'column <index>')
+                // default name is 'column <index>'...
                 name = 'column ' + oneBasedIndex;
+
+            // ...but label with the name if available...
             if( view.dataset.metadata_column_names ){
                 name = view.dataset.metadata_column_names[ index ];
+
+            // ...or, use the first line as headers if the user wants
+            } else if( usePossibleHeaders ){
+                name = view.possibleHeaders[ index ];
             }
             
             // cache all columns here
@@ -218,10 +237,16 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
             
         // render the html
         var $dataControl = this.$el.find( '.tab-pane#data-control' );
-        $dataControl.append( ScatterplotControlForm.templates.dataControl({
+        $dataControl.html( ScatterplotControlForm.templates.dataControl({
             allColumns      : allColumns,
-            numericColumns  : numericColumns
+            numericColumns  : numericColumns,
+            possibleHeaders : ( this.possibleHeaders )?( this.possibleHeaders.join( ', ' ) ):( '' ),
+            usePossibleHeaders : usePossibleHeaders
         }));
+
+        if( !this.dataset.metadata_column_names && this.possibleHeaders ){
+            $dataControl.find( '#first-line-header' ).show();
+        }
 
         // preset to column selectors if they were passed in the config in the query string
         $dataControl.find( '#X-select' ).val( this.chartConfig.xColumn );
@@ -288,6 +313,7 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     // ------------------------------------------------------------------------- EVENTS
     events : {
         'change #include-id-checkbox'          : 'toggleThirdColumnSelector',
+        'change #first-line-header-checkbox'   : 'rerenderDataControl',
         'click #data-control #render-button'   : 'renderChart',
         'click #chart-control #render-button'  : 'changeChartSettings'
     },
@@ -295,6 +321,10 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
     toggleThirdColumnSelector : function(){
         // show/hide the id selector on the data settings panel
         this.$el.find( 'select[name="ID"]' ).parent().toggle();
+    },
+
+    rerenderDataControl : function(){
+        this.$dataControl = this._render_dataControl();
     },
     
     showLoadingIndicator : function( message, callback ){
@@ -577,10 +607,8 @@ var ScatterplotControlForm = BaseView.extend( LoggableMixin ).extend({
         settings.yLabel = ( chartSettingsYLabel === 'Y' )?
                             ( colSelections.Y.colName ):( chartSettingsYLabel );
 
-        settings.animDuration = 10;
-        if( this.$chartControl.find( '#animDuration.checkbox-input' ).is( ':checked' ) ){
-            settings.animDuration = 500;
-        }
+        settings.animDuration = ( this.$chartControl.find( '#animate-chart' ).is( ':checked' ) )?
+            ( this.chart.defaults.animDuration ):( 0 );
 
         this.log( '\t chartSettings:', settings );
         return settings;

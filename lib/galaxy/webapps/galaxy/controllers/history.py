@@ -1322,4 +1322,3 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         
     def get_item( self, trans, id ):
         return self.get_history( trans, id )
-        

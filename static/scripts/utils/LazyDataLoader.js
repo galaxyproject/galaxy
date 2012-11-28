@@ -81,11 +81,11 @@ function LazyDataLoader( config ){
         //  it's the responsibility of the code using this to combine them properly
         data    : [],
         // ms btwn recursive loads
-        delay   : 500,
+        delay   : 4000,
         // starting line, element, whatever
         start   : 0,
         // size to fetch per load
-        size    : 1000,
+        size    : 4000,
         
         // loader init func: extends loader with config and calls config.init if there
         //@param {object} config : object containing variables to override (or additional)

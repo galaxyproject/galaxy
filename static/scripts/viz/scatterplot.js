@@ -90,7 +90,7 @@ function TwoVarScatterplot( config ){
         xNumTicks : 10,
         yNumTicks : 10,
         xAxisLabelBumpY : 40,
-        yAxisLabelBumpX : -35,
+        yAxisLabelBumpX : -40,
         width   : 400,
         height  : 400,
         //TODO: anyway to make this a sub-obj?
@@ -304,75 +304,37 @@ function TwoVarScatterplot( config ){
     };
     
     // ........................................................ data points
-    //TODO: these to config ...somehow
-    //TODO: use these in renderDatapoints ...somehow
-    this.glyphEnterState = function( d3Elem ){
-        
-    };
-    this.glyphFinalState = function( d3Elem ){
-        
-    };
-    this.glyphExitState = function( d3Elem ){
-        
-    };
-    
-    // initial render or complete re-render (REPLACE datapoints)
     this.renderDatapoints = function( xCol, yCol, ids ){
         this.log( this + '.renderDatapoints', arguments );
-        var count = 0;
-        
-        this.datapoints = this.addDatapoints( xCol, yCol, ids, ".glyph" );
-        
-        // glyphs that need to be removed: transition to from normal state to 'exit' state, remove from DOM
-        this.datapoints.exit()
-            .each( function(){ count += 1; } )
-            .transition().duration( this.config.animDuration )
-                .attr( "cy", this.config.height )
-                .attr( "r", 0 )
-            .remove();
-        this.log( count, ' glyphs removed' );
-        
-        //this.log( this.datapoints.length, ' glyphs in the graph' );
-    };
-    
-    // adding points to existing
-    this.addDatapoints = function( newXCol, newYCol, ids, selectorForExisting ){
-        this.log( this + '.addDatapoints', arguments );
-        // ADD datapoints to plot that's already rendered
-        //  if selectorForExisting === undefined (as in not passed), addDatapoints won't update existing
-        //  pass in the class ( '.glyph' ) to update exising datapoints
-        var plot = this,
-            count = 0,
+        var count = 0,
+            plot = this,
             xPosFn = function( d, i ){
                 //if( d ){ this.log( 'x.data:', newXCol[ i ], 'plotted:', plot.xScale( newXCol[ i ] ) ); }
-                return plot.xScale( newXCol[ i ] );
+                return plot.xScale( xCol[ i ] );
             },
             yPosFn = function( d, i ){
                 //if( d ){ this.log( 'y.data:', newYCol[ i ], 'plotted:', plot.yScale( newYCol[ i ] ) ); }
-                return plot.yScale( newYCol[ i ] );
+                return plot.yScale( yCol[ i ] );
             };
-    
-        // select all existing glyphs and compare to incoming data
-        //  enter() will yield those glyphs that need to be added
-        var newDatapoints = this.content.selectAll( selectorForExisting );
-        this.log( 'existing datapoints:', newDatapoints );
-        newDatapoints = newDatapoints.data( newXCol );
-            
-        // enter - new data to be added as glyphs: give them a 'entry' position and style
+
+        //this.datapoints = this.addDatapoints( xCol, yCol, ids, ".glyph" );
+        var datapoints = this.content.selectAll( '.glyph' ).data( xCol );
+
+        // enter - NEW data to be added as glyphs: give them a 'entry' position and style
         count = 0;
-        newDatapoints.enter()
+        datapoints.enter()
             .append( 'svg:circle' )
                 .each( function(){ count += 1; } )
                 .classed( "glyph", true )
-                .attr( "cx", xPosFn )
-                .attr( "cy", yPosFn )
+                .attr( "cx", 0 )
+                .attr( "cy", this.config.height )
                 // start all bubbles small...
                 .attr( "r", 0 );
         this.log( count, ' new glyphs created' );
         
-        // for all existing glyphs and those that need to be added: transition anim to final state
+        // for all EXISTING glyphs and those that need to be added: transition anim to final state
         count = 0;
-        newDatapoints
+        datapoints
             // ...animate to final position
             .transition().duration( this.config.animDuration )
                 .each( function(){ count += 1; } )
@@ -381,18 +343,22 @@ function TwoVarScatterplot( config ){
                 .attr( "r", plot.config.datapointSize );
         this.log( count, ' existing glyphs transitioned' );
         
-        // attach ids
-        if( ids ){
-            newDatapoints.attr( 'data', function( d, i ){ return ( ids[ i ] ); } );
-        }
-
-        // titles
-        newDatapoints.attr( 'svg:title', function( d, i ){
-            return (( ids )?( ids[ i ] + ': ' ):( '' )) + newXCol[ i ] + ', ' + newYCol[ i ];
-        });
-        
         // events
-        newDatapoints
+        // glyphs that need to be removed: transition to from normal state to 'exit' state, remove from DOM
+        datapoints.exit()
+            .each( function(){ count += 1; } )
+            .transition().duration( this.config.animDuration )
+                .attr( "cy", this.config.height )
+                .attr( "r", 0 )
+            .remove();
+        this.log( count, ' glyphs removed' );
+
+        this._addDatapointEventhandlers( datapoints, xCol, yCol, ids );
+    };
+
+    this._addDatapointEventhandlers = function( datapoints, xCol, yCol, ids ){
+        var plot = this;
+        datapoints
             //TODO: remove magic numbers
             .on( 'mouseover', function( d, i ){
                 var datapoint = d3.select( this );
@@ -404,36 +370,42 @@ function TwoVarScatterplot( config ){
                 plot.content.append( 'line' )
                     .attr( 'stroke', 'red' )
                     .attr( 'stroke-width', 1 )
-                    .attr( 'x1', datapoint.attr( 'cx' ) ).attr( 'y1', datapoint.attr( 'cy' ) )
-                    .attr( 'x2', 0 ).attr( 'y2', datapoint.attr( 'cy' ) )
-                    .classed( 'hoverline', true );
-                plot.content.append( 'line' )
-                    .attr( 'stroke', 'red' )
-                    .attr( 'stroke-width', 1 )
-                    .attr( 'x1', datapoint.attr( 'cx' ) ).attr( 'y1', datapoint.attr( 'cy' ) )
-                    .attr( 'x2', datapoint.attr( 'cx' ) ).attr( 'y2', plot.config.height )
+                    // start not at center, but at the edge of the circle - to prevent mouseover thrashing
+                    .attr( 'x1', datapoint.attr( 'cx' ) - plot.config.datapointSize )
+                    .attr( 'y1', datapoint.attr( 'cy' ) )
+                    .attr( 'x2', 0 )
+                    .attr( 'y2', datapoint.attr( 'cy' ) )
                     .classed( 'hoverline', true );
 
-                //var datapointWindowPos = $( this ).position();
-                //var datapointWindowPos = $( this ).offset();
-                //window.dot = this;
-                ////this.popup = make_abs_box( datapointWindowPos.top, datapointWindowPos.left + datapoint.attr( 'r' ),
-                //this.popup = make_abs_box( datapointWindowPos.top, datapointWindowPos.left,
-                //                           newXCol[ i ], newYCol[ i ], ( ids )?( ids[ i ] ):( undefined ) );
-                //$( 'body' ).append( this.popup );
+                // if the vertical hoverline
+                if( datapoint.attr( 'cy' ) < plot.config.height ){
+                    plot.content.append( 'line' )
+                        .attr( 'stroke', 'red' )
+                        .attr( 'stroke-width', 1 )
+                        .attr( 'x1', datapoint.attr( 'cx' ) )
+                        .attr( 'y1', datapoint.attr( 'cy' ) + plot.config.datapointSize )
+                        .attr( 'x2', datapoint.attr( 'cx' ) )
+                        .attr( 'y2', plot.config.height )
+                        .classed( 'hoverline', true );
+                }
+
+                var datapointWindowPos = $( this ).offset();
+                plot.datapointInfoBox = plot.infoBox(
+                    datapointWindowPos.top, datapointWindowPos.left,
+                    plot.infoHtml( xCol[ i ], yCol[ i ], ( ids )?( ids[ i ] ):( undefined ) )
+                );
+                $( 'body' ).append( plot.datapointInfoBox );
             })
             .on( 'mouseout', function(){
                 d3.select( this )
                     .style( 'fill', 'black' )
                     .style( 'fill-opacity', 0.2 );
-                d3.selectAll( '.hoverline' ).remove();
-                //if( this.popup ){
-                //    this.popup.remove();
-                //}
+                plot.content.selectAll( '.hoverline' ).remove();
+                if( plot.datapointInfoBox ){
+                    plot.datapointInfoBox.remove();
+                }
             });
-        
-        return newDatapoints;
-    };
+    },
     
     this.render = function( columnData, meta ){
         this.log( this + '.render', arguments );
@@ -457,7 +429,7 @@ function TwoVarScatterplot( config ){
         //this.log( 'xMin, xMax, yMin, yMax:', this.xMin, this.xMax, this.yMin, this.yMax );
         this.setUpScales();
 
-        // build the svg dom infrastructure
+        // find (or build if it doesn't exist) the svg dom infrastructure
         if( !this.svg ){ this.svg = d3.select( 'svg' ).attr( "class", "chart" ); }
         if( !this.content ){
             this.content = this.svg.append( "svg:g" ).attr( "class", "content" ).attr( 'id', this.config.id );
@@ -485,6 +457,32 @@ function TwoVarScatterplot( config ){
         this.renderGrid();
         this.renderDatapoints( xCol, yCol, ids );
     };
+
+    this.infoHtml = function( x, y, id ){
+        var retDiv = $( '<div/>' );
+        if( id ){
+            $( '<div/>' ).text( id ).css( 'font-weight', 'bold' ).appendTo( retDiv );
+        }
+        $( '<div/>' ).text( x ).appendTo( retDiv );
+        $( '<div/>' ).text( y ).appendTo( retDiv );
+        return retDiv.html();
+    };
+
+    //TODO: html for now
+    this.infoBox = function( top, left, html, adjTop, adjLeft ){
+        adjTop  = adjTop  || 0;
+        adjLeft = adjLeft || 20;
+        var infoBox = $( '<div />' )
+            .addClass( 'chart-info-box' )
+            .css({
+                'position'  : 'absolute',
+                'top'       : top  + adjTop,
+                'left'      : left + adjLeft
+            });
+        infoBox.html( html );
+        return infoBox;
+    };
+
 }
 
 //==============================================================================

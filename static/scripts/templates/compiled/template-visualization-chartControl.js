@@ -13,19 +13,19 @@ function program1(depth0,data) {
   foundHelper = helpers.datapointSize;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
   else { stack1 = depth0.datapointSize; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  buffer += escapeExpression(stack1) + "</div>\n        <div class=\"slider\"></div>\n        <p class=\"form-help help-text-small\">\n            Size of the graphic representation of each data point\n        </p>\n    </div>\n\n    <div id=\"animDuration\" class=\"form-input checkbox-input\">\n        <label for=\"animated\">Animate graph transitions?: </label>\n        <input type=\"checkbox\" id=\"animated\"\n            class=\"checkbox control\"";
+  buffer += escapeExpression(stack1) + "</div>\n        <div class=\"slider\"></div>\n        <p class=\"form-help help-text-small\">\n            Size of the graphic representation of each data point\n        </p>\n    </div>\n\n    <div id=\"animDuration\" class=\"form-input checkbox-input\">\n        <label for=\"animate-chart\">Animate chart transitions?: </label>\n        <input type=\"checkbox\" id=\"animate-chart\"\n            class=\"checkbox control\"";
   stack1 = depth0.animDuration;
   stack1 = helpers['if'].call(depth0, stack1, {hash:{},inverse:self.noop,fn:self.program(1, program1, data)});
   if(stack1 || stack1 === 0) { buffer += stack1; }
-  buffer += " />\n        <p class=\"form-help help-text-small\">\n            Uncheck this to disable the animations used on the graph\n        </p>\n    </div>\n\n    <div id=\"width\" class=\"form-input numeric-slider-input\">\n        <label for=\"width\">Graph width: </label>\n        <div class=\"slider-output\">";
+  buffer += " />\n        <p class=\"form-help help-text-small\">\n            Uncheck this to disable the animations used on the chart\n        </p>\n    </div>\n\n    <div id=\"width\" class=\"form-input numeric-slider-input\">\n        <label for=\"width\">Chart width: </label>\n        <div class=\"slider-output\">";
   foundHelper = helpers.width;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
   else { stack1 = depth0.width; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  buffer += escapeExpression(stack1) + "</div>\n        <div class=\"slider\"></div>\n        <p class=\"form-help help-text-small\">\n            (not including graph margins and axes)\n        </p>\n    </div>\n\n    <div id=\"height\" class=\"form-input numeric-slider-input\">\n        <label for=\"height\">Graph height: </label>\n        <div class=\"slider-output\">";
+  buffer += escapeExpression(stack1) + "</div>\n        <div class=\"slider\"></div>\n        <p class=\"form-help help-text-small\">\n            (not including chart margins and axes)\n        </p>\n    </div>\n\n    <div id=\"height\" class=\"form-input numeric-slider-input\">\n        <label for=\"height\">Chart height: </label>\n        <div class=\"slider-output\">";
   foundHelper = helpers.height;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
   else { stack1 = depth0.height; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
-  buffer += escapeExpression(stack1) + "</div>\n        <div class=\"slider\"></div>\n        <p class=\"form-help help-text-small\">\n            (not including graph margins and axes)\n        </p>\n    </div>\n\n    <div id=\"X-axis-label\"class=\"text-input form-input\">\n        <label for=\"X-axis-label\">Re-label the X axis: </label>\n        <input type=\"text\" name=\"X-axis-label\" id=\"X-axis-label\" value=\"";
+  buffer += escapeExpression(stack1) + "</div>\n        <div class=\"slider\"></div>\n        <p class=\"form-help help-text-small\">\n            (not including chart margins and axes)\n        </p>\n    </div>\n\n    <div id=\"X-axis-label\"class=\"text-input form-input\">\n        <label for=\"X-axis-label\">Re-label the X axis: </label>\n        <input type=\"text\" name=\"X-axis-label\" id=\"X-axis-label\" value=\"";
   foundHelper = helpers.xLabel;
   if (foundHelper) { stack1 = foundHelper.call(depth0, {hash:{}}); }
   else { stack1 = depth0.xLabel; stack1 = typeof stack1 === functionType ? stack1() : stack1; }
