@@ -301,8 +301,11 @@ class WebApplication( base.WebApplication ):
                     continue
                 for key in dir( module ):
                     T = getattr( module, key )
-                    if inspect.isclass( T ) and T is not BaseAPIController and issubclass( T, BaseAPIController ):
-                        self.add_api_controller( name, T( app ) )
+                    # Exclude classes such as BaseAPIController and BaseTagItemsController
+                    if inspect.isclass( T ) and not key.startswith("Base") and issubclass( T, BaseAPIController ):
+                        # By default use module_name, but allow controller to override name
+                        controller_name = getattr( T, "controller_name", name )
+                        self.add_api_controller( controller_name, T( app ) )
 
 class GalaxyWebTransaction( base.DefaultWebTransaction ):
     """

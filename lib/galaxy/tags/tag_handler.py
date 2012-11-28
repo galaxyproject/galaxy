@@ -97,37 +97,40 @@ class TagHandler( object ):
         if item_tag_assoc:
             return True
         return False
+    def apply_item_tag( self, trans, user, item, name, value=None ):
+        # Use lowercase name for searching/creating tag.
+        lc_name = name.lower()
+        # Get or create item-tag association.
+        item_tag_assoc = self._get_item_tag_assoc( user, item, lc_name )
+        if not item_tag_assoc:
+            # Create item-tag association.
+            # Create tag; if None, skip the tag (and log error).
+            tag = self._get_or_create_tag( trans, lc_name )
+            if not tag:
+                log.warn( "Failed to create tag with name %s" % lc_name )
+                return
+            # Create tag association based on item class.
+            item_tag_assoc_class = self.get_tag_assoc_class( item.__class__ )
+            item_tag_assoc = item_tag_assoc_class()
+            # Add tag to association.
+            item.tags.append( item_tag_assoc )
+            item_tag_assoc.tag = tag
+            item_tag_assoc.user = user    
+        # Apply attributes to item-tag association. Strip whitespace from user name and tag.
+        lc_value = None
+        if value:
+            lc_value = value.lower()
+        item_tag_assoc.user_tname = name
+        item_tag_assoc.user_value = value
+        item_tag_assoc.value = lc_value
+        return item_tag_assoc
     def apply_item_tags( self, trans, user, item, tags_str ):
         """Apply tags to an item."""
         # Parse tags.
         parsed_tags = self.parse_tags( tags_str )
         # Apply each tag.
         for name, value in parsed_tags.items():
-            # Use lowercase name for searching/creating tag.
-            lc_name = name.lower()
-            # Get or create item-tag association.
-            item_tag_assoc = self._get_item_tag_assoc( user, item, lc_name )
-            if not item_tag_assoc:
-                # Create item-tag association.
-                # Create tag; if None, skip the tag (and log error).
-                tag = self._get_or_create_tag( trans, lc_name )
-                if not tag:
-                    # Log error?
-                    continue
-                # Create tag association based on item class.
-                item_tag_assoc_class = self.get_tag_assoc_class( item.__class__ )
-                item_tag_assoc = item_tag_assoc_class()
-                # Add tag to association.
-                item.tags.append( item_tag_assoc )
-                item_tag_assoc.tag = tag
-                item_tag_assoc.user = user    
-            # Apply attributes to item-tag association. Strip whitespace from user name and tag.
-            lc_value = None
-            if value:
-                lc_value = value.lower()
-            item_tag_assoc.user_tname = name
-            item_tag_assoc.user_value = value
-            item_tag_assoc.value = lc_value
+            self.apply_item_tag( trans, user, item, name, value )
     def get_tags_str( self, tags ):
         """Build a string from an item's tags."""
         # Return empty string if there are no tags.

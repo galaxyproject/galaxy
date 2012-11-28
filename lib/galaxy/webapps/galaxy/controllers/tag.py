@@ -8,10 +8,8 @@ from sqlalchemy.sql import select
 
 log = logging.getLogger( __name__ )
 
-class TagsController ( BaseUIController ):
-    def __init__( self, app ):
-        BaseUIController.__init__( self, app )
-        self.tag_handler = app.tag_handler
+class TagsController ( BaseUIController, UsesTagsMixin ):
+
     @web.expose
     @web.require_login( "edit item tags" )
     def get_tagging_elt_async( self, trans, item_id, item_class, elt_context="" ):
@@ -35,7 +33,7 @@ class TagsController ( BaseUIController ):
         # Apply tag.
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
-        self.tag_handler.apply_item_tags( trans, user, item, new_tag.encode( 'utf-8' ) )
+        self.get_tag_handler( trans ).apply_item_tags( trans, user, item, new_tag.encode( 'utf-8' ) )
         trans.sa_session.flush()
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=new_tag )
@@ -47,7 +45,7 @@ class TagsController ( BaseUIController ):
         # Remove tag.
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
-        self.tag_handler.remove_item_tag( trans, user, item, tag_name.encode( 'utf-8' ) )
+        self.get_tag_handler( trans ).remove_item_tag( trans, user, item, tag_name.encode( 'utf-8' ) )
         trans.sa_session.flush()
         # Log.
         params = dict( item_id=item.id, item_class=item_class, tag=tag_name )
@@ -60,8 +58,8 @@ class TagsController ( BaseUIController ):
         # Apply tags.  
         item = self._get_item( trans, item_class, trans.security.decode_id( item_id ) )
         user = trans.user
-        self.tag_handler.delete_item_tags( trans, item )
-        self.tag_handler.apply_item_tags( trans, user, item, new_tags.encode( 'utf-8' ) )
+        self.get_tag_handler( trans ).delete_item_tags( trans, item )
+        self.get_tag_handler( trans ).apply_item_tags( trans, user, item, new_tags.encode( 'utf-8' ) )
         trans.sa_session.flush()    
     @web.expose
     @web.require_login( "get autocomplete data for an item's tags" )
@@ -89,7 +87,7 @@ class TagsController ( BaseUIController ):
             raise RuntimeError( "Both item and item_class cannot be None" )
         elif item is not None:
             item_class = item.__class__
-        item_tag_assoc_class = self.tag_handler.get_tag_assoc_class( item_class )
+        item_tag_assoc_class = self.get_tag_handler( trans ).get_tag_assoc_class( item_class )
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.tag_id, func.count( '*' ) ] 
         from_obj = item_tag_assoc_class.table.join( item_class.table ).join( trans.app.model.Tag.table )
@@ -108,9 +106,9 @@ class TagsController ( BaseUIController ):
         # Create and return autocomplete data.
         ac_data = "#Header|Your Tags\n"
         for row in result_set:
-            tag = self.tag_handler.get_tag_by_id( trans, row[0] )
+            tag = self.get_tag_handler( trans ).get_tag_by_id( trans, row[0] )
             # Exclude tags that are already applied to the item.    
-            if ( item is not None ) and ( self.tag_handler.item_has_tag( trans, trans.user, item, tag ) ):
+            if ( item is not None ) and ( self.get_tag_handler( trans ).item_has_tag( trans, trans.user, item, tag ) ):
                 continue
             # Add tag to autocomplete data. Use the most frequent name that user
             # has employed for the tag.
@@ -125,7 +123,7 @@ class TagsController ( BaseUIController ):
         tag_name_and_value = q.split( ":" )
         tag_name = tag_name_and_value[0]
         tag_value = tag_name_and_value[1]
-        tag = self.tag_handler.get_tag_by_name( trans, tag_name )
+        tag = self.get_tag_handler( trans ).get_tag_by_name( trans, tag_name )
         # Don't autocomplete if tag doesn't exist.
         if tag is None:
             return ""
@@ -134,7 +132,7 @@ class TagsController ( BaseUIController ):
             raise RuntimeError( "Both item and item_class cannot be None" )
         elif item is not None:
             item_class = item.__class__
-        item_tag_assoc_class = self.tag_handler.get_tag_assoc_class( item_class )
+        item_tag_assoc_class = self.get_tag_handler( trans ).get_tag_assoc_class( item_class )
         # Build select statement.
         cols_to_select = [ item_tag_assoc_class.table.c.value, func.count( '*' ) ] 
         from_obj = item_tag_assoc_class.table.join( item_class.table ).join( trans.app.model.Tag.table )
@@ -180,6 +178,6 @@ class TagsController ( BaseUIController ):
         return user_tag_names
     def _get_item( self, trans, item_class_name, id ):
         """ Get an item based on type and id. """
-        item_class = self.tag_handler.item_tag_assoc_info[item_class_name].item_class
+        item_class = self.get_tag_handler( trans ).item_tag_assoc_info[item_class_name].item_class
         item = trans.sa_session.query( item_class ).filter( "id=" + str( id ) )[0]
         return item

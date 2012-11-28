@@ -1584,6 +1584,41 @@ class UsesQuotaMixin( object ):
     def get_quota( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted )
 
+class UsesTagsMixin( object ):
+
+    def get_tag_handler( self, trans ):
+        return trans.app.tag_handler
+
+    def _get_user_tags( self, trans, item_class_name, id ):
+        user = trans.user
+        tagged_item = self._get_tagged_item( trans, item_class_name, id )
+        return [ tag for tag in tagged_item.tags if ( tag.user == user ) ]
+
+    def _get_tagged_item( self, trans, item_class_name, id, check_ownership=True ):
+        tagged_item = self.get_object( trans, id, item_class_name, check_ownership=check_ownership, check_accessible=True )
+        return tagged_item
+
+    def _remove_items_tag( self, trans, item_class_name, id, tag_name ):
+        """Remove a tag from an item."""
+        user = trans.user
+        tagged_item = self._get_tagged_item( trans, item_class_name, id )
+        deleted = tagged_item and self.get_tag_handler( trans ).remove_item_tag( trans, user, tagged_item, tag_name )
+        trans.sa_session.flush()
+        return deleted
+
+    def _apply_item_tag( self, trans, item_class_name, id, tag_name, tag_value=None ):
+        user = trans.user
+        tagged_item = self._get_tagged_item( trans, item_class_name, id )
+        tag_assoc = self.get_tag_handler( trans ).apply_item_tag( trans, user, tagged_item, tag_name, tag_value )
+        trans.sa_session.flush()
+        return tag_assoc
+
+    def _get_item_tag_assoc( self, trans, item_class_name, id, tag_name ):
+        user = trans.user
+        tagged_item = self._get_tagged_item( trans, item_class_name, id )
+        log.debug( "In get_item_tag_assoc with tagged_item %s" % tagged_item )
+        return self.get_tag_handler( trans )._get_item_tag_assoc( user, tagged_item, tag_name )
+
 """
 Deprecated: `BaseController` used to be available under the name `Root`
 """

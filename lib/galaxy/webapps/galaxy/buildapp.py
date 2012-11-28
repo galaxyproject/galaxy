@@ -96,6 +96,15 @@ def app_factory( global_conf, **kwargs ):
                                 name_prefix='group_',
                                 path_prefix='/api/groups/:group_id',
                                 parent_resources=dict( member_name='group', collection_name='groups' ) )
+    _add_item_tags_controller( webapp, 
+                               name_prefix="history_content_",
+                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+    _add_item_tags_controller( webapp, 
+                               name_prefix="history_",
+                               path_prefix='/api/histories/:history_id' )
+    _add_item_tags_controller( webapp, 
+                               name_prefix="workflow_",
+                               path_prefix='/api/workflows/:workflow_id' )
     webapp.api_mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
     webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
@@ -147,6 +156,33 @@ def pack_scripts():
         d = dict( fname=fname )
         log.info("%(fname)s --> packed/%(fname)s" % d)
         call( cmd % d, shell=True )
+
+def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
+    # Not just using map.resources because actions should be based on name not id
+    controller = "%stags" % name_prefix
+    name = "%stag" % name_prefix
+    path = "%s/tags" % path_prefix
+    map = webapp.api_mapper
+    # Allow view items' tags.
+    map.connect(name, path,
+        controller=controller, action="index",
+        conditions=dict(method=["GET"]))
+    # Allow remove tag from item
+    map.connect("%s_delete" % name, "%s/tags/:tag_name" % path_prefix,
+        controller=controller, action="delete",
+        conditions=dict(method=["DELETE"]))
+    # Allow create a new tag with from name
+    map.connect("%s_create" % name, "%s/tags/:tag_name" % path_prefix,
+        controller=controller, action="create",
+        conditions=dict(method=["POST"]))
+    # Allow update tag value
+    map.connect("%s_update" % name, "%s/tags/:tag_name" % path_prefix,
+        controller=controller, action="update",
+        conditions=dict(method=["PUT"]))
+    # Allow show tag by name
+    map.connect("%s_show" % name, "%s/tags/:tag_name" % path_prefix,
+        controller=controller, action="show",
+        conditions=dict(method=["GET"]))
 
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
