@@ -1600,8 +1600,10 @@ class DataToolParameter( ToolParameter ):
         return value.file_name
         
     def value_to_display_text( self, value, app ):
+        if not isinstance(value, list):
+            value = [ value ]
         if value:
-            return "%s: %s" % ( value.hid, value.name )
+            return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )
         else:
             return "No dataset"
 
