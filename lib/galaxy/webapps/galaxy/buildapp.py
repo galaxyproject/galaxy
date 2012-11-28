@@ -111,6 +111,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.api_mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
+    webapp.api_mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     #webapp.api_mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
 
     # "POST /api/workflows/import"  =>  ``workflows.import_workflow()``.
