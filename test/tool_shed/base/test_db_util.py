@@ -39,7 +39,7 @@ def mark_obj_deleted( obj ):
     sa_session.flush()
 def refresh( obj ):
     sa_session.refresh( obj )
-def get_repository_by_name( name, owner_username ):
+def get_repository_by_name_and_owner( name, owner_username ):
     owner = get_user_by_name( owner_username )
     repository = sa_session.query( model.Repository ) \
                            .filter( model.Repository.table.c.name==name ) \

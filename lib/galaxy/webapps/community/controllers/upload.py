@@ -77,7 +77,7 @@ class UploadController( BaseUIController ):
             elif file_data not in ( '', None ):
                 uploaded_file = file_data.file
                 uploaded_file_name = uploaded_file.name
-                uploaded_file_filename = file_data.filename
+                uploaded_file_filename = os.path.split( file_data.filename )[ -1 ]
                 isempty = os.path.getsize( os.path.abspath( uploaded_file_name ) ) == 0
             if uploaded_file or uploaded_directory:
                 ok = True

@@ -31,6 +31,7 @@ from paste import httpserver
 import galaxy.webapps.community.app
 from galaxy.webapps.community.app import UniverseApplication
 from galaxy.webapps.community import buildapp
+#from galaxy.webapps.community.util.hgweb_config import *
 
 import nose.core
 import nose.config
@@ -164,6 +165,8 @@ def main():
                                    running_functional_tests = True,
                                    hgweb_config_dir = new_file_path,
                                    **kwargs )
+#        app.hgweb_config_manager = HgWebConfigManager()
+
         log.info( "Embedded Universe application started" )
 
     # ---- Run webserver ------------------------------------------------------

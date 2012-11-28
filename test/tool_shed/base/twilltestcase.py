@@ -5,6 +5,7 @@ class ShedTwillTestCase( TwillTestCase ):
         # Security helper
         self.security = security.SecurityHelper( id_secret='changethisinproductiontoo' )
         self.history_id = None
+        self.hgweb_config_manager = None
         self.host = os.environ.get( 'TOOL_SHED_TEST_HOST' )
         self.port = os.environ.get( 'TOOL_SHED_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
@@ -29,18 +30,67 @@ class ShedTwillTestCase( TwillTestCase ):
         if strings_not_displayed:
             for string in strings_not_displayed:
                 self.check_string_not_in_page( string )
-    def check_for_tool_metadata(self, repository, changeset_revision, tool_id, strings_displayed=[], strings_not_displayed=[] ):
-        url = '/repository/view_tool_metadata?repository_id=%s&changeset_revision=%s&tool_id=%s' % \
-              ( self.security.encode_id( repository.id ), changeset_revision, tool_id )
-        self.visit_url( url )
-        self.check_for_strings( strings_displayed, strings_not_displayed )
-    def check_for_valid_tools( self, repository ):
-        self.manage_repository( repository )
-        self.check_page_for_string( 'Valid tools' )
+    def check_for_valid_tools( self, repository, strings_displayed=[], strings_not_displayed=[] ):
+        strings_displayed.append( 'Valid tools' )
+        self.manage_repository( repository, strings_displayed, strings_not_displayed )
+    def check_metadata_in_repository_changelog( self, repository, metadata_count ):
+        self.check_repository_changelog( repository )
+        self.check_string_count_in_page( 'Repository metadata is associated with this change set.', metadata_count )
     def check_repository_changelog( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/view_changelog?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def check_repository_metadata( self, repository, tip_only=True ):
+        assert self.tip_has_metadata( repository, tip_only ), \
+               'Repository tip is not a metadata revision: Repository tip - %s, metadata revisions - %s.' % \
+               ( self.get_repository_tip( repository ), ', '.join( self.get_repository_metadata_revisions( repository ) ) )
+    def check_repository_tools( self, repository, include_invalid=False ):
+        '''
+        Loop through each repository_metadata dict in the repository object. 
+        For each of these, check for a tools attribute, and load the tool metadata 
+        page if it exists, then display that tool's page.
+        '''
+        tool_list, invalid_tool_list = self.get_tools_from_repository_metadata( repository, include_invalid=include_invalid )
+        for valid_tool_dict in tool_list:
+            changeset_revision = valid_tool_dict[ 'changeset_revision' ]
+            for tool in valid_tool_dict[ 'tools' ]:
+                metadata_strings_displayed = [ tool[ 'guid' ], 
+                                               tool[ 'version' ], 
+                                               tool[ 'id' ], 
+                                               tool[ 'name' ], 
+                                               tool[ 'description' ],
+                                               changeset_revision ]
+                url = '/repository/view_tool_metadata?repository_id=%s&changeset_revision=%s&tool_id=%s' % \
+                      ( self.security.encode_id( repository.id ), changeset_revision, tool[ 'id' ] )
+                self.visit_url( url )
+                self.check_for_strings( metadata_strings_displayed )
+                self.load_display_tool_page( repository, tool_xml_path=tool[ 'tool_config' ],
+                                             changeset_revision=changeset_revision,
+                                             strings_displayed=[ '%s (version %s)' % ( tool[ 'name' ], tool[ 'version' ] ) ],
+                                             strings_not_displayed=[] )
+        if include_invalid and invalid_tool_list:
+            for invalid_tool_dict in invalid_tool_list:
+                for tool in invalid_tool_dict[ 'tools' ]:
+                    tool_path = '%s/%s' % ( self.get_repository_filesystem_path( repository ), tool )
+                    self.load_display_tool_page( repository, 
+                                                 tool_xml_path=tool_path,
+                                                 changeset_revision=changeset_revision,
+                                                 strings_displayed=[ 'properly loaded' ],
+                                                 strings_not_displayed=[] )
+    def check_string_count_in_page( self, pattern, min_count, max_count=None ):
+        """Checks the number of 'pattern' occurrences in the current browser page"""        
+        page = self.last_page()
+        pattern_count = page.count( pattern )
+        if max_count is None:
+            max_count = min_count
+        # The number of occurrences of pattern in the page should be between min_count
+        # and max_count, so show error if pattern_count is less than min_count or greater
+        # than max_count.
+        if pattern_count < min_count or pattern_count > max_count:
+            fname = self.write_temp_file( page )
+            errmsg = "%i occurrences of '%s' found (min. %i, max. %i).\npage content written to '%s' " % \
+                     ( pattern_count, pattern, min_count, max_count, fname )
+            raise AssertionError( errmsg )
     def create_category( self, category_name, category_description ):
         self.visit_url( '/admin/manage_categories?operation=create' )
         tc.fv( "1", "name", category_name )
@@ -56,8 +106,41 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "1", "category_id", "+%s" % category )
         tc.submit( "create_repository_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def delete_files_from_repository( self, repository, filenames=[], strings_displayed=[ 'were deleted from the repository' ], strings_not_displayed=[] ):
+        files_to_delete = []
+        basepath = self.get_repository_base_path_from_browse_page( repository )
+        repository_files = self.get_repository_file_list( repository, basepath )
+        # Verify that the files to delete actually exist in the repository.
+        for filename in repository_files:
+            if filename in filenames:
+                files_to_delete.append( os.path.join( basepath, filename ) )
+        self.browse_repository( repository )
+        # Twill sets hidden form fields to read-only by default. We need to write to this field.
+        form = tc.browser.get_form( 'select_files_to_delete' )
+        form.find_control( "selected_files_to_delete" ).readonly = False
+        tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
+        tc.submit( 'select_files_to_delete_button' )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def display_readme_file( self, repository, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
+        if changeset_revision is None:
+            changeset_revision = self.get_repository_tip( repository )
+        repository_id = self.security.encode_id( repository.id )
+        self.visit_url( '/repository/view_readme?changeset_revision=%s&id=%s' % ( changeset_revision, repository_id ) )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_repository_clone_page( self, owner_name, repository_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repos/%s/%s' % ( owner_name, repository_name )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def display_repository_file_contents( self, repository, filename, filepath=None, strings_displayed=[], strings_not_displayed=[] ):
+        '''Find a file in the repository and display the contents.'''
+        basepath = self.get_repository_base_path_from_browse_page( repository )
+        repository_file_list = []
+        relative_path = filename
+        if filepath is not None:
+            relative_path = os.path.join( filepath, filename )
+        repository_file_list = self.get_repository_file_list( repository, basepath )
+        assert relative_path in repository_file_list, 'File %s not found in the repository under %s.' % ( filename, filepath )
+        url = '/repository/get_file_contents?file_path=%s' % os.path.join( basepath, relative_path ).replace( '/', '%2f' )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def edit_repository_categories( self, repository, categories_to_add=[], categories_to_remove=[], restore_original=True ):
@@ -67,10 +150,10 @@ class ShedTwillTestCase( TwillTestCase ):
         strings_not_displayed = []
         for category in categories_to_add:
             tc.fv( "2", "category_id", '+%s' % category)
-            strings_displayed.append( "selected>%s</option>" % category )
+            strings_displayed.append( "selected>%s" % category )
         for category in categories_to_remove:
             tc.fv( "2", "category_id", '-%s' % category)
-            strings_not_displayed.append( "selected>%s</option>" % category )
+            strings_not_displayed.append( "selected>%s" % category )
         tc.submit( "manage_categories_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         if restore_original:
@@ -78,22 +161,22 @@ class ShedTwillTestCase( TwillTestCase ):
             strings_not_displayed = []
             for category in categories_to_remove:
                 tc.fv( "2", "category_id", '+%s' % category)
-                strings_displayed.append( "selected>%s</option>" % category )
+                strings_displayed.append( "selected>%s" % category )
             for category in categories_to_add:
                 tc.fv( "2", "category_id", '-%s' % category)
-                strings_not_displayed.append( "selected>%s</option>" % category )
+                strings_not_displayed.append( "selected>%s" % category )
             tc.submit( "manage_categories_button" )
             self.check_for_strings( strings_displayed, strings_not_displayed )
-    def edit_repository_information( self, repository, **kwargs ):
+    def edit_repository_information( self, repository, **kwd ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         original_information = dict( repo_name=repository.name, description=repository.description, long_description=repository.long_description )
         strings_displayed = []
         strings_not_displayed = []
         for input_elem_name in [ 'repo_name', 'description', 'long_description' ]:
-            if input_elem_name in kwargs:
-                tc.fv( "1", input_elem_name, kwargs[ input_elem_name ] )
-                strings_displayed.append( self.escape_html( kwargs[ input_elem_name ] ) )
+            if input_elem_name in kwd:
+                tc.fv( "1", input_elem_name, kwd[ input_elem_name ] )
+                strings_displayed.append( self.escape_html( kwd[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
         strings_displayed = []
@@ -102,19 +185,84 @@ class ShedTwillTestCase( TwillTestCase ):
             strings_displayed.append( self.escape_html( original_information[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
-    def escape_html( self, string ):
+    def escape_html( self, string, unescape=False ):
         html_entities = [ ('&', 'X' ), ( "'", '&#39;' ), ( '"', '&#34;' ) ]
         for character, replacement in html_entities:
-            string = string.replace( character, replacement )
+            if unescape:
+                string = string.replace( replacement, character )
+            else:
+                string = string.replace( character, replacement )
         return string
     def get_latest_repository_metadata_for_repository( self, repository ):
+        # TODO: This will not work as expected. Fix it.
         return repository.metadata_revisions[ 0 ]
-    def get_readme( self, repository, strings_displayed=[], strings_not_displayed=[] ):
-        repository_metadata = self.get_latest_repository_metadata_for_repository( repository )
-        changeset_revision = repository_metadata.changeset_revision
-        repository_id = self.security.encode_id( repository.id )
-        self.visit_url( '/repository/view_readme?changeset_revision=%s&id=%s' % ( changeset_revision, repository_id ) )
-        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def get_repository_base_path_from_browse_page( self, repository ):
+        '''Get the base path from the javascript dynatree parameters. This must be updated if the browse feature is altered.'''
+        self.visit_url( '/repository/browse_repository?id=%s' % self.security.encode_id( repository.id ) )
+        html = self.last_page()
+        found_file = None
+        basepath = None
+        search = re.search( 'data: { folder_path: "([^"]+)" },', html )
+        if search is not None:
+            basepath = search.group( 1 )
+        return basepath
+    def get_repository_file_list( self, repository, base_path, current_path=None ):
+        '''
+        Recursively load repository folder contents and append them to a list. Similar to os.walk, 
+        but via /repository/open_folder.
+        '''
+        if current_path is None:
+            full_path = base_path
+        else:
+            full_path = os.path.join( base_path, current_path )
+        # Get the current folder's contents.
+        url = '/repository/open_folder?folder_path=%s' % full_path.replace( '/', '%2f' )
+        self.visit_url( url )
+        file_list = from_json_string( self.last_page() )
+        returned_file_list = []
+        if current_path is not None:
+            returned_file_list.append( current_path )
+        # Loop through the json dict returned by /repository/open_folder.
+        for file_dict in file_list:
+            if file_dict[ 'isFolder' ]:
+                # This is a folder. Get the contents of the folder and append it to the list, 
+                # prefixed with the path relative to the repository root, if any.
+                if current_path is None:
+                    returned_file_list.extend( self.get_repository_file_list( repository, base_path, file_dict[ 'title' ] ) )
+                else:
+                    sub_path = os.path.join( current_path, file_dict[ 'title' ] )
+                    returned_file_list.extend( self.get_repository_file_list( repository, base_path, sub_path ) )
+            else:
+                # This is a regular file, prefix the filename with the current path and append it to the list.
+                if current_path is not None:
+                    returned_file_list.append( os.path.join( current_path, file_dict[ 'title' ] ) )
+                else:
+                    returned_file_list.append( file_dict[ 'title' ] )
+        return returned_file_list
+    def get_repository_metadata( self, repository ):
+        return [ metadata_revision for metadata_revision in repository.metadata_revisions ]
+    def get_repository_metadata_revisions( self, repository ):
+        return [ str( repository_metadata.changeset_revision ) for repository_metadata in repository.metadata_revisions ]
+    def get_repository_tip( self, repository ):
+        self.browse_repository( repository )
+        html = self.last_page()
+        revision_regex = re.search( 'revision ([0-9a-f]+) \(repository tip\)', html )
+        if revision_regex is not None:
+            return revision_regex.group( 1 )
+        return None
+    def get_repository_filesystem_path( self, repository ):
+        repo_subdirectory = '%03d' % int( repository.id / 1000 )
+        return os.path.join( 'database', 'community_files', repo_subdirectory, 'repo_%d' % repository.id )
+    def get_tools_from_repository_metadata( self, repository, include_invalid=False ):
+        '''Get a list of valid and (optionally) invalid tool dicts from the repository metadata.'''
+        valid_tools = []
+        invalid_tools = []
+        for repository_metadata in repository.metadata_revisions:
+            if 'tools' in repository_metadata.metadata:
+                valid_tools.append( dict( tools=repository_metadata.metadata[ 'tools' ], changeset_revision=repository_metadata.changeset_revision ) )
+            if include_invalid and 'invalid_tools' in repository_metadata.metadata:
+                invalid_tools.append( dict( tools=repository_metadata.metadata[ 'invalid_tools' ], changeset_revision=repository_metadata.changeset_revision ) )
+        return valid_tools, invalid_tools
     def grant_write_access( self, repository, usernames=[], strings_displayed=[], strings_not_displayed=[] ):
         self.manage_repository( repository )
         tc.fv( "3", "allow_push", '-Select one' )
@@ -122,10 +270,8 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "3", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def load_display_tool_page( self, repository, tool_xml_filename, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
+    def load_display_tool_page( self, repository, tool_xml_path, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         repository_id = self.security.encode_id( repository.id )
-        repo_subdirectory = '%03d' % int( repository.id / 1000 )
-        tool_xml_path = '%2f'.join( [ 'database', 'community_files', repo_subdirectory, 'repo_%d' % repository.id, tool_xml_filename ] )
         url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( repository_id, tool_xml_path, changeset_revision )
         self.visit_url( url )
@@ -134,20 +280,37 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def set_repository_malicious( self, repository, strings_displayed=[], strings_not_displayed=[] ):
+    def revoke_write_access( self, repository, username ):
+        url = '/repository/manage_repository?user_access_button=Remove&id=%s&remove_auth=%s' % \
+            ( self.security.encode_id( repository.id ), username )
+        self.visit_url( url )
+    def set_repository_deprecated( self, repository, set_deprecated=True, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/deprecate?id=%s&mark_deprecated=%s' % ( self.security.encode_id( repository.id ), set_deprecated )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def set_repository_malicious( self, repository, set_malicious=True, strings_displayed=[], strings_not_displayed=[] ):
         self.manage_repository( repository )
-        tc.fv( "malicious", "malicious", True )
+        tc.fv( "malicious", "malicious", set_malicious )
         tc.submit( "malicious_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def unset_repository_malicious( self, repository, strings_displayed=[], strings_not_displayed=[] ):
-        self.manage_repository( repository )
-        tc.fv( "malicious", "malicious", False )
-        tc.submit( "malicious_button" )
-        self.check_for_strings( strings_displayed, strings_not_displayed )
-    def upload( self, repository, filename, strings_displayed=[], strings_not_displayed=[], **kwargs ):
+    def tip_has_metadata( self, repository, tip_only=True ):
+        tip = self.get_repository_tip( repository )
+        changeset_revisions = [ str( repository_metadata.changeset_revision ) for repository_metadata in repository.metadata_revisions ]
+        if tip_only:
+            return len( changeset_revisions ) == 1 and tip in changeset_revisions
+        return tip in changeset_revisions    
+    def upload_file( self, 
+                     repository, 
+                     filename, 
+                     valid_tools_only=True, 
+                     strings_displayed=[], 
+                     strings_not_displayed=[],
+                     **kwd ):
         self.visit_url( '/upload/upload?repository_id=%s' % self.security.encode_id( repository.id ) )
-        for key in kwargs:
-            tc.fv( "1", key, kwargs[ key ] )
+        if valid_tools_only:
+            strings_displayed.append( "has been successfully uploaded to the repository." )
+        for key in kwd:
+            tc.fv( "1", key, kwd[ key ] )
         tc.formfile( "1", "file_data", self.get_filename( filename ) )
         tc.submit( "upload_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
