@@ -129,7 +129,7 @@ def main():
             else:
                 database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
             kwargs = {}
-        for dir in tool_shed_test_tmp_dir:
+        for dir in [ tool_shed_test_tmp_dir ]:
             try:
                 os.makedirs( dir )
             except OSError:
