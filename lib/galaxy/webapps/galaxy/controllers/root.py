@@ -531,6 +531,25 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                 rval += "-> %s" % kwd[k].file.read()
         return rval
 
+    @web.json
+    def echo_json( self, trans, **kwd ):
+        """Echos parameters as JSON (debugging)
+
+        Attempts to parse values passed as boolean, float, then int. Defaults
+        to string. Non-recursive (will not parse lists).
+        """
+        rval = {}
+        for k in kwd:
+            rval[ k ] = kwd[k]
+            try:
+                if rval[ k ] in [ 'true', 'True', 'false', 'False' ]:
+                    rval[ k ] = util.string_as_bool( rval[ k ] )
+                rval[ k ] = float( rval[ k ] )
+                rval[ k ] = int( rval[ k ] )
+            except:
+                pass
+        return rval
+
     @web.expose
     def generate_error( self, trans ):
         raise Exception( "Fake error!" )

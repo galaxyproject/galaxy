@@ -97,7 +97,6 @@ function LazyDataLoader( config ){
             if( config.hasOwnProperty( 'initialize' ) ){
                 config.initialize.call( loader, config );
             }
-            
             this.log( this + ' initialized:', loader );
         },
         
@@ -115,6 +114,23 @@ function LazyDataLoader( config ){
         
         //OVERRIDE: to handle ajax errors differently
         ajaxErrorFn : function( xhr, status, error ){
+            console.error( 'ERROR fetching data:', error );
+        },
+
+        // converters passed to the jQuery ajax call for data type parsing
+        //OVERRIDE: to provide custom parsing
+        converters : {
+            '* text'    : window.String,
+            'text html' : true,
+            'text xml'  : jQuery.parseXML,
+
+            // add NaN, inf, -inf handling to jquery json parser (by default)
+            'text json' : function( json ){
+                json = json.replace( /NaN/g, 'null' );
+                json = json.replace( /-Infinity/g, 'null' );
+                json = json.replace( /Infinity/g, 'null' );
+                return jQuery.parseJSON( json );
+            }
         },
 
         // interface to begin load (and first recursive call)
@@ -149,7 +165,9 @@ function LazyDataLoader( config ){
                 
                 jQuery.ajax({
                     url         : loader.buildUrl( start, size ),
+                    converters  : loader.converters,
                     dataType    : 'json',
+
                     error       : function( xhr, status, error ){
                         loader.log( '\t ajax error, status:', status, 'error:', error );
                         if( loader.currentIntervalId ){
