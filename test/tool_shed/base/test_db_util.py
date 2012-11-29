@@ -46,3 +46,9 @@ def get_repository_by_name_and_owner( name, owner_username ):
                            .filter( model.Repository.table.c.user_id==owner.id ) \
                            .first()
     return repository
+def get_repository_metadata_by_repository_id_changeset_revision( repository_id, changeset_revision ):
+    repository_metadata = sa_session.query( model.RepositoryMetadata ) \
+                                    .filter( and_( model.RepositoryMetadata.table.c.id == repository_id,
+                                                   model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
+                                    .first()
+    return repository_metadata

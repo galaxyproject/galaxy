@@ -66,7 +66,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
         latest_changeset_revision = self.get_repository_tip( repository )
         self.check_for_valid_tools( repository, strings_displayed=[ 'Filter1' ] )
-        self.check_metadata_in_repository_changelog( repository, metadata_count=1 )
+        self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=1 )
         self.check_repository_tools( repository )
         self.check_repository_metadata( repository, tip_only=False )
         self.browse_repository( repository, strings_displayed=[ 'Browse %s revision' % repository.name, '(repository tip)' ] )
@@ -128,7 +128,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         self.check_for_valid_tools( repository )
         strings_displayed = self.get_repository_metadata_revisions( repository ).append( 'Select a revision' )
         self.manage_repository( repository, strings_displayed=strings_displayed )
-        self.check_metadata_in_repository_changelog( repository, metadata_count=2 )
+        self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=2 )
         self.check_repository_tools( repository, include_invalid=False )
         self.check_repository_metadata( repository, tip_only=False )
     def test_0070_upload_readme_txt_file( self ):
@@ -146,7 +146,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         '''Delete the readme.txt file.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
         self.delete_files_from_repository( repository, filenames=[ 'readme.txt' ] )
-        self.check_metadata_in_repository_changelog( repository, metadata_count=2 )
+        self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=2 )
         # Deleting a readme file for a specific revision should make the repository fall back 
         # to a previous revision's readme file, if one exists.
         # TODO: All readme files should be displayed.

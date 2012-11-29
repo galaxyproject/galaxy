@@ -270,7 +270,7 @@ def main():
             for dir in [ tool_shed_test_tmp_dir ]:
                 if os.path.exists( dir ):
                     log.info( "Cleaning up temporary files in %s" % dir )
-                    shutil.rmtree( dir )
+                    #shutil.rmtree( dir )
         except:
             pass
     if success:

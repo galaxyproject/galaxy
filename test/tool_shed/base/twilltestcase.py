@@ -1,13 +1,19 @@
 from base.twilltestcase import *
-import ConfigParser
+from galaxy.webapps.community.util.hgweb_config import *
+from test_db_util import *
+
+from galaxy import eggs
+eggs.require('mercurial')
+from mercurial import hg, ui
 
 class ShedTwillTestCase( TwillTestCase ):
     def setUp( self ):
         # Security helper
         self.security = security.SecurityHelper( id_secret='changethisinproductiontoo' )
         self.history_id = None
-        self.hgweb_config_manager = None
         self.hgweb_config_dir = os.environ.get( 'TEST_HG_WEB_CONFIG_DIR' )
+        self.hgweb_config_manager = HgWebConfigManager()
+        self.hgweb_config_manager.hgweb_config_dir = self.hgweb_config_dir
         self.host = os.environ.get( 'TOOL_SHED_TEST_HOST' )
         self.port = os.environ.get( 'TOOL_SHED_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
@@ -35,7 +41,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def check_for_valid_tools( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         strings_displayed.append( 'Valid tools' )
         self.manage_repository( repository, strings_displayed, strings_not_displayed )
-    def check_metadata_in_repository_changelog( self, repository, metadata_count ):
+    def check_count_of_metadata_revisions_associated_with_repository( self, repository, metadata_count ):
         self.check_repository_changelog( repository )
         self.check_string_count_in_page( 'Repository metadata is associated with this change set.', metadata_count )
     def check_repository_changelog( self, repository, strings_displayed=[], strings_not_displayed=[] ):
@@ -43,9 +49,13 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def check_repository_metadata( self, repository, tip_only=True ):
-        assert self.tip_has_metadata( repository, tip_only ), \
-               'Repository tip is not a metadata revision: Repository tip - %s, metadata revisions - %s.' % \
-               ( self.get_repository_tip( repository ), ', '.join( self.get_repository_metadata_revisions( repository ) ) )
+        if tip_only:
+            assert self.tip_has_metadata( repository ) and len( self.get_repository_metadata_revisions( repository ) ) == 1, \
+                'Repository tip is not a metadata revision: Repository tip - %s, metadata revisions - %s.'
+        else:
+            assert len( self.get_repository_metadata_revisions( repository ) ) > 0, \
+                   'Repository tip is not a metadata revision: Repository tip - %s, metadata revisions - %s.' % \
+                   ( self.get_repository_tip( repository ), ', '.join( self.get_repository_metadata_revisions( repository ) ) )
     def check_repository_tools( self, repository, include_invalid=False ):
         '''
         Loop through each repository_metadata dict in the repository object. 
@@ -73,12 +83,36 @@ class ShedTwillTestCase( TwillTestCase ):
         if include_invalid and invalid_tool_list:
             for invalid_tool_dict in invalid_tool_list:
                 for tool in invalid_tool_dict[ 'tools' ]:
-                    tool_path = '%s/%s' % ( self.get_repository_filesystem_path( repository ), tool )
+                    tool_path = '%s/%s' % ( self.get_repo_path( repository ), tool )
                     self.load_display_tool_page( repository, 
                                                  tool_xml_path=tool_path,
                                                  changeset_revision=changeset_revision,
                                                  strings_displayed=[ 'properly loaded' ],
                                                  strings_not_displayed=[] )
+    def check_repository_tools_for_changeset_revision( self, repository, changeset_revision ):
+        '''
+        Loop through each tool dictionary in the repository metadata associated with the received changeset_revision. 
+        For each of these, check for a tools attribute, and load the tool metadata page if it exists, then display that tool's page.
+        '''
+        repository_metadata = get_repository_metadata_by_repository_id_changeset_revision( repository.id, changeset_revision )
+        metadata = repository_metadata.metadata
+        for tool_dict in metadata[ 'tools' ]:
+            metadata_strings_displayed = [ tool[ 'guid' ], 
+                                           tool[ 'version' ], 
+                                           tool[ 'id' ], 
+                                           tool[ 'name' ], 
+                                           tool[ 'description' ],
+                                           changeset_revision ]
+            url = '/repository/view_tool_metadata?repository_id=%s&changeset_revision=%s&tool_id=%s' % \
+                  ( self.security.encode_id( repository.id ), changeset_revision, tool[ 'id' ] )
+            self.visit_url( url )
+            self.check_for_strings( metadata_strings_displayed )
+            self.load_display_tool_page( repository, tool_xml_path=tool[ 'tool_config' ],
+                                         changeset_revision=changeset_revision,
+                                         strings_displayed=[ '%s (version %s)' % ( tool[ 'name' ], tool[ 'version' ] ) ],
+                                         strings_not_displayed=[] )
+    def check_repository_invalid_tools_for_changeset_revision( self, repository, changeset_revision ):
+        pass
     def check_string_count_in_page( self, pattern, min_count, max_count=None ):
         """Checks the number of 'pattern' occurrences in the current browser page"""        
         page = self.last_page()
@@ -202,15 +236,10 @@ class ShedTwillTestCase( TwillTestCase ):
     def get_repo_path( self, repository ):
         # An entry in the hgweb.config file looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
         lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
-        hgweb_config = "%s/hgweb.config" %  self.hgweb_config_dir
-        if not os.path.exists( hgweb_config ):
-            raise Exception( "Required file hgweb.config does not exist in directory %s" % self.hgweb_config_dir )
-        config = ConfigParser.ConfigParser()
-        config.read( hgweb_config )
-        for option in config.options( "paths" ):
-            if option == lhs:
-                return config.get( "paths", option )
-        raise Exception( "Entry for repository %s missing in %s/hgweb.config file." % ( lhs, self.hgweb_config_dir ) )
+        try:
+            return self.hgweb_config_manager.get_entry( lhs )
+        except:
+            raise Exception( "Entry for repository %s missing in hgweb config file %s." % ( lhs, self.hgweb_config_manager.hgweb_config ) )
     def get_repository_file_list( self, base_path, current_path=None ):
         '''Recursively load repository folder contents and append them to a list. Similar to os.walk but via /repository/open_folder.'''
         if current_path is None:
@@ -247,15 +276,8 @@ class ShedTwillTestCase( TwillTestCase ):
     def get_repository_metadata_revisions( self, repository ):
         return [ str( repository_metadata.changeset_revision ) for repository_metadata in repository.metadata_revisions ]
     def get_repository_tip( self, repository ):
-        self.browse_repository( repository )
-        html = self.last_page()
-        revision_regex = re.search( 'revision ([0-9a-f]+) \(repository tip\)', html )
-        if revision_regex is not None:
-            return revision_regex.group( 1 )
-        return None
-    def get_repository_filesystem_path( self, repository ):
-        repo_subdirectory = '%03d' % int( repository.id / 1000 )
-        return os.path.join( 'database', 'community_files', repo_subdirectory, 'repo_%d' % repository.id )
+        repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
+        return str( repo.changectx( repo.changelog.tip() ) )
     def get_tools_from_repository_metadata( self, repository, include_invalid=False ):
         '''Get a list of valid and (optionally) invalid tool dicts from the repository metadata.'''
         valid_tools = []
@@ -296,12 +318,9 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.fv( "malicious", "malicious", set_malicious )
         tc.submit( "malicious_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def tip_has_metadata( self, repository, tip_only=True ):
+    def tip_has_metadata( self, repository ):
         tip = self.get_repository_tip( repository )
-        changeset_revisions = [ str( repository_metadata.changeset_revision ) for repository_metadata in repository.metadata_revisions ]
-        if tip_only:
-            return len( changeset_revisions ) == 1 and tip in changeset_revisions
-        return tip in changeset_revisions    
+        return get_repository_metadata_by_repository_id_changeset_revision( repository.id, tip )
     def upload_file( self, 
                      repository, 
                      filename, 
