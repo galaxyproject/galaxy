@@ -1,4 +1,5 @@
 from base.twilltestcase import *
+import ConfigParser
 
 class ShedTwillTestCase( TwillTestCase ):
     def setUp( self ):
@@ -6,6 +7,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.security = security.SecurityHelper( id_secret='changethisinproductiontoo' )
         self.history_id = None
         self.hgweb_config_manager = None
+        self.hgweb_config_dir = os.environ.get( 'TEST_HG_WEB_CONFIG_DIR' )
         self.host = os.environ.get( 'TOOL_SHED_TEST_HOST' )
         self.port = os.environ.get( 'TOOL_SHED_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
@@ -108,8 +110,8 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def delete_files_from_repository( self, repository, filenames=[], strings_displayed=[ 'were deleted from the repository' ], strings_not_displayed=[] ):
         files_to_delete = []
-        basepath = self.get_repository_base_path_from_browse_page( repository )
-        repository_files = self.get_repository_file_list( repository, basepath )
+        basepath = self.get_repo_path( repository )
+        repository_files = self.get_repository_file_list( base_path=basepath, current_path=None )
         # Verify that the files to delete actually exist in the repository.
         for filename in repository_files:
             if filename in filenames:
@@ -133,14 +135,15 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_repository_file_contents( self, repository, filename, filepath=None, strings_displayed=[], strings_not_displayed=[] ):
         '''Find a file in the repository and display the contents.'''
-        basepath = self.get_repository_base_path_from_browse_page( repository )
+        basepath = self.get_repo_path( repository )
         repository_file_list = []
-        relative_path = filename
-        if filepath is not None:
-            relative_path = os.path.join( filepath, filename )
-        repository_file_list = self.get_repository_file_list( repository, basepath )
-        assert relative_path in repository_file_list, 'File %s not found in the repository under %s.' % ( filename, filepath )
-        url = '/repository/get_file_contents?file_path=%s' % os.path.join( basepath, relative_path ).replace( '/', '%2f' )
+        if filepath:
+            relative_path = os.path.join( basepath, filepath )
+        else:
+            relative_path = basepath
+        repository_file_list = self.get_repository_file_list( base_path=relative_path, current_path=None )
+        assert filename in repository_file_list, 'File %s not found in the repository under %s.' % ( filename, relative_path )
+        url = '/repository/get_file_contents?file_path=%s' % os.path.join( relative_path, filename )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def edit_repository_categories( self, repository, categories_to_add=[], categories_to_remove=[], restore_original=True ):
@@ -196,27 +199,27 @@ class ShedTwillTestCase( TwillTestCase ):
     def get_latest_repository_metadata_for_repository( self, repository ):
         # TODO: This will not work as expected. Fix it.
         return repository.metadata_revisions[ 0 ]
-    def get_repository_base_path_from_browse_page( self, repository ):
-        '''Get the base path from the javascript dynatree parameters. This must be updated if the browse feature is altered.'''
-        self.visit_url( '/repository/browse_repository?id=%s' % self.security.encode_id( repository.id ) )
-        html = self.last_page()
-        found_file = None
-        basepath = None
-        search = re.search( 'data: { folder_path: "([^"]+)" },', html )
-        if search is not None:
-            basepath = search.group( 1 )
-        return basepath
-    def get_repository_file_list( self, repository, base_path, current_path=None ):
-        '''
-        Recursively load repository folder contents and append them to a list. Similar to os.walk, 
-        but via /repository/open_folder.
-        '''
+    def get_repo_path( self, repository ):
+        # An entry in the hgweb.config file looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
+        lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
+        hgweb_config = "%s/hgweb.config" %  self.hgweb_config_dir
+        if not os.path.exists( hgweb_config ):
+            raise Exception( "Required file hgweb.config does not exist in directory %s" % self.hgweb_config_dir )
+        config = ConfigParser.ConfigParser()
+        config.read( hgweb_config )
+        for option in config.options( "paths" ):
+            if option == lhs:
+                return config.get( "paths", option )
+        raise Exception( "Entry for repository %s missing in %s/hgweb.config file." % ( lhs, self.hgweb_config_dir ) )
+    def get_repository_file_list( self, base_path, current_path=None ):
+        '''Recursively load repository folder contents and append them to a list. Similar to os.walk but via /repository/open_folder.'''
         if current_path is None:
-            full_path = base_path
+            request_param_path = base_path
         else:
-            full_path = os.path.join( base_path, current_path )
+            request_param_path = os.path.join( base_path, current_path )
+        #request_param_path = request_param_path.replace( '/', '%2f' )
         # Get the current folder's contents.
-        url = '/repository/open_folder?folder_path=%s' % full_path.replace( '/', '%2f' )
+        url = '/repository/open_folder?folder_path=%s' % request_param_path
         self.visit_url( url )
         file_list = from_json_string( self.last_page() )
         returned_file_list = []
@@ -228,10 +231,10 @@ class ShedTwillTestCase( TwillTestCase ):
                 # This is a folder. Get the contents of the folder and append it to the list, 
                 # prefixed with the path relative to the repository root, if any.
                 if current_path is None:
-                    returned_file_list.extend( self.get_repository_file_list( repository, base_path, file_dict[ 'title' ] ) )
+                    returned_file_list.extend( self.get_repository_file_list( base_path=base_path, current_path=file_dict[ 'title' ] ) )
                 else:
                     sub_path = os.path.join( current_path, file_dict[ 'title' ] )
-                    returned_file_list.extend( self.get_repository_file_list( repository, base_path, sub_path ) )
+                    returned_file_list.extend( self.get_repository_file_list( base_path=base_path, current_path=sub_path ) )
             else:
                 # This is a regular file, prefix the filename with the current path and append it to the list.
                 if current_path is not None:

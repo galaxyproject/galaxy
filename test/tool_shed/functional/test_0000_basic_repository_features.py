@@ -15,7 +15,7 @@ repository_name = 'filtering'
 repository_description = "Galaxy's filtering tool"
 repository_long_description = "Long description of Galaxy's filtering tool"
 
-class TestCreateRepository( ShedTwillTestCase ):
+class TestBasicRepositoryFeatures( ShedTwillTestCase ):
  
     def test_0000_initiate_users( self ):
         """Create necessary user accounts and login as an admin user."""
@@ -89,9 +89,13 @@ class TestCreateRepository( ShedTwillTestCase ):
                                         strings_displayed=[ 'has been marked as not deprecated', 'Mark as deprecated' ],
                                         set_deprecated=False )
     def test_0045_display_repository_tip_file( self ):
-        '''Display the contents of a file in the repository tip revision'''
+        '''Display the contents of filtering.xml in the repository tip revision'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
-        self.display_repository_file_contents( repository, filename='filtering.xml', strings_displayed=[ '1.1.0' ] )
+        self.display_repository_file_contents( repository=repository,
+                                               filename='filtering.xml',
+                                               filepath=None,
+                                               strings_displayed=[ '1.1.0' ],
+                                               strings_not_displayed=[] )
     def test_0050_upload_filtering_txt_file( self ):
         '''Upload filtering.txt file associated with tool version 1.1.0.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
@@ -105,7 +109,11 @@ class TestCreateRepository( ShedTwillTestCase ):
         '''Upload filtering test data.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
         self.upload_file( repository, 'filtering_test_data.tar', commit_message="Uploaded filtering test data", remove_repo_files_not_in_tar='No' )
-        self.display_repository_file_contents( repository, filename='1.bed', filepath='test-data' )
+        self.display_repository_file_contents( repository=repository,
+                                               filename='1.bed',
+                                               filepath='test-data',
+                                               strings_displayed=[],
+                                               strings_not_displayed=[] )
         self.check_repository_metadata( repository, tip_only=True )
     def test_0060_upload_filtering_2_2_0( self ):
         '''Upload filtering version 2.2.0'''

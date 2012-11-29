@@ -6,6 +6,10 @@ import os, sys, shutil, tempfile, re
 cwd = os.getcwd()
 tool_shed_home_directory = os.path.join( cwd, 'test', 'tool_shed' )
 default_tool_shed_test_file_dir = os.path.join( tool_shed_home_directory, 'test_data' )
+# Here's the directory where everything happens.  Temporary directories are created within this directory to contain
+# the hgweb.config file, the database, new repositories, etc.  Since the tool shed browses repository contents via HTTP,
+# the full path to the temporary directroy wher eht repositories are located cannot contain invalid url characters.
+tool_shed_test_tmp_dir = os.path.join( tool_shed_home_directory, 'tmp' )
 new_path = [ os.path.join( cwd, "lib" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
@@ -31,7 +35,6 @@ from paste import httpserver
 import galaxy.webapps.community.app
 from galaxy.webapps.community.app import UniverseApplication
 from galaxy.webapps.community import buildapp
-#from galaxy.webapps.community.util.hgweb_config import *
 
 import nose.core
 import nose.config
@@ -81,6 +84,8 @@ def main():
     use_distributed_object_store = os.environ.get( 'TOOL_SHED_USE_DISTRIBUTED_OBJECT_STORE', False )
     
     if start_server:
+        if not os.path.isdir( tool_shed_test_tmp_dir ):
+            os.mkdir( tool_shed_test_tmp_dir )
         psu_production = False
         tool_shed_test_proxy_port = None
         if 'TOOL_SHED_TEST_PSU_PRODUCTION' in os.environ:
@@ -102,7 +107,8 @@ def main():
             if not nginx_upload_store:
                 raise Exception( 'Set TOOL_SHED_TEST_NGINX_UPLOAD_STORE to the path where the nginx upload module places uploaded files' )
             file_path = tempfile.mkdtemp( dir=base_file_path )
-            new_file_path = tempfile.mkdtemp( dir=base_new_file_path )
+            new_repos_path = tempfile.mkdtemp( dir=base_new_file_path )
+            hgweb_config_file_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
             kwargs = dict( database_engine_option_pool_size = '10',
                            database_engine_option_max_overflow = '20',
                            database_engine_option_strategy = 'threadlocal',
@@ -113,22 +119,28 @@ def main():
             if 'TOOL_SHED_TEST_DBPATH' in os.environ:
                 db_path = os.environ[ 'TOOL_SHED_TEST_DBPATH' ]
             else: 
-                tempdir = tempfile.mkdtemp()
+                tempdir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
                 db_path = os.path.join( tempdir, 'database' )
             file_path = os.path.join( db_path, 'files' )
-            new_file_path = os.path.join( db_path, 'tmp' )
+            hgweb_config_file_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
+            new_repos_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
             if 'TOOL_SHED_TEST_DBURI' in os.environ:
                 database_connection = os.environ[ 'TOOL_SHED_TEST_DBURI' ]
             else:
                 database_connection = 'sqlite:///' + os.path.join( db_path, 'universe.sqlite' )
             kwargs = {}
-        for dir in file_path, new_file_path:
+        for dir in tool_shed_test_tmp_dir:
             try:
                 os.makedirs( dir )
             except OSError:
                 pass
 
     print "Database connection:", database_connection
+
+    hgweb_config_dir = hgweb_config_file_path
+    os.environ[ 'TEST_HG_WEB_CONFIG_DIR' ] = hgweb_config_dir
+
+    print "Directory location for hgweb.config:", hgweb_config_dir
 
     # ---- Build Application -------------------------------------------------- 
     app = None 
@@ -150,7 +162,7 @@ def main():
                                    database_connection = database_connection,
                                    database_engine_option_pool_size = '10',
                                    file_path = file_path,
-                                   new_file_path = new_file_path,
+                                   new_file_path = new_repos_path,
                                    tool_path=tool_path,
                                    datatype_converters_config_file = 'datatype_converters_conf.xml.sample',
                                    tool_parse_help = False,
@@ -163,9 +175,8 @@ def main():
                                    admin_users = 'test@bx.psu.edu',
                                    global_conf = global_conf,
                                    running_functional_tests = True,
-                                   hgweb_config_dir = new_file_path,
+                                   hgweb_config_dir = hgweb_config_dir,
                                    **kwargs )
-#        app.hgweb_config_manager = HgWebConfigManager()
 
         log.info( "Embedded Universe application started" )
 
@@ -254,20 +265,14 @@ def main():
         app.shutdown()
         app = None
         log.info( "Embedded Universe application stopped" )
-    try:
-        if os.path.exists( tempdir ) and 'TOOL_SHED_TEST_NO_CLEANUP' not in os.environ:
-            log.info( "Cleaning up temporary files in %s" % tempdir )
-            shutil.rmtree( tempdir )
-    except:
-        pass
-    if psu_production and 'TOOL_SHED_TEST_NO_CLEANUP' not in os.environ:
-        for dir in ( file_path, new_file_path ):
-            try:
+    if 'TOOL_SHED_TEST_NO_CLEANUP' not in os.environ:
+        try:
+            for dir in [ tool_shed_test_tmp_dir ]:
                 if os.path.exists( dir ):
-                    log.info( 'Cleaning up temporary files in %s' % dir )
+                    log.info( "Cleaning up temporary files in %s" % dir )
                     shutil.rmtree( dir )
-            except:
-                pass
+        except:
+            pass
     if success:
         return 0
     else:
