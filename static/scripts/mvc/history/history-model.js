@@ -187,9 +187,9 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             // if not interruption by iframe reload
             //TODO: remove when iframes are removed
             if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
-                if( console && console.warn ){
-                    console.warn( 'Error getting history updates from the server:', xhr, status, error );
-                }
+                //if( console && console.warn ){
+                //    console.warn( 'Error getting history updates from the server:', xhr, status, error );
+                //}
                 alert( _l( 'Error getting history updates from the server.' ) + '\n' + error );
             }
         });

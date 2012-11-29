@@ -801,14 +801,22 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # try to get the first line (assuming it's a header)
         #TODO: doesn't belong here
         try:
-            with open( hda.file_name ) as infile:
-                for index, line in enumerate( infile ):
-                    if 'comment_lines' not in hda_dict:
-                        hda_dict[ 'comment_lines' ] = []
-                    hda_dict[ 'comment_lines' ].append( line )
-                    if index >= 3:
-                        break
+            num_comment_lines = 1
+            if hda_dict[ 'metadata_comment_lines' ]:
+                num_comment_lines = hda_dict[ 'metadata_comment_lines' ]
+
+            infile = open( hda.file_name )
+            for index, line in enumerate( infile ):
+                if 'comment_lines' not in hda_dict:
+                    hda_dict[ 'comment_lines' ] = []
+                hda_dict[ 'comment_lines' ].append( line )
+                if index >= num_comment_lines:
+                    break
+            infile.close()
+
         except Exception, exc:
+            if infile:
+                infile.close()
             log.error( str( exc ) )
 
         history_id = trans.security.encode_id( hda.history.id )

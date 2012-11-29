@@ -304,12 +304,11 @@ $(function(){
     Galaxy.historyFrame = window;
 
     // ostensibly, this is the App
-    if( console && console.debug ){
-        //if( console.clear ){ console.clear(); }
-        console.pretty = function( o ){ $( '<pre/>' ).text( JSON.stringify( o, null, ' ' ) ).appendTo( 'body' ); }
-        top.storage = jQuery.jStorage
-    }
-
+    //if( console && console.debug ){
+    //    //if( console.clear ){ console.clear(); }
+    //    console.pretty = function( o ){ $( '<pre/>' ).text( JSON.stringify( o, null, ' ' ) ).appendTo( 'body' ); }
+    //    top.storage = jQuery.jStorage
+    //}
 
     // LOAD INITIAL DATA IN THIS PAGE - since we're already sending it...
     //  ...use mako to 'bootstrap' the models
@@ -330,7 +329,7 @@ $(function(){
     var historyPanel = new HistoryPanel({
         model           : new History( history, hdas ),
         urlTemplates    : galaxy_paths.attributes,
-        logger          : console,
+        //logger          : console,
         // is page sending in show settings? if so override history's
         show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
         show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
