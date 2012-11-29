@@ -501,7 +501,8 @@ class MatchedRepositoryGrid( grids.Grid ):
                                    .filter( or_( *clause_list ) ) \
                                    .order_by( model.Repository.name )
         # Return an empty query
-        return []
+        return trans.sa_session.query( model.RepositoryMetadata ) \
+                               .filter( model.RepositoryMetadata.id < 0 )
 
 class InstallMatchedRepositoryGrid( MatchedRepositoryGrid ):
     columns = [ col for col in MatchedRepositoryGrid.columns ]
