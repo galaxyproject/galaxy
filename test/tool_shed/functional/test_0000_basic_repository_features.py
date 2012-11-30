@@ -67,7 +67,8 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         latest_changeset_revision = self.get_repository_tip( repository )
         self.check_for_valid_tools( repository, strings_displayed=[ 'Filter1' ] )
         self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=1 )
-        self.check_repository_tools( repository )
+        tip = self.get_repository_tip( repository )
+        self.check_repository_tools_for_changeset_revision( repository, tip )
         self.check_repository_metadata( repository, tip_only=False )
         self.browse_repository( repository, strings_displayed=[ 'Browse %s revision' % repository.name, '(repository tip)' ] )
         self.display_repository_clone_page( admin_username, 
@@ -125,11 +126,12 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0065_verify_filtering_repository( self ):
         '''Verify the new tool versions and repository metadata.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
+        tip = self.get_repository_tip( repository )
         self.check_for_valid_tools( repository )
         strings_displayed = self.get_repository_metadata_revisions( repository ).append( 'Select a revision' )
         self.manage_repository( repository, strings_displayed=strings_displayed )
         self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=2 )
-        self.check_repository_tools( repository, include_invalid=False )
+        self.check_repository_tools_for_changeset_revision( repository, tip )
         self.check_repository_metadata( repository, tip_only=False )
     def test_0070_upload_readme_txt_file( self ):
         '''Upload readme.txt file associated with tool version 2.2.0.'''
@@ -151,3 +153,9 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         # to a previous revision's readme file, if one exists.
         # TODO: All readme files should be displayed.
         self.display_readme_file( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
+    def test_0080_search_for_valid_filter_tool( self ):
+        '''Verify that the "search for valid tool" feature finds the filtering tool.'''
+        repository = get_repository_by_name_and_owner( repository_name, admin_username )
+        tip_changeset = self.get_repository_tip( repository )
+        search_options = dict( tool_id='Filter1', tool_name='filter', tool_version='2.2.0' )
+        self.search_for_valid_tools( search_options=search_options, strings_displayed=[ tip_changeset ], strings_not_displayed=[] )

@@ -42,13 +42,13 @@ def refresh( obj ):
 def get_repository_by_name_and_owner( name, owner_username ):
     owner = get_user_by_name( owner_username )
     repository = sa_session.query( model.Repository ) \
-                           .filter( model.Repository.table.c.name==name ) \
-                           .filter( model.Repository.table.c.user_id==owner.id ) \
+                           .filter( and_( model.Repository.table.c.name == name,
+                                          model.Repository.table.c.user_id == owner.id ) ) \
                            .first()
     return repository
 def get_repository_metadata_by_repository_id_changeset_revision( repository_id, changeset_revision ):
     repository_metadata = sa_session.query( model.RepositoryMetadata ) \
-                                    .filter( and_( model.RepositoryMetadata.table.c.id == repository_id,
+                                    .filter( and_( model.RepositoryMetadata.table.c.repository_id == repository_id,
                                                    model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
                                     .first()
     return repository_metadata
