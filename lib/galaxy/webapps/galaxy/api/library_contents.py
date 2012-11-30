@@ -181,7 +181,7 @@ class LibraryContentsController( BaseAPIController, UsesLibraryMixin, UsesLibrar
         else:
             #BUG: Everything is cast to string, which can lead to false positives
             #for cross type comparisions, ie "True" == True
-            yield prefix, str(meta)
+            yield prefix, ("%s" % (meta)).encode("utf8", errors='replace')
 
     @web.expose_api
     def update( self, trans, id,  library_id, payload, **kwd ):
