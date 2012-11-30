@@ -36,6 +36,8 @@ from galaxy.util.shed_util import *
 from galaxy.util.shed_util_common import *
 from galaxy.web import url_for
 
+from paste import httpexceptions
+
 from galaxy.visualization.genome.visual_analytics import TracksterConfig
 
 log = logging.getLogger( __name__ )
@@ -1790,6 +1792,9 @@ class Tool:
             elif state.page == self.last_page:
                 try:
                     _, out_data = self.execute( trans, incoming=params, history=history )
+                except httpexceptions.HTTPFound, e:
+                    #if it's a paste redirect exception, pass it up the stack
+                    raise e
                 except Exception, e:
                     log.exception('Exception caught while attempting tool execution:')
                     return 'message.mako', dict( status='error', message='Error executing tool: %s' % str(e), refresh_frames=[] )
