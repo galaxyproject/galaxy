@@ -133,7 +133,7 @@ class JobHandlerQueue( object ):
                     .join(model.HistoryDatasetAssociation) \
                     .join(model.Dataset) \
                     .filter(and_((model.Job.state == model.Job.states.NEW),
-                                 or_((model.HistoryDatasetAssociation._state != None),
+                                 or_((model.HistoryDatasetAssociation._state == model.HistoryDatasetAssociation.states.FAILED_METADATA),
                                      (model.HistoryDatasetAssociation.deleted == True ),
                                      (model.Dataset.state != model.Dataset.states.OK ),
                                      (model.Dataset.deleted == True)))).subquery()
