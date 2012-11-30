@@ -270,61 +270,6 @@ def get_latest_tool_config_revision_from_repository_manifest( repo, filename, ch
                 fh.close()
                 return tmp_filename
     return None
-def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
-    """
-    Return the installable changeset_revision in the repository changelog after to the changeset to which after_changeset_revision
-    refers.  If there isn't one, return None.
-    """
-    changeset_revisions = get_ordered_downloadable_changeset_revisions( repository, repo )
-    if len( changeset_revisions ) == 1:
-        changeset_revision = changeset_revisions[ 0 ]
-        if changeset_revision == after_changeset_revision:
-            return None
-    found_after_changeset_revision = False
-    for changeset in repo.changelog:
-        changeset_revision = str( repo.changectx( changeset ) )
-        if found_after_changeset_revision:
-            if changeset_revision in downloadable_changeset_revisions:
-                return changeset_revision
-        elif not found_after_changeset_revision and changeset_revision == after_changeset_revision:
-            # We've found the changeset in the changelog for which we need to get the next downloadable changset.
-            found_after_changeset_revision = True
-    return None
-def get_ordered_downloadable_changeset_revisions( repository, repo ):
-    """Return an ordered list of changeset_revisions defined by a repository changelog."""
-    changeset_tups = []
-    for repository_metadata in repository.downloadable_revisions:
-        changeset_revision = repository_metadata.changeset_revision
-        ctx = get_changectx_for_changeset( repo, changeset_revision )
-        if ctx:
-            rev = '%04d' % ctx.rev()
-        else:
-            rev = '-1'
-        changeset_tups.append( ( rev, changeset_revision ) )
-    sorted_changeset_tups = sorted( changeset_tups )
-    sorted_changeset_revisions = [ changeset_tup[ 1 ] for changeset_tup in sorted_changeset_tups ]
-    return sorted_changeset_revisions
-def get_previous_downloadable_changset_revision( repository, repo, before_changeset_revision ):
-    """
-    Return the installable changeset_revision in the repository changelog prior to the changeset to which before_changeset_revision
-    refers.  If there isn't one, return the hash value of an empty repository changelog, INITIAL_CHANGELOG_HASH.
-    """
-    changeset_revisions = get_ordered_downloadable_changeset_revisions( repository, repo )
-    if len( changeset_revisions ) == 1:
-        changeset_revision = changeset_revisions[ 0 ]
-        if changeset_revision == before_changeset_revision:
-            return INITIAL_CHANGELOG_HASH
-        return changeset_revision
-    previous_changeset_revision = None
-    for changeset_revision in changeset_revisions:
-        if changeset_revision == before_changeset_revision:
-            if previous_changeset_revision:
-                return previous_changeset_revision
-            else:
-                # Return the hash value of an empty repository changelog - note that this will not be a valid changeset revision.
-                return INITIAL_CHANGELOG_HASH
-        else:
-            previous_changeset_revision = changeset_revision
 def get_previous_repository_reviews( trans, repository, changeset_revision ):
     """Return an ordered dictionary of repository reviews up to and including the received changeset revision."""
     repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )

@@ -15,7 +15,7 @@
             %if readme_files_dict:
                 <div class="form-row">
                     <table class="colored" width="100%">
-                        <th bgcolor="#EBD9B2">Repository README file (may contain important installation or license information)</th>
+                        <th bgcolor="#EBD9B2">Repository README files - may contain important installation or license information</th>
                     </table>
                 </div>
                 ${render_readme_section( containers_dict )}

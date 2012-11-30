@@ -206,8 +206,6 @@
                     col_span_str = 'colspan="4"'
                 elif folder.label == 'Repository dependencies':
                     folder_label = "%s<i> - this repository requires installation of these additional repositories</i>" % folder_label
-                elif folder.key == 'readme_files':
-                    folder_label = "%s<i> - may contain important installation or license information</i>" % folder_label
                 elif folder.invalid_tools:
                     folder_label = "%s<i> - click the tool config file name to see why the tool is invalid</i>" % folder_label
                 elif folder.tool_dependencies:
@@ -484,7 +482,7 @@
     %>
     %if readme_files_root_folder:
         <div class="toolForm">
-            <div class="toolFormTitle">Repository README files (may contain important installation or license information)</div>
+            <div class="toolFormTitle">Repository README files - may contain important installation or license information</div>
             <div class="toolFormBody">
                 <p/>
                 <% row_counter = RowCounter() %>
