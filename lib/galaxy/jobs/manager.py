@@ -12,7 +12,7 @@ from Queue import Queue, Empty
 from sqlalchemy.sql.expression import and_, or_
 
 from galaxy import model
-from galaxy.jobs import handler, Sleeper, NoopQueue
+from galaxy.jobs import handler, Sleeper, NoopQueue, JobWrapper
 from galaxy.util.json import from_json_string
 
 log = logging.getLogger( __name__ )
