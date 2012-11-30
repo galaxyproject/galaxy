@@ -5,23 +5,26 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
+
+    has_metadata = repository.metadata_revisions
+    has_readme = metadata and 'readme' in metadata
     is_admin = trans.user_is_admin()
     is_new = repository.is_new( trans.app )
     is_deprecated = repository.deprecated
-    can_contact_owner = trans.user and trans.user != repository.user
-    can_push = not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository )
-    can_upload = can_push
-    can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
+
     can_browse_contents = not is_new
-    can_set_metadata = not is_new and not is_deprecated
-    can_rate = not is_new and not is_deprecated and trans.user and repository.user != trans.user
-    can_view_change_log = not is_new
-    can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip( trans.app )
+    can_contact_owner = trans.user and trans.user != repository.user
     can_deprecate = not is_new and trans.user and ( is_admin or repository.user == trans.user ) and not is_deprecated
-    can_undeprecate = trans.user and ( is_admin or repository.user == trans.user ) and is_deprecated
+    can_push = not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository )
+    can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
+    can_rate = not is_new and not is_deprecated and trans.user and repository.user != trans.user
     can_reset_all_metadata = not is_deprecated and is_admin and len( repo ) > 0
-    has_readme = metadata and 'readme' in metadata
-    can_review_repository = not is_new and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
+    can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
+    can_set_metadata = not is_new and not is_deprecated
+    can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip( trans.app )
+    can_undeprecate = trans.user and ( is_admin or repository.user == trans.user ) and is_deprecated
+    can_upload = can_push
+    can_view_change_log = not is_new
     reviewing_repository = cntrller and cntrller == 'repository_review'
 
     if can_push:
@@ -51,7 +54,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
-    ${dependency_javascripts()}
+    ${container_javascripts()}
 </%def>
 
 <br/><br/>
@@ -77,9 +80,6 @@
                 %endif
                 %if can_upload:
                     <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
-                %endif
-                %if has_readme:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">View README</a>
                 %endif
                 %if can_view_change_log:
                     <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>

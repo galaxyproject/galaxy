@@ -1278,6 +1278,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         it into a local Galaxy instance.
         """
         includes_tools = False
+        includes_repository_dependencies = False
         includes_tool_dependencies = False
         repo_info_dicts = []
         for tup in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
@@ -1288,33 +1289,39 @@ class RepositoryController( BaseUIController, ItemRatings ):
             metadata = repository_metadata.metadata
             if not includes_tools and 'tools' in metadata:
                 includes_tools = True
+            if not includes_repository_dependencies and 'repository_dependencies' in metadata:
+                includes_repository_dependencies = True
             if not includes_tool_dependencies and 'tool_dependencies' in metadata:
                 includes_tool_dependencies = True
             repo_dir = repository.repo_path( trans.app )
             repo = hg.repository( get_configured_ui(), repo_dir )
             ctx = get_changectx_for_changeset( repo, changeset_revision )
-            repo_info_dict = create_repo_info_dict( repository, repository.user.username, repository_clone_url, changeset_revision, str( ctx.rev() ), metadata )
+            repo_info_dict = create_repo_info_dict( trans=trans,
+                                                    repo=repo,
+                                                    repository_clone_url=repository_clone_url,
+                                                    changeset_revision=changeset_revision,
+                                                    ctx_rev=str( ctx.rev() ),
+                                                    repository_owner=repository.user.username,
+                                                    repository_name=None,
+                                                    repository=repository,
+                                                    repository_metadata=repository_metadata )      
             repo_info_dicts.append( tool_shed_encode( repo_info_dict ) )
-        return dict( includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies, repo_info_dicts=repo_info_dicts )
-    @web.expose
-    def get_readme( self, trans, **kwd ):
-        """If the received changeset_revision includes a readme file, return it's contents."""
+        return dict( includes_tools=includes_tools,
+                     includes_repository_dependencies=includes_repository_dependencies,
+                     includes_tool_dependencies=includes_tool_dependencies,
+                     repo_info_dicts=repo_info_dicts )
+    @web.json
+    def get_readme_files( self, trans, **kwd ):
+        """
+        This method is called when installing or re-installing a single repository into a Galaxy instance.  If the received changeset_revision 
+        includes one or more readme files, return them in a dictionary.
+        """
         repository_name = kwd[ 'name' ]
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
         repository = get_repository_by_name_and_owner( trans, repository_name, repository_owner )
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
-        metadata = repository_metadata.metadata
-        if metadata and 'readme' in metadata:
-            try:
-                f = open( metadata[ 'readme' ], 'r' )
-                text = f.read()
-                f.close()
-                return str( text )
-            except Exception, e:
-                log.debug( "Error attempting to read README file '%s' defined in metadata for repository '%s', revision '%s': %s" % \
-                           ( str( metadata[ 'readme' ] ), str( repository_name ), str( changeset_revision ), str( e ) ) )
-        return ''
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )        
+        return build_readme_files_dict( repository_metadata )
     @web.expose
     def get_tool_dependencies( self, trans, **kwd ):
         """Handle a request from a local Galaxy instance."""
@@ -1799,7 +1806,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
-        containers_dict = build_repository_containers( repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = build_repository_containers_for_tool_shed( repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
                                     cntrller=cntrller,
                                     repo_name=repo_name,
@@ -1867,8 +1874,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         return state
     @web.json
     def open_folder( self, trans, folder_path ):
-        # The tool shed includes a repository source file browser, which currently depends upon
-        # copies of the hg repository file store in the repo_path for browsing.
         # Avoid caching
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
@@ -1904,7 +1909,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
-        containers_dict = build_repository_containers( repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = build_repository_containers_for_tool_shed( repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
                                     containers_dict=containers_dict,
@@ -2373,52 +2378,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                               action='view_repository',
                                                               **kwd ) )
     @web.expose
-    def view_readme( self, trans, id, changeset_revision, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        cntrller = params.get( 'cntrller', 'repository' )
-        repository = get_repository_in_tool_shed( trans, id )
-        repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
-        if repository_metadata:
-            metadata = repository_metadata.metadata
-        else:
-            metadata = None
-        if metadata and 'readme' in metadata:
-            readme_file = str( metadata[ 'readme' ] )
-            repo_files_dir = repository.repo_path( trans.app )
-            try:
-                f = open( readme_file, 'r' )
-                raw_text = f.read()
-                f.close()
-            except IOError:
-                work_dir = tempfile.mkdtemp()
-                try:
-                    manifest_readme_file = self.get_file_from_changeset_revision( repo_files_dir, changeset_revision, readme_file, work_dir )
-                    f = open( manifest_readme_file, 'r' )
-                    raw_text = f.read()
-                    f.close()
-                    remove_dir( work_dir )
-                except Exception, e:
-                    raw_text = "Error locating and reading this repository's README file '%s': %s" % ( readme_file, str( e ) )
-                    log.debug( raw_text )
-                    remove_dir( work_dir )
-            except Exception, e:
-                raw_text = "Error locating and reading this repository's README file '%s': %s" % ( readme_file, str( e ) )
-                log.debug( raw_text )
-            readme_text = raw_text
-        else:
-            readme_text = ''
-        is_malicious = changeset_is_malicious( trans, id, changeset_revision )
-        return trans.fill_template( '/webapps/community/common/view_readme.mako',
-                                    cntrller=cntrller,
-                                    repository=repository,
-                                    changeset_revision=changeset_revision,
-                                    readme_text=readme_text,
-                                    is_malicious=is_malicious,
-                                    message=message,
-                                    status=status )
-    @web.expose
     def view_repository( self, trans, id, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -2492,7 +2451,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
-        containers_dict = build_repository_containers( repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = build_repository_containers_for_tool_shed( repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     cntrller=cntrller,
                                     repo=repo,

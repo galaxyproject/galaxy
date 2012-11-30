@@ -134,12 +134,6 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def display_readme_file( self, repository, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
-        if changeset_revision is None:
-            changeset_revision = self.get_repository_tip( repository )
-        repository_id = self.security.encode_id( repository.id )
-        self.visit_url( '/repository/view_readme?changeset_revision=%s&id=%s' % ( changeset_revision, repository_id ) )
-        self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_repository_clone_page( self, owner_name, repository_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repos/%s/%s' % ( owner_name, repository_name )
         self.visit_url( url )

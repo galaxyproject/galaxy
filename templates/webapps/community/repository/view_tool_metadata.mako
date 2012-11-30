@@ -6,23 +6,27 @@
 <%
     from galaxy.web.framework.helpers import time_ago
     from urllib import quote_plus
+
+    has_metadata = repository.metadata_revisions
+    has_readme = metadata and 'readme' in metadata
     is_admin = trans.user_is_admin()
     is_new = repository.is_new( trans.app )
     is_deprecated = repository.deprecated
-    can_contact_owner = trans.user and trans.user != repository.user
-    can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
-    can_upload = can_push
-    can_download = not is_new and ( not is_malicious or can_push )
+
     can_browse_contents = trans.webapp.name == 'community' and not is_new
-    can_rate = repository.user != trans.user
+    can_contact_owner = trans.user and trans.user != repository.user
+    can_download = not is_new and ( not is_malicious or can_push )
     can_manage = is_admin or repository.user == trans.user
+    can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
+    can_rate = repository.user != trans.user
+    can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
+    can_upload = can_push
     can_view_change_log = trans.webapp.name == 'community' and not is_new
+
     if can_push:
         browse_label = 'Browse or delete repository tip files'
     else:
         browse_label = 'Browse repository tip files'
-    has_readme = metadata and 'readme' in metadata
-    can_review_repository = not is_new and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
 %>
 
 <%!
@@ -68,9 +72,6 @@
                 %endif
                 %if can_upload:
                     <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
-                %endif
-                %if has_readme:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">View README</a>
                 %endif
                 %if can_view_change_log:
                     <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>

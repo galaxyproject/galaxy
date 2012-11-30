@@ -3111,8 +3111,6 @@ class ToolShedRepository( object ):
                 if os.path.exists( relative_path ):
                     self.shed_config_filename = shed_tool_conf_dict[ 'config_filename' ]
                     return shed_tool_conf_dict
-        #if self.dist_to_shed:
-        #    #return ./migrated_tools.xml
         return default
     def get_shed_config_dict( self, app, default=None ):
         """
@@ -3154,8 +3152,8 @@ class ToolShedRepository( object ):
     def in_error_state( self ):
         return self.status == self.installation_status.ERROR
     @property
-    def has_readme( self ):
-        return self.metadata and 'readme' in self.metadata
+    def has_readme_files( self ):
+        return self.metadata and 'readme_files' in self.metadata
     @property
     def installed_tool_dependencies( self ):
         """Return the repository's tool dependencies that are currently installed."""

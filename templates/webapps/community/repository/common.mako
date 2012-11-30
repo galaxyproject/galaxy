@@ -1,3 +1,5 @@
+<%namespace file="/webapps/community/common/common.mako" import="escape_html_add_breaks" />
+
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
         $(function(){
@@ -75,7 +77,7 @@
     </script>
 </%def>
 
-<%def name="dependency_javascripts()">
+<%def name="container_javascripts()">
     <script type="text/javascript">
         var init_dependencies = function() {
             var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
@@ -199,30 +201,29 @@
             >
             <%
                 col_span_str = ''
+                folder_label = str( folder.label )
                 if folder.datatypes:
-                    label = folder.label
                     col_span_str = 'colspan="4"'
                 elif folder.label == 'Repository dependencies':
-                    label = "%s<i> - this repository requires installation of these additional repositories</i>" % folder.label
-                elif folder.repository_dependencies:
-                    label = folder.label
+                    folder_label = "%s<i> - this repository requires installation of these additional repositories</i>" % folder_label
+                elif folder.key == 'readme_files':
+                    folder_label = "%s<i> - may contain important installation or license information</i>" % folder_label
                 elif folder.invalid_tools:
-                    label = "%s<i> - click the tool config file name to see why the tool is invalid</i>" % folder.label
+                    folder_label = "%s<i> - click the tool config file name to see why the tool is invalid</i>" % folder_label
                 elif folder.tool_dependencies:
-                    label = "%s<i> - this repository's tools require installation of these dependencies</i>" % folder.label
+                    folder_label = "%s<i> - this repository's tools require handling of these dependencies</i>" % folder_label
                     col_span_str = 'colspan="3"'
                 elif folder.valid_tools:
-                    label = "%s<i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i>" % folder.label
+                    folder_label = "%s<i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i>" % folder_label
                     col_span_str = 'colspan="3"'
                 elif folder.workflows:
-                    label = folder.label
                     col_span_str = 'colspan="4"'
             %>
             <td ${col_span_str} style="padding-left: ${folder_pad}px;">
                 <span class="expandLink folder-${encoded_id}-click">
                     <div style="float: left; margin-left: 2px;" class="expandLink folder-${encoded_id}-click">
                         <a class="folder-${encoded_id}-click" href="javascript:void(0);">
-                            ${label}
+                            ${folder_label}
                         </a>
                     </div>
                 </span>
@@ -235,6 +236,9 @@
     %endif
     %for sub_folder in folder.folders:
         ${render_folder( sub_folder, pad, parent=my_row, row_counter=row_counter, is_root_folder=False )}
+    %endfor
+    %for readme in folder.readme_files:
+        ${render_readme( readme, pad, my_row, row_counter )}
     %endfor
     %for repository_dependency in folder.repository_dependencies:
         ${render_repository_dependency( repository_dependency, pad, my_row, row_counter )}
@@ -298,9 +302,30 @@
         %endif
         id="libraryItem-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( invalid_tool.repository_id ), tool_config=invalid_tool.tool_config, changeset_revision=invalid_tool.changeset_revision )}">
+            %if invalid_tool.repository_id and invalid_tool.tool_config and invalid_tool.changeset_revision:
+                <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( invalid_tool.repository_id ), tool_config=invalid_tool.tool_config, changeset_revision=invalid_tool.changeset_revision )}">
+                    ${invalid_tool.tool_config | h}
+                </a>
+            %else:
                 ${invalid_tool.tool_config | h}
-            </a>
+            %endif
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_readme( readme, pad, parent, row_counter )">
+    <% encoded_id = trans.security.encode_id( readme.id ) %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            ${escape_html_add_breaks( readme.text )}
         </td>
     </tr>
     <%
@@ -311,14 +336,19 @@
 
 <%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter )">
                 
-    <% encoded_id = trans.security.encode_id( repository_dependency.id ) %>
+    <%
+        encoded_id = trans.security.encode_id( repository_dependency.id )
+        repository_name = str( repository_dependency.repository_name )
+        changeset_revision = str( repository_dependency.changeset_revision )
+        repository_owner = str( repository_dependency.repository_owner )
+    %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
         ##<td style="padding-left: ${pad+20}px;">${repository_dependency.toolshed | h}</td>
-        <td style="padding-left: ${pad+20}px;">Repository <b>${repository_dependency.repository_name | h}</b> revision <b>${repository_dependency.changeset_revision | h}</b> owned by <b>${repository_dependency.repository_owner | h}</b></td>
+        <td style="padding-left: ${pad+20}px;">Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b></td>
     </tr>
     <%
         my_row = row_counter.count
@@ -385,6 +415,9 @@
             ${version_str | h}
         </${cell_type}>
         <${cell_type}>${tool_dependency.type | h}</${cell_type}>
+        %if tool_dependency.install_dir:
+            <${cell_type}>${tool_dependency.install_dir | h}</${cell_type}>
+        %endif
     </tr>
     <%
         my_row = row_counter.count
@@ -428,17 +461,18 @@
         from galaxy.tool_shed.encoding_util import tool_shed_encode
 
         has_datatypes = metadata and 'datatypes' in metadata
-        has_readme = metadata and 'readme' in metadata
+        has_readme_files = metadata and 'readme_files' in metadata
         has_workflows = metadata and 'workflows' in metadata
         
         datatypes_root_folder = containers_dict[ 'datatypes' ]
         invalid_tools_root_folder = containers_dict[ 'invalid_tools' ]
+        readme_files_root_folder = containers_dict[ 'readme_files' ]
         repository_dependencies_root_folder = containers_dict[ 'repository_dependencies' ]
         tool_dependencies_root_folder = containers_dict[ 'tool_dependencies' ]
         valid_tools_root_folder = containers_dict[ 'valid_tools' ]
         workflows_root_folder = containers_dict[ 'workflows' ]
         
-        has_contents = datatypes_root_folder, invalid_tools_root_folder or valid_tools_root_folder or workflows_root_folder
+        has_contents = datatypes_root_folder or invalid_tools_root_folder or valid_tools_root_folder or workflows_root_folder
 
         class RowCounter( object ):
             def __init__( self ):
@@ -448,6 +482,18 @@
             def __str__( self ):
                 return str( self.count )
     %>
+    %if readme_files_root_folder:
+        <div class="toolForm">
+            <div class="toolFormTitle">Repository README files (may contain important installation or license information)</div>
+            <div class="toolFormBody">
+                <p/>
+                <% row_counter = RowCounter() %>
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="readme_files">
+                    ${render_folder( readme_files_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                </table>
+            </div>
+        </div>
+    %endif
     %if repository_dependencies_root_folder or tool_dependencies_root_folder:
         <div class="toolForm">
             <div class="toolFormTitle">Dependencies of this repository</div>
@@ -455,15 +501,15 @@
                 %if repository_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
-                    <table cellspacing="0" cellpadding="0" border="0" width="100%" class="tables container-table" id="repository_dependencies">
-                        ${self.render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="repository_dependencies">
+                        ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
                 %if tool_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
-                    <table cellspacing="0" cellpadding="0" border="0" width="100%" class="tables container-table" id="tool_dependencies">
-                        ${self.render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="tool_dependencies">
+                        ${render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
             </div>
@@ -477,29 +523,29 @@
                 %if valid_tools_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
-                    <table cellspacing="0" cellpadding="0" border="0" width="100%" class="tables container-table" id="valid_tools">
-                        ${self.render_folder( valid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="valid_tools">
+                        ${render_folder( valid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
                 %if invalid_tools_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
-                    <table cellspacing="0" cellpadding="0" border="0" width="100%" class="tables container-table" id="invalid_tools">
-                        ${self.render_folder( invalid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tools">
+                        ${render_folder( invalid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
                 %if workflows_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
-                    <table cellspacing="0" cellpadding="0" border="0" width="100%" class="tables container-table" id="workflows">
-                        ${self.render_folder( workflows_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="workflows">
+                        ${render_folder( workflows_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
                 %if datatypes_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
-                    <table cellspacing="0" cellpadding="0" border="0" width="100%" class="tables container-table" id="datatypes">
-                        ${self.render_folder( datatypes_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="datatypes">
+                        ${render_folder( datatypes_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
             </div>

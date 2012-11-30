@@ -147,9 +147,6 @@
                         %if can_upload:
                             <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
                         %endif
-                        %if has_readme:
-                            <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">View README</a>
-                        %endif
                         %if can_view_change_log:
                             <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
                         %endif

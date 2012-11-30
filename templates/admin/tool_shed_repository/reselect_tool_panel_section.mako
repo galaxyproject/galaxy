@@ -1,19 +1,33 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/admin/tool_shed_repository/common.mako" import="render_tool_dependency_section" />
-<%namespace file="/webapps/community/common/common.mako" import="render_readme" />
+<%namespace file="/admin/tool_shed_repository/common.mako" import="render_dependencies_section" />
+<%namespace file="/admin/tool_shed_repository/common.mako" import="render_readme_section" />
 
 %if message:
     ${render_msg( message, status )}
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Choose the tool panel section to contain the installed tools (optional)</div>
     <div class="toolFormBody">
         <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='reinstall_repository', id=trans.security.encode_id( repository.id ), repo_info_dict=encoded_repo_info_dict )}" method="post" >
             <div style="clear: both"></div>
-            %if includes_tool_dependencies:
-                ${render_tool_dependency_section( install_tool_dependencies_check_box, [ repo_info_dict ] )}
+            <% readme_files_dict = containers_dict[ 'readme_files' ] %>
+            %if readme_files_dict:
+                <div class="form-row">
+                    <table class="colored" width="100%">
+                        <th bgcolor="#EBD9B2">Repository README file (may contain important installation or license information)</th>
+                    </table>
+                </div>
+                ${render_readme_section( containers_dict )}
+                <div style="clear: both"></div>
+            %endif
+            %if includes_repository_dependencies or includes_tool_dependencies:
+                <div class="form-row">
+                    <table class="colored" width="100%">
+                        <th bgcolor="#EBD9B2">Confirm dependency installation</th>
+                    </table>
+                </div>
+                ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict )}
             %endif
             <div style="clear: both"></div>
             <div class="form-row">
@@ -43,6 +57,3 @@
         </form>
     </div>
 </div>
-%if readme_text:
-    ${render_readme( readme_text )}
-%endif

@@ -1,6 +1,7 @@
 import os, logging
 from galaxy.web.base.controller import *
-from galaxy.webapps.community.controllers.common import *
+from galaxy.util.shed_util_common import get_repository_by_name_and_owner
+from galaxy.webapps.community.controllers.common import set_repository_metadata
 
 from galaxy import eggs
 eggs.require('mercurial')

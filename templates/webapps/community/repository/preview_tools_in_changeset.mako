@@ -36,7 +36,7 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
-    ${dependency_javascripts()}
+    ${container_javascripts()}
 </%def>
 
 <br/><br/>
@@ -44,9 +44,6 @@
     <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), changeset_revisions=changeset_revision )}">Install to local Galaxy</a></li>
     <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Tool Shed Actions</a></li>
     <div popupmenu="repository-${repository.id}-popup">
-        %if has_readme:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">View README</a>
-        %endif
         <a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories' )}">Browse valid repositories</a>
         <a class="action-button" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
         <a class="action-button" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>

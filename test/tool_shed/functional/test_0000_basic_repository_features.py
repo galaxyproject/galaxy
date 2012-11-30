@@ -105,7 +105,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                           commit_message="Uploaded filtering.txt", 
                           uncompress_file='No', 
                           remove_repo_files_not_in_tar='No' )
-        self.display_readme_file( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
+        self.manage_repository( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
     def test_0055_upload_filtering_test_data( self ):
         '''Upload filtering test data.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
@@ -137,22 +137,16 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         '''Upload readme.txt file associated with tool version 2.2.0.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
         self.upload_file( repository, 'readme.txt', commit_message="Uploaded readme.txt" )
-        self.display_readme_file( repository, strings_displayed=[ 'This is a readme file.' ] )
+        self.manage_repository( repository, strings_displayed=[ 'This is a readme file.' ] )
         # Verify that there is a different readme file for each metadata revision.
         metadata_revisions = self.get_repository_metadata_revisions( repository )
-        strings_to_check = [ 'Readme file for filtering 1.1.0', 'This is a readme file.' ]
-        for key, metadata_revision in enumerate( metadata_revisions ):
-            # Metadata revisions are in order newest to oldest at this point.
-            self.display_readme_file( repository, metadata_revision, strings_not_displayed=[ strings_to_check[ key ] ] )
+        self.manage_repository( repository, strings_displayed=[ 'Readme file for filtering 1.1.0', 'This is a readme file.' ] )
     def test_0075_delete_readme_txt_file( self ):
         '''Delete the readme.txt file.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
         self.delete_files_from_repository( repository, filenames=[ 'readme.txt' ] )
         self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=2 )
-        # Deleting a readme file for a specific revision should make the repository fall back 
-        # to a previous revision's readme file, if one exists.
-        # TODO: All readme files should be displayed.
-        self.display_readme_file( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
+        self.manage_repository( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
     def test_0080_search_for_valid_filter_tool( self ):
         '''Verify that the "search for valid tool" feature finds the filtering tool.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )

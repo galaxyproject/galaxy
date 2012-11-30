@@ -1,4 +1,4 @@
-import os, string, socket, logging, simplejson, binascii, tempfile, filecmp, threading
+import os, string, socket, logging, simplejson, binascii, tempfile, filecmp
 from time import strftime
 from datetime import *
 from galaxy.datatypes.checkers import *
@@ -7,7 +7,6 @@ from galaxy.util.odict import odict
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
 from galaxy.util.shed_util_common import *
-from galaxy.webapps.community.util.container_util import *
 from galaxy.web.base.controller import *
 from galaxy.web.base.controllers.admin import *
 from galaxy.webapps.community import model
@@ -21,11 +20,11 @@ from mercurial import hg, ui, commands
 log = logging.getLogger( __name__ )
 
 new_repo_email_alert_template = """
+Repository name:       ${repository_name}
 Revision:              ${revision}
 Change description:
 ${description}
 
-Repository name:       ${repository_name}
 Uploaded by:           ${username}
 Date content uploaded: ${display_date}
 
@@ -41,24 +40,23 @@ new repositories were created in the Galaxy tool shed named "${host}".
 """
 
 email_alert_template = """
-GALAXY TOOL SHED REPOSITORY UPDATE ALERT
------------------------------------------------------------------------------
-You received this alert because you registered to receive email whenever
-changes were made to the repository named "${repository_name}".
------------------------------------------------------------------------------
-
-Date of change: ${display_date}
-Changed by:     ${username}
-
+Repository name:       ${repository_name}
 Revision: ${revision}
 Change description:
 ${description}
+
+Changed by:     ${username}
+Date of change: ${display_date}
 
 ${content_alert_str}
 
 -----------------------------------------------------------------------------
 This change alert was sent from the Galaxy tool shed hosted on the server
 "${host}"
+-----------------------------------------------------------------------------
+You received this alert because you registered to receive email whenever
+changes were made to the repository named "${repository_name}".
+-----------------------------------------------------------------------------
 """
 
 contact_owner_template = """
@@ -104,62 +102,6 @@ class ItemRatings( UsesItemRatings ):
             trans.sa_session.flush()
         return item_rating
 
-def build_repository_containers( repository, changeset_revision, repository_dependencies, repository_metadata ):
-    containers_dict = dict( datatypes=None,
-                            invalid_tools=None,
-                            repository_dependencies=None,
-                            tool_dependencies=None,
-                            valid_tools=None,
-                            workflows=None )
-    if repository_metadata:
-        metadata = repository_metadata.metadata
-        lock = threading.Lock()
-        lock.acquire( True )
-        try:
-            folder_id = 0
-            # Datatypes container.
-            if metadata and 'datatypes' in metadata:
-                datatypes = metadata[ 'datatypes' ]
-                folder_id, datatypes_root_folder = build_datatypes_folder( folder_id, datatypes )
-                containers_dict[ 'datatypes' ] = datatypes_root_folder
-            # Invalid tools container.
-            if metadata and 'invalid_tools' in metadata:
-                invalid_tool_configs = metadata[ 'invalid_tools' ]
-                folder_id, invalid_tools_root_folder = build_invalid_tools_folder( folder_id,
-                                                                                   invalid_tool_configs,
-                                                                                   repository,
-                                                                                   changeset_revision,
-                                                                                   label='Invalid tools' )
-                containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
-            # Repository dependencies container.
-            folder_id, repository_dependencies_root_folder = build_repository_dependencies_folder( repository,
-                                                                                                   changeset_revision,
-                                                                                                   folder_id,
-                                                                                                   repository_dependencies )
-            if repository_dependencies_root_folder:
-                containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
-            # Tool dependencies container.
-            if metadata and 'tool_dependencies' in metadata:
-                tool_dependencies = metadata[ 'tool_dependencies' ]
-                folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( folder_id, tool_dependencies )
-                containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
-            # Valid tools container.
-            if metadata and 'tools' in metadata:
-                valid_tools = metadata[ 'tools' ]
-                folder_id, valid_tools_root_folder = build_tools_folder( folder_id, valid_tools, repository, changeset_revision, label='Valid tools' )
-                containers_dict[ 'valid_tools' ] = valid_tools_root_folder
-            # Workflows container.
-            if metadata and 'workflows' in metadata:
-                workflows = metadata[ 'workflows' ]
-                folder_id, workflows_root_folder = build_workflows_folder( folder_id, workflows, repository_metadata, label='Workflows' )
-                containers_dict[ 'workflows' ] = workflows_root_folder
-        except Exception, e:
-            repository_dependencies_root_folder = None
-            tool_dependencies_root_folder  = None
-            log.debug( "Exception in build_repository_containers: %s" % str( e ) )
-        finally:
-            lock.release()
-    return containers_dict
 def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
     # Build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in repository_metadata.
     metadata = repository_metadata.metadata
@@ -401,75 +343,6 @@ def get_previous_repository_reviews( trans, repository, changeset_revision ):
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
     return trans.sa_session.query( trans.model.Repository ).filter_by( name=name ).one()
-def get_repository_by_name_and_owner( trans, name, owner ):
-    """Get a repository from the database via name and owner"""
-    user = get_user_by_username( trans, owner )
-    return trans.sa_session.query( trans.model.Repository ) \
-                             .filter( and_( trans.model.Repository.table.c.name == name,
-                                            trans.model.Repository.table.c.user_id == user.id ) ) \
-                             .first()
-def get_repository_dependencies_for_changeset_revision( trans, repo, repository, repository_metadata, toolshed_base_url, repository_dependencies=None,
-                                                        all_repository_dependencies=None ):
-    """
-    Return a dictionary of all repositories upon which the contents of the received repository_metadata record depend.  The dictionary keys
-    are name-spaced values consisting of tool_shed_base_url/repository_name/repository_owner/changeset_revision and the values are lists of
-    repository_dependency tuples consisting of ( tool_shed_base_url, repository_name, repository_owner, changeset_revision ).  This is a
-    recursive method, so it ensures that all required repositories to the nth degree are returned.
-    """   
-    if all_repository_dependencies is None:
-        all_repository_dependencies = odict()
-    if repository_dependencies is None:
-        repository_dependencies = []
-    metadata = repository_metadata.metadata
-    if metadata and 'repository_dependencies' in metadata:
-        repository_dependencies_root_key = generate_repository_dependencies_key_for_repository( repository, repository_metadata.changeset_revision )
-        for repository_dependency in metadata[ 'repository_dependencies' ]:
-            if repository_dependency not in repository_dependencies:
-                repository_dependencies.append( repository_dependency )
-    else:
-        repository_dependencies_root_key = None
-    if repository_dependencies:
-        repository_dependency = repository_dependencies.pop( 0 )
-        tool_shed, name, owner, changeset_revision = repository_dependency
-        if repository_dependencies_root_key:
-            if repository_dependencies_root_key in all_repository_dependencies:
-                # See if this repository_dependency is contained in the list associated with the repository_dependencies_root_key.
-                all_repository_dependencies_val = all_repository_dependencies[ repository_dependencies_root_key ]
-                if repository_dependency not in all_repository_dependencies_val:
-                    all_repository_dependencies_val.append( repository_dependency )
-                    all_repository_dependencies[ repository_dependencies_root_key ] = all_repository_dependencies_val
-            else:
-                # Insert this repository_dependency.
-                all_repository_dependencies[ repository_dependencies_root_key ] = [ repository_dependency ]
-        if tool_shed_is_this_tool_shed( tool_shed ):
-            # The repository is in the current tool shed.
-            required_repository = get_repository_by_name_and_owner( trans, name, owner )
-            required_repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
-                                                                                                       trans.security.encode_id( required_repository.id ),
-                                                                                                       changeset_revision )
-            if required_repository_metadata:
-                required_repo_dir = required_repository.repo_path( trans.app )
-                required_repo = hg.repository( get_configured_ui(), required_repo_dir )
-            else:
-                # The repository changeset_revision is no longer installable, so see if there's been an update.
-                required_repo_dir = required_repository.repo_path( trans.app )
-                required_repo = hg.repository( get_configured_ui(), required_repo_dir )
-                required_repository_metadata = get_next_downloadable_changeset_revision( required_repository, required_repo, changeset_revision )
-            if required_repository_metadata:
-                # The required_repository_metadata changeset_revision is installable.
-                required_metadata = required_repository_metadata.metadata
-                if required_metadata:
-                    return get_repository_dependencies_for_changeset_revision( trans=trans,
-                                                                               repo=required_repo,
-                                                                               repository=required_repository,
-                                                                               repository_metadata=required_repository_metadata,
-                                                                               toolshed_base_url=tool_shed,
-                                                                               repository_dependencies=repository_dependencies,
-                                                                               all_repository_dependencies=all_repository_dependencies )     
-        else:
-            # The repository is in a different tool shed, so build an url and send a request.
-            raise Exception( "Repository dependencies that refer to repositories in other tool sheds is not yet supported." )
-    return all_repository_dependencies
 def get_repository_metadata_by_id( trans, id ):
     """Get repository metadata from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
@@ -477,12 +350,6 @@ def get_repository_metadata_by_repository_id( trans, id ):
     """Get all metadata records for a specified repository."""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
                            .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) )
-def get_repository_metadata_by_repository_id_changset_revision( trans, id, changeset_revision ):
-    """Get a specified metadata record for a specified repository."""
-    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
-                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
-                           .first()
 def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
     repository_metadata_revisions = []
     metadata_changeset_revision_hashes = []
@@ -635,7 +502,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                 else:
                     email_alerts.append( user.email )
         else:
-            subject = "Galaxy tool shed repository update alert"
+            subject = "Galaxy tool shed update alert for repository named %s" % str( repository.name )
             email_alerts = from_json_string( repository.email_alerts )
         for email in email_alerts:
             to = email.strip()
@@ -827,8 +694,6 @@ def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str
                                                           id=trans.security.encode_id( repository.id ),
                                                           message=error_message,
                                                           status='error' ) )
-def tool_shed_is_this_tool_shed( toolshed_base_url ):
-    return toolshed_base_url.rstrip( '/' ) == str( url_for( '/', qualified=True ) ).rstrip( '/' )
 def update_for_browsing( trans, repository, current_working_dir, commit_message='' ):
     # This method id deprecated, but we'll keep it around for a while in case we need it.  The problem is that hg purge
     # is not supported by the mercurial API.

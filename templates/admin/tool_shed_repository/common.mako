@@ -1,3 +1,5 @@
+<%namespace file="/webapps/community/repository/common.mako" import="*" />
+
 <%def name="browse_files(title_text, directory_path)">
     <script type="text/javascript">
         $(function(){
@@ -67,146 +69,107 @@
     </script>
 </%def>
 
-<%def name="render_tool_dependency_section( install_tool_dependencies_check_box, repo_info_dicts )">
-    <% import os %>
+<%def name="render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict )">
+    <style type="text/css">
+        #dependency_table{ table-layout:fixed;
+                           width:100%;
+                           overflow-wrap:normal;
+                           overflow:hidden;
+                           border:0px; 
+                           word-break:keep-all;
+                           word-wrap:break-word;
+                           line-break:strict; }
+    </style>
+    <%
+        class RowCounter( object ):
+            def __init__( self ):
+                self.count = 0
+            def increment( self ):
+                self.count += 1
+            def __str__( self ):
+                return str( self.count )
+
+        repository_dependencies_root_folder = containers_dict[ 'repository_dependencies' ]
+        tool_dependencies_root_folder = containers_dict[ 'tool_dependencies' ]
+        env_settings_heaader_row_displayed = False
+        package_header_row_displayed = False
+    %>
     <div class="form-row">
         <div class="toolParamHelp" style="clear: both;">
             <p>
-                These tool dependencies can be automatically handled with the installed repository, providing significant benefits, and 
+                These dependencies can be automatically handled with the installed repository, providing significant benefits, and 
                 Galaxy includes various features to manage them.
             </p>
         </div>
     </div>
-    <div class="form-row">
-        <label>Handle tool dependencies?</label>
-        <% disabled = trans.app.config.tool_dependency_dir is None %>
-        ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
-        <div class="toolParamHelp" style="clear: both;">
-            %if disabled:
-                Set the tool_dependency_dir configuration value in your universe_wsgi.ini to automatically handle tool dependencies.
-            %else:
-                Un-check to skip automatic handling of these tool dependencies.
-            %endif
+    %if repository_dependencies_root_folder:
+        <div class="form-row">
+            <label>Handle repository dependencies?</label>
+            ${install_repository_dependencies_check_box.get_html()}
+            <div class="toolParamHelp" style="clear: both;">
+                Un-check to skip automatic installation of these additional repositories required by this repository.
+            </div>
         </div>
-    </div>
-    <div style="clear: both"></div>
-    <div class="form-row">
-        <style type="text/css">
-            #dependency_table{ table-layout:fixed;
-                               width:100%;
-                               overflow-wrap:normal;
-                               overflow:hidden;
-                               border:0px; 
-                               word-break:keep-all;
-                               word-wrap:break-word;
-                               line-break:strict; }
-        </style>
-        <table class="grid" id="dependency_table">
-            <tr><td colspan="4" bgcolor="#D8D8D8"><b>Tool dependencies</b></td></tr>
-            <%
-                env_settings_heaader_row_displayed = False
-                package_header_row_displayed = False
-            %>
-            %for repo_info_dict in repo_info_dicts:
-                %for repository_name, repo_info_tuple in repo_info_dict.items():
-                    <% description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple %>
-                    %if tool_dependencies:
-                        <%
-                            # See if tool dependencies are packages, environment settings or both.
-                            contains_packages = False
-                            for k in tool_dependencies.keys():
-                                if k != 'set_environment':
-                                    contains_packages = True
-                                    break
-                            contains_env_settings = 'set_environment' in tool_dependencies.keys()
-                        %>
-                        %if contains_packages:
-                            %if not package_header_row_displayed:
-                                <%
-                                    info_str = "Each of these packages may require their own build requirements (e.g., CMake, g++, etc).  "
-                                    info_str += "Galaxy will not attempt to install these build requirements, so tool dependency installation "
-                                    info_str += "may partially fail if any are missing from your environment, but the repository and all of it's "
-                                    info_str += "contents will be installed.  You can install the missing build requirements and have Galaxy attempt "
-                                    info_str += "to install the packages again if tool dependency installation fails in any way."
-                                %>
-                                </tr><td bgcolor="#FFFFCC" colspan="4">${info_str}</td></tr>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Version</th>
-                                    <th>Type</th>
-                                    <th>Install directory</th>
-                                </tr>
-                                <% package_header_row_displayed = True %>
-                            %endif
-                            %for dependency_key, requirements_dict in tool_dependencies.items():
-                                %if dependency_key not in [ 'set_environment' ]:
-                                    <%
-                                        name = requirements_dict[ 'name' ]
-                                        version = requirements_dict[ 'version' ]
-                                        type = requirements_dict[ 'type' ]
-                                        install_dir = os.path.join( trans.app.config.tool_dependency_dir,
-                                                                    name,
-                                                                    version,
-                                                                    repository_owner,
-                                                                    repository_name,
-                                                                    changeset_revision )
-                                        tool_dependency_readme_text = requirements_dict.get( 'readme', None )
-                                    %>
-                                    %if not os.path.exists( install_dir ):
-                                        <tr>
-                                            <td>${name}</td>
-                                            <td>${version}</td>
-                                            <td>${type}</td>
-                                            <td>${install_dir}</td>
-                                        </tr>
-                                        %if tool_dependency_readme_text:
-                                            <tr><td colspan="4" bgcolor="#FFFFCC">${name} ${version} requirements and installation information</td></tr>
-                                            <tr><td colspan="4"><pre>${tool_dependency_readme_text}</pre></td></tr>
-                                        %endif
-                                    %endif
-                                %endif
-                            %endfor
-                        %endif
-                        %if contains_env_settings:
-                            <% environment_settings = tool_dependencies[ 'set_environment' ] %>
-                            %if not env_settings_heaader_row_displayed:
-                                <%
-                                    info_str = "Each of these environment settings will be defined in a file named env.sh in the installation directory."
-                                %>
-                                </tr><td bgcolor="#FFFFCC" colspan="4">${info_str}</td></tr>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Type</th>
-                                    <th colspan="2">Install directory for environment shell file</th>
-                                </tr>
-                                <% env_settings_heaader_row_displayed = True %>
-                            %endif
-                            %for environment_setting_dict in environment_settings:
-                                <%
-                                    name = environment_setting_dict[ 'name' ]
-                                    type = environment_setting_dict[ 'type' ]
-                                    install_dir = os.path.join( trans.app.config.tool_dependency_dir,
-                                                                'environment_settings',
-                                                                name,
-                                                                repository_owner,
-                                                                repository_name,
-                                                                changeset_revision )
-                                %>
-                                %if not os.path.exists( install_dir ):
-                                    <tr>
-                                        <td>${name}</td>
-                                        <td>${type}</td>
-                                        <td colspan="2">${install_dir}</td>
-                                    </tr>
-                                %endif
-                            %endfor
-                        %endif
-                    %endif
-                %endfor
-            %endfor
-        </table>
         <div style="clear: both"></div>
-    </div>
+        <div class="form-row">
+            %if repository_dependencies_root_folder:
+                <p/>
+                <% row_counter = RowCounter() %>
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table">
+                    ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                </table>
+            %endif
+            <div style="clear: both"></div>
+        </div>
+    %endif
+    %if tool_dependencies_root_folder:
+        <div class="form-row">
+            <label>Handle tool dependencies?</label>
+            <% disabled = trans.app.config.tool_dependency_dir is None %>
+            ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
+            <div class="toolParamHelp" style="clear: both;">
+                %if disabled:
+                    Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
+                %else:
+                    Un-check to skip automatic handling of these tool dependencies.
+                %endif
+            </div>
+        </div>
+        <div style="clear: both"></div>
+        <div class="form-row">
+            %if tool_dependencies_root_folder:
+                <p/>
+                <% row_counter = RowCounter() %>
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="dependency_table">
+                    ${render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                </table>
+            %endif
+            <div style="clear: both"></div>
+        </div>
+    %endif
+</%def>
+
+<%def name="render_readme_section( containers_dict )">
+    <%
+        class RowCounter( object ):
+            def __init__( self ):
+                self.count = 0
+            def increment( self ):
+                self.count += 1
+            def __str__( self ):
+                return str( self.count )
+
+        readme_files_root_folder = containers_dict[ 'readme_files' ]
+    %>
+    %if readme_files_root_folder:
+        <p/>
+        <div class="form-row">
+            <% row_counter = RowCounter() %>
+            <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table">
+                ${render_folder( readme_files_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+            </table>
+        </div>
+    %endif
 </%def>
 
 <%def name="dependency_status_updater()">

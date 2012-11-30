@@ -1,4 +1,4 @@
-import logging
+import os, logging
 from galaxy.web import url_for
 
 log = logging.getLogger( __name__ )
@@ -18,6 +18,7 @@ class Folder( object ):
         self.valid_tools = []
         self.tool_dependencies = []
         self.repository_dependencies = []
+        self.readme_files = []
         self.workflows = []
     def contains_folder( self, folder ):
         for index, contained_folder in enumerate( self.folders ):
@@ -41,6 +42,13 @@ class InvalidTool( object ):
         self.tool_config = tool_config
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
+
+class ReadMe( object ):
+    """Readme text object"""
+    def __init__( self, id=None, name=None, text=None ):
+        self.id = id
+        self.name = name
+        self.text = text
 
 class RepositoryDependency( object ):
     """Repository dependency object"""
@@ -67,11 +75,13 @@ class Tool( object ):
 
 class ToolDependency( object ):
     """Tool dependency object"""
-    def __init__( self, id=None, name=None, version=None, type=None ):
+    def __init__( self, id=None, name=None, version=None, type=None, install_dir=None, readme=None ):
         self.id = id
         self.name = name
         self.version = version
         self.type = type
+        self.install_dir = install_dir
+        self.readme = readme
 
 class Workflow( object ):
     """Workflow object"""
@@ -111,8 +121,9 @@ def build_datatypes_folder( folder_id, datatypes, label='Datatypes' ):
     else:
         datatypes_root_folder = None
     return folder_id, datatypes_root_folder
-def build_invalid_tools_folder( folder_id, invalid_tool_configs, repository, changeset_revision, label='Invalid tools' ):
+def build_invalid_tools_folder( folder_id, invalid_tool_configs, changeset_revision, repository=None, label='Invalid tools' ):
     """Return a folder hierarchy containing invalid tools."""
+    # TODO: Should we display invalid tools on the tool panel selection page when installing the repository into Galaxy?
     if invalid_tool_configs:
         invalid_tool_id = 0
         folder_id += 1
@@ -122,15 +133,41 @@ def build_invalid_tools_folder( folder_id, invalid_tool_configs, repository, cha
         invalid_tools_root_folder.folders.append( folder )
         for invalid_tool_config in invalid_tool_configs:
             invalid_tool_id += 1
+            if repository:
+                repository_id = repository.id
+            else:
+                repository_id = None
             invalid_tool = InvalidTool( id=invalid_tool_id,
                                         tool_config=invalid_tool_config,
-                                        repository_id=repository.id,
+                                        repository_id=repository_id,
                                         changeset_revision=changeset_revision )
             folder.invalid_tools.append( invalid_tool )
     else:
         invalid_tools_root_folder = None
     return folder_id, invalid_tools_root_folder
-def build_repository_dependencies_folder( repository, changeset_revision, folder_id, repository_dependencies, label='Repository dependencies' ):
+def build_readme_files_folder( folder_id, readme_files_dict, label='Readme files' ):
+    """Return a folder hierarchy containing readme text files."""
+    if readme_files_dict:
+        readme_id = 0
+        folder_id += 1
+        readme_files_root_folder = Folder( id=folder_id, key='root', label='root' )
+        folder_id += 1
+        readme_files_folder = Folder( id=folder_id, key='readme_files', label=label )
+        readme_files_root_folder.folders.append( readme_files_folder )
+        for readme_file_name, readme_file_text in readme_files_dict.items():
+            readme_id += 1
+            readme = ReadMe( id=readme_id,
+                             name=readme_file_name,
+                             text=readme_file_text )
+            folder_id += 1
+            folder = Folder( id=folder_id, key=readme.name, label=readme.name )
+            folder.readme_files.append( readme )
+            readme_files_folder.folders.append( folder )
+    else:
+        readme_files_root_folder = None
+    return folder_id, readme_files_root_folder
+def build_repository_dependencies_folder( toolshed_base_url, repository_name, repository_owner, changeset_revision, folder_id, repository_dependencies,
+                                          label='Repository dependencies' ):
     """Return a folder hierarchy containing repository dependencies."""
     if repository_dependencies:
         repository_dependency_id = 0
@@ -139,7 +176,7 @@ def build_repository_dependencies_folder( repository, changeset_revision, folder
         repository_dependencies_root_folder = Folder( id=folder_id, key='root', label='root' )
         folder_id += 1
         # Create the Repository dependencies folder and add it to the root folder.
-        key = generate_repository_dependencies_key_for_repository( repository, changeset_revision )
+        key = generate_repository_dependencies_key_for_repository( toolshed_base_url, repository_name, repository_owner, changeset_revision )
         repository_dependencies_folder = Folder( id=folder_id, key=key, label=label )
         repository_dependencies_root_folder.folders.append( repository_dependencies_folder )
         # Process the repository dependencies.
@@ -149,7 +186,7 @@ def build_repository_dependencies_folder( repository, changeset_revision, folder
             if not folder:
                 # Create a new folder.
                 folder_id += 1
-                label = generate_repository_dependencies_folder_label_from_key( repository, changeset_revision, key )
+                label = generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision, key )
                 folder = Folder( id=folder_id, key=key, label=label )
             for repository_dependency_tup in val:
                 toolshed, name, owner, changeset_revision = repository_dependency_tup
@@ -213,7 +250,7 @@ def build_tools_folder( folder_id, tool_dicts, repository, changeset_revision, v
     else:
         tools_root_folder = None
     return folder_id, tools_root_folder
-def build_tool_dependencies_folder( folder_id, tool_dependencies, label='Tool dependencies' ):
+def build_tool_dependencies_folder( folder_id, tool_dependencies, label='Tool dependencies', for_galaxy=False ):
     """Return a folder hierarchy containing tool dependencies."""
     if tool_dependencies:
         tool_dependency_id = 0
@@ -224,22 +261,40 @@ def build_tool_dependencies_folder( folder_id, tool_dependencies, label='Tool de
         tool_dependencies_root_folder.folders.append( folder )
         # Insert a header row.
         tool_dependency_id += 1
-        tool_dependency = ToolDependency( id=tool_dependency_id,
-                                          name='Name',
-                                          version='Version',
-                                          type='Type' )
+        if for_galaxy:
+            # Include the installation directory.
+            tool_dependency = ToolDependency( id=tool_dependency_id,
+                                              name='Name',
+                                              version='Version',
+                                              type='Type',
+                                              install_dir='Install directory' )
+        else:
+            tool_dependency = ToolDependency( id=tool_dependency_id,
+                                              name='Name',
+                                              version='Version',
+                                              type='Type' )
         folder.tool_dependencies.append( tool_dependency )
         for dependency_key, requirements_dict in tool_dependencies.items():
             tool_dependency_id += 1
             if dependency_key == 'set_environment':
-                version = None
+                for set_environment_dict in requirements_dict:
+                    name = set_environment_dict[ 'name' ]
+                    type = set_environment_dict[ 'type' ]
+                    tool_dependency = ToolDependency( id=tool_dependency_id,
+                                                      name=name,
+                                                      type=type )
+                    folder.tool_dependencies.append( tool_dependency )
             else:
+                name = requirements_dict[ 'name' ]
                 version = requirements_dict[ 'version' ]
-            tool_dependency = ToolDependency( id=tool_dependency_id,
-                                              name=requirements_dict[ 'name' ],
-                                              version=version,
-                                              type=requirements_dict[ 'type' ] )
-            folder.tool_dependencies.append( tool_dependency )
+                type = requirements_dict[ 'type' ]
+                install_dir = requirements_dict.get( 'install_dir', None )
+                tool_dependency = ToolDependency( id=tool_dependency_id,
+                                                  name=name,
+                                                  version=version,
+                                                  type=type,
+                                                  install_dir=install_dir )
+                folder.tool_dependencies.append( tool_dependency )
     else:
         tool_dependencies_root_folder = None
     return folder_id, tool_dependencies_root_folder
@@ -279,18 +334,23 @@ def build_workflows_folder( folder_id, workflows, repository_metadata, label='Wo
     else:
         workflows_root_folder = None
     return folder_id, workflows_root_folder
-def generate_repository_dependencies_folder_label_from_key( repository, changeset_revision, key ):
+def generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision, key ):
     """Return a repository dependency label based on the repository dependency key."""
-    if key_is_current_repositorys_key( repository, changeset_revision, key ):
+    if key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, key ):
         label = 'Repository dependencies'
     else:
         toolshed_base_url, name, owner, revision = get_components_from_key( key )
         label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % ( name, revision, owner )
     return label
-def generate_repository_dependencies_key_for_repository( repository, changeset_revision ):
+def generate_repository_dependencies_key_for_repository( toolshed_base_url, repository_name, repository_owner, changeset_revision ):
     # FIXME: assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported.
-    toolshed_base_url = str( url_for( '/', qualified=True ) ).rstrip( '/' )
-    return '%s%s%s%s%s%s%s' % ( toolshed_base_url, STRSEP, repository.name, STRSEP, repository.user.username, STRSEP, changeset_revision )
+    return '%s%s%s%s%s%s%s' % ( str( toolshed_base_url ).rstrip( '/' ),
+                                STRSEP,
+                                str( repository_name ),
+                                STRSEP,
+                                str( repository_owner ),
+                                STRSEP,
+                                str( changeset_revision ) )
 def get_folder( folder, key ):
     if folder and folder.key == key:
         return folder
@@ -308,7 +368,7 @@ def get_components_from_key( key ):
 def is_folder( folder_keys, toolshed_base_url, repository_name, repository_owner, changeset_revision ):
     key = '%s%s%s%s%s%s%s' % ( toolshed_base_url, STRSEP, repository_name, STRSEP, repository_owner, STRSEP, changeset_revision )
     return key in folder_keys
-def key_is_current_repositorys_key( repository, changeset_revision, key ):
-    toolshed_base_url, repository_name, repository_owner, changeset_revision = get_components_from_key( key )
-    return repository_name == repository.name and repository_owner == repository.user.username and repository_changeset_revision == changeset_revision
+def key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, key ):
+    toolshed_base_url, key_name, key_owner, key_changeset_revision = get_components_from_key( key )
+    return repository_name == key_name and repository_owner == key_owner and changeset_revision == key_changeset_revision
     

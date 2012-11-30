@@ -1,7 +1,19 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/admin/tool_shed_repository/common.mako" import="render_tool_dependency_section" />
-<%namespace file="/webapps/community/common/common.mako" import="render_readme" />
+<%namespace file="/admin/tool_shed_repository/common.mako" import="render_dependencies_section" />
+<%namespace file="/admin/tool_shed_repository/common.mako" import="render_readme_section" />
+<%namespace file="/webapps/community/repository/common.mako" import="*" />
+
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css( "library" )}
+</%def>
+
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
+    ${container_javascripts()}
+</%def>
 
 %if message:
     ${render_msg( message, status )}
@@ -21,26 +33,34 @@
         general questions or concerns.
     </p>
 </div>
-<br/>
-
 <div class="toolForm">
-    %if includes_tool_dependencies and trans.app.config.use_tool_dependencies:
-        <div class="toolFormTitle">Confirm tool dependency installation</div>
-    %else:
-        <div class="toolFormTitle">Choose the tool panel section to contain the installed tools (optional)</div>
-    %endif
     <div class="toolFormBody">
         <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
             <div style="clear: both"></div>
-            %if includes_tool_dependencies and trans.app.config.use_tool_dependencies:
-                ${render_tool_dependency_section( install_tool_dependencies_check_box, repo_info_dicts )}
-                <div style="clear: both"></div>
+            <% readme_files_dict = containers_dict[ 'readme_files' ] %>
+            %if readme_files_dict:
                 <div class="form-row">
                     <table class="colored" width="100%">
-                        <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
+                        <th bgcolor="#EBD9B2">Repository README file (may contain important installation or license information)</th>
                     </table>
                 </div>
+                ${render_readme_section( containers_dict )}
+                <div style="clear: both"></div>
             %endif
+            %if includes_repository_dependencies or ( includes_tool_dependencies and trans.app.config.use_tool_dependencies ):
+                <div class="form-row">
+                    <table class="colored" width="100%">
+                        <th bgcolor="#EBD9B2">Confirm dependency installation</th>
+                    </table>
+                </div>
+                ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict )}
+                <div style="clear: both"></div>
+            %endif
+            <div class="form-row">
+                <table class="colored" width="100%">
+                    <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
+                </table>
+            </div>
             %if shed_tool_conf_select_field:
                 <div class="form-row">
                     <label>Shed tool configuration file:</label>
@@ -77,6 +97,3 @@
         </form>
     </div>
 </div>
-%if readme_text:
-    ${render_readme( readme_text )}
-%endif

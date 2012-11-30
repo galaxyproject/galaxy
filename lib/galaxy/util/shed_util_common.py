@@ -1,10 +1,11 @@
-import os, shutil, tempfile, logging, string
+import os, shutil, tempfile, logging, string, threading
 from galaxy import util
 from galaxy.tools import parameters
 from galaxy.util import inflector
 from galaxy.util.json import *
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
+from galaxy.webapps.community.util.container_util import *
 from galaxy.datatypes.checkers import *
 from galaxy.model.orm import *
 
@@ -33,6 +34,133 @@ GALAXY_ADMIN_TOOL_SHED_CONTROLLER = 'GALAXY_ADMIN_TOOL_SHED_CONTROLLER'
 TOOL_SHED_ADMIN_CONTROLLER = 'TOOL_SHED_ADMIN_CONTROLLER'
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 
+def add_installation_directories_to_tool_dependencies( trans, repository_name, repository_owner, changeset_revision, tool_dependencies ):
+    for dependency_key, requirements_dict in tool_dependencies.items():
+        if dependency_key not in [ 'set_environment' ]:
+            dependency_name = requirements_dict[ 'name' ]
+            version = requirements_dict[ 'version' ]
+            type = requirements_dict[ 'type' ]
+            install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+                                        dependency_name,
+                                        version,
+                                        repository_owner,
+                                        repository_name,
+                                        changeset_revision )
+            requirements_dict[ 'install_dir' ] = install_dir
+            tool_dependencies[ dependency_key ] = requirements_dict
+    return tool_dependencies
+def build_readme_files_dict( repository_metadata ):
+    """Return a dictionary of valid readme file name <-> readme file content pairs for all readme files contained in the received repository_metadata."""
+    readme_files_dict = {}
+    if repository_metadata:
+        metadata = repository_metadata.metadata
+        if metadata and 'readme_files' in metadata:
+            for relative_path_to_readme_file in metadata[ 'readme_files' ]:
+                readme_file_name = os.path.split( relative_path_to_readme_file )[ 1 ]
+                full_path_to_readme_file = os.path.abspath( relative_path_to_readme_file )
+                try:
+                    f = open( full_path_to_readme_file, 'r' )
+                    text = f.read()
+                    f.close()
+                    readme_files_dict[ readme_file_name ] = str( text )
+                except Exception, e:
+                    log.debug( "Error reading README file '%s' defined in metadata for repository '%s', revision '%s': %s" % \
+                               ( str( relative_path_to_readme_file ), str( repository_name ), str( changeset_revision ), str( e ) ) )
+    return readme_files_dict
+def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository_name, repository_owner, changeset_revision, 
+                                            readme_files_dict, repository_dependencies, tool_dependencies ):
+    """Return a dictionary of containers for the received repository's dependencies and readme files for display during installation to Galaxy."""
+    containers_dict = dict( readme_files=None, repository_dependencies=None, tool_dependencies=None )
+    if readme_files_dict or repository_dependencies or tool_dependencies:
+        lock = threading.Lock()
+        lock.acquire( True )
+        if tool_dependencies:
+            # Add the install_dir attribute to the tool_dependencies.
+            tool_dependencies = add_installation_directories_to_tool_dependencies( trans, repository_name, repository_owner, changeset_revision, tool_dependencies )
+        try:
+            folder_id = 0
+            if readme_files_dict:
+                folder_id, readme_files_root_folder = build_readme_files_folder( folder_id, readme_files_dict )
+                containers_dict[ 'readme_files' ] = readme_files_root_folder
+            if repository_dependencies:
+                folder_id, repository_dependencies_root_folder = build_repository_dependencies_folder( toolshed_base_url=toolshed_base_url,
+                                                                                                       repository_name=repository_name,
+                                                                                                       repository_owner=repository_owner,
+                                                                                                       changeset_revision=changeset_revision,
+                                                                                                       folder_id=folder_id,
+                                                                                                       repository_dependencies=repository_dependencies )
+                containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
+            if tool_dependencies:
+                folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( folder_id, tool_dependencies, for_galaxy=True )
+                containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
+        except Exception, e:
+            log.debug( "Exception in build_repository_containers_for_galaxy: %s" % str( e ) )
+        finally:
+            lock.release()
+    return containers_dict
+def build_repository_containers_for_tool_shed( repository, changeset_revision, repository_dependencies, repository_metadata ):
+    """Return a dictionary of containers for the received repository's dependencies and contents for display in the tool shed."""
+    containers_dict = dict( datatypes=None,
+                            invalid_tools=None,
+                            readme_files=None,
+                            repository_dependencies=None,
+                            tool_dependencies=None,
+                            valid_tools=None,
+                            workflows=None )
+    if repository_metadata:
+        metadata = repository_metadata.metadata
+        lock = threading.Lock()
+        lock.acquire( True )
+        try:
+            folder_id = 0
+            # Datatypes container.
+            if metadata and 'datatypes' in metadata:
+                datatypes = metadata[ 'datatypes' ]
+                folder_id, datatypes_root_folder = build_datatypes_folder( folder_id, datatypes )
+                containers_dict[ 'datatypes' ] = datatypes_root_folder
+            # Invalid tools container.
+            if metadata and 'invalid_tools' in metadata:
+                invalid_tool_configs = metadata[ 'invalid_tools' ]
+                folder_id, invalid_tools_root_folder = build_invalid_tools_folder( folder_id,
+                                                                                   invalid_tool_configs,
+                                                                                   changeset_revision,
+                                                                                   repository=repository,
+                                                                                   label='Invalid tools' )
+                containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
+            # Readme files container.
+            readme_files_dict = build_readme_files_dict( repository_metadata )
+            folder_id, readme_files_root_folder = build_readme_files_folder( folder_id, readme_files_dict )
+            containers_dict[ 'readme_files' ] = readme_files_root_folder
+            # Repository dependencies container.
+            toolshed_base_url = str( url_for( '/', qualified=True ) ).rstrip( '/' )
+            folder_id, repository_dependencies_root_folder = build_repository_dependencies_folder( toolshed_base_url=toolshed_base_url,
+                                                                                                   repository_name=repository.name,
+                                                                                                   repository_owner=repository.user.username,
+                                                                                                   changeset_revision=changeset_revision,
+                                                                                                   folder_id=folder_id,
+                                                                                                   repository_dependencies=repository_dependencies )
+            if repository_dependencies_root_folder:
+                containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
+            # Tool dependencies container.
+            if metadata and 'tool_dependencies' in metadata:
+                tool_dependencies = metadata[ 'tool_dependencies' ]
+                folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( folder_id, tool_dependencies, for_galaxy=False )
+                containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
+            # Valid tools container.
+            if metadata and 'tools' in metadata:
+                valid_tools = metadata[ 'tools' ]
+                folder_id, valid_tools_root_folder = build_tools_folder( folder_id, valid_tools, repository, changeset_revision, label='Valid tools' )
+                containers_dict[ 'valid_tools' ] = valid_tools_root_folder
+            # Workflows container.
+            if metadata and 'workflows' in metadata:
+                workflows = metadata[ 'workflows' ]
+                folder_id, workflows_root_folder = build_workflows_folder( folder_id, workflows, repository_metadata, label='Workflows' )
+                containers_dict[ 'workflows' ] = workflows_root_folder
+        except Exception, e:
+            log.debug( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
+        finally:
+            lock.release()
+    return containers_dict
 def build_repository_ids_select_field( trans, cntrller, name='repository_ids', multiple=True, display='checkboxes' ):
     """Method called from both Galaxy and the Tool Shed to generate the current list of repositories for resetting metadata."""
     repositories_select_field = SelectField( name=name, multiple=multiple, display=display )
@@ -336,14 +464,40 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
     trans.sa_session.add( repository_metadata )
     trans.sa_session.flush()
     return repository_metadata
-def create_repo_info_dict( repository, owner, repository_clone_url, changeset_revision, ctx_rev, metadata ):
+def create_repo_info_dict( trans, repo, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None,
+                           repository=None, repository_metadata=None ):
+    """
+    Return a dictionary that includes all of the information needed to install a repository into a local Galaxy instance.  The dictionary will also contain
+    the recursive list of repository dependencies defined for the repository, as well as the defined tool dependencies.  This method is called during the
+    tool shed repository installation process from Galaxy.  In this case both the received repository and repository_metadata will be objects, but repository_name
+    sill be None.  This method is also called when a tool shed repository that was uninstalled from a Galaxy instance is being re-installed.  In this case, both
+    repository and repository_metadata will be None, but repository_name will have a value.
+    """
     repo_info_dict = {}
-    repo_info_dict[ repository.name ] = ( repository.description,
-                                          repository_clone_url,
-                                          changeset_revision,
-                                          ctx_rev,
-                                          owner,
-                                          metadata.get( 'tool_dependencies', None ) )
+    if repository is None and repository_metadata is None:
+        # The repository associated with the received repository_clone_url is being re-installed into a Galaxy instance, so we need to retrieve the
+        # appropriate repository from the tool shed using the received information.
+        repository = get_repository_by_name_and_owner( trans, repository_name, repository_owner )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
+    if repository_metadata:
+        metadata = repository_metadata.metadata
+        if metadata:
+            # Get a dictionary of all repositories upon which the contents of the received repository depends.
+            repository_dependencies = get_repository_dependencies_for_changeset_revision( trans,
+                                                                                          repo,
+                                                                                          repository,
+                                                                                          repository_metadata,
+                                                                                          str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                          repository_dependencies=None,
+                                                                                          all_repository_dependencies=None )
+            # Cast unicode to string.
+            repo_info_dict[ str( repository.name ) ] = ( str( repository.description ),
+                                                         str( repository_clone_url ),
+                                                         str( changeset_revision ),
+                                                         str( ctx_rev ),
+                                                         str( repository_owner ),
+                                                         repository_dependencies,
+                                                         metadata.get( 'tool_dependencies', None ) )
     return repo_info_dict
 def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
     """Generate the URL for cloning a repository that is in the tool shed."""
@@ -464,7 +618,8 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
     else:
         original_repository_metadata = None
     readme_file_names = get_readme_file_names( repository.name )
-    metadata_dict = { 'shed_config_filename': shed_config_dict.get( 'config_filename' ) }
+    metadata_dict = { 'shed_config_filename' : shed_config_dict.get( 'config_filename' ) }
+    readme_files = []
     invalid_file_tups = []
     invalid_tool_configs = []
     tool_dependencies_config = None
@@ -524,7 +679,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                                                                                                      shed_config_dict,
                                                                                                      resetting_all_metadata_on_repository )
                     metadata_dict = generate_repository_dependency_metadata( relative_path_to_repository_dependencies, metadata_dict )
-                # See if we have a READ_ME file.
+                # See if we have one or more READ_ME files.
                 elif name.lower() in readme_file_names:
                     relative_path_to_readme = get_relative_path_to_repository_file( root,
                                                                                     name,
@@ -532,7 +687,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                                                                                     work_dir,
                                                                                     shed_config_dict,
                                                                                     resetting_all_metadata_on_repository )
-                    metadata_dict[ 'readme' ] = relative_path_to_readme
+                    readme_files.append( relative_path_to_readme )
                 # See if we have a tool config.
                 elif name not in NOT_TOOL_CONFIGS and name.endswith( '.xml' ):
                     full_path = str( os.path.abspath( os.path.join( root, name ) ) )
@@ -583,6 +738,8 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                         exported_workflow_dict = from_json_string( workflow_text )
                         if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
                             metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
+    if readme_files:
+        metadata_dict[ 'readme_files' ] = readme_files
     if 'tools' in metadata_dict:
         # This step must be done after metadata for tools has been defined.
         tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', files_dir )
@@ -864,6 +1021,80 @@ def get_readme_file_names( repository_name ):
         valid_filenames.append( '%s.txt' % r )
     valid_filenames.append( '%s.txt' % repository_name )
     return valid_filenames
+def get_repository_by_name_and_owner( trans, name, owner ):
+    """Get a repository from the database via name and owner"""
+    user = get_user_by_username( trans, owner )
+    return trans.sa_session.query( trans.model.Repository ) \
+                             .filter( and_( trans.model.Repository.table.c.name == name,
+                                            trans.model.Repository.table.c.user_id == user.id ) ) \
+                             .first()
+def get_repository_dependencies_for_changeset_revision( trans, repo, repository, repository_metadata, toolshed_base_url, repository_dependencies=None,
+                                                        all_repository_dependencies=None ):
+    """
+    Return a dictionary of all repositories upon which the contents of the received repository_metadata record depend.  The dictionary keys
+    are name-spaced values consisting of toolshed_base_url/repository_name/repository_owner/changeset_revision and the values are lists of
+    repository_dependency tuples consisting of ( toolshed_base_url, repository_name, repository_owner, changeset_revision ).  This method
+    ensures that all required repositories to the nth degree are returned.
+    """
+    if all_repository_dependencies is None:
+        all_repository_dependencies = {}
+    if repository_dependencies is None:
+        repository_dependencies = []
+    metadata = repository_metadata.metadata
+    if metadata and 'repository_dependencies' in metadata:
+        repository_dependencies_root_key = generate_repository_dependencies_key_for_repository( toolshed_base_url=toolshed_base_url,
+                                                                                                repository_name=repository.name,
+                                                                                                repository_owner=repository.user.username,
+                                                                                                changeset_revision=repository_metadata.changeset_revision )
+        for repository_dependency in metadata[ 'repository_dependencies' ]:
+            if repository_dependency not in repository_dependencies:
+                repository_dependencies.append( repository_dependency )
+    else:
+        repository_dependencies_root_key = None
+    if repository_dependencies:
+        repository_dependency = repository_dependencies.pop( 0 )
+        # Cast unicode to string.
+        repository_dependency = [ str( item ) for item in repository_dependency ]
+        tool_shed, name, owner, changeset_revision = repository_dependency
+        if repository_dependencies_root_key:
+            if repository_dependencies_root_key in all_repository_dependencies:
+                # See if this repository_dependency is contained in the list associated with the repository_dependencies_root_key.
+                all_repository_dependencies_val = all_repository_dependencies[ repository_dependencies_root_key ]
+                if repository_dependency not in all_repository_dependencies_val:
+                    all_repository_dependencies_val.append( repository_dependency )
+                    all_repository_dependencies[ repository_dependencies_root_key ] = all_repository_dependencies_val
+            else:
+                # Insert this repository_dependency.
+                all_repository_dependencies[ repository_dependencies_root_key ] = [ repository_dependency ]
+        if tool_shed_is_this_tool_shed( tool_shed ):
+            # The repository is in the current tool shed.
+            required_repository = get_repository_by_name_and_owner( trans, name, owner )
+            required_repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
+                                                                                                       trans.security.encode_id( required_repository.id ),
+                                                                                                       changeset_revision )
+            if required_repository_metadata:
+                required_repo_dir = required_repository.repo_path( trans.app )
+                required_repo = hg.repository( get_configured_ui(), required_repo_dir )
+            else:
+                # The repository changeset_revision is no longer installable, so see if there's been an update.
+                required_repo_dir = required_repository.repo_path( trans.app )
+                required_repo = hg.repository( get_configured_ui(), required_repo_dir )
+                required_repository_metadata = get_next_downloadable_changeset_revision( required_repository, required_repo, changeset_revision )
+            if required_repository_metadata:
+                # The required_repository_metadata changeset_revision is installable.
+                required_metadata = required_repository_metadata.metadata
+                if required_metadata:
+                    return get_repository_dependencies_for_changeset_revision( trans=trans,
+                                                                               repo=required_repo,
+                                                                               repository=required_repository,
+                                                                               repository_metadata=required_repository_metadata,
+                                                                               toolshed_base_url=tool_shed,
+                                                                               repository_dependencies=repository_dependencies,
+                                                                               all_repository_dependencies=all_repository_dependencies )     
+        else:
+            # The repository is in a different tool shed, so build an url and send a request.
+            raise Exception( "Repository dependencies that refer to repositories in other tool sheds is not yet supported." )
+    return all_repository_dependencies
 def get_repository_file_contents( file_path ):
     if is_gzip( file_path ):
         to_html = to_html_str( '\ngzip compressed file\n' )
@@ -917,6 +1148,12 @@ def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision
     elif all_metadata_records:
         return all_metadata_records[ 0 ]
     return None
+def get_repository_metadata_by_repository_id_changset_revision( trans, id, changeset_revision ):
+    """Get a specified metadata record for a specified repository."""
+    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
+                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
+                           .first()
 def get_relative_path_to_repository_file( root, name, relative_install_dir, work_dir, shed_config_dict, resetting_all_metadata_on_repository ):
     if resetting_all_metadata_on_repository:
         full_path_to_file = os.path.join( root, name )
@@ -959,6 +1196,11 @@ def get_sample_files_from_disk( repository_files_dir, tool_path = None, relative
                                     relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
     return sample_file_metadata_paths, sample_file_copy_paths
+def get_user_by_username( trans, username ):
+    """Get a user from the database by username"""
+    return trans.sa_session.query( trans.model.User ) \
+                           .filter( trans.model.User.table.c.username == username ) \
+                           .one()
 def handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_dependency_dict, new_dependency_dict ):
     """
     This method is called when a Galaxy admin is getting updates for an installed tool shed repository in order to cover the case where an
@@ -1348,6 +1590,8 @@ def to_html_str( text ):
         elif c not in [ '\r' ]:
             translated.append( '' )
     return ''.join( translated )
+def tool_shed_is_this_tool_shed( toolshed_base_url ):
+    return toolshed_base_url.rstrip( '/' ) == str( url_for( '/', qualified=True ) ).rstrip( '/' )
 def update_existing_tool_dependency( app, repository, original_dependency_dict, new_dependencies_dict ):
     """
     Update an exsiting tool dependency whose definition was updated in a change set pulled by a Galaxy administrator when getting updates 

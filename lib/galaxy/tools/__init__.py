@@ -33,7 +33,6 @@ from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
 from galaxy.util.shed_util import *
-from galaxy.util.shed_util_common import *
 from galaxy.web import url_for
 
 from galaxy.visualization.genome.visual_analytics import TracksterConfig

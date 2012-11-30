@@ -2,7 +2,6 @@ import urllib2, tempfile
 from admin import *
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
-from galaxy.util.shed_util_common import *
 from galaxy.tool_shed.encoding_util import *
 from galaxy import eggs, tools
 
@@ -961,12 +960,6 @@ class AdminToolshed( AdminGalaxy ):
                                 url_args=dict( controller='admin_toolshed', 
                                                action='deactivate_or_uninstall_repository', 
                                                id=trans.security.encode_id( tool_shed_repository.id ) ) ) ]
-        if tool_shed_repository.metadata and 'readme' in tool_shed_repository.metadata:
-            view_readme_action = grids.GridAction( label='View README', 
-                                                   url_args=dict( controller='admin_toolshed', 
-                                                                  action='view_readme', 
-                                                                  id=trans.security.encode_id( tool_shed_repository.id ) ) )
-            self.tool_dependency_grid.global_actions.insert( 1, view_readme_action )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if not tool_dependency_ids:
@@ -1050,6 +1043,9 @@ class AdminToolshed( AdminGalaxy ):
         status = kwd.get( 'status', 'done' )
         includes_tools = util.string_as_bool( kwd.get( 'includes_tools', False ) )
         tool_shed_url = kwd[ 'tool_shed_url' ]
+        # Handle repository dependencies.
+        includes_repository_dependencies = util.string_as_bool( kwd.get( 'includes_repository_dependencies', False ) )
+        install_repository_dependencies = kwd.get( 'install_repository_dependencies', '' )
         # Every repository will be installed into the same tool panel section or all will be installed outside of any sections.
         new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
         tool_panel_section = kwd.get( 'tool_panel_section', '' )
@@ -1071,10 +1067,13 @@ class AdminToolshed( AdminGalaxy ):
             response.close()
             repo_information_dict = from_json_string( raw_text )
             includes_tools = util.string_as_bool( repo_information_dict[ 'includes_tools' ] )
+            includes_repository_dependencies = util.string_as_bool( repo_information_dict[ 'includes_repository_dependencies' ] )
             includes_tool_dependencies = util.string_as_bool( repo_information_dict[ 'includes_tool_dependencies' ] )
             encoded_repo_info_dicts = util.listify( repo_information_dict[ 'repo_info_dicts' ] )
         repo_info_dicts = [ tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
-        if not includes_tools or ( includes_tools and kwd.get( 'select_tool_panel_section_button', False ) ):
+        if ( not includes_tools and not includes_repository_dependencies ) or \
+            ( ( includes_tools or includes_repository_dependencies ) and kwd.get( 'select_tool_panel_section_button', False ) ):
+            install_repository_dependencies = CheckboxField.is_checked( install_repository_dependencies )
             if includes_tools:
                 install_tool_dependencies = CheckboxField.is_checked( install_tool_dependencies )
                 shed_tool_conf = kwd[ 'shed_tool_conf' ]
@@ -1100,10 +1099,9 @@ class AdminToolshed( AdminGalaxy ):
             filtered_repo_info_dicts = []
             for repo_info_dict in repo_info_dicts:
                 for name, repo_info_tuple in repo_info_dict.items():
-                    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
+                    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
                     clone_dir = os.path.join( tool_path, self.generate_tool_path( repository_clone_url, changeset_revision ) )
                     relative_install_dir = os.path.join( clone_dir, name )
-                    owner = get_repository_owner( clean_repository_clone_url( repository_clone_url ) )
                     # Make sure the repository was not already installed.
                     installed_tool_shed_repository, installed_changeset_revision = self.repository_was_previously_installed( trans,
                                                                                                                              tool_shed_url,
@@ -1111,7 +1109,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                                                              repo_info_tuple,
                                                                                                                              clone_dir )
                     if installed_tool_shed_repository:
-                        message += "The tool shed repository <b>%s</b> with owner <b>%s</b> and changeset revision <b>%s</b> " % ( name, owner, changeset_revision )
+                        message += "Revision <b>%s</b> of tool shed repository <b>%s</b> owned by <b>%s</b> " % ( changeset_revision, name, repository_owner )
                         if installed_changeset_revision != changeset_revision:
                             message += "was previously installed using changeset revision <b>%s</b>.  " % installed_changeset_revision
                         else:
@@ -1123,7 +1121,8 @@ class AdminToolshed( AdminGalaxy ):
                         if installed_changeset_revision != changeset_revision:
                             message += "You can get the latest updates for the repository using the <b>Get updates</b> option from the repository's "
                             message += "<b>Repository Actions</b> pop-up menu.  "
-                        message+= 'Click <a href="%s">here</a> to manage the repository.  ' % ( web.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( installed_tool_shed_repository.id ) ) )
+                        message+= 'Click <a href="%s">here</a> to manage the repository.  ' % \
+                            ( web.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( installed_tool_shed_repository.id ) ) )
                         status = 'error'
                         if len( repo_info_dicts ) == 1:
                             new_kwd = dict( message=message, status=status )
@@ -1131,7 +1130,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                               action='browse_repositories',
                                                                               **new_kwd ) )
                     else:
-                        print "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name
+                        log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name )
                         tool_shed_repository = create_or_update_tool_shed_repository( app=trans.app,
                                                                                       name=name,
                                                                                       description=description,
@@ -1141,7 +1140,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                       metadata_dict={},
                                                                                       status=trans.model.ToolShedRepository.installation_status.NEW,
                                                                                       current_changeset_revision=changeset_revision,
-                                                                                      owner=owner,
+                                                                                      owner=repository_owner,
                                                                                       dist_to_shed=False )
                         created_or_updated_tool_shed_repositories.append( tool_shed_repository )
                         filtered_repo_info_dicts.append( tool_shed_encode( repo_info_dict ) )
@@ -1171,6 +1170,7 @@ class AdminToolshed( AdminGalaxy ):
                     tool_section = None
                 tsrids_list = [ trans.security.encode_id( tsr.id ) for tsr in created_or_updated_tool_shed_repositories ]
                 new_kwd = dict( includes_tools=includes_tools,
+                                includes_repository_dependencies=includes_repository_dependencies,
                                 includes_tool_dependencies=includes_tool_dependencies,
                                 install_tool_dependencies=install_tool_dependencies,
                                 message=message,
@@ -1203,42 +1203,53 @@ class AdminToolshed( AdminGalaxy ):
             shed_tool_conf = shed_tool_conf.replace( './', '', 1 )
             shed_tool_conf_select_field = None
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
-        if includes_tools and len( repo_info_dicts ) == 1:
-            # If we're installing a single repository, see if it contains a readme file tha twe can display.
+        if len( repo_info_dicts ) == 1:
+            # If we're installing a single repository, see if it contains a readme or dependencies that we can display.
             repo_info_dict = repo_info_dicts[ 0 ]
             name = repo_info_dict.keys()[ 0 ]
             repo_info_tuple = repo_info_dict[ name ]
-            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
+            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
             url = url_join( tool_shed_url,
-                            'repository/get_readme?name=%s&owner=%s&changeset_revision=%s' % \
+                            'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
                             ( name, repository_owner, changeset_revision ) )
             response = urllib2.urlopen( url )
             raw_text = response.read()
             response.close()
-            readme_text = raw_text
+            readme_files_dict = from_json_string( raw_text )
+            containers_dict = build_repository_containers_for_galaxy( trans=trans,
+                                                                      toolshed_base_url=tool_shed_url,
+                                                                      repository_name=name,
+                                                                      repository_owner=repository_owner,
+                                                                      changeset_revision=changeset_revision,
+                                                                      readme_files_dict=readme_files_dict,
+                                                                      repository_dependencies=repository_dependencies,
+                                                                      tool_dependencies=tool_dependencies )
         else:
-            readme_text = '' 
+            containers_dict = dict( readme_files_dict=None, repository_dependencies=None, tool_dependencies=None )
+        # Handle tool dependencies chack box.
         if trans.app.config.tool_dependency_dir is None:
             if includes_tool_dependencies:
-                message = "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b>"
-                message += " setting in your Galaxy config file (universe_wsgi.ini) and restart your Galaxy server before installing the repository."
+                message = "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b> "
+                message += "setting in your Galaxy config file (universe_wsgi.ini) and restart your Galaxy server before installing the repository."
                 status = "warning"
-            checked = False
+            install_tool_dependencies_check_box_checked = False
         else:
-            checked = True
-        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=checked )
+            install_tool_dependencies_check_box_checked = True
+        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
+        # Handle repository dependencies check box.
+        install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
         return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
                                     encoded_repo_info_dicts=encoded_repo_info_dicts,
                                     includes_tools=includes_tools,
                                     includes_tool_dependencies=includes_tool_dependencies,
+                                    install_repository_dependencies_check_box=install_repository_dependencies_check_box,
                                     install_tool_dependencies_check_box=install_tool_dependencies_check_box,
                                     new_tool_panel_section=new_tool_panel_section,
-                                    repo_info_dicts=repo_info_dicts,
+                                    containers_dict=containers_dict,
                                     shed_tool_conf=shed_tool_conf,
                                     shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
                                     tool_shed_url=kwd[ 'tool_shed_url' ],
-                                    readme_text=readme_text,
                                     message=message,
                                     status=status )
     @web.expose
@@ -1269,8 +1280,8 @@ class AdminToolshed( AdminGalaxy ):
                     tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
             else:
                 tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
-            # TODO: Fix this to handle the case where the tools are distributed across in more than 1 ToolSection.  The
-            # following assumes everything was loaded into 1 section (or no section) in the tool panel.
+            # Fix this to handle the case where the tools are distributed across in more than 1 ToolSection - this assumes everything was loaded into 1
+            # section (or no section) in the tool panel.
             tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
             tool_section_dict = tool_section_dicts[ 0 ]
             original_section_id = tool_section_dict[ 'id' ]
@@ -1328,12 +1339,16 @@ class AdminToolshed( AdminGalaxy ):
         # The repo_info_dict should be encoded.
         if not repo_info_dict:
             # This should only happen if the tool_shed_repository does not include any valid tools.
-            repo_info_dict = create_repo_info_dict( tool_shed_repository,
-                                                    tool_shed_repository.owner,
-                                                    repository_clone_url,
-                                                    tool_shed_repository.installed_changeset_revision,
-                                                    ctx_rev,
-                                                    metadata )
+            repo = hg.repository( get_configured_ui(), path=os.path.abspath( tool_shed_repository.repo_path( trans.app ) ) )
+            repo_info_dict = create_repo_info_dict( trans=trans,
+                                                    repo=repo,
+                                                    repository_clone_url=repository_clone_url,
+                                                    changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                    ctx_rev=ctx_rev,
+                                                    repository_owner=tool_shed_repository.owner,
+                                                    repository_name=tool_shed_repository.name,
+                                                    repository=None,
+                                                    repository_metadata=None )
             repo_info_dict = tool_shed_encode( repo_info_dict )
         new_kwd = dict( includes_tool_dependencies=tool_shed_repository.includes_tool_dependencies,
                         includes_tools=tool_shed_repository.includes_tools,
@@ -1410,12 +1425,16 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
         ctx_rev = get_ctx_rev( tool_shed_url, repository.name, repository.owner, repository.installed_changeset_revision )
         repository_clone_url = generate_clone_url_for_installed_repository( trans, repository )
-        repo_info_dict = create_repo_info_dict( repository,
-                                                repository.owner,
-                                                repository_clone_url,
-                                                repository.installed_changeset_revision,
-                                                ctx_rev,
-                                                metadata )
+        repo = hg.repository( get_configured_ui(), path=os.path.abspath( tool_shed_repository.repo_path( trans.app ) ) )
+        repo_info_dict = create_repo_info_dict( trans=trans,
+                                                repo=repo,
+                                                repository_clone_url=repository_clone_url,
+                                                changeset_revision=repository.installed_changeset_revision,
+                                                ctx_rev=ctx_rev,
+                                                repository_owner=repository.owner,
+                                                repository_name=repository.name,
+                                                repository=None,
+                                                repository_metadata=None )
         # Get the location in the tool panel in which the tool was originally loaded.
         if 'tool_panel_section' in metadata:
             tool_panel_dict = metadata[ 'tool_panel_section' ]
@@ -1444,28 +1463,46 @@ class AdminToolshed( AdminGalaxy ):
             message = "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % repository.name
             message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section."
             status = 'warning'
-        includes_tool_dependencies = 'tool_dependencies' in metadata
-        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=True )
-        if metadata and 'readme' in metadata:
+        if metadata and 'readme_files' in metadata:
             url = url_join( tool_shed_url,
-                            'repository/get_readme?name=%s&owner=%s&changeset_revision=%s' % \
+                            'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
                             ( repository.name, repository.owner, repository.installed_changeset_revision ) )
             response = urllib2.urlopen( url )
             raw_text = response.read()
             response.close()
-            readme_text = raw_text
+            readme_files_dict = from_json_string( raw_text )
+            containers_dict = build_repository_containers_for_galaxy( trans=trans,
+                                                                      toolshed_base_url=tool_shed_url,
+                                                                      repository_name=name,
+                                                                      repository_owner=repository_owner,
+                                                                      changeset_revision=changeset_revision,
+                                                                      readme_files_dict=readme_files_dict,
+                                                                      repository_dependencies=repository_dependencies,
+                                                                      tool_dependencies=tool_dependencies )
         else:
-            readme_text = '' 
+            containers_dict = dict( readme_files_dict=None, repository_dependencies=None, tool_dependencies=None )
+        # Handle repository dependencies check box.
+        install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
+        # Handle tool dependencies check box.
+        if trans.app.config.tool_dependency_dir is None:
+            if includes_tool_dependencies:
+                message = "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b> "
+                message += "setting in your Galaxy config file (universe_wsgi.ini) and restart your Galaxy server before installing the repository."
+                status = "warning"
+            install_tool_dependencies_check_box_checked = False
+        else:
+            install_tool_dependencies_check_box_checked = True
+        install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
         return trans.fill_template( '/admin/tool_shed_repository/reselect_tool_panel_section.mako',
                                     repository=repository,
-                                    readme_text=readme_text,
                                     no_changes_check_box=no_changes_check_box,
                                     original_section_name=original_section_name,
+                                    install_repository_dependencies_check_box=install_repository_dependencies_check_box,
                                     install_tool_dependencies_check_box=install_tool_dependencies_check_box,
+                                    containers_dict=containers_dict,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
                                     encoded_repo_info_dict=tool_shed_encode( repo_info_dict ),
                                     repo_info_dict=repo_info_dict,
-                                    includes_tool_dependencies=includes_tool_dependencies,
                                     message=message,
                                     status=status )
     @web.expose
@@ -1712,41 +1749,6 @@ class AdminToolshed( AdminGalaxy ):
                                                           id=trans.security.encode_id( repository.id ),
                                                           message=message,
                                                           status=status ) )
-    @web.expose
-    @web.require_admin
-    def view_readme( self, trans, id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        cntrller = params.get( 'cntrller', 'admin_toolshed' )
-        status = params.get( 'status', 'done' )
-        repository = get_installed_tool_shed_repository( trans, id )
-        metadata = repository.metadata
-        shed_config_dict = repository.get_shed_config_dict( trans.app )
-        tool_path = shed_config_dict.get( 'tool_path', None )
-        if metadata and 'readme' in metadata:
-            readme_filename = metadata[ 'readme' ]
-            if tool_path:
-                readme_filename = os.path.join( tool_path, readme_filename )
-            try:
-                f = open( readme_filename, 'r' )
-                raw_text = f.read()
-                f.close()
-                readme_text = raw_text
-            except Exception, e:
-                log.debug( "Error attempting to read README file '%s' defined in metadata for repository '%s', revision '%s': %s" % \
-                           ( str( readme_filename ), str( repository.name ), str( repository.changeset_revision ), str( e ) ) )
-                readme_text = ''
-        else:
-            readme_text = ''
-        is_malicious = False
-        return trans.fill_template( '/webapps/community/common/view_readme.mako',
-                                    cntrller=cntrller,
-                                    repository=repository,
-                                    changeset_revision=repository.changeset_revision,
-                                    readme_text=readme_text,
-                                    is_malicious=is_malicious,
-                                    message=message,
-                                    status=status )
     @web.expose
     @web.require_admin
     def view_tool_metadata( self, trans, repository_id, tool_id, **kwd ):

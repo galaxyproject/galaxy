@@ -52,9 +52,6 @@
         %else:
             <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View repository</a>
         %endif
-        %if has_readme:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_readme', id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View README</a>
-        %endif
         %if can_rate:
             <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.security.encode_id( repository.id ) )}">Rate repository</a>
         %endif
