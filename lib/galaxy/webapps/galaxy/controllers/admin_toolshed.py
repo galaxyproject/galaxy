@@ -670,7 +670,7 @@ class AdminToolshed( AdminGalaxy ):
             # Clone each repository to the configured location.
             update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.CLONING )
             repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
-            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
+            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
             relative_clone_dir = self.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision )
             clone_dir = os.path.join( tool_path, relative_clone_dir )
             relative_install_dir = os.path.join( relative_clone_dir, tool_shed_repository.name )
@@ -1395,7 +1395,7 @@ class AdminToolshed( AdminGalaxy ):
         # Handle case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
         # in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one
         # that was previously installed.  We'll look in the database instead of on disk since the repository may be uninstalled.
-        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
+        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
         tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
         # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
         # revision to see if it was previously installed using one of them.
