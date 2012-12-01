@@ -1064,19 +1064,6 @@ def remove_tool_dependency( trans, tool_dependency ):
     return removed, error_message
 def tool_shed_from_repository_clone_url( repository_clone_url ):
     return clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
-def translate_string( raw_text, to_html=True ):
-    if raw_text:
-        if to_html:
-            if len( raw_text ) <= MAX_CONTENT_SIZE:
-                translated_string = to_html_str( raw_text )
-            else:
-                large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
-                translated_string = to_html_str( '%s%s' % ( raw_text[ 0:MAX_CONTENT_SIZE ], large_str ) )
-        else:
-            raise Exception( "String translation currently only supports text to HTML." )
-    else:
-        translated_string = ''
-    return translated_string
 def update_in_shed_tool_config( app, repository ):
     # A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list.

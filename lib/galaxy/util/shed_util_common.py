@@ -62,7 +62,7 @@ def build_readme_files_dict( repository_metadata ):
                     f = open( full_path_to_readme_file, 'r' )
                     text = f.read()
                     f.close()
-                    readme_files_dict[ readme_file_name ] = str( text )
+                    readme_files_dict[ readme_file_name ] = translate_string( text, to_html=False )
                 except Exception, e:
                     log.debug( "Error reading README file '%s' defined in metadata for repository '%s', revision '%s': %s" % \
                                ( str( relative_path_to_readme_file ), str( repository_name ), str( changeset_revision ), str( e ) ) )
@@ -1155,22 +1155,22 @@ def get_repository_dependencies_for_changeset_revision( trans, repo, repository,
     return all_repository_dependencies
 def get_repository_file_contents( file_path ):
     if is_gzip( file_path ):
-        to_html = to_html_str( '\ngzip compressed file\n' )
+        safe_str = to_safe_str( '\ngzip compressed file\n' )
     elif is_bz2( file_path ):
-        to_html = to_html_str( '\nbz2 compressed file\n' )
+        safe_str = to_safe_str( '\nbz2 compressed file\n' )
     elif check_zip( file_path ):
-        to_html = to_html_str( '\nzip compressed file\n' )
+        safe_str = to_safe_str( '\nzip compressed file\n' )
     elif check_binary( file_path ):
-        to_html = to_html_str( '\nBinary file\n' )
+        safe_str = to_safe_str( '\nBinary file\n' )
     else:
-        to_html = ''
+        safe_str = ''
         for i, line in enumerate( open( file_path ) ):
-            to_html = '%s%s' % ( to_html, to_html_str( line ) )
-            if len( to_html ) > MAX_CONTENT_SIZE:
+            safe_str = '%s%s' % ( safe_str, to_safe_str( line ) )
+            if len( safe_str ) > MAX_CONTENT_SIZE:
                 large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
-                to_html = '%s%s' % ( to_html, to_html_str( large_str ) )
+                safe_str = '%s%s' % ( safe_str, to_safe_str( large_str ) )
                 break
-    return to_html
+    return safe_str
 def get_repository_files( trans, folder_path ):
     contents = []
     for item in os.listdir( folder_path ):
@@ -1631,7 +1631,7 @@ def strip_path( fpath ):
     except:
         file_name = fpath
     return file_name
-def to_html_str( text ):
+def to_safe_str( text, to_html=True ):
     """Translates the characters in text to an html string"""
     translated = []
     for c in text:
@@ -1639,17 +1639,28 @@ def to_html_str( text ):
             translated.append( c )
         elif c in MAPPED_CHARS:
             translated.append( MAPPED_CHARS[ c ] )
-        elif c == ' ':
-            translated.append( '&nbsp;' )
-        elif c == '\t':
-            translated.append( '&nbsp;&nbsp;&nbsp;&nbsp;' )
-        elif c == '\n':
-            translated.append( '<br/>' )
-        elif c not in [ '\r' ]:
+        elif c in [ '\n', '\r' ]:
+            if to_html:
+                translated.append( '<br/>' )
+            else:
+                translated.append( c )
+        elif c in [ ' ', '    ' ]:
+            translated.append( c )
+        else:
             translated.append( '' )
     return ''.join( translated )
 def tool_shed_is_this_tool_shed( toolshed_base_url ):
     return toolshed_base_url.rstrip( '/' ) == str( url_for( '/', qualified=True ) ).rstrip( '/' )
+def translate_string( raw_text, to_html=True ):
+    if raw_text:
+        if len( raw_text ) <= MAX_CONTENT_SIZE:
+            translated_string = to_safe_str( raw_text, to_html=to_html )
+        else:
+            large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
+            translated_string = to_safe_str( '%s%s' % ( raw_text[ 0:MAX_CONTENT_SIZE ], large_str ), to_html=to_html )
+    else:
+        translated_string = ''
+    return translated_string
 def update_existing_tool_dependency( app, repository, original_dependency_dict, new_dependencies_dict ):
     """
     Update an exsiting tool dependency whose definition was updated in a change set pulled by a Galaxy administrator when getting updates 
