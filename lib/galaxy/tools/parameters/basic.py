@@ -1551,6 +1551,8 @@ class DataToolParameter( ToolParameter ):
             raise ValueError( "History does not include a dataset of the required format / build" )
         if value in [None, "None"]:
             return None
+        if isinstance( value, str ) and value.find( "," ) > 0:
+            value = [ int( value_part ) for value_part in  value.split( "," ) ]
         if isinstance( value, list ):
             rval = [ trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( v ) for v in value ]
         elif isinstance( value, trans.app.model.HistoryDatasetAssociation ):
@@ -1598,8 +1600,10 @@ class DataToolParameter( ToolParameter ):
         return value.file_name
         
     def value_to_display_text( self, value, app ):
+        if not isinstance(value, list):
+            value = [ value ]
         if value:
-            return "%s: %s" % ( value.hid, value.name )
+            return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )
         else:
             return "No dataset"
 

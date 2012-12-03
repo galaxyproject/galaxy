@@ -243,9 +243,12 @@ if wf_parms:
             %if isinstance( param, DataToolParameter ):
                 %if ( prefix + param.name ) in step.input_connections_by_name:
                     <%
-                        conn = step.input_connections_by_name[ prefix + param.name ]
+                        conns = step.input_connections_by_name[ prefix + param.name ]
+                        if not isinstance(conns, list):
+                            conns = [conns]
+                        vals = ["Output dataset '%s' from step %d" % (conn.output_name, int(conn.output_step.order_index)+1) for conn in conns]
                     %>
-                    Output dataset '${conn.output_name}' from step ${int(conn.output_step.order_index)+1}
+                    ${",".join(vals)}
                 %else:
                     ## FIXME: Initialize in the controller
                     <%
