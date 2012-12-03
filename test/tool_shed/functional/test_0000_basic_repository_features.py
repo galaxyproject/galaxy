@@ -83,9 +83,10 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                                        strings_displayed=[ 'The repository tip has been defined as <b>not</b> malicious.' ] )
         self.set_repository_deprecated( repository, 
                                         strings_displayed=[ 'has been marked as deprecated', 'Mark as not deprecated' ] )
-        self.manage_repository( repository, 
+        self.display_manage_repository_page( repository, 
                                 strings_displayed=[ 'This repository has been marked as deprecated' ],
                                 strings_not_displayed=[ 'Upload files', 'Reset all repository metadata' ] )
+        self.browse_repository( repository, strings_not_displayed=[ 'Upload files' ] )
         self.set_repository_deprecated( repository, 
                                         strings_displayed=[ 'has been marked as not deprecated', 'Mark as deprecated' ],
                                         set_deprecated=False )
@@ -105,7 +106,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                           commit_message="Uploaded filtering.txt", 
                           uncompress_file='No', 
                           remove_repo_files_not_in_tar='No' )
-        self.manage_repository( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
+        self.display_manage_repository_page( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
     def test_0055_upload_filtering_test_data( self ):
         '''Upload filtering test data.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
@@ -129,7 +130,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         tip = self.get_repository_tip( repository )
         self.check_for_valid_tools( repository )
         strings_displayed = self.get_repository_metadata_revisions( repository ).append( 'Select a revision' )
-        self.manage_repository( repository, strings_displayed=strings_displayed )
+        self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
         self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=2 )
         self.check_repository_tools_for_changeset_revision( repository, tip )
         self.check_repository_metadata( repository, tip_only=False )
@@ -137,19 +138,19 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         '''Upload readme.txt file associated with tool version 2.2.0.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
         self.upload_file( repository, 'readme.txt', commit_message="Uploaded readme.txt" )
-        self.manage_repository( repository, strings_displayed=[ 'This is a readme file.' ] )
+        self.display_manage_repository_page( repository, strings_displayed=[ 'This is a readme file.' ] )
         # Verify that there is a different readme file for each metadata revision.
         metadata_revisions = self.get_repository_metadata_revisions( repository )
-        self.manage_repository( repository, strings_displayed=[ 'Readme file for filtering 1.1.0', 'This is a readme file.' ] )
+        self.display_manage_repository_page( repository, strings_displayed=[ 'Readme file for filtering 1.1.0', 'This is a readme file.' ] )
     def test_0075_delete_readme_txt_file( self ):
         '''Delete the readme.txt file.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
         self.delete_files_from_repository( repository, filenames=[ 'readme.txt' ] )
         self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=2 )
-        self.manage_repository( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
+        self.display_manage_repository_page( repository, strings_displayed=[ 'Readme file for filtering 1.1.0' ] )
     def test_0080_search_for_valid_filter_tool( self ):
-        '''Verify that the "search for valid tool" feature finds the filtering tool.'''
+        '''Search for the filtering tool by tool ID, name, and version.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
         tip_changeset = self.get_repository_tip( repository )
-        search_options = dict( tool_id='Filter1', tool_name='filter', tool_version='2.2.0' )
-        self.search_for_valid_tools( search_options=search_options, strings_displayed=[ tip_changeset ], strings_not_displayed=[] )
+        search_fields = dict( tool_id='Filter1', tool_name='filter', tool_version='2.2.0' )
+        self.search_for_valid_tools( search_fields=search_fields, strings_displayed=[ tip_changeset ], strings_not_displayed=[] )

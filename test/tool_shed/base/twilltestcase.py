@@ -40,7 +40,7 @@ class ShedTwillTestCase( TwillTestCase ):
                 self.check_string_not_in_page( string )
     def check_for_valid_tools( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         strings_displayed.append( 'Valid tools' )
-        self.manage_repository( repository, strings_displayed, strings_not_displayed )
+        self.display_manage_repository_page( repository, strings_displayed, strings_not_displayed )
     def check_count_of_metadata_revisions_associated_with_repository( self, repository, metadata_count ):
         self.check_repository_changelog( repository )
         self.check_string_count_in_page( 'Repository metadata is associated with this change set.', metadata_count )
@@ -63,6 +63,8 @@ class ShedTwillTestCase( TwillTestCase ):
         '''
         repository_metadata = get_repository_metadata_by_repository_id_changeset_revision( repository.id, changeset_revision )
         metadata = repository_metadata.metadata
+        if 'tools' not in metadata:
+            raise AssertionError( 'No tools in %s revision %s.' % ( repository.name, changeset_revision ) )
         for tool_dict in metadata[ 'tools' ]:
             metadata_strings_displayed = [ tool_dict[ 'guid' ], 
                                            tool_dict[ 'version' ], 
@@ -78,18 +80,18 @@ class ShedTwillTestCase( TwillTestCase ):
                                          changeset_revision=changeset_revision,
                                          strings_displayed=[ '%s (version %s)' % ( tool_dict[ 'name' ], tool_dict[ 'version' ] ) ],
                                          strings_not_displayed=[] )
-    def check_repository_invalid_tools_for_changeset_revision( self, repository, changeset_revision ):
+    def check_repository_invalid_tools_for_changeset_revision( self, repository, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
+        '''Load the invalid tool page for each invalid tool associated with this changeset revision and verify the received error messages.'''
         repository_metadata = get_repository_metadata_by_repository_id_changeset_revision( repository.id, changeset_revision )
         metadata = repository_metadata.metadata
         if 'invalid_tools' not in metadata:
             return
-        for tool_xml in metadata[ 'tools' ]:
-            tool_path = '%s/%s' % ( self.get_repo_path( repository ), tool_xml )
-            self.load_display_tool_page( repository, 
-                                         tool_xml_path=tool_path,
+        for tool_xml in metadata[ 'invalid_tools' ]:
+            self.load_invalid_tool_page( repository, 
+                                         tool_xml=tool_xml,
                                          changeset_revision=changeset_revision,
-                                         strings_displayed=[ 'properly loaded' ],
-                                         strings_not_displayed=[] )
+                                         strings_displayed=strings_displayed,
+                                         strings_not_displayed=strings_not_displayed )
     def check_string_count_in_page( self, pattern, min_count, max_count=None ):
         """Checks the number of 'pattern' occurrences in the current browser page"""        
         page = self.last_page()
@@ -260,19 +262,23 @@ class ShedTwillTestCase( TwillTestCase ):
                 invalid_tools.append( dict( tools=repository_metadata.metadata[ 'invalid_tools' ], changeset_revision=repository_metadata.changeset_revision ) )
         return valid_tools, invalid_tools
     def grant_write_access( self, repository, usernames=[], strings_displayed=[], strings_not_displayed=[] ):
-        self.manage_repository( repository )
+        self.display_manage_repository_page( repository )
         tc.fv( "3", "allow_push", '-Select one' )
         for username in usernames:
             tc.fv( "3", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def load_display_tool_page( self, repository, tool_xml_path, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
-        repository_id = self.security.encode_id( repository.id )
-        url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
-              ( repository_id, tool_xml_path, changeset_revision )
+    def load_invalid_tool_page( self, repository, tool_xml, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
+              ( self.security.encode_id( repository.id ), tool_xml, changeset_revision )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def manage_repository( self, repository, strings_displayed=[], strings_not_displayed=[] ):
+    def load_display_tool_page( self, repository, tool_xml_path, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
+              ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def display_manage_repository_page( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
@@ -280,21 +286,20 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository/manage_repository?user_access_button=Remove&id=%s&remove_auth=%s' % \
             ( self.security.encode_id( repository.id ), username )
         self.visit_url( url )
-    def search_for_valid_tools( self, search_options={}, strings_displayed=[], strings_not_displayed=[] ):
-        for exact_matches in [ True, False ]:
-            for key, value in search_options.items():
-                url = '/repository/find_tools'
-                self.visit_url( url )
-                tc.fv( "1", "exact_matches", exact_matches )
-                tc.fv( "1", key, value )
-                tc.submit()
-                self.check_for_strings( strings_displayed, strings_not_displayed ) 
+    def search_for_valid_tools( self, search_fields={}, exact_matches=False, strings_displayed=[], strings_not_displayed=[] ):
+        for field_name, search_string in search_fields.items():
+            url = '/repository/find_tools'
+            self.visit_url( url )
+            tc.fv( "1", "exact_matches", exact_matches )
+            tc.fv( "1", field_name, search_string )
+            tc.submit()
+            self.check_for_strings( strings_displayed, strings_not_displayed ) 
     def set_repository_deprecated( self, repository, set_deprecated=True, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/deprecate?id=%s&mark_deprecated=%s' % ( self.security.encode_id( repository.id ), set_deprecated )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def set_repository_malicious( self, repository, set_malicious=True, strings_displayed=[], strings_not_displayed=[] ):
-        self.manage_repository( repository )
+        self.display_manage_repository_page( repository )
         tc.fv( "malicious", "malicious", set_malicious )
         tc.submit( "malicious_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
