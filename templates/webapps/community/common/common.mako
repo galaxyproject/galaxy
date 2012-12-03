@@ -31,16 +31,6 @@
     </script>
 </%def>
 
-<%def name="escape_html_add_breaks( value )">
-    <%
-        from galaxy import eggs
-        eggs.require('markupsafe')
-        import markupsafe
-        value = str( markupsafe.escape( value ) ).replace( '\n', '<br/>' )
-    %>
-    ${value}
-</%def>
-
 <%def name="render_star_rating( name, rating, disabled=False )">
     <%
         if disabled:
@@ -71,7 +61,7 @@
     <div class="form-row">
         <label>Detailed description:</label>
         <table id="description_table">
-            <tr><td>${ escape_html_add_breaks( description_text ) }</td></tr>
+            <tr><td>${description_text}</td></tr>
         </table>
         <div style="clear: both"></div>
     </div>

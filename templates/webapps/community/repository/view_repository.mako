@@ -5,6 +5,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
+    from galaxy.util.shed_util_common import to_safe_string
 
     has_readme = metadata and 'readme' in metadata
     has_metadata = repository.metadata_revisions
@@ -157,7 +158,7 @@
             ${repository.description | h}
         </div>
         %if repository.long_description:
-            ${render_long_description( repository.long_description )}
+            ${render_long_description( to_safe_string( repository.long_description, to_html=True ) )}
         %endif
         <div class="form-row">
             <label>Revision:</label>

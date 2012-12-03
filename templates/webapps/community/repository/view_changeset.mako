@@ -185,7 +185,7 @@
                         ctr += 1
                 %>
                 <tr><td bgcolor="#E0E0E0">${anchor_str}</td></tr>
-                <tr><td>${ escape_html_add_breaks( diff ) }</td></tr>
+                <tr><td>${diff}</td></tr>
             %endfor
         </table>
     </div>

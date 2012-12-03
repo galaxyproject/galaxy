@@ -1,4 +1,3 @@
-<%namespace file="/webapps/community/common/common.mako" import="escape_html_add_breaks" />
 
 <%def name="common_javascripts(repository)">
     <script type="text/javascript">
@@ -316,14 +315,17 @@
 </%def>
 
 <%def name="render_readme( readme, pad, parent, row_counter )">
-    <% encoded_id = trans.security.encode_id( readme.id ) %>
+    <%
+        from galaxy.util.shed_util_common import to_safe_string
+        encoded_id = trans.security.encode_id( readme.id )
+    %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            ${escape_html_add_breaks( readme.text )}
+            ${ to_safe_string( readme.text, to_html=True ) }
         </td>
     </tr>
     <%

@@ -5,6 +5,7 @@
 <%
     from galaxy.web.form_builder import CheckboxField
     from galaxy.webapps.community.util.container_util import STRSEP
+    from galaxy.util.shed_util_common import to_safe_string
     can_manage_repository = is_admin or repository.user == trans.user
 %>
 
@@ -93,7 +94,7 @@
                                             <tr>
                                                 <td>
                                                     <div overflow-wrap:normal;overflow:hidden;word-break:keep-all;word-wrap:break-word;line-break:strict;>
-                                                        ${ escape_html_add_breaks( component_review.comment ) }
+                                                        ${ to_safe_string( component_review.comment, to_html=True ) }
                                                     </div>
                                                 </td>
                                             </tr>

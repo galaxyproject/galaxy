@@ -19,6 +19,9 @@ pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
 from elementtree.ElementTree import Element, SubElement
 
+eggs.require( 'markupsafe' )
+import markupsafe
+        
 log = logging.getLogger( __name__ )
 
 INITIAL_CHANGELOG_HASH = '000000000000'
@@ -1155,20 +1158,20 @@ def get_repository_dependencies_for_changeset_revision( trans, repo, repository,
     return all_repository_dependencies
 def get_repository_file_contents( file_path ):
     if is_gzip( file_path ):
-        safe_str = to_safe_str( '\ngzip compressed file\n' )
+        safe_str = to_safe_string( '\ngzip compressed file\n' )
     elif is_bz2( file_path ):
-        safe_str = to_safe_str( '\nbz2 compressed file\n' )
+        safe_str = to_safe_string( '\nbz2 compressed file\n' )
     elif check_zip( file_path ):
-        safe_str = to_safe_str( '\nzip compressed file\n' )
+        safe_str = to_safe_string( '\nzip compressed file\n' )
     elif check_binary( file_path ):
-        safe_str = to_safe_str( '\nBinary file\n' )
+        safe_str = to_safe_string( '\nBinary file\n' )
     else:
         safe_str = ''
         for i, line in enumerate( open( file_path ) ):
-            safe_str = '%s%s' % ( safe_str, to_safe_str( line ) )
+            safe_str = '%s%s' % ( safe_str, to_safe_string( line ) )
             if len( safe_str ) > MAX_CONTENT_SIZE:
                 large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
-                safe_str = '%s%s' % ( safe_str, to_safe_str( large_str ) )
+                safe_str = '%s%s' % ( safe_str, to_safe_string( large_str ) )
                 break
     return safe_str
 def get_repository_files( trans, folder_path ):
@@ -1631,7 +1634,7 @@ def strip_path( fpath ):
     except:
         file_name = fpath
     return file_name
-def to_safe_str( text, to_html=True ):
+def to_safe_string( text, to_html=True ):
     """Translates the characters in text to an html string"""
     translated = []
     for c in text:
@@ -1639,25 +1642,29 @@ def to_safe_str( text, to_html=True ):
             translated.append( c )
         elif c in MAPPED_CHARS:
             translated.append( MAPPED_CHARS[ c ] )
-        elif c in [ '\n', '\r' ]:
+        elif c in [ '\n' ]:
             if to_html:
                 translated.append( '<br/>' )
             else:
                 translated.append( c )
+        elif c in [ '\r' ]:
+            continue
         elif c in [ ' ', '    ' ]:
             translated.append( c )
         else:
             translated.append( '' )
+    if to_html:
+        str( markupsafe.escape( ''.join( translated ) ) )
     return ''.join( translated )
 def tool_shed_is_this_tool_shed( toolshed_base_url ):
     return toolshed_base_url.rstrip( '/' ) == str( url_for( '/', qualified=True ) ).rstrip( '/' )
 def translate_string( raw_text, to_html=True ):
     if raw_text:
         if len( raw_text ) <= MAX_CONTENT_SIZE:
-            translated_string = to_safe_str( raw_text, to_html=to_html )
+            translated_string = to_safe_string( raw_text, to_html=to_html )
         else:
             large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
-            translated_string = to_safe_str( '%s%s' % ( raw_text[ 0:MAX_CONTENT_SIZE ], large_str ), to_html=to_html )
+            translated_string = to_safe_string( '%s%s' % ( raw_text[ 0:MAX_CONTENT_SIZE ], large_str ), to_html=to_html )
     else:
         translated_string = ''
     return translated_string

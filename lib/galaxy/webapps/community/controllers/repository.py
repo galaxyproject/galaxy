@@ -2263,17 +2263,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if list:
             return ','.join( list )
         return ''
-    def to_html_escaped( self, text ):
-        """Translates the characters in text to html values"""
-        translated = []
-        for c in text:
-            if c in [ '\r\n', '\n', ' ', '\t' ] or c in VALID_CHARS:
-                translated.append( c )
-            elif c in MAPPED_CHARS:
-                translated.append( MAPPED_CHARS[ c ] )
-            else:
-                translated.append( '' )
-        return ''.join( translated )
     def __validate_repository_name( self, name, user ):
         # Repository names must be unique for each user, must be at least four characters
         # in length and must contain only lower-case letters, numbers, and the '_' character.
@@ -2347,7 +2336,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         anchors = modified + added + removed + deleted + unknown + ignored + clean
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
-            diffs.append( self.to_html_escaped( diff ) )
+            diffs.append( to_safe_string( diff, to_html=True ) )
         is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, ctx_str )
         return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
