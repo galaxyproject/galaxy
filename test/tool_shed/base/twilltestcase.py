@@ -1,6 +1,7 @@
 from base.twilltestcase import *
 from galaxy.webapps.community.util.hgweb_config import *
 from test_db_util import *
+import string 
 
 from galaxy import eggs
 eggs.require('mercurial')

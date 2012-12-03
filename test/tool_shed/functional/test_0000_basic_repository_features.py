@@ -6,10 +6,10 @@ admin_user_private_role = None
 admin_email = 'test@bx.psu.edu'
 admin_username = 'admin-user'
 
-regular_user = None
-regular_user_private_role = None
-regular_email = 'test-1@bx.psu.edu'
-regular_username = 'user1'
+test_user_1 = None
+test_user_1_private_role = None
+test_user_1_email = 'test-1@bx.psu.edu'
+test_user_1_name = 'user1'
 
 repository_name = 'filtering'
 repository_description = "Galaxy's filtering tool"
@@ -19,10 +19,10 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
  
     def test_0000_initiate_users( self ):
         """Create necessary user accounts and login as an admin user."""
-        self.login( email=regular_email, username=regular_username )
-        regular_user = get_user( regular_email )
-        assert regular_user is not None, 'Problem retrieving user with email %s from the database' % regular_email
-        regular_user_private_role = get_private_role( regular_user )
+        self.login( email=test_user_1_email, username=test_user_1_name )
+        test_user_1 = get_user( test_user_1_email )
+        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
+        test_user_1_private_role = get_private_role( test_user_1 )
         self.logout()
         self.login( email=admin_email, username=admin_username )
         admin_user = get_user( admin_email )
@@ -55,8 +55,8 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0025_grant_write_access( self ):
         '''Grant write access to another user'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
-        self.grant_write_access( repository, usernames=[ regular_username ] )
-        self.revoke_write_access( repository, regular_username )
+        self.grant_write_access( repository, usernames=[ test_user_1_name ] )
+        self.revoke_write_access( repository, test_user_1_name )
     def test_0030_upload_filtering_1_1_0( self ):
         """Upload filtering_1.1.0.tar to the repository"""
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
