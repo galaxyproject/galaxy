@@ -9,7 +9,7 @@
     is_new = repository.is_new( trans.app )
     can_contact_owner = trans.user and trans.user != repository.user
     can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
-    can_upload = can_push
+    can_upload = can_push and ( not repository.deprecated )
     can_download = not is_new and ( not is_malicious or can_push )
     can_browse_contents = not is_new
     can_rate = trans.user and repository.user != trans.user
