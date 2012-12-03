@@ -454,7 +454,7 @@ $(function(){
         }
 
         .historyItemTitle {
-            text-decoration: none;
+            text-decoration: underline;
             cursor: pointer;
             -webkit-user-select: none;
             -moz-user-select: none;
