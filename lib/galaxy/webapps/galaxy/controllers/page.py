@@ -1,6 +1,8 @@
-from galaxy import model
-from galaxy.model.item_attrs import *
-from galaxy.web.base.controller import *
+from sqlalchemy import desc
+from galaxy import model, web
+from galaxy.web import error, url_for
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
 from galaxy.util.odict import odict
