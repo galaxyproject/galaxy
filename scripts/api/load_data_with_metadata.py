@@ -6,7 +6,7 @@ the data from the file, and attaches the .json contents using the 'extended_meta
 system in the library
 
 Sample call:
-python load_data_with_metadata.py <api_key> <api_url> /tmp/g_inbox/ /tmp/g_inbox/done/ "API Imports"
+python load_data_with_metadata.py <api_key> <api_url> /data/folder "API Imports"
 
 NOTE:  The upload method used requires the data library filesystem upload allow_library_path_paste
 """
@@ -18,7 +18,7 @@ import time
 sys.path.insert( 0, os.path.dirname( __file__ ) )
 from common import submit, display
 
-def main(api_key, api_url, in_folder, out_folder, data_library):
+def main(api_key, api_url, in_folder, data_library):
     # Find/Create data library with the above name.  Assume we're putting datasets in the root folder '/'
     libs = display(api_key, api_url + 'libraries', return_formatted=False)
     library_id = None
@@ -36,11 +36,11 @@ def main(api_key, api_url, in_folder, out_folder, data_library):
     if not library_id or not library_folder_id:
         print "Failure to configure library destination."
         sys.exit(1)
-    # Watch in_folder, upload anything that shows up there to data library and get ldda,
-    # invoke workflow, move file to out_folder.
+
     for fname in os.listdir(in_folder):
         fullpath = os.path.join(in_folder, fname)
         if os.path.isfile(fullpath) and os.path.exists(fullpath + ".json"):
+            print "Loading", fullpath
             data = {}
             data['folder_id'] = library_folder_id
             data['file_type'] = 'auto'
@@ -48,6 +48,8 @@ def main(api_key, api_url, in_folder, out_folder, data_library):
             data['upload_option'] = 'upload_paths'
             data['filesystem_paths'] = fullpath
             data['create_type'] = 'file'
+
+            data['link_data_only'] = 'link_to_files'
 
             handle = open( fullpath + ".json" )
             smeta = handle.read()
@@ -61,10 +63,9 @@ if __name__ == '__main__':
         api_key = sys.argv[1]
         api_url = sys.argv[2]
         in_folder = sys.argv[3]
-        out_folder = sys.argv[4]
-        data_library = sys.argv[5]
+        data_library = sys.argv[4]
     except IndexError:
-        print 'usage: %s key url in_folder out_folder data_library' % os.path.basename( sys.argv[0] )
+        print 'usage: %s key url in_folder data_library' % os.path.basename( sys.argv[0] )
         sys.exit( 1 )
-    main(api_key, api_url, in_folder, out_folder, data_library )
+    main(api_key, api_url, in_folder, data_library )
 
