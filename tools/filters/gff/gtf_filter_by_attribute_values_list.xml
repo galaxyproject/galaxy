@@ -14,7 +14,7 @@
         <param format="tabular,txt" name="ids" type="data" label="And attribute values"/>
     </inputs>
     <outputs>
-        <data format="input" name="output" metadata_source="input"/>
+        <data format="gtf" name="output"/>
     </outputs>
     <tests>
         <!-- Test filtering with a simple list of values. -->
