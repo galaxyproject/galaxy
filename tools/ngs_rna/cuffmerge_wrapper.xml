@@ -47,7 +47,7 @@
                 <option value="Yes">Yes</option>
             </param>
             <when value="Yes">
-                <param format="gff3,gtf" name="reference_annotation" type="data" label="Reference Annotation" help="Make sure your annotation file is in GTF format and that Galaxy knows that your file is GTF--not GFF."/>    
+                <param format="gff3,gtf" name="reference_annotation" type="data" label="Reference Annotation" help="Requires an annotation file in GFF3 or GTF format."/>    
             </when>
             <when value="No">
             </when>
