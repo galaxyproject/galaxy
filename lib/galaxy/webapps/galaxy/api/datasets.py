@@ -2,15 +2,8 @@
 API operations on the contents of a dataset.
 """
 import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
 from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import *
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.orm import *
-from galaxy.visualization.data_providers.genome import *
-from galaxy.visualization.data_providers.basic import ColumnDataProvider
-from galaxy.datatypes.tabular import Vcf
-from galaxy.model import NoConverterException, ConverterDependencyException
+from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, get_highest_priority_msg, messages
 from galaxy.web.framework.helpers import is_true
 
 log = logging.getLogger( __name__ )
