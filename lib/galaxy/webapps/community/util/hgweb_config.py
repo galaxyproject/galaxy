@@ -1,4 +1,4 @@
-import sys, os, ConfigParser, logging, shutil
+import sys, os, ConfigParser, logging, shutil, threading
 from time import strftime
 from datetime import date
 
@@ -15,32 +15,51 @@ class HgWebConfigManager( object ):
         self.in_memory_config = None
     def add_entry( self, lhs, rhs ):
         """Add an entry in the hgweb.config file for a new repository."""
-        # Since we're changing the config, make sure the latest is loaded into memory.
-        self.read_config( force_read=True )
-        # An entry looks something like: repos/test/mira_assembler = database/community_files/000/repo_123.
-        if rhs.startswith( './' ):
-            rhs = rhs.replace( './', '', 1 )
-        self.make_backup()
-        # Add the new entry into memory.
-        self.in_memory_config.set( 'paths', lhs, rhs )
-        # Persist our in-memory configuration.
-        self.write_config()
+        lock = threading.Lock()
+        lock.acquire( True )
+        try:
+            # Since we're changing the config, make sure the latest is loaded into memory.
+            self.read_config( force_read=True )
+            # An entry looks something like: repos/test/mira_assembler = database/community_files/000/repo_123.
+            if rhs.startswith( './' ):
+                rhs = rhs.replace( './', '', 1 )
+            self.make_backup()
+            # Add the new entry into memory.
+            self.in_memory_config.set( 'paths', lhs, rhs )
+            # Persist our in-memory configuration.
+            self.write_config()
+        except Exception, e:
+            log.debug( "Exception in HgWebConfigManager.add_entry(): %s" % str( e ) )
+        finally:
+            lock.release()
     def change_entry( self, old_lhs, new_lhs, new_rhs ):
         """Change an entry in the hgweb.config file for a repository - this only happens when the owner changes the name of the repository."""
-        self.make_backup()
-        # Remove the old entry.
-        self.in_memory_config.remove_option( 'paths', old_lhs )
-        # Add the new entry.
-        self.in_memory_config.set( 'paths', new_lhs, new_rhs )
-        # Persist our in-memory configuration.
-        self.write_config()
+        lock = threading.Lock()
+        lock.acquire( True )
+        try:
+            self.make_backup()
+            # Remove the old entry.
+            self.in_memory_config.remove_option( 'paths', old_lhs )
+            # Add the new entry.
+            self.in_memory_config.set( 'paths', new_lhs, new_rhs )
+            # Persist our in-memory configuration.
+            self.write_config()
+        except Exception, e:
+            log.debug( "Exception in HgWebConfigManager.change_entry(): %s" % str( e ) )
+        finally:
+            lock.release()
     def get_entry( self, lhs ):
         """Return an entry in the hgweb.config file for a repository"""
         self.read_config()
         try:
             entry = self.in_memory_config.get( 'paths', lhs )
         except ConfigParser.NoOptionError:
-            raise Exception( "Entry for repository %s missing in file %s." % ( lhs, self.hgweb_config ) )
+            try:
+                # We have a multi-threaded front-end, so one of the threads may not have the latest version of the hgweb.config file.
+                self.read_config( force_read=True )
+                entry = self.in_memory_config.get( 'paths', lhs )
+            except ConfigParser.NoOptionError:
+                raise Exception( "Entry for repository %s missing in file %s." % ( lhs, self.hgweb_config ) )
         return entry
     @property
     def hgweb_config( self ):
