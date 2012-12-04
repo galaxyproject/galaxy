@@ -1,4 +1,5 @@
 import os, logging,  shutil
+import inspect
 from galaxy import model, util
 
 
@@ -125,7 +126,8 @@ def do_merge( job_wrapper,  task_wrappers):
             output_file_name = str(outputs[output][1])
             base_output_name = os.path.basename(output_file_name)
             if output in merge_outputs:
-                output_type = outputs[output][0].datatype
+                output_dataset = outputs[output][0]
+                output_type = output_dataset.datatype
                 output_files = [os.path.join(dir,base_output_name) for dir in task_dirs]
                 # Just include those files f in the output list for which the 
                 # file f exists; some files may not exist if a task fails.
@@ -135,7 +137,13 @@ def do_merge( job_wrapper,  task_wrappers):
                     if len(output_files) < len(task_dirs):
                         log.debug('merging only %i out of expected %i files for %s'
                                   % (len(output_files), len(task_dirs), output_file_name))
-                    output_type.merge(output_files, output_file_name)
+                    # First two args to merge always output_files and path of dataset. More
+                    # complicated merge methods may require more parameters. Set those up here.
+                    extra_merge_arg_names = inspect.getargspec( output_type.merge ).args[2:]
+                    extra_merge_args = {}
+                    if "output_dataset" in extra_merge_arg_names:
+                        extra_merge_args["output_dataset"] = output_dataset
+                    output_type.merge(output_files, output_file_name, **extra_merge_args)
                     log.debug('merge finished: %s' % output_file_name)
                 else:
                     msg = 'nothing to merge for %s (expected %i files)' \
