@@ -193,7 +193,6 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         if( !( this.model.hasData() )
         ||  !( visualizations && visualizations.length )
         ||  !( visualization_url ) ){
-            //console.warn( 'NOT rendering visualization icon' )
             this.visualizationsButton = null;
             return null;
         }

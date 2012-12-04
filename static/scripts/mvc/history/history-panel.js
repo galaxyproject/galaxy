@@ -160,6 +160,20 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         this.model.bind( 'change:nice_size', this.updateHistoryDiskSize, this );
         this.model.hdas.bind( 'add',   this.add,    this );
         this.model.hdas.bind( 'reset', this.addAll, this );
+
+        // if an a hidden hda is created (gen. by a workflow), moves thru the updater to the ready state,
+        //  then: remove it from the collection if the panel is set to NOT show hidden datasets
+        this.model.hdas.bind( 'change:state',
+            function( hda, newState, changedList ){
+                //TODO: magic string here - somehow use HDA.states
+                if( ( hda.inReadyState() )
+                &&  ( !hda.get( 'visible' ) )
+                &&  ( !this.storage.get( 'show_hidden' ) ) ){
+                    this.removeHda( hda );
+                }
+            },
+        this );
+
         //this.bind( 'all', function(){
         //    this.log( arguments );
         //}, this );
@@ -178,6 +192,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
      *  @see PersistantStorage
      */
     _setUpWebStorage : function( initiallyExpanded, show_deleted, show_hidden ){
+        //this.log( '_setUpWebStorage, initiallyExpanded:', initiallyExpanded,
+        //    'show_deleted:', show_deleted, 'show_hidden', show_hidden );
 
         // data that needs to be persistant over page refreshes
         //  (note the key function which uses the history id as well)
@@ -197,7 +213,6 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
 
         // get the show_deleted/hidden settings giving priority to values passed in,
         //  using web storage otherwise
-        //this.log( 'show_deleted:', show_deleted, 'show_hidden', show_hidden );
         // if the page has specifically requested show_deleted/hidden, these will be either true or false
         //  (as opposed to undefined, null) - and we give priority to that setting
         if( ( show_deleted === true ) || ( show_deleted === false ) ){
@@ -218,16 +233,29 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
      *  @param {HistoryDatasetAssociation} hda hda to add to the collection
      */
     add : function( hda ){
-        //console.debug( 'add.' + this, hda );
-        //TODO
+        //this.log( 'add.' + this, hda );
+        //KISS: just re-render the entire thing when adding
+        this.render();
     },
 
     /** Event hander to respond when hdas are reset
      */
     addAll : function(){
-        //console.debug( 'addAll.' + this );
+        //this.log( 'addAll.' + this );
         // re render when all hdas are reset
         this.render();
+    },
+
+    /** Remove a view from the panel and the assoc. model from the collection
+     *  @param {HistoryDataAssociation} the hda to remove
+     */
+    removeHda : function( hdaModel, callback ){
+        var hdaView = this.hdaViews[ hdaModel.get( 'id' ) ];
+        hdaView.$el.fadeOut( 'fast', function(){
+            hdaView.$el.remove();
+            if( callback ){ callback(); }
+        });
+        this.model.hdas.remove( hdaModel );
     },
 
     // ......................................................................... RENDERING
@@ -242,8 +270,6 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             newRender = $( '<div/>' ),
             modelJson = this.model.toJSON(),
             initialRender = ( this.$el.children().size() === 0 );
-
-        //console.debug( this + '.render, initialRender:', initialRender );
 
         // render the urls and add them to the model json
         modelJson.urls = this._renderUrls( modelJson );
@@ -466,7 +492,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         }
         return false;
     },
-    
+
     // ......................................................................... MISC
     /** Return a string rep of the history
      */

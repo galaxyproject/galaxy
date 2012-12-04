@@ -23,29 +23,39 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-  ## <!--[if lt IE 7]>
-  ## <script type='text/javascript' src="/static/scripts/libs/IE/IE7.js"> </script>
-  ## <![endif]-->
-  
-  ${h.js(
-    "libs/jquery/jquery",
-    "libs/json2",
-    "libs/bootstrap",
-    "galaxy.base",
-    "libs/underscore",
-    "libs/backbone/backbone",
-    "libs/backbone/backbone-relational",
-    "libs/handlebars.runtime",
-    "mvc/ui"
-  )}
-  
-  <script type="text/javascript">
-      // Set up needed paths.
-      var galaxy_paths = new GalaxyPaths({
-          root_path: '${h.url_for( "/" )}',
-          image_path: '${h.url_for( "/static/images" )}'
-      });
-  </script>
+    ## <!--[if lt IE 7]>
+    ## <script type='text/javascript' src="/static/scripts/libs/IE/IE7.js"> </script>
+    ## <![endif]-->
+    
+    ${h.js(
+        "libs/jquery/jquery",
+        "libs/json2",
+        "libs/bootstrap",
+        "galaxy.base",
+        "libs/underscore",
+        "libs/backbone/backbone",
+        "libs/backbone/backbone-relational",
+        "libs/handlebars.runtime",
+        "mvc/ui"
+    )}
+    
+    <script type="text/javascript">
+        // console protection
+        window.console = window.console || {
+            log     : function(){},
+            debug   : function(){},
+            info    : function(){},
+            warn    : function(){},
+            error   : function(){},
+            assert  : function(){},
+        };
+      
+        // Set up needed paths.
+        var galaxy_paths = new GalaxyPaths({
+            root_path: '${h.url_for( "/" )}',
+            image_path: '${h.url_for( "/static/images" )}'
+        });
+    </script>
 </%def>
 
 ## Additional metas can be defined by templates inheriting from this one.

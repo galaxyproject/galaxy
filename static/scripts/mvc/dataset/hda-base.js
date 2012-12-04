@@ -72,7 +72,13 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
                 if( urlKey === 'meta_download' ){
                     urls[ urlKey ] = hdaView._renderMetaDownloadUrls( urlTemplateOrObj, modelJson );
                 } else {
-                    urls[ urlKey ] = _.template( urlTemplateOrObj, modelJson );
+                    try {
+                        urls[ urlKey ] = _.template( urlTemplateOrObj, modelJson );
+                    } catch( Error ){
+                        throw( hdaView + '._renderUrls error: ' + Error +
+                               '\n rendering:' + urlTemplateOrObj +
+                               '\n with ' + JSON.stringify( modelJson ) );
+                    }
                 }
             }
         });
@@ -109,7 +115,6 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
             itemWrapper = $( '<div/>' ).attr( 'id', 'historyItem-' + id ),
             initialRender = ( this.$el.children().size() === 0 );
 
-        //console.debug( this + '.render, initial?:', initialRender );
         this.$el.attr( 'id', 'historyItemContainer-' + id );
         
         itemWrapper
@@ -362,7 +367,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
                 break;
             default:
                 //??: no body?
-                body.append( $( '<div>Error: unknown dataset state "' + state + '".</div>' ) );
+                body.append( $( '<div>Error: unknown dataset state "' + this.model.get( 'state' ) + '".</div>' ) );
         }
         body.append( '<div style="clear: both"></div>' );
 
@@ -518,6 +523,11 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
                 hdaView.trigger( 'body-collapsed', hdaView.model.get( 'id' ) );
             });
         }
+    },
+
+
+    remove : function(){
+
     },
 
     // ......................................................................... MISC

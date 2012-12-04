@@ -88,8 +88,6 @@ var History = BaseModel.extend( LoggableMixin ).extend(
                 history.fetch()
 
             ).then( function( userResponse, historyResponse ){
-                //console.warn( 'fetched user: ', userResponse[0] );
-                //console.warn( 'fetched history: ', historyResponse[0] );
                 history.attributes.user = userResponse[0]; //? meh.
 
                 history.trigger( 'loaded:user', userResponse[0] );
@@ -102,7 +100,6 @@ var History = BaseModel.extend( LoggableMixin ).extend(
 
                 // reset the collection to the hdas returned
                 })).success( function( hdas ){
-                    //console.warn( 'fetched hdas', hdas );
                     history.hdas.reset( hdas );
                     history.checkForUpdates();
 
@@ -167,7 +164,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
 
             // send the changed ids (if any) to dataset collection to have them fetch their own model changes
             if( changedIds.length ){
-                history.hdas.update( changedIds );
+                history.updateHdas( changedIds );
             }
 
             // set up to keep pulling if this history in run/queue state
@@ -176,7 +173,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             ||  ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.QUEUED ) ){
                 setTimeout( function(){
                     history.stateUpdater();
-                }, 4000 );
+                }, History.UPDATE_DELAY );
 
             // otherwise, we're now in a 'ready' state (no hdas running)
             } else {
@@ -187,11 +184,67 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             // if not interruption by iframe reload
             //TODO: remove when iframes are removed
             if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
-                //if( console && console.warn ){
-                //    console.warn( 'Error getting history updates from the server:', xhr, status, error );
-                //}
                 alert( _l( 'Error getting history updates from the server.' ) + '\n' + error );
             }
+        });
+    },
+
+    /** Update the models in the hdas collection that match the ids given by getting their data
+     *      via the api/AJAX. If a model exists in the collection, set will be used with the new data.
+     *      If it's not in the collection, addHdas will be used to create it.
+     *  @param {String[]} hdaIds an array of the encoded ids of the hdas to get from the server.
+     */
+    updateHdas : function( hdaIds ){
+        //TODO:?? move to collection? still need proper url
+        var history = this;
+        jQuery.ajax({
+            url     : this.url() + '/contents?' + jQuery.param({ ids : hdaIds.join(',') }),
+
+            error   : function( xhr, status, error ){
+                var msg = 'ERROR updating hdas from api history contents:';
+                history.log( msg, hdaIds, xhr, status, error );
+                alert( msg + hdaIds.join(',') );
+            },
+
+            /** when the proper models for the requested ids are returned,
+             *      either update existing or create new entries in the hdas collection
+             *  @inner
+             */
+            success : function( hdaDataList, status, xhr ){
+                history.log( history + '.updateHdas, success:', hdaDataList, status, xhr );
+                //TODO: compile new models to be added in one go
+                var hdasToAdd = [];
+
+                _.each( hdaDataList, function( hdaData, index ){
+                    var existingModel = history.hdas.get( hdaData.id );
+                    // if this model exists already, update it
+                    if( existingModel ){
+                        history.log( 'found existing model in list for id ' + hdaData.id + ', updating...:' );
+                        existingModel.set( hdaData );
+
+                    // if this model is new and isn't in the hda collection, cache it to be created
+                    } else {
+                        history.log( 'NO existing model for id ' + hdaData.id + ', creating...:' );
+                        modelsToAdd.push( hdaData );
+                    }
+                });
+                if( hdasToAdd.length ){
+                    history.addHdas( hdasToAdd );
+                }
+            }
+        });
+    },
+
+    /** Add multiple hda models to the hdas collection from an array of hda data.
+     */
+    addHdas : function( hdaDataList ){
+        //TODO: this is all probably easier if hdas is a relation
+        var history = this;
+        //TODO:?? what about hidden? deleted?
+        _.each( hdaDataList, function( hdaData, index ){
+            var indexFromHid = history.hdas.hidToCollectionIndex( hdaData.hid );
+            hdaData.history_id = history.get( 'id' );
+            history.hdas.add( new HistoryDatasetAssociation( hdaData ), { at: indexFromHid });
         });
     },
 
@@ -201,6 +254,13 @@ var History = BaseModel.extend( LoggableMixin ).extend(
         return 'History(' + this.get( 'id' ) + nameString + ')';
     }
 });
+
+//------------------------------------------------------------------------------ CLASS VARS
+/** When the history has running hdas,
+ *  this is the amount of time between update checks from the server
+ */
+History.UPDATE_DELAY = 4000;
+
 
 //==============================================================================
 /** @class A collection of histories (per user).

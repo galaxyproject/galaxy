@@ -32,13 +32,14 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         // ---whereas these are Dataset related/inherited
 
         id                  : null, 
-        name                : '',
+        name                : '(unnamed dataset)',
         // one of HistoryDatasetAssociation.STATES
-        state               : '',
+        state               : 'ok',
         // sniffed datatype (sam, tabular, bed, etc.)
         data_type           : null,
         // size in bytes
         file_size           : 0,
+        file_ext            : '',
 
         // array of associated file types (eg. [ 'bam_index', ... ])
         meta_files          : [],
@@ -48,10 +49,10 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
 
         deleted             : false, 
         purged              : false,
-        // aka. !hidden
+        // aka. !hidden (start hidden)
         visible             : false,
         // based on trans.user (is_admin or security_agent.can_access_dataset( <user_roles>, hda.dataset ))
-        accessible          : false
+        accessible          : true
     },
 
     /** fetch location of this history in the api */
@@ -59,6 +60,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
     url : function(){
         //TODO: get this via url router
         return 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
+        //TODO: this breaks on save()
     },
     
     /** Set up the model, determine if accessible, bind listeners
@@ -222,6 +224,34 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
         return this.map( function( item ){ return item.id; });
     },
 
+    /** If the given hid is in the collection, return it's index. If not, return the insertion point it would need.
+     *      NOTE: assumes hids are unique and valid
+     *  @param {Int} hid the hid to find or create. If hid is 0, null, undefined: return the last hid + 1
+     *  @returns the collection index of the existing hda or an insertion point if it doesn't exist
+     */
+    hidToCollectionIndex : function( hid ){
+        // if the hid is 0, null, undefined: assume a request for a new hid (return the last index)
+        if( !hid ){
+            return this.models.length;
+        }
+
+        var endingIndex = this.models.length - 1;
+        //TODO: prob. more efficient to cycle backwards through these (assuming ordered by hid)
+        for( var i=endingIndex; i>=0; i-- ){
+            var hdaHid = this.at( i ).get( 'hid' );
+            //this.log( i, 'hdaHid:', hdaHid );
+            if( hdaHid == hid ){
+                //this.log( '\t match:', hdaHid, hid, ' returning:', i );
+                return i;
+            }
+            if( hdaHid < hid ){
+                //this.log( '\t past it, returning:', ( i + 1 ) );
+                return i + 1;
+            }
+        }
+        return null;
+    },
+
     /** Get every 'shown' hda in this collection based on show_deleted/hidden
      *  @param {Boolean} show_deleted are we showing deleted hdas?
      *  @param {Boolean} show_hidden are we showing hidden hdas?
@@ -263,24 +293,31 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
     },
 
     /** Update (fetch) the data of the hdas with the given ids.
+     *  @param {String} historyId the id of the history containing this collection
      *  @param {String[]} ids an array of hda ids to update
+     *  @returns {HistoryDatasetAssociation[]} hda models that were updated
      *  @see HistoryDatasetAssociation#fetch
      */
     update : function( ids ){
         this.log( this + 'update:', ids );
 
-        if( !( ids && ids.length ) ){ return; }
+        if( !( ids && ids.length ) ){ return []; }
 
-        var collection = this;
+        var collection = this,
+            updatedHdas = null;
         _.each( ids, function( id, index ){
-            var historyItem = collection.get( id );
-            historyItem.fetch();
+            var hda = collection.get( id );
+            if( hda ){
+                hda.fetch();
+                updatedHdas.push( hda );
+            }
         });
+        return updatedHdas;
     },
 
     /** String representation. */
     toString : function(){
-         return ( 'HDACollection(' + this.ids().join(',') + ')' );
+         return ( 'HDACollection()' );
     }
 });
 

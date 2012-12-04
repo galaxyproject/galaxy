@@ -297,14 +297,13 @@ GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_loc
 // add needed controller urls to GalaxyPaths
 galaxy_paths.set( 'hda', ${get_hda_url_templates()} );
 galaxy_paths.set( 'history', ${get_history_url_templates()} );
-//console.debug( 'galaxy_paths:', galaxy_paths );
 
 $(function(){
     galaxyPageSetUp();
     Galaxy.historyFrame = window;
 
     // ostensibly, this is the App
-    //if( console && console.debug ){
+    //if( window.console && console.debug ){
     //    //if( console.clear ){ console.clear(); }
     //    console.pretty = function( o ){ $( '<pre/>' ).text( JSON.stringify( o, null, ' ' ) ).appendTo( 'body' ); }
     //    top.storage = jQuery.jStorage
@@ -315,9 +314,6 @@ $(function(){
     var user    = ${ get_current_user() },
         history = ${ get_history( history.id ) },
         hdas    = ${ get_hdas( history.id, datasets ) };
-    //console.debug( 'user:', user );
-    //console.debug( 'history:', history );
-    //console.debug( 'hdas:', hdas );
     var currUser = new User( user );
     if( !Galaxy.currUser ){ Galaxy.currUser = currUser; }
 

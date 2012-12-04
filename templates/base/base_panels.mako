@@ -60,6 +60,16 @@
         'galaxy.base'
     )}
     <script type="text/javascript">
+        // console protection
+        window.console = window.console || {
+            log     : function(){},
+            debug   : function(){},
+            info    : function(){},
+            warn    : function(){},
+            error   : function(){},
+            assert  : function(){},
+        };
+
         // Set up needed paths.
         var galaxy_paths = new GalaxyPaths({
             root_path: '${h.url_for( "/" )}',
