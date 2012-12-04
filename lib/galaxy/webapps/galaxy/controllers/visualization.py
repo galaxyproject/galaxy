@@ -1,8 +1,9 @@
 from __future__ import absolute_import
 
-from galaxy import model
-from galaxy.model.item_attrs import *
-from galaxy.web.base.controller import *
+from sqlalchemy import desc
+from galaxy import model, web
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
