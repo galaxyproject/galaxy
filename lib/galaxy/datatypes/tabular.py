@@ -4,15 +4,16 @@ Tabular datatype
 """
 import pkg_resources
 pkg_resources.require( "bx-python" )
-
+import gzip
 import logging
-import data
-from galaxy import util
+import os
 from cgi import escape
+from galaxy import util
+from galaxy.datatypes import data
 from galaxy.datatypes import metadata
+from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
-import galaxy_utils.sequence.vcf
-from sniff import *
+from galaxy.datatypes.sniff import get_headers
 from galaxy.util.json import to_json_string
 
 log = logging.getLogger(__name__)
@@ -264,10 +265,21 @@ class Tabular( data.Text ):
         return to_json_string({'ck_data': ck_data, 'ck_index': ck_index+1})
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
-        #TODO Prevent failure when displaying extremely long > 50kb lines.
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
-        if to_ext or not preview:
+        elif dataset.metadata.columns > 50:
+            #Fancy tabular display is only suitable for datasets without an incredibly large number of columns.
+            #We should add a new datatype 'matrix', with it's own draw method, suitable for this kind of data.
+            #For now, default to the old behavior, ugly as it is.  Remove this after adding 'matrix'.
+            max_peek_size = 1000000 # 1 MB
+            if not preview or os.stat( dataset.file_name ).st_size < max_peek_size:
+                return open( dataset.file_name )
+            else:
+                trans.response.set_content_type( "text/html" )
+                return trans.stream_template_mako( "/dataset/large_file.mako",
+                                            truncated_data = open( dataset.file_name ).read(max_peek_size),
+                                            data = dataset)
+        elif to_ext or not preview:
             return self._serve_raw(trans, dataset, to_ext)
         else:
             column_names = 'null'
@@ -589,7 +601,6 @@ class Eland( Tabular ):
             - LANE, TILEm X, Y, INDEX, READ_NO, SEQ, QUAL, POSITION, *STRAND, FILT must be correct
             - We will only check that up to the first 5 alignments are correctly formatted.
         """
-        import gzip
         try:
             compress = is_gzip(filename)
             if compress:
