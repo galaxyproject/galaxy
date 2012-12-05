@@ -8,6 +8,7 @@ from galaxy.web.form_builder import SelectField
 from galaxy.webapps.community.util.container_util import *
 from galaxy.datatypes.checkers import *
 from galaxy.model.orm import *
+from galaxy.tools.parameters import dynamic_options
 
 from galaxy import eggs
 import pkg_resources
@@ -249,7 +250,7 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
         if isinstance( input_param, parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
             # If the tool refers to .loc files or requires an entry in the tool_data_table_conf.xml, make sure all requirements exist.
             options = input_param.dynamic_options or input_param.options
-            if options:
+            if options and isinstance( options, dynamic_options.DynamicOptions ):
                 if options.tool_data_table or options.missing_tool_data_table_name:
                     # Make sure the repository contains a tool_data_table_conf.xml.sample file.
                     sample_tool_data_table_conf = get_config_from_disk( 'tool_data_table_conf.xml.sample', repo_dir )
