@@ -77,8 +77,15 @@ class ToolDataTableManager( object ):
             </table>
 
         """
-        tree = util.parse_xml( config_filename )
-        root = tree.getroot()
+        error_message = ''
+        table_elems = []
+        try:
+            tree = util.parse_xml( config_filename )
+            root = tree.getroot()
+        except Exception, e:
+            error_message = 'Error attempting to parse file %s: %s' % ( str( os.path.split( config_filename )[ 1 ] ), str( e ) )
+            log.debug( error_message )
+            return table_elems, error_message
         # Make a copy of the current list of data_table_elem_names so we can persist later if changes to the config file are necessary.
         original_data_table_elem_names = [ name for name in self.data_table_elem_names ]
         if root.tag == 'tables':
@@ -86,7 +93,6 @@ class ToolDataTableManager( object ):
                                                       tool_data_path=tool_data_path,
                                                       from_shed_config=True )
         else:
-            table_elems = []
             type = root.get( 'type', 'tabular' )
             assert type in tool_data_table_types, "Unknown data table type '%s'" % type
             table_elems.append( root )
@@ -101,7 +107,7 @@ class ToolDataTableManager( object ):
         if persist and self.data_table_elem_names != original_data_table_elem_names:
             # Persist Galaxy's version of the changed tool_data_table_conf.xml file.
             self.to_xml_file( shed_tool_data_table_config )
-        return table_elems
+        return table_elems, error_message
     def to_xml_file( self, shed_tool_data_table_config ):
         """Write the current in-memory version of the shed_tool_data_table_conf.xml file to disk."""
         full_path = os.path.abspath( shed_tool_data_table_config )
@@ -146,8 +152,8 @@ class TabularToolDataTable( ToolDataTable ):
     
     def __init__( self, config_element, tool_data_path ):
         super( TabularToolDataTable, self ).__init__( config_element, tool_data_path )
-        self.configure_and_load( config_element )
-    def configure_and_load( self, config_element ):
+        self.configure_and_load( config_element, tool_data_path )
+    def configure_and_load( self, config_element, tool_data_path ):
         """
         Configure and load table from an XML element.
         """
@@ -157,9 +163,16 @@ class TabularToolDataTable( ToolDataTable ):
         self.parse_column_spec( config_element )
         # Read every file
         all_rows = []
-        found = False
         for file_element in config_element.findall( 'file' ):
-            filename = file_element.get( 'path' )
+            found = False
+            if tool_data_path:
+                # We're loading a tool in the tool shed, so we cannot use the Galaxy tool-data
+                # directory which is hard-coded into the tool_data_table_conf.xml entries.
+                filepath = file_element.get( 'path' )
+                filename = os.path.split( filepath )[ 1 ]
+                filename = os.path.join( tool_data_path, filename )
+            else:
+               filename = file_element.get( 'path' )
             if os.path.exists( filename ):
                 found = True
                 all_rows.extend( self.parse_file_fields( open( filename ) ) )
