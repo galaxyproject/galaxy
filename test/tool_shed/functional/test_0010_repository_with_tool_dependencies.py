@@ -38,7 +38,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         self.upload_file( repository, 
                           'freebayes/freebayes.xml', 
                           valid_tools_only=False,
-                          strings_displayed=[ 'Metadata was defined', 'This file requires an entry', 'tool_data_table_conf' ], 
+                          strings_displayed=[ 'Metadata may have been defined', 'This file requires an entry', 'tool_data_table_conf' ], 
                           commit_message='Uploaded the tool xml.' )
         self.display_manage_repository_page( repository, strings_displayed=[ 'Invalid tools' ], strings_not_displayed=[ 'Valid tools' ] )
         tip = self.get_repository_tip( repository )

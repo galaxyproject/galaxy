@@ -618,7 +618,7 @@ def generate_message_for_invalid_tools( trans, invalid_file_tups, repository, me
     message = ''
     if not displaying_invalid_tool:
         if metadata_dict:
-            message += "Metadata was defined for some items in revision '%s'.  " % str( repository.tip( trans.app ) )
+            message += "Metadata may have been defined for some items in revision '%s'.  " % str( repository.tip( trans.app ) )
             message += "Correct the following problems if necessary and reset metadata.%s" % new_line
         else:
             message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip( trans.app ) )
@@ -719,7 +719,9 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                 # See if we have a repository dependencies defined.
                 if name == 'repository_dependencies.xml':
                     path_to_repository_dependencies_config = os.path.join( root, name )
-                    metadata_dict = generate_repository_dependency_metadata( path_to_repository_dependencies_config, metadata_dict )
+                    metadata_dict, error_message = generate_repository_dependency_metadata( app, path_to_repository_dependencies_config, metadata_dict )
+                    if error_message:
+                        invalid_file_tups.append( ( name, error_message ) )
                 # See if we have one or more READ_ME files.
                 elif name.lower() in readme_file_names:
                     relative_path_to_readme = get_relative_path_to_repository_file( root,
@@ -812,29 +814,71 @@ def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
     if requirements_dict:
         tool_dependencies_dict[ dependency_key ] = requirements_dict
     return tool_dependencies_dict
-def generate_repository_dependency_metadata( repository_dependencies_config, metadata_dict ):
+def generate_repository_dependency_metadata( app, repository_dependencies_config, metadata_dict ):
+    """Generate a repository dependencies dictionary based on valid information defined in the received repository_dependencies_config."""
     repository_dependencies_tups = []
+    error_message = ''
+    config_file_name = strip_path( repository_dependencies_config )
     try:
         # Make sure we're looking at a valid repository_dependencies.xml file.
         tree = util.parse_xml( repository_dependencies_config )
         root = tree.getroot()
         is_valid = root.tag == 'repositories'
     except Exception, e:
-        log.debug( "Error parsing %s, exception: %s" % ( repository_dependencies_config, str( e ) ) )
+        error_message = "Error parsing %s, exception: %s" % ( repository_dependencies_config, str( e ) )
+        log.debug( error_message )
         is_valid = False
     if is_valid:
+        sa_session = app.model.context.current
         for repository_elem in root.findall( 'repository' ):
-            repository_dependencies_tup = ( repository_elem.attrib[ 'toolshed' ],
-                                            repository_elem.attrib[ 'name' ],
-                                            repository_elem.attrib[ 'owner'],
-                                            repository_elem.attrib[ 'changeset_revision' ] )
-            if repository_dependencies_tup not in repository_dependencies_tups:
-                repository_dependencies_tups.append( repository_dependencies_tup )
+            toolshed = repository_elem.attrib[ 'toolshed' ]
+            name = repository_elem.attrib[ 'name' ]
+            owner = repository_elem.attrib[ 'owner']
+            changeset_revision = repository_elem.attrib[ 'changeset_revision' ]
+            user = None
+            repository = None
+            # Repository dependencies are currentlhy supported only within a single tool shed.
+            if tool_shed_is_this_tool_shed( toolshed ):
+                try:
+                    user = sa_session.query( app.model.User ) \
+                                     .filter( app.model.User.table.c.username == owner ) \
+                                     .one()
+                except Exception, e:
+                    error_message = "Invalid owner %s defined for repository %s in config file %s.  " % ( owner, name, config_file_name )
+                    error_message += "Repository dependencies will be ignored."
+                    log.debug( error_message )
+                    return metadata_dict, error_message
+                if user:
+                    try:
+                        repository = sa_session.query( app.model.Repository ) \
+                                               .filter( and_( app.model.Repository.table.c.name == name,
+                                                              app.model.Repository.table.c.user_id == user.id ) ) \
+                                               .first()
+                    except:
+                        error_message = "Invalid name %s or owner %s defined for repository in config file %s.  " % ( name, owner, config_file_name )
+                        error_message += "Repository dependencies will be ignored."
+                        log.debug( error_message )
+                        return metadata_dict, error_message
+                    if repository:
+                        repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
+                        if repository_dependencies_tup not in repository_dependencies_tups:
+                            repository_dependencies_tups.append( repository_dependencies_tup )
+                    else:
+                        error_message = "Invalid name %s or owner %s defined for repository in config file %s.  " % ( name, owner, config_file_name )
+                        error_message += "Repository dependencies will be ignored."
+                        log.debug( error_message )
+                        return metadata_dict, error_message
+                else:
+                    # We have an invalid repository owner defined for an entry in repository_dependencies.xml.
+                    config_file_name = strip_path( repository_dependencies_config )
+                    error_message = "Invalid username %s defined for owner of repository %s in config file %s.  Repository dependencies will be ignored." % ( owner, name, config_file_name )
+                    log.debug( error_message )
+                    return metadata_dict, error_message 
         if repository_dependencies_tups:
             repository_dependencies_dict = dict( description=root.get( 'description' ),
                                                  repository_dependencies=repository_dependencies_tups )
             metadata_dict[ 'repository_dependencies' ] = repository_dependencies_dict
-    return metadata_dict
+    return metadata_dict, error_message
 def generate_tool_dependency_metadata( app, repository, tool_dependencies_config, metadata_dict, original_repository_metadata=None ):
     """
     If the combination of name, version and type of each element is defined in the <requirement> tag for at least one tool in the repository,
