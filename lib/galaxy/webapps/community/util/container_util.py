@@ -7,10 +7,11 @@ STRSEP = '__ESEP__'
 
 class Folder( object ):
     """Container object."""
-    def __init__( self, id=None, key=None, label=None ):
+    def __init__( self, id=None, key=None, label=None, parent=None ):
         self.id = id
         self.key = key
         self.label = label
+        self.parent = parent
         self.description = None
         self.datatypes = []
         self.folders = []
@@ -25,8 +26,18 @@ class Folder( object ):
             if folder == contained_folder:
                 return index, contained_folder
         return 0, None
+    def contains_repository_dependency( self, repository_dependency ):
+        listified_repository_dependency = repository_dependency.listify
+        for contained_repository_dependency in self.repository_dependencies:
+            if contained_repository_dependency.listify == listified_repository_dependency:
+                return True
+        return False
     def remove_repository_dependency( self, repository_dependency ):
-        self.repository_dependencies.remove( repository_dependency )
+        listified_repository_dependency = repository_dependency.listify
+        for contained_repository_dependency in self.repository_dependencies:
+            if contained_repository_dependency.listify == listified_repository_dependency:
+                self.repository_dependencies.remove( contained_repository_dependency )        
+
 class Datatype( object ):
     """Datatype object"""
     def __init__( self, id=None, extension=None, type=None, mimetype=None, subclass=None ):
@@ -102,9 +113,9 @@ def build_datatypes_folder( folder_id, datatypes, label='Datatypes' ):
     if datatypes:
         datatype_id = 0
         folder_id += 1
-        datatypes_root_folder = Folder( id=folder_id, key='root', label='root' )
+        datatypes_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         folder_id += 1
-        folder = Folder( id=folder_id, key='datatypes', label=label )
+        folder = Folder( id=folder_id, key='datatypes', label=label, parent=datatypes_root_folder )
         datatypes_root_folder.folders.append( folder )
         # Insert a header row.
         datatype_id += 1
@@ -131,9 +142,9 @@ def build_invalid_tools_folder( folder_id, invalid_tool_configs, changeset_revis
     if invalid_tool_configs:
         invalid_tool_id = 0
         folder_id += 1
-        invalid_tools_root_folder = Folder( id=folder_id, key='root', label='root' )
+        invalid_tools_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         folder_id += 1
-        folder = Folder( id=folder_id, key='invalid_tools', label=label )
+        folder = Folder( id=folder_id, key='invalid_tools', label=label, parent=invalid_tools_root_folder )
         invalid_tools_root_folder.folders.append( folder )
         for invalid_tool_config in invalid_tool_configs:
             invalid_tool_id += 1
@@ -155,24 +166,22 @@ def build_readme_files_folder( folder_id, readme_files_dict, label='Readme files
         multiple_readme_files = len( readme_files_dict ) > 1
         readme_id = 0
         folder_id += 1
-        readme_files_root_folder = Folder( id=folder_id, key='root', label='root' )
+        readme_files_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         if multiple_readme_files:
             folder_id += 1
-            readme_files_folder = Folder( id=folder_id, key='readme_files', label=label )
+            readme_files_folder = Folder( id=folder_id, key='readme_files', label=label, parent=readme_files_root_folder )
             readme_files_root_folder.folders.append( readme_files_folder )
         for readme_file_name, readme_file_text in readme_files_dict.items():
             readme_id += 1
-            readme = ReadMe( id=readme_id,
-                             name=readme_file_name,
-                             text=readme_file_text )
+            readme = ReadMe( id=readme_id, name=readme_file_name, text=readme_file_text )
             if multiple_readme_files:
                 folder_id += 1
-                folder = Folder( id=folder_id, key=readme.name, label=readme.name )
+                folder = Folder( id=folder_id, key=readme.name, label=readme.name, parent=readme_files_folder )
                 folder.readme_files.append( readme )
                 readme_files_folder.folders.append( folder )
             else:
                 folder_id += 1
-                readme_files_folder = Folder( id=folder_id, key='readme_files', label=readme.name )
+                readme_files_folder = Folder( id=folder_id, key='readme_files', label=readme.name, parent=readme_files_root_folder )
                 readme_files_folder.readme_files.append( readme )
                 readme_files_root_folder.folders.append( readme_files_folder )
     else:
@@ -185,11 +194,11 @@ def build_repository_dependencies_folder( toolshed_base_url, repository_name, re
         repository_dependency_id = 0
         folder_id += 1
         # Create the root folder.
-        repository_dependencies_root_folder = Folder( id=folder_id, key='root', label='root' )
+        repository_dependencies_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         folder_id += 1
         # Create the Repository dependencies folder and add it to the root folder.
         repository_dependencies_folder_key = repository_dependencies[ 'root_key' ]
-        repository_dependencies_folder = Folder( id=folder_id, key=repository_dependencies_folder_key, label=label )
+        repository_dependencies_folder = Folder( id=folder_id, key=repository_dependencies_folder_key, label=label, parent=repository_dependencies_root_folder )
         # The received repository_dependencies is a dictionary with a single 'description' key, and one or more repository_dependency keys.
         # We want the description value associated with the repository_dependencies_folder.
         repository_dependencies_folder.description = repository_dependencies.get( 'description', None )
@@ -203,7 +212,7 @@ def build_repository_dependencies_folder( toolshed_base_url, repository_name, re
                 # Create a new folder.
                 folder_id += 1
                 label = generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision, key )
-                folder = Folder( id=folder_id, key=key, label=label )
+                folder = Folder( id=folder_id, key=key, label=label, parent=repository_dependencies_folder )
             for repository_dependency_tup in val:
                 toolshed, name, owner, changeset_revision = repository_dependency_tup
                 # Create a new repository_dependency.
@@ -218,8 +227,8 @@ def build_repository_dependencies_folder( toolshed_base_url, repository_name, re
             if not get_folder( repository_dependencies_folder, key ):
                 # Insert the folder into the list.
                 repository_dependencies_folder.folders.append( folder )
-        # Remove repository_dependencies that are also folders.
-        remove_unwanted_repository_dependencies( repository_dependencies_folder )
+        # Remove repository_dependencies that are also folders, and coerce empty folders into repository dependencies.
+        prune_repository_dependencies( repository_dependencies_folder, repository_dependencies_folder )
     else:
         repository_dependencies_root_folder = None
     return folder_id, repository_dependencies_root_folder
@@ -228,9 +237,9 @@ def build_tools_folder( folder_id, tool_dicts, repository, changeset_revision, v
     if tool_dicts:
         tool_id = 0
         folder_id += 1
-        tools_root_folder = Folder( id=folder_id, key='root', label='root' )
+        tools_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         folder_id += 1
-        folder = Folder( id=folder_id, key='tools', label=label )
+        folder = Folder( id=folder_id, key='tools', label=label, parent=tools_root_folder )
         tools_root_folder.folders.append( folder )
         # Insert a header row.
         tool_id += 1
@@ -272,9 +281,9 @@ def build_tool_dependencies_folder( folder_id, tool_dependencies, label='Tool de
     if tool_dependencies:
         tool_dependency_id = 0
         folder_id += 1
-        tool_dependencies_root_folder = Folder( id=folder_id, key='root', label='root' )
+        tool_dependencies_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         folder_id += 1
-        folder = Folder( id=folder_id, key='tool_dependencies', label=label )
+        folder = Folder( id=folder_id, key='tool_dependencies', label=label, parent=tool_dependencies_root_folder )
         tool_dependencies_root_folder.folders.append( folder )
         # Insert a header row.
         tool_dependency_id += 1
@@ -320,9 +329,9 @@ def build_workflows_folder( folder_id, workflows, repository_metadata, label='Wo
     if workflows:
         workflow_id = 0
         folder_id += 1
-        workflows_root_folder = Folder( id=folder_id, key='root', label='root' )
+        workflows_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         folder_id += 1
-        folder = Folder( id=folder_id, key='workflows', label=label )
+        folder = Folder( id=folder_id, key='workflows', label=label, parent=workflows_root_folder )
         workflows_root_folder.folders.append( folder )
         # Insert a header row.
         workflow_id += 1
@@ -388,10 +397,19 @@ def is_folder( folder_keys, toolshed_base_url, repository_name, repository_owner
 def key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, key ):
     toolshed_base_url, key_name, key_owner, key_changeset_revision = get_components_from_key( key )
     return repository_name == key_name and repository_owner == key_owner and changeset_revision == key_changeset_revision
-def remove_unwanted_repository_dependencies( folder ):
+def prune_folder( folder, repository_dependency, key ):
+    if get_folder( folder, key ):
+        folder.remove_repository_dependency( repository_dependency )
+    for sub_folder in folder.folders:
+        prune_folder( sub_folder, repository_dependency, key )
+def prune_repository_dependencies( folder, root_folder ):
+    """Remove repository_dependencies that are also folders, and coerce empty folders into repository dependencies."""
+    remove_repository_dependencies( folder, root_folder )
+    for sub_folder in folder.folders:
+        prune_repository_dependencies( sub_folder, root_folder )
+def remove_repository_dependencies( folder, root_folder ):
     for repository_dependency in folder.repository_dependencies:
         toolshed, name, owner, changeset_revision = repository_dependency.listify
         key = generate_repository_dependencies_key_for_repository( toolshed, name, owner, changeset_revision )
-        if get_folder( folder, key ):
-            folder.remove_repository_dependency( repository_dependency )
+        prune_folder( root_folder, repository_dependency, key )
     

@@ -1066,10 +1066,10 @@ class AdminToolshed( AdminGalaxy ):
             raw_text = response.read()
             response.close()
             repo_information_dict = from_json_string( raw_text )
-            includes_tools = util.string_as_bool( repo_information_dict[ 'includes_tools' ] )
-            includes_repository_dependencies = util.string_as_bool( repo_information_dict[ 'includes_repository_dependencies' ] )
-            includes_tool_dependencies = util.string_as_bool( repo_information_dict[ 'includes_tool_dependencies' ] )
-            encoded_repo_info_dicts = util.listify( repo_information_dict[ 'repo_info_dicts' ] )
+            includes_tools = util.string_as_bool( repo_information_dict.get( 'includes_tools', False ) )
+            includes_repository_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_repository_dependencies', False ) )
+            includes_tool_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_tool_dependencies', False ) )
+            encoded_repo_info_dicts = util.listify( repo_information_dict.get( 'repo_info_dicts', [] ) )
         repo_info_dicts = [ tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
         if ( not includes_tools and not includes_repository_dependencies ) or \
             ( ( includes_tools or includes_repository_dependencies ) and kwd.get( 'select_tool_panel_section_button', False ) ):

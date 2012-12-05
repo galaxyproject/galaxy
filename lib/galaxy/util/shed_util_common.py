@@ -819,7 +819,6 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
     """Generate a repository dependencies dictionary based on valid information defined in the received repository_dependencies_config."""
     repository_dependencies_tups = []
     error_message = ''
-    config_file_name = strip_path( repository_dependencies_config )
     try:
         # Make sure we're looking at a valid repository_dependencies.xml file.
         tree = util.parse_xml( repository_dependencies_config )
@@ -838,15 +837,13 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
             changeset_revision = repository_elem.attrib[ 'changeset_revision' ]
             user = None
             repository = None
-            # Repository dependencies are currentlhy supported only within a single tool shed.
             if tool_shed_is_this_tool_shed( toolshed ):
                 try:
                     user = sa_session.query( app.model.User ) \
                                      .filter( app.model.User.table.c.username == owner ) \
                                      .one()
                 except Exception, e:
-                    error_message = "Invalid owner %s defined for repository %s in config file %s.  " % ( owner, name, config_file_name )
-                    error_message += "Repository dependencies will be ignored."
+                    error_message = "Invalid owner %s defined for repository %s.  Repository dependencies will be ignored." % ( owner, name )
                     log.debug( error_message )
                     return metadata_dict, error_message
                 if user:
@@ -856,8 +853,7 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
                                                               app.model.Repository.table.c.user_id == user.id ) ) \
                                                .first()
                     except:
-                        error_message = "Invalid name %s or owner %s defined for repository in config file %s.  " % ( name, owner, config_file_name )
-                        error_message += "Repository dependencies will be ignored."
+                        error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
                         log.debug( error_message )
                         return metadata_dict, error_message
                     if repository:
@@ -865,16 +861,19 @@ def generate_repository_dependency_metadata( app, repository_dependencies_config
                         if repository_dependencies_tup not in repository_dependencies_tups:
                             repository_dependencies_tups.append( repository_dependencies_tup )
                     else:
-                        error_message = "Invalid name %s or owner %s defined for repository in config file %s.  " % ( name, owner, config_file_name )
-                        error_message += "Repository dependencies will be ignored."
+                        error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
                         log.debug( error_message )
                         return metadata_dict, error_message
                 else:
-                    # We have an invalid repository owner defined for an entry in repository_dependencies.xml.
-                    config_file_name = strip_path( repository_dependencies_config )
-                    error_message = "Invalid username %s defined for owner of repository %s in config file %s.  Repository dependencies will be ignored." % ( owner, name, config_file_name )
+                    error_message = "Invalid owner %s defined for owner of repository %s.  Repository dependencies will be ignored." % ( owner, name )
                     log.debug( error_message )
-                    return metadata_dict, error_message 
+                    return metadata_dict, error_message
+            else:
+                # Repository dependencies are currentlhy supported within a single tool shed.
+                error_message = "Invalid tool shed %s defined for repository %s.  " % ( toolshed, name )
+                error_message += "Repository dependencies are currently supported within a single tool shed, so your definition will be ignored."
+                log.debug( error_message )
+                return metadata_dict, error_message
         if repository_dependencies_tups:
             repository_dependencies_dict = dict( description=root.get( 'description' ),
                                                  repository_dependencies=repository_dependencies_tups )
