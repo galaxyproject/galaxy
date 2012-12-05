@@ -1,16 +1,6 @@
 from tool_shed.base.twilltestcase import *
 from tool_shed.base.test_db_util import *
 
-admin_user = None
-admin_user_private_role = None
-admin_email = 'test@bx.psu.edu'
-admin_username = 'admin-user'
-
-test_user_1 = None
-test_user_1_private_role = None
-test_user_1_email = 'test-1@bx.psu.edu'
-test_user_1_name = 'user1'
-
 repository_name = 'filtering'
 repository_description = "Galaxy's filtering tool"
 repository_long_description = "Long description of Galaxy's filtering tool"
@@ -60,7 +50,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0030_upload_filtering_1_1_0( self ):
         """Upload filtering_1.1.0.tar to the repository"""
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
-        self.upload_file( repository, 'filtering_1.1.0.tar', commit_message="Uploaded filtering 1.1.0" )
+        self.upload_file( repository, 'filtering/filtering_1.1.0.tar', commit_message="Uploaded filtering 1.1.0" )
     def test_0035_verify_repository( self ):
         '''Display basic repository pages'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
@@ -102,7 +92,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         '''Upload filtering.txt file associated with tool version 1.1.0.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
         self.upload_file( repository, 
-                          'filtering.txt', 
+                          'filtering/filtering.txt', 
                           commit_message="Uploaded filtering.txt", 
                           uncompress_file='No', 
                           remove_repo_files_not_in_tar='No' )
@@ -110,7 +100,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0055_upload_filtering_test_data( self ):
         '''Upload filtering test data.'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
-        self.upload_file( repository, 'filtering_test_data.tar', commit_message="Uploaded filtering test data", remove_repo_files_not_in_tar='No' )
+        self.upload_file( repository, 'filtering/filtering_test_data.tar', commit_message="Uploaded filtering test data", remove_repo_files_not_in_tar='No' )
         self.display_repository_file_contents( repository=repository,
                                                filename='1.bed',
                                                filepath='test-data',
@@ -121,7 +111,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         '''Upload filtering version 2.2.0'''
         repository = get_repository_by_name_and_owner( repository_name, admin_username )
         self.upload_file( repository, 
-                          'filtering_2.2.0.tar', 
+                          'filtering/filtering_2.2.0.tar', 
                           commit_message="Uploaded filtering 2.2.0", 
                           remove_repo_files_not_in_tar='No' )
     def test_0065_verify_filtering_repository( self ):

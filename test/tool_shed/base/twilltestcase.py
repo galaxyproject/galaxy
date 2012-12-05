@@ -1,6 +1,7 @@
 from base.twilltestcase import *
 from galaxy.webapps.community.util.hgweb_config import *
 from test_db_util import *
+from common import *
 import string 
 
 from galaxy import eggs
@@ -137,6 +138,10 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def display_manage_repository_page( self, repository, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_repository_clone_page( self, owner_name, repository_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repos/%s/%s' % ( owner_name, repository_name )
         self.visit_url( url )
@@ -204,6 +209,15 @@ class ShedTwillTestCase( TwillTestCase ):
             else:
                 string = string.replace( character, replacement )
         return string
+    def generate_repository_dependency_xml( self, repository, xml_filename ):
+        changeset_revision = self.get_repository_tip( repository )
+        template_parser = string.Template( new_repository_dependencies_xml )
+        repository_dependency_xml = template_parser.safe_substitute( toolshed_url=self.url,
+                                                                     owner=repository.user.username,
+                                                                     repository_name=repository.name,
+                                                                     changeset_revision=changeset_revision )
+        # Save the generated xml to test-data/emboss_5/repository_dependencies.xml.
+        file( xml_filename, 'w' ).write( repository_dependency_xml )
     def get_latest_repository_metadata_for_repository( self, repository ):
         # TODO: This will not work as expected. Fix it.
         return repository.metadata_revisions[ 0 ]
@@ -277,10 +291,6 @@ class ShedTwillTestCase( TwillTestCase ):
     def load_display_tool_page( self, repository, tool_xml_path, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
-        self.visit_url( url )
-        self.check_for_strings( strings_displayed, strings_not_displayed )
-    def display_manage_repository_page( self, repository, strings_displayed=[], strings_not_displayed=[] ):
-        url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def revoke_write_access( self, repository, username ):
