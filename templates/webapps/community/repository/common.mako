@@ -204,7 +204,10 @@
                 if folder.datatypes:
                     col_span_str = 'colspan="4"'
                 elif folder.label == 'Repository dependencies':
-                    folder_label = "%s<i> - this repository requires installation of these additional repositories</i>" % folder_label
+                    if folder.description:
+                        folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
+                    else:
+                        folder_label = "%s<i> - this repository requires installation of these additional repositories</i>" % folder_label
                 elif folder.invalid_tools:
                     folder_label = "%s<i> - click the tool config file name to see why the tool is invalid</i>" % folder_label
                 elif folder.tool_dependencies:

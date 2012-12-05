@@ -1019,6 +1019,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         repository, tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        if message:
+            status = 'error'
         tool_state = self.__new_state( trans )
         is_malicious = changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, repository_id, changeset_revision )
@@ -1760,7 +1762,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repository_metadata_id = None
         metadata = None
         is_malicious = False
-        repository_dependencies = []
+        repository_dependencies = None
         if changeset_revision != INITIAL_CHANGELOG_HASH:
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
             if repository_metadata:
@@ -1786,7 +1788,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                               repository_metadata,
                                                                                               str( url_for( '/', qualified=True ) ).rstrip( '/' ),
                                                                                               repository_dependencies=None,
-                                                                                              all_repository_dependencies=None )
+                                                                                              all_repository_dependencies=None,
+                                                                                              handled=None )
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push
@@ -1898,7 +1901,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                           repository_metadata,
                                                                                           str( url_for( '/', qualified=True ) ).rstrip( '/' ),
                                                                                           repository_dependencies=None,
-                                                                                          all_repository_dependencies=None )
+                                                                                          all_repository_dependencies=None,
+                                                                                          handled=None )
         else:
             repository_metadata_id = None
             metadata = None
@@ -2383,7 +2387,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             email_alerts = from_json_string( repository.email_alerts )
         else:
             email_alerts = []
-        repository_dependencies = []
+        repository_dependencies = None
         user = trans.user
         if user and params.get( 'receive_email_alerts_button', False ):
             flush_needed = False
@@ -2419,7 +2423,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                           repository_metadata,
                                                                                           str( url_for( '/', qualified=True ) ).rstrip( '/' ),
                                                                                           repository_dependencies=None,
-                                                                                          all_repository_dependencies=None )
+                                                                                          all_repository_dependencies=None,
+                                                                                          handled=None )
         else:
             repository_metadata_id = None
             metadata = None

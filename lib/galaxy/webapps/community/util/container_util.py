@@ -11,6 +11,7 @@ class Folder( object ):
         self.id = id
         self.key = key
         self.label = label
+        self.description = None
         self.datatypes = []
         self.folders = []
         self.invalid_tools = []
@@ -24,7 +25,8 @@ class Folder( object ):
             if folder == contained_folder:
                 return index, contained_folder
         return 0, None
-
+    def remove_repository_dependency( self, repository_dependency ):
+        self.repository_dependencies.remove( repository_dependency )
 class Datatype( object ):
     """Datatype object"""
     def __init__( self, id=None, extension=None, type=None, mimetype=None, subclass=None ):
@@ -57,6 +59,9 @@ class RepositoryDependency( object ):
         self.repository_name = repository_name
         self.repository_owner = repository_owner
         self.changeset_revision = changeset_revision
+    @property
+    def listify( self ):
+        return [ self.toolshed, self.repository_name, self.repository_owner, self.changeset_revision ]
 
 class Tool( object ):
     """Tool object"""
@@ -183,11 +188,15 @@ def build_repository_dependencies_folder( toolshed_base_url, repository_name, re
         repository_dependencies_root_folder = Folder( id=folder_id, key='root', label='root' )
         folder_id += 1
         # Create the Repository dependencies folder and add it to the root folder.
-        key = generate_repository_dependencies_key_for_repository( toolshed_base_url, repository_name, repository_owner, changeset_revision )
-        repository_dependencies_folder = Folder( id=folder_id, key=key, label=label )
+        repository_dependencies_folder_key = repository_dependencies[ 'root_key' ]
+        repository_dependencies_folder = Folder( id=folder_id, key=repository_dependencies_folder_key, label=label )
+        # The received repository_dependencies is a dictionary with a single 'description' key, and one or more repository_dependency keys.
+        # We want the description value associated with the repository_dependencies_folder.
+        repository_dependencies_folder.description = repository_dependencies.get( 'description', None )
         repository_dependencies_root_folder.folders.append( repository_dependencies_folder )
-        # Process the repository dependencies.
         for key, val in repository_dependencies.items():
+            if key in [ 'root_key', 'description' ]:
+                continue
             # Only create a new folder object if necessary.
             folder = get_folder( repository_dependencies_root_folder, key )
             if not folder:
@@ -197,19 +206,20 @@ def build_repository_dependencies_folder( toolshed_base_url, repository_name, re
                 folder = Folder( id=folder_id, key=key, label=label )
             for repository_dependency_tup in val:
                 toolshed, name, owner, changeset_revision = repository_dependency_tup
-                if not is_folder( repository_dependencies.keys(), toolshed, name, owner, changeset_revision ):
-                    # Create a new repository_dependency.
-                    repository_dependency_id += 1
-                    repository_dependency = RepositoryDependency( id=repository_dependency_id,
-                                                                  toolshed=toolshed,
-                                                                  repository_name=name,
-                                                                  repository_owner=owner,
-                                                                  changeset_revision=changeset_revision )
-                    # Insert the repository_dependency into the folder.
-                    folder.repository_dependencies.append( repository_dependency )
+                # Create a new repository_dependency.
+                repository_dependency_id += 1
+                repository_dependency = RepositoryDependency( id=repository_dependency_id,
+                                                              toolshed=toolshed,
+                                                              repository_name=name,
+                                                              repository_owner=owner,
+                                                              changeset_revision=changeset_revision )
+                # Insert the repository_dependency into the folder.
+                folder.repository_dependencies.append( repository_dependency )
             if not get_folder( repository_dependencies_folder, key ):
                 # Insert the folder into the list.
                 repository_dependencies_folder.folders.append( folder )
+        # Remove repository_dependencies that are also folders.
+        remove_unwanted_repository_dependencies( repository_dependencies_folder )
     else:
         repository_dependencies_root_folder = None
     return folder_id, repository_dependencies_root_folder
@@ -378,4 +388,10 @@ def is_folder( folder_keys, toolshed_base_url, repository_name, repository_owner
 def key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, key ):
     toolshed_base_url, key_name, key_owner, key_changeset_revision = get_components_from_key( key )
     return repository_name == key_name and repository_owner == key_owner and changeset_revision == key_changeset_revision
+def remove_unwanted_repository_dependencies( folder ):
+    for repository_dependency in folder.repository_dependencies:
+        toolshed, name, owner, changeset_revision = repository_dependency.listify
+        key = generate_repository_dependencies_key_for_repository( toolshed, name, owner, changeset_revision )
+        if get_folder( folder, key ):
+            folder.remove_repository_dependency( repository_dependency )
     

@@ -191,17 +191,13 @@ def generate_tool_guid( trans, repository, tool ):
                                       tool.id,
                                       tool.version )
 def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
+    stripped_file_name = strip_path( file_name )
     file_path = None
-    found = False
     for root, dirs, files in os.walk( repo_files_dir ):
         if root.find( '.hg' ) < 0:
             for name in files:
-                if name == file_name:
-                    file_path = os.path.abspath( os.path.join( root, name ) )
-                    found = True
-                    break
-        if found:
-            break
+                if name == stripped_file_name:
+                    return os.path.abspath( os.path.join( root, name ) )
     return file_path
 def get_category( trans, id ):
     """Get a category from the database"""
@@ -501,7 +497,6 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
                                                                as_html=True,
                                                                displaying_invalid_tool=True )
                 message = concat_messages( message, message2 )
-                status = 'error'
     else:
         tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
     remove_dir( work_dir )
