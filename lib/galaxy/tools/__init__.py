@@ -993,17 +993,24 @@ class Tool:
         else:
             self.parallelism = None
         # Set job handler(s). Each handler is a dict with 'url' and, optionally, 'params'.
-        self_id = self.id.lower()
+        self_ids = [ self.id.lower() ]
+        if self.old_id != self.id:
+            # Handle toolshed guids
+            self_ids = [ self.id.lower(), self.id.lower().rsplit('/',1)[0], self.old_id.lower() ]
         self.job_handlers = [ { "name" : name } for name in self.app.config.default_job_handlers ]
         # Set custom handler(s) if they're defined.
-        if self_id in self.app.config.tool_handlers:
-            self.job_handlers = self.app.config.tool_handlers[ self_id ]
+        for self_id in self_ids:
+            if self_id in self.app.config.tool_handlers:
+                self.job_handlers = self.app.config.tool_handlers[ self_id ]
+                break
         # Set job runner(s). Each runner is a dict with 'url' and, optionally, 'params'.
         # Set job runner to the cluster default
         self.job_runners = [ { "url" : self.app.config.default_cluster_job_runner } ]
         # Set custom runner(s) if they're defined.
-        if self_id in self.app.config.tool_runners:
-            self.job_runners = self.app.config.tool_runners[ self_id ]
+        for self_id in self_ids:
+            if self_id in self.app.config.tool_runners:
+                self.job_runners = self.app.config.tool_runners[ self_id ]
+                break
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = util.xml_text(root, "hidden")
         if self.hidden: self.hidden = util.string_as_bool(self.hidden)
