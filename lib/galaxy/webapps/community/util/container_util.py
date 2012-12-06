@@ -36,7 +36,14 @@ class Folder( object ):
         listified_repository_dependency = repository_dependency.listify
         for contained_repository_dependency in self.repository_dependencies:
             if contained_repository_dependency.listify == listified_repository_dependency:
-                self.repository_dependencies.remove( contained_repository_dependency )        
+                self.repository_dependencies.remove( contained_repository_dependency )
+    def to_repository_dependency( self, repository_dependency_id ):
+        toolshed, name, owner, changeset_revision = self.key.split( STRSEP )
+        return RepositoryDependency( id=repository_dependency_id,
+                                     toolshed=toolshed,
+                                     repository_name=name,
+                                     repository_owner=owner,
+                                     changeset_revision=changeset_revision )
 
 class Datatype( object ):
     """Datatype object"""
@@ -199,36 +206,45 @@ def build_repository_dependencies_folder( toolshed_base_url, repository_name, re
         # Create the Repository dependencies folder and add it to the root folder.
         repository_dependencies_folder_key = repository_dependencies[ 'root_key' ]
         repository_dependencies_folder = Folder( id=folder_id, key=repository_dependencies_folder_key, label=label, parent=repository_dependencies_root_folder )
-        # The received repository_dependencies is a dictionary with a single 'description' key, and one or more repository_dependency keys.
+        del repository_dependencies[ 'root_key' ]
+        # The received repository_dependencies is a dictionary with keys: 'root_key', 'description', and one or more repository_dependency keys.
         # We want the description value associated with the repository_dependencies_folder.
         repository_dependencies_folder.description = repository_dependencies.get( 'description', None )
         repository_dependencies_root_folder.folders.append( repository_dependencies_folder )
+        del repository_dependencies[ 'description' ]
+        # The remaining keys in repository_dependencies should all be folders.
+        folder_keys = repository_dependencies.keys()
+        # If repository_dependencies_folder_key is an entry in repository_dependencies, process it first.
+        if repository_dependencies_folder_key in repository_dependencies:
+            val = repository_dependencies[ repository_dependencies_folder_key ]
+            repository_dependencies_folder, folder_id, repository_dependency_id = handle_repository_dependencies_entry( repository_dependencies_root_folder,
+                                                                                                                        repository_dependencies_folder,
+                                                                                                                        repository_dependencies_folder_key,
+                                                                                                                        folder_keys,
+                                                                                                                        folder_id,
+                                                                                                                        repository_dependency_id,
+                                                                                                                        repository_name,
+                                                                                                                        repository_owner,
+                                                                                                                        changeset_revision,
+                                                                                                                        repository_dependencies_folder_key,
+                                                                                                                        val )
+            del repository_dependencies[ repository_dependencies_folder_key ]
         for key, val in repository_dependencies.items():
-            if key in [ 'root_key', 'description' ]:
-                continue
-            # Only create a new folder object if necessary.
-            folder = get_folder( repository_dependencies_root_folder, key )
-            if not folder:
-                # Create a new folder.
-                folder_id += 1
-                label = generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision, key )
-                folder = Folder( id=folder_id, key=key, label=label, parent=repository_dependencies_folder )
-            for repository_dependency_tup in val:
-                toolshed, name, owner, changeset_revision = repository_dependency_tup
-                # Create a new repository_dependency.
-                repository_dependency_id += 1
-                repository_dependency = RepositoryDependency( id=repository_dependency_id,
-                                                              toolshed=toolshed,
-                                                              repository_name=name,
-                                                              repository_owner=owner,
-                                                              changeset_revision=changeset_revision )
-                # Insert the repository_dependency into the folder.
-                folder.repository_dependencies.append( repository_dependency )
-            if not get_folder( repository_dependencies_folder, key ):
-                # Insert the folder into the list.
-                repository_dependencies_folder.folders.append( folder )
+            repository_dependencies_folder, folder_id, repository_dependency_id = handle_repository_dependencies_entry( repository_dependencies_root_folder,
+                                                                                                                        repository_dependencies_folder,
+                                                                                                                        repository_dependencies_folder_key,
+                                                                                                                        folder_keys,
+                                                                                                                        folder_id,
+                                                                                                                        repository_dependency_id,
+                                                                                                                        repository_name,
+                                                                                                                        repository_owner,
+                                                                                                                        changeset_revision,
+                                                                                                                        key,
+                                                                                                                        val )
+        # Cast empty folders to be repository dependencies.
+        repository_dependencies_folder, repository_dependency_id = cast_empty_repository_dependency_folders( repository_dependencies_folder,
+                                                                                                             repository_dependency_id )
         # Remove repository_dependencies that are also folders, and coerce empty folders into repository dependencies.
-        prune_repository_dependencies( repository_dependencies_folder, repository_dependencies_folder )
     else:
         repository_dependencies_root_folder = None
     return folder_id, repository_dependencies_root_folder
@@ -360,13 +376,23 @@ def build_workflows_folder( folder_id, workflows, repository_metadata, label='Wo
     else:
         workflows_root_folder = None
     return folder_id, workflows_root_folder
+def cast_empty_repository_dependency_folders( folder, repository_dependency_id ):
+    if not folder.folders and not folder.repository_dependencies:
+        repository_dependency_id += 1
+        repository_dependency = folder.to_repository_dependency( repository_dependency_id )
+        if not folder.parent.contains_repository_dependency( repository_dependency ):
+            folder.parent.repository_dependencies.append( repository_dependency )
+            folder.parent.folders.remove( folder )
+    for sub_folder in folder.folders:
+        return cast_empty_repository_dependency_folders( sub_folder, repository_dependency_id )
+    return folder, repository_dependency_id
 def generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision, key ):
     """Return a repository dependency label based on the repository dependency key."""
     if key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, key ):
         label = 'Repository dependencies'
     else:
-        toolshed_base_url, name, owner, revision = get_components_from_key( key )
-        label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % ( name, revision, owner )
+        #toolshed_base_url, name, owner, revision = get_components_from_key( key )
+        label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % ( repository_name, changeset_revision, repository_owner )
     return label
 def generate_repository_dependencies_key_for_repository( toolshed_base_url, repository_name, repository_owner, changeset_revision ):
     # FIXME: assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported.
@@ -391,25 +417,61 @@ def get_components_from_key( key ):
     repository_owner = items[ 2 ]
     changeset_revision = items[ 3 ]
     return toolshed_base_url, repository_name, repository_owner, changeset_revision
-def is_folder( folder_keys, toolshed_base_url, repository_name, repository_owner, changeset_revision ):
-    key = '%s%s%s%s%s%s%s' % ( toolshed_base_url, STRSEP, repository_name, STRSEP, repository_owner, STRSEP, changeset_revision )
+def handle_repository_dependencies_entry( repository_dependencies_root_folder, repository_dependencies_folder, repository_dependencies_folder_key,
+                                          folder_keys, folder_id, repository_dependency_id, repository_name, repository_owner, changeset_revision,
+                                          key, val ):
+    # Only create a new folder object if necessary.
+    folder = get_folder( repository_dependencies_root_folder, key )
+    if not folder:
+        folder_id += 1
+        label = generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision, key )
+        folder = Folder( id=folder_id, key=key, label=label, parent=repository_dependencies_folder )
+    for repository_dependency_tup in val:
+        toolshed, name, owner, changeset_revision = repository_dependency_tup
+        if is_root_repository( repository_dependencies_folder_key, toolshed, name, owner ):
+            # Do not include repository dependencies that point to a revision within the same repository.
+            continue
+        if is_or_should_be_folder( folder_keys, toolshed, name, owner, changeset_revision ):
+            check_folder_key = generate_repository_dependencies_key_for_repository( toolshed, name, owner, changeset_revision )
+            if get_folder( repository_dependencies_root_folder, check_folder_key ):
+                continue
+            else:
+                # Create a new folder, which may be populated later.
+                folder_id += 1
+                label = generate_repository_dependencies_folder_label_from_key( name, owner, changeset_revision, key )
+                sub_folder = Folder( id=folder_id, key=check_folder_key, label=label, parent=repository_dependencies_folder )
+                folder.folders.append( sub_folder )
+        else:
+            repository_dependency_id += 1
+            repository_dependency = RepositoryDependency( id=repository_dependency_id,
+                                                          toolshed=toolshed,
+                                                          repository_name=name,
+                                                          repository_owner=owner,
+                                                          changeset_revision=changeset_revision )
+            # Insert the repository_dependency into the folder.
+            folder.repository_dependencies.append( repository_dependency )
+    if not get_folder( repository_dependencies_folder, folder.key ):
+        if folder.folders:
+            # Insert the folder into the list.
+            repository_dependencies_folder.folders.append( folder )
+    return repository_dependencies_folder, folder_id, repository_dependency_id
+def is_or_should_be_folder( folder_keys, toolshed, repository_name, repository_owner, changeset_revision ):
+    key = '%s%s%s%s%s%s%s' % ( toolshed, STRSEP, repository_name, STRSEP, repository_owner, STRSEP, changeset_revision )
     return key in folder_keys
+def is_root_repository( repository_dependencies_folder_key, toolshed, repository_name, repository_owner ):
+    # Return True if a repository dependency points to a revision within it's own repository.
+    repository_dependencies_folder_tup = repository_dependencies_folder_key.split( STRSEP )
+    rdf_toolshed, rdf_repository_name, rdf_repository_owner, rdf_changeset_revision = repository_dependencies_folder_tup
+    return rdf_toolshed == toolshed and rdf_repository_name == repository_name and rdf_repository_owner == repository_owner
 def key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, key ):
     toolshed_base_url, key_name, key_owner, key_changeset_revision = get_components_from_key( key )
     return repository_name == key_name and repository_owner == key_owner and changeset_revision == key_changeset_revision
-def prune_folder( folder, repository_dependency, key ):
-    if get_folder( folder, key ):
-        folder.remove_repository_dependency( repository_dependency )
+def print_folders( pad, folder ):
+    # For debugging...
+    pad_str = ''
+    for i in range( 1, pad ):
+        pad_str += ' '
+    print '%s%s' % ( pad_str, folder.key )
     for sub_folder in folder.folders:
-        prune_folder( sub_folder, repository_dependency, key )
-def prune_repository_dependencies( folder, root_folder ):
-    """Remove repository_dependencies that are also folders, and coerce empty folders into repository dependencies."""
-    remove_repository_dependencies( folder, root_folder )
-    for sub_folder in folder.folders:
-        prune_repository_dependencies( sub_folder, root_folder )
-def remove_repository_dependencies( folder, root_folder ):
-    for repository_dependency in folder.repository_dependencies:
-        toolshed, name, owner, changeset_revision = repository_dependency.listify
-        key = generate_repository_dependencies_key_for_repository( toolshed, name, owner, changeset_revision )
-        prune_folder( root_folder, repository_dependency, key )
+        print_folders( pad+5, sub_folder )
     

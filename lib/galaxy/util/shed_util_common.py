@@ -1200,7 +1200,6 @@ def get_repository_dependencies_for_changeset_revision( trans, repo, repository,
         if 'description' not in all_repository_dependencies:
             description = repository_dependencies_dict.get( 'description', None )
             all_repository_dependencies[ 'description' ] = description
-
         # The next key of interest in repository_dependencies_dict is 'repository_dependencies', which is a list of tuples.
         repository_dependencies_tups = repository_dependencies_dict[ 'repository_dependencies' ]
         for repository_dependency in repository_dependencies_tups:
@@ -1231,6 +1230,7 @@ def get_repository_dependencies_for_changeset_revision( trans, repo, repository,
             else:
                 # Insert this repository_dependency.
                 all_repository_dependencies[ repository_dependencies_root_key ] = [ repository_dependency ]
+                handled.append( repository_dependency )
         if tool_shed_is_this_tool_shed( tool_shed ):
             # The repository is in the current tool shed.
             required_repository = get_repository_by_name_and_owner( trans, name, owner )
