@@ -1,4 +1,4 @@
-from sqlalchemy import desc
+from sqlalchemy import desc, and_
 from galaxy import model, web
 from galaxy.web import error, url_for
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
