@@ -1099,7 +1099,12 @@ class AdminToolshed( AdminGalaxy ):
             filtered_repo_info_dicts = []
             for repo_info_dict in repo_info_dicts:
                 for name, repo_info_tuple in repo_info_dict.items():
-                    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
+                    # Take care in handling the repo_info_tuple as it evolves over time as new features are introduced.
+                    if len( repo_info_tuple ) == 6:
+                        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
+                        repository_dependencies = None
+                    elif len( repo_info_tuple ) == 7:
+                        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
                     clone_dir = os.path.join( tool_path, self.generate_tool_path( repository_clone_url, changeset_revision ) )
                     relative_install_dir = os.path.join( clone_dir, name )
                     # Make sure the repository was not already installed.
@@ -1208,7 +1213,11 @@ class AdminToolshed( AdminGalaxy ):
             repo_info_dict = repo_info_dicts[ 0 ]
             name = repo_info_dict.keys()[ 0 ]
             repo_info_tuple = repo_info_dict[ name ]
-            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
+            if len( repo_info_tuple ) == 6:
+                description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
+                repository_dependencies = None
+            elif len( repo_info_tuple ) == 7:
+                description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
             url = url_join( tool_shed_url,
                             'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
                             ( name, repository_owner, changeset_revision ) )
@@ -1396,7 +1405,11 @@ class AdminToolshed( AdminGalaxy ):
         # Handle case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
         # in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one
         # that was previously installed.  We'll look in the database instead of on disk since the repository may be uninstalled.
-        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
+        if len( repo_info_tuple ) == 6:
+            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
+            repository_dependencies = None
+        elif len( repo_info_tuple ) == 7:
+            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
         tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
         # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
         # revision to see if it was previously installed using one of them.
