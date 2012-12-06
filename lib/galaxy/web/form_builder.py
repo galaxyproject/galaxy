@@ -67,8 +67,10 @@ class TextArea(BaseField):
     >>> print TextArea( "bins", size="4x5", value="default" ).get_html()
     <textarea name="bins" rows="4" cols="5">default</textarea>
     """
-    def __init__( self, name, size="5x25", value=None ):
+    _DEFAULT_SIZE = "5x25"
+    def __init__( self, name, size=None, value=None ):
         self.name = name
+        size = size or self._DEFAULT_SIZE
         self.size = size.split("x")
         self.rows = int(self.size[0])
         self.cols = int(self.size[-1])
