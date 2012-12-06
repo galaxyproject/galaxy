@@ -691,25 +691,33 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         Display browser for the visualization denoted by id and add the datasets listed in `dataset_ids`.
         """
 
+        # Get dataset to add.
+        new_dataset_id = kwargs.get( "dataset_id", None )
+        
         # Set up new browser if no id provided.
         if not id:
+            # Use dbkey from dataset to be added or from incoming parameter.
+            dbkey = None
+            if new_dataset_id:
+                dbkey = self.get_dataset( trans, new_dataset_id ).dbkey
+                if dbkey == '?':
+                    dbkey = kwargs.get( "dbkey", None )
+            
             return trans.fill_template( "tracks/browser.mako", config={}, 
-                                        add_dataset=kwargs.get("dataset_id", None), 
-                                        default_dbkey=kwargs.get("dbkey", None) )
+                                        add_dataset=new_dataset_id, 
+                                        default_dbkey=dbkey )
 
         # Display saved visualization.
         vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         viz_config = self.get_visualization_config( trans, vis )
         
-        # Get new dataset if specified.
-        new_dataset = kwargs.get("dataset_id", None)
         '''
         FIXME:
         if new_dataset is not None:
             if trans.security.decode_id(new_dataset) in [ d["dataset_id"] for d in viz_config.get("tracks") ]:
                 new_dataset = None # Already in browser, so don't add
         '''
-        return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset )
+        return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset_id )
 
     @web.expose
     def circster( self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None ):
