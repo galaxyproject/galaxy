@@ -189,6 +189,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 dataset_id: this.model.get( 'id' ),
                 hda_ldda: 'hda'
             };
+        // Add dbkey to params if it exists.
+        if( dbkey ){ params.dbkey = dbkey; }
 
         if( !( this.model.hasData() )
         ||  !( visualizations && visualizations.length )
@@ -209,8 +211,6 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //TODO: make this more concise
         // map a function to each visualization in the icon's attributes
         //  create a popupmenu from that map
-        // Add dbkey to params if it exists.
-        if( dbkey ){ params.dbkey = dbkey; }
 
         /** @inner */
         function create_viz_action( visualization ) {
@@ -513,10 +513,13 @@ function create_scatterplot_action_fn( url, params ){
 //TODO: should be imported from trackster.js
 function create_trackster_action_fn(vis_url, dataset_params, dbkey) {
     return function() {
-        var params = {};
-        if (dbkey) { params.dbkey = dbkey; }
+        var listTracksParams = {};
+        if (dbkey){
+            // list_tracks seems to use 'f-dbkey' (??)
+            listTracksParams[ 'f-dbkey' ] = dbkey;
+        }
         $.ajax({
-            url: vis_url + '/list_tracks?f-' + $.param(params),
+            url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
             dataType: "html",
             error: function() { alert( _l( "Could not add this dataset to browser" ) + '.' ); },
             success: function(table_html) {
