@@ -35,12 +35,9 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
             this._render_showParamsButton
         ];
         
-        // render urlTemplates (gen. provided by GalaxyPaths) to urls
-        //TODO:?? render urls here or in render()?
+        // cache urlTemplates (gen. provided by GalaxyPaths) to urls
         if( !attributes.urlTemplates ){ throw( 'HDAView needs urlTemplates on initialize' ); }
-        /** web controller urls for functions relating to this hda. These
-         *      are rendered from urlTemplates using the model data. */
-        this.urls = this._renderUrls( attributes.urlTemplates, this.model.toJSON() );
+        this.urlTemplates = attributes.urlTemplates;
 
         /** is the body of this hda view expanded/not. */
         this.expanded = attributes.expanded || false;
@@ -52,6 +49,61 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         //}, this );
     },
    
+    // ......................................................................... RENDER MAIN
+    /** Render this HDA, set up ui.
+     *  @fires rendered:ready when rendered and NO running HDAs
+     *  @fires rendered when rendered and running HDAs
+     *  @fires rendered:initial on first render with running HDAs
+     *  @fires rendered:initial:ready when first rendered and NO running HDAs
+     *  @returns {Object} this HDABaseView
+     */
+    render : function(){
+        var view = this,
+            id = this.model.get( 'id' ),
+            state = this.model.get( 'state' ),
+            itemWrapper = $( '<div/>' ).attr( 'id', 'historyItem-' + id ),
+            initialRender = ( this.$el.children().size() === 0 );
+
+        this.$el.attr( 'id', 'historyItemContainer-' + id );
+
+        /** web controller urls for functions relating to this hda.
+         *      These are rendered from urlTemplates using the model data. */
+        this.urls = this._renderUrls( this.urlTemplates, this.model.toJSON() );
+
+        itemWrapper
+            .addClass( 'historyItemWrapper' ).addClass( 'historyItem' )
+            .addClass( 'historyItem-' + state );
+
+        itemWrapper.append( this._render_warnings() );
+        itemWrapper.append( this._render_titleBar() );
+        this.body = $( this._render_body() );
+        itemWrapper.append( this.body );
+
+        //TODO: move to own function: setUpBehaviours
+        // we can potentially skip this step and call popupmenu directly on the download button
+        make_popup_menus( itemWrapper );
+
+        // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
+        itemWrapper.find( '.tooltip' ).tooltip({ placement : 'bottom' });
+
+        // transition...
+        this.$el.fadeOut( 'fast', function(){
+            view.$el.children().remove();
+            view.$el.append( itemWrapper ).fadeIn( 'fast', function(){
+                view.log( view + ' rendered:', view.$el );
+
+                var renderedEventName = 'rendered';
+                if( initialRender ){
+                    renderedEventName += ':initial';
+                } else if( view.model.inReadyState() ){
+                    renderedEventName += ':ready';
+                }
+                view.trigger( renderedEventName );
+            });
+        });
+        return this;
+    },
+
     /** render the urls for this hda using the model data and the url templates from initialize.
      *  @param {Object} urlTemplates a map (or nested map) of underscore templates (currently, anyhoo)
      *  @param {Object} modelJson data from the model
@@ -71,6 +123,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
                 //TODO: should be a better (gen.) way to handle this case
                 if( urlKey === 'meta_download' ){
                     urls[ urlKey ] = hdaView._renderMetaDownloadUrls( urlTemplateOrObj, modelJson );
+
                 } else {
                     try {
                         urls[ urlKey ] = _.template( urlTemplateOrObj, modelJson );
@@ -100,57 +153,6 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         });
     },
 
-    // ......................................................................... RENDER MAIN
-    /** Render this HDA, set up ui.
-     *  @fires rendered:ready when rendered and NO running HDAs
-     *  @fires rendered when rendered and running HDAs
-     *  @fires rendered:initial on first render with running HDAs
-     *  @fires rendered:initial:ready when first rendered and NO running HDAs
-     *  @returns {Object} this HDABaseView
-     */
-    render : function(){
-        var view = this,
-            id = this.model.get( 'id' ),
-            state = this.model.get( 'state' ),
-            itemWrapper = $( '<div/>' ).attr( 'id', 'historyItem-' + id ),
-            initialRender = ( this.$el.children().size() === 0 );
-
-        this.$el.attr( 'id', 'historyItemContainer-' + id );
-        
-        itemWrapper
-            .addClass( 'historyItemWrapper' ).addClass( 'historyItem' )
-            .addClass( 'historyItem-' + state );
-            
-        itemWrapper.append( this._render_warnings() );
-        itemWrapper.append( this._render_titleBar() );
-        this.body = $( this._render_body() );
-        itemWrapper.append( this.body );
-        
-        //TODO: move to own function: setUpBehaviours
-        // we can potentially skip this step and call popupmenu directly on the download button
-        make_popup_menus( itemWrapper );
-
-        // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
-        itemWrapper.find( '.tooltip' ).tooltip({ placement : 'bottom' });
-        
-        // transition...
-        this.$el.fadeOut( 'fast', function(){
-            view.$el.children().remove();
-            view.$el.append( itemWrapper ).fadeIn( 'fast', function(){
-                view.log( view + ' rendered:', view.$el );
-                
-                var renderedEventName = 'rendered';
-                if( initialRender ){
-                    renderedEventName += ':initial';
-                } else if( view.model.inReadyState() ){
-                    renderedEventName += ':ready';
-                }
-                view.trigger( renderedEventName );
-            });
-        });
-        return this;
-    },
-    
     // ................................................................................ RENDER titlebar
     /** Render any hda warnings including: is deleted, is purged, is hidden.
      *      (including links to further actions (undelete, etc.))
