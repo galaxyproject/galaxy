@@ -54,7 +54,7 @@
             info    : function(){},
             warn    : function(){},
             error   : function(){},
-            assert  : function(){},
+            assert  : function(){}
         };
       
         // Set up needed paths.

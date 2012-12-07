@@ -287,7 +287,7 @@ function galaxyPageSetUp(){
     top.Galaxy.currUser         = top.Galaxy.currUser;
     top.Galaxy.currHistoryPanel = top.Galaxy.currHistoryPanel;
 
-    top.Galaxy.paths            = galaxy_paths;
+    //top.Galaxy.paths            = galaxy_paths;
 
     top.Galaxy.localization     = GalaxyLocalization;
     window.Galaxy = top.Galaxy;
@@ -297,12 +297,13 @@ function galaxyPageSetUp(){
 GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
 
 // add needed controller urls to GalaxyPaths
+if( !galaxy_paths ){ galaxy_paths = top.galaxy_paths || new GalaxyPaths(); }
 galaxy_paths.set( 'hda', ${get_hda_url_templates()} );
 galaxy_paths.set( 'history', ${get_history_url_templates()} );
 
 $(function(){
     galaxyPageSetUp();
-    Galaxy.historyFrame = window;
+    //Galaxy.historyFrame = window;
 
     var debugging = ( new PersistantStorage( '__history_panel' ).get( 'debugging' ) || false );
 
@@ -387,6 +388,7 @@ $(function(){
         }
 
         // lots of wtf here...due to infernalframes
+        //TODO: this is way tooo acrobatic
         var $historyButtonWindow = $( top.document ),
             HISTORY_MENU_BUTTON_ID = 'history-options-button',
             $historyMenuButton = $historyButtonWindow.find( '#' + HISTORY_MENU_BUTTON_ID ),
@@ -410,44 +412,50 @@ $(function(){
 
         // since the history frame reloads so often (compared to the main window),
         //  we need to check whether these options are there already before we add them again
-        //NOTE: we use the global here because these remain bound in the main window even if panel refreshes
+        // In IE, however, NOT re-adding them creates a 'cant execute from freed script' error:
+        //  so...we need to re-add the function in either case (just not the option itself)
+        //NOTE: we use the global Galaxy.currHistoryPanel here
+        //  because these remain bound in the main window even if panel refreshes
         //TODO: too much boilerplate
-        if( popupMenu.findIndexByHtml( COLLAPSE_OPTION_TEXT ) === null ){
-            popupMenu.addItem({
-                html    : COLLAPSE_OPTION_TEXT,
-                func    : function() {
-                    Galaxy.currHistoryPanel.collapseAllHdaBodies();
-                }
-            }, START_INSERTING_AT_INDEX )
+        //TODO: ugh...(in general)
+        var collapseOption = popupMenu.findItemByHtml( COLLAPSE_OPTION_TEXT );
+        if( !collapseOption ){
+            collapseOption = {
+                html    : COLLAPSE_OPTION_TEXT
+            };
+            popupMenu.addItem( collapseOption, START_INSERTING_AT_INDEX )
         }
+        collapseOption.func = function() {
+            Galaxy.currHistoryPanel.collapseAllHdaBodies();
+        };
 
-        var deletedOptionIndex = popupMenu.findIndexByHtml( DELETED_OPTION_TEXT );
-        if( deletedOptionIndex === null ){
-            popupMenu.addItem({
-                html    : DELETED_OPTION_TEXT,
-                func    : function( clickEvent, thisMenuOption ){
-                    var show_deleted = Galaxy.currHistoryPanel.toggleShowDeleted();
-                    thisMenuOption.checked = show_deleted;
-                }
-            }, START_INSERTING_AT_INDEX + 1 )
-            deletedOptionIndex = START_INSERTING_AT_INDEX + 1;
+        var deletedOption = popupMenu.findItemByHtml( DELETED_OPTION_TEXT );
+        if( !deletedOption ){
+            deletedOption = {
+                html    : DELETED_OPTION_TEXT
+            };
+            popupMenu.addItem( deletedOption, START_INSERTING_AT_INDEX + 1 )
         }
+        deletedOption.func = function( clickEvent, thisMenuOption ){
+            var show_deleted = Galaxy.currHistoryPanel.toggleShowDeleted();
+            thisMenuOption.checked = show_deleted;
+        };
         // whether was there or added, update the checked option to reflect the panel's settings on the panel render
-        popupMenu.options[ deletedOptionIndex ].checked = Galaxy.currHistoryPanel.storage.get( 'show_deleted' );
+        deletedOption.checked = Galaxy.currHistoryPanel.storage.get( 'show_deleted' );
 
-        var hiddenOptionIndex = popupMenu.findIndexByHtml( HIDDEN_OPTION_TEXT );
-        if( hiddenOptionIndex === null ){
-            popupMenu.addItem({
-                html    : HIDDEN_OPTION_TEXT,
-                func    : function( clickEvent, thisMenuOption ){
-                    var show_hidden = Galaxy.currHistoryPanel.toggleShowHidden();
-                    thisMenuOption.checked = show_hidden;
-                }
-            }, START_INSERTING_AT_INDEX + 2 )
-            hiddenOptionIndex = START_INSERTING_AT_INDEX + 2;
+        var hiddenOption = popupMenu.findItemByHtml( HIDDEN_OPTION_TEXT );
+        if( !hiddenOption ){
+            hiddenOption = {
+                html    : HIDDEN_OPTION_TEXT
+            };
+            popupMenu.addItem( hiddenOption, START_INSERTING_AT_INDEX + 2 )
         }
+        hiddenOption.func = function( clickEvent, thisMenuOption ){
+            var show_hidden = Galaxy.currHistoryPanel.toggleShowHidden();
+            thisMenuOption.checked = show_hidden;
+        };
         // whether was there or added, update the checked option to reflect the panel's settings on the panel render
-        popupMenu.options[ hiddenOptionIndex ].checked = Galaxy.currHistoryPanel.storage.get( 'show_hidden' );
+        hiddenOption.checked = Galaxy.currHistoryPanel.storage.get( 'show_hidden' );
     })();
 
     //TODO: both the quota meter and the options-menu stuff need to be moved out when iframes are removed
