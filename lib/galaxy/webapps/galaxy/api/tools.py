@@ -1,5 +1,5 @@
 from galaxy import web, util
-from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin, messages, get_highest_priority_msg
+from galaxy.web.base.controller import BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesVisualizationMixin
 from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string, from_json_string
@@ -57,7 +57,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         tool_id = payload[ 'tool_id' ]
         tool = trans.app.toolbox.get_tool( tool_id )
         if not tool:
-            return { "message": { "type": "error", "text" : messages.NO_TOOL } }
+            return { "message": { "type": "error", "text" : trans.app.model.Dataset.conversion_messages.NO_TOOL } }
 
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
@@ -123,7 +123,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         #
         tool = trans.app.toolbox.get_tool( tool_id )
         if not tool:
-            return messages.NO_TOOL
+            return trans.app.model.Dataset.conversion_messages.NO_TOOL
 
         # HACK: add run button so that tool.handle_input will run tool.
         kwargs['runtool_btn'] = 'Execute'
@@ -199,7 +199,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         original_job = get_dataset_job( original_dataset )
         tool = trans.app.toolbox.get_tool( original_job.tool_id )
         if not tool:
-            return messages.NO_TOOL
+            return trans.app.model.Dataset.conversion_messages.NO_TOOL
         tool_params = dict( [ ( p.name, p.value ) for p in original_job.parameters ] )
         
         # TODO: rather than set new inputs using dict of json'ed value, unpack parameters and set using set_param_value below.
@@ -226,7 +226,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                             messages_list.append( msg )
 
         # Return any messages generated during conversions.
-        return_message = get_highest_priority_msg( messages_list )
+        return_message = self._get_highest_priority_msg( messages_list )
         if return_message:
             return to_json_string( return_message )
 
@@ -290,7 +290,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                     break
 
             if not success:
-                return messages.ERROR
+                return trans.app.model.Dataset.conversion_messages.ERROR
 
         #
         # Set input datasets for tool. If running on regions, extract and use subset

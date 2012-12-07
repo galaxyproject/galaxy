@@ -239,7 +239,7 @@ class Bam( Binary ):
         except:
             return "Binary bam alignments file (%s)" % ( data.nice_size( dataset.get_size() ) )
     def get_track_type( self ):
-        return "ReadTrack", {"data": "bai", "index": "summary_tree"}
+        return "ReadTrack", { "data": "bai", "index": [ "bigwig", "summary_tree" ] }
 
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
 

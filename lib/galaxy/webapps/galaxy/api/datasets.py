@@ -4,7 +4,7 @@ API operations on the contents of a dataset.
 import logging, os, string, shutil, urllib, re, socket
 from galaxy import util, datatypes, jobs, web, util
 from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider
-from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, get_highest_priority_msg, messages
+from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
 from galaxy.web.framework.helpers import is_true
 
 log = logging.getLogger( __name__ )
@@ -64,7 +64,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
             
         msg = self.check_dataset_state( trans, dataset )
         if not msg:
-            msg = messages.DATA
+            msg = dataset.conversion_messages.DATA
 
         return msg
         
@@ -80,7 +80,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         # Get datasources and check for messages (which indicate errors). Retry if flag is set.
         data_sources = dataset.get_datasources( trans )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
-        msg = get_highest_priority_msg( messages_list )
+        msg = self._get_highest_priority_msg( messages_list )
         if msg:
             if retry:
                 # Clear datasources and then try again.
@@ -92,12 +92,12 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         # If there is a chrom, check for data on the chrom.
         if chrom:
             data_provider_registry = trans.app.data_provider_registry
-            data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset= dataset, source='index' )
+            data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
             if not data_provider.has_data( chrom ):
-                return messages.NO_DATA
+                return dataset.conversion_messages.NO_DATA
 
         # Have data if we get here
-        return { "status": messages.DATA, "valid_chroms": None }
+        return { "status": dataset.conversion_messages.DATA, "valid_chroms": None }
 
     def _search_features( self, trans, dataset, query ):
         """
@@ -121,17 +121,17 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
     
         # Parameter check.
         if not chrom:
-            return messages.NO_DATA
+            return dataset.conversion_messages.NO_DATA
         
         # Dataset check.
         msg = self.check_dataset_state( trans, dataset )
         if msg:
             return msg
             
-        # Get datasources and check for messages.
+        # Get datasources and check for essages.
         data_sources = dataset.get_datasources( trans )
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
-        return_message = get_highest_priority_msg( messages_list )
+        return_message = self._get_highest_priority_msg( messages_list )
         if return_message:
             return return_message
             

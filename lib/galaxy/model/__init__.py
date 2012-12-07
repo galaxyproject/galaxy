@@ -872,6 +872,16 @@ class Dataset( object ):
                     PAUSED = 'paused',
                     SETTING_METADATA = 'setting_metadata',
                     FAILED_METADATA = 'failed_metadata' )
+
+    conversion_messages = Bunch( PENDING = "pending",
+                                 NO_DATA = "no data",
+                                 NO_CHROMOSOME = "no chromosome",
+                                 NO_CONVERTER = "no converter",
+                                 NO_TOOL = "no tool",
+                                 DATA = "data",
+                                 ERROR = "error",
+                                 OK = "ok" )
+
     permitted_actions = get_permitted_actions( filter='DATASET' )
     file_path = "/tmp/"
     object_store = None # This get initialized in mapping.py (method init) by app.py
@@ -996,6 +1006,7 @@ class Dataset( object ):
 class DatasetInstance( object ):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
     states = Dataset.states
+    conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
     def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, tool_version=None, extension=None,
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
@@ -1170,9 +1181,9 @@ class DatasetInstance( object ):
                 if dep_dataset is None:
                     # None means converter is running first time
                     return None
-                elif dep_dataset.state == trans.app.model.Job.states.ERROR:
+                elif dep_dataset.state == Job.states.ERROR:
                     raise ConverterDependencyException("A dependency (%s) was in an error state." % dependency)
-                elif dep_dataset.state != trans.app.model.Job.states.OK:
+                elif dep_dataset.state != Job.states.OK:
                     # Pending
                     return None
                 deps[dependency] = dep_dataset
@@ -1196,12 +1207,11 @@ class DatasetInstance( object ):
         for name, value in self.metadata.items():
             # HACK: MetadataFile objects do not have a type/ext, so need to use metadata name
             # to determine type.
-            if dataset_ext == 'bai' and name == 'bam_index' and isinstance( value, trans.app.model.MetadataFile ):
+            if dataset_ext == 'bai' and name == 'bam_index' and isinstance( value, MetadataFile ):
                 # HACK: MetadataFile objects cannot be used by tools, so return
                 # a fake HDA that points to metadata file.
-                fake_dataset = trans.app.model.Dataset( state=trans.app.model.Dataset.states.OK,
-                                                        external_filename=value.file_name )
-                fake_hda = trans.app.model.HistoryDatasetAssociation( dataset=fake_dataset )
+                fake_dataset = Dataset( state=Dataset.states.OK, external_filename=value.file_name )
+                fake_hda = HistoryDatasetAssociation( dataset=fake_dataset )
                 return fake_hda
     def clear_associated_files( self, metadata_safe = False, purge = False ):
         raise 'Unimplemented'
@@ -1311,16 +1321,26 @@ class DatasetInstance( object ):
         track_type, data_sources = self.datatype.get_track_type()
         data_sources_dict = {}
         msg = None
-        for source_type, data_source in data_sources.iteritems():
+        for source_type, source_list in data_sources.iteritems():
+            data_source = None
             if source_type == "data_standalone":
                 # Nothing to do.
                 msg = None
+                data_source = source_list
             else:
                 # Convert.
-                msg = self.convert_dataset( trans, data_source )
+                if isinstance( source_list, str ):
+                    source_list = [ source_list ]
+
+                # Loop through sources until viable one is found.
+                for source in source_list:
+                    msg = self.convert_dataset( trans, source )
+                    if msg == self.conversion_messages.PENDING:
+                        data_source = source
+                        break
 
             # Store msg.
-            data_sources_dict[ source_type ] = { "name" : data_source, "message": msg }
+            data_sources_dict[ source_type ] = { "name": data_source, "message": msg }
 
         return data_sources_dict
 
@@ -1331,35 +1351,23 @@ class DatasetInstance( object ):
         was converted successfully.
         """
 
-        # FIXME: copied from controller.py
-        messages = Bunch(
-            PENDING = "pending",
-            NO_DATA = "no data",
-            NO_CHROMOSOME = "no chromosome",
-            NO_CONVERTER = "no converter",
-            NO_TOOL = "no tool",
-            DATA = "data",
-            ERROR = "error",
-            OK = "ok"
-        )
-
         # Get converted dataset; this will start the conversion if necessary.
         try:
             converted_dataset = self.get_converted_dataset( trans, target_type )
         except NoConverterException:
-            return messages.NO_CONVERTER
+            return self.conversion_messages.NO_CONVERTER
         except ConverterDependencyException, dep_error:
-            return { 'kind': messages.ERROR, 'message': dep_error.value }
+            return { 'kind': self.conversion_messages.ERROR, 'message': dep_error.value }
 
         # Check dataset state and return any messages.
         msg = None
-        if converted_dataset and converted_dataset.state == trans.app.model.Dataset.states.ERROR:
-            job_id = trans.sa_session.query( trans.app.model.JobToOutputDatasetAssociation ) \
+        if converted_dataset and converted_dataset.state == Dataset.states.ERROR:
+            job_id = trans.sa_session.query( JobToOutputDatasetAssociation ) \
                         .filter_by( dataset_id=converted_dataset.id ).first().job_id
-            job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
-            msg = { 'kind': messages.ERROR, 'message': job.stderr }
-        elif not converted_dataset or converted_dataset.state != trans.app.model.Dataset.states.OK:
-            msg = messages.PENDING
+            job = trans.sa_session.query( Job ).get( job_id )
+            msg = { 'kind': self.conversion_messages.ERROR, 'message': job.stderr }
+        elif not converted_dataset or converted_dataset.state != Dataset.states.OK:
+            msg = self.conversion_messages.PENDING
 
         return msg
 
@@ -2414,7 +2422,7 @@ All samples in state:     %(sample_state)s
         elif not trans.app.config.smtp_server:
             comments = "Email notification failed as SMTP server not set in config file"
         if comments:
-            event = trans.app.model.RequestEvent( self, self.state, comments )
+            event = RequestEvent( self, self.state, comments )
             trans.sa_session.add( event )
             trans.sa_session.flush()
         return comments

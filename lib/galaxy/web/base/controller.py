@@ -190,37 +190,6 @@ class Datatype( object ):
 # -- Mixins for working with Galaxy objects. --
 #
 
-# Message strings returned to browser
-messages = Bunch(
-    PENDING = "pending",
-    NO_DATA = "no data",
-    NO_CHROMOSOME = "no chromosome",
-    NO_CONVERTER = "no converter",
-    NO_TOOL = "no tool",
-    DATA = "data",
-    ERROR = "error",
-    OK = "ok"
-)
-
-def get_highest_priority_msg( message_list ):
-    """
-    Returns highest priority message from a list of messages.
-    """
-    return_message = None
-    
-    # For now, priority is: job error (dict), no converter, pending.
-    for message in message_list:
-        if message is not None:
-            if isinstance(message, dict):
-                return_message = message
-                break
-            elif message == messages.NO_CONVERTER:
-                return_message = message
-            elif return_message == None and message == messages.PENDING:
-                return_message = message
-    return return_message
-
-
 class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
     def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
@@ -313,11 +282,11 @@ class UsesHistoryDatasetAssociationMixin:
         Returns a message if dataset is not ready to be used in visualization.
         """
         if not dataset:
-            return messages.NO_DATA
+            return dataset.conversion_messages.NO_DATA
         if dataset.state == trans.app.model.Job.states.ERROR:
-            return messages.ERROR
+            return dataset.conversion_messages.ERROR
         if dataset.state != trans.app.model.Job.states.OK:
-            return messages.PENDING
+            return dataset.conversion_messages.PENDING
         return None
     
 
@@ -624,7 +593,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
 
         # If there are no messages (messages indicate data is not ready/available), get data.
         messages_list = [ data_source_dict[ 'message' ] for data_source_dict in data_sources.values() ]
-        message = get_highest_priority_msg( messages_list )
+        message = self._get_highest_priority_msg( messages_list )
         if message:
             rval = message
         else:
@@ -645,6 +614,27 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                                                   interchromosomal=True )
 
         return rval
+
+    # FIXME: this method probably belongs down in the model.Dataset class.
+    def _get_highest_priority_msg( self, message_list ):
+        """
+        Returns highest priority message from a list of messages.
+        """
+        return_message = None
+        
+        # For now, priority is: job error (dict), no converter, pending.
+        for message in message_list:
+            if message is not None:
+                if isinstance(message, dict):
+                    return_message = message
+                    break
+                elif message == "no converter":
+                    return_message = message
+                elif return_message == None and message == "pending":
+                    return_message = message
+        return return_message
+
+
 
 class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use StoredWorkflow objects. """

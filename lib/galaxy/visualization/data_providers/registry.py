@@ -1,6 +1,9 @@
 from galaxy.visualization.data_providers.basic import ColumnDataProvider
-from galaxy.visualization.data_providers.genome import *
+from galaxy.visualization.data_providers import genome
+from galaxy.model import NoConverterException
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
+from galaxy.datatypes.tabular import Tabular, Vcf
+from galaxy.datatypes.interval import Interval, ENCODEPeak, ChromatinInteractions, Gtf, Gff, Bed
 from galaxy.datatypes.xml import Phyloxml
 from galaxy.datatypes.data import Newick, Nexus
 
@@ -15,20 +18,20 @@ class DataProviderRegistry( object ):
         # is original dataset type.
         self.dataset_type_name_to_data_provider = {
             "tabix": { 
-                Vcf: VcfTabixDataProvider,
-                Bed: BedTabixDataProvider,
-                Gtf: GtfTabixDataProvider,
-                ENCODEPeak: ENCODEPeakTabixDataProvider,
-                Interval: IntervalTabixDataProvider,
-                ChromatinInteractions: ChromatinInteractionsTabixDataProvider, 
-                "default" : TabixDataProvider 
+                Vcf: genome.VcfTabixDataProvider,
+                Bed: genome.BedTabixDataProvider,
+                Gtf: genome.GtfTabixDataProvider,
+                ENCODEPeak: genome.ENCODEPeakTabixDataProvider,
+                Interval: genome.IntervalTabixDataProvider,
+                ChromatinInteractions: genome.ChromatinInteractionsTabixDataProvider, 
+                "default" : genome.TabixDataProvider
             },
-            "interval_index": IntervalIndexDataProvider,
-            "bai": BamDataProvider,
-            "bam": SamDataProvider,
-            "summary_tree": SummaryTreeDataProvider,
-            "bigwig": BigWigDataProvider,
-            "bigbed": BigBedDataProvider
+            "interval_index": genome.IntervalIndexDataProvider,
+            "bai": genome.BamDataProvider,
+            "bam": genome.SamDataProvider,
+            "summary_tree": genome.SummaryTreeDataProvider,
+            "bigwig": genome.BigWigDataProvider,
+            "bigbed": genome.BigBedDataProvider
         }
 
     def get_data_provider( self, trans, name=None, source='data', raw=False, original_dataset=None ):
@@ -41,15 +44,15 @@ class DataProviderRegistry( object ):
         if raw:
             # Working with raw data.
             if isinstance( original_dataset.datatype, Gff ):
-                data_provider_class = RawGFFDataProvider
+                data_provider_class = genome.RawGFFDataProvider
             elif isinstance( original_dataset.datatype, Bed ):
-                data_provider_class = RawBedDataProvider
+                data_provider_class = genome.RawBedDataProvider
             elif isinstance( original_dataset.datatype, Vcf ):
-                data_provider_class = RawVcfDataProvider
+                data_provider_class = genome.RawVcfDataProvider
             elif isinstance( original_dataset.datatype, Tabular ):
-                data_provider_class = ColumnDataProvider
+                data_provider_class = genome.ColumnDataProvider
             elif isinstance( original_dataset.datatype, ( Nexus, Newick, Phyloxml ) ):
-                data_provider_class = PhylovizDataProvider
+                data_provider_class = genome.PhylovizDataProvider
 
             data_provider = data_provider_class( original_dataset=original_dataset )
 
@@ -87,10 +90,20 @@ class DataProviderRegistry( object ):
                 # Get data provider mapping and data provider.
                 _ , data_provider_mapping = original_dataset.datatype.get_track_type()
                 if 'data_standalone' in data_provider_mapping:
-                    data_provider_name = data_provider_mapping[ 'data_standalone' ]
+                    data_provider = self.get_data_provider( trans, 
+                                                            name=data_provider_mapping[ 'data_standalone' ], 
+                                                            original_dataset=original_dataset )
                 else:
-                    data_provider_name = data_provider_mapping[ source ]
-                
-                data_provider = self.get_data_provider( trans, name=data_provider_name, original_dataset=original_dataset )
+                    source_list = data_provider_mapping[ source ]
+                    if isinstance( source_list, str ):
+                        source_list = [ source_list ]
+
+                    # Find a valid data provider in the source list.
+                    for source in source_list:
+                        try:
+                            data_provider = self.get_data_provider( trans, name=source, original_dataset=original_dataset )
+                            break
+                        except NoConverterException:
+                            pass
 
         return data_provider
