@@ -504,6 +504,35 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
     reset_tool_data_tables( trans.app )
     return repository, tool, message
+def new_repository_dependency_metadata_required( trans, repository, metadata_dict ):
+    """
+    Compare the last saved metadata for each repository dependency in the repository with the new 
+    metadata in metadata_dict to determine if a new repository_metadata table record is required, 
+    or if the last saved metadata record can be updated instead.
+    """
+    if 'repository_dependencies' in metadata_dict:
+        repository_metadata = get_latest_repository_metadata( trans, repository.id )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata and 'repository_dependencies' in metadata:
+                saved_repository_dependencies = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
+                new_repository_dependencies = metadata_dict[ 'repository_dependencies' ][ 'repository_dependencies' ]
+                # The saved metadata must be a subset of the new metadata.
+                for new_repository_dependency_metadata in new_repository_dependencies:
+                    if new_repository_dependency_metadata not in saved_repository_dependencies:
+                        return True
+                for saved_repository_dependency_metadata in saved_repository_dependencies:
+                    if saved_repository_dependency_metadata not in new_repository_dependencies:
+                        return True
+            else:
+                # We have repository metadata that does not include metadata for any repository dependencies in the
+                # repository, so we can update the existing repository metadata.
+                return False
+        else:
+            # There is no saved repository metadata, so we need to create a new repository_metadata table record.
+            return True
+    # The received metadata_dict includes no metadata for repository dependencies, so a new repository_metadata table record is not needed.
+    return False
 def new_tool_metadata_required( trans, repository, metadata_dict ):
     """
     Compare the last saved metadata for each tool in the repository with the new metadata in metadata_dict to determine if a new repository_metadata
@@ -579,7 +608,9 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     if metadata_dict:
         downloadable = is_downloadable( metadata_dict )
         repository_metadata = None
-        if new_tool_metadata_required( trans, repository, metadata_dict ) or new_workflow_metadata_required( trans, repository, metadata_dict ):
+        if new_repository_dependency_metadata_required( trans, repository, metadata_dict ) or \
+           new_tool_metadata_required( trans, repository, metadata_dict ) or \
+           new_workflow_metadata_required( trans, repository, metadata_dict ):
             # Create a new repository_metadata table row.
             repository_metadata = create_or_update_repository_metadata( trans,
                                                                         encoded_id,
