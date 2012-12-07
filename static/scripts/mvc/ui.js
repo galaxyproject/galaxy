@@ -190,7 +190,6 @@ var PopupMenu = Backbone.View.extend(
         // default settings
         this.$button = $button || $( '<div/>' );
         this.options = options || [];
-        //console.debug( this + '.initialize, button:', $button, ', options:', options );
 
         // set up button click -> open menu behavior
         var menu = this;
@@ -230,7 +229,6 @@ var PopupMenu = Backbone.View.extend(
             // sets menu div id to '{{ id }}-menu'
             id          : this.$button.attr( 'id' )
         }));
-        //console.debug( this.$el, ':', this.$el.html() );
 
         // set up behavior on each link/anchor elem
         if( this.options.length ){
@@ -239,7 +237,6 @@ var PopupMenu = Backbone.View.extend(
                     $anchor = $li.children( 'a.popupmenu-option' ),
                     menuFunc = menu.options[ i ].func;
 
-                //console.debug( 'setting up behavior:', i, menu.options[ i ], $li, $anchor );
                 if( $anchor.length && menuFunc ){
                     $anchor.click( function( event ){
                         menuFunc( event, menu.options[ i ] );

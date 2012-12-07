@@ -66,7 +66,6 @@ var History = BaseModel.extend( LoggableMixin ).extend(
         //});
         //this.bind( 'all', function( event ){
         //    //this.log( this + '', arguments );
-        //    console.info( this + '', arguments );
         //});
     },
 
