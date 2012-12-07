@@ -72,6 +72,11 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         
         # Set up inputs.
         inputs = payload[ 'inputs' ]
+        # Find files coming in as multipart file data and add to inputs.
+        for k, v in payload.iteritems():
+            if k.startswith("files_"):
+                inputs[k] = v
+
         # HACK: add run button so that tool.handle_input will run tool.
         inputs['runtool_btn'] = 'Execute'
         # TODO: encode data ids and decode ids.

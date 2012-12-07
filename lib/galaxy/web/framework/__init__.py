@@ -142,6 +142,14 @@ def expose_api( func ):
                     named_args, _, _, _ = inspect.getargspec(func)
                     for arg in named_args:
                         payload.pop(arg, None)
+                    for k, v in payload.iteritems():
+                        if isinstance(v, (str, unicode)):
+                            try:
+                                payload[k] = simplejson.loads(v)
+                            except:
+                                # may not actually be json, just continue
+                                pass
+                    payload = util.recursively_stringify_dictionary_keys( payload )
                 else:
                     # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
                     # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
