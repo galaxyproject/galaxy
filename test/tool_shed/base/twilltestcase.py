@@ -1,8 +1,7 @@
-from base.twilltestcase import *
-from galaxy.webapps.community.util.hgweb_config import *
-from test_db_util import *
-from common import *
-import string 
+import galaxy.webapps.community.util.hgweb_config
+import common, string, os
+from base.twilltestcase import tc, from_json_string, TwillTestCase, security
+from test_db_util import get_repository_metadata_by_repository_id_changeset_revision
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -14,7 +13,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.security = security.SecurityHelper( id_secret='changethisinproductiontoo' )
         self.history_id = None
         self.hgweb_config_dir = os.environ.get( 'TEST_HG_WEB_CONFIG_DIR' )
-        self.hgweb_config_manager = HgWebConfigManager()
+        self.hgweb_config_manager = galaxy.webapps.community.util.hgweb_config.HgWebConfigManager()
         self.hgweb_config_manager.hgweb_config_dir = self.hgweb_config_dir
         self.host = os.environ.get( 'TOOL_SHED_TEST_HOST' )
         self.port = os.environ.get( 'TOOL_SHED_TEST_PORT' )
@@ -138,8 +137,12 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def display_manage_repository_page( self, repository, strings_displayed=[], strings_not_displayed=[] ):
-        url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
+    def display_manage_repository_page( self, repository, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
+        base_url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
+        if changeset_revision is not None:
+            url = '%s&changeset_revision=%s' % ( base_url, changeset_revision )
+        else:
+            url = base_url
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_repository_clone_page( self, owner_name, repository_name, strings_displayed=[], strings_not_displayed=[] ):
@@ -209,14 +212,19 @@ class ShedTwillTestCase( TwillTestCase ):
             else:
                 string = string.replace( character, replacement )
         return string
-    def generate_repository_dependency_xml( self, repository, xml_filename ):
+    def generate_repository_dependency_xml( self, repository, xml_filename, dependency_description='' ):
         changeset_revision = self.get_repository_tip( repository )
-        template_parser = string.Template( new_repository_dependencies_xml )
+        if dependency_description:
+            description = ' description="%s"' % dependency_description
+        else:
+            description = dependency_description
+        template_parser = string.Template( common.new_repository_dependencies_xml )
         repository_dependency_xml = template_parser.safe_substitute( toolshed_url=self.url,
                                                                      owner=repository.user.username,
                                                                      repository_name=repository.name,
-                                                                     changeset_revision=changeset_revision )
-        # Save the generated xml to test-data/emboss_5/repository_dependencies.xml.
+                                                                     changeset_revision=changeset_revision,
+                                                                     description=description )
+        # Save the generated xml to the specified location.
         file( xml_filename, 'w' ).write( repository_dependency_xml )
     def get_latest_repository_metadata_for_repository( self, repository ):
         # TODO: This will not work as expected. Fix it.
@@ -293,6 +301,13 @@ class ShedTwillTestCase( TwillTestCase ):
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def repository_is_new( self, repository ):
+        repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
+        tip_ctx = repo.changectx( repo.changelog.tip() )
+        return tip_ctx.rev() < 0
+    def reset_repository_metadata( self, repository ):
+        url = '/repository/reset_all_metadata?id=%s' % self.security.encode_id( repository.id )
+        self.visit_url( url )
     def revoke_write_access( self, repository, username ):
         url = '/repository/manage_repository?user_access_button=Remove&id=%s&remove_auth=%s' % \
             ( self.security.encode_id( repository.id ), username )

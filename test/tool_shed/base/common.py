@@ -9,7 +9,7 @@ test_user_1_email = 'test-1@bx.psu.edu'
 test_user_1_name = 'user1'
 
 new_repository_dependencies_xml = '''<?xml version="1.0"?>
-<repositories>
+<repositories${description}>
     <repository toolshed="${toolshed_url}" name="${repository_name}" owner="${owner}" changeset_revision="${changeset_revision}" />
 </repositories>
 '''
