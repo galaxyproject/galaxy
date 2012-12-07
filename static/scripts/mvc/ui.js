@@ -205,9 +205,6 @@ var PopupMenu = Backbone.View.extend(
 
         // template loading is problematic - ui is loaded in base.mako
         //  and the template (prev.) needed to be loaded before ui
-        if( !this.templates.wrapper ){
-            this.templates.wrapper = Handlebars.templates[ 'template-popupmenu-wrapper' ];
-        }
     },
 
     /** Render the menu. NOTE: doesn't attach itself to the DOM.
