@@ -140,6 +140,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
      *  @see Backbone.View#initialize
      */
     initialize : function( attributes ){
+        // set the logger if requested
+        if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
         this.log( this + '.initialize:', attributes );
 
         // set up url templates
@@ -203,7 +205,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             show_deleted : false,
             show_hidden  : false
         });
-        this.log( 'this.storage:', this.storage.get() );
+        this.log( this + ' (prev) storage:', JSON.stringify( this.storage.get(), null, 2 ) );
 
         // expanded Hdas is a map of hda.ids -> a boolean rep'ing whether this hda's body is expanded
         // store any pre-expanded ids passed in
@@ -226,7 +228,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         this.show_deleted = this.storage.get( 'show_deleted' );
         this.show_hidden  = this.storage.get( 'show_hidden' );
         //this.log( 'this.show_deleted:', this.show_deleted, 'show_hidden', this.show_hidden );
-        this.log( '(init\'d) this.storage:', this.storage.get() );
+        this.log( this + ' (init\'d) storage:', this.storage.get() );
     },
 
     /** Add an hda to this history's collection
@@ -351,7 +353,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             historyView.hdaViews[ hdaId ] = new historyView.HDAView({
                     model           : hda,
                     expanded        : expanded,
-                    urlTemplates    : historyView.hdaUrlTemplates
+                    urlTemplates    : historyView.hdaUrlTemplates,
+                    logger          : historyView.logger
                 });
             historyView._setUpHdaListeners( historyView.hdaViews[ hdaId ] );
 
@@ -432,19 +435,23 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     /** Handle the user toggling the deleted visibility by:
      *      (1) storing the new value in the persistant storage
      *      (2) re-rendering the history
+     * @returns {Boolean} new show_deleted setting
      */
     toggleShowDeleted : function(){
         this.storage.set( 'show_deleted', !this.storage.get( 'show_deleted' ) );
         this.render();
+        return this.storage.get( 'show_deleted' );
     },
 
     /** Handle the user toggling the deleted visibility by:
      *      (1) storing the new value in the persistant storage
      *      (2) re-rendering the history
+     * @returns {Boolean} new show_hidden setting
      */
     toggleShowHidden : function(){
         this.storage.set( 'show_hidden', !this.storage.get( 'show_hidden' ) );
         this.render();
+        return this.storage.get( 'show_hidden' );
     },
 
     /** Collapse all hda bodies and clear expandedHdas in the storage

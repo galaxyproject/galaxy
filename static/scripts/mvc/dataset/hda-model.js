@@ -130,8 +130,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         //TODO: to list inclusion test
         //TODO: class level readyStates list
         return (
-            ( state === HistoryDatasetAssociation.STATES.NEW )
-        ||  ( state === HistoryDatasetAssociation.STATES.OK )
+            ( state === HistoryDatasetAssociation.STATES.OK )
         ||  ( state === HistoryDatasetAssociation.STATES.EMPTY )
         ||  ( state === HistoryDatasetAssociation.STATES.FAILED_METADATA )
         ||  ( state === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )

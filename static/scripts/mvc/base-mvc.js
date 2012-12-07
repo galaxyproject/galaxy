@@ -288,7 +288,7 @@ var PersistantStorage = function( storageKey, storageDefaults ){
         },
         /** String representation.
          */
-        toString : function(){ return 'PersistantStorage(' + data + ')'; }
+        toString : function(){ return 'PersistantStorage(' + storageKey + ')'; }
     });
     
     return returnedStorage;

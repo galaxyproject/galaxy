@@ -28,6 +28,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @see Backbone.View#initialize
      */
     initialize  : function( attributes ){
+        if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
         this.log( this + '.initialize:', attributes );
 
         /** list of rendering functions for the default, primary icon-buttons. */
@@ -334,6 +335,8 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
 
         //TODO: not a fan of this dispatch
         switch( this.model.get( 'state' ) ){
+            case HistoryDatasetAssociation.STATES.NEW :
+                break;
             case HistoryDatasetAssociation.STATES.NOT_VIEWABLE :
                 this._render_body_not_viewable( body );
                 break;

@@ -10,7 +10,7 @@
     $(function(){
         // Init history options.
         $("#history-options-button").css( "position", "relative" );
-        make_popupmenu( $("#history-options-button"), {
+        var popupmenu = PopupMenu.make_popupmenu( $("#history-options-button"), {
             "${_("History Lists")}": null,
             "${_("Saved Histories")}": function() {
                 galaxy_main.location = "${h.url_for( controller='history', action='list')}";
@@ -39,18 +39,6 @@
             },
             "${_("Resume Paused Jobs")}": function() {
                 galaxy_history.location = "${h.url_for( controller='history', action='resume_paused_jobs', current=True)}";
-            },
-            "${_("Collapse Expanded Datasets")}": function() {
-                Galaxy.currHistoryPanel.collapseAllHdaBodies();
-                //galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
-            },
-            "${_("Show/Hide Deleted Datasets")}": function() {
-                Galaxy.currHistoryPanel.toggleShowDeleted();
-                //galaxy_history.location = "${h.url_for( controller='root', action='history', show_deleted=True)}";
-            },
-            "${_("Show/Hide Hidden Datasets")}": function() {
-                Galaxy.currHistoryPanel.toggleShowHidden();
-                //galaxy_history.location = "${h.url_for( controller='root', action='history', show_hidden=True)}";
             },
             "${_("Unhide Hidden Datasets")}": function() {
                 if ( confirm( "Really unhide all hidden datasets?" ) ) {
@@ -83,7 +71,6 @@
                 galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
             }
         });
-        
     });
     </script>
 </%def>

@@ -14,11 +14,12 @@ class TestHistory( TwillTestCase ):
         name = 'anonymous'
         self.new_history( name=name )
         global anonymous_history
-        anonymous_history = sa_session.query( galaxy.model.History ) \
-                                      .filter( and_( galaxy.model.History.table.c.deleted==False,
-                                                     galaxy.model.History.table.c.name==name ) ) \
-                                      .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
-                                      .first()
+        anonymous_history = (
+            sa_session.query( galaxy.model.History )
+                .filter( and_( galaxy.model.History.table.c.deleted==False, galaxy.model.History.table.c.name==name ) )
+                .order_by( desc( galaxy.model.History.table.c.create_time ) )
+                .first()
+        )
         assert anonymous_history is not None, "Problem retrieving anonymous_history from database"
         # Upload a dataset to anonymous_history so it will be set as the current history after login
         self.upload_file( '1.bed', dbkey='hg18' )
@@ -235,27 +236,35 @@ class TestHistory( TwillTestCase ):
         # Check list of histories to make sure shared history3 was cloned
         strings_displayed=[ "Clone of '%s' shared by '%s'" % ( history3.name, admin_user.email ) ]
         self.view_stored_active_histories( strings_displayed=strings_displayed )
+
     def test_035_clone_current_history( self ):
         """Testing cloning the current history"""
         # logged in as regular_user1
         self.logout()
         self.login( email=admin_user.email )
+
         # Current history should be history3, add more datasets to history3, then delete them so we can
         # test cloning activatable datasets as well as only the active datasets
         self.upload_file( '2.bed', dbkey='hg18' )
-        hda_2_bed = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                              .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3.id,
-                                             galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) ) \
-                              .first()
+        hda_2_bed = (
+            sa_session.query( galaxy.model.HistoryDatasetAssociation )
+                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3.id,
+                               galaxy.model.HistoryDatasetAssociation.table.c.name=='2.bed' ) )
+                .first()
+        )
         assert hda_2_bed is not None, "Problem retrieving hda_2_bed from database"
         self.delete_history_item( str( hda_2_bed.id ) )
+
         self.upload_file( '3.bed', dbkey='hg18' )
-        hda_3_bed = sa_session.query( galaxy.model.HistoryDatasetAssociation ) \
-                              .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3.id,
-                                             galaxy.model.HistoryDatasetAssociation.table.c.name=='3.bed' ) ) \
-                              .first()
+        hda_3_bed = (
+            sa_session.query( galaxy.model.HistoryDatasetAssociation )
+                .filter( and_( galaxy.model.HistoryDatasetAssociation.table.c.history_id==history3.id,
+                               galaxy.model.HistoryDatasetAssociation.table.c.name=='3.bed' ) )
+                .first()
+        )
         assert hda_3_bed is not None, "Problem retrieving hda_3_bed from database"
         self.delete_history_item( str( hda_3_bed.id ) )
+
         # Test cloning activatable datasets
         self.clone_history( self.security.encode_id( history3.id ),
                             'activatable',
@@ -267,6 +276,7 @@ class TestHistory( TwillTestCase ):
                                     .order_by( desc( galaxy.model.History.table.c.create_time ) ) \
                                     .first()
         assert history3_clone2 is not None, "Problem retrieving history3_clone2 from database"
+
         # Check list of histories to make sure shared history3 was cloned
         self.view_stored_active_histories( strings_displayed=[ "Clone of '%s'" % history3.name ] )
         # Switch to the cloned history to make sure activatable datasets were cloned
@@ -307,6 +317,7 @@ class TestHistory( TwillTestCase ):
             raise AssertionError, "Deleted datasets incorrectly included in cloned history history3_clone3"
         except:
             pass
+
     def test_040_sharing_mulitple_histories_with_multiple_users( self ):
         """Testing sharing multiple histories containing only public datasets with multiple users"""
         # Logged in as admin_user

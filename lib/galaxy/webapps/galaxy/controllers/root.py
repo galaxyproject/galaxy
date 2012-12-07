@@ -98,7 +98,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
         return trans.fill_template_mako( "/my_data.mako" )
 
     @web.expose
-    #def history( self, trans, as_xml=False, show_deleted=False, show_hidden=False, hda_id=None, **kwd ):
     def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
         """
         Display the current history, creating a new history if necessary.

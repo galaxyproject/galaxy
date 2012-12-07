@@ -223,10 +223,12 @@ ${parent.javascripts()}
 ${h.js(
     "libs/jquery/jstorage",
     "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging",
-    "libs/json2",
+    ##"libs/json2",
     ##"libs/bootstrap",
-    "libs/backbone/backbone-relational",
-    "mvc/base-mvc", "mvc/ui"
+    ## I think we can remove some of these
+    ##"libs/backbone/backbone-relational",
+    "mvc/base-mvc",
+    ##"mvc/ui"
 )}
 
 ${h.templates(
@@ -302,13 +304,9 @@ $(function(){
     galaxyPageSetUp();
     Galaxy.historyFrame = window;
 
-    // ostensibly, this is the App
-    //if( window.console && console.debug ){
-    //    //if( console.clear ){ console.clear(); }
-    //    console.pretty = function( o ){ $( '<pre/>' ).text( JSON.stringify( o, null, ' ' ) ).appendTo( 'body' ); }
-    //    top.storage = jQuery.jStorage
-    //}
+    var debugging = ( new PersistantStorage( '__history_panel' ).get( 'debugging' ) || false );
 
+    // ostensibly, this is the App
     // LOAD INITIAL DATA IN THIS PAGE - since we're already sending it...
     //  ...use mako to 'bootstrap' the models
     var user    = ${ get_current_user() },
@@ -325,7 +323,7 @@ $(function(){
     var historyPanel = new HistoryPanel({
         model           : new History( history, hdas ),
         urlTemplates    : galaxy_paths.attributes,
-        //logger          : console,
+        logger          : ( debugging )?( console ):( null ),
         // is page sending in show settings? if so override history's
         show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
         show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
@@ -336,12 +334,16 @@ $(function(){
     //historyPanel = new HistoryPanel({
     //    model: new History(),
     //    urlTemplates    : galaxy_paths.attributes,
-    //    logger          : console,
+    //    logger          : ( debugging )?( console ):( null ),
     //    // is page sending in show settings? if so override history's
     //    show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
     //    show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
     //});
     //historyPanel.model.loadFromApi( history.id );
+
+    // set it up to be accessible across iframes
+    //TODO:?? mem leak
+    top.Galaxy.currHistoryPanel = historyPanel;
 
 
     // QUOTA METER is a cross-frame ui element (meter in masthead, over quota message in history)
@@ -352,6 +354,7 @@ $(function(){
     //window.currUser.logger = console;
     var quotaMeter = new UserQuotaMeter({
         model   : currUser,
+        //logger  : ( debugging )?( console ):( null ),
         el      : $( top.document ).find( '.quota-meter-container' )
     });
     //quotaMeter.logger = console; window.quotaMeter = quotaMeter
@@ -373,9 +376,81 @@ $(function(){
         quotaMeter.update()
     }, quotaMeter );
 
-    // set it up to be accessible across iframes
-    //TODO:?? mem leak
-    top.Galaxy.currHistoryPanel = historyPanel;
+
+    //ANOTHER cross-frame element is the history-options-button...
+    // in this case, we need to change the popupmenu options listed to include some functions for this history
+    // these include: current (1 & 2) 'show/hide' delete and hidden functions, and (3) the collapse all option
+    (function(){
+        // don't try this if the history panel is in it's own window
+        if( top.document === window.document ){
+            return;
+        }
+
+        // lots of wtf here...due to infernalframes
+        var $historyButtonWindow = $( top.document ),
+            HISTORY_MENU_BUTTON_ID = 'history-options-button',
+            $historyMenuButton = $historyButtonWindow.find( '#' + HISTORY_MENU_BUTTON_ID ),
+            // jq data in another frame can only be accessed by the jQuery in that frame,
+            //  get the jQuery from the top frame (that contains the history-options-button)
+            START_INSERTING_AT_INDEX = 11,
+            COLLAPSE_OPTION_TEXT = _l("Collapse Expanded Datasets"),
+            DELETED_OPTION_TEXT  = _l("Include Deleted Datasets"),
+            HIDDEN_OPTION_TEXT   = _l("Include Hidden Datasets");
+            windowJQ = $( top )[0].jQuery,
+            popupMenu = ( windowJQ && $historyMenuButton[0] )?( windowJQ.data( $historyMenuButton[0], 'PopupMenu' ) )
+                                                             :( null );
+
+        //console.debug(
+        //    '$historyButtonWindow:', $historyButtonWindow,
+        //    '$historyMenuButton:', $historyMenuButton,
+        //    'windowJQ:', windowJQ,
+        //    'popupmenu:', popupMenu
+        //);
+        if( !popupMenu ){ return; }
+
+        // since the history frame reloads so often (compared to the main window),
+        //  we need to check whether these options are there already before we add them again
+        //NOTE: we use the global here because these remain bound in the main window even if panel refreshes
+        //TODO: too much boilerplate
+        if( popupMenu.findIndexByHtml( COLLAPSE_OPTION_TEXT ) === null ){
+            popupMenu.addItem({
+                html    : COLLAPSE_OPTION_TEXT,
+                func    : function() {
+                    Galaxy.currHistoryPanel.collapseAllHdaBodies();
+                }
+            }, START_INSERTING_AT_INDEX )
+        }
+
+        var deletedOptionIndex = popupMenu.findIndexByHtml( DELETED_OPTION_TEXT );
+        if( deletedOptionIndex === null ){
+            popupMenu.addItem({
+                html    : DELETED_OPTION_TEXT,
+                func    : function( clickEvent, thisMenuOption ){
+                    var show_deleted = Galaxy.currHistoryPanel.toggleShowDeleted();
+                    thisMenuOption.checked = show_deleted;
+                }
+            }, START_INSERTING_AT_INDEX + 1 )
+            deletedOptionIndex = START_INSERTING_AT_INDEX + 1;
+        }
+        // whether was there or added, update the checked option to reflect the panel's settings on the panel render
+        popupMenu.options[ deletedOptionIndex ].checked = Galaxy.currHistoryPanel.storage.get( 'show_deleted' );
+
+        var hiddenOptionIndex = popupMenu.findIndexByHtml( HIDDEN_OPTION_TEXT );
+        if( hiddenOptionIndex === null ){
+            popupMenu.addItem({
+                html    : HIDDEN_OPTION_TEXT,
+                func    : function( clickEvent, thisMenuOption ){
+                    var show_hidden = Galaxy.currHistoryPanel.toggleShowHidden();
+                    thisMenuOption.checked = show_hidden;
+                }
+            }, START_INSERTING_AT_INDEX + 2 )
+            hiddenOptionIndex = START_INSERTING_AT_INDEX + 2;
+        }
+        // whether was there or added, update the checked option to reflect the panel's settings on the panel render
+        popupMenu.options[ hiddenOptionIndex ].checked = Galaxy.currHistoryPanel.storage.get( 'show_hidden' );
+    })();
+
+    //TODO: both the quota meter and the options-menu stuff need to be moved out when iframes are removed
 
     return;
 });

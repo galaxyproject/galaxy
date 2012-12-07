@@ -31,11 +31,18 @@
         "libs/jquery/jquery",
         "libs/json2",
         "libs/bootstrap",
-        "galaxy.base",
         "libs/underscore",
         "libs/backbone/backbone",
         "libs/backbone/backbone-relational",
         "libs/handlebars.runtime",
+        "galaxy.base"
+    )}
+
+    ${h.templates(
+        "template-popupmenu-menu"
+    )}
+
+    ${h.js(
         "mvc/ui"
     )}
     

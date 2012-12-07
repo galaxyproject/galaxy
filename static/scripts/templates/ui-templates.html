@@ -1,4 +1,4 @@
-<script type="text/template" class="template-history" id="template-user-quotaMeter-quota">
+<script type="text/template" class="template-user" id="template-user-quotaMeter-quota">
 <div id="quota-meter" class="quota-meter progress">
     <div id="quota-meter-bar"  class="quota-meter-bar bar" style="width: {{quota_percent}}%"></div>
     {{! TODO: remove the hardcoded style }}
@@ -8,11 +8,36 @@
 </div>
 </script>
 
-<script type="text/template" class="template-history" id="template-user-quotaMeter-usage">
+<script type="text/template" class="template-user" id="template-user-quotaMeter-usage">
 {{! TODO: remove the hardcoded styles }}
 <div id="quota-meter" class="quota-meter" style="background-color: transparent">
     <div id="quota-meter-text" class="quota-meter-text" style="top: 6px; color: white">
         {{#local}}Using{{/local}} {{ nice_total_disk_usage }}
     </div>
 </div>
+</script>
+
+<script type="text/template" class="template-ui" id="template-popupmenu-menu">
+<ul id="{{ id }}-menu" class="dropdown-menu">
+{{#if options.length }}
+    {{#each options }}
+        {{#if divider }}
+            <li class="divider"></li>
+        {{else}}
+            {{#if header }}
+                <li class="head"><a href=""javascript:void(0);">{{{ html }}}</a></li>
+            {{else}}
+                {{!NOTE: changed from # to void fn }}
+                <li><a href="{{#if href }}{{ href }}{{else}}javascript:void(0);{{/if}}"
+                    {{#if href }}target="{{ target }}"{{/if}} class="popupmenu-option">
+                        {{#if checked }}<span class="ficon ok"></span>{{/if}}
+                        {{{ html }}}
+                </a></li>
+            {{/if}}
+        {{/if}}
+    {{/each}}
+{{else}}
+    <li>No Options.</li>
+{{/if}}
+</ul>
 </script>
