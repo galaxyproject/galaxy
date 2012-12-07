@@ -188,7 +188,7 @@ class UploadController( BaseUIController ):
                         else:
                             metadata_dict = {}
                         if 'tool_dependencies' not in metadata_dict:
-                            message += 'Name, version and type from a tool requirement tag does not match the information in the "tool_dependencies.xml".  '
+                            message += 'Name, version and type from a tool requirement tag does not match the information in the "tool_dependencies.xml file".  '
                             status = 'warning'
                             log.debug( 'Error in tool dependencies for repository %s: %s.' % ( repository.id, repository.name ) )
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.

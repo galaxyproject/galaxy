@@ -212,7 +212,7 @@ def build_repository_dependencies_folder( toolshed_base_url, repository_name, re
         repository_dependencies_folder.description = repository_dependencies.get( 'description', None )
         repository_dependencies_root_folder.folders.append( repository_dependencies_folder )
         del repository_dependencies[ 'description' ]
-        # The remaining keys in repository_dependencies should all be folders.
+        # The current keys in repository_dependencies should all be folders.
         folder_keys = repository_dependencies.keys()
         # If repository_dependencies_folder_key is an entry in repository_dependencies, process it first.
         if repository_dependencies_folder_key in repository_dependencies:
@@ -404,7 +404,7 @@ def generate_repository_dependencies_key_for_repository( toolshed_base_url, repo
                                 STRSEP,
                                 str( changeset_revision ) )
 def get_folder( folder, key ):
-    if folder and folder.key == key:
+    if folder.key == key:
         return folder
     for sub_folder in folder.folders:
         return get_folder( sub_folder, key )
@@ -421,25 +421,30 @@ def handle_repository_dependencies_entry( repository_dependencies_root_folder, r
                                           folder_keys, folder_id, repository_dependency_id, repository_name, repository_owner, changeset_revision,
                                           key, val ):
     # Only create a new folder object if necessary.
-    folder = get_folder( repository_dependencies_root_folder, key )
+    folder = get_folder( repository_dependencies_folder, key )
     if not folder:
         folder_id += 1
         label = generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision, key )
         folder = Folder( id=folder_id, key=key, label=label, parent=repository_dependencies_folder )
     for repository_dependency_tup in val:
         toolshed, name, owner, changeset_revision = repository_dependency_tup
-        if is_root_repository( repository_dependencies_folder_key, toolshed, name, owner ):
-            # Do not include repository dependencies that point to a revision within the same repository.
-            continue
         if is_or_should_be_folder( folder_keys, toolshed, name, owner, changeset_revision ):
             check_folder_key = generate_repository_dependencies_key_for_repository( toolshed, name, owner, changeset_revision )
-            if get_folder( repository_dependencies_root_folder, check_folder_key ):
-                continue
+            check_folder = get_folder( repository_dependencies_folder, check_folder_key )
+            if check_folder:
+                repository_dependency_id += 1
+                repository_dependency = RepositoryDependency( id=repository_dependency_id,
+                                                              toolshed=toolshed,
+                                                              repository_name=name,
+                                                              repository_owner=owner,
+                                                              changeset_revision=changeset_revision )
+                if not check_folder.contains_repository_dependency( repository_dependency ):
+                    check_folder.repository_dependencies.append( repository_dependency )
             else:
                 # Create a new folder, which may be populated later.
                 folder_id += 1
                 label = generate_repository_dependencies_folder_label_from_key( name, owner, changeset_revision, key )
-                sub_folder = Folder( id=folder_id, key=check_folder_key, label=label, parent=repository_dependencies_folder )
+                sub_folder = Folder( id=folder_id, key=check_folder_key, label=label, parent=folder )
                 folder.folders.append( sub_folder )
         else:
             repository_dependency_id += 1
@@ -458,11 +463,6 @@ def handle_repository_dependencies_entry( repository_dependencies_root_folder, r
 def is_or_should_be_folder( folder_keys, toolshed, repository_name, repository_owner, changeset_revision ):
     key = '%s%s%s%s%s%s%s' % ( toolshed, STRSEP, repository_name, STRSEP, repository_owner, STRSEP, changeset_revision )
     return key in folder_keys
-def is_root_repository( repository_dependencies_folder_key, toolshed, repository_name, repository_owner ):
-    # Return True if a repository dependency points to a revision within it's own repository.
-    repository_dependencies_folder_tup = repository_dependencies_folder_key.split( STRSEP )
-    rdf_toolshed, rdf_repository_name, rdf_repository_owner, rdf_changeset_revision = repository_dependencies_folder_tup
-    return rdf_toolshed == toolshed and rdf_repository_name == repository_name and rdf_repository_owner == repository_owner
 def key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, key ):
     toolshed_base_url, key_name, key_owner, key_changeset_revision = get_components_from_key( key )
     return repository_name == key_name and repository_owner == key_owner and changeset_revision == key_changeset_revision
