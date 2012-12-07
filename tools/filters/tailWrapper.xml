@@ -1,0 +1,42 @@
+<tool id="Show tail1" name="Select last">
+  <description>lines from a dataset</description>
+  <command interpreter="perl">tailWrapper.pl $input $lineNum $out_file1</command>
+  <inputs>
+    <param name="lineNum" size="5" type="integer" value="10" label="Select last" help="lines"/>
+    <param format="txt" name="input" type="data" label="from"/>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="lineNum" value="10"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-showtail.dat"/>
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool outputs specified number of lines from the **end** of a dataset
+
+-----
+
+**Example**
+
+- Input File::
+
+    chr7    57134   57154   D17003_CTCF_R7  356     -
+    chr7    57247   57267   D17003_CTCF_R4  207     +
+    chr7    57314   57334   D17003_CTCF_R5  269     +
+    chr7    57341   57361   D17003_CTCF_R7  375     +
+    chr7    57457   57477   D17003_CTCF_R3  188     +
+
+- Show last two lines of above file. The result is::
+
+    chr7    57341   57361   D17003_CTCF_R7  375     +
+    chr7    57457   57477   D17003_CTCF_R3  188     +
+
+  </help>
+</tool>

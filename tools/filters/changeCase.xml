@@ -1,0 +1,77 @@
+<tool id="ChangeCase" name="Change Case">
+  <description> of selected columns</description>
+  <stdio>
+    <exit_code range="1:" err_level="fatal" />
+  </stdio>
+  <command interpreter="perl">changeCase.pl $input "$cols" $delimiter $casing $out_file1</command>
+  <inputs>
+    <param name="input" format="txt" type="data" label="From"/>
+    <param name="cols" size="10" type="text" value="c1,c2" label="Change case of columns"/>
+    <param name="delimiter" type="select" label="Delimited by">
+      <option value="TAB">Tab</option>
+      <option value="SPACE">Whitespace</option>
+      <option value="DOT">Dot</option>
+      <option value="COMMA">Comma</option>
+      <option value="DASH">Dash</option>
+      <option value="UNDERSCORE">Underscore</option>
+      <option value="PIPE">Pipe</option>
+    </param>
+    <param name="casing" type="select" label="To">
+      <option value="up">Upper case</option>
+      <option value="lo">Lower case</option>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="1.txt" ftype="txt"/>
+      <param name="cols" value="c1"/>
+      <param name="delimiter" value="SPACE"/>
+      <param name="casing" value="up"/>
+      <output name="out_file1" file="changeCase_out1.tabular"/>
+    </test>
+    <test>
+      <param name="input" value="1.bed" ftype="bed"/>
+      <param name="cols" value="c1"/>
+      <param name="delimiter" value="TAB"/>
+      <param name="casing" value="up"/>
+      <output name="out_file1" file="changeCase_out2.tabular"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark
+
+**This tool breaks column assignments.** To re-establish column assignments run the tool and click on the pencil icon in the resulting history item.
+
+.. class:: warningmark
+
+The format of the resulting dataset from this tool is always tabular.
+
+-----
+
+**What it does**
+
+This tool selects specified columns from a dataset and converts the values of those columns to upper or lower case.
+
+- Columns are specified as **c1**, **c2**, and so on.
+- Columns can be specified in any order (e.g., **c2,c1,c6**)
+
+-----
+
+**Example**
+
+Changing columns 1 and 3 ( delimited by Comma ) to upper case in::
+
+  apple,is,good
+  windows,is,bad
+
+will result in::
+
+  APPLE is GOOD
+  WINDOWS is BAD
+
+  </help>
+</tool>

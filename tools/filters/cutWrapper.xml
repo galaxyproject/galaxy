@@ -1,0 +1,202 @@
+<tool id="Cut1" name="Cut" version="1.0.1">
+  <description>columns from a table</description>
+  <command interpreter="perl">cutWrapper.pl $input "$columnList" $delimiter $out_file1</command>
+  <inputs>
+    <param name="columnList" size="10" type="text" value="c1,c2" label="Cut columns"/>
+    <param name="delimiter" type="select" label="Delimited by">
+      <option value="T">Tab</option>
+      <option value="Sp">Whitespace</option>
+      <option value="Dt">Dot</option>
+      <option value="C">Comma</option>
+      <option value="D">Dash</option>
+      <option value="U">Underscore</option>
+      <option value="P">Pipe</option>
+    </param>
+    <param format="txt" name="input" type="data" label="From"/>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" >
+      <actions>
+        <conditional name="delimiter">
+          <when value="T">
+            <conditional name="input">
+              <when datatype_isinstance="interval">
+                <action type="format" default="tabular">
+                  <option type="from_param" name="columnList" column="0" offset="0"> <!-- chromCol is 1-->
+                    
+                    <filter type="insert_column" column="0" value="interval"/>
+                    
+                    <filter type="insert_column" ref="columnList" /> <!-- startCol -->
+                    
+                    <filter type="insert_column" ref="columnList" /> <!-- endCol -->
+                    
+                    <filter type="multiple_splitter" column="1" separator=","/>
+                    <filter type="column_strip" column="1"/> <!-- get rid of all external whitespace -->
+                    <filter type="string_function" column="1" name="lower" />
+                    <filter type="param_value" column="1" value="^c\d{1,}$" compare="re_search" keep="True"/>
+                    <filter type="column_strip" column="1" strip="c"/> <!-- get rid of c's  -->
+                    <filter type="boolean" column="1" cast="int" />
+                    
+                    <filter type="multiple_splitter" column="2" separator=","/>
+                    <filter type="column_strip" column="2"/> <!-- get rid of all external whitespace -->
+                    <filter type="string_function" column="2" name="lower" />
+                    <filter type="param_value" column="2" value="^c\d{1,}$" compare="re_search" keep="True"/>
+                    <filter type="column_strip" column="2" strip="c"/> <!-- get rid of c's  -->
+                    <filter type="boolean" column="2" cast="int" />
+                    
+                    <filter type="multiple_splitter" column="3" separator=","/>
+                    <filter type="column_strip" column="3"/> <!-- get rid of all external whitespace -->
+                    <filter type="string_function" column="3" name="lower" />
+                    <filter type="param_value" column="3" value="^c\d{1,}$" compare="re_search" keep="True"/>
+                    <filter type="column_strip" column="3" strip="c"/> <!-- get rid of c's  -->
+                    <filter type="boolean" column="3" cast="int" />
+                    
+                    <filter type="metadata_value" ref="input" name="chromCol" column="1" />
+                    <filter type="metadata_value" ref="input" name="startCol" column="2" />
+                    <filter type="metadata_value" ref="input" name="endCol" column="3" />
+                    
+                  </option>
+                </action>
+                
+                <conditional name="out_file1">
+                  <when datatype_isinstance="interval">
+                    <action type="metadata" name="chromCol">
+                      <option type="from_param" name="columnList" column="0" offset="0"> <!-- chromCol is 0-->
+                        <filter type="multiple_splitter" column="0" separator=","/>
+                        <filter type="column_strip" column="0"/> <!-- get rid of all external whitespace -->
+                        <filter type="string_function" column="0" name="lower" />
+                        <filter type="param_value" column="0" value="^c\d{1,}$" compare="re_search" keep="True"/>
+                        <filter type="column_strip" column="0" strip="c"/> <!-- get rid of c's  -->
+                        <filter type="insert_column" value="1" iterate="True" column="0"/>
+                        <filter type="boolean" column="1" cast="int" /> 
+                        <filter type="metadata_value" ref="input" name="chromCol" column="1" />
+                      </option>
+                    </action>
+                    
+                    <action type="metadata" name="startCol">
+                      <option type="from_param" name="columnList" column="0" offset="0"> <!-- startCol is 0-->
+                        <filter type="multiple_splitter" column="0" separator=","/>
+                        <filter type="column_strip" column="0"/> <!-- get rid of all external whitespace -->
+                        <filter type="string_function" column="0" name="lower" />
+                        <filter type="param_value" column="0" value="^c\d{1,}$" compare="re_search" keep="True"/>
+                        <filter type="column_strip" column="0" strip="c"/> <!-- get rid of c's  -->
+                        <filter type="insert_column" value="1" iterate="True" column="0"/>
+                        <filter type="boolean" column="1" cast="int" />
+                        <filter type="metadata_value" ref="input" name="startCol" column="1" />
+                      </option>
+                    </action>
+                    
+                    <action type="metadata" name="endCol">
+                      <option type="from_param" name="columnList" column="0" offset="0"> <!-- endCol is 0-->
+                        <filter type="multiple_splitter" column="0" separator=","/>
+                        <filter type="column_strip" column="0"/> <!-- get rid of all external whitespace -->
+                        <filter type="string_function" column="0" name="lower" />
+                        <filter type="param_value" column="0" value="^c\d{1,}$" compare="re_search" keep="True"/>
+                        <filter type="column_strip" column="0" strip="c"/> <!-- get rid of c's  -->
+                        <filter type="insert_column" value="1" iterate="True" column="0"/>
+                        <filter type="boolean" column="1" cast="int" />
+                        <filter type="metadata_value" ref="input" name="endCol" column="1" />
+                      </option>
+                    </action>
+                  
+                    <action type="metadata" name="nameCol" default="0">
+                      <option type="from_param" name="columnList" column="0" offset="0"> <!-- nameCol is 0-->
+                        <filter type="multiple_splitter" column="0" separator=","/>
+                        <filter type="column_strip" column="0"/> <!-- get rid of all external whitespace -->
+                        <filter type="string_function" column="0" name="lower" />
+                        <filter type="param_value" column="0" value="^c\d{1,}$" compare="re_search" keep="True"/>
+                        <filter type="column_strip" column="0" strip="c"/> <!-- get rid of c's  -->
+                        <filter type="insert_column" value="1" iterate="True" column="0"/>
+                        <filter type="boolean" column="1" cast="int" />
+                        <filter type="metadata_value" ref="input" name="nameCol" column="1" />
+                      </option>
+                    </action>
+                  
+                    <action type="metadata" name="strandCol" default="0">
+                      <option type="from_param" name="columnList" column="0" offset="0"> <!-- strandCol is 0-->
+                        <filter type="multiple_splitter" column="0" separator=","/>
+                        <filter type="column_strip" column="0"/> <!-- get rid of all external whitespace -->
+                        <filter type="string_function" column="0" name="lower" />
+                        <filter type="param_value" column="0" value="^c\d{1,}$" compare="re_search" keep="True"/>
+                        <filter type="column_strip" column="0" strip="c"/> <!-- get rid of c's  -->
+                        <filter type="insert_column" value="1" iterate="True" column="0"/>
+                        <filter type="boolean" column="1" cast="int" />
+                        <filter type="metadata_value" ref="input" name="strandCol" column="1" />
+                      </option>
+                    </action>  
+                  </when>
+                </conditional>
+                
+              </when>
+            </conditional>
+          </when>
+        </conditional>
+      </actions>
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="columnList" value="c1,c4,c2,c3"/>
+      <param name="delimiter" value="T"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-cut.dat"/>
+    </test>
+  </tests>
+  <help>
+
+.. class:: warningmark
+
+**WARNING: This tool breaks column assignments.** To re-establish column assignments run the tools and click on the pencil icon in the latest history item.
+
+.. class:: infomark
+
+The output of this tool is always in tabular format (e.g., if your original delimiters are commas, they will be replaced with tabs). For example:
+
+  Cutting columns 1 and 3 from::
+
+     apple,is,good
+     windows,is,bad
+
+  will give::
+
+    apple   good
+    windows bad
+
+-----
+
+**What it does**
+
+This tool selects (cuts out) specified columns from the dataset.
+
+- Columns are specified as **c1**, **c2**, and so on. Column count begins with **1**
+- Columns can be specified in any order (e.g., **c2,c1,c6**)
+- If you specify more columns than actually present - empty spaces will be filled with dots
+
+-----
+
+**Example**
+
+Input dataset (six columns: c1, c2, c3, c4, c5, and c6)::
+
+   chr1 10   1000  gene1 0 +
+   chr2 100  1500  gene2 0 +
+
+**cut** on columns "**c1,c4,c6**" will return::
+
+   chr1 gene1 +
+   chr2 gene2 +
+
+**cut** on columns "**c6,c5,c4,c1**" will return::
+
+   + 0 gene1 chr1 
+   + 0 gene2 chr2
+
+
+**cut** on columns "**c8,c7,c4**" will return::
+
+   . . gene1 
+   . . gene2
+   
+
+</help>
+</tool>

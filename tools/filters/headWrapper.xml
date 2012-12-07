@@ -1,0 +1,42 @@
+<tool id="Show beginning1" name="Select first">
+  <description>lines from a dataset</description>
+  <command interpreter="perl">headWrapper.pl $input $lineNum $out_file1</command>
+  <inputs>
+    <param name="lineNum" size="5" type="integer" value="10" label="Select first" help="lines"/>
+    <param format="txt" name="input" type="data" label="from"/>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="lineNum" value="10"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-showbeginning.dat"/>
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool outputs specified number of lines from the **beginning** of a dataset
+
+-----
+
+**Example**
+
+Selecting 2 lines from this::
+
+    chr7  56632  56652  D17003_CTCF_R6  310  +
+    chr7  56736  56756  D17003_CTCF_R7  354  +
+    chr7  56761  56781  D17003_CTCF_R4  220  +
+    chr7  56772  56792  D17003_CTCF_R7  372  +
+    chr7  56775  56795  D17003_CTCF_R4  207  +
+
+will produce::
+
+    chr7  56632  56652  D17003_CTCF_R6  310  +
+    chr7  56736  56756  D17003_CTCF_R7  354  +
+
+  </help>
+</tool>

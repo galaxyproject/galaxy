@@ -1,0 +1,48 @@
+<tool id="Condense characters1" name="Condense">
+  <description>consecutive characters</description>
+  <command interpreter="perl">condense_characters.pl $input $character $out_file1</command>
+  <inputs>
+<!--    <display>condense all consecutive $character from $input</display> -->
+    <param name="character" type="select" label="Condense all consecutive">
+      <option value="T">Tabs</option>
+      <option value="Sp">Spaces</option>
+      <option value="Dt">Dots</option>
+      <option value="C">Commas</option>
+      <option value="D">Dashes</option>
+      <option value="U">Underscores</option>
+      <option value="P">Pipes</option>
+    </param>
+    <param format="txt" name="input" type="data" label="in this Query"/>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="character" value="T"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-condense.dat"/>
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool condenses all consecutive characters of a specified type.
+
+-----
+
+**Example**
+
+- Input file::
+
+    geneX,,,10,,,,,20
+    geneY,,5,,,,,12,15,9,
+
+- Condense all consecutive commas. The above file will be converted into::
+
+    geneX,10,20
+    geneY,5,12,15,9
+
+</help>
+</tool>

@@ -1,0 +1,42 @@
+<tool id="Remove beginning1" name="Remove beginning">
+  <description>of a file</description>
+  <command interpreter="perl">remove_beginning.pl $input $num_lines $out_file1</command>
+  <inputs>
+    <param name="num_lines" size="5" type="integer" value="1" label="Remove first" help="lines"/>
+    <param format="txt" name="input" type="data" label="from"/>
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="num_lines" value="5"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-removebeginning.dat"/>
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+This tool removes a specified number of lines from the beginning of a dataset.
+
+-----
+
+**Example**
+
+Input File::
+
+    chr7  56632  56652   D17003_CTCF_R6  310  +
+    chr7  56736  56756   D17003_CTCF_R7  354  +
+    chr7  56761  56781   D17003_CTCF_R4  220  +
+    chr7  56772  56792   D17003_CTCF_R7  372  +
+    chr7  56775  56795   D17003_CTCF_R4  207  +
+
+After removing the first 3 lines the dataset will look like this::
+
+    chr7  56772  56792   D17003_CTCF_R7  372  +
+    chr7  56775  56795   D17003_CTCF_R4  207  +
+
+</help>
+</tool>

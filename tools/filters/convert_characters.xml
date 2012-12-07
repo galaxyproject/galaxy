@@ -1,0 +1,58 @@
+<tool id="Convert characters1" name="Convert">
+  <description>delimiters to TAB</description>
+  <command interpreter="python">convert_characters.py $input $convert_from $out_file1</command>
+  <inputs>
+    <param name="convert_from" type="select" label="Convert all">
+      <option value="s">Whitespaces</option>
+      <option value="T">Tabs</option>
+      <!--<option value="Sp">Spaces</option>-->
+      <option value="Dt">Dots</option>
+      <option value="C">Commas</option>
+      <option value="D">Dashes</option>
+      <option value="U">Underscores</option>
+      <option value="P">Pipes</option>
+      <option value="Co">Colons</option>
+    </param>
+    <param format="txt" name="input" type="data" label="in Query"/>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="convert_from" value="s"/>
+      <param name="input" value="1.bed"/>
+      <output name="out_file1" file="eq-convert.dat"/>
+    </test>
+    <test>
+      <param name="convert_from" value="s"/>
+      <param name="input" value="a.txt"/>
+      <output name="out_file1" file="a.tab"/>
+    </test>
+  </tests>
+  <help>
+
+**What it does**
+
+Converts all delimiters of a specified type into TABs.  Consecutive characters are condensed. For example, if columns are separated by 5 spaces they will converted into 1 tab.
+
+-----
+
+**Example**
+
+- Input file::
+
+    chrX||151283558|151283724|NM_000808_exon_8_0_chrX_151283559_r|0|-
+    chrX|151370273|151370486|NM_000808_exon_9_0_chrX_151370274_r|0|-
+    chrX|151559494|151559583|NM_018558_exon_1_0_chrX_151559495_f|0|+
+    chrX|151564643|151564711|NM_018558_exon_2_0_chrX_151564644_f||||0|+
+
+- Converting all pipe delimiters of the above file to TABs will get::
+
+    chrX  151283558  151283724  NM_000808_exon_8_0_chrX_151283559_r  0  -
+    chrX  151370273  151370486  NM_000808_exon_9_0_chrX_151370274_r  0  -
+    chrX  151559494  151559583  NM_018558_exon_1_0_chrX_151559495_f  0  +
+    chrX  151564643  151564711  NM_018558_exon_2_0_chrX_151564644_f  0  +
+
+</help>
+</tool>

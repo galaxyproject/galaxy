@@ -1,0 +1,120 @@
+<tool id="trimmer" name="Trim" version="0.0.1">
+    <description>leading or trailing characters</description>
+    <command interpreter="python">
+    trimmer.py -a -f $input1 -c $col -s $start -e $end -i $ignore $fastq > $out_file1
+    </command>
+    <inputs>
+        <param format="tabular,txt" name="input1" type="data" label="this dataset"/>
+        <param name="col" type="integer" value="0" label="Trim this column only" help="0 = process entire line" />
+        <param name="start" type="integer" size="10" value="1" label="Trim from the beginning to this position" help="1 = do not trim the beginning"/>
+        <param name="end" type="integer" size="10" value="0" label="Remove everything from this position to the end" help="0 = do not trim the end"/>
+        <param name="fastq" type="select" label="Is input dataset in fastq format?" help="If set to YES, the tool will not trim evenly numbered lines (0, 2, 4, etc...)">
+            <option selected="true" value="">No</option>
+            <option value="-q">Yes</option>
+        </param>
+        <param name="ignore" type="select" display="checkboxes" multiple="True" label="Ignore lines beginning with these characters" help="lines beginning with these are not trimmed">
+            <option value="62">&gt;</option>
+            <option value="64">@</option>
+            <option value="43">+</option>
+            <option value="60">&lt;</option>
+            <option value="42">*</option>
+            <option value="45">-</option>
+            <option value="61">=</option>
+            <option value="124">|</option>
+            <option value="63">?</option>
+            <option value="36">$</option>
+            <option value="46">.</option>
+            <option value="58">:</option>
+            <option value="38">&amp;</option>
+            <option value="37">%</option>
+            <option value="94">^</option>
+            <option value="35">&#35;</option>
+         </param>   
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="input" metadata_source="input1"/>
+    </outputs>
+    <tests>
+        <test>
+           <param name="input1" value="trimmer_tab_delimited.dat"/>
+           <param name="col" value="0"/>
+           <param name="start" value="1"/>
+           <param name="end" value="13"/>
+           <param name="ignore" value="62"/>
+           <param name="fastq" value="No"/>
+           <output name="out_file1" file="trimmer_a_f_c0_s1_e13_i62.dat"/>
+        </test>
+        <test>
+           <param name="input1" value="trimmer_tab_delimited.dat"/>
+           <param name="col" value="2"/>
+           <param name="start" value="1"/>
+           <param name="end" value="2"/>
+           <param name="ignore" value="62"/>
+           <param name="fastq" value="No"/>
+           <output name="out_file1" file="trimmer_a_f_c2_s1_e2_i62.dat"/>
+        </test>
+
+    </tests>
+
+    <help>
+
+
+**What it does**
+
+Trims specified number of characters from a dataset or its field (if dataset is tab-delimited).
+
+-----
+
+**Example 1**
+
+Trimming this dataset::
+
+  1234567890
+  abcdefghijk
+
+by setting **Trim from the beginning to this position** to *2* and **Remove everything from this position to the end** to *6* will produce::
+
+  23456
+  bcdef
+
+-----
+
+**Example 2**
+
+Trimming column 2 of this dataset::
+
+  abcde 12345 fghij 67890
+  fghij 67890 abcde 12345
+
+by setting **Trim content of this column only** to *2*, **Trim from the beginning to this position** to *2*, and **Remove everything from this position to the end** to *4* will produce::
+
+  abcde  234 fghij 67890
+  fghij  789 abcde 12345
+
+-----
+
+**Trimming FASTQ datasets**
+
+This tool can be used to trim sequences and quality strings in fastq datasets. This is done by selected *Yes* from the **Is input dataset in fastq format?** dropdown. If set to *Yes*, the tool will skip all even numbered lines (see warning below). For example, trimming last 5 bases of this dataset::
+
+  @081017-and-081020:1:1:1715:1759
+  GGACTCAGATAGTAATCCACGCTCCTTTAAAATATC
+  +
+  II#IIIIIII$5+.(9IIIIIII$%*$G$A31I&amp;&amp;B
+  
+cab done by setting **Remove everything from this position to the end** to 31::
+
+  @081017-and-081020:1:1:1715:1759
+  GGACTCAGATAGTAATCCACGCTCCTTTAAA
+  +
+  II#IIIIIII$5+.(9IIIIIII$%*$G$A3 
+  
+**Note** that headers are skipped.
+
+.. class:: warningmark
+
+**WARNING:** This tool will only work on properly formatted fastq datasets where (1) each read and quality string occupy one line and (2) '@' (read header) and "+" (quality header) lines are evenly numbered like in the above example.
+
+
+    </help>
+</tool>

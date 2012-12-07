@@ -1,0 +1,63 @@
+<tool id="mergeCols1" name="Merge Columns" version="1.0.1">
+  <description>together</description>
+  <command interpreter="python">
+   mergeCols.py 
+      $input1
+      $out_file1
+      $col1
+      $col2
+      #for $col in $columns
+        ${col.datacol}
+      #end for
+  </command>
+  <inputs>
+    <param format="tabular" name="input1" type="data" label="Select data" help="Dataset missing? See TIP below."/>
+    <param name="col1" label="Merge column" type="data_column" data_ref="input1" />
+    <param name="col2" label="with column" type="data_column" data_ref="input1" help="Need to add more columns? Use controls below."/>
+    <repeat name="columns" title="Columns">
+      <param name="datacol" label="Add column" type="data_column" data_ref="input1" />
+    </repeat>
+  </inputs>
+  <outputs>
+    <data format="tabular" name="out_file1" />
+  </outputs>
+  <tests>
+    <test>
+      <param name="input1" value="1.bed"/>
+      <param name="col1" value="4" />
+      <param name="col2" value="1" />
+      <param name="datacol" value="6" />
+      <output name="out_file1" file="mergeCols.dat"/>
+    </test>
+  </tests>
+<help>
+
+.. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
+
+-----
+
+**What it does**
+
+This tool merges columns together. Any number of valid columns can be merged in any order.
+
+-----
+
+**Example**
+
+Input dataset (five columns: c1, c2, c3, c4, and c5)::
+
+   1 10   1000  gene1 chr
+   2 100  1500  gene2 chr
+
+merging columns "**c5,c1**" will return::
+
+   1 10   1000  gene1 chr chr1
+   2 100  1500  gene2 chr chr2
+
+.. class:: warningmark
+   
+Note that all original columns are preserved and the result of merge is added as the rightmost column.
+  </help>
+</tool>
