@@ -1,0 +1,14 @@
+<tool id="CONVERTER_bam_to_bigwig_0" name="Convert BAM to BigWig" version="1.0.0" hidden="true">
+    <!--  <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <command>
+        bedtools genomecov -bg -split -ibam $input -g $chromInfo | wigToBigWig stdin $chromInfo $output
+    </command>
+    <inputs>
+        <param format="bam" name="input" type="data" label="Choose BAM file"/>
+    </inputs>
+    <outputs>
+        <data format="bigwig" name="output"/>
+    </outputs>
+    <help>
+    </help>
+</tool>

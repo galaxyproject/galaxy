@@ -7,7 +7,12 @@
     <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
       <converter file="bam_to_bai.xml" target_datatype="bai"/>
-      <converter file="bam_to_summary_tree_converter.xml" target_datatype="summary_tree" depends_on="bai"/>
+      <converter file="bam_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
+      <!--
+        Caution: (a) this converter requires bedtools to be installed and (b) it is very memory intensive and
+        is not recommended for most laptops/desktops.
+        <converter file="bam_to_bigwig_converter.xml" target_datatype="bigwig"/>
+      -->
       <display file="ucsc/bam.xml" />
       <display file="ensembl/ensembl_bam.xml" />
       <display file="igv/bam.xml" />
