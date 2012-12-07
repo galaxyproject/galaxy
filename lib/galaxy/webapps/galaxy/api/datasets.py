@@ -3,6 +3,7 @@ API operations on the contents of a dataset.
 """
 import logging, os, string, shutil, urllib, re, socket
 from galaxy import util, datatypes, jobs, web, util
+from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider
 from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, get_highest_priority_msg, messages
 from galaxy.web.framework.helpers import is_true
 
