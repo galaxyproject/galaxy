@@ -714,7 +714,12 @@ class SelectToolParameter( ToolParameter ):
         else:
             if value not in legal_values:
                 raise ValueError( "An invalid option was selected, please verify" )
-            return value    
+            return value
+    def to_html_value( self, value, app ):
+        if isinstance( value, list ):
+            return value
+        else:
+            return str( value )
     def to_param_dict_string( self, value, other_values={} ):
         if value is None:
             return "None"
