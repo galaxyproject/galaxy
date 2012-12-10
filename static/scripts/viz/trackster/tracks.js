@@ -3278,7 +3278,6 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             this.tile_predraw_init();
             
             var canvas = track.view.canvas_manager.new_canvas(),
-                tile_bounds = track._get_tile_bounds(tile_index, resolution),
                 tile_low = region.get('start'),
                 tile_high = region.get('end'),
                 all_data_index = 0,
