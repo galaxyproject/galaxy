@@ -2766,8 +2766,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Generate a key for the tile cache.
      * TODO: create a TileCache object (like DataCache) and generate key internally.
      */
-    _gen_tile_cache_key: function(width, w_scale, tile_index) { 
-        return width + '_' + w_scale + '_' + tile_index;
+    _gen_tile_cache_key: function(w_scale, tile_index) { 
+        return w_scale + '_' + tile_index;
     },
     /**
      * Request that track be drawn.
@@ -2826,7 +2826,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             is_tile = function(o) { return (o && 'track' in o); };
         // Draw tiles.
         while ( ( tile_index * TILE_SIZE * resolution ) < high ) {
-            var draw_result = this.draw_helper( force, width, tile_index, resolution, this.tiles_div, w_scale );
+            var draw_result = this.draw_helper( force, tile_index, resolution, this.tiles_div, w_scale );
             if ( is_tile(draw_result) ) {
                 drawn_tiles.push( draw_result );
             } else {
@@ -2875,9 +2875,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Retrieves from cache, draws, or sets up drawing for a single tile. Returns either a Tile object or a 
      * jQuery.Deferred object that is fulfilled when tile can be drawn again.
      */ 
-    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, kwargs) {
+    draw_helper: function(force, tile_index, resolution, parent_element, w_scale, kwargs) {
         var track = this,
-            key = this._gen_tile_cache_key(width, w_scale, tile_index),
+            key = this._gen_tile_cache_key(w_scale, tile_index),
             region = this._get_tile_bounds(tile_index, resolution);
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
@@ -3227,10 +3227,10 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         this.action_icons.param_space_viz_icon.hide();
     },
     can_draw: Drawable.prototype.can_draw,
-    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, kwargs) {
+    draw_helper: function(force, tile_index, resolution, parent_element, w_scale, kwargs) {
         // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
         var track = this,
-            key = this._gen_tile_cache_key(width, w_scale, tile_index),
+            key = this._gen_tile_cache_key(w_scale, tile_index),
             region = this._get_tile_bounds(tile_index, resolution);
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
@@ -3413,7 +3413,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         for (var i = 0; i < tiles.length; i++) {
             var tile = tiles[i];
             if (tile.html_elt.find("canvas").height() !== max_height) {
-                this.draw_helper(true, width, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { height: max_height } );
+                this.draw_helper(true, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { height: max_height } );
                 tile.html_elt.remove();
             }
         }        
@@ -3451,9 +3451,9 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
      * Only retrieves data and draws tile if reference data can be displayed.
      */
-    draw_helper: function(force, width, tile_index, resolution, parent_element, w_scale, kwargs) {
+    draw_helper: function(force, tile_index, resolution, parent_element, w_scale, kwargs) {
         if (w_scale > this.view.canvas_manager.char_width_px) {
-            return TiledTrack.prototype.draw_helper.call(this, force, width, tile_index, resolution, parent_element, w_scale, kwargs);
+            return TiledTrack.prototype.draw_helper.call(this, force, tile_index, resolution, parent_element, w_scale, kwargs);
         }
         else {
             this.hide_contents();
@@ -3815,7 +3815,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 var tile = tiles[i];
                 if (tile.max_val !== global_max) {
                     tile.html_elt.remove();
-                    track.draw_helper(true, width, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { more_tile_data: { max: global_max } } );
+                    track.draw_helper(true, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { more_tile_data: { max: global_max } } );
                 }
             }
         }            
