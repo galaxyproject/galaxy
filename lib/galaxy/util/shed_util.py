@@ -1,8 +1,6 @@
 import os, tempfile, shutil, logging, urllib2
 from galaxy import util
-from galaxy.datatypes.checkers import *
-from galaxy.util.json import *
-from galaxy.util.shed_util_common import *
+from shed_util_common import *
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tool_shed.tool_dependencies.install_util import create_or_update_tool_dependency, install_package, set_environment
 from galaxy.tool_shed.encoding_util import *

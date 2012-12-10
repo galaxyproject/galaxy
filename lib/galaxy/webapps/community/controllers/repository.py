@@ -1782,14 +1782,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         is_malicious = repository_metadata.malicious
             if repository_metadata:
                 # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
-                repository_dependencies = get_repository_dependencies_for_changeset_revision( trans,
-                                                                                              repo,
-                                                                                              repository,
-                                                                                              repository_metadata,
-                                                                                              str( url_for( '/', qualified=True ) ).rstrip( '/' ),
-                                                                                              repository_dependencies=None,
+                repository_dependencies = get_repository_dependencies_for_changeset_revision( trans=trans,
+                                                                                              repo=repo,
+                                                                                              repository=repository,
+                                                                                              repository_metadata=repository_metadata,
+                                                                                              toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                              key_rd_dicts_to_be_processed=None,
                                                                                               all_repository_dependencies=None,
-                                                                                              handled=None )
+                                                                                              handled_key_rd_dicts=None )
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push
@@ -1895,14 +1895,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
             repository_metadata_id = trans.security.encode_id( repository_metadata.id ),
             metadata = repository_metadata.metadata
             # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
-            repository_dependencies = get_repository_dependencies_for_changeset_revision( trans,
-                                                                                          repo,
-                                                                                          repository,
-                                                                                          repository_metadata,
-                                                                                          str( url_for( '/', qualified=True ) ).rstrip( '/' ),
-                                                                                          repository_dependencies=None,
+            repository_dependencies = get_repository_dependencies_for_changeset_revision( trans=trans,
+                                                                                          repo=repo,
+                                                                                          repository=repository,
+                                                                                          repository_metadata=repository_metadata,
+                                                                                          toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                          key_rd_dicts_to_be_processed=None,
                                                                                           all_repository_dependencies=None,
-                                                                                          handled=None )
+                                                                                          handled_key_rd_dicts=None )
         else:
             repository_metadata_id = None
             metadata = None
@@ -2417,14 +2417,14 @@ class RepositoryController( BaseUIController, ItemRatings ):
             repository_metadata_id = trans.security.encode_id( repository_metadata.id )
             metadata = repository_metadata.metadata
             # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
-            repository_dependencies = get_repository_dependencies_for_changeset_revision( trans,
-                                                                                          repo,
-                                                                                          repository,
-                                                                                          repository_metadata,
-                                                                                          str( url_for( '/', qualified=True ) ).rstrip( '/' ),
-                                                                                          repository_dependencies=None,
+            repository_dependencies = get_repository_dependencies_for_changeset_revision( trans=trans,
+                                                                                          repo=repo,
+                                                                                          repository=repository,
+                                                                                          repository_metadata=repository_metadata,
+                                                                                          toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                          key_rd_dicts_to_be_processed=None,
                                                                                           all_repository_dependencies=None,
-                                                                                          handled=None )
+                                                                                          handled_key_rd_dicts=None )
         else:
             repository_metadata_id = None
             metadata = None
