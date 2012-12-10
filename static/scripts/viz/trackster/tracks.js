@@ -2854,21 +2854,17 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         //
         // If some tiles have icons, set padding of tiles without icons so features and rows align.
         //
-        var icons_present = false;
-        for (var tile_index = 0; tile_index < tiles.length; tile_index++) {
-            if (tiles[tile_index].has_icons) {
-                icons_present = true;
-                break;
-            }
-        }
+        var icons_present = _.find(tiles, function(tile) { 
+            return tile.has_icons;
+        });
+
         if (icons_present) {
-            for (var tile_index = 0; tile_index < tiles.length; tile_index++) {
-                tile = tiles[tile_index];
+            _.each(tiles, function(tile) {
                 if (!tile.has_icons) {
                     // Need to align with other tile(s) that have icons.
                     tile.html_elt.css("padding-top", ERROR_PADDING);
                 }
-            }
+            });
         }        
     },
     /**
@@ -4045,7 +4041,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, ref_seq);
         var feature_mapper = null;
 
-        // console.log(( tile_low - this.view.low ) * w_scale, tile_index, w_scale);
         ctx.fillStyle = this.prefs.block_color;
         ctx.font = ctx.canvas.manager.default_font;
         ctx.textAlign = "right";
