@@ -52,7 +52,7 @@ def pgcalc( sa_session, id ):
     sql = """
            UPDATE galaxy_user
               SET disk_usage = (SELECT COALESCE(SUM(total_size), 0)
-                                  FROM (  SELECT d.total_size
+                                  FROM (  SELECT DISTINCT ON (d.id) d.total_size, d.id
                                             FROM history_dataset_association hda
                                                  JOIN history h ON h.id = hda.history_id
                                                  JOIN dataset d ON hda.dataset_id = d.id
@@ -62,7 +62,7 @@ def pgcalc( sa_session, id ):
                                                  AND d.purged = false
                                                  AND d.id NOT IN (SELECT dataset_id
                                                                     FROM library_dataset_dataset_association)
-                                        GROUP BY d.id) sizes)
+                                         ) sizes)
             WHERE id = :id
         RETURNING disk_usage;
     """
