@@ -130,6 +130,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                 history_panel_template = "root/history.mako"
 
             else:
+                # get all datasets server-side, client-side will get flags and render appropriately
                 datasets = self.get_history_datasets( trans, history,
                                                       show_deleted=True, show_hidden=True, show_purged=True )
 

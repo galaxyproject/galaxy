@@ -310,11 +310,12 @@ $(function(){
     // ostensibly, this is the App
     // LOAD INITIAL DATA IN THIS PAGE - since we're already sending it...
     //  ...use mako to 'bootstrap' the models
-    var user    = ${ get_current_user() },
+    var page_show_deleted = ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
+        page_show_hidden  = ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) },
+
+        user    = ${ get_current_user() },
         history = ${ get_history( history.id ) },
         hdas    = ${ get_hdas( history.id, datasets ) };
-    var currUser = new User( user );
-    if( !Galaxy.currUser ){ Galaxy.currUser = currUser; }
 
     // add user data to history
     // i don't like this history+user relationship, but user authentication changes views/behaviour
@@ -326,8 +327,8 @@ $(function(){
         urlTemplates    : galaxy_paths.attributes,
         logger          : ( debugging )?( console ):( null ),
         // is page sending in show settings? if so override history's
-        show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
-        show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
+        show_deleted    : page_show_deleted,
+        show_hidden     : page_show_hidden
     });
     historyPanel.render();
 
@@ -337,15 +338,16 @@ $(function(){
     //    urlTemplates    : galaxy_paths.attributes,
     //    logger          : ( debugging )?( console ):( null ),
     //    // is page sending in show settings? if so override history's
-    //    show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
-    //    show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
+    //    show_deleted    : page_show_deleted,
+    //    show_hidden     : page_show_hidden
     //});
     //historyPanel.model.loadFromApi( history.id );
 
     // set it up to be accessible across iframes
     //TODO:?? mem leak
     top.Galaxy.currHistoryPanel = historyPanel;
-
+    var currUser = new User( user );
+    if( !Galaxy.currUser ){ Galaxy.currUser = currUser; }
 
     // QUOTA METER is a cross-frame ui element (meter in masthead, over quota message in history)
     //  create it and join them here for now (via events)

@@ -241,8 +241,9 @@ def main():
             try:
                 os.makedirs( dir )
             except OSError:
-                pass 
-    print "Database connection:", database_connection
+                pass
+    log.info( "Database connection:", database_connection )
+
     # ---- Build Application -------------------------------------------------- 
     app = None 
     if start_server:
@@ -412,6 +413,8 @@ def main():
         if os.path.exists( tempdir ) and 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
             log.info( "Cleaning up temporary files in %s" % tempdir )
             shutil.rmtree( tempdir )
+        else:
+            log.info( "GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir )
     except:
         pass
     if psu_production and 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
