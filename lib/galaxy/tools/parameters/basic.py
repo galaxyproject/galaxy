@@ -1605,7 +1605,7 @@ class DataToolParameter( ToolParameter ):
         return value.file_name
         
     def value_to_display_text( self, value, app ):
-        if not isinstance(value, list):
+        if value and not isinstance( value, list ):
             value = [ value ]
         if value:
             return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )
