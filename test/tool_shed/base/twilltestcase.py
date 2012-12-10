@@ -15,6 +15,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.hgweb_config_dir = os.environ.get( 'TEST_HG_WEB_CONFIG_DIR' )
         self.hgweb_config_manager = galaxy.webapps.community.util.hgweb_config.HgWebConfigManager()
         self.hgweb_config_manager.hgweb_config_dir = self.hgweb_config_dir
+        self.tool_shed_test_tmp_dir = os.environ.get( 'TOOL_SHED_TEST_TMP_DIR', None)
         self.host = os.environ.get( 'TOOL_SHED_TEST_HOST' )
         self.port = os.environ.get( 'TOOL_SHED_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
@@ -213,6 +214,9 @@ class ShedTwillTestCase( TwillTestCase ):
                 string = string.replace( character, replacement )
         return string
     def generate_repository_dependency_xml( self, repository, xml_filename, dependency_description='' ):
+        file_path = os.path.split( xml_filename )[0]
+        if not os.path.exists( file_path ):
+            os.makedirs( file_path )
         changeset_revision = self.get_repository_tip( repository )
         if dependency_description:
             description = ' description="%s"' % dependency_description
@@ -226,6 +230,13 @@ class ShedTwillTestCase( TwillTestCase ):
                                                                      description=description )
         # Save the generated xml to the specified location.
         file( xml_filename, 'w' ).write( repository_dependency_xml )
+    def generate_temp_path( self, test_script_path, additional_paths=[] ):
+        return os.path.join( self.tool_shed_test_tmp_dir, test_script_path, os.sep.join( additional_paths ) )
+    def get_filename( self, filename, filepath=None ):
+        if filepath is not None:
+            return os.path.abspath( os.path.join( filepath, filename ) )
+        else:
+            return os.path.abspath( os.path.join( self.file_dir, filename ) )
     def get_latest_repository_metadata_for_repository( self, repository ):
         # TODO: This will not work as expected. Fix it.
         return repository.metadata_revisions[ 0 ]
@@ -335,6 +346,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def upload_file( self, 
                      repository, 
                      filename, 
+                     filepath=None,
                      valid_tools_only=True, 
                      strings_displayed=[], 
                      strings_not_displayed=[],
@@ -344,6 +356,6 @@ class ShedTwillTestCase( TwillTestCase ):
             strings_displayed.append( "has been successfully uploaded to the repository." )
         for key in kwd:
             tc.fv( "1", key, kwd[ key ] )
-        tc.formfile( "1", "file_data", self.get_filename( filename ) )
+        tc.formfile( "1", "file_data", self.get_filename( filename, filepath ) )
         tc.submit( "upload_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )

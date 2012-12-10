@@ -10,6 +10,7 @@ default_tool_shed_test_file_dir = os.path.join( tool_shed_home_directory, 'test_
 # the hgweb.config file, the database, new repositories, etc.  Since the tool shed browses repository contents via HTTP,
 # the full path to the temporary directroy wher eht repositories are located cannot contain invalid url characters.
 tool_shed_test_tmp_dir = os.path.join( tool_shed_home_directory, 'tmp' )
+os.environ[ 'TOOL_SHED_TEST_TMP_DIR' ] = tool_shed_test_tmp_dir
 new_path = [ os.path.join( cwd, "lib" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
@@ -270,7 +271,7 @@ def main():
             for dir in [ tool_shed_test_tmp_dir ]:
                 if os.path.exists( dir ):
                     log.info( "Cleaning up temporary files in %s" % dir )
-                    #shutil.rmtree( dir )
+                    shutil.rmtree( dir )
         except:
             pass
     if success:
