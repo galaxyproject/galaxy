@@ -726,7 +726,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
         relative_path, filename = os.path.split( sample_file )
         if filename == 'tool_data_table_conf.xml.sample':
             new_table_elems, error_message = app.tool_data_tables.add_new_entries_from_config_file( config_filename=sample_file,
-                                                                                                    tool_data_path=original_tool_data_path,
+                                                                                                    tool_data_path=app.config.tool_data_path,
                                                                                                     shed_tool_data_table_config=app.config.shed_tool_data_table_config,
                                                                                                     persist=persist )
             if error_message:
@@ -771,7 +771,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                                     if not valid:
                                         invalid_file_tups.append( ( name, error_message ) )
                                 else:
-                                    invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_file_metadata_paths )
+                                    invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_file_copy_paths )
                                     can_set_metadata = True
                                     for tup in invalid_files_and_errors_tups:
                                         if name in tup:
@@ -1329,32 +1329,32 @@ def get_relative_path_to_repository_file( root, name, relative_install_dir, work
             relative_path_to_file.startswith( os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir ) ):
             relative_path_to_file = relative_path_to_file[ len( shed_config_dict.get( 'tool_path' ) ) + 1: ]
     return relative_path_to_file
-def get_sample_files_from_disk( repository_files_dir, tool_path = None, relative_install_dir=None, resetting_all_metadata_on_repository=False ):
+def get_sample_files_from_disk( repository_files_dir, tool_path=None, relative_install_dir=None, resetting_all_metadata_on_repository=False ):
     if resetting_all_metadata_on_repository:
         # Keep track of the location where the repository is temporarily cloned so that we can strip it when setting metadata.
         work_dir = repository_files_dir
     sample_file_metadata_paths = []
     sample_file_copy_paths = []
     for root, dirs, files in os.walk( repository_files_dir ):
-            if root.find( '.hg' ) < 0:
-                for name in files:
-                    if name.endswith( '.sample' ):
-                        if resetting_all_metadata_on_repository:
-                            full_path_to_sample_file = os.path.join( root, name )
-                            stripped_path_to_sample_file = full_path_to_sample_file.replace( work_dir, '' )
-                            if stripped_path_to_sample_file.startswith( '/' ):
-                                stripped_path_to_sample_file = stripped_path_to_sample_file[ 1: ]
-                            relative_path_to_sample_file = os.path.join( relative_install_dir, stripped_path_to_sample_file )
-                            if os.path.exists( relative_path_to_sample_file ):
-                                sample_file_copy_paths.append( relative_path_to_sample_file )
-                            else:
-                                sample_file_copy_paths.append( full_path_to_sample_file )
-                        else:
-                            relative_path_to_sample_file = os.path.join( root, name )
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name.endswith( '.sample' ):
+                    if resetting_all_metadata_on_repository:
+                        full_path_to_sample_file = os.path.join( root, name )
+                        stripped_path_to_sample_file = full_path_to_sample_file.replace( work_dir, '' )
+                        if stripped_path_to_sample_file.startswith( '/' ):
+                            stripped_path_to_sample_file = stripped_path_to_sample_file[ 1: ]
+                        relative_path_to_sample_file = os.path.join( relative_install_dir, stripped_path_to_sample_file )
+                        if os.path.exists( relative_path_to_sample_file ):
                             sample_file_copy_paths.append( relative_path_to_sample_file )
-                            if tool_path and relative_install_dir:
-                                if relative_path_to_sample_file.startswith( os.path.join( tool_path, relative_install_dir ) ):
-                                    relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
+                        else:
+                            sample_file_copy_paths.append( full_path_to_sample_file )
+                    else:
+                        relative_path_to_sample_file = os.path.join( root, name )
+                        sample_file_copy_paths.append( relative_path_to_sample_file )
+                        if tool_path and relative_install_dir:
+                            if relative_path_to_sample_file.startswith( os.path.join( tool_path, relative_install_dir ) ):
+                                relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
     return sample_file_metadata_paths, sample_file_copy_paths
 def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_dicts ):
