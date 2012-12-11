@@ -2,6 +2,7 @@ import pkg_resources
 pkg_resources.require( "twill==0.9" )
 
 import StringIO, os, filecmp, time, unittest, urllib, logging, difflib, tarfile, zipfile, tempfile, re, shutil, subprocess
+import pprint
 
 import twill
 import twill.commands as tc
@@ -299,16 +300,60 @@ class TwillTestCase( unittest.TestCase ):
             # twill stores the regex match in a special stack variable
             match = twill.namespaces.get_twill_glocals()[1][ '__match__' ]
             json_data = from_json_string( match )
-            assert check_fn( json_data ), 'failed check_fn'
+            assert check_fn( json_data ), 'failed check_fn: %s' %( check_fn.func_name )
 
         except Exception, exc:
             log.error( exc, exc_info=True )
+            log.debug( 'json_data: %s', ( '\n' + pprint.pformat( json_data ) if json_data else '(no match)' ) )
             fname = self.write_temp_file( tc.browser.get_html() )
             errmsg = ( "json '%s' could not be found or failed check_fn" % ( pattern ) +
                        "\npage content written to '%s'" % ( fname ) )
             raise AssertionError( errmsg )
 
         self.home()
+
+    def is_history_empty( self ):
+        """
+        Uses history page JSON to determine whether this history is empty
+        (i.e. has no undeleted datasets).
+        """
+        def has_no_undeleted_hdas( hda_list ):
+            if not len( hda_list ):
+                return True
+            for hda in hda_list:
+                if not( hda[ 'deleted' ] or hda[ 'purged' ] ):
+                    return False
+            return True
+        try:
+            self.check_history_json( r'\bhdas\s*=\s*(.*);', has_no_undeleted_hdas )
+        except AssertionError, exc:
+            log.error( 'history is not empty' )
+            raise exc
+
+    def check_hda_json_for_key_value( self, hda_id, key, value, use_string_contains=False ):
+        """
+        Uses history page JSON to determine whether the current history:
+        (1) has an hda with hda_id,
+        (2) that hda has a JSON var named 'key',
+        (3) that var 'key' == value
+        If use_string_contains=True, this will search for value in var 'key'
+        instead of testing for an entire, exact match (string only).
+        """
+        #TODO: multi key, value
+        def hda_has_key_value( hda_list ):
+            for hda in hda_list:
+                # if we found the hda and there's a var in the json named key
+                if( ( hda[ 'id' ] == hda_id )
+                and ( key in hda ) ):
+                    var = hda[ key ]
+                    # test for partial string containment if str and requested
+                    if( ( type( var ) == str )
+                    and ( use_string_contains ) ):
+                        return ( value in var )
+                    # otherwise, test for equivalence
+                    return ( var == value )
+            return False
+        self.check_history_json( r'\bhdas\s*=\s*(.*);', hda_has_key_value )
 
     def clear_history( self ):
         """Empties a history of all datasets"""
