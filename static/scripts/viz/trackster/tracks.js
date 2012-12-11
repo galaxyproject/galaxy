@@ -1190,7 +1190,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                 view.chrom_select.html(chrom_options);
                 view.chrom_start_index = result.start_index;
                 
-                chrom_data.resolve(result);
+                chrom_data.resolve(result.chrom_info);
             },
             error: function() {
                 alert("Could not load chroms for this dbkey:", view.dbkey);
