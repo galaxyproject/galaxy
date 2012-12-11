@@ -846,17 +846,17 @@ def is_data_index_sample_file( file_path ):
     if is_column_based( file_path ):
         return True
     # If the file is any of the following, don't copy it.
-    if check_html( file_path ):
+    if checkers.check_html( file_path ):
         return False
-    if check_image( file_path ):
+    if checkers.check_image( file_path ):
         return False
-    if check_binary( name=file_path ):
+    if checkers.check_binary( name=file_path ):
         return False
-    if is_bz2( file_path ):
+    if checkers.is_bz2( file_path ):
         return False
-    if is_gzip( file_path ):
+    if checkers.is_gzip( file_path ):
         return False
-    if check_zip( file_path ):
+    if checkers.check_zip( file_path ):
         return False
     # Default to copying the file if none of the above are true.
     return True
