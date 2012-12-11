@@ -99,7 +99,7 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
                                                                                                        repository_dependencies=repository_dependencies )
                 containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
             if tool_dependencies:
-                folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( folder_id, tool_dependencies, for_galaxy=True )
+                folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id, tool_dependencies, for_galaxy=True )
                 containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
         except Exception, e:
             log.debug( "Exception in build_repository_containers_for_galaxy: %s" % str( e ) )
