@@ -55,7 +55,7 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
         repository = get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         datatypes_repository = get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0020', additional_paths=[ 'emboss', '5' ] )
-        self.generate_repository_dependency_xml( datatypes_repository, 
+        self.generate_repository_dependency_xml( [ datatypes_repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
         self.upload_file( repository, 
                           'repository_dependencies.xml', 

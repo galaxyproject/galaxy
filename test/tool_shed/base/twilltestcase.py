@@ -22,12 +22,6 @@ class ShedTwillTestCase( TwillTestCase ):
         self.file_dir = os.environ.get( 'TOOL_SHED_TEST_FILE_DIR', None )
         self.tool_shed_test_file = None
         self.shed_tools_dict = {}
-        self.keepOutdir = os.environ.get( 'TOOL_SHED_TEST_SAVE', '' )
-        if self.keepOutdir > '':
-           try:
-               os.makedirs( self.keepOutdir )
-           except:
-               pass
         self.home()
     def browse_repository( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/browse_repository?id=%s' % self.security.encode_id( repository.id )
@@ -50,9 +44,11 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository/view_changelog?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def check_repository_dependency( self, repository, depends_on_repository, depends_on_changeset_revision ):
+    def check_repository_dependency( self, repository, depends_on_repository, depends_on_changeset_revision, changeset_revision=None ):
+        if changeset_revision is None:
+            changeset_revision = self.get_repository_tip( repository )
         strings_displayed = [ depends_on_repository.name, depends_on_repository.user.username, depends_on_changeset_revision  ]
-        self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
+        self.display_manage_repository_page( repository, changeset_revision=changeset_revision, strings_displayed=strings_displayed )
     def check_repository_metadata( self, repository, tip_only=True ):
         if tip_only:
             assert self.tip_has_metadata( repository ) and len( self.get_repository_metadata_revisions( repository ) ) == 1, \
@@ -216,21 +212,24 @@ class ShedTwillTestCase( TwillTestCase ):
             else:
                 string = string.replace( character, replacement )
         return string
-    def generate_repository_dependency_xml( self, repository, xml_filename, dependency_description='' ):
+    def generate_repository_dependency_xml( self, repositories, xml_filename, dependency_description='' ):
         file_path = os.path.split( xml_filename )[0]
         if not os.path.exists( file_path ):
             os.makedirs( file_path )
-        changeset_revision = self.get_repository_tip( repository )
+        dependency_entries = []
+        for repository in repositories:
+            changeset_revision = self.get_repository_tip( repository )
+            template = string.Template( common.new_repository_dependencies_line )
+            dependency_entries.append( template.safe_substitute( toolshed_url=self.url,
+                                                                 owner=repository.user.username,
+                                                                 repository_name=repository.name,
+                                                                 changeset_revision=changeset_revision ) )
         if dependency_description:
             description = ' description="%s"' % dependency_description
         else:
             description = dependency_description
         template_parser = string.Template( common.new_repository_dependencies_xml )
-        repository_dependency_xml = template_parser.safe_substitute( toolshed_url=self.url,
-                                                                     owner=repository.user.username,
-                                                                     repository_name=repository.name,
-                                                                     changeset_revision=changeset_revision,
-                                                                     description=description )
+        repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
         file( xml_filename, 'w' ).write( repository_dependency_xml )
     def generate_temp_path( self, test_script_path, additional_paths=[] ):

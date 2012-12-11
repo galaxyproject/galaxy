@@ -73,7 +73,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
         '''Generate a repository_dependencies.xml file specifying emboss_datatypes and upload it to the emboss_5 repository.'''
         datatypes_repository = get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0030', additional_paths=[ 'emboss' ] )
-        self.generate_repository_dependency_xml( datatypes_repository, 
+        self.generate_repository_dependency_xml( [ datatypes_repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
         emboss_5_repository = get_repository_by_name_and_owner( emboss_5_repository_name, common.test_user_1_name )
         self.upload_file( emboss_5_repository, 
@@ -93,7 +93,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
         emboss_repository = get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         emboss_5_repository = get_repository_by_name_and_owner( emboss_5_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0030', additional_paths=[ 'emboss', '5' ] )
-        self.generate_repository_dependency_xml( emboss_5_repository, 
+        self.generate_repository_dependency_xml( [ emboss_5_repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                  dependency_description='Emboss requires the Emboss 5 repository.' )
         self.upload_file( emboss_repository, 
@@ -105,7 +105,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
         emboss_repository = get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         emboss_6_repository = get_repository_by_name_and_owner( emboss_6_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0030', additional_paths=[ 'emboss', '6' ] )
-        self.generate_repository_dependency_xml( emboss_6_repository, 
+        self.generate_repository_dependency_xml( [ emboss_6_repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                  dependency_description='Emboss requires the Emboss 6 repository.' )
         self.upload_file( emboss_repository, 

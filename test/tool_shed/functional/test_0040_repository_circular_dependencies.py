@@ -63,7 +63,7 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         filtering_repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0040', additional_paths=[ 'filtering' ] )
-        self.generate_repository_dependency_xml( repository, 
+        self.generate_repository_dependency_xml( [ repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                  dependency_description='Filtering 1.1.0 depends on the freebayes repository.' )
         self.upload_file( filtering_repository, 
@@ -79,7 +79,7 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
         freebayes_repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0040', additional_paths=[ 'freebayes' ] )
-        self.generate_repository_dependency_xml( repository, 
+        self.generate_repository_dependency_xml( [ repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                  dependency_description='Freebayes depends on the filtering repository.' )
         self.upload_file( freebayes_repository, 
@@ -95,8 +95,5 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         # Freebayes revision 0 -> filtering revision 1.
         # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
         # In this case, the displayed dependency will specify the tip revision, but this will not always be the case.
-        filtering_strings_displayed = [ freebayes_repository_name, common.test_user_1_name, self.get_repository_tip( freebayes_repository ) ]
-        freebayes_strings_displayed = [ filtering_repository_name, common.test_user_1_name, self.get_repository_tip( filtering_repository ) ]
-        self.display_manage_repository_page( filtering_repository, strings_displayed=filtering_strings_displayed )
-        self.display_manage_repository_page( freebayes_repository, strings_displayed=freebayes_strings_displayed )
-
+        self.check_repository_dependency( filtering_repository, freebayes_repository, self.get_repository_tip( freebayes_repository ) )
+        self.check_repository_dependency( freebayes_repository, filtering_repository, self.get_repository_tip( filtering_repository ) )

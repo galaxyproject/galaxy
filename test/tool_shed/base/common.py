@@ -10,6 +10,8 @@ test_user_1_name = 'user1'
 
 new_repository_dependencies_xml = '''<?xml version="1.0"?>
 <repositories${description}>
-    <repository toolshed="${toolshed_url}" name="${repository_name}" owner="${owner}" changeset_revision="${changeset_revision}" />
+${dependency_lines}
 </repositories>
 '''
+
+new_repository_dependencies_line = '''    <repository toolshed="${toolshed_url}" name="${repository_name}" owner="${owner}" changeset_revision="${changeset_revision}" />'''
