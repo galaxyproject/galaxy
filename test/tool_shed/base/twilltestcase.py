@@ -50,6 +50,9 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository/view_changelog?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def check_repository_dependency( self, repository, depends_on_repository, depends_on_changeset_revision ):
+        strings_displayed = [ depends_on_repository.name, depends_on_repository.user.username, depends_on_changeset_revision  ]
+        self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
     def check_repository_metadata( self, repository, tip_only=True ):
         if tip_only:
             assert self.tip_has_metadata( repository ) and len( self.get_repository_metadata_revisions( repository ) ) == 1, \
@@ -353,7 +356,7 @@ class ShedTwillTestCase( TwillTestCase ):
                      **kwd ):
         self.visit_url( '/upload/upload?repository_id=%s' % self.security.encode_id( repository.id ) )
         if valid_tools_only:
-            strings_displayed.append( "has been successfully uploaded to the repository." )
+            strings_displayed.extend( [ 'has been successfully', 'uploaded to the repository.' ] )
         for key in kwd:
             tc.fv( "1", key, kwd[ key ] )
         tc.formfile( "1", "file_data", self.get_filename( filename, filepath ) )

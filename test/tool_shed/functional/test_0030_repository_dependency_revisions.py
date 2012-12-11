@@ -18,7 +18,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = get_user( common.test_user_1_email )
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % regular_email
+        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
         test_user_1_private_role = get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
@@ -28,7 +28,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
     def test_0005_create_category( self ):
         """Create a category for this test suite"""
         self.create_category( 'Test 0030 Repository Dependency Revisions', 'Testing repository dependencies by revision.' )
-    def test_0005_create_repositories( self ):
+    def test_0010_create_repositories( self ):
         '''Create the emboss_5_0030, emboss_6_0030, emboss_datatypes, and emboss repositories and populate the emboss_datatypes repository.'''
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
@@ -69,7 +69,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
                                     strings_displayed=[] )
             emboss_repository = get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
             self.upload_file( emboss_5_repository, 'emboss/emboss.tar', commit_message='Uploaded tool tarball.' )
-    def test_0010_generate_repository_dependencies_for_emboss_5( self ):
+    def test_0015_generate_repository_dependencies_for_emboss_5( self ):
         '''Generate a repository_dependencies.xml file specifying emboss_datatypes and upload it to the emboss_5 repository.'''
         datatypes_repository = get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0030', additional_paths=[ 'emboss' ] )
@@ -80,7 +80,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
                           'repository_dependencies.xml', 
                           filepath=repository_dependencies_path, 
                           commit_message='Uploaded repository_depepndencies.xml.' )
-    def test_0015_generate_repository_dependencies_for_emboss_6( self ):
+    def test_0020_generate_repository_dependencies_for_emboss_6( self ):
         '''Generate a repository_dependencies.xml file specifying emboss_datatypes and upload it to the emboss_6 repository.'''
         emboss_6_repository = get_repository_by_name_and_owner( emboss_6_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0030', additional_paths=[ 'emboss' ] )
@@ -88,7 +88,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
                           'repository_dependencies.xml', 
                           filepath=repository_dependencies_path, 
                           commit_message='Uploaded repository_depepndencies.xml.' )
-    def test_0020_generate_repository_dependency_on_emboss_5( self ):
+    def test_0025_generate_repository_dependency_on_emboss_5( self ):
         '''Create and upload repository_dependencies.xml for the emboss_5_0030 repository.'''
         emboss_repository = get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         emboss_5_repository = get_repository_by_name_and_owner( emboss_5_repository_name, common.test_user_1_name )
@@ -100,7 +100,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
                           'repository_dependencies.xml', 
                           filepath=repository_dependencies_path, 
                           commit_message='Uploaded dependency configuration specifying emboss_5' )
-    def test_0025_generate_repository_dependency_on_emboss_6( self ):
+    def test_0030_generate_repository_dependency_on_emboss_6( self ):
         '''Create and upload repository_dependencies.xml for the emboss_6_0030 repository.'''
         emboss_repository = get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         emboss_6_repository = get_repository_by_name_and_owner( emboss_6_repository_name, common.test_user_1_name )
@@ -112,7 +112,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
                           'repository_dependencies.xml', 
                           filepath=repository_dependencies_path, 
                           commit_message='Uploaded dependency configuration specifying emboss_6' )
-    def test_0030_verify_repository_dependency_revisions( self ):
+    def test_0035_verify_repository_dependency_revisions( self ):
         '''Verify that different metadata revisions of the emboss repository have different repository dependencies.'''
         repository = get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         repository_metadata = [ ( metadata.metadata, metadata.changeset_revision ) for metadata in self.get_repository_metadata( repository ) ]

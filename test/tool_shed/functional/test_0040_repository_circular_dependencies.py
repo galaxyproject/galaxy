@@ -1,0 +1,102 @@
+from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
+from tool_shed.base.test_db_util import get_repository_by_name_and_owner, get_user, get_private_role
+
+freebayes_repository_name = 'freebayes_0040'
+freebayes_repository_name_description = "Galaxy's freebayes tool"
+freebayes_repository_name_long_description = "Long description of Galaxy's freebayes tool"
+
+filtering_repository_name = 'filtering_0040'
+filtering_repository_description = "Galaxy's filtering tool"
+filtering_repository_long_description = "Long description of Galaxy's filtering tool"
+
+class TestRepositoryCircularDependencies( ShedTwillTestCase ):
+    '''Verify that the code correctly handles circular dependencies.'''
+    def test_0000_initiate_users( self ):
+        """Create necessary user accounts."""
+        self.logout()
+        self.login( email=common.test_user_1_email, username=common.test_user_1_name )
+        test_user_1 = get_user( common.test_user_1_email )
+        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
+        test_user_1_private_role = get_private_role( test_user_1 )
+        self.logout()
+        self.login( email=common.admin_email, username=common.admin_username )
+        admin_user = get_user( common.admin_email )
+        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
+        admin_user_private_role = get_private_role( admin_user )
+    def test_0005_create_category( self ):
+        """Create a category for this test suite"""
+        self.create_category( 'test_0040_repository_circular_dependencies', 'Testing handling of circular repository dependencies.' )
+    def test_0010_create_freebayes_repository_name( self ):
+        '''Create and populate freebayes_0040.'''
+        self.logout()
+        self.login( email=common.test_user_1_email, username=common.test_user_1_name )
+        self.create_repository( freebayes_repository_name, 
+                                freebayes_repository_name_description, 
+                                repository_long_description=freebayes_repository_name_long_description, 
+                                categories=[ 'test_0040_repository_circular_dependencies' ], 
+                                strings_displayed=[] )
+        repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        self.upload_file( repository, 
+                          'freebayes/freebayes.tar', 
+                          strings_displayed=[], 
+                          commit_message='Uploaded freebayes.tar.' )
+    def test_0015_create_filtering_repository( self ):
+        '''Create and populate filtering_0040.'''
+        self.logout()
+        self.login( email=common.test_user_1_email, username=common.test_user_1_name )
+        self.create_repository( filtering_repository_name, 
+                                filtering_repository_description, 
+                                repository_long_description=filtering_repository_long_description, 
+                                categories=[ 'test_0040_repository_circular_dependencies' ], 
+                                strings_displayed=[] )
+        repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        self.upload_file( repository, 
+                          'filtering/filtering_1.1.0.tar', 
+                          strings_displayed=[], 
+                          commit_message='Uploaded filtering.tar.' )
+    def test_0020_create_dependency_on_freebayes( self ):
+        '''Upload a repository_dependencies.xml file that specifies the current revision of freebayes to the filtering_0040 repository.'''
+        # The dependency structure should look like:
+        # Filtering revision 0 -> freebayes revision 0.
+        # Freebayes revision 0 -> filtering revision 1.
+        # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
+        repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        filtering_repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        repository_dependencies_path = self.generate_temp_path( 'test_0040', additional_paths=[ 'filtering' ] )
+        self.generate_repository_dependency_xml( repository, 
+                                                 self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
+                                                 dependency_description='Filtering 1.1.0 depends on the freebayes repository.' )
+        self.upload_file( filtering_repository, 
+                          'repository_dependencies.xml', 
+                          filepath=repository_dependencies_path, 
+                          commit_message='Uploaded dependency on freebayes' )
+    def test_0025_create_dependency_on_filtering( self ):
+        '''Upload a repository_dependencies.xml file that specifies the current revision of filtering to the freebayes_0040 repository.'''
+        # The dependency structure should look like:
+        # Filtering revision 0 -> freebayes revision 0.
+        # Freebayes revision 0 -> filtering revision 1.
+        # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
+        repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        freebayes_repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        repository_dependencies_path = self.generate_temp_path( 'test_0040', additional_paths=[ 'freebayes' ] )
+        self.generate_repository_dependency_xml( repository, 
+                                                 self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
+                                                 dependency_description='Freebayes depends on the filtering repository.' )
+        self.upload_file( freebayes_repository, 
+                          'repository_dependencies.xml', 
+                          filepath=repository_dependencies_path, 
+                          commit_message='Uploaded dependency on filtering' )
+    def test_0030_verify_repository_dependencies( self ):
+        '''Verify that each repository can depend on the other without causing an infinite loop.'''
+        filtering_repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        freebayes_repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        # The dependency structure should look like:
+        # Filtering revision 0 -> freebayes revision 0.
+        # Freebayes revision 0 -> filtering revision 1.
+        # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
+        # In this case, the displayed dependency will specify the tip revision, but this will not always be the case.
+        filtering_strings_displayed = [ freebayes_repository_name, common.test_user_1_name, self.get_repository_tip( freebayes_repository ) ]
+        freebayes_strings_displayed = [ filtering_repository_name, common.test_user_1_name, self.get_repository_tip( filtering_repository ) ]
+        self.display_manage_repository_page( filtering_repository, strings_displayed=filtering_strings_displayed )
+        self.display_manage_repository_page( freebayes_repository, strings_displayed=freebayes_strings_displayed )
+
