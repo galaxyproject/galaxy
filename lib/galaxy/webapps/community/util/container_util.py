@@ -214,6 +214,7 @@ def build_repository_dependencies_folder( toolshed_base_url, repository_name, re
         del repository_dependencies[ 'description' ]
         repository_dependencies_folder, folder_id, repository_dependency_id = \
             populate_repository_dependencies_container( repository_dependencies_folder, repository_dependencies, folder_id, repository_dependency_id )
+        repository_dependencies_folder = prune_repository_dependencies( repository_dependencies_folder )
     else:
         repository_dependencies_root_folder = None
     return folder_id, repository_dependencies_root_folder
@@ -346,6 +347,10 @@ def build_workflows_folder( folder_id, workflows, repository_metadata, label='Wo
         workflows_root_folder = None
     return folder_id, workflows_root_folder
 def cast_empty_repository_dependency_folders( folder, repository_dependency_id ):
+    """
+    Change any empty folders contained within the repository dependencies container into a repository dependency since it has no repository dependencies
+    of it's own.  This method is not used (and may not be needed), but here it is just in case.
+    """
     if not folder.folders and not folder.repository_dependencies:
         repository_dependency_id += 1
         repository_dependency = folder.to_repository_dependency( repository_dependency_id )
@@ -439,4 +444,20 @@ def print_folders( pad, folder ):
         print '    %s%s' % ( pad_str, repository_dependency.listify )
     for sub_folder in folder.folders:
         print_folders( pad+5, sub_folder )
+def prune_repository_dependencies( folder ):
+    """
+    Since the object used to generate a repository dependencies container is a dictionary and not an odict() (it must be json-serialize-able), the
+    order in which the dictionary is processed to create the container sometimes results in repository dependency entries in a folder that also
+    includes the repository dependency as a sub-folder (if the repository dependency has it's own repository dependency).  This method will remove
+    all repository dependencies from folder that are also sub-folders of folder.
+    """
+    repository_dependencies = [ rd for rd in folder.repository_dependencies ]
+    for repository_dependency in repository_dependencies:
+        listified_repository_dependency = repository_dependency.listify
+        if is_subfolder_of( folder, listified_repository_dependency ):
+            repository_dependencies.remove( repository_dependency )
+    folder.repository_dependencies = repository_dependencies
+    for sub_folder in folder.folders:
+        return prune_repository_dependencies( sub_folder )
+    return folder
     
