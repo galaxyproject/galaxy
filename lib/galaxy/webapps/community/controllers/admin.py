@@ -5,7 +5,7 @@ from galaxy.model.orm import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.web.form_builder import SelectField
 from galaxy.util import inflector
-from galaxy.util.shed_util_common import *
+import galaxy.util.shed_util_common as suc
 from common import *
 from repository import RepositoryGrid, CategoryGrid
 
@@ -342,8 +342,8 @@ class RepositoryMetadataGrid( grids.Grid ):
     class RevisionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
             repository = repository_metadata.repository
-            repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
-            ctx = get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
+            repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+            ctx = suc.get_changectx_for_changeset( repo, repository_metadata.changeset_revision )
             return "%s:%s" % ( str( ctx.rev() ), repository_metadata.changeset_revision )
     class ToolsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository_metadata ):
@@ -481,7 +481,7 @@ class AdminController( BaseUIController, Admin ):
                     # The received id is the repository id, so we need to get the id of the user
                     # that uploaded the repository.
                     repository_id = kwd.get( 'id', None )
-                    repository = get_repository_in_tool_shed( trans, repository_id )
+                    repository = suc.get_repository_in_tool_shed( trans, repository_id )
                     kwd[ 'f-email' ] = repository.user.email
             elif operation == "repositories_by_category":
                 # Eliminate the current filters if any exist.
@@ -513,7 +513,7 @@ class AdminController( BaseUIController, Admin ):
             changset_revision_str = 'changeset_revision_'
             if k.startswith( changset_revision_str ):
                 repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
-                repository = get_repository_in_tool_shed( trans, repository_id )
+                repository = suc.get_repository_in_tool_shed( trans, repository_id )
                 if repository.tip( trans.app ) != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='browse_repositories',
@@ -586,7 +586,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             deleted_repositories = ""
             for repository_id in ids:
-                repository = get_repository_in_tool_shed( trans, repository_id )
+                repository = suc.get_repository_in_tool_shed( trans, repository_id )
                 if not repository.deleted:
                     repository.deleted = True
                     trans.sa_session.add( repository )
@@ -717,12 +717,12 @@ class AdminController( BaseUIController, Admin ):
     @web.require_admin
     def reset_metadata_on_selected_repositories_in_tool_shed( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            kwd[ 'CONTROLLER' ] = TOOL_SHED_ADMIN_CONTROLLER
-            message, status = reset_metadata_on_selected_repositories( trans, **kwd )
+            kwd[ 'CONTROLLER' ] = suc.TOOL_SHED_ADMIN_CONTROLLER
+            message, status = suc.reset_metadata_on_selected_repositories( trans, **kwd )
         else:
             message = util.restore_text( kwd.get( 'message', ''  ) )
             status = kwd.get( 'status', 'done' )
-        repositories_select_field = build_repository_ids_select_field( trans, TOOL_SHED_ADMIN_CONTROLLER )
+        repositories_select_field = suc.build_repository_ids_select_field( trans, suc.TOOL_SHED_ADMIN_CONTROLLER )
         return trans.fill_template( '/webapps/community/admin/reset_metadata_on_selected_repositories.mako',
                                     repositories_select_field=repositories_select_field,
                                     message=message,
@@ -740,7 +740,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             undeleted_repositories = ""
             for repository_id in ids:
-                repository = get_repository_in_tool_shed( trans, repository_id )
+                repository = suc.get_repository_in_tool_shed( trans, repository_id )
                 if repository.deleted:
                     repository.deleted = False
                     trans.sa_session.add( repository )

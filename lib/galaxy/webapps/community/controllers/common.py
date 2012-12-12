@@ -6,7 +6,7 @@ from galaxy.tools import *
 from galaxy.util.odict import odict
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.hash_util import *
-from galaxy.util.shed_util_common import *
+import galaxy.util.shed_util_common as suc
 from galaxy.web.base.controller import *
 from galaxy.web.base.controllers.admin import *
 from galaxy.webapps.community import model
@@ -108,12 +108,12 @@ def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
     tool_versions_dict = {}
     for tool_dict in metadata.get( 'tools', [] ):
         # We have at least 2 changeset revisions to compare tool guids and tool ids.
-        parent_id = get_parent_id( trans,
-                                   id,
-                                   tool_dict[ 'id' ],
-                                   tool_dict[ 'version' ],
-                                   tool_dict[ 'guid' ],
-                                   changeset_revisions )
+        parent_id = suc.get_parent_id( trans,
+                                       id,
+                                       tool_dict[ 'id' ],
+                                       tool_dict[ 'version' ],
+                                       tool_dict[ 'guid' ],
+                                       changeset_revisions )
         tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
     if tool_versions_dict:
         repository_metadata.tool_versions = tool_versions_dict
@@ -130,7 +130,7 @@ def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset
         return False
     if changeset_revision == repository.tip( trans.app ):
         return True
-    file_name = strip_path( file_path )
+    file_name = suc.strip_path( file_path )
     latest_version_of_file = get_latest_tool_config_revision_from_repository_manifest( repo, file_name, changeset_revision )
     can_use_disk_file = filecmp.cmp( file_path, latest_version_of_file )
     try:
@@ -140,7 +140,7 @@ def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset
     return can_use_disk_file
 def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
-    repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+    repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
         return repository_metadata.malicious
     return False
@@ -191,7 +191,7 @@ def generate_tool_guid( trans, repository, tool ):
                                       tool.id,
                                       tool.version )
 def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
-    stripped_file_name = strip_path( file_name )
+    stripped_file_name = suc.strip_path( file_name )
     file_path = None
     for root, dirs, files in os.walk( repo_files_dir ):
         if root.find( '.hg' ) < 0:
@@ -246,11 +246,11 @@ def get_latest_tool_config_revision_from_repository_manifest( repo, filename, ch
     This method is restricted to tool_config files rather than any file since it is likely that, with the exception of tool config files,
     multiple files will have the same name in various directories within the repository.
     """
-    stripped_filename = strip_path( filename )
-    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+    stripped_filename = suc.strip_path( filename )
+    for changeset in suc.reversed_upper_bounded_changelog( repo, changeset_revision ):
         manifest_ctx = repo.changectx( changeset )
         for ctx_file in manifest_ctx.files():
-            ctx_file_name = strip_path( ctx_file )
+            ctx_file_name = suc.strip_path( ctx_file )
             if ctx_file_name == stripped_filename:
                 try:
                     fctx = manifest_ctx[ ctx_file ]
@@ -268,10 +268,10 @@ def get_latest_tool_config_revision_from_repository_manifest( repo, filename, ch
     return None
 def get_previous_repository_reviews( trans, repository, changeset_revision ):
     """Return an ordered dictionary of repository reviews up to and including the received changeset revision."""
-    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
     reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
     previous_reviews_dict = odict()
-    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+    for changeset in suc.reversed_upper_bounded_changelog( repo, changeset_revision ):
         previous_changeset_revision = str( repo.changectx( changeset ) )
         if previous_changeset_revision in reviewed_revision_hashes:
             previous_rev, previous_changeset_revision_label = get_rev_label_from_changeset_revision( repo, previous_changeset_revision )
@@ -313,9 +313,9 @@ def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
 def get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=None ):
     if repository is None:
         repository = repository_metadata.repository
-    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
     changeset_revision = repository_metadata.changeset_revision
-    ctx = get_changectx_for_changeset( repo, changeset_revision )
+    ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         rev = '%04d' % ctx.rev()
         label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
@@ -324,7 +324,7 @@ def get_rev_label_changeset_revision_from_repository_metadata( trans, repository
         label = "-1:%s" % changeset_revision
     return rev, label, changeset_revision
 def get_rev_label_from_changeset_revision( repo, changeset_revision ):
-    ctx = get_changectx_for_changeset( repo, changeset_revision )
+    ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         rev = '%04d' % ctx.rev()
         label = "%s:%s" % ( str( ctx.rev() ), changeset_revision )
@@ -358,8 +358,8 @@ def get_revision_label( trans, repository, changeset_revision ):
     Return a string consisting of the human read-able 
     changeset rev and the changeset revision string.
     """
-    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
-    ctx = get_changectx_for_changeset( repo, changeset_revision )
+    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         return "%s:%s" % ( str( ctx.rev() ), changeset_revision )
     else:
@@ -389,7 +389,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
     #    user is not an admin user, the email will not include any information about both HTML and image content
     #    that was included in the change set.
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( get_configured_ui(), repo_dir )
+    repo = hg.repository( suc.get_configured_ui(), repo_dir )
     smtp_server = trans.app.config.smtp_server
     if smtp_server and ( new_repo_alert or repository.email_alerts ):
         # Send email alert to users that want them.
@@ -457,9 +457,9 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
 def has_previous_repository_reviews( trans, repository, changeset_revision ):
     """Determine if a repository has a changeset revision review prior to the received changeset revision."""
-    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
+    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
     reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
-    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+    for changeset in suc.reversed_upper_bounded_changelog( repo, changeset_revision ):
         previous_changeset_revision = str( repo.changectx( changeset ) )
         if previous_changeset_revision in reviewed_revision_hashes:
             return True
@@ -471,9 +471,9 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     revision and the first changeset revision in the repository, searching backwards.
     """
     original_tool_data_path = trans.app.config.tool_data_path
-    repository = get_repository_in_tool_shed( trans, repository_id )
+    repository = suc.get_repository_in_tool_shed( trans, repository_id )
     repo_files_dir = repository.repo_path( trans.app )
-    repo = hg.repository( get_configured_ui(), repo_files_dir )
+    repo = hg.repository( suc.get_configured_ui(), repo_files_dir )
     message = ''
     tool = None
     can_use_disk_file = False
@@ -482,27 +482,27 @@ def load_tool_from_changeset_revision( trans, repository_id, changeset_revision,
     can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
     if can_use_disk_file:
         trans.app.config.tool_data_path = work_dir
-        tool, valid, message, sample_files = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir )
+        tool, valid, message, sample_files = suc.handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir )
         if tool is not None:
-            invalid_files_and_errors_tups = check_tool_input_params( trans.app,
-                                                                     repo_files_dir,
-                                                                     tool_config_filename,
-                                                                     tool,
-                                                                     sample_files )
+            invalid_files_and_errors_tups = suc.check_tool_input_params( trans.app,
+                                                                         repo_files_dir,
+                                                                         tool_config_filename,
+                                                                         tool,
+                                                                         sample_files )
             if invalid_files_and_errors_tups:
-                message2 = generate_message_for_invalid_tools( trans,
-                                                               invalid_files_and_errors_tups,
-                                                               repository,
-                                                               metadata_dict=None,
-                                                               as_html=True,
-                                                               displaying_invalid_tool=True )
-                message = concat_messages( message, message2 )
+                message2 = suc.generate_message_for_invalid_tools( trans,
+                                                                   invalid_files_and_errors_tups,
+                                                                   repository,
+                                                                   metadata_dict=None,
+                                                                   as_html=True,
+                                                                   displaying_invalid_tool=True )
+                message = suc.concat_messages( message, message2 )
     else:
-        tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
-    remove_dir( work_dir )
+        tool, message, sample_files = suc.handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
+    suc.remove_dir( work_dir )
     trans.app.config.tool_data_path = original_tool_data_path
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-    reset_tool_data_tables( trans.app )
+    suc.reset_tool_data_tables( trans.app )
     return repository, tool, message
 def new_repository_dependency_metadata_required( trans, repository, metadata_dict ):
     """
@@ -594,36 +594,36 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     message = ''
     status = 'done'
     encoded_id = trans.security.encode_id( repository.id )
-    repository_clone_url = generate_clone_url_for_repository_in_tool_shed( trans, repository )
+    repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( get_configured_ui(), repo_dir )
-    metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
-                                                                                 repository=repository,
-                                                                                 repository_clone_url=repository_clone_url,
-                                                                                 relative_install_dir=repo_dir,
-                                                                                 repository_files_dir=None,
-                                                                                 resetting_all_metadata_on_repository=False,
-                                                                                 updating_installed_repository=False,
-                                                                                 persist=False )
+    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+    metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                     repository=repository,
+                                                                                     repository_clone_url=repository_clone_url,
+                                                                                     relative_install_dir=repo_dir,
+                                                                                     repository_files_dir=None,
+                                                                                     resetting_all_metadata_on_repository=False,
+                                                                                     updating_installed_repository=False,
+                                                                                     persist=False )
     if metadata_dict:
-        downloadable = is_downloadable( metadata_dict )
+        downloadable = suc.is_downloadable( metadata_dict )
         repository_metadata = None
         if new_repository_dependency_metadata_required( trans, repository, metadata_dict ) or \
            new_tool_metadata_required( trans, repository, metadata_dict ) or \
            new_workflow_metadata_required( trans, repository, metadata_dict ):
             # Create a new repository_metadata table row.
-            repository_metadata = create_or_update_repository_metadata( trans,
-                                                                        encoded_id,
-                                                                        repository,
-                                                                        repository.tip( trans.app ),
-                                                                        metadata_dict )
+            repository_metadata = suc.create_or_update_repository_metadata( trans,
+                                                                            encoded_id,
+                                                                            repository,
+                                                                            repository.tip( trans.app ),
+                                                                            metadata_dict )
             # If this is the first record stored for this repository, see if we need to send any email alerts.
             if len( repository.downloadable_revisions ) == 1:
                 handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
         else:
             repository_metadata = get_latest_repository_metadata( trans, repository.id )
             if repository_metadata:
-                downloadable = is_downloadable( metadata_dict )
+                downloadable = suc.is_downloadable( metadata_dict )
                 # Update the last saved repository_metadata table row.
                 repository_metadata.changeset_revision = repository.tip( trans.app )
                 repository_metadata.metadata = metadata_dict
@@ -632,17 +632,17 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                 trans.sa_session.flush()
             else:
                 # There are no tools in the repository, and we're setting metadata on the repository tip.
-                repository_metadata = create_or_update_repository_metadata( trans,
-                                                                            encoded_id,
-                                                                            repository,
-                                                                            repository.tip( trans.app ),
-                                                                            metadata_dict )
+                repository_metadata = suc.create_or_update_repository_metadata( trans,
+                                                                                encoded_id,
+                                                                                repository,
+                                                                                repository.tip( trans.app ),
+                                                                                metadata_dict )
         if 'tools' in metadata_dict and repository_metadata and status != 'error':
             # Set tool versions on the new downloadable change set.  The order of the list of changesets is critical, so we use the repo's changelog.
             changeset_revisions = []
             for changeset in repo.changelog:
                 changeset_revision = str( repo.changectx( changeset ) )
-                if get_repository_metadata_by_changeset_revision( trans, encoded_id, changeset_revision ):
+                if suc.get_repository_metadata_by_changeset_revision( trans, encoded_id, changeset_revision ):
                     changeset_revisions.append( changeset_revision )
             add_tool_versions( trans, encoded_id, repository_metadata, changeset_revisions )
     elif len( repo ) == 1 and not invalid_file_tups:
@@ -650,10 +650,10 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
         message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
         status = "error"
     if invalid_file_tups:
-        message = generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
+        message = suc.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
         status = 'error'
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-    reset_tool_data_tables( trans.app )
+    suc.reset_tool_data_tables( trans.app )
     return message, status
 def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=None, **kwd ):
     # Set metadata on the repository tip.
@@ -671,7 +671,7 @@ def update_for_browsing( trans, repository, current_working_dir, commit_message=
     # Make a copy of a repository's files for browsing, remove from disk all files that are not tracked, and commit all
     # added, modified or removed files that have not yet been committed.
     repo_dir = repository.repo_path( trans.app )
-    repo = hg.repository( get_configured_ui(), repo_dir )
+    repo = hg.repository( suc.get_configured_ui(), repo_dir )
     # The following will delete the disk copy of only the files in the repository.
     #os.system( 'hg update -r null > /dev/null 2>&1' )
     files_to_remove_from_disk = []

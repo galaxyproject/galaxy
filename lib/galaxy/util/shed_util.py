@@ -1,10 +1,10 @@
 import os, tempfile, shutil, logging, urllib2
 from galaxy import util
-from shed_util_common import *
+import shed_util_common as suc
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tool_shed.tool_dependencies.install_util import create_or_update_tool_dependency, install_package, set_environment
-from galaxy.tool_shed.encoding_util import *
-from galaxy.model.orm import *
+from galaxy.tool_shed import encoding_util
+from galaxy.model.orm import and_
 
 from galaxy import eggs
 import pkg_resources
@@ -185,7 +185,7 @@ def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=No
                 filename=os.path.join( tool_path, filename )
             # Attempt to ensure we're copying an appropriate file.
             if is_data_index_sample_file( filename ):
-                copy_sample_file( app, filename, dest_path=dest_path )
+                suc.copy_sample_file( app, filename, dest_path=dest_path )
 def create_repository_dict_for_proprietary_datatypes( tool_shed, name, owner, installed_changeset_revision, tool_dicts, converter_path=None, display_path=None ):
     return dict( tool_shed=tool_shed,
                  repository_name=name,
@@ -204,7 +204,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
         # to it being uninstalled.
         current_changeset_revision = installed_changeset_revision
     sa_session = app.model.context.current  
-    tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
+    tool_shed = suc.get_tool_shed_from_clone_url( repository_clone_url )
     if not owner:
         owner = get_repository_owner_from_clone_url( repository_clone_url )
     includes_datatypes = 'datatypes' in metadata_dict
@@ -255,7 +255,7 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
     if shed_config_dict.get( 'tool_path' ):
         relative_install_dir = os.path.join( shed_config_dict.get( 'tool_path' ), relative_install_dir )
     # Get the tool_dependencies.xml file from the repository.
-    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
+    tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', relative_install_dir )
     try:
         tree = ElementTree.parse( tool_dependencies_config )
     except Exception, e:
@@ -295,8 +295,8 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
     return tool_dependency_objects
 def generate_clone_url_for_installed_repository( trans, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
-    tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-    return url_join( tool_shed_url, 'repos', repository.owner, repository.name )
+    tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+    return suc.url_join( tool_shed_url, 'repos', repository.owner, repository.name )
 def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section ):
     if tool_section is not None:
         tool_elem = SubElement( tool_section, 'tool' )
@@ -321,7 +321,7 @@ def generate_tool_panel_elem_list( repository_name, repository_clone_url, change
     """Generate a list of ElementTree Element objects for each section or tool."""
     elem_list = []
     tool_elem = None
-    cleaned_repository_clone_url = clean_repository_clone_url( repository_clone_url )
+    cleaned_repository_clone_url = suc.clean_repository_clone_url( repository_clone_url )
     if not owner:
         owner = get_repository_owner( cleaned_repository_clone_url )
     tool_shed = cleaned_repository_clone_url.split( 'repos' )[ 0 ].rstrip( '/' )
@@ -475,12 +475,12 @@ def generate_tool_section_element_from_dict( tool_section_dict ):
 def get_config( config_file, repo, ctx, dir ):
     """Return the latest version of config_filename from the repository manifest."""
     config_file = strip_path( config_file )
-    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
+    for changeset in suc.reversed_upper_bounded_changelog( repo, ctx ):
         changeset_ctx = repo.changectx( changeset )
         for ctx_file in changeset_ctx.files():
             ctx_file_name = strip_path( ctx_file )
             if ctx_file_name == config_file:
-                return get_named_tmpfile_from_ctx( changeset_ctx, ctx_file, dir )
+                return suc.get_named_tmpfile_from_ctx( changeset_ctx, ctx_file, dir )
     return None
 def get_converter_and_display_paths( registration_elem, relative_install_dir ):
     """Find the relative path to data type converters and display applications included in installed tool shed repositories."""
@@ -525,7 +525,7 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
             break
     return converter_path, display_path
 def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
-    url = url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
+    url = suc.url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
     response = urllib2.urlopen( url )
     ctx_rev = response.read()
     response.close()
@@ -552,7 +552,7 @@ def get_repository_owner( cleaned_repository_url ):
         repo_path = repo_path.replace( '/', '', 1 )
     return repo_path.lstrip( '/' ).split( '/' )[ 0 ]
 def get_repository_owner_from_clone_url( repository_clone_url ):
-    tmp_url = clean_repository_clone_url( repository_clone_url )
+    tmp_url = suc.clean_repository_clone_url( repository_clone_url )
     tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
     return get_repository_owner( tmp_url )
 def get_repository_tools_tups( app, metadata_dict ):
@@ -674,14 +674,14 @@ def get_tool_version_association( app, parent_tool_version, tool_version ):
                      .first()
 def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     """Return the changeset revision hash to which the repository can be updated."""
-    tool_shed_url = get_url_from_repository_tool_shed( trans.app, repository )
-    url = url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
+    tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+    url = suc.url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
         ( repository.name, repository.owner, repository.installed_changeset_revision ) )
     try:
         response = urllib2.urlopen( url )
         encoded_update_dict = response.read()
         if encoded_update_dict:
-            update_dict = tool_shed_decode( encoded_update_dict )
+            update_dict = encoding_util.tool_shed_decode( encoded_update_dict )
             changeset_revision = update_dict[ 'changeset_revision' ]
             ctx_rev = update_dict[ 'ctx_rev' ]
         response.close()
@@ -704,11 +704,11 @@ def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repos
             break
     if missing_data_table_entry:
         # The repository must contain a tool_data_table_conf.xml.sample file that includes all required entries for all tools in the repository.
-        sample_tool_data_table_conf = get_config_from_disk( 'tool_data_table_conf.xml.sample', relative_install_dir )
+        sample_tool_data_table_conf = suc.get_config_from_disk( 'tool_data_table_conf.xml.sample', relative_install_dir )
         if sample_tool_data_table_conf:
             # Add entries to the ToolDataTableManager's in-memory data_tables dictionary as well as the list of data_table_elems and the list of
             # data_table_elem_names.
-            error, message = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
+            error, message = suc.handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
             if error:
                 # TODO: Do more here than logging an exception.
                 log.debug( message )
@@ -716,7 +716,7 @@ def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repos
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        reset_tool_data_tables( app )
+        suc.reset_tool_data_tables( app )
     return repository_tools_tups
 def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups, sample_files_copied ):
     """
@@ -734,7 +734,7 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
                 for sample_file in sample_files:
                     sample_file_name = strip_path( sample_file )
                     if sample_file_name == '%s.sample' % missing_file_name:
-                        copy_sample_file( app, sample_file )
+                        suc.copy_sample_file( app, sample_file )
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
                             options.tool_data_table.handle_found_index_file( options.missing_index_file )
                         sample_files_copied.append( options.missing_index_file )
@@ -852,7 +852,7 @@ def load_installed_datatypes( app, repository, relative_install_dir, deactivate=
     # Load proprietary datatypes and return information needed for loading proprietary datatypes converters and display applications later.
     metadata = repository.metadata
     repository_dict = None
-    datatypes_config = get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
+    datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', relative_install_dir )
     if datatypes_config:
         converter_path, display_path = alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=deactivate )
         if converter_path or display_path:
@@ -883,10 +883,7 @@ def panel_entry_per_tool( tool_section_dict ):
     return False
 def pull_repository( repo, repository_clone_url, ctx_rev ):
     """Pull changes from a remote repository to a local one."""
-    commands.pull( get_configured_ui(),
-                   repo,
-                   source=repository_clone_url,
-                   rev=[ ctx_rev ] )
+    commands.pull( suc.get_configured_ui(), repo, source=repository_clone_url, rev=[ ctx_rev ] )
 def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     # A tool shed repository is being uninstalled so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have
@@ -1038,7 +1035,7 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
         trans.app.toolbox.write_integrated_tool_panel_config_file()
 def remove_tool_dependency( trans, tool_dependency ):
     dependency_install_dir = tool_dependency.installation_directory( trans.app )
-    removed, error_message = remove_tool_dependency_installation_directory( dependency_install_dir )
+    removed, error_message = suc.remove_tool_dependency_installation_directory( dependency_install_dir )
     if removed:
         tool_dependency.status = trans.model.ToolDependency.installation_status.UNINSTALLED
         tool_dependency.error_message = None
@@ -1046,7 +1043,7 @@ def remove_tool_dependency( trans, tool_dependency ):
         trans.sa_session.flush()
     return removed, error_message
 def tool_shed_from_repository_clone_url( repository_clone_url ):
-    return clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
+    return suc.clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
 def update_in_shed_tool_config( app, repository ):
     # A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list.
@@ -1060,7 +1057,7 @@ def update_in_shed_tool_config( app, repository ):
     
     tool_panel_dict = generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
     repository_tools_tups = get_repository_tools_tups( app, repository.metadata )
-    cleaned_repository_clone_url = clean_repository_clone_url( generate_clone_url_for_installed_repository( trans, repository ) )
+    cleaned_repository_clone_url = suc.clean_repository_clone_url( generate_clone_url_for_installed_repository( trans, repository ) )
     tool_shed = tool_shed_from_repository_clone_url( cleaned_repository_clone_url )
     owner = repository.owner
     if not owner:

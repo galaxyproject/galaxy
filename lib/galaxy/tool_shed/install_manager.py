@@ -6,6 +6,7 @@ import urllib2, tempfile
 from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.util.shed_util import *
+import galaxy.util.shed_util_common as suc
 from galaxy.util.odict import odict
 from galaxy.tool_shed.common_util import *
 
@@ -87,7 +88,7 @@ class InstallManager( object ):
                 break      
         full_path = str( os.path.abspath( os.path.join( root, name ) ) )
         tool = self.toolbox.load_tool( full_path )
-        return generate_tool_guid( repository_clone_url, tool )
+        return suc.generate_tool_guid( repository_clone_url, tool )
     def get_proprietary_tool_panel_elems( self, latest_tool_migration_script_number ):
         # Parse each config in self.proprietary_tool_confs (the default is tool_conf.xml) and generate a list of Elements that are
         # either ToolSection elements or Tool elements.  These will be used to generate new entries in the migrated_tools_conf.xml
@@ -177,15 +178,15 @@ class InstallManager( object ):
             else:
                 print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
                 % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
-        metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=self.app,
-                                                                                     repository=tool_shed_repository,
-                                                                                     repository_clone_url=repository_clone_url,
-                                                                                     shed_config_dict = self.shed_config_dict,
-                                                                                     relative_install_dir=relative_install_dir,
-                                                                                     repository_files_dir=None,
-                                                                                     resetting_all_metadata_on_repository=False,
-                                                                                     updating_installed_repository=False,
-                                                                                     persist=True )
+        metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=self.app,
+                                                                                         repository=tool_shed_repository,
+                                                                                         repository_clone_url=repository_clone_url,
+                                                                                         shed_config_dict = self.shed_config_dict,
+                                                                                         relative_install_dir=relative_install_dir,
+                                                                                         repository_files_dir=None,
+                                                                                         resetting_all_metadata_on_repository=False,
+                                                                                         updating_installed_repository=False,
+                                                                                         persist=True )
         tool_shed_repository.metadata = metadata_dict
         self.app.sa_session.add( tool_shed_repository )
         self.app.sa_session.flush()
@@ -217,7 +218,7 @@ class InstallManager( object ):
                                                         tool_shed_repository,
                                                         self.app.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
                     # Get the tool_dependencies.xml file from disk.
-                    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
+                    tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_install_dir )
                     installed_tool_dependencies = handle_tool_dependencies( app=self.app,
                                                                             tool_shed_repository=tool_shed_repository,
                                                                             tool_dependencies_config=tool_dependencies_config,
@@ -242,7 +243,7 @@ class InstallManager( object ):
             self.app.sa_session.add( tool_shed_repository )
             self.app.sa_session.flush()
             work_dir = tempfile.mkdtemp()
-            datatypes_config = get_config_from_disk( 'datatypes_conf.xml', repo_install_dir )
+            datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', repo_install_dir )
             # Load proprietary data types required by tools.  The value of override is not important here since the Galaxy server will be started
             # after this installation completes.
             converter_path, display_path = alter_config_and_load_prorietary_datatypes( self.app, datatypes_config, repo_install_dir, override=False ) #repo_install_dir was relative_install_dir
@@ -294,7 +295,7 @@ class InstallManager( object ):
                                                                           owner=self.repository_owner,
                                                                           dist_to_shed=True )
             update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
-            cloned_ok, error_message = clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
+            cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
             if cloned_ok:
                 self.handle_repository_contents( tool_shed_repository=tool_shed_repository,
                                                  repository_clone_url=repository_clone_url,
