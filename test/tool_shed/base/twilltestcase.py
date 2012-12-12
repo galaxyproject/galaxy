@@ -1,7 +1,9 @@
 import galaxy.webapps.community.util.hgweb_config
-import common, string, os
+import galaxy.model as galaxy_model
+import common, string, os, re
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security
-from test_db_util import get_repository_metadata_by_repository_id_changeset_revision
+from test_db_util import get_repository_by_name_and_owner, get_repository_metadata_by_repository_id_changeset_revision, \
+                         get_galaxy_repository_by_name_owner_changeset_revision
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -19,13 +21,24 @@ class ShedTwillTestCase( TwillTestCase ):
         self.host = os.environ.get( 'TOOL_SHED_TEST_HOST' )
         self.port = os.environ.get( 'TOOL_SHED_TEST_PORT' )
         self.url = "http://%s:%s" % ( self.host, self.port )
+        self.galaxy_host = os.environ.get( 'GALAXY_TEST_HOST' )
+        self.galaxy_port = os.environ.get( 'GALAXY_TEST_PORT' )
+        self.galaxy_url = "http://%s:%s" % ( self.galaxy_host, self.galaxy_port )
         self.file_dir = os.environ.get( 'TOOL_SHED_TEST_FILE_DIR', None )
         self.tool_shed_test_file = None
         self.shed_tools_dict = {}
         self.home()
+    def browse_category( self, category, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/browse_valid_categories?sort=name&operation=valid_repositories_by_category&id=%s' % \
+              self.security.encode_id( category.id )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def browse_repository( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/browse_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def browse_tool_shed( self, url, strings_displayed=[], strings_not_displayed=[] ):
+        self.visit_galaxy_url( '/admin_toolshed/browse_tool_shed?tool_shed_url=%s' % url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def check_for_strings( self, strings_displayed=[], strings_not_displayed=[] ):
         if strings_displayed:
@@ -122,6 +135,36 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "1", "category_id", "+%s" % category )
         tc.submit( "create_repository_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def create_user_in_galaxy( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
+        self.visit_galaxy_url( "/user/create?cntrller=%s&use_panels=False" % cntrller )
+        tc.fv( '1', 'email', email )
+        tc.fv( '1', 'redirect', redirect )
+        tc.fv( '1', 'password', password )
+        tc.fv( '1', 'confirm', password )
+        tc.fv( '1', 'username', username )
+        tc.submit( 'create_user_button' )
+        previously_created = False
+        username_taken = False
+        invalid_username = False
+        try:
+            self.check_page_for_string( "Created new user account" )
+        except:
+            try:
+                # May have created the account in a previous test run...
+                self.check_page_for_string( "User with that email already exists" )
+                previously_created = True
+            except:
+                try:
+                    self.check_page_for_string( 'Public name is taken; please choose another' )
+                    username_taken = True
+                except:
+                    try:
+                        # Note that we're only checking if the usr name is >< 4 chars here...
+                        self.check_page_for_string( 'Public name must be at least 4 characters in length' )
+                        invalid_username = True
+                    except:
+                        pass
+        return previously_created, username_taken, invalid_username
     def delete_files_from_repository( self, repository, filenames=[], strings_displayed=[ 'were deleted from the repository' ], strings_not_displayed=[] ):
         files_to_delete = []
         basepath = self.get_repo_path( repository )
@@ -212,6 +255,21 @@ class ShedTwillTestCase( TwillTestCase ):
             else:
                 string = string.replace( character, replacement )
         return string
+    def galaxy_login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
+        previously_created, username_taken, invalid_username = \
+            self.create_user_in_galaxy( email=email, password=password, username=username, redirect=redirect )
+        if previously_created:
+            self.visit_galaxy_url( "/user/login?use_panels=False" )
+            tc.fv( '1', 'email', email )
+            tc.fv( '1', 'redirect', redirect )
+            tc.fv( '1', 'password', password )
+            tc.submit( 'login_button' )
+    def galaxy_logout( self ):
+        self.home()
+        self.visit_galaxy_url( "/user/logout" )
+        self.check_page_for_string( "You have been logged out" )
+        self.home()
+
     def generate_repository_dependency_xml( self, repositories, xml_filename, dependency_description='' ):
         file_path = os.path.split( xml_filename )[0]
         if not os.path.exists( file_path ):
@@ -239,9 +297,6 @@ class ShedTwillTestCase( TwillTestCase ):
             return os.path.abspath( os.path.join( filepath, filename ) )
         else:
             return os.path.abspath( os.path.join( self.file_dir, filename ) )
-    def get_latest_repository_metadata_for_repository( self, repository ):
-        # TODO: This will not work as expected. Fix it.
-        return repository.metadata_revisions[ 0 ]
     def get_repo_path( self, repository ):
         # An entry in the hgweb.config file looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
         lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
@@ -304,6 +359,29 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "3", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def install_repository( self, name, owner, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
+        repository = get_repository_by_name_and_owner( name, owner )
+        repository_id = self.security.encode_id( repository.id )
+        if changeset_revision is None:
+            changeset_revision = self.get_repository_tip( repository )
+        url = '/repository/install_repositories_by_revision?changeset_revisions=%s&repository_ids=%s&galaxy_url=%s' % \
+              ( changeset_revision, repository_id, self.galaxy_url )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        tc.submit( 'select_tool_panel_section_button' )
+        html = self.last_page()
+        # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the 
+        # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in 
+        # group(2), and the reinstalling flag in group(3) and pass them to the manage_repositories method in the Galaxy 
+        # admin_toolshed controller.
+        install_parameters = re.search( 'initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html )
+        iri_ids = install_parameters.group(1)
+        encoded_kwd = install_parameters.group(2)
+        reinstalling = install_parameters.group(3)
+        url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
+            ( iri_ids, encoded_kwd, reinstalling )
+        self.visit_galaxy_url( url )
+        self.wait_for_repository_installation( repository )
     def load_invalid_tool_page( self, repository, tool_xml, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml, changeset_revision )
@@ -313,6 +391,13 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
         self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def preview_repository_in_tool_shed( self, name, owner, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
+        repository = get_repository_by_name_and_owner( name, owner )
+        if changeset_revision is None:
+            changeset_revision = self.get_repository_tip( repository )
+        self.visit_url( '/repository/preview_tools_in_changeset?repository_id=%s&changeset_revision=%s' % \
+                        ( self.security.encode_id( repository.id ), changeset_revision ) )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def repository_is_new( self, repository ):
         repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
@@ -361,3 +446,18 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.formfile( "1", "file_data", self.get_filename( filename, filepath ) )
         tc.submit( "upload_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def visit_galaxy_url( self, url ):
+        url = '%s%s' % ( self.galaxy_url, url )
+        self.visit_url( url )
+    def wait_for_repository_installation( self, repository ):
+        final_states = [ galaxy_model.ToolShedRepository.installation_status.ERROR,
+                         galaxy_model.ToolShedRepository.installation_status.INSTALLED, 
+                         galaxy_model.ToolShedRepository.installation_status.UNINSTALLED,
+                         galaxy_model.ToolShedRepository.installation_status.DEACTIVATED ]
+        repository_name = repository.name
+        owner = repository.user.username
+        changeset_revision = self.get_repository_tip( repository )
+        galaxy_repository = get_galaxy_repository_by_name_owner_changeset_revision( repository_name, owner, changeset_revision )
+        while galaxy_repository.status not in final_states:
+            ga_refresh( galaxy_repository )
+            time.sleep( 1 )

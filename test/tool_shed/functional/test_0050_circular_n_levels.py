@@ -79,8 +79,8 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
                                 repository_long_description=filtering_repository_long_description, 
                                 categories=[ default_category ], 
                                 strings_displayed=[] )
-        repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
-        self.upload_file( repository, 
+        filtering_repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        self.upload_file( filtering_repository, 
                           'filtering/filtering_1.1.0.tar', 
                           strings_displayed=[], 
                           commit_message='Uploaded filtering.tar.' )
@@ -89,7 +89,7 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
         self.generate_repository_dependency_xml( [ emboss_repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                  dependency_description='Filtering depends on the emboss repository.' )
-        self.upload_file( repository, 
+        self.upload_file( filtering_repository, 
                           'repository_dependencies.xml', 
                           filepath=repository_dependencies_path, 
                           commit_message='Uploaded dependency on emboss.' )
@@ -109,6 +109,13 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
         emboss_repository = get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         filtering_repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0050', additional_paths=[ 'freebayes' ] )
+        self.generate_repository_dependency_xml( [ filtering_repository ], 
+                                                 self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
+                                                 dependency_description='Emboss depends on the filtering repository.' )
+        self.upload_file( emboss_repository, 
+                          'repository_dependencies.xml', 
+                          filepath=repository_dependencies_path, 
+                          commit_message='Uploaded dependency on filtering.' )
         previous_tip = self.get_repository_tip( repository )
         self.generate_repository_dependency_xml( [ emboss_datatypes_repository, emboss_repository, filtering_repository, repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
@@ -119,11 +126,24 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
                           commit_message='Uploaded dependency on filtering.' )
         self.display_manage_repository_page( repository, strings_not_displayed=[ previous_tip ] )
     def test_0030_verify_repository_dependencies( self ):
-        '''Verify that the generated dependency circle does not cause an infinite loop.'''
+        '''Verify that the generated dependency circle does not cause an infinite loop.
+        
+        Expected structure:
+        
+        id: 2 key: http://localhost:8634__ESEP__freebayes_0050__ESEP__user1__ESEP__2e73d8e1b59d
+            ['http://localhost:8634', 'emboss_datatypes_0050', 'user1', '596029c334b1']
+            ['http://localhost:8634', 'emboss_0050', 'user1', '9f1503046640']
+            id: 3 key: http://localhost:8634__ESEP__filtering_0050__ESEP__user1__ESEP__eefdd8bc0db9
+                ['http://localhost:8634', 'emboss_0050', 'user1', '9f1503046640']
+            id: 4 key: http://localhost:8634__ESEP__emboss_0050__ESEP__user1__ESEP__9f1503046640
+                ['http://localhost:8634', 'emboss_datatypes_0050', 'user1', '596029c334b1']
+        '''
         emboss_datatypes_repository = get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
         emboss_repository = get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         filtering_repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
         freebayes_repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         for repository in [ emboss_datatypes_repository, emboss_repository, filtering_repository ]:
             self.check_repository_dependency( freebayes_repository, repository, self.get_repository_tip( repository ) )
+        for changeset_revision in self.get_repository_metadata_revisions( emboss_repository ):
+            self.check_repository_dependency( freebayes_repository, emboss_repository, changeset_revision )
         self.display_manage_repository_page( freebayes_repository, strings_displayed=[ 'Freebayes depends on the filtering repository.' ] )

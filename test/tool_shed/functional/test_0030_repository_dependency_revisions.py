@@ -1,7 +1,7 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 from tool_shed.base.test_db_util import get_repository_by_name_and_owner, get_user, get_private_role
 
-datatypes_repository_name = 'emboss_datatypes'
+datatypes_repository_name = 'emboss_datatypes_0030'
 datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."
 datatypes_repository_long_description = "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
 
@@ -29,7 +29,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
         """Create a category for this test suite"""
         self.create_category( 'Test 0030 Repository Dependency Revisions', 'Testing repository dependencies by revision.' )
     def test_0010_create_repositories( self ):
-        '''Create the emboss_5_0030, emboss_6_0030, emboss_datatypes, and emboss repositories and populate the emboss_datatypes repository.'''
+        '''Create the emboss_5_0030, emboss_6_0030, emboss_datatypes_0030, and emboss_0030 repositories and populate the emboss_datatypes repository.'''
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         emboss_5_repository = get_repository_by_name_and_owner( emboss_5_repository_name, common.test_user_1_name )
