@@ -1,4 +1,4 @@
-import os, shutil, tempfile, logging, string, threading
+import os, shutil, tempfile, logging, string, threading, urllib2
 from galaxy import util
 from galaxy.tools import parameters
 from galaxy.util import inflector
@@ -91,12 +91,12 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
                 folder_id, readme_files_root_folder = build_readme_files_folder( folder_id, readme_files_dict )
                 containers_dict[ 'readme_files' ] = readme_files_root_folder
             if repository_dependencies:
-                folder_id, repository_dependencies_root_folder = build_repository_dependencies_folder( toolshed_base_url=toolshed_base_url,
-                                                                                                       repository_name=repository_name,
-                                                                                                       repository_owner=repository_owner,
-                                                                                                       changeset_revision=changeset_revision,
-                                                                                                       folder_id=folder_id,
-                                                                                                       repository_dependencies=repository_dependencies )
+                folder_id, repository_dependencies_root_folder = container_util.build_repository_dependencies_folder( toolshed_base_url=toolshed_base_url,
+                                                                                                                      repository_name=repository_name,
+                                                                                                                      repository_owner=repository_owner,
+                                                                                                                      changeset_revision=changeset_revision,
+                                                                                                                      folder_id=folder_id,
+                                                                                                                      repository_dependencies=repository_dependencies )
                 containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
             if tool_dependencies:
                 folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id, tool_dependencies, for_galaxy=True )
@@ -526,42 +526,44 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
     trans.sa_session.add( repository_metadata )
     trans.sa_session.flush()
     return repository_metadata
-def create_repo_info_dict( trans, repo, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None,
-                           repository=None, repository_metadata=None ):
+def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None, repository=None,
+                           repository_metadata=None, metadata=None, repository_dependencies=None ):
     """
-    Return a dictionary that includes all of the information needed to install a repository into a local Galaxy instance.  The dictionary will also contain
-    the recursive list of repository dependencies defined for the repository, as well as the defined tool dependencies.  This method is called during the
-    tool shed repository installation process from Galaxy.  In this case both the received repository and repository_metadata will be objects, but repository_name
-    sill be None.  This method is also called when a tool shed repository that was uninstalled from a Galaxy instance is being re-installed.  In this case, both
-    repository and repository_metadata will be None, but repository_name will have a value.
+    Return a dictionary that includes all of the information needed to install a repository into a local Galaxy instance.  The dictionary will also
+    contain the recursive list of repository dependencies defined for the repository, as well as the defined tool dependencies.  
+    
+    This method is called from Galaxy from two places:
+    1. During the tool shed repository installation process (via the tool shed's get_repository_information() method)- in this case both the received
+    repository and repository_metadata will be objects.
+    2. When a tool shed repository that was uninstalled from a Galaxy instance is being re-installed - in this case, both repository and
+    repository_metadata will be None, but metadata will be the tool_shed_repository metadata on the Galaxy side, and the repository_dependencies will
+    be an object previously retrieved from the tool shed.
     """
     repo_info_dict = {}
-    if repository is None and repository_metadata is None:
-        # The repository associated with the received repository_clone_url is being re-installed into a Galaxy instance, so we need to retrieve the
-        # appropriate repository from the tool shed using the received information.
-        repository = get_repository_by_name_and_owner( trans, repository_name, repository_owner )
+    repository = get_repository_by_name_and_owner( trans, repository_name, repository_owner )
+    if trans.webapp.name == 'community':
+        # We're in the tool shed.
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
-    if repository_metadata:
-        metadata = repository_metadata.metadata
-        if metadata:
-            # Get a dictionary of all repositories upon which the contents of the received repository depends.
-            repository_dependencies = get_repository_dependencies_for_changeset_revision( trans=trans,
-                                                                                          repo=repo,
-                                                                                          repository=repository,
-                                                                                          repository_metadata=repository_metadata,
-                                                                                          toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
-                                                                                          key_rd_dicts_to_be_processed=None,
-                                                                                          all_repository_dependencies=None,
-                                                                                          handled_key_rd_dicts=None,
-                                                                                          circular_repository_dependencies=None )
-            # Cast unicode to string.
-            repo_info_dict[ str( repository.name ) ] = ( str( repository.description ),
-                                                         str( repository_clone_url ),
-                                                         str( changeset_revision ),
-                                                         str( ctx_rev ),
-                                                         str( repository_owner ),
-                                                         repository_dependencies,
-                                                         metadata.get( 'tool_dependencies', None ) )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata:
+                # Get a dictionary of all repositories upon which the contents of the received repository depends.
+                repository_dependencies = get_repository_dependencies_for_changeset_revision( trans=trans,
+                                                                                              repository=repository,
+                                                                                              repository_metadata=repository_metadata,
+                                                                                              toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                              key_rd_dicts_to_be_processed=None,
+                                                                                              all_repository_dependencies=None,
+                                                                                              handled_key_rd_dicts=None,
+                                                                                              circular_repository_dependencies=None )
+    # Cast unicode to string.
+    repo_info_dict[ str( repository.name ) ] = ( str( repository.description ),
+                                                 str( repository_clone_url ),
+                                                 str( changeset_revision ),
+                                                 str( ctx_rev ),
+                                                 str( repository_owner ),
+                                                 repository_dependencies,
+                                                 metadata.get( 'tool_dependencies', None ) )
     return repo_info_dict
 def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
     """Generate the URL for cloning a repository that is in the tool shed."""
@@ -1189,12 +1191,18 @@ def get_readme_file_names( repository_name ):
     return valid_filenames
 def get_repository_by_name_and_owner( trans, name, owner ):
     """Get a repository from the database via name and owner"""
+    if trans.webapp.name == 'galaxy':
+        return trans.sa_session.query( trans.model.ToolShedRepository ) \
+                                 .filter( and_( trans.model.ToolShedRepository.table.c.name == name,
+                                                trans.model.ToolShedRepository.table.c.owner == owner ) ) \
+                                 .first()
+    # We're in the tool shed.
     user = get_user_by_username( trans, owner )
     return trans.sa_session.query( trans.model.Repository ) \
                              .filter( and_( trans.model.Repository.table.c.name == name,
                                             trans.model.Repository.table.c.user_id == user.id ) ) \
                              .first()
-def get_repository_dependencies_for_changeset_revision( trans, repo, repository, repository_metadata, toolshed_base_url,
+def get_repository_dependencies_for_changeset_revision( trans, repository, repository_metadata, toolshed_base_url,
                                                         key_rd_dicts_to_be_processed=None, all_repository_dependencies=None,
                                                         handled_key_rd_dicts=None, circular_repository_dependencies=None ):
     """
@@ -1291,7 +1299,7 @@ def get_repository_in_tool_shed( trans, id ):
     """Get a repository on the tool shed side from the database via id"""
     return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
 def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
-    """Get metadata for a specified repository change set from the database"""
+    """Get metadata for a specified repository change set from the database."""
     # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.  Duplicate records were somehow
     # created in the past.  The cause of this issue has been resolved, but we'll leave this method as is for a while longer to ensure all duplicate
     # records are removed.
@@ -1357,6 +1365,9 @@ def get_sample_files_from_disk( repository_files_dir, tool_path=None, relative_i
                                 relative_path_to_sample_file = relative_path_to_sample_file[ len( tool_path ) + 1 :]
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
     return sample_file_metadata_paths, sample_file_copy_paths
+def get_tool_shed_from_clone_url( repository_clone_url ):
+    tmp_url = clean_repository_clone_url( repository_clone_url )
+    return tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
 def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_dicts ):
     updated_key_rd_dicts = []
     for key_rd_dict in key_rd_dicts:
@@ -1387,6 +1398,18 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
                     # We have the updated changset revision.
                     updated_key_rd_dicts.append( new_key_rd_dict )
     return updated_key_rd_dicts
+def get_url_from_repository_tool_shed( app, repository ):
+    """
+    The stored value of repository.tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
+    something like: http://toolshed.g2.bx.psu.edu/.
+    """
+    for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
+        if shed_url.find( repository.tool_shed ) >= 0:
+            if shed_url.endswith( '/' ):
+                shed_url = shed_url.rstrip( '/' )
+            return shed_url
+    # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
+    return None
 def get_user_by_username( trans, username ):
     """Get a user from the database by username"""
     return trans.sa_session.query( trans.model.User ) \
@@ -1412,7 +1435,7 @@ def handle_current_repository_dependency( trans, current_repository_key, key_rd_
         new_key_rd_dict[ current_repository_key ] = rd_copy
         current_repository_key_rd_dicts.append( new_key_rd_dict )
     if current_repository_key_rd_dicts:
-        toolshed, required_repo, required_repository, required_repository_metadata, repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts = \
+        toolshed, required_repository, required_repository_metadata, repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts = \
             handle_key_rd_dicts_for_repository( trans,
                                                 current_repository_key,
                                                 current_repository_key_rd_dicts,
@@ -1420,7 +1443,6 @@ def handle_current_repository_dependency( trans, current_repository_key, key_rd_
                                                 handled_key_rd_dicts,
                                                 circular_repository_dependencies )
         return get_repository_dependencies_for_changeset_revision( trans=trans,
-                                                                   repo=required_repo,
                                                                    repository=required_repository,
                                                                    repository_metadata=required_repository_metadata,
                                                                    toolshed_base_url=toolshed,
@@ -1456,8 +1478,6 @@ def handle_key_rd_dicts_for_repository( trans, current_repository_key, repositor
                                                                                                    trans.security.encode_id( required_repository.id ),
                                                                                                    changeset_revision )
         if required_repository_metadata:
-            required_repo_dir = required_repository.repo_path( trans.app )
-            required_repo = hg.repository( get_configured_ui(), required_repo_dir )
             # The required_repository_metadata changeset_revision is installable.
             required_metadata = required_repository_metadata.metadata
             if required_metadata:
@@ -1475,12 +1495,12 @@ def handle_key_rd_dicts_for_repository( trans, current_repository_key, repositor
         error_message = "Repository dependencies are currently supported only within the same tool shed.  Ignoring repository dependency definition "
         error_message += "for tool shed %s, name %s, owner %s, changeset revision %s" % ( toolshed, name, owner, changeset_revision )
         log.debug( error_message )
-    return toolshed, required_repo, required_repository, required_repository_metadata, repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts
+    return toolshed, required_repository, required_repository_metadata, repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts
 def handle_next_repository_dependency( trans, key_rd_dicts_to_be_processed, all_repository_dependencies, handled_key_rd_dicts, circular_repository_dependencies ):
     next_repository_key_rd_dict = key_rd_dicts_to_be_processed.pop( 0 )
     next_repository_key_rd_dicts = [ next_repository_key_rd_dict ]
     next_repository_key = next_repository_key_rd_dict.keys()[ 0 ]
-    toolshed, required_repo, required_repository, required_repository_metadata, repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts = \
+    toolshed, required_repository, required_repository_metadata, repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts = \
         handle_key_rd_dicts_for_repository( trans,
                                             next_repository_key,
                                             next_repository_key_rd_dicts,
@@ -1488,7 +1508,6 @@ def handle_next_repository_dependency( trans, key_rd_dicts_to_be_processed, all_
                                             handled_key_rd_dicts,
                                             circular_repository_dependencies )
     return get_repository_dependencies_for_changeset_revision( trans=trans,
-                                                               repo=required_repo,
                                                                repository=required_repository,
                                                                repository_metadata=required_repository_metadata,
                                                                toolshed_base_url=toolshed,

@@ -11,7 +11,7 @@
     <div class="toolFormBody">
         <form name="reselect_tool_panel_section" id="reselect_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='reinstall_repository', id=trans.security.encode_id( repository.id ), repo_info_dict=encoded_repo_info_dict )}" method="post" >
             <div style="clear: both"></div>
-            <% readme_files_dict = containers_dict[ 'readme_files' ] %>
+            <% readme_files_dict = containers_dict.get( 'readme_files', None ) %>
             %if readme_files_dict:
                 <div class="form-row">
                     <table class="colored" width="100%">

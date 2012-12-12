@@ -636,9 +636,6 @@ def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_di
                         relative_install_dir = os.path.join( tool_path, partial_install_dir )
                         return tool_path, relative_install_dir
     return None, None
-def get_tool_shed_from_clone_url( repository_clone_url ):
-    tmp_url = clean_repository_clone_url( repository_clone_url )
-    return tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
 def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
     # This method is used only in Galaxy, not the tool shed.
     sa_session = app.model.context.current
@@ -693,18 +690,6 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
         changeset_revision = None
         ctx_rev = None
     return changeset_revision, ctx_rev
-def get_url_from_repository_tool_shed( app, repository ):
-    """
-    The stored value of repository.tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
-    something like: http://toolshed.g2.bx.psu.edu/.
-    """
-    for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
-        if shed_url.find( repository.tool_shed ) >= 0:
-            if shed_url.endswith( '/' ):
-                shed_url = shed_url.rstrip( '/' )
-            return shed_url
-    # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
-    return None
 def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the

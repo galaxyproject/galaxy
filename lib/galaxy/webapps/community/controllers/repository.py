@@ -1243,6 +1243,58 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                     message=message,
                                     status=status )
     @web.expose
+    def get_changeset_revision_and_ctx_rev( self, trans, **kwd ):
+        """Handle a request from a local Galaxy instance to retrieve the changeset revision hash to which an installed repository can be updated."""
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        galaxy_url = kwd.get( 'galaxy_url', '' )
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        repository = get_repository_by_name_and_owner( trans, name, owner )
+        repo_dir = repository.repo_path( trans.app )
+        repo = hg.repository( get_configured_ui(), repo_dir )
+        # Default to the received changeset revision and ctx_rev.
+        update_to_ctx = get_changectx_for_changeset( repo, changeset_revision )
+        ctx_rev = str( update_to_ctx.rev() )
+        latest_changeset_revision = changeset_revision
+        update_dict = dict( changeset_revision=changeset_revision, ctx_rev=ctx_rev )
+        if changeset_revision == repository.tip( trans.app ):
+            # If changeset_revision is the repository tip, there are no additional updates.
+            return tool_shed_encode( update_dict )
+        else:
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, 
+                                                                                 trans.security.encode_id( repository.id ),
+                                                                                 changeset_revision )
+            if repository_metadata:
+                # If changeset_revision is in the repository_metadata table for this repository, there are no additional updates.
+                return tool_shed_encode( update_dict )
+            else:
+                # The changeset_revision column in the repository_metadata table has been updated with a new changeset_revision value since the
+                # repository was installed.  We need to find the changeset_revision to which we need to update.
+                update_to_changeset_hash = None
+                for changeset in repo.changelog:
+                    changeset_hash = str( repo.changectx( changeset ) )
+                    ctx = get_changectx_for_changeset( repo, changeset_hash )
+                    if update_to_changeset_hash:
+                        if get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_hash ):
+                            # We found a RepositoryMetadata record.
+                            if changeset_hash == repository.tip( trans.app ):
+                                # The current ctx is the repository tip, so use it.
+                                update_to_ctx = get_changectx_for_changeset( repo, changeset_hash )
+                                latest_changeset_revision = changeset_hash
+                            else:
+                                update_to_ctx = get_changectx_for_changeset( repo, update_to_changeset_hash )
+                                latest_changeset_revision = update_to_changeset_hash
+                            break
+                    elif not update_to_changeset_hash and changeset_hash == changeset_revision:
+                        # We've found the changeset in the changelog for which we need to get the next update.
+                        update_to_changeset_hash = changeset_hash
+                update_dict[ 'changeset_revision' ] = str( latest_changeset_revision )
+        update_dict[ 'ctx_rev' ] = str( update_to_ctx.rev() )
+        return tool_shed_encode( update_dict )
+    @web.expose
     def get_ctx_rev( self, trans, **kwd ):
         """Given a repository and changeset_revision, return the correct ctx.rev() value."""
         repository_name = kwd[ 'name' ]
@@ -1274,6 +1326,30 @@ class RepositoryController( BaseUIController, ItemRatings ):
             return repository_metadata.metadata
         return None
     @web.json
+    def get_repository_dependencies( self, trans, **kwd ):
+        params = util.Params( kwd )
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        repository = get_repository_by_name_and_owner( trans, name, owner )
+        repository_id = trans.security.encode_id( repository.id )
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata:
+                # Get a dictionary of all repositories upon which the contents of the received repository depends.
+                repository_dependencies = get_repository_dependencies_for_changeset_revision( trans=trans,
+                                                                                              repository=repository,
+                                                                                              repository_metadata=repository_metadata,
+                                                                                              toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                              key_rd_dicts_to_be_processed=None,
+                                                                                              all_repository_dependencies=None,
+                                                                                              handled_key_rd_dicts=None,
+                                                                                              circular_repository_dependencies=None )
+                if repository_dependencies:
+                    return tool_shed_encode( repository_dependencies )
+        return ''
+    @web.json
     def get_repository_information( self, trans, repository_ids, changeset_revisions, **kwd ):
         """
         Generate a list of dictionaries, each of which contains the information about a repository that will be necessary for installing
@@ -1299,13 +1375,13 @@ class RepositoryController( BaseUIController, ItemRatings ):
             repo = hg.repository( get_configured_ui(), repo_dir )
             ctx = get_changectx_for_changeset( repo, changeset_revision )
             repo_info_dict = create_repo_info_dict( trans=trans,
-                                                    repo=repo,
                                                     repository_clone_url=repository_clone_url,
                                                     changeset_revision=changeset_revision,
                                                     ctx_rev=str( ctx.rev() ),
                                                     repository_owner=repository.user.username,
-                                                    repository_name=None,
+                                                    repository_name=repository.name,
                                                     repository=repository,
+                                                    metadata=None,
                                                     repository_metadata=repository_metadata )      
             repo_info_dicts.append( tool_shed_encode( repo_info_dict ) )
         return dict( includes_tools=includes_tools,
@@ -1370,58 +1446,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if tool_version_dicts:
             return to_json_string( tool_version_dicts )
         return ''
-    @web.expose
-    def get_changeset_revision_and_ctx_rev( self, trans, **kwd ):
-        """Handle a request from a local Galaxy instance to retrieve the changeset revision hash to which an installed repository can be updated."""
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        galaxy_url = kwd.get( 'galaxy_url', '' )
-        name = params.get( 'name', None )
-        owner = params.get( 'owner', None )
-        changeset_revision = params.get( 'changeset_revision', None )
-        repository = get_repository_by_name_and_owner( trans, name, owner )
-        repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( get_configured_ui(), repo_dir )
-        # Default to the received changeset revision and ctx_rev.
-        update_to_ctx = get_changectx_for_changeset( repo, changeset_revision )
-        ctx_rev = str( update_to_ctx.rev() )
-        latest_changeset_revision = changeset_revision
-        update_dict = dict( changeset_revision=changeset_revision, ctx_rev=ctx_rev )
-        if changeset_revision == repository.tip( trans.app ):
-            # If changeset_revision is the repository tip, there are no additional updates.
-            return tool_shed_encode( update_dict )
-        else:
-            repository_metadata = get_repository_metadata_by_changeset_revision( trans, 
-                                                                                 trans.security.encode_id( repository.id ),
-                                                                                 changeset_revision )
-            if repository_metadata:
-                # If changeset_revision is in the repository_metadata table for this repository, there are no additional updates.
-                return tool_shed_encode( update_dict )
-            else:
-                # The changeset_revision column in the repository_metadata table has been updated with a new changeset_revision value since the
-                # repository was installed.  We need to find the changeset_revision to which we need to update.
-                update_to_changeset_hash = None
-                for changeset in repo.changelog:
-                    changeset_hash = str( repo.changectx( changeset ) )
-                    ctx = get_changectx_for_changeset( repo, changeset_hash )
-                    if update_to_changeset_hash:
-                        if get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_hash ):
-                            # We found a RepositoryMetadata record.
-                            if changeset_hash == repository.tip( trans.app ):
-                                # The current ctx is the repository tip, so use it.
-                                update_to_ctx = get_changectx_for_changeset( repo, changeset_hash )
-                                latest_changeset_revision = changeset_hash
-                            else:
-                                update_to_ctx = get_changectx_for_changeset( repo, update_to_changeset_hash )
-                                latest_changeset_revision = update_to_changeset_hash
-                            break
-                    elif not update_to_changeset_hash and changeset_hash == changeset_revision:
-                        # We've found the changeset in the changelog for which we need to get the next update.
-                        update_to_changeset_hash = changeset_hash
-                update_dict[ 'changeset_revision' ] = str( latest_changeset_revision )
-        update_dict[ 'ctx_rev' ] = str( update_to_ctx.rev() )
-        return tool_shed_encode( update_dict )
     def get_versions_of_tool( self, trans, repository, repository_metadata, guid ):
         """Return the tool lineage in descendant order for the received guid contained in the received repsitory_metadata.tool_versions."""
         encoded_id = trans.security.encode_id( repository.id )
@@ -1783,7 +1807,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if repository_metadata:
                 # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
                 repository_dependencies = get_repository_dependencies_for_changeset_revision( trans=trans,
-                                                                                              repo=repo,
                                                                                               repository=repository,
                                                                                               repository_metadata=repository_metadata,
                                                                                               toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
@@ -1896,7 +1919,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
             metadata = repository_metadata.metadata
             # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
             repository_dependencies = get_repository_dependencies_for_changeset_revision( trans=trans,
-                                                                                          repo=repo,
                                                                                           repository=repository,
                                                                                           repository_metadata=repository_metadata,
                                                                                           toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
@@ -2418,7 +2440,6 @@ class RepositoryController( BaseUIController, ItemRatings ):
             metadata = repository_metadata.metadata
             # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
             repository_dependencies = get_repository_dependencies_for_changeset_revision( trans=trans,
-                                                                                          repo=repo,
                                                                                           repository=repository,
                                                                                           repository_metadata=repository_metadata,
                                                                                           toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),

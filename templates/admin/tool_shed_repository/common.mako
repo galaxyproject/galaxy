@@ -159,7 +159,7 @@
             def __str__( self ):
                 return str( self.count )
 
-        readme_files_root_folder = containers_dict[ 'readme_files' ]
+        readme_files_root_folder = containers_dict.get( 'readme_files', None )
     %>
     %if readme_files_root_folder:
         <p/>

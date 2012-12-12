@@ -37,7 +37,7 @@
     <div class="toolFormBody">
         <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
             <div style="clear: both"></div>
-            <% readme_files_dict = containers_dict[ 'readme_files' ] %>
+            <% readme_files_dict = containers_dict.get( 'readme_files', None ) %>
             %if readme_files_dict:
                 <div class="form-row">
                     <table class="colored" width="100%">

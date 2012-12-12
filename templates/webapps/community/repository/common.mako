@@ -467,13 +467,13 @@
         has_readme_files = metadata and 'readme_files' in metadata
         has_workflows = metadata and 'workflows' in metadata
         
-        datatypes_root_folder = containers_dict[ 'datatypes' ]
-        invalid_tools_root_folder = containers_dict[ 'invalid_tools' ]
-        readme_files_root_folder = containers_dict[ 'readme_files' ]
-        repository_dependencies_root_folder = containers_dict[ 'repository_dependencies' ]
-        tool_dependencies_root_folder = containers_dict[ 'tool_dependencies' ]
-        valid_tools_root_folder = containers_dict[ 'valid_tools' ]
-        workflows_root_folder = containers_dict[ 'workflows' ]
+        datatypes_root_folder = containers_dict.get( 'datatypes', None )
+        invalid_tools_root_folder = containers_dict.get( 'invalid_tools', None )
+        readme_files_root_folder = containers_dict.get( 'readme_files', None )
+        repository_dependencies_root_folder = containers_dict.get( 'repository_dependencies', None )
+        tool_dependencies_root_folder = containers_dict.get( 'tool_dependencies', None )
+        valid_tools_root_folder = containers_dict.get( 'valid_tools', none )
+        workflows_root_folder = containers_dict.get( 'workflows', None )
         
         has_contents = datatypes_root_folder or invalid_tools_root_folder or valid_tools_root_folder or workflows_root_folder
 
