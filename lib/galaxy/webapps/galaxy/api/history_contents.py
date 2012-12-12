@@ -196,6 +196,7 @@ def get_hda_dict( trans, history, hda, for_editing ):
             hda_dict[ 'meta_files' ] = meta_files
 
     hda_dict[ 'display_apps' ] = get_display_apps( trans, hda )
+    hda_dict[ 'display_types' ] = get_display_types( trans, hda )
     hda_dict[ 'visualizations' ] = hda.get_visualizations()
     hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
 
@@ -224,5 +225,24 @@ def get_display_apps( trans, hda ):
                 'text' : gettext( display_app_link.name )
             })
         display_apps.append( dict( label=display_app.name, links=app_links ) )
+
+    return display_apps
+
+def get_display_types( trans, hda ):
+    #TODO: make more straightforward (somehow)
+    #FIXME: need to force a transition to all new-style display applications
+    display_apps = []
+    
+    for display_app in hda.datatype.get_display_types():
+        app_links = []
+        target_frame, display_links = hda.datatype.get_display_links( hda, display_app, trans.app, trans.request.base )
+        for display_name, display_link in display_links:
+            app_links.append({
+                'target' : target_frame,
+                'href' : display_link,
+                'text' : display_name
+            })
+        if app_links:
+            display_apps.append( dict( label=hda.datatype.get_display_label( display_app ), links=app_links ) )
 
     return display_apps
