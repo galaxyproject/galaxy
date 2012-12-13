@@ -309,7 +309,7 @@ class AdminToolshed( AdminGalaxy ):
     def activate_repository( self, trans, **kwd ):
         """Activate a repository that was deactivated but not uninstalled."""
         repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
-        shed_tool_conf, tool_path, relative_install_dir = shed_util.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
+        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         repository_clone_url = suc.generate_clone_url_for_installed_repository( trans, repository )
         repository.deleted = False
         repository.status = trans.model.ToolShedRepository.installation_status.INSTALLED
@@ -460,7 +460,7 @@ class AdminToolshed( AdminGalaxy ):
         remove_from_disk = params.get( 'remove_from_disk', '' )
         remove_from_disk_checked = CheckboxField.is_checked( remove_from_disk )
         tool_shed_repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
-        shed_tool_conf, tool_path, relative_install_dir = shed_util.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
+        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
         if relative_install_dir:
             if tool_path:
                 relative_install_dir = os.path.join( tool_path, relative_install_dir )
@@ -553,7 +553,7 @@ class AdminToolshed( AdminGalaxy ):
         items = tmp_url.split( 'repos' )
         tool_shed_url = items[ 0 ]
         repo_path = items[ 1 ]
-        tool_shed_url = shed_util.clean_tool_shed_url( tool_shed_url )
+        tool_shed_url = suc.clean_tool_shed_url( tool_shed_url )
         return suc.url_join( tool_shed_url, 'repos', repo_path, changeset_revision )
     @web.json
     @web.require_admin
@@ -794,7 +794,7 @@ class AdminToolshed( AdminGalaxy ):
             sample_files = metadata_dict.get( 'sample_files', [] )
             tool_index_sample_files = shed_util.get_tool_index_sample_files( sample_files )
             shed_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=tool_path )
-            sample_files_copied = [ s for s in tool_index_sample_files ]
+            sample_files_copied = [ str( s ) for s in tool_index_sample_files ]
             repository_tools_tups = shed_util.get_repository_tools_tups( trans.app, metadata_dict )
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
@@ -866,7 +866,7 @@ class AdminToolshed( AdminGalaxy ):
                                 ( repository.name, repository.owner, repository.installed_changeset_revision, ( url_for( '/', qualified=True ) ) ) )
             return trans.response.send_redirect( url )
         description = util.restore_text( params.get( 'description', repository.description ) )
-        shed_tool_conf, tool_path, relative_install_dir = shed_util.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
+        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         if relative_install_dir:
             repo_files_dir = os.path.abspath( os.path.join( tool_path, relative_install_dir, repository.name ) )
         else:
@@ -1294,7 +1294,7 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
         new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
         tool_panel_section = kwd.get( 'tool_panel_section', '' )
-        shed_tool_conf, tool_path, relative_install_dir = shed_util.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
+        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
         repository_clone_url = suc.generate_clone_url_for_installed_repository( trans, tool_shed_repository )
         clone_dir = os.path.join( tool_path, self.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision ) )
         relative_install_dir = os.path.join( clone_dir, tool_shed_repository.name )
@@ -1660,7 +1660,7 @@ class AdminToolshed( AdminGalaxy ):
             message += "Reset all of this reppository's metadata in the tool shed, then set the installed tool versions "
             message ++ "from the installed repository's <b>Repository Actions</b> menu.  "
             status = 'error'
-        shed_tool_conf, tool_path, relative_install_dir = shed_util.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
+        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,
@@ -1749,7 +1749,7 @@ class AdminToolshed( AdminGalaxy ):
             if changeset_revision == latest_changeset_revision:
                 message = "The installed repository named '%s' is current, there are no updates available.  " % name
             else:
-                shed_tool_conf, tool_path, relative_install_dir = shed_util.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
+                shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
                 if relative_install_dir:
                     if tool_path:
                         repo_files_dir = os.path.abspath( os.path.join( tool_path, relative_install_dir, name ) )
@@ -1759,7 +1759,7 @@ class AdminToolshed( AdminGalaxy ):
                     repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
                     shed_util.pull_repository( repo, repository_clone_url, latest_ctx_rev )
                     suc.update_repository( repo, latest_ctx_rev )
-                    tool_shed = shed_util.clean_tool_shed_url( tool_shed_url )
+                    tool_shed = suc.clean_tool_shed_url( tool_shed_url )
                     # Update the repository metadata.
                     metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
                                                                                                      repository=repository,
@@ -1777,12 +1777,13 @@ class AdminToolshed( AdminGalaxy ):
                     repository.update_available = False
                     trans.sa_session.add( repository )
                     trans.sa_session.flush()
+                    # Fixme: call shed_util.add_to_tool_panel here?
                     # Create tool_dependency records if necessary.
                     if 'tool_dependencies' in metadata_dict:
                         tool_dependencies = shed_util.create_tool_dependency_objects( trans.app, repository, relative_install_dir, set_status=False )
                     message = "The installed repository named '%s' has been updated to change set revision '%s'.  " % ( name, latest_changeset_revision )
                     # See if any tool dependencies can be installed.
-                    shed_tool_conf, tool_path, relative_install_dir = shed_util.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
+                    shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
                     if repository.missing_tool_dependencies:
                         message += "Click the name of one of the missing tool dependencies listed below to install tool dependencies."
                 else:

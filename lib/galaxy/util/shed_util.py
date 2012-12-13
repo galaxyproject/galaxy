@@ -166,11 +166,6 @@ def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     os.close( fd )
     shutil.move( filename, os.path.abspath( config_filename ) )
     os.chmod( config_filename, 0644 )
-def clean_tool_shed_url( tool_shed_url ):
-    if tool_shed_url.find( ':' ) > 0:
-        # Eliminate the port, if any, since it will result in an invalid directory name.
-        return tool_shed_url.split( ':' )[ 0 ]
-    return tool_shed_url.rstrip( '/' )
 def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None ):
     """
     Copy all appropriate files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
@@ -379,53 +374,6 @@ def generate_tool_panel_dict_for_new_install( tool_dicts, tool_section=None ):
         else:
             tool_panel_dict[ guid ] = [ tool_section_dict ]
     return tool_panel_dict
-def generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository ):
-    """
-    Keep track of the section in the tool panel in which this repository's tools will be contained by parsing the shed-tool_conf in
-    which the repository's tools are defined and storing the tool panel definition of each tool in the repository.  This method is called
-    only when the repository is being deactivated or uninstalled and allows for activation or reinstallation using the original layout.
-    """
-    tool_panel_dict = {}
-    shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir( trans.app, repository )
-    metadata = repository.metadata
-    # Create a dictionary of tool guid and tool config file name for each tool in the repository.
-    guids_and_configs = {}
-    for tool_dict in metadata[ 'tools' ]:
-        guid = tool_dict[ 'guid' ]
-        tool_config = tool_dict[ 'tool_config' ]
-        file_name = suc.strip_path( tool_config )
-        guids_and_configs[ guid ] = file_name
-    # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict. 
-    tree = util.parse_xml( shed_tool_conf )
-    root = tree.getroot()
-    for elem in root:
-        if elem.tag == 'tool':
-            guid = elem.get( 'guid' )
-            if guid in guids_and_configs:
-                # The tool is displayed in the tool panel outside of any tool sections.
-                tool_section_dict = dict( tool_config=guids_and_configs[ guid ], id='', name='', version='' )
-                if guid in tool_panel_dict:
-                    tool_panel_dict[ guid ].append( tool_section_dict )
-                else:
-                    tool_panel_dict[ guid ] = [ tool_section_dict ]
-        elif elem.tag == 'section':
-            section_id = elem.get( 'id' ) or ''
-            section_name = elem.get( 'name' ) or ''
-            section_version = elem.get( 'version' ) or ''
-            for section_elem in elem:
-                if section_elem.tag == 'tool':
-                    guid = section_elem.get( 'guid' )
-                    if guid in guids_and_configs:
-                        # The tool is displayed in the tool panel inside the current tool section.
-                        tool_section_dict = dict( tool_config=guids_and_configs[ guid ],
-                                                  id=section_id,
-                                                  name=section_name,
-                                                  version=section_version )
-                        if guid in tool_panel_dict:
-                            tool_panel_dict[ guid ].append( tool_section_dict )
-                        else:
-                            tool_panel_dict[ guid ] = [ tool_section_dict ]
-    return tool_panel_dict
 def generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=None ):
     """
     Create a dictionary of the following type for a single tool config file name.  The intent is to call this method for every tool config
@@ -583,7 +531,7 @@ def get_tool_index_sample_files( sample_files ):
     for s in sample_files:
         # The problem with this is that Galaxy does not follow a standard naming convention for file names.
         if s.endswith( '.loc.sample' ) or s.endswith( '.xml.sample' ) or s.endswith( '.txt.sample' ):
-            tool_index_sample_files.append( s )
+            tool_index_sample_files.append( str( s ) )
     return tool_index_sample_files
 def get_tool_dependency( trans, id ):
     """Get a tool_dependency from the database via id"""
@@ -598,23 +546,6 @@ def get_tool_dependency_ids( as_string=False, **kwd ):
     if as_string:
         return ','.join( tool_dependency_ids )
     return tool_dependency_ids
-def get_tool_panel_config_tool_path_install_dir( app, repository ):
-    # Return shed-related tool panel config, the tool_path configured in it, and the relative path to the directory where the
-    # repository is installed.  This method assumes all repository tools are defined in a single shed-related tool panel config.
-    tool_shed = clean_tool_shed_url( repository.tool_shed )
-    partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
-    # Get the relative tool installation paths from each of the shed tool configs.
-    relative_install_dir = None
-    shed_config_dict = repository.get_shed_config_dict( app )
-    if not shed_config_dict:
-        #just pick a semi-random shed config
-        for shed_config_dict in app.toolbox.shed_tool_confs:
-            if ( repository.dist_to_shed and shed_config_dict['config_filename'] == app.config.migrated_tools_config ) or ( not repository.dist_to_shed and shed_config_dict['config_filename'] != app.config.migrated_tools_config ):
-                break
-    shed_tool_conf = shed_config_dict[ 'config_filename' ]
-    tool_path = shed_config_dict[ 'tool_path' ]
-    relative_install_dir = partial_install_dir
-    return shed_tool_conf, tool_path, relative_install_dir
 def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems ):
     for elem in config_elems:
         if elem.tag == 'tool':
@@ -913,7 +844,7 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     """A tool shed repository is being deactivated or uninstalled so handle tool panel alterations accordingly."""
     # Determine where the tools are currently defined in the tool panel and store this information so the tools can be displayed
     # in the same way when the repository is activated or reinstalled.
-    tool_panel_dict = generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
+    tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
     repository.metadata[ 'tool_panel_section' ] = tool_panel_dict
     trans.sa_session.add( repository )
     trans.sa_session.flush()

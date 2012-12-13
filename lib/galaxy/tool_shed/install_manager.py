@@ -37,7 +37,7 @@ class InstallManager( object ):
         self.tool_shed_install_config = tool_shed_install_config
         tree = util.parse_xml( tool_shed_install_config )
         root = tree.getroot()
-        self.tool_shed = shed_util.clean_tool_shed_url( root.get( 'name' ) )
+        self.tool_shed = suc.clean_tool_shed_url( root.get( 'name' ) )
         self.repository_owner = common_util.REPOSITORY_OWNER
         index, self.shed_config_dict = shed_util.get_shed_tool_conf_dict( app, self.migrated_tools_config )
         # Since tool migration scripts can be executed any number of times, we need to make sure the appropriate tools are defined in
@@ -198,6 +198,7 @@ class InstallManager( object ):
             tool_dependencies = None
         if 'tools' in metadata_dict:
             sample_files = metadata_dict.get( 'sample_files', [] )
+            sample_files = [ str( s ) for s in sample_files ]
             tool_index_sample_files = shed_util.get_tool_index_sample_files( sample_files )
             shed_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=self.tool_path )
             sample_files_copied = [ s for s in tool_index_sample_files ]
