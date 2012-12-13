@@ -1,9 +1,7 @@
 import galaxy.webapps.community.util.hgweb_config
 import galaxy.model as galaxy_model
-import common, string, os, re
+import common, string, os, re, test_db_util
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
-from test_db_util import get_repository_by_name_and_owner, get_repository_metadata_by_repository_id_changeset_revision, \
-                         get_galaxy_repository_by_name_owner_changeset_revision, get_installed_repository_by_name_owner
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -88,7 +86,7 @@ class ShedTwillTestCase( TwillTestCase ):
         Loop through each tool dictionary in the repository metadata associated with the received changeset_revision. 
         For each of these, check for a tools attribute, and load the tool metadata page if it exists, then display that tool's page.
         '''
-        repository_metadata = get_repository_metadata_by_repository_id_changeset_revision( repository.id, changeset_revision )
+        repository_metadata = test_db_util.get_repository_metadata_by_repository_id_changeset_revision( repository.id, changeset_revision )
         metadata = repository_metadata.metadata
         if 'tools' not in metadata:
             raise AssertionError( 'No tools in %s revision %s.' % ( repository.name, changeset_revision ) )
@@ -109,7 +107,7 @@ class ShedTwillTestCase( TwillTestCase ):
                                          strings_not_displayed=[] )
     def check_repository_invalid_tools_for_changeset_revision( self, repository, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         '''Load the invalid tool page for each invalid tool associated with this changeset revision and verify the received error messages.'''
-        repository_metadata = get_repository_metadata_by_repository_id_changeset_revision( repository.id, changeset_revision )
+        repository_metadata = test_db_util.get_repository_metadata_by_repository_id_changeset_revision( repository.id, changeset_revision )
         metadata = repository_metadata.metadata
         if 'invalid_tools' not in metadata:
             return
@@ -382,7 +380,7 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.submit( 'user_access_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def install_repository( self, name, owner, install_tool_dependencies=False, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
-        repository = get_repository_by_name_and_owner( name, owner )
+        repository = test_db_util.get_repository_by_name_and_owner( name, owner )
         repository_id = self.security.encode_id( repository.id )
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip( repository )
@@ -420,7 +418,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def preview_repository_in_tool_shed( self, name, owner, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
-        repository = get_repository_by_name_and_owner( name, owner )
+        repository = test_db_util.get_repository_by_name_and_owner( name, owner )
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip( repository )
         self.visit_url( '/repository/preview_tools_in_changeset?repository_id=%s&changeset_revision=%s' % \
@@ -456,7 +454,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def tip_has_metadata( self, repository ):
         tip = self.get_repository_tip( repository )
-        return get_repository_metadata_by_repository_id_changeset_revision( repository.id, tip )
+        return test_db_util.get_repository_metadata_by_repository_id_changeset_revision( repository.id, tip )
     def upload_file( self, 
                      repository, 
                      filename, 
@@ -502,7 +500,7 @@ class ShedTwillTestCase( TwillTestCase ):
         owner = repository.user.username
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip( repository )
-        galaxy_repository = get_galaxy_repository_by_name_owner_changeset_revision( repository_name, owner, changeset_revision )
+        galaxy_repository = test_db_util.get_galaxy_repository_by_name_owner_changeset_revision( repository_name, owner, changeset_revision )
         timeout_counter = 0
         while galaxy_repository.status not in final_states:
             ga_refresh( galaxy_repository )
