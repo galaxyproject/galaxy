@@ -397,7 +397,7 @@ class ToolBox( object ):
                     # If there is not yet a tool_shed_repository record, we're in the process of installing
                     # a new repository, so any included tools can be loaded into the tool panel.
                     can_load_into_panel_dict = True
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )            
+            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
             key = 'tool_%s' % str( tool.id )
             if can_load_into_panel_dict:
                 if guid is not None:
@@ -435,9 +435,12 @@ class ToolBox( object ):
                                 tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
                                 self.sa_session.add( tta )
                                 self.sa_session.flush()
-                if tool.id not in self.tools_by_id:
-                    # Allow for the same tool to be loaded into multiple places in the tool panel.
-                    self.tools_by_id[ tool.id ] = tool
+                #if tool.id not in self.tools_by_id:
+                # Allow for the same tool to be loaded into multiple places in the tool panel.  We have to handle the case where the tool is contained
+                # in a repository installed from the tool shed, and the Galaxy administrator has retrieved updates to the installed repository.  In this
+                # case, the tool may have been updated, but the version was not changed, so the tool should always be reloaded here.  We used to only load
+                # the tool if it's it was not found in self.tools_by_id, but performing that check did not enable this scenario.
+                self.tools_by_id[ tool.id ] = tool
                 if load_panel_dict:
                     self.__add_tool_to_tool_panel( tool.id, panel_dict, section=isinstance( panel_dict, galaxy.tools.ToolSection ) )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.

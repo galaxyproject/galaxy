@@ -1036,7 +1036,7 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
     return metadata_dict
 def generate_tool_panel_dict_from_shed_tool_conf_entries( app, repository ):
     """
-    Keep track of the section in the tool panel in which this repository's tools will be contained by parsing the shed-tool_conf in
+    Keep track of the section in the tool panel in which this repository's tools will be contained by parsing the shed_tool_conf in
     which the repository's tools are defined and storing the tool panel definition of each tool in the repository.  This method is called
     only when the repository is being deactivated or uninstalled and allows for activation or reinstallation using the original layout.
     """
@@ -2232,8 +2232,10 @@ def update_existing_tool_dependency( app, repository, original_dependency_dict, 
                 sa_session.flush()
     return new_tool_dependency
 def update_in_shed_tool_config( app, repository ):
-    # A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config file to generate the entire list
-    # of config_elems instead of using the in-memory list.
+    """
+    A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config file to generate the entire list
+    of config_elems instead of using the in-memory list.
+    """
     shed_conf_dict = repository.get_shed_config_dict( app )
     shed_tool_conf = shed_conf_dict[ 'config_filename' ]
     tool_path = shed_conf_dict[ 'tool_path' ]

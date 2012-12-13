@@ -327,7 +327,7 @@ class AdminToolshed( AdminGalaxy ):
             shed_util.add_to_tool_panel( trans.app,
                                          repository.name,
                                          repository_clone_url,
-                                         repository.changeset_revision,
+                                         repository.installed_changeset_revision,
                                          repository_tools_tups,
                                          repository.owner,
                                          shed_tool_conf,
@@ -810,7 +810,7 @@ class AdminToolshed( AdminGalaxy ):
                 shed_util.add_to_tool_panel( app=trans.app,
                                              repository_name=tool_shed_repository.name,
                                              repository_clone_url=repository_clone_url,
-                                             changeset_revision=tool_shed_repository.changeset_revision,
+                                             changeset_revision=tool_shed_repository.installed_changeset_revision,
                                              repository_tools_tups=repository_tools_tups,
                                              owner=tool_shed_repository.owner,
                                              shed_tool_conf=shed_tool_conf,
@@ -1777,7 +1777,20 @@ class AdminToolshed( AdminGalaxy ):
                     repository.update_available = False
                     trans.sa_session.add( repository )
                     trans.sa_session.flush()
-                    # Fixme: call shed_util.add_to_tool_panel here?
+                    if 'tools' in metadata_dict:
+                        tool_panel_dict = metadata_dict.get( 'tool_panel_section', None )
+                        if tool_panel_dict is None:
+                            tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( trans.app, repository )
+                        repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata_dict )
+                        shed_util.add_to_tool_panel( app=trans.app,
+                                                     repository_name=repository.name,
+                                                     repository_clone_url=repository_clone_url,
+                                                     changeset_revision=repository.installed_changeset_revision,
+                                                     repository_tools_tups=repository_tools_tups,
+                                                     owner=repository.owner,
+                                                     shed_tool_conf=shed_tool_conf,
+                                                     tool_panel_dict=tool_panel_dict,
+                                                     new_install=False )
                     # Create tool_dependency records if necessary.
                     if 'tool_dependencies' in metadata_dict:
                         tool_dependencies = shed_util.create_tool_dependency_objects( trans.app, repository, relative_install_dir, set_status=False )
