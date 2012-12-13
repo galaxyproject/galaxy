@@ -32,7 +32,7 @@ from galaxy.datatypes import sniff
 from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
-import galaxy.util.shed_util as shed_util
+import galaxy.util.shed_util
 from galaxy.web import url_for
 
 from galaxy.visualization.genome.visual_analytics import TracksterConfig
@@ -887,11 +887,11 @@ class Tool:
     def tool_shed_repository( self ):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return shed_util.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
-                                                                                                       self.tool_shed,
-                                                                                                       self.repository_name,
-                                                                                                       self.repository_owner,
-                                                                                                       self.installed_changeset_revision )
+            return galaxy.util.shed_util.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
+                                                                                                                   self.tool_shed,
+                                                                                                                   self.repository_name,
+                                                                                                                   self.repository_owner,
+                                                                                                                   self.installed_changeset_revision )
         return None
     def __get_job_run_config( self, run_configs, key, job_params=None ):
         # Look through runners/handlers to find one with matching parameters.

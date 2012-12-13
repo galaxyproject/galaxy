@@ -1316,7 +1316,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         return suc.get_repository_file_contents( file_path )
     def get_file_from_changeset_revision( self, repo_files_dir, changeset_revision, file_name, dir ):
         """Return file_name from the received changeset_revision of the repository manifest."""
-        stripped_file_name = strip_path( file_name )
+        stripped_file_name = suc.strip_path( file_name )
         repo = hg.repository( suc.get_configured_ui(), repo_files_dir )
         ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
         named_tmp_file = suc.get_named_tmpfile_from_ctx( ctx, file_name, dir )

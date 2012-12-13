@@ -393,7 +393,7 @@ def generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository ):
     for tool_dict in metadata[ 'tools' ]:
         guid = tool_dict[ 'guid' ]
         tool_config = tool_dict[ 'tool_config' ]
-        file_name = strip_path( tool_config )
+        file_name = suc.strip_path( tool_config )
         guids_and_configs[ guid ] = file_name
     # Parse the shed_tool_conf file in which all of this repository's tools are defined and generate the tool_panel_dict. 
     tree = util.parse_xml( shed_tool_conf )
@@ -434,7 +434,7 @@ def generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=N
     {<Tool guid> : [{ tool_config : <tool_config_file>, id: <ToolSection id>, version : <ToolSection version>, name : <TooSection name>}]}
     """
     tool_panel_dict = {}
-    file_name = strip_path( tool_config )
+    file_name = suc.strip_path( tool_config )
     tool_section_dicts = generate_tool_section_dicts( tool_config=file_name, tool_sections=tool_sections )
     tool_panel_dict[ guid ] = tool_section_dicts
     return tool_panel_dict
@@ -471,11 +471,11 @@ def generate_tool_section_element_from_dict( tool_section_dict ):
     return tool_section
 def get_config( config_file, repo, ctx, dir ):
     """Return the latest version of config_filename from the repository manifest."""
-    config_file = strip_path( config_file )
+    config_file = suc.strip_path( config_file )
     for changeset in suc.reversed_upper_bounded_changelog( repo, ctx ):
         changeset_ctx = repo.changectx( changeset )
         for ctx_file in changeset_ctx.files():
-            ctx_file_name = strip_path( ctx_file )
+            ctx_file_name = suc.strip_path( ctx_file )
             if ctx_file_name == config_file:
                 return suc.get_named_tmpfile_from_ctx( changeset_ctx, ctx_file, dir )
     return None
@@ -491,7 +491,7 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
             for converter in elem.findall( 'converter' ):
                 converter_config = converter.get( 'file', None )
                 if converter_config:
-                    converter_config_file_name = strip_path( converter_config )
+                    converter_config_file_name = suc.strip_path( converter_config )
                     for root, dirs, files in os.walk( relative_install_dir ):
                         if root.find( '.hg' ) < 0:
                             for name in files:
@@ -508,7 +508,7 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
             for display_app in elem.findall( 'display' ):
                 display_config = display_app.get( 'file', None )
                 if display_config:
-                    display_config_file_name = strip_path( display_config )
+                    display_config_file_name = suc.strip_path( display_config )
                     for root, dirs, files in os.walk( relative_install_dir ):
                         if root.find( '.hg' ) < 0:
                             for name in files:
@@ -574,7 +574,7 @@ def get_shed_tool_conf_dict( app, shed_tool_conf ):
         if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
             return index, shed_tool_conf_dict
         else:
-            file_name = strip_path( shed_tool_conf_dict[ 'config_filename' ] )
+            file_name = suc.strip_path( shed_tool_conf_dict[ 'config_filename' ] )
             if shed_tool_conf == file_name:
                 return index, shed_tool_conf_dict
 def get_tool_index_sample_files( sample_files ):
@@ -722,11 +722,11 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
         params_with_missing_index_file = repository_tool.params_with_missing_index_file
         for param in params_with_missing_index_file:
             options = param.options
-            missing_file_name = strip_path( options.missing_index_file )
+            missing_file_name = suc.strip_path( options.missing_index_file )
             if missing_file_name not in sample_files_copied:
                 # The repository must contain the required xxx.loc.sample file.
                 for sample_file in sample_files:
-                    sample_file_name = strip_path( sample_file )
+                    sample_file_name = suc.strip_path( sample_file )
                     if sample_file_name == '%s.sample' % missing_file_name:
                         suc.copy_sample_file( app, sample_file )
                         if options.tool_data_table and options.tool_data_table.missing_index_file:

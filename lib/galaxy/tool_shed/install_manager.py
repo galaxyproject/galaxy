@@ -2,13 +2,14 @@
 Manage automatic installation of tools configured in the xxx.xml files in ~/scripts/migrate_tools (e.g., 0002_tools.xml).
 All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
-import urllib2, tempfile
+import os, urllib2, tempfile
+from galaxy import util
 from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
 import galaxy.util.shed_util as shed_util
 import galaxy.util.shed_util_common as suc
 from galaxy.util.odict import odict
-from galaxy.tool_shed.common_util import *
+from galaxy.tool_shed import common_util
 
 class InstallManager( object ):
     def __init__( self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config, install_dependencies ):
@@ -37,17 +38,17 @@ class InstallManager( object ):
         tree = util.parse_xml( tool_shed_install_config )
         root = tree.getroot()
         self.tool_shed = shed_util.clean_tool_shed_url( root.get( 'name' ) )
-        self.repository_owner = REPOSITORY_OWNER
+        self.repository_owner = common_util.REPOSITORY_OWNER
         index, self.shed_config_dict = shed_util.get_shed_tool_conf_dict( app, self.migrated_tools_config )
         # Since tool migration scripts can be executed any number of times, we need to make sure the appropriate tools are defined in
         # tool_conf.xml.  If no tools associated with the migration stage are defined, no repositories will be installed on disk.
         # The default behavior is that the tool shed is down.
         tool_shed_accessible = False
-        tool_panel_configs = get_non_shed_tool_panel_configs( app )
+        tool_panel_configs = common_util.get_non_shed_tool_panel_configs( app )
         if tool_panel_configs:
             # The missing_tool_configs_dict contents are something like:
             # {'emboss_antigenic.xml': [('emboss', '5.0.0', 'package', '\nreadme blah blah blah\n')]}
-            tool_shed_accessible, missing_tool_configs_dict = check_for_missing_tools( app, tool_panel_configs, latest_migration_script_number )
+            tool_shed_accessible, missing_tool_configs_dict = common_util.check_for_missing_tools( app, tool_panel_configs, latest_migration_script_number )
         else:
             # It doesn't matter if the tool shed is accessible since there are no migrated tools defined in the local Galaxy instance, but
             # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in 
@@ -112,7 +113,7 @@ class InstallManager( object ):
                     # Tools outside of sections.
                     file_path = elem.get( 'file', None )
                     if file_path:
-                        name = strip_path( file_path )
+                        name = suc.strip_path( file_path )
                         if name in migrated_tool_configs:
                             if elem not in tool_panel_elems:
                                 tool_panel_elems.append( elem )
@@ -122,7 +123,7 @@ class InstallManager( object ):
                         if section_elem.tag == 'tool':
                             file_path = section_elem.get( 'file', None )
                             if file_path:
-                                name = strip_path( file_path )
+                                name = suc.strip_path( file_path )
                                 if name in migrated_tool_configs:
                                     # Append the section, not the tool.
                                     if elem not in tool_panel_elems:
@@ -139,7 +140,7 @@ class InstallManager( object ):
             if proprietary_tool_panel_elem.tag == 'tool':
                 # The proprietary_tool_panel_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
                 proprietary_tool_config = proprietary_tool_panel_elem.get( 'file' )
-                proprietary_name = strip_path( proprietary_tool_config )
+                proprietary_name = suc.strip_path( proprietary_tool_config )
                 if tool_config == proprietary_name:
                     # The tool is loaded outside of any sections.
                     tool_sections.append( None )
@@ -151,7 +152,7 @@ class InstallManager( object ):
                     if section_elem.tag == 'tool':
                         # The section_elem looks something like <tool file="emboss_5/emboss_antigenic.xml" />.
                         proprietary_tool_config = section_elem.get( 'file' )
-                        proprietary_name = strip_path( proprietary_tool_config )
+                        proprietary_name = suc.strip_path( proprietary_tool_config )
                         if tool_config == proprietary_name:
                             # The tool is loaded inside of the section_elem.
                             tool_sections.append( ToolSection( proprietary_tool_panel_elem ) )
@@ -349,7 +350,7 @@ class InstallManager( object ):
                 shed_util.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.INSTALLED )
     @property
     def non_shed_tool_panel_configs( self ):
-        return get_non_shed_tool_panel_configs( self.app )
+        return common_util.get_non_shed_tool_panel_configs( self.app )
     def __get_url_from_tool_shed( self, tool_shed ):
         # The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is something like:
         # http://toolshed.g2.bx.psu.edu/

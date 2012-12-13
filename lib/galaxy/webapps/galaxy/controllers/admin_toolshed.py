@@ -1109,7 +1109,7 @@ class AdminToolshed( AdminGalaxy ):
                     tool_path = shed_tool_conf_dict[ 'tool_path' ]
                     break
                 else:
-                    file_name = strip_path( config_filename )
+                    file_name = suc.strip_path( config_filename )
                     if file_name == shed_tool_conf:
                         tool_path = shed_tool_conf_dict[ 'tool_path' ]
                         break
