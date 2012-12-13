@@ -39,7 +39,7 @@ class InstallManager( object ):
         root = tree.getroot()
         self.tool_shed = suc.clean_tool_shed_url( root.get( 'name' ) )
         self.repository_owner = common_util.REPOSITORY_OWNER
-        index, self.shed_config_dict = shed_util.get_shed_tool_conf_dict( app, self.migrated_tools_config )
+        index, self.shed_config_dict = suc.get_shed_tool_conf_dict( app, self.migrated_tools_config )
         # Since tool migration scripts can be executed any number of times, we need to make sure the appropriate tools are defined in
         # tool_conf.xml.  If no tools associated with the migration stage are defined, no repositories will be installed on disk.
         # The default behavior is that the tool shed is down.
@@ -202,7 +202,7 @@ class InstallManager( object ):
             tool_index_sample_files = shed_util.get_tool_index_sample_files( sample_files )
             shed_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=self.tool_path )
             sample_files_copied = [ s for s in tool_index_sample_files ]
-            repository_tools_tups = shed_util.get_repository_tools_tups( self.app, metadata_dict )
+            repository_tools_tups = suc.get_repository_tools_tups( self.app, metadata_dict )
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
                 repository_tools_tups = shed_util.handle_missing_data_table_entry( self.app, relative_install_dir, self.tool_path, repository_tools_tups )

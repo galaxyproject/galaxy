@@ -310,13 +310,13 @@ class AdminToolshed( AdminGalaxy ):
         """Activate a repository that was deactivated but not uninstalled."""
         repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
-        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans, repository )
+        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
         repository.deleted = False
         repository.status = trans.model.ToolShedRepository.installation_status.INSTALLED
         if repository.includes_tools:
             metadata = repository.metadata
             try:
-                repository_tools_tups = shed_util.get_repository_tools_tups( trans.app, metadata )
+                repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata )
             except Exception, e:
                 error = "Error activating repository %s: %s" % ( repository.name, str( e ) )
                 log.debug( error )
@@ -795,7 +795,7 @@ class AdminToolshed( AdminGalaxy ):
             tool_index_sample_files = shed_util.get_tool_index_sample_files( sample_files )
             shed_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=tool_path )
             sample_files_copied = [ str( s ) for s in tool_index_sample_files ]
-            repository_tools_tups = shed_util.get_repository_tools_tups( trans.app, metadata_dict )
+            repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata_dict )
             if repository_tools_tups:
                 # Handle missing data table entries for tool parameters that are dynamically generated select lists.
                 repository_tools_tups = shed_util.handle_missing_data_table_entry( trans.app, relative_install_dir, tool_path, repository_tools_tups )
@@ -1295,7 +1295,7 @@ class AdminToolshed( AdminGalaxy ):
         new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
         tool_panel_section = kwd.get( 'tool_panel_section', '' )
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
-        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans, tool_shed_repository )
+        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, tool_shed_repository )
         clone_dir = os.path.join( tool_path, self.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision ) )
         relative_install_dir = os.path.join( clone_dir, tool_shed_repository.name )
         tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, tool_shed_repository )
@@ -1466,7 +1466,7 @@ class AdminToolshed( AdminGalaxy ):
         metadata = tool_shed_repository.metadata
         tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, tool_shed_repository )
         ctx_rev = shed_util.get_ctx_rev( tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.installed_changeset_revision )
-        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans, tool_shed_repository )
+        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, tool_shed_repository )
         repository_dependencies = self.get_repository_dependencies( trans=trans,
                                                                     repository_id=repository_id,
                                                                     repository_name=tool_shed_repository.name,
@@ -1572,7 +1572,7 @@ class AdminToolshed( AdminGalaxy ):
         """Reset all metadata on a single installed tool shed repository."""
         repository = suc.get_installed_tool_shed_repository( trans, id )
         tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
-        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans, repository )
+        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
         tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
         if relative_install_dir:
             original_metadata_dict = repository.metadata

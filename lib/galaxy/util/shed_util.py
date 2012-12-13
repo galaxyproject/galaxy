@@ -34,12 +34,12 @@ def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
     for elem_entry in elem_list:
         config_elems.append( elem_entry )
     # Persist the altered shed_tool_config file.
-    config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
+    suc.config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
 def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_revision, repository_tools_tups, owner, shed_tool_conf, tool_panel_dict,
                        new_install=True ):
     """A tool shed repository is being installed or updated so handle tool panel alterations accordingly."""
     # We need to change the in-memory version and the file system version of the shed_tool_conf file.
-    index, shed_tool_conf_dict = get_shed_tool_conf_dict( app, shed_tool_conf )
+    index, shed_tool_conf_dict = suc.get_shed_tool_conf_dict( app, shed_tool_conf )
     tool_path = shed_tool_conf_dict[ 'tool_path' ]
     # Generate the list of ElementTree Element objects for each section or tool.
     elem_list = generate_tool_panel_elem_list( repository_name,
@@ -155,17 +155,6 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
         except:
             pass
     return converter_path, display_path
-def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
-    # Persist the current in-memory list of config_elems to a file named by the value of config_filename.  
-    fd, filename = tempfile.mkstemp()
-    os.write( fd, '<?xml version="1.0"?>\n' )
-    os.write( fd, '<toolbox tool_path="%s">\n' % str( tool_path ) )
-    for elem in config_elems:
-        os.write( fd, '%s' % util.xml_to_string( elem, pretty=True ) )
-    os.write( fd, '</toolbox>\n' )
-    os.close( fd )
-    shutil.move( filename, os.path.abspath( config_filename ) )
-    os.chmod( config_filename, 0644 )
 def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None ):
     """
     Copy all appropriate files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
@@ -289,26 +278,6 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
                                                                         set_status=set_status )
                     tool_dependency_objects.append( tool_dependency )
     return tool_dependency_objects
-def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section ):
-    if tool_section is not None:
-        tool_elem = SubElement( tool_section, 'tool' )
-    else:
-        tool_elem = Element( 'tool' )
-    tool_elem.attrib[ 'file' ] = tool_file_path
-    tool_elem.attrib[ 'guid' ] = tool.guid
-    tool_shed_elem = SubElement( tool_elem, 'tool_shed' )
-    tool_shed_elem.text = tool_shed
-    repository_name_elem = SubElement( tool_elem, 'repository_name' )
-    repository_name_elem.text = repository_name
-    repository_owner_elem = SubElement( tool_elem, 'repository_owner' )
-    repository_owner_elem.text = owner
-    changeset_revision_elem = SubElement( tool_elem, 'installed_changeset_revision' )
-    changeset_revision_elem.text = changeset_revision
-    id_elem = SubElement( tool_elem, 'id' )
-    id_elem.text = tool.id
-    version_elem = SubElement( tool_elem, 'version' )
-    version_elem.text = tool.version
-    return tool_elem
 def generate_tool_panel_elem_list( repository_name, repository_clone_url, changeset_revision, tool_panel_dict, repository_tools_tups, owner='' ):
     """Generate a list of ElementTree Element objects for each section or tool."""
     elem_list = []
@@ -340,9 +309,9 @@ def generate_tool_panel_elem_list( repository_name, repository_clone_url, change
                 if tup_guid == guid:
                     break
             if inside_section:
-                tool_elem = generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section )
+                tool_elem = suc.generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section )
             else:
-                tool_elem = generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, None )
+                tool_elem = suc.generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, None )
             if inside_section:
                 if section_in_elem_list:
                     elem_list[ index ] = tool_section
@@ -497,34 +466,6 @@ def get_repository_owner_from_clone_url( repository_clone_url ):
     tmp_url = suc.clean_repository_clone_url( repository_clone_url )
     tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
     return get_repository_owner( tmp_url )
-def get_repository_tools_tups( app, metadata_dict ):
-    repository_tools_tups = []
-    index, shed_conf_dict = get_shed_tool_conf_dict( app, metadata_dict.get( 'shed_config_filename' ) )
-    if 'tools' in metadata_dict:
-        for tool_dict in metadata_dict[ 'tools' ]:
-            load_relative_path = relative_path = tool_dict.get( 'tool_config', None )
-            if shed_conf_dict.get( 'tool_path' ):
-                load_relative_path = os.path.join( shed_conf_dict.get( 'tool_path' ), relative_path )
-            guid = tool_dict.get( 'guid', None )
-            if relative_path and guid:
-                tool = app.toolbox.load_tool( os.path.abspath( load_relative_path ), guid=guid )
-            else:
-                tool = None
-            if tool:
-                repository_tools_tups.append( ( relative_path, guid, tool ) )
-    return repository_tools_tups
-def get_shed_tool_conf_dict( app, shed_tool_conf ):
-    """
-    Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
-    in the shed_tool_conf_dict associated with the file.
-    """
-    for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
-        if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
-            return index, shed_tool_conf_dict
-        else:
-            file_name = suc.strip_path( shed_tool_conf_dict[ 'config_filename' ] )
-            if shed_tool_conf == file_name:
-                return index, shed_tool_conf_dict
 def get_tool_index_sample_files( sample_files ):
     """Try to return the list of all appropriate tool data sample files included in the repository."""
     tool_index_sample_files = []
@@ -839,12 +780,12 @@ def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     for config_elem in config_elems_to_remove:
         config_elems.remove( config_elem )
     # Persist the altered in-memory version of the tool config.
-    config_elems_to_xml_file( trans.app, config_elems, shed_tool_conf, tool_path )
+    suc.config_elems_to_xml_file( trans.app, config_elems, shed_tool_conf, tool_path )
 def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     """A tool shed repository is being deactivated or uninstalled so handle tool panel alterations accordingly."""
     # Determine where the tools are currently defined in the tool panel and store this information so the tools can be displayed
     # in the same way when the repository is activated or reinstalled.
-    tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
+    tool_panel_dict = suc.generate_tool_panel_dict_from_shed_tool_conf_entries( trans.app, repository )
     repository.metadata[ 'tool_panel_section' ] = tool_panel_dict
     trans.sa_session.add( repository )
     trans.sa_session.flush()
@@ -854,7 +795,7 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     for guid_to_remove in guids_to_remove:
         if guid_to_remove in trans.app.toolbox.tools_by_id:
             del trans.app.toolbox.tools_by_id[ guid_to_remove ]
-    index, shed_tool_conf_dict = get_shed_tool_conf_dict( trans.app, shed_tool_conf )
+    index, shed_tool_conf_dict = suc.get_shed_tool_conf_dict( trans.app, shed_tool_conf )
     if uninstall:
         # Remove from the shed_tool_conf file on disk.
         remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove )

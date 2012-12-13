@@ -2,6 +2,7 @@ import os, logging, tempfile, shutil, ConfigParser
 from time import gmtime, strftime
 from datetime import date, datetime
 from galaxy import util
+from galaxy.util.odict import odict
 from galaxy.web.base.controller import *
 from galaxy.web.form_builder import CheckboxField
 from galaxy.webapps.community import model
