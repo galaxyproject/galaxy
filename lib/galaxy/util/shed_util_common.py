@@ -565,6 +565,10 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                                                  repository_dependencies,
                                                  metadata.get( 'tool_dependencies', None ) )
     return repo_info_dict
+def generate_clone_url_for_installed_repository( trans, repository ):
+    """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
+    tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+    return suc.url_join( tool_shed_url, 'repos', repository.owner, repository.name )
 def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
     """Generate the URL for cloning a repository that is in the tool shed."""
     base_url = url_for( '/', qualified=True ).rstrip( '/' )
@@ -1056,6 +1060,9 @@ def get_file_context_from_ctx( ctx, filename ):
     if deleted:
         return 'DELETED'
     return None
+def get_installed_tool_shed_repository( trans, id ):
+    """Get a repository on the Galaxy side from the database via id"""
+    return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
 def get_list_of_copied_sample_files( repo, ctx, dir ):
     """
     Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
@@ -2011,6 +2018,8 @@ def to_safe_string( text, to_html=True ):
     if to_html:
         str( markupsafe.escape( ''.join( translated ) ) )
     return ''.join( translated )
+def tool_shed_from_repository_clone_url( repository_clone_url ):
+    return suc.clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
 def tool_shed_is_this_tool_shed( toolshed_base_url ):
     return toolshed_base_url.rstrip( '/' ) == str( url_for( '/', qualified=True ) ).rstrip( '/' )
 def translate_string( raw_text, to_html=True ):
@@ -2090,6 +2099,42 @@ def update_existing_tool_dependency( app, repository, original_dependency_dict, 
                 sa_session.delete( tool_dependency )
                 sa_session.flush()
     return new_tool_dependency
+def update_in_shed_tool_config( app, repository ):
+    # A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config file to generate the entire list
+    # of config_elems instead of using the in-memory list.
+    shed_conf_dict = repository.get_shed_config_dict( app )
+    shed_tool_conf = shed_conf_dict[ 'config_filename' ]
+    tool_path = shed_conf_dict[ 'tool_path' ]
+    
+    #hack for 'trans.app' used in lots of places. These places should just directly use app
+    trans = util.bunch.Bunch()
+    trans.app = app
+    
+    tool_panel_dict = generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
+    repository_tools_tups = get_repository_tools_tups( app, repository.metadata )
+    cleaned_repository_clone_url = suc.clean_repository_clone_url( suc.generate_clone_url_for_installed_repository( trans, repository ) )
+    tool_shed = tool_shed_from_repository_clone_url( cleaned_repository_clone_url )
+    owner = repository.owner
+    if not owner:
+        owner = get_repository_owner( cleaned_repository_clone_url )
+    guid_to_tool_elem_dict = {}
+    for tool_config_filename, guid, tool in repository_tools_tups:
+        guid_to_tool_elem_dict[ guid ] = generate_tool_elem( tool_shed, repository.name, repository.changeset_revision, repository.owner or '', tool_config_filename, tool, None )
+    config_elems = []
+    tree = util.parse_xml( shed_tool_conf )
+    root = tree.getroot()
+    for elem in root:
+        if elem.tag == 'section':
+            for i, tool_elem in enumerate( elem ):
+                guid = tool_elem.attrib.get( 'guid' )
+                if guid in guid_to_tool_elem_dict:
+                    elem[i] = guid_to_tool_elem_dict[ guid ]
+        elif elem.tag == 'tool':
+            guid = elem.attrib.get( 'guid' )
+            if guid in guid_to_tool_elem_dict:
+                elem = guid_to_tool_elem_dict[ guid ]
+        config_elems.append( elem )
+    config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
 def update_repository( repo, ctx_rev=None ):
     """
     Update the cloned repository to changeset_revision.  It is critical that the installed repository is updated to the desired

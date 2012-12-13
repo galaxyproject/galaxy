@@ -3,7 +3,7 @@ Determine if installed tool shed repositories have updates available in their re
 """
 import threading, urllib2, logging
 from galaxy.util import string_as_bool
-from galaxy.util.shed_util import *
+import galaxy.util.shed_util as shed_util
 
 log = logging.getLogger( __name__ )
 

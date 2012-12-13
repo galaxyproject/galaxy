@@ -1,4 +1,5 @@
 import os, tempfile, shutil, logging, urllib2
+from galaxy.datatypes import checkers
 from galaxy import util
 import shed_util_common as suc
 from galaxy.tools.search import ToolBoxSearch
@@ -293,10 +294,6 @@ def create_tool_dependency_objects( app, tool_shed_repository, relative_install_
                                                                         set_status=set_status )
                     tool_dependency_objects.append( tool_dependency )
     return tool_dependency_objects
-def generate_clone_url_for_installed_repository( trans, repository ):
-    """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
-    tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
-    return suc.url_join( tool_shed_url, 'repos', repository.owner, repository.name )
 def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section ):
     if tool_section is not None:
         tool_elem = SubElement( tool_section, 'tool' )
@@ -542,9 +539,6 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
         if idx == count:
             break
     return headers
-def get_installed_tool_shed_repository( trans, id ):
-    """Get a repository on the Galaxy side from the database via id"""
-    return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
 def get_repository_owner( cleaned_repository_url ):
     items = cleaned_repository_url.split( 'repos' )
     repo_path = items[ 1 ]
@@ -1042,44 +1036,6 @@ def remove_tool_dependency( trans, tool_dependency ):
         trans.sa_session.add( tool_dependency )
         trans.sa_session.flush()
     return removed, error_message
-def tool_shed_from_repository_clone_url( repository_clone_url ):
-    return suc.clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
-def update_in_shed_tool_config( app, repository ):
-    # A tool shed repository is being updated so change the shed_tool_conf file.  Parse the config file to generate the entire list
-    # of config_elems instead of using the in-memory list.
-    shed_conf_dict = repository.get_shed_config_dict( app )
-    shed_tool_conf = shed_conf_dict[ 'config_filename' ]
-    tool_path = shed_conf_dict[ 'tool_path' ]
-    
-    #hack for 'trans.app' used in lots of places. These places should just directly use app
-    trans = util.bunch.Bunch()
-    trans.app = app
-    
-    tool_panel_dict = generate_tool_panel_dict_from_shed_tool_conf_entries( trans, repository )
-    repository_tools_tups = get_repository_tools_tups( app, repository.metadata )
-    cleaned_repository_clone_url = suc.clean_repository_clone_url( generate_clone_url_for_installed_repository( trans, repository ) )
-    tool_shed = tool_shed_from_repository_clone_url( cleaned_repository_clone_url )
-    owner = repository.owner
-    if not owner:
-        owner = get_repository_owner( cleaned_repository_clone_url )
-    guid_to_tool_elem_dict = {}
-    for tool_config_filename, guid, tool in repository_tools_tups:
-        guid_to_tool_elem_dict[ guid ] = generate_tool_elem( tool_shed, repository.name, repository.changeset_revision, repository.owner or '', tool_config_filename, tool, None )
-    config_elems = []
-    tree = util.parse_xml( shed_tool_conf )
-    root = tree.getroot()
-    for elem in root:
-        if elem.tag == 'section':
-            for i, tool_elem in enumerate( elem ):
-                guid = tool_elem.attrib.get( 'guid' )
-                if guid in guid_to_tool_elem_dict:
-                    elem[i] = guid_to_tool_elem_dict[ guid ]
-        elif elem.tag == 'tool':
-            guid = elem.attrib.get( 'guid' )
-            if guid in guid_to_tool_elem_dict:
-                elem = guid_to_tool_elem_dict[ guid ]
-        config_elems.append( elem )
-    config_elems_to_xml_file( app, config_elems, shed_tool_conf, tool_path )
 def update_tool_shed_repository_status( app, tool_shed_repository, status ):
     sa_session = app.model.context.current
     tool_shed_repository.status = status
