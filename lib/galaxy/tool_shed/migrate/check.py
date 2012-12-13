@@ -5,7 +5,6 @@ pkg_resources.require( "sqlalchemy-migrate" )
 
 from migrate.versioning import repository, schema
 from sqlalchemy import *
-from common import *
 from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )

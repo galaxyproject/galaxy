@@ -1,5 +1,5 @@
 import os, shutil, tarfile, urllib2, zipfile
-from galaxy.datatypes.checkers import *
+from galaxy.datatypes import checkers
 
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
     env_var_name = elem.get( 'name', 'PATH' )
@@ -73,13 +73,13 @@ def extract_zip( archive_path, extraction_path ):
     zip_archive.close()
     return True
 def isbz2( file_path ):
-    return is_bz2( file_path )
+    return checkers.is_bz2( file_path )
 def isgzip( file_path ):
-    return is_gzip( file_path )
+    return checkers.is_gzip( file_path )
 def istar( file_path ):
     return tarfile.is_tarfile( file_path )
 def iszip( file_path ):
-    return check_zip( file_path )
+    return checkers.check_zip( file_path )
 def make_directory( full_path ):
     if not os.path.exists( full_path ):
         os.makedirs( full_path )

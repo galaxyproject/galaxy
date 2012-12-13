@@ -3,7 +3,7 @@ Classes encapsulating the management of repositories installed from Galaxy tool 
 """
 import os
 import galaxy.util.shed_util
-from galaxy.model.orm import *
+from galaxy.model.orm import and_
 
 from galaxy import eggs
 import pkg_resources

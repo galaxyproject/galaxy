@@ -1,16 +1,13 @@
 import os, string, socket, logging, simplejson, binascii, tempfile, filecmp
-from time import strftime
+from time import gmtime, strftime
 from datetime import *
-from galaxy.datatypes.checkers import *
 from galaxy.tools import *
 from galaxy.util.odict import odict
 from galaxy.util.json import from_json_string, to_json_string
-from galaxy.util.hash_util import *
 import galaxy.util.shed_util_common as suc
-from galaxy.web.base.controller import *
 from galaxy.web.base.controllers.admin import *
 from galaxy.webapps.community import model
-from galaxy.model.orm import *
+from galaxy.model.orm import and_
 from galaxy.model.item_attrs import UsesItemRatings
 
 from galaxy import eggs
@@ -72,9 +69,6 @@ ${message}
 This message was sent from the Galaxy Tool Shed instance hosted on the server
 '${host}'
 """
-
-# States for passing messages
-SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
 malicious_error = "  This changeset cannot be downloaded because it potentially produces malicious behavior or contains inappropriate content."
 malicious_error_can_push = "  Correct this changeset as soon as possible, it potentially produces malicious behavior or contains inappropriate content."
@@ -146,7 +140,6 @@ def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     return False
 def changeset_revision_reviewed_by_user( trans, user, repository, changeset_revision ):
     """Determine if the current changeset revision has been reviewed by the current user."""
-    changeset_revision_reviewed_by_user = False
     for review in repository.reviews:
         if review.changeset_revision == changeset_revision and review.user == user:
             return True
@@ -162,34 +155,6 @@ def check_file_contents( trans ):
             if user_email in admin_users:
                 return True
     return False
-def copy_file_from_disk( filename, repo_dir, dir ):
-    file_path = None
-    found = False
-    for root, dirs, files in os.walk( repo_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name == filename:
-                    file_path = os.path.abspath( os.path.join( root, name ) )
-                    found = True
-                    break
-        if found:
-            break
-    if file_path:
-        tmp_filename = os.path.join( dir, filename )
-        shutil.copy( file_path, tmp_filename )
-    else:
-        tmp_filename = None
-    return tmp_filename
-def generate_tool_guid( trans, repository, tool ):
-    """
-    Generate a guid for the received tool.  The form of the guid is    
-    <tool shed host>/repos/<tool shed username>/<tool shed repo name>/<tool id>/<tool version>
-    """
-    return '%s/repos/%s/%s/%s/%s' % ( trans.request.host,
-                                      repository.user.username,
-                                      repository.name,
-                                      tool.id,
-                                      tool.version )
 def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
     stripped_file_name = suc.strip_path( file_name )
     file_path = None
@@ -287,10 +252,6 @@ def get_repository_by_name( trans, name ):
 def get_repository_metadata_by_id( trans, id ):
     """Get repository metadata from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
-def get_repository_metadata_by_repository_id( trans, id ):
-    """Get all metadata records for a specified repository."""
-    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
-                           .filter( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ) )
 def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
     repository_metadata_revisions = []
     metadata_changeset_revision_hashes = []
@@ -402,7 +363,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
         tip_changeset = repo.changelog.tip()
         ctx = repo.changectx( tip_changeset )
         t, tz = ctx.date()
-        date = datetime( *time.gmtime( float( t ) - tz )[:6] )
+        date = datetime( *gmtime( float( t ) - tz )[:6] )
         display_date = date.strftime( "%Y-%m-%d" )
         try:
             username = ctx.user().split()[0]

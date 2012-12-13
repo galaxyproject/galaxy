@@ -7,7 +7,7 @@ the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 import os.path, os, errno, sys, codecs, operator, logging, tarfile, mimetypes, ConfigParser
 from galaxy import util
 from galaxy.util.bunch import Bunch
-from galaxy.util.hash_util import *
+from galaxy.util.hash_util import new_secure_hash
 from galaxy.web.form_builder import *
 
 from galaxy import eggs

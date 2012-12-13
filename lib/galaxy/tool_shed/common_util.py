@@ -1,7 +1,7 @@
 import os, urllib2
 from galaxy import util
 from galaxy.util.odict import odict
-from galaxy.tool_shed.encoding_util import *
+from galaxy.tool_shed.encoding_util import tool_shed_decode
 
 REPOSITORY_OWNER = 'devteam'
 

@@ -1,5 +1,5 @@
-import binascii
-from galaxy.util.hash_util import *
+import binascii, logging
+from galaxy.util.hash_util import hmac_new
 from galaxy.util.json import json_fix
 
 from galaxy import eggs
@@ -7,6 +7,8 @@ import pkg_resources
 
 pkg_resources.require( "simplejson" )
 import simplejson
+
+log = logging.getLogger( __name__ )
 
 encoding_sep = '__esep__'
 

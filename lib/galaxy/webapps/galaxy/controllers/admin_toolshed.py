@@ -3,7 +3,7 @@ from admin import *
 from galaxy.util.json import from_json_string, to_json_string
 import galaxy.util.shed_util as shed_util
 import galaxy.util.shed_util_common as suc
-from galaxy.tool_shed.encoding_util import *
+from galaxy.tool_shed.encoding_util import tool_shed_encode, tool_shed_decode
 from galaxy import eggs, tools
 
 eggs.require( 'mercurial' )

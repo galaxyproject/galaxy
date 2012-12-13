@@ -1,8 +1,7 @@
 import sys, os, shutil, logging, tarfile, tempfile, urllib
 from galaxy.web.base.controller import *
-from galaxy.model.orm import *
-from galaxy.datatypes.checkers import *
-from common import *
+from galaxy.datatypes import checkers
+import common
 import galaxy.util.shed_util_common as suc
 
 from galaxy import eggs
@@ -13,8 +12,6 @@ log = logging.getLogger( __name__ )
 
 undesirable_dirs = [ '.hg', '.svn', '.git', '.cvs' ]
 undesirable_files = [ '.hg_archival.txt', 'hgrc', '.DS_Store' ]
-# States for passing messages
-SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 CHUNK_SIZE = 2**20 # 1Mb
 
 class UploadController( BaseUIController ):
@@ -26,7 +23,7 @@ class UploadController( BaseUIController ):
         status = params.get( 'status', 'done' )
         commit_message = util.restore_text( params.get( 'commit_message', 'Uploaded'  ) )
         category_ids = util.listify( params.get( 'category_id', '' ) )
-        categories = get_categories( trans )
+        categories = common.get_categories( trans )
         repository_id = params.get( 'repository_id', '' )
         repository = suc.get_repository_in_tool_shed( trans, repository_id )
         repo_dir = repository.repo_path( trans.app )
@@ -40,7 +37,7 @@ class UploadController( BaseUIController ):
         url = params.get( 'url', '' )
         # Part of the upload process is sending email notification to those that have registered to
         # receive them.  One scenario occurs when the first change set is produced for the repository.
-        # See the handle_email_alerts() method for the definition of the scenarios.
+        # See the common.handle_email_alerts() method for the definition of the scenarios.
         new_repo_alert = repository.is_new( trans.app )
         uploaded_directory = None
         if params.get( 'upload_button', False ):
@@ -85,9 +82,9 @@ class UploadController( BaseUIController ):
                 isbz2 = False
                 if uploaded_file:
                     if uncompress_file:
-                        isgzip = is_gzip( uploaded_file_name )
+                        isgzip = checkers.is_gzip( uploaded_file_name )
                         if not isgzip:
-                            isbz2 = is_bz2( uploaded_file_name )
+                            isbz2 = checkers.is_bz2( uploaded_file_name )
                     if isempty:
                         tar = None
                         istar = False
@@ -134,7 +131,7 @@ class UploadController( BaseUIController ):
                     shutil.move( uploaded_file_name, full_path )
                     # See if any admin users have chosen to receive email alerts when a repository is
                     # updated.  If so, check every uploaded file to ensure content is appropriate.
-                    check_contents = check_file_contents( trans )
+                    check_contents = common.check_file_contents( trans )
                     if check_contents and os.path.isfile( full_path ):
                         content_alert_str = self.__check_file_content( full_path )
                     else:
@@ -151,7 +148,7 @@ class UploadController( BaseUIController ):
                             message = '%s<br/>%s' % ( message, error_message )
                     # See if the content of the change set was valid.
                     admin_only = len( repository.downloadable_revisions ) != 1
-                    handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
+                    common.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
                 if ok:
                     # Update the repository files for browsing.
                     suc.update_repository( repo )
@@ -180,7 +177,7 @@ class UploadController( BaseUIController ):
                             else:
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
                         kwd[ 'message' ] = message
-                        set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
+                        common.set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
                     # Provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to e.g. a requirement tag mismatch
                     if suc.get_config_from_disk( 'tool_dependencies.xml', repo_dir ):
                         if repository.metadata_revisions:
@@ -330,7 +327,7 @@ class UploadController( BaseUIController ):
                             pass
         # See if any admin users have chosen to receive email alerts when a repository is
         # updated.  If so, check every uploaded file to ensure content is appropriate.
-        check_contents = check_file_contents( trans )
+        check_contents = common.check_file_contents( trans )
         for filename_in_archive in filenames_in_archive:
             # Check file content to ensure it is appropriate.
             if check_contents and os.path.isfile( filename_in_archive ):
@@ -344,7 +341,7 @@ class UploadController( BaseUIController ):
                     return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
         commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
         admin_only = len( repository.downloadable_revisions ) != 1
-        handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
+        common.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
         return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
     def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
         if isgzip:
@@ -423,8 +420,8 @@ class UploadController( BaseUIController ):
         return True, ''
     def __check_file_content( self, file_path ):
         message = ''
-        if check_html( file_path ):
+        if checkers.check_html( file_path ):
             message = 'The file "%s" contains HTML content.\n' % str( file_path )
-        elif check_image( file_path ):
+        elif checkers.check_image( file_path ):
             message = 'The file "%s" contains image content.\n' % str( file_path )
         return message

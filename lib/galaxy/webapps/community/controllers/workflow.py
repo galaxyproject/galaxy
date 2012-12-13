@@ -6,12 +6,12 @@ from galaxy.webapps.community import model
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.workflow.modules import InputDataModule, ToolModule, WorkflowModuleFactory
+from galaxy.web.base.controller import *
 from galaxy.tools import DefaultToolState
 from galaxy.webapps.galaxy.controllers.workflow import attach_ordered_steps
-from galaxy.model.orm import *
-from common import *
+import common
 import galaxy.util.shed_util_common as suc
-from galaxy.tool_shed.encoding_util import *
+from galaxy.tool_shed.encoding_util import tool_shed_encode, tool_shed_decode
 
 class RepoInputDataModule( InputDataModule ):
 
@@ -49,7 +49,7 @@ class RepoToolModule( ToolModule ):
         self.errors = None
         for tool_dict in tools_metadata:
             if self.tool_id in [ tool_dict[ 'id' ], tool_dict[ 'guid' ] ]:
-                repository, self.tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
+                repository, self.tool, message = common.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
                 if message and self.tool is None:
                     self.errors = 'unavailable'
                 break
@@ -144,7 +144,7 @@ class WorkflowController( BaseUIController ):
             workflow_name = tool_shed_decode( workflow_name )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
-        repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+        repository_metadata = common.get_repository_metadata_by_id( trans, repository_metadata_id )
         repository = suc.get_repository_in_tool_shed( trans, trans.security.encode_id( repository_metadata.repository_id ) )
         return trans.fill_template( "/webapps/community/repository/view_workflow.mako",
                                     repository=repository,
@@ -156,7 +156,7 @@ class WorkflowController( BaseUIController ):
                                     status=status )
     @web.expose
     def generate_workflow_image( self, trans, repository_metadata_id, workflow_name ):
-        repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+        repository_metadata = common.get_repository_metadata_by_id( trans, repository_metadata_id )
         repository_id = trans.security.encode_id( repository_metadata.repository_id )
         changeset_revision = repository_metadata.changeset_revision
         metadata = repository_metadata.metadata

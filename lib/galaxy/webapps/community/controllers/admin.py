@@ -1,12 +1,12 @@
 from galaxy.web.base.controller import *
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.webapps.community import model
-from galaxy.model.orm import *
+from galaxy.model.orm import and_
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.web.form_builder import SelectField
 from galaxy.util import inflector
 import galaxy.util.shed_util_common as suc
-from common import *
+import common
 from repository import RepositoryGrid, CategoryGrid
 
 from galaxy import eggs
@@ -474,7 +474,7 @@ class AdminController( BaseUIController, Admin ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 if 'user_id' in kwd:
-                    user = get_user( trans, kwd[ 'user_id' ] )
+                    user = common.get_user( trans, kwd[ 'user_id' ] )
                     kwd[ 'f-email' ] = user.email
                     del kwd[ 'user_id' ]
                 else:
@@ -489,7 +489,7 @@ class AdminController( BaseUIController, Admin ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 category_id = kwd.get( 'id', None )
-                category = get_category( trans, category_id )
+                category = common.get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
                 if kwd[ 'id' ]:
@@ -533,7 +533,7 @@ class AdminController( BaseUIController, Admin ):
                 # The received id is a RepositoryMetadata object id, so we need to get the
                 # associated Repository and redirect to view_or_manage_repository with the
                 # changeset_revision.
-                repository_metadata = get_repository_metadata_by_id( trans, kwd[ 'id' ] )
+                repository_metadata = common.get_repository_metadata_by_id( trans, kwd[ 'id' ] )
                 repository = repository_metadata.repository
                 kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
@@ -554,7 +554,7 @@ class AdminController( BaseUIController, Admin ):
             if not name or not description:
                 message = 'Enter a valid name and a description'
                 status = 'error'
-            elif get_category_by_name( trans, name ):
+            elif common.get_category_by_name( trans, name ):
                 message = 'A category with that name already exists'
                 status = 'error'
             else:
@@ -615,7 +615,7 @@ class AdminController( BaseUIController, Admin ):
             ids = util.listify( id )
             count = 0
             for repository_metadata_id in ids:
-                repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+                repository_metadata = common.get_repository_metadata_by_id( trans, repository_metadata_id )
                 trans.sa_session.delete( repository_metadata )
                 trans.sa_session.flush()
                 count += 1
@@ -641,7 +641,7 @@ class AdminController( BaseUIController, Admin ):
                                                        action='manage_categories',
                                                        message=message,
                                                        status='error' ) )
-        category = get_category( trans, id )
+        category = common.get_category( trans, id )
         if params.get( 'edit_category_button', False ):
             new_name = util.restore_text( params.get( 'name', '' ) ).strip()
             new_description = util.restore_text( params.get( 'description', '' ) ).strip()
@@ -649,7 +649,7 @@ class AdminController( BaseUIController, Admin ):
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif category.name != new_name and get_category_by_name( trans, name ):
+                elif category.name != new_name and common.get_category_by_name( trans, name ):
                     message = 'A category with that name already exists'
                     status = 'error'
                 else:
@@ -772,7 +772,7 @@ class AdminController( BaseUIController, Admin ):
             ids = util.listify( id )
             message = "Deleted %d categories: " % len( ids )
             for category_id in ids:
-                category = get_category( trans, category_id )
+                category = common.get_category( trans, category_id )
                 category.deleted = True
                 trans.sa_session.add( category )
                 trans.sa_session.flush()
@@ -800,7 +800,7 @@ class AdminController( BaseUIController, Admin ):
             purged_categories = ""
             message = "Purged %d categories: " % len( ids )
             for category_id in ids:
-                category = get_category( trans, category_id )
+                category = common.get_category( trans, category_id )
                 if category.deleted:
                     # Delete RepositoryCategoryAssociations
                     for rca in category.repositories:
@@ -827,7 +827,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             undeleted_categories = ""
             for category_id in ids:
-                category = get_category( trans, category_id )
+                category = common.get_category( trans, category_id )
                 if category.deleted:
                     category.deleted = False
                     trans.sa_session.add( category )

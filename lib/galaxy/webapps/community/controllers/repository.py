@@ -1,5 +1,5 @@
 import os, logging, tempfile, shutil, ConfigParser
-from time import strftime
+from time import gmtime, strftime
 from datetime import date, datetime
 from galaxy import util
 from galaxy.web.base.controller import *
@@ -8,10 +8,10 @@ from galaxy.webapps.community import model
 from galaxy.webapps.community.model import directory_hash_id
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
-from galaxy.model.orm import *
+from galaxy.model.orm import and_
 import galaxy.util.shed_util_common as suc
-from galaxy.tool_shed.encoding_util import *
-from common import *
+from galaxy.tool_shed.encoding_util import tool_shed_encode
+import common
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -511,7 +511,7 @@ class InstallMatchedRepositoryGrid( MatchedRepositoryGrid ):
                                                      link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                                      attach_popup=False )
 
-class RepositoryController( BaseUIController, ItemRatings ):
+class RepositoryController( BaseUIController, common.ItemRatings ):
 
     install_matched_repository_grid = InstallMatchedRepositoryGrid()
     matched_repository_grid = MatchedRepositoryGrid()
@@ -535,7 +535,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 # The value of 'id' has been set to the search string, which is a repository name.  We'll try to get the desired encoded repository
                 # id to pass on.
                 try:
-                    repository = get_repository_by_name( trans, kwd[ 'id' ] )
+                    repository = common.get_repository_by_name( trans, kwd[ 'id' ] )
                     kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 except:
                     pass
@@ -610,7 +610,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 if 'user_id' in kwd:
-                    user = get_user( trans, kwd[ 'user_id' ] )
+                    user = common.get_user( trans, kwd[ 'user_id' ] )
                     kwd[ 'f-email' ] = user.email
                     del kwd[ 'user_id' ]
                 else:
@@ -650,7 +650,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 category_id = kwd.get( 'id', None )
-                category = get_category( trans, category_id )
+                category = common.get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
                 if trans.user:
@@ -691,7 +691,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         # Update repository files for browsing.
         suc.update_repository( repo )
-        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
+        is_malicious = common.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repository=repository,
@@ -716,7 +716,8 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 # The value of 'id' has been set to the search string, which is a repository name.
                 # We'll try to get the desired encoded repository id to pass on.
                 try:
-                    repository = get_repository_by_name( trans, kwd[ 'id' ] )
+                    name = kwd[ 'id' ]
+                    repository = common.get_repository_by_name( trans, name )
                     kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 except:
                     pass
@@ -739,7 +740,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if 'f-Category.name' in kwd:
                 # The user browsed to a category and then entered a search string, so get the category associated with it's value.
                 category_name = kwd[ 'f-Category.name' ]
-                category = get_category_by_name( trans, category_name )
+                category = common.get_category_by_name( trans, category_name )
                 # Set the id value in kwd since it is required by the ValidRepositoryGrid.build_initial_query method.
                 kwd[ 'id' ] = trans.security.encode_id( category.id )
         if galaxy_url:
@@ -749,7 +750,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             if operation == "preview_tools_in_changeset":
                 repository_id = kwd.get( 'id', None )
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                repository_metadata = get_latest_repository_metadata( trans, repository.id )
+                repository_metadata = common.get_latest_repository_metadata( trans, repository.id )
                 latest_installable_changeset_revision = repository_metadata.changeset_revision
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
@@ -761,7 +762,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 category_id = kwd.get( 'id', None )
-                category = get_category( trans, category_id )
+                category = common.get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
         # The changeset_revision_select_field in the ValidRepositoryGrid performs a refresh_on_change which sends in request parameters like
         # changeset_revison_1, changeset_revision_2, etc.  One of the many select fields on the grid performed the refresh_on_change, so we loop
@@ -921,7 +922,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        categories = get_categories( trans )
+        categories = common.get_categories( trans )
         if not categories:
             message = 'No categories have been configured in this instance of the Galaxy Tool Shed.  ' + \
                 'An administrator needs to create some via the Administrator control panel before creating repositories.',
@@ -1018,11 +1019,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        repository, tool, message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, message = common.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         if message:
             status = 'error'
         tool_state = self.__new_state( trans )
-        is_malicious = changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
+        is_malicious = common.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, repository_id, changeset_revision )
         try:
             return trans.fill_template( "/webapps/community/repository/tool_form.mako",
@@ -1085,7 +1086,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 is_admin = trans.user_is_admin()
                 if operation == "view_or_manage_repository":
                     # The received id is a RepositoryMetadata id, so we have to get the repository id.
-                    repository_metadata = get_repository_metadata_by_id( trans, item_id )
+                    repository_metadata = common.get_repository_metadata_by_id( trans, item_id )
                     repository_id = trans.security.encode_id( repository_metadata.repository.id )
                     repository = suc.get_repository_in_tool_shed( trans, repository_id )
                     kwd[ 'id' ] = repository_id
@@ -1102,7 +1103,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     encoded_repository_ids = []
                     changeset_revisions = []
                     for repository_metadata_id in util.listify( item_id ):
-                        repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
+                        repository_metadata = common.get_repository_metadata_by_id( trans, repository_metadata_id )
                         encoded_repository_ids.append( trans.security.encode_id( repository_metadata.repository.id ) )
                         changeset_revisions.append( repository_metadata.changeset_revision )
                     new_kwd[ 'repository_ids' ] = encoded_repository_ids
@@ -1170,7 +1171,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 is_admin = trans.user_is_admin()
                 if operation == "view_or_manage_repository":
                     # The received id is a RepositoryMetadata id, so we have to get the repository id.
-                    repository_metadata = get_repository_metadata_by_id( trans, item_id )
+                    repository_metadata = common.get_repository_metadata_by_id( trans, item_id )
                     repository_id = trans.security.encode_id( repository_metadata.repository.id )
                     repository = suc.get_repository_in_tool_shed( trans, repository_id )
                     kwd[ 'id' ] = repository_id
@@ -1187,7 +1188,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                     encoded_repository_ids = []
                     changeset_revisions = []
                     for repository_metadata_id in util.listify( item_id ):
-                        repository_metadata = get_repository_metadata_by_id( trans, item_id )
+                        repository_metadata = common.get_repository_metadata_by_id( trans, item_id )
                         encoded_repository_ids.append( trans.security.encode_id( repository_metadata.repository.id ) )
                         changeset_revisions.append( repository_metadata.changeset_revision )
                     new_kwd = {}
@@ -1581,9 +1582,9 @@ class RepositoryController( BaseUIController, ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'error' )
-        repository, tool, error_message = load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, error_message = common.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
-        is_malicious = changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
+        is_malicious = common.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         invalid_file_tups = []
         if tool:
             invalid_file_tups = suc.check_tool_input_params( trans.app,
@@ -1781,7 +1782,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
-        revision_label = get_revision_label( trans, repository, repository.tip( trans.app ) )
+        revision_label = common.get_revision_label( trans, repository, repository.tip( trans.app ) )
         repository_metadata = None
         repository_metadata_id = None
         metadata = None
@@ -1790,7 +1791,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
             if repository_metadata:
-                revision_label = get_revision_label( trans, repository, changeset_revision )
+                revision_label = common.get_revision_label( trans, repository, changeset_revision )
                 repository_metadata_id = trans.security.encode_id( repository_metadata.id )
                 metadata = repository_metadata.metadata
                 is_malicious = repository_metadata.malicious
@@ -1800,7 +1801,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 if previous_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, previous_changeset_revision )
                     if repository_metadata:
-                        revision_label = get_revision_label( trans, repository, previous_changeset_revision )
+                        revision_label = common.get_revision_label( trans, repository, previous_changeset_revision )
                         repository_metadata_id = trans.security.encode_id( repository_metadata.id )
                         metadata = repository_metadata.metadata
                         is_malicious = repository_metadata.malicious
@@ -1815,20 +1816,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                                   handled_key_rd_dicts=None )
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
-                message += malicious_error_can_push
+                message += common.malicious_error_can_push
             else:
-                message += malicious_error
+                message += common.malicious_error
             status = 'error'
         malicious_check_box = CheckboxField( 'malicious', checked=is_malicious )
-        categories = get_categories( trans )
+        categories = common.get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
         # Determine if the current changeset revision has been reviewed by the current user.
-        reviewed_by_user = changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
+        reviewed_by_user = common.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
-            review = get_review_by_repository_id_changeset_revision_user_id( trans,
-                                                                             id,
-                                                                             changeset_revision,
-                                                                             trans.security.encode_id( trans.user.id ) )
+            review = common.get_review_by_repository_id_changeset_revision_user_id( trans, id, changeset_revision, trans.security.encode_id( trans.user.id ) )
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
@@ -1929,7 +1927,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             repository_metadata_id = None
             metadata = None
             repository_dependencies = None
-        revision_label = get_revision_label( trans, repository, changeset_revision )
+        revision_label = common.get_revision_label( trans, repository, changeset_revision )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
@@ -2001,7 +1999,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
-        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
+        is_malicious = common.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/community/repository/rate_repository.mako', 
                                     repository=repository,
@@ -2161,7 +2159,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 if not commit_message:
                     commit_message = 'Deleted selected files'
                 commands.commit( repo.ui, repo, repo_dir, user=trans.user.username, message=commit_message )
-                handle_email_alerts( trans, repository )
+                common.handle_email_alerts( trans, repository )
                 # Update the repository files for browsing.
                 suc.update_repository( repo )
                 # Get the new repository tip.
@@ -2173,11 +2171,11 @@ class RepositoryController( BaseUIController, ItemRatings ):
                 else:
                     message += 'The selected files were deleted from the repository.  '
                     kwd[ 'message' ] = message
-                    set_repository_metadata_due_to_new_tip( trans, repository, **kwd )
+                    common.set_repository_metadata_due_to_new_tip( trans, repository, **kwd )
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
-        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
+        is_malicious = common.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -2200,7 +2198,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             # Get the name of the server hosting the tool shed instance.
             host = trans.request.host
             # Build the email message
-            body = string.Template( contact_owner_template ) \
+            body = string.Template( common.contact_owner_template ) \
                 .safe_substitute( username=trans.user.username,
                                   repository_name=repository.name,
                                   email=trans.user.email,
@@ -2319,7 +2317,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
             else:
                 has_metadata = False
             t, tz = ctx.date()
-            date = datetime( *time.gmtime( float( t ) - tz )[:6] )
+            date = datetime( *gmtime( float( t ) - tz )[:6] )
             display_date = date.strftime( "%Y-%m-%d" )
             change_dict = { 'ctx' : ctx,
                             'rev' : str( ctx.rev() ),
@@ -2332,7 +2330,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             'has_metadata' : has_metadata }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
-        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
+        is_malicious = common.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/community/repository/view_changelog.mako', 
                                     repository=repository,
@@ -2363,7 +2361,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
             diffs.append( suc.to_safe_string( diff, to_html=True ) )
-        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
+        is_malicious = common.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, ctx_str )
         return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
                                     repository=repository,
@@ -2433,7 +2431,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
-        revision_label = get_revision_label( trans, repository, changeset_revision )
+        revision_label = common.get_revision_label( trans, repository, changeset_revision )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id )
@@ -2449,20 +2447,17 @@ class RepositoryController( BaseUIController, ItemRatings ):
         else:
             repository_metadata_id = None
             metadata = None
-        is_malicious = changeset_is_malicious( trans, id, repository.tip( trans.app ) )
+        is_malicious = common.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
-                message += malicious_error_can_push
+                message += common.malicious_error_can_push
             else:
-                message += malicious_error
+                message += common.malicious_error
             status = 'error'
         # Determine if the current changeset revision has been reviewed by the current user.
-        reviewed_by_user = changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
+        reviewed_by_user = common.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
-            review = get_review_by_repository_id_changeset_revision_user_id( trans,
-                                                                             id,
-                                                                             changeset_revision,
-                                                                             trans.security.encode_id( trans.user.id ) )
+            review = common.get_review_by_repository_id_changeset_revision_user_id( trans, id, changeset_revision, trans.security.encode_id( trans.user.id ) )
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
@@ -2499,7 +2494,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
         tool = None
         guid = None
         original_tool_data_path = trans.app.config.tool_data_path
-        revision_label = get_revision_label( trans, repository, changeset_revision )
+        revision_label = common.get_revision_label( trans, repository, changeset_revision )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             metadata = repository_metadata.metadata
@@ -2512,7 +2507,7 @@ class RepositoryController( BaseUIController, ItemRatings ):
                             guid = tool_metadata_dict[ 'guid' ]
                             full_path_to_tool_config = os.path.abspath( relative_path_to_tool_config )
                             full_path_to_dir, tool_config_filename = os.path.split( full_path_to_tool_config )
-                            can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, full_path_to_tool_config, changeset_revision )
+                            can_use_disk_file = common.can_use_tool_config_disk_file( trans, repository, repo, full_path_to_tool_config, changeset_revision )
                             if can_use_disk_file:
                                 trans.app.config.tool_data_path = work_dir
                                 tool, valid, message, sample_files = suc.handle_sample_files_and_load_tool_from_disk( trans,
@@ -2534,19 +2529,16 @@ class RepositoryController( BaseUIController, ItemRatings ):
                         tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
         else:
             metadata = None
-        is_malicious = changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
+        is_malicious = common.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
         trans.app.config.tool_data_path = original_tool_data_path
-        reviewed_by_user = changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
+        reviewed_by_user = common.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
-            review = get_review_by_repository_id_changeset_revision_user_id( trans,
-                                                                             id,
-                                                                             changeset_revision,
-                                                                             trans.security.encode_id( trans.user.id ) )
+            review = common.get_review_by_repository_id_changeset_revision_user_id( trans, id, changeset_revision, trans.security.encode_id( trans.user.id ) )
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
@@ -2598,7 +2590,7 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         # Restrict the options to all revisions that have associated metadata.
         repository_metadata_revisions = repository.metadata_revisions
     for repository_metadata in repository_metadata_revisions:
-        rev, label, changeset_revision = get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=repository )
+        rev, label, changeset_revision = common.get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=repository )
         changeset_tups.append( ( rev, label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
     # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,
