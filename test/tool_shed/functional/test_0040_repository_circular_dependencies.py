@@ -1,5 +1,5 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
-from tool_shed.base.test_db_util import get_repository_by_name_and_owner, get_user, get_private_role
+import tool_shed.base.test_db_util as test_db_util
 
 freebayes_repository_name = 'freebayes_0040'
 freebayes_repository_name_description = "Galaxy's freebayes tool"
@@ -15,14 +15,14 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         """Create necessary user accounts."""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = get_user( common.test_user_1_email )
+        test_user_1 = test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = get_private_role( test_user_1 )
+        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        admin_user = get_user( common.admin_email )
+        admin_user = test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
-        admin_user_private_role = get_private_role( admin_user )
+        admin_user_private_role = test_db_util.get_private_role( admin_user )
     def test_0005_create_category( self ):
         """Create a category for this test suite"""
         self.create_category( 'test_0040_repository_circular_dependencies', 'Testing handling of circular repository dependencies.' )
@@ -35,7 +35,7 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
                                 repository_long_description=freebayes_repository_name_long_description, 
                                 categories=[ 'test_0040_repository_circular_dependencies' ], 
                                 strings_displayed=[] )
-        repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           'freebayes/freebayes.tar', 
                           strings_displayed=[], 
@@ -49,7 +49,7 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
                                 repository_long_description=filtering_repository_long_description, 
                                 categories=[ 'test_0040_repository_circular_dependencies' ], 
                                 strings_displayed=[] )
-        repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
         self.upload_file( repository, 
                           'filtering/filtering_1.1.0.tar', 
                           strings_displayed=[], 
@@ -60,8 +60,8 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         # Filtering revision 0 -> freebayes revision 0.
         # Freebayes revision 0 -> filtering revision 1.
         # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
-        repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
-        filtering_repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0040', additional_paths=[ 'filtering' ] )
         self.generate_repository_dependency_xml( [ repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
@@ -76,8 +76,8 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         # Filtering revision 0 -> freebayes revision 0.
         # Freebayes revision 0 -> filtering revision 1.
         # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
-        repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
-        freebayes_repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0040', additional_paths=[ 'freebayes' ] )
         self.generate_repository_dependency_xml( [ repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
@@ -88,8 +88,8 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
                           commit_message='Uploaded dependency on filtering' )
     def test_0030_verify_repository_dependencies( self ):
         '''Verify that each repository can depend on the other without causing an infinite loop.'''
-        filtering_repository = get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
-        freebayes_repository = get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         # The dependency structure should look like:
         # Filtering revision 0 -> freebayes revision 0.
         # Freebayes revision 0 -> filtering revision 1.

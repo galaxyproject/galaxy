@@ -32,6 +32,11 @@ def get_galaxy_repository_by_name_owner_changeset_revision( repository_name, own
                                     galaxy.model.ToolShedRepository.table.c.owner == owner,
                                     galaxy.model.ToolShedRepository.table.c.changeset_revision == changeset_revision ) ) \
                      .first()
+def get_installed_repository_by_name_owner( repository_name, owner ):
+    return ga_session.query( galaxy.model.ToolShedRepository ) \
+                     .filter( and_( galaxy.model.ToolShedRepository.table.c.name == repository_name,
+                                    galaxy.model.ToolShedRepository.table.c.owner == owner ) ) \
+                     .first()
 def get_private_role( user ):
     for role in user.all_roles():
         if role.name == user.email and role.description == 'Private Role for %s' % user.email:

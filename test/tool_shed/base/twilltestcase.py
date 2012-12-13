@@ -1,9 +1,9 @@
 import galaxy.webapps.community.util.hgweb_config
 import galaxy.model as galaxy_model
 import common, string, os, re
-from base.twilltestcase import tc, from_json_string, TwillTestCase, security
+from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
 from test_db_util import get_repository_by_name_and_owner, get_repository_metadata_by_repository_id_changeset_revision, \
-                         get_galaxy_repository_by_name_owner_changeset_revision
+                         get_galaxy_repository_by_name_owner_changeset_revision, get_installed_repository_by_name_owner
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -53,6 +53,19 @@ class ShedTwillTestCase( TwillTestCase ):
     def check_count_of_metadata_revisions_associated_with_repository( self, repository, metadata_count ):
         self.check_repository_changelog( repository )
         self.check_string_count_in_page( 'Repository metadata is associated with this change set.', metadata_count )
+    def check_installed_repository_tool_dependencies( self, installed_repository, dependencies_installed=False ):
+        strings_not_displayed = []
+        strings_displayed = []
+        for dependency in installed_repository.metadata[ 'tool_dependencies' ]:
+            tool_dependency = installed_repository.metadata[ 'tool_dependencies' ][ dependency ]
+            strings_displayed.extend( [ tool_dependency[ 'name' ], tool_dependency[ 'version' ], tool_dependency[ 'type' ] ] )
+            if dependencies_installed:
+                strings_displayed.append( 'Installed' )
+            else:
+                strings_displayed.append( 'Never installed' )
+        url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
+        self.visit_galaxy_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def check_repository_changelog( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/view_changelog?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -179,6 +192,15 @@ class ShedTwillTestCase( TwillTestCase ):
         form.find_control( "selected_files_to_delete" ).readonly = False
         tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def display_installed_repository_manage_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
+        self.visit_galaxy_url( url )
+        strings_displayed.extend( [ installed_repository.name, 
+                                    installed_repository.description, 
+                                    installed_repository.owner, 
+                                    installed_repository.tool_shed, 
+                                    installed_repository.installed_changeset_revision ] )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_manage_repository_page( self, repository, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         base_url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
@@ -359,7 +381,7 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "3", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def install_repository( self, name, owner, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
+    def install_repository( self, name, owner, install_tool_dependencies=False, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         repository = get_repository_by_name_and_owner( name, owner )
         repository_id = self.security.encode_id( repository.id )
         if changeset_revision is None:
@@ -368,6 +390,11 @@ class ShedTwillTestCase( TwillTestCase ):
               ( changeset_revision, repository_id, self.galaxy_url )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        if 'install_tool_dependencies' in self.last_page():
+            if install_tool_dependencies:
+                tc.fv( '1', 'install_tool_dependencies', True )
+            else:
+                tc.fv( '1', 'install_tool_dependencies', False )
         tc.submit( 'select_tool_panel_section_button' )
         html = self.last_page()
         # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the 
@@ -381,7 +408,7 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
             ( iri_ids, encoded_kwd, reinstalling )
         self.visit_galaxy_url( url )
-        self.wait_for_repository_installation( repository )
+        self.wait_for_repository_installation( repository, changeset_revision )
     def load_invalid_tool_page( self, repository, tool_xml, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml, changeset_revision )
@@ -446,18 +473,42 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.formfile( "1", "file_data", self.get_filename( filename, filepath ) )
         tc.submit( "upload_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def verify_installed_repository_on_browse_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/admin_toolshed/browse_repositories'
+        self.visit_galaxy_url( url )
+        strings_displayed.extend( [ installed_repository.name, 
+                                    installed_repository.description, 
+                                    installed_repository.owner, 
+                                    installed_repository.tool_shed, 
+                                    installed_repository.installed_changeset_revision ] )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def verify_tool_metadata_for_installed_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
+        repository_id = self.security.encode_id( installed_repository.id )
+        for tool in installed_repository.metadata[ 'tools' ]:
+            strings = list( strings_displayed )
+            strings.extend( [ tool[ 'id' ], tool[ 'description' ], tool[ 'version' ], tool[ 'guid' ], tool[ 'name' ] ] )
+            url = '/admin_toolshed/view_tool_metadata?repository_id=%s&tool_id=%s' % ( repository_id, urllib.quote_plus( tool[ 'id' ] ) )
+            self.visit_galaxy_url( url )
+            self.check_for_strings( strings, strings_not_displayed )
     def visit_galaxy_url( self, url ):
         url = '%s%s' % ( self.galaxy_url, url )
         self.visit_url( url )
-    def wait_for_repository_installation( self, repository ):
+    def wait_for_repository_installation( self, repository, changeset_revision ):
         final_states = [ galaxy_model.ToolShedRepository.installation_status.ERROR,
                          galaxy_model.ToolShedRepository.installation_status.INSTALLED, 
                          galaxy_model.ToolShedRepository.installation_status.UNINSTALLED,
                          galaxy_model.ToolShedRepository.installation_status.DEACTIVATED ]
         repository_name = repository.name
         owner = repository.user.username
-        changeset_revision = self.get_repository_tip( repository )
+        if changeset_revision is None:
+            changeset_revision = self.get_repository_tip( repository )
         galaxy_repository = get_galaxy_repository_by_name_owner_changeset_revision( repository_name, owner, changeset_revision )
+        timeout_counter = 0
         while galaxy_repository.status not in final_states:
             ga_refresh( galaxy_repository )
+            timeout_counter = timeout_counter + 1
+            if timeout_counter > common.repository_installation_timeout:
+                raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \
+                                      ( timeout_counter, repository.status ) )
+                break
             time.sleep( 1 )
