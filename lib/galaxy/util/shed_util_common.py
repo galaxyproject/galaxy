@@ -705,10 +705,6 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
         original_repository_metadata = None
     readme_file_names = get_readme_file_names( repository.name )
     metadata_dict = { 'shed_config_filename' : shed_config_dict.get( 'config_filename' ) }
-    # If we're regenerating metadata for a repository that contains tools, make sure we keep the tool panel section information.
-    # Fixme: do we need this?
-    #if original_repository_metadata and 'tool_panel_section' in original_repository_metadata:
-    #    metadata_dict[ 'tool_panel_section' ] = original_repository_metadata[ 'tool_panel_section' ]
     readme_files = []
     invalid_file_tups = []
     invalid_tool_configs = []

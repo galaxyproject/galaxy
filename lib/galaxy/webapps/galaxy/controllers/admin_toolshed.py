@@ -414,6 +414,11 @@ class AdminToolshed( AdminGalaxy ):
             message += "if necessary, and try installing the dependency again."
             status = "error"
         tool_shed_repository = tool_dependency.tool_shed_repository
+        tool_dependency.name = suc.to_safe_string( tool_dependency.name )
+        tool_dependency.version = suc.to_safe_string( tool_dependency.version )
+        tool_dependency.type = suc.to_safe_string( tool_dependency.type )
+        tool_dependency.status = suc.to_safe_string( tool_dependency.status )
+        tool_dependency.error_message = suc.to_safe_string( tool_dependency.error_message )
         return trans.fill_template( '/admin/tool_shed_repository/browse_tool_dependency.mako',
                                     repository=tool_shed_repository,
                                     tool_dependency=tool_dependency,
@@ -620,7 +625,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                           tool_dependencies=tool_dependencies )
         for installed_tool_dependency in installed_tool_dependencies:
             if installed_tool_dependency.status == trans.app.model.ToolDependency.installation_status.ERROR:
-                message += '  %s' % installed_tool_dependency.error_message
+                message += '  %s' % suc.to_safe_string( installed_tool_dependency.error_message )
         tool_dependency_ids = [ trans.security.encode_id( td.id ) for td in tool_dependencies ]
         if message:
             status = 'error'
