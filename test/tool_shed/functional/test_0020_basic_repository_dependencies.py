@@ -68,3 +68,9 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
         changeset_revision = self.get_repository_tip( datatypes_repository )
         strings_displayed = [ datatypes_repository_name, common.test_user_1_name, changeset_revision, 'Repository dependencies' ]
         self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
+    def test_0040_verify_repository_metadata( self ):
+        '''Verify that resetting the metadata does not change it.'''
+        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        datatypes_repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
+        self.verify_unchanged_repository_metadata( emboss_repository )
+        self.verify_unchanged_repository_metadata( datatypes_repository )

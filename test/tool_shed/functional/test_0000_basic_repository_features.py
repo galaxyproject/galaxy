@@ -155,3 +155,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         tip_changeset = self.get_repository_tip( repository )
         search_fields = dict( tool_id='Filter1', tool_name='filter', tool_version='2.2.0' )
         self.search_for_valid_tools( search_fields=search_fields, strings_displayed=[ tip_changeset ], strings_not_displayed=[] )
+    def test_0085_verify_repository_metadata( self ):
+        '''Verify that resetting the metadata does not change it.'''
+        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        self.verify_unchanged_repository_metadata( repository )

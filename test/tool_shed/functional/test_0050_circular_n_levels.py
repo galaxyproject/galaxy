@@ -147,3 +147,11 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
         for changeset_revision in self.get_repository_metadata_revisions( emboss_repository ):
             self.check_repository_dependency( freebayes_repository, emboss_repository, changeset_revision )
         self.display_manage_repository_page( freebayes_repository, strings_displayed=[ 'Freebayes depends on the filtering repository.' ] )
+    def test_0035_verify_repository_metadata( self ):
+        '''Verify that resetting the metadata does not change it.'''
+        emboss_datatypes_repository = test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
+        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        for repository in [ emboss_datatypes_repository, emboss_repository, freebayes_repository, filtering_repository ]:
+            self.verify_unchanged_repository_metadata( repository )

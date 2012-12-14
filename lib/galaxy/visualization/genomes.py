@@ -1,8 +1,10 @@
-import os, re, sys, glob
+import os, re, sys, glob, logging
 from bx.seq.twobit import TwoBitFile
 from galaxy.util.json import from_json_string
 from galaxy import model
 from galaxy.util.bunch import Bunch
+
+log = logging.getLogger( __name__ )
 
 # FIXME: copied from tracks.py
 # Message strings returned to browser
@@ -166,13 +168,18 @@ class Genomes( object ):
             self.genomes[ key ] = Genome( key, len_file=f )
                 
         # Add genome data (twobit files) to genomes.
-        for line in open( os.path.join( app.config.tool_data_path, "twobit.loc" ) ):
-            if line.startswith("#"): continue
-            val = line.split()
-            if len( val ) == 2:
-                key, path = val
-                if key in self.genomes:
-                    self.genomes[ key ].twobit_file = path
+        # FIXME: If a galaxy instance does not have ~/tool-data/twobit.loc file, the following error is thrown:
+        # IOError: [Errno 2] No such file or directory: '~/tool-data/twobit.loc'
+        try:
+            for line in open( os.path.join( app.config.tool_data_path, "twobit.loc" ) ):
+                if line.startswith("#"): continue
+                val = line.split()
+                if len( val ) == 2:
+                    key, path = val
+                    if key in self.genomes:
+                        self.genomes[ key ].twobit_file = path
+        except IOError, e:
+            log.exception( str( e ) )
                     
     def get_build( self, dbkey ):
         """ Returns build for the given key. """

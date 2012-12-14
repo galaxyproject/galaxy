@@ -1,6 +1,7 @@
 import galaxy.webapps.community.util.hgweb_config
 import galaxy.model as galaxy_model
-import common, string, os, re, test_db_util
+import common, string, os, re, test_db_util, simplejson
+import galaxy.util as util
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
 from galaxy.tool_shed.encoding_util import tool_shed_encode
 
@@ -23,8 +24,10 @@ class ShedTwillTestCase( TwillTestCase ):
         self.galaxy_host = os.environ.get( 'GALAXY_TEST_HOST' )
         self.galaxy_port = os.environ.get( 'GALAXY_TEST_PORT' )
         self.galaxy_url = "http://%s:%s" % ( self.galaxy_host, self.galaxy_port )
+        self.shed_tool_data_table_conf = os.environ.get( 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF' )
         self.file_dir = os.environ.get( 'TOOL_SHED_TEST_FILE_DIR', None )
         self.tool_shed_test_file = None
+        self.tool_data_path = os.environ.get( 'GALAXY_TEST_TOOL_DATA_PATH' )
         self.shed_tools_dict = {}
         self.home()
     def browse_category( self, category, strings_displayed=[], strings_not_displayed=[] ):
@@ -439,9 +442,14 @@ class ShedTwillTestCase( TwillTestCase ):
         repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return tip_ctx.rev() < 0
+    def reset_installed_repository_metadata( self, repository ):
+        url = '/admin_toolshed/reset_repository_metadata?id=%s' % self.security.encode_id( repository.id )
+        self.visit_galaxy_url( url )
+        self.check_for_strings( [ 'Metadata has been reset' ] )
     def reset_repository_metadata( self, repository ):
         url = '/repository/reset_all_metadata?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
+        self.check_for_strings( [ 'All repository metadata has been reset.' ] )
     def revoke_write_access( self, repository, username ):
         url = '/repository/manage_repository?user_access_button=Remove&id=%s&remove_auth=%s' % \
             ( self.security.encode_id( repository.id ), username )
@@ -466,6 +474,10 @@ class ShedTwillTestCase( TwillTestCase ):
     def tip_has_metadata( self, repository ):
         tip = self.get_repository_tip( repository )
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision( repository.id, tip )
+    def update_installed_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/admin_toolshed/check_for_updates?id=%s' % self.security.encode_id( installed_repository.id )
+        self.visit_galaxy_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def upload_file( self, 
                      repository, 
                      filename, 
@@ -482,6 +494,27 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.formfile( "1", "file_data", self.get_filename( filename, filepath ) )
         tc.submit( "upload_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def verify_installed_repository_metadata_unchanged( self, name, owner ):
+        installed_repository = test_db_util.get_installed_repository_by_name_owner( name, owner )
+        differs = False
+        metadata = installed_repository.metadata
+        self.reset_installed_repository_metadata( installed_repository )
+        new_metadata = installed_repository.metadata
+        # This test assumes that the different metadata components will always appear in the same order. If this is ever not
+        # the case, this test must be updated.
+        for metadata_key in [ 'datatypes', 'tools', 'tool_dependencies', 'repository_dependencies', 'workflows' ]:
+            if ( metadata_key in metadata and metadata_key not in new_metadata ) or \
+               ( metadata_key not in metadata and metadata_key in new_metadata ):
+                differs = True
+                break
+            elif metadata_key not in metadata and metadata_key not in new_metadata:
+                continue
+            else:
+                if metadata[ metadata_key ] != new_metadata[ metadata_key ]:
+                    differs = True
+                    break
+        if differs:
+            raise AssertionError( 'Metadata for installed repository %s differs after metadata reset.' % name )
     def verify_installed_repository_on_browse_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/browse_repositories'
         self.visit_galaxy_url( url )
@@ -491,6 +524,17 @@ class ShedTwillTestCase( TwillTestCase ):
                                     installed_repository.tool_shed, 
                                     installed_repository.installed_changeset_revision ] )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def verify_installed_repository_data_table_entries( self, data_tables=[] ):
+        data_table = util.parse_xml( self.shed_tool_data_table_conf )
+        found = False
+        for table_elem in data_table.findall( 'table' ):
+            for data_table in data_tables:
+                if 'name' in table_elem.attrib and table_elem.attrib[ 'name' ] == data_table:
+                    file_elem = table_elem.find( 'file' )
+                    assert os.path.exists( file_elem.attrib[ 'path' ] ), 'Tool data table file %s not found.' % file_elem.path
+                    found = True
+                    break
+                assert found, 'No entry for %s in %s.' % ( data_table, self.shed_tool_data_table_conf )
     def verify_tool_metadata_for_installed_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         repository_id = self.security.encode_id( installed_repository.id )
         for tool in installed_repository.metadata[ 'tools' ]:
@@ -499,6 +543,11 @@ class ShedTwillTestCase( TwillTestCase ):
             url = '/admin_toolshed/view_tool_metadata?repository_id=%s&tool_id=%s' % ( repository_id, urllib.quote_plus( tool[ 'id' ] ) )
             self.visit_galaxy_url( url )
             self.check_for_strings( strings, strings_not_displayed )
+    def verify_unchanged_repository_metadata( self, repository ):
+        self.check_repository_changelog( repository )
+        html = self.last_page()
+        self.reset_repository_metadata( repository )
+        self.check_repository_changelog( repository, strings_displayed=[ html ] )
     def visit_galaxy_url( self, url ):
         url = '%s%s' % ( self.galaxy_url, url )
         self.visit_url( url )

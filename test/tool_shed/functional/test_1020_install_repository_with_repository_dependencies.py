@@ -25,3 +25,6 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                                        strings_displayed=[ 'Installed tool shed repository', 'Tools', 'antigenic' ] )
         self.check_installed_repository_tool_dependencies( installed_repository, dependencies_installed=False )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
+    def test_0020_verify_installed_repository_metadata( self ):
+        '''Verify that resetting the metadata on an installed repository does not change the metadata.'''
+        self.verify_installed_repository_metadata_unchanged( 'emboss_0020', common.test_user_1_name )

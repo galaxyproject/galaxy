@@ -97,3 +97,9 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         # In this case, the displayed dependency will specify the tip revision, but this will not always be the case.
         self.check_repository_dependency( filtering_repository, freebayes_repository, self.get_repository_tip( freebayes_repository ) )
         self.check_repository_dependency( freebayes_repository, filtering_repository, self.get_repository_tip( filtering_repository ) )
+    def test_0035_verify_repository_metadata( self ):
+        '''Verify that resetting the metadata does not change it.'''
+        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        for repository in [ freebayes_repository, filtering_repository ]:
+            self.verify_unchanged_repository_metadata( repository )

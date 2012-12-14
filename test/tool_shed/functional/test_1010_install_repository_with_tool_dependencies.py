@@ -25,3 +25,10 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
                                                        strings_displayed=[ 'Installed tool shed repository', 'Tools', 'FreeBayes' ] )
         self.check_installed_repository_tool_dependencies( installed_repository, dependencies_installed=False )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
+    def test_0020_verify_installed_repository_metadata( self ):
+        '''Verify that resetting the metadata on an installed repository does not change the metadata.'''
+        self.verify_installed_repository_metadata_unchanged( 'freebayes_0010', common.test_user_1_name )
+    def test_0025_verify_sample_files( self ):
+        '''Verify that the installed repository populated shed_tool_data_table.xml and the sample files.'''
+        self.verify_installed_repository_data_table_entries( data_tables=[ 'sam_fa_indexes' ] )
+        

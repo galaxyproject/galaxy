@@ -131,3 +131,11 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
             self.display_manage_repository_page( repository, 
                                                  changeset_revision=changeset_revision, 
                                                  strings_displayed=[ str( metadata ) for metadata in repository_dependency_metadata ] )
+    def test_0040_verify_repository_metadata( self ):
+        '''Verify that resetting the metadata does not change it.'''
+        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        emboss_5_repository = test_db_util.get_repository_by_name_and_owner( emboss_5_repository_name, common.test_user_1_name )
+        emboss_6_repository = test_db_util.get_repository_by_name_and_owner( emboss_6_repository_name, common.test_user_1_name )
+        datatypes_repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
+        for repository in [ emboss_repository, emboss_5_repository, emboss_6_repository, datatypes_repository ]:
+            self.verify_unchanged_repository_metadata( repository )

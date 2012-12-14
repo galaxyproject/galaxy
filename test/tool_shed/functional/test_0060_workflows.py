@@ -54,3 +54,7 @@ class TestToolShedWorkflowFeatures( ShedTwillTestCase ):
                           commit_message="Uploaded filtering 2.2.0", 
                           remove_repo_files_not_in_tar='No' )
         self.load_workflow_image( repository, workflow_name, strings_not_displayed=[ '#EBBCB2' ] )
+    def test_0025_verify_repository_metadata( self ):
+        '''Verify that resetting the metadata does not change it.'''
+        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        self.verify_unchanged_repository_metadata( repository )
