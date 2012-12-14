@@ -537,9 +537,6 @@ $(function(){
         .historyItemTitle {
             text-decoration: underline;
             cursor: pointer;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -khtml-user-select: none;
         }
         .historyItemTitle:hover {
             text-decoration: underline;
