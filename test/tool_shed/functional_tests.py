@@ -224,7 +224,7 @@ def main():
     log.info( "Embedded web server started" )
     
     # ---- Optionally start up a Galaxy instance ------------------------------------------------------
-    if 'TEST_TOOL_SHED_START_GALAXY' in os.environ:
+    if 'TOOL_SHED_TEST_OMIT_GALAXY' not in os.environ:
         # Generate the shed_tool_conf.xml and tool_sheds_conf.xml files
         tool_sheds_conf_template_parser = string.Template( tool_sheds_conf_xml_template )
         tool_sheds_conf_xml = tool_sheds_conf_template_parser.safe_substitute( shed_url=tool_shed_test_host, shed_port=tool_shed_test_port )
@@ -346,16 +346,17 @@ def main():
         toolshedapp.shutdown()
         toolshedapp = None
         log.info( "Embedded tool shed application stopped" )
-    if galaxy_server:
-        log.info( "Shutting down galaxy web server" )
-        galaxy_server.server_close()
-        galaxy_server = None
-        log.info( "Embedded galaxy server stopped" )
-    if galaxyapp:
-        log.info( "Shutting down galaxy app" )
-        galaxyapp.shutdown()
-        galaxyapp = None
-        log.info( "Embedded galaxy application stopped" )
+    if 'TOOL_SHED_TEST_OMIT_GALAXY' not in os.environ:
+        if galaxy_server:
+            log.info( "Shutting down galaxy web server" )
+            galaxy_server.server_close()
+            galaxy_server = None
+            log.info( "Embedded galaxy server stopped" )
+        if galaxyapp:
+            log.info( "Shutting down galaxy app" )
+            galaxyapp.shutdown()
+            galaxyapp = None
+            log.info( "Embedded galaxy application stopped" )
     if 'TOOL_SHED_TEST_NO_CLEANUP' not in os.environ:
         try:
             for dir in [ tool_shed_test_tmp_dir ]:

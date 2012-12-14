@@ -2,6 +2,7 @@ import galaxy.webapps.community.util.hgweb_config
 import galaxy.model as galaxy_model
 import common, string, os, re, test_db_util
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
+from galaxy.tool_shed.encoding_util import tool_shed_encode
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -52,8 +53,12 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_repository_changelog( repository )
         self.check_string_count_in_page( 'Repository metadata is associated with this change set.', metadata_count )
     def check_installed_repository_tool_dependencies( self, installed_repository, dependencies_installed=False ):
+        # Tool dependencies are not being installed in these functional tests. If this is changed, the test method will also need to be updated.
         strings_not_displayed = []
-        strings_displayed = []
+        if not dependencies_installed:
+            strings_displayed = [ 'Missing tool dependencies' ]
+        else:
+            strings_displayed = [ 'Tool dependencies' ]
         for dependency in installed_repository.metadata[ 'tool_dependencies' ]:
             tool_dependency = installed_repository.metadata[ 'tool_dependencies' ][ dependency ]
             strings_displayed.extend( [ tool_dependency[ 'name' ], tool_dependency[ 'version' ], tool_dependency[ 'type' ] ] )
@@ -415,6 +420,12 @@ class ShedTwillTestCase( TwillTestCase ):
     def load_display_tool_page( self, repository, tool_xml_path, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def load_workflow_image( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
+        metadata = self.get_repository_metadata( repository )
+        url = '/workflow/generate_workflow_image?repository_metadata_id=%s&workflow_name=%s' % \
+              ( self.security.encode_id( metadata[0].id ), tool_shed_encode( workflow_name ) )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def preview_repository_in_tool_shed( self, name, owner, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
