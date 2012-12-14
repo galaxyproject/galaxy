@@ -77,6 +77,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
 
         itemWrapper.append( this._render_warnings() );
         itemWrapper.append( this._render_titleBar() );
+
         this.body = $( this._render_body() );
         itemWrapper.append( this.body );
 
@@ -321,18 +322,31 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
     },
     
     // ......................................................................... state body renderers
-    /** Render the (expanded) body of an HDA, dispatching to other functions based on the HDA state
+    /** Render the enclosing div of the hda body and, if expanded, the html in the body
      *  @returns {jQuery} rendered DOM
      */
     //TODO: only render these on expansion (or already expanded)
     _render_body : function(){
-        //this.log( this + '_render_body' );
-
         var body = $( '<div/>' )
             .attr( 'id', 'info-' + this.model.get( 'id' ) )
             .addClass( 'historyItemBody' )
-            .attr(  'style', 'display: block' );
+            .attr( 'style', 'display: none' );
 
+        if( this.expanded ){
+            // only render the body html if it's being shown
+            this._render_body_html( body );
+            body.show();
+        }
+        return body;
+    },
+
+    /** Render the (expanded) body of an HDA, dispatching to other functions based on the HDA state
+     *  @param {jQuery} body the body element to append the html to
+     */
+    //TODO: only render these on expansion (or already expanded)
+    _render_body_html : function( body ){
+        //this.log( this + '_render_body' );
+        body.html( '' );
         //TODO: not a fan of this dispatch
         switch( this.model.get( 'state' ) ){
             case HistoryDatasetAssociation.STATES.NEW :
@@ -375,13 +389,6 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
                 body.append( $( '<div>Error: unknown dataset state "' + this.model.get( 'state' ) + '".</div>' ) );
         }
         body.append( '<div style="clear: both"></div>' );
-
-        if( this.expanded ){
-            body.show();
-        } else {
-            body.hide();
-        }
-        return body;
     },
 
     /** Render inaccessible, not-owned by curr user.
@@ -514,17 +521,17 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @fires body-collapsed when a body has been collapsed
      */
     toggleBodyVisibility : function( event, expanded ){
-        var hdaView = this,
-            $body = this.$el.find( '.historyItemBody' );
-        expanded = ( expanded === undefined )?( !$body.is( ':visible' ) ):( expanded );
+        var hdaView = this;
+        this.expanded = ( expanded === undefined )?( !this.body.is( ':visible' ) ):( expanded );
         //this.log( 'toggleBodyVisibility, expanded:', expanded, '$body:', $body );
 
-        if( expanded ){
-            $body.slideDown( 'fast', function(){
+        if( this.expanded ){
+            hdaView._render_body_html( hdaView.body );
+            this.body.slideDown( 'fast', function(){
                 hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
             });
         } else {
-            $body.slideUp( 'fast', function(){
+            this.body.slideUp( 'fast', function(){
                 hdaView.trigger( 'body-collapsed', hdaView.model.get( 'id' ) );
             });
         }
