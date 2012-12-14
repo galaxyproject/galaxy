@@ -719,6 +719,12 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def display_application( self, trans, dataset_id=None, user_id=None, app_name = None, link_name = None, app_action = None, action_param = None, **kwds ):
         """Access to external display applications"""
+        # Build list of parameters to pass in to display application logic (app_kwds)
+        app_kwds = {}
+        for name, value in dict(kwds).iteritems():  # clone kwds because we remove stuff as we go.
+            if name.startswith( "app_" ):
+                app_kwds[ name[ len( "app_" ): ] ] = value
+                del kwds[ name ]
         if kwds:
             log.debug( "Unexpected Keywords passed to display_application: %s" % kwds ) #route memory?
         #decode ids
@@ -742,7 +748,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             display_app = trans.app.datatypes_registry.display_applications.get( app_name )
             assert display_app, "Unknown display application has been requested: %s" % app_name
             dataset_hash, user_hash = encode_dataset_user( trans, data, user )
-            display_link = display_app.get_link( link_name, data, dataset_hash, user_hash, trans )
+            display_link = display_app.get_link( link_name, data, dataset_hash, user_hash, trans, app_kwds )
             assert display_link, "Unknown display link has been requested: %s" % link_name
             if data.state == data.states.ERROR:
                 msg.append( ( 'This dataset is in an error state, you cannot view it at an external display application.', 'error' ) )
