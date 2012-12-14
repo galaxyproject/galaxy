@@ -13,17 +13,14 @@ class SetMetadataToolAction( ToolAction ):
         """
         Execute using a web transaction.
         """
-        user_id = None
-        if trans.user:
-            user_id = trans.user.id
         job, odict = self.execute_via_app( tool, trans.app, trans.get_galaxy_session().id, 
-                                           trans.history.id, user_id, incoming, set_output_hid,
+                                           trans.history.id, trans.user, incoming, set_output_hid,
                                            overwrite, history, job_params )
         # FIXME: can remove this when logging in execute_via_app method.
         trans.log_event( "Added set external metadata job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
         return job, odict
     
-    def execute_via_app( self, tool, app, session_id, history_id, user_id = None, 
+    def execute_via_app( self, tool, app, session_id, history_id, user=None, 
                          incoming = {}, set_output_hid = False, overwrite = True, 
                          history=None, job_params=None ):
         """
@@ -50,8 +47,8 @@ class SetMetadataToolAction( ToolAction ):
         job.session_id = session_id
         job.history_id = history_id
         job.tool_id = tool.id
-        if user_id:
-            job.user_id = user_id
+        if user:
+            job.user_id = user.id
         if job_params:
             job.params = to_json_string( job_params )
         start_job_state = job.state #should be job.states.NEW

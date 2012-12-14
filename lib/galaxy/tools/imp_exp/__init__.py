@@ -3,7 +3,7 @@ from galaxy import model
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.web.framework.helpers import to_unicode
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.util.json import *
+from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web.base.controller import UsesHistoryMixin
 
 log = logging.getLogger(__name__)
@@ -47,10 +47,12 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
         Class provides support for performing jobs that import a history from
         an archive.
     """
-    def __init__( self, job_id ):
+    def __init__( self, app, job_id ):
+        self.app = app
         self.job_id = job_id
+        self.sa_session = self.app.model.context
         
-    def cleanup_after_job( self, db_session ):
+    def cleanup_after_job( self ):
         """ Set history, datasets, and jobs' attributes and clean up archive directory. """
         
         #
@@ -88,7 +90,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
         # Import history.
         #
         
-        jiha = db_session.query( model.JobImportHistoryArchive ).filter_by( job_id=self.job_id ).first()
+        jiha = self.sa_session.query( model.JobImportHistoryArchive ).filter_by( job_id=self.job_id ).first()
         if jiha:
             try:
                 archive_dir = jiha.archive_dir
@@ -107,13 +109,13 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                 new_history.importing = True
                 new_history.hid_counter = history_attrs['hid_counter']
                 new_history.genome_build = history_attrs['genome_build']
-                db_session.add( new_history )
+                self.sa_session.add( new_history )
                 jiha.history = new_history
-                db_session.flush()
+                self.sa_session.flush()
                     
                 # Add annotation, tags.
                 if user:
-                    self.add_item_annotation( db_session, user, new_history, history_attrs[ 'annotation' ] )
+                    self.add_item_annotation( self.sa_session, user, new_history, history_attrs[ 'annotation' ] )
                     """
                     TODO: figure out to how add tags to item.
                     for tag, value in history_attrs[ 'tags' ].items():
@@ -153,16 +155,16 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                                                            metadata = metadata, 
                                                            history = new_history,
                                                            create_dataset = True,
-                                                           sa_session = db_session )
+                                                           sa_session = self.sa_session )
                     hda.state = hda.states.OK
-                    db_session.add( hda )
-                    db_session.flush()
+                    self.sa_session.add( hda )
+                    self.sa_session.flush()
                     new_history.add_dataset( hda, genome_build = None )
                     hda.hid = dataset_attrs['hid'] # Overwrite default hid set when HDA added to history.
                     # TODO: Is there a way to recover permissions? Is this needed?
                     #permissions = trans.app.security_agent.history_get_default_permissions( new_history )
                     #trans.app.security_agent.set_all_dataset_permissions( hda.dataset, permissions )
-                    db_session.flush()
+                    self.sa_session.flush()
     
                     # Do security check and move/copy dataset data.
                     temp_dataset_file_name = \
@@ -177,13 +179,25 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
     
                     # Set tags, annotations.
                     if user:
-                        self.add_item_annotation( db_session, user, hda, dataset_attrs[ 'annotation' ] )
+                        self.add_item_annotation( self.sa_session, user, hda, dataset_attrs[ 'annotation' ] )
                         # TODO: Set tags.
                         """
                         for tag, value in dataset_attrs[ 'tags' ].items():
                             trans.app.tag_handler.apply_item_tags( trans, trans.user, hda, get_tag_str( tag, value ) )
-                            db_session.flush()
+                            self.sa_session.flush()
                         """
+
+                    # Although metadata is set above, need to set metadata to recover BAI for BAMs.
+                    if hda.extension == 'bam':
+                        if self.app.config.set_metadata_externally:
+                            self.app.datatypes_registry.set_external_metadata_tool.tool_action.execute_via_app( 
+                                self.app.datatypes_registry.set_external_metadata_tool, self.app, jiha.job.session_id, 
+                                new_history.id, jiha.job.user, incoming={ 'input1': hda }, overwrite=False
+                            )
+                        else:
+                            message = 'Attributes updated'
+                            hda.set_meta()
+                            hda.datatype.after_setting_metadata( hda )
     
                 #
                 # Create jobs.
@@ -198,7 +212,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     """ Hook to 'decode' an HDA; method uses history and HID to get the HDA represented by 
                         the encoded object. This only works because HDAs are created above. """
                     if obj_dct.get( '__HistoryDatasetAssociation__', False ):
-                            return db_session.query( model.HistoryDatasetAssociation ) \
+                            return self.sa_session.query( model.HistoryDatasetAssociation ) \
                                             .filter_by( history=new_history, hid=obj_dct['hid'] ).first()
                     return obj_dct
                 jobs_attrs = from_json_string( jobs_attr_str, object_hook=as_hda )
@@ -214,8 +228,8 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     imported_job.tool_version = job_attrs[ 'tool_version' ]
                     imported_job.set_state( job_attrs[ 'state' ] )
                     imported_job.imported = True
-                    db_session.add( imported_job )
-                    db_session.flush()
+                    self.sa_session.add( imported_job )
+                    self.sa_session.flush()
         
                     class HistoryDatasetAssociationIDEncoder( simplejson.JSONEncoder ):
                         """ Custom JSONEncoder for a HistoryDatasetAssociation that encodes an HDA as its ID. """
@@ -235,7 +249,7 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                         # Transform parameter values when necessary.
                         if isinstance( value, model.HistoryDatasetAssociation ):
                             # HDA input: use hid to find input.
-                            input_hda = db_session.query( model.HistoryDatasetAssociation ) \
+                            input_hda = self.sa_session.query( model.HistoryDatasetAssociation ) \
                                             .filter_by( history=new_history, hid=value.hid ).first()
                             value = input_hda.id
                         #print "added parameter %s-->%s to job %i" % ( name, value, imported_job.id )
@@ -246,22 +260,23 @@ class JobImportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations 
                     # Connect jobs to output datasets.
                     for output_hid in job_attrs[ 'output_datasets' ]:
                         #print "%s job has output dataset %i" % (imported_job.id, output_hid)
-                        output_hda = db_session.query( model.HistoryDatasetAssociation ) \
+                        output_hda = self.sa_session.query( model.HistoryDatasetAssociation ) \
                                         .filter_by( history=new_history, hid=output_hid ).first()
                         if output_hda:
                             imported_job.add_output_dataset( output_hda.name, output_hda )
                         
-                    # Done importing.
-                    new_history.importing = False
+                    self.sa_session.flush()
 
-                    db_session.flush()
+                # Done importing.
+                new_history.importing = False
+                self.sa_session.flush()
                         
                 # Cleanup.
                 if os.path.exists( archive_dir ):
                     shutil.rmtree( archive_dir )                    
             except Exception, e:
                 jiha.job.stderr += "Error cleaning up history import job: %s" % e
-                db_session.flush()
+                self.sa_session.flush()
 
 class JobExportHistoryArchiveWrapper( object, UsesHistoryMixin, UsesAnnotations ):
     """ 
