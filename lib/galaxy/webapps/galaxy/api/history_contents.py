@@ -196,7 +196,7 @@ def get_hda_dict( trans, history, hda, for_editing ):
             hda_dict[ 'meta_files' ] = meta_files
 
     hda_dict[ 'display_apps' ] = get_display_apps( trans, hda )
-    hda_dict[ 'display_types' ] = get_display_types( trans, hda )
+    #hda_dict[ 'display_types' ] = get_display_types( trans, hda )
     hda_dict[ 'visualizations' ] = hda.get_visualizations()
     hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
 
