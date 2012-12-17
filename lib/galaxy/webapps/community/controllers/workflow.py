@@ -11,7 +11,7 @@ from galaxy.tools import DefaultToolState
 from galaxy.webapps.galaxy.controllers.workflow import attach_ordered_steps
 import common
 import galaxy.util.shed_util_common as suc
-from galaxy.tool_shed.encoding_util import tool_shed_encode, tool_shed_decode
+from galaxy.tool_shed import encoding_util
 
 class RepoInputDataModule( InputDataModule ):
 
@@ -141,7 +141,7 @@ class WorkflowController( BaseUIController ):
         repository_metadata_id = kwd.get( 'repository_metadata_id', '' )
         workflow_name = kwd.get( 'workflow_name', '' )
         if workflow_name:
-            workflow_name = tool_shed_decode( workflow_name )
+            workflow_name = encoding_util.tool_shed_decode( workflow_name )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         repository_metadata = common.get_repository_metadata_by_id( trans, repository_metadata_id )
@@ -160,7 +160,7 @@ class WorkflowController( BaseUIController ):
         repository_id = trans.security.encode_id( repository_metadata.repository_id )
         changeset_revision = repository_metadata.changeset_revision
         metadata = repository_metadata.metadata
-        workflow_name = tool_shed_decode( workflow_name )
+        workflow_name = encoding_util.tool_shed_decode( workflow_name )
         # metadata[ 'workflows' ] is a list of tuples where each contained tuple is
         # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
         for workflow_tup in metadata[ 'workflows' ]:
@@ -386,7 +386,7 @@ class WorkflowController( BaseUIController ):
         repository_metadata_id = kwd.get( 'repository_metadata_id', '' )
         workflow_name = kwd.get( 'workflow_name', '' )
         if workflow_name:
-            workflow_name = tool_shed_decode( workflow_name )
+            workflow_name = encoding_util.tool_shed_decode( workflow_name )
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         repository_metadata = get_repository_metadata_by_id( trans, repository_metadata_id )
@@ -403,7 +403,7 @@ class WorkflowController( BaseUIController ):
                 return open( tmp_fname )
             galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
             url = '%sworkflow/import_workflow?tool_shed_url=%s&repository_metadata_id=%s&workflow_name=%s' % \
-                ( galaxy_url, url_for( '/', qualified=True ), repository_metadata_id, tool_shed_encode( workflow_name ) )
+                ( galaxy_url, url_for( '/', qualified=True ), repository_metadata_id, encoding_util.tool_shed_encode( workflow_name ) )
             return trans.response.send_redirect( url )
         return trans.response.send_redirect( web.url_for( controller='workflow',
                                                           action='view_workflow',

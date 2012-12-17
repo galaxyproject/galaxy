@@ -3,7 +3,8 @@ from admin import *
 from galaxy.util.json import from_json_string, to_json_string
 import galaxy.util.shed_util as shed_util
 import galaxy.util.shed_util_common as suc
-from galaxy.tool_shed.encoding_util import tool_shed_encode, tool_shed_decode
+from galaxy.tool_shed import encoding_util
+from galaxy.webapps.community.util import container_util
 from galaxy import eggs, tools
 
 eggs.require( 'mercurial' )
@@ -584,11 +585,59 @@ class AdminToolshed( AdminGalaxy ):
         raw_text = response.read()
         response.close()
         if len( raw_text ) > 2:
-            text = json.from_json_string( tool_shed_decode( raw_text ) )
+            text = json.from_json_string( encoding_util.tool_shed_decode( raw_text ) )
             log.debug( text )
         else:
             text = ''
         return text
+    def get_required_repo_info_dicts( self, tool_shed_url, repo_info_dicts ):
+        """
+        Inspect the list of repo_info_dicts for repository dependencies and append a repo_info_dict for each of them to the list.  All
+        repository_dependencies entries in each of the received repo_info_dicts includes all required repositories, so only one pass through
+        this methid is required to retrieve all repository dependencies.
+        """
+        if repo_info_dicts:
+            all_repo_info_dicts = [ rid for rid in repo_info_dicts ]
+            # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool shed to discover repository ids.
+            required_repository_tups = []
+            for repo_info_dict in repo_info_dicts:
+                for repository_name, repo_info_tup in repo_info_dict.items():
+                    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+                        suc.get_repo_info_tuple_contents( repo_info_tup )
+                    if repository_dependencies:
+                        for key, val in repository_dependencies.items():
+                            if key in [ 'root_key', 'description' ]:
+                                continue
+                            toolshed, name, owner, changeset_revision = container_util.get_components_from_key( key )
+                            components_list = [ toolshed, name, owner, changeset_revision ]
+                            if components_list not in required_repository_tups:
+                                required_repository_tups.append( components_list )
+                            for components_list in val:
+                                if components_list not in required_repository_tups:
+                                    required_repository_tups.append( components_list )
+                if required_repository_tups:
+                    # The value of required_repository_tups is a list of tuples, so we need to encode it.
+                    encoded_required_repository_tups = []
+                    for required_repository_tup in required_repository_tups:
+                        encoded_required_repository_tups.append( encoding_util.encoding_sep.join( required_repository_tup ) )
+                    encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
+                    encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )
+                    url = suc.url_join( tool_shed_url, '/repository/get_required_repo_info_dict?encoded_str=%s' % encoded_required_repository_str )
+                    response = urllib2.urlopen( url )
+                    text = response.read()
+                    response.close()
+                    if text:
+                        required_repo_info_dict = from_json_string( text )                        
+                        required_repo_info_dicts = []
+                        encoded_dict_strings = required_repo_info_dict[ 'repo_info_dicts' ]
+                        for encoded_dict_str in encoded_dict_strings:
+                            decoded_dict = encoding_util.tool_shed_decode( encoded_dict_str )
+                            required_repo_info_dicts.append( decoded_dict )                        
+                        if required_repo_info_dicts:                            
+                            for required_repo_info_dict in required_repo_info_dicts:
+                                if required_repo_info_dict not in all_repo_info_dicts:
+                                    all_repo_info_dicts.append( required_repo_info_dict )
+        return all_repo_info_dicts
     def get_versions_of_tool( self, app, guid ):
         tool_version = shed_util.get_tool_version( app, guid )
         return tool_version.get_version_ids( app, reverse=True )
@@ -694,7 +743,7 @@ class AdminToolshed( AdminGalaxy ):
             tool_section = None
         for tup in zip( tool_shed_repositories, repo_info_dicts ):
             tool_shed_repository, repo_info_dict = tup
-            repo_info_dict = tool_shed_decode( repo_info_dict )
+            repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
             # Clone each repository to the configured location.
             shed_util.update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.CLONING )
             repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
@@ -939,7 +988,7 @@ class AdminToolshed( AdminGalaxy ):
             elif operation == "install":
                 reinstalling = util.string_as_bool( params.get( 'reinstalling', False ) )
                 encoded_kwd = kwd[ 'encoded_kwd' ]
-                decoded_kwd = tool_shed_decode( encoded_kwd )
+                decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
                 tsr_ids = decoded_kwd[ 'tool_shed_repository_ids' ]
                 repositories_for_installation = []
                 for tsr_id in tsr_ids:
@@ -1095,7 +1144,7 @@ class AdminToolshed( AdminGalaxy ):
             includes_repository_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_repository_dependencies', False ) )
             includes_tool_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_tool_dependencies', False ) )
             encoded_repo_info_dicts = util.listify( repo_information_dict.get( 'repo_info_dicts', [] ) )
-        repo_info_dicts = [ tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
+        repo_info_dicts = [ encoding_util.tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
         if ( not includes_tools and not includes_repository_dependencies ) or \
             ( ( includes_tools or includes_repository_dependencies ) and kwd.get( 'select_tool_panel_section_button', False ) ):
             install_repository_dependencies = CheckboxField.is_checked( install_repository_dependencies )
@@ -1122,14 +1171,12 @@ class AdminToolshed( AdminGalaxy ):
             created_or_updated_tool_shed_repositories = []
             # Repositories will be filtered (e.g., if already installed, etc), so filter the associated repo_info_dicts accordingly.
             filtered_repo_info_dicts = []
+            # Disciver all repository dependencies and retrieve information for installing them.
+            repo_info_dicts = self.get_required_repo_info_dicts( tool_shed_url, repo_info_dicts )
             for repo_info_dict in repo_info_dicts:
                 for name, repo_info_tuple in repo_info_dict.items():
-                    # Take care in handling the repo_info_tuple as it evolves over time as new features are introduced.
-                    if len( repo_info_tuple ) == 6:
-                        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
-                        repository_dependencies = None
-                    elif len( repo_info_tuple ) == 7:
-                        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
+                    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+                        suc.get_repo_info_tuple_contents( repo_info_tuple )
                     clone_dir = os.path.join( tool_path, self.generate_tool_path( repository_clone_url, changeset_revision ) )
                     relative_install_dir = os.path.join( clone_dir, name )
                     # Make sure the repository was not already installed.
@@ -1173,7 +1220,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                                 owner=repository_owner,
                                                                                                 dist_to_shed=False )
                         created_or_updated_tool_shed_repositories.append( tool_shed_repository )
-                        filtered_repo_info_dicts.append( tool_shed_encode( repo_info_dict ) )
+                        filtered_repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
             if created_or_updated_tool_shed_repositories:
                 if includes_tools and ( new_tool_panel_section or tool_panel_section ):
                     if new_tool_panel_section:
@@ -1201,6 +1248,7 @@ class AdminToolshed( AdminGalaxy ):
                 tsrids_list = [ trans.security.encode_id( tsr.id ) for tsr in created_or_updated_tool_shed_repositories ]
                 new_kwd = dict( includes_tools=includes_tools,
                                 includes_repository_dependencies=includes_repository_dependencies,
+                                install_repository_dependencies=install_repository_dependencies,
                                 includes_tool_dependencies=includes_tool_dependencies,
                                 install_tool_dependencies=install_tool_dependencies,
                                 message=message,
@@ -1211,7 +1259,7 @@ class AdminToolshed( AdminGalaxy ):
                                 tool_panel_section_key=tool_panel_section_key,
                                 tool_shed_repository_ids=tsrids_list,
                                 tool_shed_url=tool_shed_url )
-                encoded_kwd = tool_shed_encode( new_kwd )
+                encoded_kwd = encoding_util.tool_shed_encode( new_kwd )
                 tsrids_str = ','.join( tsrids_list )
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                   action='initiate_repository_installation',
@@ -1391,7 +1439,7 @@ class AdminToolshed( AdminGalaxy ):
                                                         repository_metadata=None,
                                                         metadata=metadata,
                                                         repository_dependencies=repository_dependencies )
-            repo_info_dict = tool_shed_encode( repo_info_dict )
+            repo_info_dict = encoding_util.tool_shed_encode( repo_info_dict )
         new_kwd = dict( includes_tool_dependencies=tool_shed_repository.includes_tool_dependencies,
                         includes_tools=tool_shed_repository.includes_tools,
                         install_tool_dependencies=install_tool_dependencies,
@@ -1405,7 +1453,7 @@ class AdminToolshed( AdminGalaxy ):
                         tool_panel_section_key=tool_panel_section_key,
                         tool_shed_repository_ids=[ repository_id ],
                         tool_shed_url=tool_shed_url )
-        encoded_kwd = tool_shed_encode( new_kwd )
+        encoded_kwd = encoding_util.tool_shed_encode( new_kwd )
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='initiate_repository_installation',
                                                           shed_repository_ids=repository_id,
@@ -1437,11 +1485,8 @@ class AdminToolshed( AdminGalaxy ):
         # Handle case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
         # in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one
         # that was previously installed.  We'll look in the database instead of on disk since the repository may be uninstalled.
-        if len( repo_info_tuple ) == 6:
-            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
-            repository_dependencies = None
-        elif len( repo_info_tuple ) == 7:
-            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
+        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+            suc.get_repo_info_tuple_contents( repo_info_tuple )
         tool_shed = suc.get_tool_shed_from_clone_url( repository_clone_url )
         # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
         # revision to see if it was previously installed using one of them.
@@ -1553,7 +1598,7 @@ class AdminToolshed( AdminGalaxy ):
                                     install_tool_dependencies_check_box=install_tool_dependencies_check_box,
                                     containers_dict=containers_dict,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
-                                    encoded_repo_info_dict=tool_shed_encode( repo_info_dict ),
+                                    encoded_repo_info_dict=encoding_util.tool_shed_encode( repo_info_dict ),
                                     repo_info_dict=repo_info_dict,
                                     message=message,
                                     status=status )

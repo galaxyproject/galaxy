@@ -1279,6 +1279,14 @@ def get_readme_file_names( repository_name ):
         valid_filenames.append( '%s.txt' % r )
     valid_filenames.append( '%s.txt' % repository_name )
     return valid_filenames
+def get_repo_info_tuple_contents( repo_info_tuple ):
+    # Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced.
+    if len( repo_info_tuple ) == 6:
+        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
+        repository_dependencies = None
+    elif len( repo_info_tuple ) == 7:
+        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
+    return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
 def get_repository_by_name_and_owner( trans, name, owner ):
     """Get a repository from the database via name and owner"""
     if trans.webapp.name == 'galaxy':

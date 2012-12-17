@@ -11,7 +11,7 @@ from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.model.orm import and_
 import galaxy.util.shed_util_common as suc
-from galaxy.tool_shed.encoding_util import tool_shed_encode
+from galaxy.tool_shed import encoding_util
 import common
 
 from galaxy import eggs
@@ -1264,14 +1264,14 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         update_dict = dict( changeset_revision=changeset_revision, ctx_rev=ctx_rev )
         if changeset_revision == repository.tip( trans.app ):
             # If changeset_revision is the repository tip, there are no additional updates.
-            return tool_shed_encode( update_dict )
+            return encoding_util.tool_shed_encode( update_dict )
         else:
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
                                                                                      trans.security.encode_id( repository.id ),
                                                                                      changeset_revision )
             if repository_metadata:
                 # If changeset_revision is in the repository_metadata table for this repository, there are no additional updates.
-                return tool_shed_encode( update_dict )
+                return encoding_util.tool_shed_encode( update_dict )
             else:
                 # The changeset_revision column in the repository_metadata table has been updated with a new changeset_revision value since the
                 # repository was installed.  We need to find the changeset_revision to which we need to update.
@@ -1295,7 +1295,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                         update_to_changeset_hash = changeset_hash
                 update_dict[ 'changeset_revision' ] = str( latest_changeset_revision )
         update_dict[ 'ctx_rev' ] = str( update_to_ctx.rev() )
-        return tool_shed_encode( update_dict )
+        return encoding_util.tool_shed_encode( update_dict )
     @web.expose
     def get_ctx_rev( self, trans, **kwd ):
         """Given a repository and changeset_revision, return the correct ctx.rev() value."""
@@ -1328,7 +1328,20 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             return repository_metadata.metadata
         return None
     @web.json
+    def get_readme_files( self, trans, **kwd ):
+        """
+        This method is called when installing or re-installing a single repository into a Galaxy instance.  If the received changeset_revision 
+        includes one or more readme files, return them in a dictionary.
+        """
+        repository_name = kwd[ 'name' ]
+        repository_owner = kwd[ 'owner' ]
+        changeset_revision = kwd[ 'changeset_revision' ]
+        repository = suc.get_repository_by_name_and_owner( trans, repository_name, repository_owner )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )        
+        return suc.build_readme_files_dict( repository_metadata )
+    @web.json
     def get_repository_dependencies( self, trans, **kwd ):
+        """Return an encoded dictionary of all repositories upon which the contents of the received repository depends."""
         params = util.Params( kwd )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
@@ -1339,7 +1352,6 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                # Get a dictionary of all repositories upon which the contents of the received repository depends.
                 repository_dependencies = suc.get_repository_dependencies_for_changeset_revision( trans=trans,
                                                                                                   repository=repository,
                                                                                                   repository_metadata=repository_metadata,
@@ -1349,7 +1361,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                                                                                                   handled_key_rd_dicts=None,
                                                                                                   circular_repository_dependencies=None )
                 if repository_dependencies:
-                    return tool_shed_encode( repository_dependencies )
+                    return encoding_util.tool_shed_encode( repository_dependencies )
         return ''
     @web.json
     def get_repository_information( self, trans, repository_ids, changeset_revisions, **kwd ):
@@ -1385,26 +1397,34 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                                                         repository=repository,
                                                         metadata=None,
                                                         repository_metadata=repository_metadata )      
-            repo_info_dicts.append( tool_shed_encode( repo_info_dict ) )
+            repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
         return dict( includes_tools=includes_tools,
                      includes_repository_dependencies=includes_repository_dependencies,
                      includes_tool_dependencies=includes_tool_dependencies,
                      repo_info_dicts=repo_info_dicts )
     @web.json
-    def get_readme_files( self, trans, **kwd ):
-        """
-        This method is called when installing or re-installing a single repository into a Galaxy instance.  If the received changeset_revision 
-        includes one or more readme files, return them in a dictionary.
-        """
-        repository_name = kwd[ 'name' ]
-        repository_owner = kwd[ 'owner' ]
-        changeset_revision = kwd[ 'changeset_revision' ]
-        repository = suc.get_repository_by_name_and_owner( trans, repository_name, repository_owner )
-        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )        
-        return suc.build_readme_files_dict( repository_metadata )
+    def get_required_repo_info_dict( self, trans, encoded_str ):
+        """Retrive a list of dictionaries that each contain all of the information needed to install the list of repositories defined by encoded_str."""
+        encoded_required_repository_str = encoding_util.tool_shed_decode( encoded_str )
+        encoded_required_repository_tups = encoded_required_repository_str.split( encoding_util.encoding_sep2 )
+        decoded_required_repository_tups = []
+        for encoded_required_repository_tup in encoded_required_repository_tups:
+            decoded_required_repository_tups.append( encoded_required_repository_tup.split( encoding_util.encoding_sep ) )
+        encoded_repository_ids = []
+        changeset_revisions = []
+        for required_repository_tup in decoded_required_repository_tups:
+            tool_shed, name, owner, changeset_revision = required_repository_tup
+            repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+            encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
+            changeset_revisions.append( changeset_revision )
+        if encoded_repository_ids and changeset_revisions:
+            repo_info_dict = from_json_string( self.get_repository_information( trans, encoded_repository_ids, changeset_revisions ) )
+        else:
+            repo_info_dict = {}
+        return repo_info_dict
     @web.expose
     def get_tool_dependencies( self, trans, **kwd ):
-        """Handle a request from a local Galaxy instance."""
+        """Handle a request from the InstallManager of a local Galaxy instance."""
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -1422,9 +1442,8 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         from_install_manager = kwd.get( 'from_install_manager', False )
         if from_install_manager:
             if tool_dependencies:
-                return tool_shed_encode( tool_dependencies )
-            return ''
-        # TODO: future handler where request comes from some Galaxy admin feature.
+                return encoding_util.tool_shed_encode( tool_dependencies )
+        return ''
     @web.expose
     def get_tool_versions( self, trans, **kwd ):
         """

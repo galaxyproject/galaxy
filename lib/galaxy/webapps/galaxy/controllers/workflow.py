@@ -14,7 +14,7 @@ from galaxy.datatypes.data import Data
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
-from galaxy.tool_shed.encoding_util import tool_shed_encode, tool_shed_decode
+from galaxy.tool_shed import encoding_util
 from galaxy.workflow.modules import *
 from galaxy import model
 from galaxy import util
@@ -1044,7 +1044,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # from a Galaxy tool shed, in which case the value was encoded.
         workflow_name = kwd.get( 'workflow_name', '' )
         if workflow_name:
-            workflow_name = tool_shed_decode( workflow_name )
+            workflow_name = encoding_util.tool_shed_decode( workflow_name )
         # The following parameters will have a value only if the import originated
         # from a tool shed repository installed locally or from the API.
         installed_repository_file = kwd.get( 'installed_repository_file', '' )
@@ -1057,7 +1057,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
             workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&open_for_url=true' % \
-                ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ) )
+                ( tool_shed_url, repository_metadata_id, encoding_util.tool_shed_encode( workflow_name ) )
             response = urllib2.urlopen( workflow_url )
             workflow_text = response.read()
             response.close()
@@ -1164,7 +1164,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         # We've received the textual representation of a workflow from a Galaxy tool shed.
                         message = "Workflow <b>%s</b> imported successfully." % workflow.name
                         url = '%s/workflow/view_workflow?repository_metadata_id=%s&workflow_name=%s&message=%s' % \
-                            ( tool_shed_url, repository_metadata_id, tool_shed_encode( workflow_name ), message )
+                            ( tool_shed_url, repository_metadata_id, encoding_util.tool_shed_encode( workflow_name ), message )
                         return trans.response.send_redirect( url )
                     elif installed_repository_file:
                         # The workflow was read from a file included with an installed tool shed repository.

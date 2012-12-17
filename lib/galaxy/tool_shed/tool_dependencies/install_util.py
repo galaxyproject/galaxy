@@ -1,7 +1,7 @@
 import sys, os, subprocess, tempfile
 import common_util
 import fabric_util
-from galaxy.tool_shed.encoding_util import encoding_sep, tool_shed_encode, tool_shed_decode
+from galaxy.tool_shed import encoding_util
 from galaxy.model.orm import and_
 
 from galaxy import eggs
@@ -214,10 +214,10 @@ def run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_
                 for action_elem in param_elem:
                     actions.append( action_elem.text.replace( '$INSTALL_DIR', install_dir ) )
                 if actions:
-                    params_str += 'actions=%s,' % tool_shed_encode( encoding_sep.join( actions ) )
+                    params_str += 'actions=%s,' % encoding_util.tool_shed_encode( encoding_util.encoding_sep.join( actions ) )
             else:
                 if param_elem.text:
-                    param_value = tool_shed_encode( param_elem.text )
+                    param_value = encoding_util.tool_shed_encode( param_elem.text )
                     params_str += '%s=%s,' % ( param_name, param_value )
     if package_name:
         params_str += 'package_name=%s' % package_name
