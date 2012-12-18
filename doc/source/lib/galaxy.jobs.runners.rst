@@ -57,14 +57,6 @@ runners Package
     :undoc-members:
     :show-inheritance:
 
-:mod:`sge` Module
------------------
-
-.. automodule:: galaxy.jobs.runners.sge
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
 :mod:`tasks` Module
 -------------------
 

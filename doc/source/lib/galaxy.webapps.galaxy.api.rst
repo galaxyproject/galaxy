@@ -293,6 +293,14 @@ API Controllers
     :undoc-members:
     :show-inheritance:
 
+:mod:`item_tags` Module
+-----------------------
+
+.. automodule:: galaxy.webapps.galaxy.api.item_tags
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`libraries` Module
 -----------------------
 
