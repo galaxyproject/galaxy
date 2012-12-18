@@ -119,7 +119,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             icon_class  : 'delete',
             on_click    : function() {
                 // Provide feedback by hiding from view immediately.
-                self.$el.hide();
+                self.$el.slideUp();
 
                 // Delete the dataset on the server and update HDA + view depending on success/failure.
                 // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly 
