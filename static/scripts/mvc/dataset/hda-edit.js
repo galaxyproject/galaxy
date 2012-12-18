@@ -110,11 +110,38 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             return null;
         }
         
-        var deleteBtnData = {
+        var self = this,
+            delete_url = self.urls[ 'delete' ],
+            deleteBtnData = {
             title       : _l( 'Delete' ),
-            href        : this.urls[ 'delete' ],
+            href        : delete_url,
             id          : 'historyItemDeleter-' + this.model.get( 'id' ),
-            icon_class  : 'delete'
+            icon_class  : 'delete',
+            on_click    : function() {
+                // Provide feedback by hiding from view immediately.
+                self.$el.hide();
+
+                // Delete the dataset on the server and update HDA + view depending on success/failure.
+                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly 
+                // on the model.
+                $.ajax({
+                    url: delete_url,
+                    type: 'POST',
+                    error: function() {
+                        // Something went wrong, so show HDA again.
+                        // TODO: an error notification would be good.
+                        self.$el.show();
+                    },
+                    success: function() {
+                        // FIXME: setting model attribute causes re-rendering, which is unnecessary.
+                        self.model.set( 'deleted', true );
+                        self.$el.remove();
+                    }
+                });
+
+                // Return false so that anchor action (page reload) does not happen.
+                return false;
+            }
         };
         if( this.model.get( 'deleted' ) || this.model.get( 'purged' ) ){
             deleteBtnData = {
