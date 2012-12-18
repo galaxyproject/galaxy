@@ -25,17 +25,18 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
         admin_user_private_role = test_db_util.get_private_role( admin_user )
     def test_0005_create_category( self ):
         """Create a category for this test suite"""
-        self.create_category( 'Test 0020 Basic Repository Dependencies', 'Testing basic repository dependency features.' )
+        self.create_category( name='Test 0020 Basic Repository Dependencies', description='Testing basic repository dependency features.' )
     def test_0010_create_emboss_datatypes_repository_and_upload_tarball( self ):
         '''Create and populate the emboss_datatypes repository.'''
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        self.create_repository( datatypes_repository_name, 
-                                datatypes_repository_description, 
-                                repository_long_description=datatypes_repository_long_description, 
-                                categories=[ 'Test 0020 Basic Repository Dependencies' ], 
-                                strings_displayed=[] )
-        repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
+        category = test_db_util.get_category_by_name( 'Test 0020 Basic Repository Dependencies' )
+        repository = self.get_or_create_repository( name=datatypes_repository_name, 
+                                             description=datatypes_repository_description, 
+                                             long_description=datatypes_repository_long_description, 
+                                             owner=common.test_user_1_name,
+                                             category_id=self.security.encode_id( category.id ), 
+                                             strings_displayed=[] )
         self.upload_file( repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
     def test_0015_verify_datatypes_in_datatypes_repository( self ):
         '''Verify that the emboss_datatypes repository contains datatype entries.'''
@@ -43,12 +44,13 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
         self.display_manage_repository_page( repository, strings_displayed=[ 'Datatypes', 'equicktandem', 'hennig86', 'vectorstrip' ] )
     def test_0020_create_emboss_5_repository_and_upload_files( self ):
         '''Create and populate the emboss_5_0020 repository.'''
-        self.create_repository( emboss_repository_name, 
-                                emboss_repository_description, 
-                                repository_long_description=emboss_repository_long_description, 
-                                categories=[ 'Test 0020 Basic Repository Dependencies' ], 
-                                strings_displayed=[] )
-        repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        category = test_db_util.get_category_by_name( 'Test 0020 Basic Repository Dependencies' )
+        repository = self.get_or_create_repository( name=emboss_repository_name, 
+                                             description=emboss_repository_description, 
+                                             long_description=emboss_repository_long_description, 
+                                             owner=common.test_user_1_name,
+                                             category_id=self.security.encode_id( category.id ), 
+                                             strings_displayed=[] )
         self.upload_file( repository, 'emboss/emboss.tar', commit_message='Uploaded emboss_5.tar' )
     def test_0025_generate_and_upload_repository_dependencies_xml( self ):
         '''Generate and upload the repository_dependencies.xml file'''

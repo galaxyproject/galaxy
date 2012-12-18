@@ -21,17 +21,18 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         admin_user_private_role = test_db_util.get_private_role( admin_user )
     def test_0005_create_category( self ):
         """Create a category for this test suite"""
-        self.create_category( 'Test 0010 Repository With Tool Dependencies', 'Tests for a repository with tool dependencies.' )
+        self.create_category( name='Test 0010 Repository With Tool Dependencies', description='Tests for a repository with tool dependencies.' )
     def test_0010_create_freebayes_repository_and_upload_tool_xml( self ):
         '''Create freebayes repository and upload freebayes.xml without tool_data_table_conf.xml.sample. This should result in an error message and invalid tool.'''
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        self.create_repository( repository_name, 
-                                repository_description, 
-                                repository_long_description=repository_long_description, 
-                                categories=[ 'Test 0010 Repository With Tool Dependencies' ], 
-                                strings_displayed=[] )
-        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        category = test_db_util.get_category_by_name( 'Test 0010 Repository With Tool Dependencies' )
+        repository = self.get_or_create_repository( name=repository_name, 
+                                                    description=repository_description, 
+                                                    long_description=repository_long_description, 
+                                                    owner=common.test_user_1_name,
+                                                    category_id=self.security.encode_id( category.id ), 
+                                                    strings_displayed=[] )
         self.upload_file( repository, 
                           'freebayes/freebayes.xml', 
                           valid_tools_only=False,

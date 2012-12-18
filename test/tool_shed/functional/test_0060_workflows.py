@@ -23,16 +23,17 @@ class TestToolShedWorkflowFeatures( ShedTwillTestCase ):
         admin_user_private_role = test_db_util.get_private_role( admin_user )
     def test_0005_create_categories( self ):
         """Create categories for this test suite"""
-        self.create_category( 'Test 0060 Workflow Features', 'Test 0060 - Workflow Features' )
+        self.create_category( name='Test 0060 Workflow Features', description='Test 0060 - Workflow Features' )
     def test_0010_create_repository( self ):
         """Create and populate the filtering repository"""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        self.create_repository( repository_name, 
-                                repository_description, 
-                                repository_long_description=repository_long_description, 
-                                categories=[ 'Test 0060 Workflow Features' ], 
-                                strings_displayed=[] )
+        self.get_or_create_repository( name=repository_name, 
+                                       description=repository_description, 
+                                       long_description=repository_long_description, 
+                                       owner=common.test_user_1_name,
+                                       categories=[ 'Test 0060 Workflow Features' ], 
+                                       strings_displayed=[] )
     def test_0015_upload_workflow( self ):
         '''Upload a workflow with a missing tool, and verify that the tool specified is marked as missing.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )

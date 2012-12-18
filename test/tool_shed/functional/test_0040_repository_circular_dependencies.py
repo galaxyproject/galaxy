@@ -25,17 +25,17 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         admin_user_private_role = test_db_util.get_private_role( admin_user )
     def test_0005_create_category( self ):
         """Create a category for this test suite"""
-        self.create_category( 'test_0040_repository_circular_dependencies', 'Testing handling of circular repository dependencies.' )
+        self.create_category( name='test_0040_repository_circular_dependencies', description='Testing handling of circular repository dependencies.' )
     def test_0010_create_freebayes_repository_name( self ):
         '''Create and populate freebayes_0040.'''
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        self.create_repository( freebayes_repository_name, 
-                                freebayes_repository_name_description, 
-                                repository_long_description=freebayes_repository_name_long_description, 
-                                categories=[ 'test_0040_repository_circular_dependencies' ], 
-                                strings_displayed=[] )
-        repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        repository = self.get_or_create_repository( name=freebayes_repository_name, 
+                                                    description=freebayes_repository_name_description, 
+                                                    long_description=freebayes_repository_name_long_description, 
+                                                    owner=common.test_user_1_name,
+                                                    categories=[ 'test_0040_repository_circular_dependencies' ], 
+                                                    strings_displayed=[] )
         self.upload_file( repository, 
                           'freebayes/freebayes.tar', 
                           strings_displayed=[], 
@@ -44,12 +44,12 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         '''Create and populate filtering_0040.'''
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        self.create_repository( filtering_repository_name, 
-                                filtering_repository_description, 
-                                repository_long_description=filtering_repository_long_description, 
-                                categories=[ 'test_0040_repository_circular_dependencies' ], 
-                                strings_displayed=[] )
-        repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
+        repository = self.get_or_create_repository( name=filtering_repository_name, 
+                                                    description=filtering_repository_description, 
+                                                    long_description=filtering_repository_long_description, 
+                                                    owner=common.test_user_1_name,
+                                                    categories=[ 'test_0040_repository_circular_dependencies' ], 
+                                                    strings_displayed=[] )
         self.upload_file( repository, 
                           'filtering/filtering_1.1.0.tar', 
                           strings_displayed=[], 

@@ -11,7 +11,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         """Create necessary user accounts and login as an admin user."""
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = test_db_util.get_user( common.test_user_1_email )
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
+        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
@@ -20,22 +20,21 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         admin_user_private_role = test_db_util.get_private_role( admin_user )
     def test_0005_create_categories( self ):
         """Create categories for this test suite"""
-        self.create_category( 'Test 0000 Basic Repository Features 1', 'Test 0000 Basic Repository Features 1' )
-        self.create_category( 'Test 0000 Basic Repository Features 2', 'Test 0000 Basic Repository Features 2' )
+        self.create_category( name='Test 0000 Basic Repository Features 1', description='Test 0000 Basic Repository Features 1' )
+        self.create_category( name='Test 0000 Basic Repository Features 2', description='Test 0000 Basic Repository Features 2' )
     def test_0010_create_repository( self ):
         """Create the filtering repository"""
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
-        test_user_1 = test_db_util.get_user( common.test_user_1_email )
-        assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % test_user_1_email
-        test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        category = test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
         strings_displayed = [ 'Repository %s' % "'%s'" % repository_name, 
                               'Repository %s has been created' % "'%s'" % repository_name ]
-        self.create_repository( repository_name, 
-                                repository_description, 
-                                repository_long_description=repository_long_description, 
-                                categories=[ 'Test 0000 Basic Repository Features 1' ], 
-                                strings_displayed=strings_displayed )
+        self.get_or_create_repository( name=repository_name, 
+                                       description=repository_description, 
+                                       long_description=repository_long_description, 
+                                       owner=common.test_user_1_name,
+                                       category_id=self.security.encode_id( category.id ), 
+                                       strings_displayed=strings_displayed )
     def test_0015_edit_repository( self ):
         """Edit the repository name, description, and long description"""
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )

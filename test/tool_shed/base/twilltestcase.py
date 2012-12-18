@@ -139,21 +139,13 @@ class ShedTwillTestCase( TwillTestCase ):
             errmsg = "%i occurrences of '%s' found (min. %i, max. %i).\npage content written to '%s' " % \
                      ( pattern_count, pattern, min_count, max_count, fname )
             raise AssertionError( errmsg )
-    def create_category( self, category_name, category_description ):
+    def create_category( self, **kwd ):
+        category = test_db_util.get_category_by_name( kwd[ 'name' ] )
+        if category is not None:
+            return category
         self.visit_url( '/admin/manage_categories?operation=create' )
-        tc.fv( "1", "name", category_name )
-        tc.fv( "1", "description", category_description )
-        tc.submit( "create_category_button" )
-    def create_repository( self, repository_name, repository_description, repository_long_description=None, categories=[], strings_displayed=[], strings_not_displayed=[] ):
-        self.visit_url( '/repository/create_repository' )
-        tc.fv( "1", "name", repository_name )
-        tc.fv( "1", "description", repository_description )
-        if repository_long_description is not None:
-            tc.fv( "1", "long_description", repository_long_description )
-        for category in categories:
-            tc.fv( "1", "category_id", "+%s" % category )
-        tc.submit( "create_repository_button" )
-        self.check_for_strings( strings_displayed, strings_not_displayed )
+        self.submit_form( form_no=1, button="create_category_button", **kwd )
+        return test_db_util.get_category_by_name( kwd[ 'name' ] )
     def create_user_in_galaxy( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         self.visit_galaxy_url( "/user/create?cntrller=%s&use_panels=False" % cntrller )
         tc.fv( '1', 'email', email )
@@ -325,6 +317,14 @@ class ShedTwillTestCase( TwillTestCase ):
             return os.path.abspath( os.path.join( filepath, filename ) )
         else:
             return os.path.abspath( os.path.join( self.file_dir, filename ) )
+    def get_or_create_repository( self, owner=None, strings_displayed=[], strings_not_displayed=[], **kwd ):
+        repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
+        if repository is None:
+            self.visit_url( '/repository/create_repository' )
+            self.submit_form( 1, 'create_repository_button', **kwd )
+            self.check_for_strings( strings_displayed, strings_not_displayed )
+            repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
+        return repository
     def get_repo_path( self, repository ):
         # An entry in the hgweb.config file looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
         lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
@@ -387,7 +387,12 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "3", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def install_repository( self, name, owner, install_tool_dependencies=False, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
+    def install_repository( self, name, owner, category_name, install_tool_dependencies=False, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
+        if test_db_util.get_installed_repository_by_name_owner( name, owner ) is not None:
+            return
+        self.browse_tool_shed( url=self.url )
+        self.browse_category( test_db_util.get_category_by_name( category_name ) )
+        self.preview_repository_in_tool_shed( name, common.test_user_1_name, strings_displayed=[] )
         repository = test_db_util.get_repository_by_name_and_owner( name, owner )
         repository_id = self.security.encode_id( repository.id )
         if changeset_revision is None:
@@ -446,6 +451,14 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/admin_toolshed/reset_repository_metadata?id=%s' % self.security.encode_id( repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( [ 'Metadata has been reset' ] )
+    def reset_metadata_on_selected_repositories( self, repository_ids ):
+        self.visit_url( '/admin/reset_metadata_on_selected_repositories_in_tool_shed' )
+        kwd = dict( repository_ids=repository_ids )
+        self.submit_form( form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd )
+    def reset_metadata_on_selected_installed_repositories( self, repository_ids ):
+        self.visit_galaxy_url( '/admin_toolshed/reset_metadata_on_selected_installed_repositories' )
+        kwd = dict( repository_ids=repository_ids )
+        self.submit_form( form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd )
     def reset_repository_metadata( self, repository ):
         url = '/repository/reset_all_metadata?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -496,25 +509,10 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def verify_installed_repository_metadata_unchanged( self, name, owner ):
         installed_repository = test_db_util.get_installed_repository_by_name_owner( name, owner )
-        differs = False
         metadata = installed_repository.metadata
         self.reset_installed_repository_metadata( installed_repository )
         new_metadata = installed_repository.metadata
-        # This test assumes that the different metadata components will always appear in the same order. If this is ever not
-        # the case, this test must be updated.
-        for metadata_key in [ 'datatypes', 'tools', 'tool_dependencies', 'repository_dependencies', 'workflows' ]:
-            if ( metadata_key in metadata and metadata_key not in new_metadata ) or \
-               ( metadata_key not in metadata and metadata_key in new_metadata ):
-                differs = True
-                break
-            elif metadata_key not in metadata and metadata_key not in new_metadata:
-                continue
-            else:
-                if metadata[ metadata_key ] != new_metadata[ metadata_key ]:
-                    differs = True
-                    break
-        if differs:
-            raise AssertionError( 'Metadata for installed repository %s differs after metadata reset.' % name )
+        assert metadata == new_metadata, 'Metadata for installed repository %s differs after metadata reset.' % name
     def verify_installed_repository_on_browse_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/browse_repositories'
         self.visit_galaxy_url( url )
@@ -544,10 +542,14 @@ class ShedTwillTestCase( TwillTestCase ):
             self.visit_galaxy_url( url )
             self.check_for_strings( strings, strings_not_displayed )
     def verify_unchanged_repository_metadata( self, repository ):
-        self.check_repository_changelog( repository )
-        html = self.last_page()
+        old_metadata = dict()
+        new_metadata = dict()
+        for metadata in self.get_repository_metadata( repository ):
+            old_metadata[ metadata.changeset_revision ] = metadata.metadata 
         self.reset_repository_metadata( repository )
-        self.check_repository_changelog( repository, strings_displayed=[ html ] )
+        for metadata in self.get_repository_metadata( repository ):
+            new_metadata[ metadata.changeset_revision ] = metadata.metadata
+        assert old_metadata == new_metadata, 'Metadata changed after reset on repository %s.' % repository.name 
     def visit_galaxy_url( self, url ):
         url = '%s%s' % ( self.galaxy_url, url )
         self.visit_url( url )
