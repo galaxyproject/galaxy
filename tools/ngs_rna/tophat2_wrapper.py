@@ -83,6 +83,12 @@ def __main__():
     parser.add_option( '', '--single-paired', dest='single_paired', help='' )
     parser.add_option( '', '--settings', dest='settings', help='' )
 
+    # Read group options.
+    parser.add_option( '', '--rgid', dest='rgid', help='Read group identifier' )
+    parser.add_option( '', '--rglb', dest='rglb', help='Library name' )
+    parser.add_option( '', '--rgpl', dest='rgpl', help='Platform/technology used to produce the reads' )
+    parser.add_option( '', '--rgsm', dest='rgsm', help='Sample' )
+
     (options, args) = parser.parse_args()
 
     # Color or base space
@@ -137,6 +143,15 @@ def __main__():
         opts += ' -r %s' % options.mate_inner_dist
         if options.report_discordant_pairs:
             opts += ' --report-discordant-pair-alignments'
+    # Read group options.
+    if options.rgid:
+        if not options.rglb or not options.rgpl or not options.rgsm:
+            stop_err( 'If you want to specify read groups, you must include the ID, LB, PL, and SM tags.' )
+        opts += ' --rg-id %s' % options.rgid
+        opts += ' --rg-library %s' % options.rglb
+        opts += ' --rg-platform %s' % options.rgpl
+        opts += ' --rg-sample %s' % options.rgsm
+
     if options.settings == 'preSet':
         cmd = cmd % ( opts, index_path, reads )
     else:

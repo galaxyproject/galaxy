@@ -113,6 +113,14 @@
             #end if
                         
         #end if
+
+        ## Read group information.
+        #if $readGroup.specReadGroup == "yes"
+          --rgid="$readGroup.rgid"
+          --rglb="$readGroup.rglb"
+          --rgpl="$readGroup.rgpl"
+          --rgsm="$readGroup.rgsm"
+        #end if
     </command>
     <inputs>
         <conditional name="singlePaired">
@@ -291,6 +299,19 @@
               </conditional>
             </when>  <!-- full -->
       </conditional>  <!-- params -->
+      <conditional name="readGroup">
+        <param name="specReadGroup" type="select" label="Specify read group?">
+            <option value="yes">Yes</option>
+            <option value="no" selected="True">No</option>
+        </param>
+        <when value="yes">
+            <param name="rgid" type="text" size="25" label="Read group identiﬁer (ID). Each @RG line must have a unique ID. The value of ID is used in the RG tags of alignment records. Must be unique among all read groups in header section." help="Required if RG specified. Read group IDs may be modiﬁed when merging SAM ﬁles in order to handle collisions." />
+            <param name="rglb" type="text" size="25" label="Library name (LB)" help="Required if RG specified" />
+            <param name="rgpl" type="text" size="25" label="Platform/technology used to produce the reads (PL)" help="Required if RG specified. Valid values : CAPILLARY, LS454, ILLUMINA, SOLID, HELICOS, IONTORRENT and PACBIO" />
+            <param name="rgsm" type="text" size="25" label="Sample (SM)" help="Required if RG specified. Use pool name where a pool is being sequenced" />
+        </when>
+        <when value="no" />
+      </conditional> <!-- readGroup -->
     </inputs>
 
     <outputs>
@@ -387,6 +408,7 @@
             <param name="genomeSource" value="indexed" />
             <param name="index" value="tophat_test" />
             <param name="settingsType" value="preSet" />
+            <param name="specReadGroup" value="No" />
             <output name="junctions" file="tophat_out1j.bed" />
             <output name="accepted_hits" file="tophat_out1h.bam" compare="sim_size" />
         </test>
@@ -404,6 +426,7 @@
             <param name="ownFile" ftype="fasta" value="tophat_in1.fasta" />
             <param name="mate_inner_distance" value="20" />
             <param name="settingsType" value="preSet" />
+            <param name="specReadGroup" value="No" />
             <output name="junctions" file="tophat2_out2j.bed" />
             <output name="accepted_hits" file="tophat_out2h.bam" compare="sim_size" />
         </test>
@@ -452,6 +475,7 @@
             <param name="multireads" value="4" />
             <param name="multipairs" value="5" />
             <param name="ignore_chromosomes" value="chrM"/>
+            <param name="specReadGroup" value="No" />
             <output name="insertions" file="tophat_out3i.bed" />
             <output name="deletions" file="tophat_out3d.bed" />
             <output name="junctions" file="tophat2_out3j.bed" />
@@ -500,6 +524,7 @@
             <param name="multireads" value="4" />
             <param name="multipairs" value="5" />
             <param name="ignore_chromosomes" value="chrM"/>
+            <param name="specReadGroup" value="No" />
             <output name="junctions" file="tophat2_out4j.bed" />
             <output name="accepted_hits" file="tophat_out4h.bam" compare="sim_size" />
         </test>
