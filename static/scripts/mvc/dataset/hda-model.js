@@ -220,7 +220,15 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
      *  @returns array of encoded ids 
      */
     ids : function(){
-        return this.map( function( item ){ return item.id; });
+        return this.map( function( hda ){ return hda.id; });
+    },
+
+    /** Get the hda with the given hid
+     *  @param {Int} hid the hid to search for
+     *  @returns {HistoryDatasetAssociation} the hda with the given hid or undefined if not found
+     */
+    getByHid : function( hid ){
+        return _.first( this.filter( function( hda ){ return hda.get( 'hid' ) === hid; }) );
     },
 
     /** If the given hid is in the collection, return it's index. If not, return the insertion point it would need.

@@ -78,15 +78,11 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         itemWrapper.append( this._render_warnings() );
         itemWrapper.append( this._render_titleBar() );
 
+        //NOTE: only sets behaviors on title and warnings - body will set up it's own
+        this._setUpBehaviors( itemWrapper );
+
         this.body = $( this._render_body() );
         itemWrapper.append( this.body );
-
-        //TODO: move to own function: setUpBehaviours
-        // we can potentially skip this step and call popupmenu directly on the download button
-        make_popup_menus( itemWrapper );
-
-        // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
-        itemWrapper.find( '.tooltip' ).tooltip({ placement : 'bottom' });
 
         // transition...
         this.$el.fadeOut( 'fast', function(){
@@ -153,6 +149,17 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
                 file_type   : meta_file.file_type
             };
         });
+    },
+
+    /** set up js behaviors, event handlers for elements within the given container
+     *  @param {jQuery} $container jq object that contains the elements to process (defaults to this.$el)
+     */
+    _setUpBehaviors : function( $container ){
+        $container = $container || this.$el;
+        // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
+        //TODO: we can potentially skip this step and call popupmenu directly on the download button
+        make_popup_menus( $container );
+        $container.find( '.tooltip' ).tooltip({ placement : 'bottom' });
     },
 
     // ................................................................................ RENDER titlebar
@@ -389,6 +396,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
                 body.append( $( '<div>Error: unknown dataset state "' + this.model.get( 'state' ) + '".</div>' ) );
         }
         body.append( '<div style="clear: both"></div>' );
+        this._setUpBehaviors( body );
     },
 
     /** Render inaccessible, not-owned by curr user.
