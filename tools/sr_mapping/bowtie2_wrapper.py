@@ -25,6 +25,12 @@ def __main__():
     parser.add_option( '', '--local', dest='local', action="store_true" )
     parser.add_option( '', '--preset-alignment', dest='preset_alignment')
 
+    # Read group options.
+    parser.add_option( '', '--rgid', dest='rgid', help='Read group identifier' )
+    parser.add_option( '', '--rglb', dest='rglb', help='Library name' )
+    parser.add_option( '', '--rgpl', dest='rgpl', help='Platform/technology used to produce the reads' )
+    parser.add_option( '', '--rgsm', dest='rgsm', help='Sample' )
+
     (options, args) = parser.parse_args()
     
     # Creat bowtie index if necessary.
@@ -86,7 +92,16 @@ def __main__():
         if options.local:
             opts += ' --local'
         if options.preset_alignment:
-            opts += " --" + options.preset_alignment
+            opts += ' --' + options.preset_alignment
+
+    # Read group options.
+    if options.rgid:
+        if not options.rglb or not options.rgpl or not options.rgsm:
+            stop_err( 'If you want to specify read groups, you must include the ID, LB, PL, and SM tags.' )
+        opts += ' --rg-id %s' % options.rgid
+        opts += ' --rg %s:%s' % ( 'LB', options.rglb )
+        opts += ' --rg %s:%s' % ( 'PL', options.rgpl )
+        opts += ' --rg %s:%s' % ( 'SM', options.rgsm )
         
     # Final command:
     cmd = cmd % ( opts, index_path, reads, options.output )
