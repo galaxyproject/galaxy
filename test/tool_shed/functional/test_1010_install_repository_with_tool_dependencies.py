@@ -62,10 +62,15 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
         self.browse_tool_shed( url=self.url, strings_displayed=[ 'Test 0010 Repository With Tool Dependencies' ] )
         category = test_db_util.get_category_by_name( 'Test 0010 Repository With Tool Dependencies' )
         self.browse_category( category, strings_displayed=[ 'freebayes_0010' ] )
-        self.preview_repository_in_tool_shed( 'freebayes_0010', common.test_user_1_name, strings_displayed=[ 'freebayes_0010', 'Valid tools' ] )
+        self.preview_repository_in_tool_shed( 'freebayes_0010', common.test_user_1_name, strings_displayed=[ 'freebayes_0010', 'Valid tools', 'Tool dependencies' ] )
     def test_0015_install_freebayes_repository( self ):
         '''Install the freebayes repository without installing tool dependencies.'''
-        self.install_repository( 'freebayes_0010', common.test_user_1_name, 'Test 0010 Repository With Tool Dependencies', install_tool_dependencies=False )
+        strings_displayed=[ 'set your tool_dependency_dir', 'can be automatically installed', 'Set the tool_dependency_dir' ]
+        self.install_repository( 'freebayes_0010', 
+                                 common.test_user_1_name,
+                                 'Test 0010 Repository With Tool Dependencies', 
+                                 strings_displayed=strings_displayed,
+                                 install_tool_dependencies=False )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'freebayes_0010', common.test_user_1_name )
         self.verify_installed_repository_on_browse_page( installed_repository )
         self.display_installed_repository_manage_page( installed_repository, 

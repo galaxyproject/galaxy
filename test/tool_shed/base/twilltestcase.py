@@ -28,6 +28,8 @@ class ShedTwillTestCase( TwillTestCase ):
         self.file_dir = os.environ.get( 'TOOL_SHED_TEST_FILE_DIR', None )
         self.tool_shed_test_file = None
         self.tool_data_path = os.environ.get( 'GALAXY_TEST_TOOL_DATA_PATH' )
+        # TODO: Figure out a way to alter these attributes during tests.
+        self.galaxy_tool_dependency_dir = None # os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
         self.home()
     def browse_category( self, category, strings_displayed=[], strings_not_displayed=[] ):
@@ -387,12 +389,12 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "3", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def install_repository( self, name, owner, category_name, install_tool_dependencies=False, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
+    def install_repository( self, name, owner, category_name, install_tool_dependencies=False, changeset_revision=None, strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[] ):
         if test_db_util.get_installed_repository_by_name_owner( name, owner ) is not None:
             return
         self.browse_tool_shed( url=self.url )
         self.browse_category( test_db_util.get_category_by_name( category_name ) )
-        self.preview_repository_in_tool_shed( name, common.test_user_1_name, strings_displayed=[] )
+        self.preview_repository_in_tool_shed( name, common.test_user_1_name, strings_displayed=preview_strings_displayed )
         repository = test_db_util.get_repository_by_name_and_owner( name, owner )
         repository_id = self.security.encode_id( repository.id )
         if changeset_revision is None:
@@ -402,10 +404,13 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         if 'install_tool_dependencies' in self.last_page():
+            form = tc.browser.get_form( 'select_tool_panel_section' )
+            checkbox = form.find_control( id="install_tool_dependencies" )
+            checkbox.disabled = False
             if install_tool_dependencies:
-                tc.fv( '1', 'install_tool_dependencies', True )
+                checkbox.selected = True
             else:
-                tc.fv( '1', 'install_tool_dependencies', False )
+                checkbox.selected = False
         tc.submit( 'select_tool_panel_section_button' )
         html = self.last_page()
         # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the 

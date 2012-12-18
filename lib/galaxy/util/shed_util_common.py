@@ -44,7 +44,11 @@ def add_installation_directories_to_tool_dependencies( trans, repository_name, r
             dependency_name = requirements_dict[ 'name' ]
             version = requirements_dict[ 'version' ]
             type = requirements_dict[ 'type' ]
-            install_dir = os.path.join( trans.app.config.tool_dependency_dir,
+            if trans.app.config.tool_dependency_dir:
+                root_dir = trans.app.config.tool_dependency_dir
+            else:
+                root_dir = '<set your tool_dependency_dir in your Galaxy configuration file>'
+            install_dir = os.path.join( root_dir,
                                         dependency_name,
                                         version,
                                         repository_owner,

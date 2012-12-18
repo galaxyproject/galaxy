@@ -140,6 +140,7 @@ def main():
     new_repos_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     galaxy_shed_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
     galaxy_tool_dependency_dir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
+    os.environ[ 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' ] = galaxy_tool_dependency_dir
     if 'TOOL_SHED_TEST_DBURI' in os.environ:
         toolshed_database_connection = os.environ[ 'TOOL_SHED_TEST_DBURI' ]
     else:
@@ -268,7 +269,6 @@ def main():
                                                file_path = galaxy_file_path,
                                                tool_path = tool_path,
                                                tool_data_path = tool_data_path,
-                                               tool_dependency_dir=galaxy_tool_dependency_dir,
                                                shed_tool_path=galaxy_shed_tool_path,
                                                update_integrated_tool_panel = False,
                                                tool_config_file = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
