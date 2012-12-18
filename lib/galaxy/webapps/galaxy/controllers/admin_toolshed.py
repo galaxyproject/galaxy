@@ -1511,6 +1511,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def reselect_tool_panel_section( self, trans, **kwd ):
+        message = ''
         repository_id = kwd[ 'id' ]
         tool_shed_repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         metadata = tool_shed_repository.metadata
@@ -1551,14 +1552,14 @@ class AdminToolshed( AdminGalaxy ):
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
         no_changes_check_box = CheckboxField( 'no_changes', checked=True )
         if original_section_name:
-            message = "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " \
+            message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " \
                 % ( tool_shed_repository.name, original_section_name )
             message += "Uncheck the <b>No changes</b> check box and select a different tool panel section to load the tools in a "
-            message += "different section in the tool panel."
+            message += "different section in the tool panel.  "
             status = 'warning'
         else:
-            message = "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % tool_shed_repository.name
-            message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section."
+            message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % tool_shed_repository.name
+            message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section.  "
             status = 'warning'
         if metadata and 'readme_files' in metadata:
             url = suc.url_join( tool_shed_url,
@@ -1582,9 +1583,9 @@ class AdminToolshed( AdminGalaxy ):
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
         # Handle tool dependencies check box.
         if trans.app.config.tool_dependency_dir is None:
-            if includes_tool_dependencies:
-                message = "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b> "
-                message += "setting in your Galaxy config file (universe_wsgi.ini) and restart your Galaxy server before installing the repository."
+            if tool_shed_repository.includes_tool_dependencies:
+                message += "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b> "
+                message += "setting in your Galaxy config file (universe_wsgi.ini) and restart your Galaxy server before installing the repository.  "
                 status = "warning"
             install_tool_dependencies_check_box_checked = False
         else:
