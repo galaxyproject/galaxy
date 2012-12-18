@@ -1488,7 +1488,7 @@ def get_shed_tool_conf_dict( app, shed_tool_conf ):
         if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
             return index, shed_tool_conf_dict
         else:
-            file_name = suc.strip_path( shed_tool_conf_dict[ 'config_filename' ] )
+            file_name = strip_path( shed_tool_conf_dict[ 'config_filename' ] )
             if shed_tool_conf == file_name:
                 return index, shed_tool_conf_dict
 def get_tool_panel_config_tool_path_install_dir( app, repository ):
