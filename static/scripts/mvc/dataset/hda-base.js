@@ -546,9 +546,12 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         }
     },
 
-
-    remove : function(){
-
+    remove : function( callback ){
+        var hdaView = this;
+        this.$el.fadeOut( 'fast', function(){
+            hdaView.$el.remove();
+            if( callback ){ callback(); }
+        });
     },
 
     // ......................................................................... MISC

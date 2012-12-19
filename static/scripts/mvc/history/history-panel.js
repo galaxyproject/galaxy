@@ -166,20 +166,18 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         // when a hda model is (un)deleted or (un)hidden, re-render entirely
         //TODO??: purged
         //TODO??: could be more selective here
-        this.model.hdas.bind( 'change:deleted change:hidden', this.render, this );
+        this.model.hdas.bind( 'change:deleted', this.handleHdaDeletionChange, this );
+        this.model.hdas.bind( 'change:hidden', this.render, this );
 
         // if an a hidden hda is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
-        this.model.hdas.bind( 'change:state',
-            function( hda, newState, changedList ){
-                //TODO: magic string here - somehow use HDA.states
-                if( ( hda.inReadyState() )
-                &&  ( !hda.get( 'visible' ) )
-                &&  ( !this.storage.get( 'show_hidden' ) ) ){
-                    this.removeHda( hda );
-                }
-            },
-        this );
+        this.model.hdas.bind( 'change:state', function( hda, newState, changedList ){
+            if( ( hda.inReadyState() )
+            &&  ( !hda.get( 'visible' ) )
+            &&  ( !this.storage.get( 'show_hidden' ) ) ){
+                this.removeHdaView( hda.get( 'id' ) );
+            }
+        }, this );
 
         //this.bind( 'all', function(){
         //    this.log( arguments );
@@ -253,16 +251,27 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         this.render();
     },
 
-    /** Remove a view from the panel and the assoc. model from the collection
-     *  @param {HistoryDataAssociation} the hda to remove
+    /** If this hda is deleted and we're not showing deleted hdas, remove the view
+     *  @param {HistoryDataAssociation} the hda to check
      */
-    removeHda : function( hdaModel, callback ){
-        var hdaView = this.hdaViews[ hdaModel.get( 'id' ) ];
-        hdaView.$el.fadeOut( 'fast', function(){
-            hdaView.$el.remove();
-            if( callback ){ callback(); }
-        });
-        this.model.hdas.remove( hdaModel );
+    handleHdaDeletionChange : function( hda ){
+        if( hda.get( 'deleted' ) && !this.storage.get( 'show_deleted' ) ){
+            this.removeHdaView( hda.get( 'id' ) );
+        } // otherwise, the hdaView rendering should handle it
+    },
+
+    /** Remove a view from the panel and if the panel is now empty, re-render
+     *  @param {Int} the id of the hdaView to remove
+     */
+    removeHdaView : function( id, callback ){
+        var hdaView = this.hdaViews[ id ];
+        if( !hdaView ){ return; }
+
+        hdaView.remove( callback );
+        delete this.hdaViews[ id ];
+        if( _.isEmpty( this.hdaViews ) ){
+            this.render();
+        }
     },
 
     // ......................................................................... RENDERING
