@@ -881,7 +881,7 @@ class AdminToolshed( AdminGalaxy ):
         datatypes = metadata.get( 'datatypes', None )
         invalid_tools = metadata.get( 'invalid_tools', None )
         if repository.has_readme_files:
-            readme_files_dict = suc.build_readme_files_dict( repository.metadata )
+            readme_files_dict = suc.build_readme_files_dict( repository.metadata, tool_path )
         else:
             readme_files_dict = None
         repository_dependencies = metadata.get( 'repository_dependencies', None )
@@ -1515,17 +1515,19 @@ class AdminToolshed( AdminGalaxy ):
             if repository_dependencies:
                 # We need to add a root_key entry to the repository_dependencies dictionary since it will not be included in the installed tool
                 # shed repository metadata.
-                root_key = container_util.generate_repository_dependencies_key_for_repository( repository.tool_shed,
-                                                                                               repository.name,
-                                                                                               repository.owner,
-                                                                                               repository.installed_changeset_revision )
+                root_key = container_util.generate_repository_dependencies_key_for_repository( tool_shed_repository.tool_shed,
+                                                                                               tool_shed_repository.name,
+                                                                                               tool_shed_repository.owner,
+                                                                                               tool_shed_repository.installed_changeset_revision )
                 rd_tups_for_display = []
                 rd_tups = repository_dependencies[ 'repository_dependencies' ]
                 repository_dependencies_dict_for_display[ 'root_key' ] = root_key
                 repository_dependencies_dict_for_display[ root_key ] = rd_tups
                 repository_dependencies_dict_for_display[ 'description' ] = repository_dependencies[ 'description' ]
             all_tool_dependencies = metadata.get( 'tool_dependencies', None )            
-            tool_dependencies, missing_tool_dependencies = shed_util.get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies )
+            tool_dependencies, missing_tool_dependencies = shed_util.get_installed_and_missing_tool_dependencies( trans, 
+                                                                                                                  tool_shed_repository, 
+                                                                                                                  all_tool_dependencies )
             valid_tools = metadata.get( 'tools', None )
             workflows = metadata.get( 'workflows', None )
             containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,

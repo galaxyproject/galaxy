@@ -57,13 +57,16 @@ def add_installation_directories_to_tool_dependencies( trans, repository_name, r
             requirements_dict[ 'install_dir' ] = install_dir
             tool_dependencies[ dependency_key ] = requirements_dict
     return tool_dependencies
-def build_readme_files_dict( metadata ):
+def build_readme_files_dict( metadata, tool_path=None ):
     """Return a dictionary of valid readme file name <-> readme file content pairs for all readme files contained in the received repository_metadata."""
     readme_files_dict = {}
     if metadata and 'readme_files' in metadata:
         for relative_path_to_readme_file in metadata[ 'readme_files' ]:
             readme_file_name = os.path.split( relative_path_to_readme_file )[ 1 ]
-            full_path_to_readme_file = os.path.abspath( relative_path_to_readme_file )
+            if tool_path:
+                full_path_to_readme_file = os.path.abspath( os.path.join( tool_path, relative_path_to_readme_file ) )
+            else:
+                full_path_to_readme_file = os.path.abspath( relative_path_to_readme_file )
             try:
                 f = open( full_path_to_readme_file, 'r' )
                 text = f.read()
@@ -103,7 +106,7 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
                 containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
             # Readme files container.
             if readme_files_dict:
-                folder_id, readme_files_root_folder = build_readme_files_folder( folder_id, readme_files_dict )
+                folder_id, readme_files_root_folder = container_util.build_readme_files_folder( folder_id, readme_files_dict )
                 containers_dict[ 'readme_files' ] = readme_files_root_folder
             # Repository dependencies container.
             if repository_dependencies:
