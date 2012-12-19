@@ -1569,11 +1569,13 @@ class AdminToolshed( AdminGalaxy ):
             raw_text = response.read()
             response.close()
             readme_files_dict = from_json_string( raw_text )
+            tool_dependencies = metadata.get( 'tool_dependencies', None )
+            repository_dependencies = metadata.get( 'repository_dependencies', None )
             containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
                                                                           toolshed_base_url=tool_shed_url,
-                                                                          repository_name=name,
-                                                                          repository_owner=repository_owner,
-                                                                          changeset_revision=changeset_revision,
+                                                                          repository_name=tool_shed_repository.name,
+                                                                          repository_owner=tool_shed_repository.owner,
+                                                                          changeset_revision=tool_shed_repository.installed_changeset_revision,
                                                                           readme_files_dict=readme_files_dict,
                                                                           repository_dependencies=repository_dependencies,
                                                                           tool_dependencies=tool_dependencies )
