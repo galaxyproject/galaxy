@@ -210,7 +210,7 @@
         </form>
     </div>
 </div>
-${render_repository_items( repository_metadata_id, changeset_revision, metadata, containers_dict, can_set_metadata=True )}
+${render_repository_items( metadata, containers_dict, can_set_metadata=True )}
 <p/>
 <div class="toolForm">
     <div class="toolFormTitle">Manage categories</div>

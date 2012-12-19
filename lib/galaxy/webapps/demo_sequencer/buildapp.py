@@ -55,7 +55,7 @@ def app_factory( global_conf, **kwargs ):
             sys.exit( 1 )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
-    webapp = galaxy.webapps.demo_sequencer.framework.WebApplication( app, session_cookie='galaxydemo_sequencersession' )
+    webapp = galaxy.webapps.demo_sequencer.framework.WebApplication( app, session_cookie='galaxydemo_sequencersession', name="demo_sequencer" )
     add_ui_controllers( webapp, app )
     # These two routes handle our simple needs at the moment
     webapp.add_route( '/:controller/:action', action='index' )

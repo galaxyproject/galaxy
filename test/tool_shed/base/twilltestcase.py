@@ -67,10 +67,13 @@ class ShedTwillTestCase( TwillTestCase ):
         for dependency in installed_repository.metadata[ 'tool_dependencies' ]:
             tool_dependency = installed_repository.metadata[ 'tool_dependencies' ][ dependency ]
             strings_displayed.extend( [ tool_dependency[ 'name' ], tool_dependency[ 'version' ], tool_dependency[ 'type' ] ] )
+            """
+            TODO: Uncomment these when Greg enhances the tool dependencies and missing tool dependencies containers to display the status.
             if dependencies_installed:
                 strings_displayed.append( 'Installed' )
             else:
                 strings_displayed.append( 'Never installed' )
+            """
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )

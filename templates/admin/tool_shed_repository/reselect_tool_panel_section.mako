@@ -2,6 +2,18 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_dependencies_section" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_readme_section" />
+<%namespace file="/webapps/community/repository/common.mako" import="*" />
+
+<%def name="stylesheets()">
+    ${parent.stylesheets()}
+    ${h.css( "library" )}
+</%def>
+
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    ${h.js("libs/jquery/jquery.rating", "libs/jquery/jstorage" )}
+    ${container_javascripts()}
+</%def>
 
 %if message:
     ${render_msg( message, status )}

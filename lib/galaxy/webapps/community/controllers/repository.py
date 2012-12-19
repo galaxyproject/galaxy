@@ -1338,7 +1338,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         changeset_revision = kwd[ 'changeset_revision' ]
         repository = suc.get_repository_by_name_and_owner( trans, repository_name, repository_owner )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )        
-        return suc.build_readme_files_dict( repository_metadata )
+        return suc.build_readme_files_dict( repository_metadata.metadata )
     @web.json
     def get_repository_dependencies( self, trans, **kwd ):
         """Return an encoded dictionary of all repositories upon which the contents of the received repository depends."""

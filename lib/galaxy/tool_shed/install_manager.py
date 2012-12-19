@@ -283,19 +283,19 @@ class InstallManager( object ):
             repository_clone_url = os.path.join( tool_shed_url, 'repos', self.repository_owner, name )
             relative_install_dir = os.path.join( relative_clone_dir, name )
             install_dir = os.path.join( clone_dir, name )
-            ctx_rev = shed_util.get_ctx_rev( tool_shed_url, name, self.repository_owner, installed_changeset_revision )
+            ctx_rev = suc.get_ctx_rev( tool_shed_url, name, self.repository_owner, installed_changeset_revision )
             print "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name
-            tool_shed_repository = shed_util.create_or_update_tool_shed_repository( app=self.app,
-                                                                                    name=name,
-                                                                                    description=description,
-                                                                                    installed_changeset_revision=installed_changeset_revision,
-                                                                                    ctx_rev=ctx_rev,
-                                                                                    repository_clone_url=repository_clone_url,
-                                                                                    metadata_dict={},
-                                                                                    status=self.app.model.ToolShedRepository.installation_status.NEW,
-                                                                                    current_changeset_revision=None,
-                                                                                    owner=self.repository_owner,
-                                                                                    dist_to_shed=True )
+            tool_shed_repository = suc.create_or_update_tool_shed_repository( app=self.app,
+                                                                              name=name,
+                                                                              description=description,
+                                                                              installed_changeset_revision=installed_changeset_revision,
+                                                                              ctx_rev=ctx_rev,
+                                                                              repository_clone_url=repository_clone_url,
+                                                                              metadata_dict={},
+                                                                              status=self.app.model.ToolShedRepository.installation_status.NEW,
+                                                                              current_changeset_revision=None,
+                                                                              owner=self.repository_owner,
+                                                                              dist_to_shed=True )
             shed_util.update_tool_shed_repository_status( self.app, tool_shed_repository, self.app.model.ToolShedRepository.installation_status.CLONING )
             cloned_ok, error_message = suc.clone_repository( repository_clone_url, os.path.abspath( install_dir ), ctx_rev )
             if cloned_ok:

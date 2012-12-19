@@ -111,7 +111,7 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0030', common.test_user_1_name )
         self.verify_installed_repository_on_browse_page( installed_repository )
         self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Tools', 'antigenic' ] )
+                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'antigenic' ] )
         self.check_installed_repository_tool_dependencies( installed_repository, dependencies_installed=False )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
         self.update_installed_repository( installed_repository, strings_displayed=[ "there are no updates available" ] )

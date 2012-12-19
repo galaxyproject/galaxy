@@ -81,4 +81,4 @@
     </div>
 </div>
 <p/>
-${render_repository_items( repository_metadata_id, changeset_revision, metadata, containers_dict, can_set_metadata=False )}
+${render_repository_items( metadata, containers_dict, can_set_metadata=False )}

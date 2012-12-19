@@ -103,14 +103,16 @@
         </div>
     </div>
     %if repository_dependencies_root_folder:
-        <div class="form-row">
-            <label>Handle repository dependencies?</label>
-            ${install_repository_dependencies_check_box.get_html()}
-            <div class="toolParamHelp" style="clear: both;">
-                Un-check to skip automatic installation of these additional repositories required by this repository.
+        %if install_repository_dependencies_check_box is not None:
+            <div class="form-row">
+                <label>Handle repository dependencies?</label>
+                ${install_repository_dependencies_check_box.get_html()}
+                <div class="toolParamHelp" style="clear: both;">
+                    Un-check to skip automatic installation of these additional repositories required by this repository.
+                </div>
             </div>
-        </div>
-        <div style="clear: both"></div>
+            <div style="clear: both"></div>
+        %endif
         <div class="form-row">
             %if repository_dependencies_root_folder:
                 <p/>
@@ -123,19 +125,21 @@
         </div>
     %endif
     %if tool_dependencies_root_folder:
-        <div class="form-row">
-            <label>Handle tool dependencies?</label>
-            <% disabled = trans.app.config.tool_dependency_dir is None %>
-            ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
-            <div class="toolParamHelp" style="clear: both;">
-                %if disabled:
-                    Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
-                %else:
-                    Un-check to skip automatic handling of these tool dependencies.
-                %endif
+        %if install_tool_dependencies_check_box is not None:
+            <div class="form-row">
+                <label>Handle tool dependencies?</label>
+                <% disabled = trans.app.config.tool_dependency_dir is None %>
+                ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
+                <div class="toolParamHelp" style="clear: both;">
+                    %if disabled:
+                        Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
+                    %else:
+                        Un-check to skip automatic handling of these tool dependencies.
+                    %endif
+                </div>
             </div>
-        </div>
-        <div style="clear: both"></div>
+            <div style="clear: both"></div>
+        %endif
         <div class="form-row">
             %if tool_dependencies_root_folder:
                 <p/>

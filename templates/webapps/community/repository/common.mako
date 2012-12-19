@@ -208,13 +208,16 @@
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
                     else:
                         folder_label = "%s<i> - this repository requires installation of these additional repositories</i>" % folder_label
+                elif folder.label == 'Valid tools':
+                    col_span_str = 'colspan="3"'
+                    if folder.description:
+                        folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
+                    else:
+                        folder_label = "%s<i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i>" % folder_label
                 elif folder.invalid_tools:
                     folder_label = "%s<i> - click the tool config file name to see why the tool is invalid</i>" % folder_label
                 elif folder.tool_dependencies:
                     folder_label = "%s<i> - this repository's tools require handling of these dependencies</i>" % folder_label
-                    col_span_str = 'colspan="3"'
-                elif folder.valid_tools:
-                    folder_label = "%s<i> - click the name to preview the tool and use the pop-up menu to inspect all metadata</i>" % folder_label
                     col_span_str = 'colspan="3"'
                 elif folder.workflows:
                     col_span_str = 'colspan="4"'
@@ -302,7 +305,7 @@
         %endif
         id="libraryItem-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            %if invalid_tool.repository_id and invalid_tool.tool_config and invalid_tool.changeset_revision:
+            %if trans.webapp.name == 'community' and invalid_tool.repository_id and invalid_tool.tool_config and invalid_tool.changeset_revision:
                 <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( invalid_tool.repository_id ), tool_config=invalid_tool.tool_config, changeset_revision=invalid_tool.changeset_revision )}">
                     ${invalid_tool.tool_config | h}
                 </a>
@@ -376,12 +379,20 @@
             <th style="padding-left: ${pad+20}px;">${tool.name | h}</th>
         %else:
             <td style="padding-left: ${pad+20}px;">
-                <div style="float:left;" class="menubutton split popup" id="tool-${encoded_id}-popup">
-                    <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision )}">${tool.name | h}</a>
-                </div>
-                <div popupmenu="tool-${encoded_id}-popup">
-                    <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">View tool metadata</a>
-                </div>
+                %if tool.repository_id:
+                    %if trans.webapp.name == 'community':
+                        <div style="float:left;" class="menubutton split popup" id="tool-${encoded_id}-popup">
+                            <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision )}">${tool.name | h}</a>
+                        </div>
+                        <div popupmenu="tool-${encoded_id}-popup">
+                            <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">View tool metadata</a>
+                        </div>
+                    %else:
+                        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">View tool metadata</a>
+                    %endif
+                %else:
+                    ${tool.name | h}
+                %endif
             </td>
         %endif
         <${cell_type}>${tool.description | h}</${cell_type}>
@@ -459,7 +470,7 @@
     %>
 </%def>
 
-<%def name="render_repository_items( repository_metadata_id, changeset_revision, metadata, containers_dict, can_set_metadata=False )">
+<%def name="render_repository_items( metadata, containers_dict, can_set_metadata=False )">
     <%
         from galaxy.tool_shed.encoding_util import tool_shed_encode
 
@@ -472,6 +483,7 @@
         readme_files_root_folder = containers_dict.get( 'readme_files', None )
         repository_dependencies_root_folder = containers_dict.get( 'repository_dependencies', None )
         tool_dependencies_root_folder = containers_dict.get( 'tool_dependencies', None )
+        missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
         valid_tools_root_folder = containers_dict.get( 'valid_tools', none )
         workflows_root_folder = containers_dict.get( 'workflows', None )
         
@@ -513,6 +525,13 @@
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="tool_dependencies">
                         ${render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    </table>
+                %endif
+                %if missing_tool_dependencies_root_folder:
+                    <p/>
+                    <% row_counter = RowCounter() %>
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="missing_tool_dependencies">
+                        ${render_folder( missing_tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
             </div>

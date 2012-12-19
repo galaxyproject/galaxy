@@ -3148,6 +3148,9 @@ class ToolShedRepository( object ):
     def can_reinstall_or_activate( self ):
         return self.deleted
     @property
+    def has_repository_dependencies( self ):
+        return self.metadata and 'repository_dependencies' in self.metadata
+    @property
     def includes_tools( self ):
         return self.metadata and 'tools' in self.metadata
     @property
@@ -3210,6 +3213,15 @@ class ToolShedRepository( object ):
             if tool_dependency.status == ToolDependency.installation_status.UNINSTALLED:
                 uninstalled_tool_dependencies.append( tool_dependency )
         return uninstalled_tool_dependencies
+
+class RepositoryRepositoryDependencyAssociation( object ):
+    def __init__( self, tool_shed_repository_id=None, repository_dependency_id=None ):
+        self.tool_shed_repository_id = tool_shed_repository_id
+        self.repository_dependency_id = repository_dependency_id
+
+class RepositoryDependency( object ):
+    def __init__( self, tool_shed_repository_id=None ):
+        self.tool_shed_repository_id = tool_shed_repository_id
 
 class ToolDependency( object ):
     installation_status = Bunch( NEVER_INSTALLED='Never installed',

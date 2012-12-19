@@ -218,7 +218,7 @@ def build_repository_dependencies_folder( toolshed_base_url, repository_name, re
     else:
         repository_dependencies_root_folder = None
     return folder_id, repository_dependencies_root_folder
-def build_tools_folder( folder_id, tool_dicts, repository, changeset_revision, valid=True, label='Valid tools' ):
+def build_tools_folder( folder_id, tool_dicts, repository, changeset_revision, valid=True, label='Valid tools', description=None ):
     """Return a folder hierarchy containing valid tools."""
     if tool_dicts:
         tool_id = 0
@@ -226,6 +226,8 @@ def build_tools_folder( folder_id, tool_dicts, repository, changeset_revision, v
         tools_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
         folder_id += 1
         folder = Folder( id=folder_id, key='tools', label=label, parent=tools_root_folder )
+        if description:
+            folder.description = description
         tools_root_folder.folders.append( folder )
         # Insert a header row.
         tool_id += 1
@@ -239,6 +241,10 @@ def build_tools_folder( folder_id, tool_dicts, repository, changeset_revision, v
                      repository_id='',
                      changeset_revision='' )
         folder.valid_tools.append( tool )
+        if repository:
+            repository_id = repository.id
+        else:
+            repository_id = ''
         for tool_dict in tool_dicts:
             tool_id += 1
             if 'requirements' in tool_dict:
@@ -256,7 +262,7 @@ def build_tools_folder( folder_id, tool_dicts, repository, changeset_revision, v
                          description=tool_dict[ 'description' ],
                          version=tool_dict[ 'version' ],
                          requirements=requirements_str,
-                         repository_id=repository.id,
+                         repository_id=repository_id,
                          changeset_revision=changeset_revision )
             folder.valid_tools.append( tool )
     else:
