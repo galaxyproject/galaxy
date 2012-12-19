@@ -163,6 +163,11 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         this.model.hdas.bind( 'add',   this.add,    this );
         this.model.hdas.bind( 'reset', this.addAll, this );
 
+        // when a hda model is (un)deleted or (un)hidden, re-render entirely
+        //TODO??: purged
+        //TODO??: could be more selective here
+        this.model.hdas.bind( 'change:deleted change:hidden', this.render, this );
+
         // if an a hidden hda is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
         this.model.hdas.bind( 'change:state',
@@ -292,6 +297,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         // fade out existing, swap with the new, fade in, set up behaviours
         $( historyView ).queue( setUpQueueName, function( next ){
             historyView.$el.fadeOut( 'fast', function(){ next(); });
+            //historyView.$el.show( function(){ next(); });
         });
         $( historyView ).queue( setUpQueueName, function( next ){
             // swap over from temp div newRender
@@ -299,6 +305,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             historyView.$el.append( newRender.children() );
 
             historyView.$el.fadeIn( 'fast', function(){ next(); });
+            //historyView.$el.show( function(){ next(); });
         });
         $( historyView ).queue( setUpQueueName, function( next ){
             this.log( historyView + ' rendered:', historyView.$el );

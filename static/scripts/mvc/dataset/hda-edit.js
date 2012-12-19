@@ -118,9 +118,6 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             id          : 'historyItemDeleter-' + this.model.get( 'id' ),
             icon_class  : 'delete',
             on_click    : function() {
-                // Provide feedback by hiding from view immediately.
-                self.$el.slideUp();
-
                 // Delete the dataset on the server and update HDA + view depending on success/failure.
                 // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly 
                 // on the model.
@@ -134,13 +131,13 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                     },
                     success: function() {
                         // FIXME: setting model attribute causes re-rendering, which is unnecessary.
-                        self.model.set( 'deleted', true );
-                        self.$el.remove();
+                        //self.$el.remove();
+                        self.model.set({ deleted: true });
                     }
                 });
 
                 // Return false so that anchor action (page reload) does not happen.
-                return false;
+                //return false;
             }
         };
         if( this.model.get( 'deleted' ) || this.model.get( 'purged' ) ){

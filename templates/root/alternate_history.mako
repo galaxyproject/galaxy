@@ -144,8 +144,7 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 
         #TODO: via api
         #TODO: show deleted handled by history
-        'delete' : h.url_for( controller='dataset', action='delete',
-            dataset_id=encoded_id_template, show_deleted_on_refresh=show_deleted ),
+        'delete' : h.url_for( controller='dataset', action='delete_async', dataset_id=encoded_id_template ),
 
         # ................................................................ download links (and associated meta files),
         'download' : h.url_for( controller='/dataset', action='display',

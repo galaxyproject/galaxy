@@ -44,7 +44,8 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         this.expanded = attributes.expanded || false;
 
         // re-render the entire view on any model change
-        this.model.bind( 'change', this.render, this );
+        this.model.bind( 'change', this.render , this );
+
         //this.bind( 'all', function( event ){
         //    this.log( event );
         //}, this );
