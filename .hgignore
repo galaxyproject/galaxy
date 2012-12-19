@@ -74,6 +74,10 @@ tool-data/shared/jars/
 */variables.less
 static/june_2007_style/blue/base_sprites.less
 
+# Testing
+selenium-server.jar
+selenium_results.html
+
 # Documentation build files.
 doc/build
 
