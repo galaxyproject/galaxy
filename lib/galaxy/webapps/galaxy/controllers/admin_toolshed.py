@@ -1258,17 +1258,6 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
-        log.debug("PPPPP In prepare_for_install, containers_dict: %s" % str( containers_dict ))
-        """
-        PPPPP In prepare_for_install, 
-        containers_dict: 
-        {'repository_dependencies': None, 
-         'missing_tool_dependencies': <galaxy.webapps.community.util.container_util.Folder object at 0x108a56f0>, 
-         'readme_files': None, 
-         'tool_dependencies': None}
-        FAIL
-
-        """
         return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
                                     encoded_repo_info_dicts=encoded_repo_info_dicts,
                                     includes_tools=includes_tools,
@@ -1538,9 +1527,10 @@ class AdminToolshed( AdminGalaxy ):
             valid_tools = metadata.get( 'tools', None )
             workflows = metadata.get( 'workflows', None )
             # All tool dependencies will be considered missing since we are reinstalling the repository.
-            for td in tool_dependencies:
-                missing_tool_dependencies.append( td )
-            tool_dependencies = None
+            if tool_dependencies:
+                for td in tool_dependencies:
+                    missing_tool_dependencies.append( td )
+                tool_dependencies = None
             containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
                                                                           toolshed_base_url=tool_shed_url,
                                                                           repository_name=tool_shed_repository.name,

@@ -79,7 +79,14 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
                                             invalid_tools, missing_tool_dependencies, readme_files_dict, repository_dependencies, tool_dependencies,
                                             valid_tools, workflows ):
     """Return a dictionary of containers for the received repository's dependencies and readme files for display during installation to Galaxy."""
-    containers_dict = dict( readme_files=None, repository_dependencies=None, tool_dependencies=None )
+    containers_dict = dict( datatypes=None,
+                            invalid_tools=None,
+                            missing_tool_dependencies=None,
+                            readme_files=None,
+                            repository_dependencies=None,
+                            tool_dependencies=None,
+                            valid_tools=None,
+                            workflows=None )
     lock = threading.Lock()
     lock.acquire( True )
     if tool_dependencies:
