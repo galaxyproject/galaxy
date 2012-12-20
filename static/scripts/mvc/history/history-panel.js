@@ -5,55 +5,6 @@
 Backbone.js implementation of history panel
 
 TODO:
-    refactoring on for_editing:
-        uhoh: purge link in warning message in history_common.mako conditional on trans.app.config.allow_user_dataset_purge
-        bug: rerun still doesn't take encoded ids
-
-    anon user, mako template init:
-        BUG: shouldn't have tag/anno buttons (on hdas)
-            Check for user in hdaView somehow
-
-    logged in, mako template:
-        bug: rename not being changed locally - render() shows old name, refresh: new name
-            TODO: editable text to MV, might also just use REST.update on history
-        BUG: meter is not updating RELIABLY on change:nice_size
-        BUG: am able to start upload even if over quota - 'runs' forever
-        bug: quotaMeter bar rendering square in chrome
-
-    from loadFromApi:
-
-    fixed:
-        BUG: not loading deleted datasets
-            FIXED: history_contents, show: state_ids returns all ids now (incl. deleted)
-        BUG: upload, history size, doesn't change
-            FIXED: using change:nice_size to trigger re-render of history size
-        BUG: delete uploading hda - now in state 'discarded'! ...new state to handle
-            FIXED: handled state
-        BUG: historyItem, error'd ds show display, download?
-            FIXED: removed
-        bug: loading hdas (alt_hist)
-            FIXED: added anon user api request ( trans.user == None and trans.history.id == requested id )
-        bug: quota meter not updating on upload/tool run
-            FIXED: quotaMeter now listens for 'state:ready' from glx_history in alternate_history.mako
-        bug: use of new HDACollection with event listener in init doesn't die...keeps reporting
-            FIXED: change getVisible to return an array
-        BUG: history, broken intial hist state (running, updater, etc.)
-            ??: doesn't seem to happen anymore
-        BUG: collapse all should remove all expanded from storage
-            FIXED: hideAllItemBodies now resets storage.expandedItems
-        BUG: historyItem, shouldn't allow tag, annotate, peek on purged datasets
-            FIXED: ok state now shows only: info, rerun
-        BUG: history?, some ids aren't returning encoded...
-            FIXED:???
-        BUG: history, showing deleted ds
-            FIXED
-        UGH: historyItems have to be decorated with history_ids (api/histories/:history_id/contents/:id)
-            FIXED by adding history_id to history_contents.show
-        BUG: history, if hist has err'd ds, hist has perm state 'error', updater on following ds's doesn't run
-            FIXED by reordering history state from ds' states here and histories
-        BUG: history, broken annotation on reload (can't get thru api (sets fine, tho))
-            FIXED: get thru api for now
-
     replication:
         show_deleted/hidden:
             use storage
@@ -61,9 +12,6 @@ TODO:
                 need urls
                 change template
         move histview fadein/out in render to app?
-        don't draw body until it's first expand event
-        localize all
-        ?: render url templates on init or render?
         ?: history, annotation won't accept unicode
 
     RESTful:
@@ -167,13 +115,11 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         //TODO??: purged
         //TODO??: could be more selective here
         this.model.hdas.bind( 'change:deleted', this.handleHdaDeletionChange, this );
-        this.model.hdas.bind( 'change:hidden', this.render, this );
 
         // if an a hidden hda is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
-        this.model.hdas.bind( 'change:state', function( hda, newState, changedList ){
-            if( ( hda.inReadyState() )
-            &&  ( !hda.get( 'visible' ) )
+        this.model.hdas.bind( 'state:ready', function( hda, newState, oldState ){
+            if( ( !hda.get( 'visible' ) )
             &&  ( !this.storage.get( 'show_hidden' ) ) ){
                 this.removeHdaView( hda.get( 'id' ) );
             }

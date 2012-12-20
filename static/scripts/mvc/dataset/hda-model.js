@@ -82,7 +82,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         this.on( 'change:state', function( currModel, newState ){
             this.log( this + ' has changed state:', currModel, newState );
             if( this.inReadyState() ){
-                this.trigger( 'state:ready', this.get( 'id' ), newState, this.previous( 'state' ), currModel );
+                this.trigger( 'state:ready', currModel, newState, this.previous( 'state' ) );
             }
         });
 

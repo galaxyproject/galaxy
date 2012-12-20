@@ -78,7 +78,11 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
      */
     log : function(){
         if( this.logger ){
-            return this.logger.log.apply( this.logger, arguments );
+            var log = this.logger.log;
+            if( typeof this.logger.log == 'object' ){
+                log = Function.prototype.bind.call( this.logger.log, this.logger );
+            }
+            return log.apply( this.logger, arguments );
         }
         return undefined;
     }
