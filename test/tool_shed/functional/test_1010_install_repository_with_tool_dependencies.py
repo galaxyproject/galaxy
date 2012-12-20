@@ -62,7 +62,9 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
         self.browse_tool_shed( url=self.url, strings_displayed=[ 'Test 0010 Repository With Tool Dependencies' ] )
         category = test_db_util.get_category_by_name( 'Test 0010 Repository With Tool Dependencies' )
         self.browse_category( category, strings_displayed=[ 'freebayes_0010' ] )
-        self.preview_repository_in_tool_shed( 'freebayes_0010', common.test_user_1_name, strings_displayed=[ 'freebayes_0010', 'Valid tools', 'Tool dependencies' ] )
+        self.preview_repository_in_tool_shed( 'freebayes_0010', common.test_user_1_name, strings_displayed=[ 'freebayes_0010',
+                                                                                                             'Valid tools',
+                                                                                                             'Installed tool dependencies' ] )
     def test_0015_install_freebayes_repository( self ):
         '''Install the freebayes repository without installing tool dependencies.'''
         strings_displayed=[ 'set your tool_dependency_dir', 'can be automatically installed', 'Set the tool_dependency_dir' ]

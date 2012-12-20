@@ -493,20 +493,29 @@ def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dep
         missing_tool_dependencies = {}
         for td_key, val in all_tool_dependencies.items():
             if td_key in [ 'set_environment' ]:
-                for td_info_dict in val:
+                for index, td_info_dict in enumerate( val ):
                     name = td_info_dict[ 'name' ]
                     version = None
                     type = td_info_dict[ 'type' ]
-                tool_dependency = get_tool_dependency_by_name_type_repository( trans, repository, name, type )
+                    tool_dependency = get_tool_dependency_by_name_type_repository( trans, repository, name, type )
+                    if tool_dependency:
+                        td_info_dict[ 'status' ] = str( tool_dependency.status )
+                        val[ index ] = td_info_dict
+                        if tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLED:
+                            tool_dependencies[ td_key ] = val
+                        else:
+                            missing_tool_dependencies[ td_key ] = val
             else:
                 name = val[ 'name' ]
                 version = val[ 'version' ]
                 type = val[ 'type' ]
                 tool_dependency = get_tool_dependency_by_name_version_type_repository( trans, repository, name, version, type )
-            if tool_dependency and tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLED:
-                tool_dependencies[ td_key ] = val
-            else:
-                missing_tool_dependencies[ td_key ] = val
+                val[ 'status' ] = str( tool_dependency.status )
+            if tool_dependency:
+                if tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLED:
+                    tool_dependencies[ td_key ] = val
+                else:
+                    missing_tool_dependencies[ td_key ] = val
     else:
         tool_dependencies = None
         missing_tool_dependencies = None

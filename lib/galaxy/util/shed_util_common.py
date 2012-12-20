@@ -87,6 +87,12 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
                             tool_dependencies=None,
                             valid_tools=None,
                             workflows=None )
+    # Some of the tool dependency folders will include links to display tool dependency information, and some of these links require the repository
+    # id.  However we need to be careful because sometimes the repository object is None.
+    if repository:
+        repository_id = repository.id
+    else:
+        repository_id = None
     lock = threading.Lock()
     lock.acquire( True )
     if tool_dependencies:
@@ -125,12 +131,26 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
             containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
         # Tool dependencies container.
         if tool_dependencies:
-            folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id, tool_dependencies, for_galaxy=True )
+            # We only want to display the Status column if the tool_dependency is missing.
+            description = 'click the name to browse the dependency installation directory'
+            folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id,
+                                                                                                      tool_dependencies,
+                                                                                                      for_galaxy=True,
+                                                                                                      repository_id=repository_id ,
+                                                                                                      description=description,
+                                                                                                      display_status=False )
             containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
         # Missing tool dependencies container.
         if missing_tool_dependencies:
-            folder_id, missing_tool_dependencies_root_folder = \
-                container_util.build_tool_dependencies_folder( folder_id, missing_tool_dependencies, label='Missing tool dependencies', for_galaxy=True )
+            description = 'click the name to install the missing dependency'
+            # We only want to display the Status column if the tool_dependency is missing.
+            folder_id, missing_tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id,
+                                                                                                              missing_tool_dependencies,
+                                                                                                              label='Missing tool dependencies',
+                                                                                                              for_galaxy=True,
+                                                                                                              repository_id=repository_id,
+                                                                                                              description=description,
+                                                                                                              display_status=True )
             containers_dict[ 'missing_tool_dependencies' ] = missing_tool_dependencies_root_folder
         # Valid tools container.
         if valid_tools:
@@ -197,7 +217,12 @@ def build_repository_containers_for_tool_shed( repository, changeset_revision, r
             # Tool dependencies container.
             if metadata and 'tool_dependencies' in metadata:
                 tool_dependencies = metadata[ 'tool_dependencies' ]
-                folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id, tool_dependencies, for_galaxy=False )
+                folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id,
+                                                                                                          tool_dependencies,
+                                                                                                          for_galaxy=False,
+                                                                                                          repository_id=None,
+                                                                                                          description=None,
+                                                                                                          display_status=False )
                 containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
             # Valid tools container.
             if metadata and 'tools' in metadata:
@@ -2441,26 +2466,28 @@ def strip_path( fpath ):
     return file_name
 def to_safe_string( text, to_html=True ):
     """Translates the characters in text to an html string"""
-    translated = []
-    for c in text:
-        if c in VALID_CHARS:
-            translated.append( c )
-        elif c in MAPPED_CHARS:
-            translated.append( MAPPED_CHARS[ c ] )
-        elif c in [ '\n' ]:
-            if to_html:
-                translated.append( '<br/>' )
-            else:
+    if text:
+        translated = []
+        for c in text:
+            if c in VALID_CHARS:
                 translated.append( c )
-        elif c in [ '\r' ]:
-            continue
-        elif c in [ ' ', '    ' ]:
-            translated.append( c )
-        else:
-            translated.append( '' )
-    if to_html:
-        str( markupsafe.escape( ''.join( translated ) ) )
-    return ''.join( translated )
+            elif c in MAPPED_CHARS:
+                translated.append( MAPPED_CHARS[ c ] )
+            elif c in [ '\n' ]:
+                if to_html:
+                    translated.append( '<br/>' )
+                else:
+                    translated.append( c )
+            elif c in [ '\r' ]:
+                continue
+            elif c in [ ' ', '    ' ]:
+                translated.append( c )
+            else:
+                translated.append( '' )
+        if to_html:
+            str( markupsafe.escape( ''.join( translated ) ) )
+        return ''.join( translated )
+    return text
 def tool_shed_from_repository_clone_url( repository_clone_url ):
     return clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
 def tool_shed_is_this_tool_shed( toolshed_base_url ):

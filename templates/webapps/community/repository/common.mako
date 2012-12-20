@@ -203,6 +203,12 @@
                 folder_label = str( folder.label )
                 if folder.datatypes:
                     col_span_str = 'colspan="4"'
+                elif folder.label == 'Missing tool dependencies':
+                    if folder.description:
+                        folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
+                    else:
+                        folder_label = "%s<i> - this repository's tools require handling of these missing dependencies</i>" % folder_label
+                    col_span_str = 'colspan="5"'
                 elif folder.label == 'Repository dependencies':
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
@@ -217,8 +223,11 @@
                 elif folder.invalid_tools:
                     folder_label = "%s<i> - click the tool config file name to see why the tool is invalid</i>" % folder_label
                 elif folder.tool_dependencies:
-                    folder_label = "%s<i> - this repository's tools require handling of these dependencies</i>" % folder_label
-                    col_span_str = 'colspan="3"'
+                    if folder.description:
+                        folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
+                    else:
+                        folder_label = "%s<i> - this repository's tools require handling of these dependencies</i>" % folder_label
+                    col_span_str = 'colspan="4"'
                 elif folder.workflows:
                     col_span_str = 'colspan="4"'
             %>
@@ -418,7 +427,24 @@
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <${cell_type} style="padding-left: ${pad+20}px;">${tool_dependency.name | h}</${cell_type}>
+        <${cell_type} style="padding-left: ${pad+20}px;">
+            %if row_is_header:
+                ${tool_dependency.name | h}
+            %elif tool_dependency.repository_id:
+                %if not tool_dependency.installation_status:
+                    ## tool_dependency.installation_status will be None if the status value in the database is 'Installed'.
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( tool_dependency.repository_id ) )}">
+                        ${tool_dependency.name | h}
+                    </a>
+                 %else:
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( tool_dependency.id ) )}">
+                        ${tool_dependency.name}
+                    </a>
+                 %endif
+            %else:
+                ${tool_dependency.name | h}
+            %endif
+        </${cell_type}>
         <${cell_type}>
             <%
                 if tool_dependency.version:
@@ -431,6 +457,9 @@
         <${cell_type}>${tool_dependency.type | h}</${cell_type}>
         %if tool_dependency.install_dir:
             <${cell_type}>${tool_dependency.install_dir | h}</${cell_type}>
+        %endif
+        %if tool_dependency.installation_status not in [ 'Installed', None ]:
+            <${cell_type}>${tool_dependency.installation_status | h}</${cell_type}>
         %endif
     </tr>
     <%
