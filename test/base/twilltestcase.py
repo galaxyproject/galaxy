@@ -2474,3 +2474,6 @@ class TwillTestCase( unittest.TestCase ):
     def add_tag( self, item_id, item_class, context, new_tag ):
         self.visit_url( "%s/tag/add_tag_async?item_id=%s&item_class=%s&context=%s&new_tag=%s" % \
                         ( self.url, item_id, item_class, context, new_tag ) )
+    def get_tags( self, item_id, item_class ):
+        self.visit_url( "%s/tag/get_tagging_elt_async?item_id=%s&item_class=%s" % \
+                        ( self.url, item_id, item_class ) )
