@@ -80,69 +80,68 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
                                             valid_tools, workflows ):
     """Return a dictionary of containers for the received repository's dependencies and readme files for display during installation to Galaxy."""
     containers_dict = dict( readme_files=None, repository_dependencies=None, tool_dependencies=None )
-    if readme_files_dict or repository_dependencies or tool_dependencies:
-        lock = threading.Lock()
-        lock.acquire( True )
+    lock = threading.Lock()
+    lock.acquire( True )
+    if tool_dependencies:
+        # Add the install_dir attribute to the tool_dependencies.
+        tool_dependencies = add_installation_directories_to_tool_dependencies( trans,
+                                                                               repository_name,
+                                                                               repository_owner,
+                                                                               changeset_revision,
+                                                                               tool_dependencies )
+    try:
+        folder_id = 0
+        # Datatypes container.
+        if datatypes:
+            folder_id, datatypes_root_folder = container_util.build_datatypes_folder( folder_id, datatypes )
+            containers_dict[ 'datatypes' ] = datatypes_root_folder
+        # Invalid tools container.
+        if invalid_tools:
+            folder_id, invalid_tools_root_folder = container_util.build_invalid_tools_folder( folder_id,
+                                                                                              invalid_tools,
+                                                                                              changeset_revision,
+                                                                                              repository=repository,
+                                                                                              label='Invalid tools' )
+            containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
+        # Readme files container.
+        if readme_files_dict:
+            folder_id, readme_files_root_folder = container_util.build_readme_files_folder( folder_id, readme_files_dict )
+            containers_dict[ 'readme_files' ] = readme_files_root_folder
+        # Repository dependencies container.
+        if repository_dependencies:
+            folder_id, repository_dependencies_root_folder = container_util.build_repository_dependencies_folder( toolshed_base_url=toolshed_base_url,
+                                                                                                                  repository_name=repository_name,
+                                                                                                                  repository_owner=repository_owner,
+                                                                                                                  changeset_revision=changeset_revision,
+                                                                                                                  folder_id=folder_id,
+                                                                                                                  repository_dependencies=repository_dependencies )
+            containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
+        # Tool dependencies container.
         if tool_dependencies:
-            # Add the install_dir attribute to the tool_dependencies.
-            tool_dependencies = add_installation_directories_to_tool_dependencies( trans,
-                                                                                   repository_name,
-                                                                                   repository_owner,
-                                                                                   changeset_revision,
-                                                                                   tool_dependencies )
-        try:
-            folder_id = 0
-            # Datatypes container.
-            if datatypes:
-                folder_id, datatypes_root_folder = container_util.build_datatypes_folder( folder_id, datatypes )
-                containers_dict[ 'datatypes' ] = datatypes_root_folder
-            # Invalid tools container.
-            if invalid_tools:
-                folder_id, invalid_tools_root_folder = container_util.build_invalid_tools_folder( folder_id,
-                                                                                                  invalid_tools,
-                                                                                                  changeset_revision,
-                                                                                                  repository=repository,
-                                                                                                  label='Invalid tools' )
-                containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
-            # Readme files container.
-            if readme_files_dict:
-                folder_id, readme_files_root_folder = container_util.build_readme_files_folder( folder_id, readme_files_dict )
-                containers_dict[ 'readme_files' ] = readme_files_root_folder
-            # Repository dependencies container.
-            if repository_dependencies:
-                folder_id, repository_dependencies_root_folder = container_util.build_repository_dependencies_folder( toolshed_base_url=toolshed_base_url,
-                                                                                                                      repository_name=repository_name,
-                                                                                                                      repository_owner=repository_owner,
-                                                                                                                      changeset_revision=changeset_revision,
-                                                                                                                      folder_id=folder_id,
-                                                                                                                      repository_dependencies=repository_dependencies )
-                containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
-            # Tool dependencies container.
-            if tool_dependencies:
-                folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id, tool_dependencies, for_galaxy=True )
-                containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
-            # Missing tool dependencies container.
-            if missing_tool_dependencies:
-                folder_id, missing_tool_dependencies_root_folder = \
-                    container_util.build_tool_dependencies_folder( folder_id, missing_tool_dependencies, label='Missing tool dependencies', for_galaxy=True )
-                containers_dict[ 'missing_tool_dependencies' ] = missing_tool_dependencies_root_folder
-            # Valid tools container.
-            if valid_tools:
-                folder_id, valid_tools_root_folder = container_util.build_tools_folder( folder_id,
-                                                                                        valid_tools,
-                                                                                        repository,
-                                                                                        changeset_revision,
-                                                                                        label='Valid tools',
-                                                                                        description='click the name to inspect the tool metadata' )
-                containers_dict[ 'valid_tools' ] = valid_tools_root_folder
-            # Workflows container.
-            if workflows:
-                folder_id, workflows_root_folder = container_util.build_workflows_folder( folder_id, workflows, repository_metadata, label='Workflows' )
-                containers_dict[ 'workflows' ] = workflows_root_folder
-        except Exception, e:
-            log.debug( "Exception in build_repository_containers_for_galaxy: %s" % str( e ) )
-        finally:
-            lock.release()
+            folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id, tool_dependencies, for_galaxy=True )
+            containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
+        # Missing tool dependencies container.
+        if missing_tool_dependencies:
+            folder_id, missing_tool_dependencies_root_folder = \
+                container_util.build_tool_dependencies_folder( folder_id, missing_tool_dependencies, label='Missing tool dependencies', for_galaxy=True )
+            containers_dict[ 'missing_tool_dependencies' ] = missing_tool_dependencies_root_folder
+        # Valid tools container.
+        if valid_tools:
+            folder_id, valid_tools_root_folder = container_util.build_tools_folder( folder_id,
+                                                                                    valid_tools,
+                                                                                    repository,
+                                                                                    changeset_revision,
+                                                                                    label='Valid tools',
+                                                                                    description='click the name to inspect the tool metadata' )
+            containers_dict[ 'valid_tools' ] = valid_tools_root_folder
+        # Workflows container.
+        if workflows:
+            folder_id, workflows_root_folder = container_util.build_workflows_folder( folder_id, workflows, repository_metadata, label='Workflows' )
+            containers_dict[ 'workflows' ] = workflows_root_folder
+    except Exception, e:
+        log.debug( "Exception in build_repository_containers_for_galaxy: %s" % str( e ) )
+    finally:
+        lock.release()
     return containers_dict
 def build_repository_containers_for_tool_shed( repository, changeset_revision, repository_dependencies, repository_metadata ):
     """Return a dictionary of containers for the received repository's dependencies and contents for display in the tool shed."""

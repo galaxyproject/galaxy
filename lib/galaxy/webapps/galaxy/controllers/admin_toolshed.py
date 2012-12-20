@@ -1365,10 +1365,7 @@ class AdminToolshed( AdminGalaxy ):
         ctx_rev = suc.get_ctx_rev( tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.installed_changeset_revision )
         repo_info_dicts = []
         repo_info_dict = kwd.get( 'repo_info_dict', None )
-        if repo_info_dict:
-            # The repo_info_dict should be encoded.
-            repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
-        else:
+        if not repo_info_dict:
             # Entering this if block used to happen only if the tool_shed_repository does not include any valid tools.  After repository dependencies
             # were introduced, it may never happen, but we'll keep the block just in case.
             if install_repository_dependencies:
