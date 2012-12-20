@@ -223,6 +223,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                         message += "You can get the latest updates for the repository using the <b>Get updates</b> option from the repository's "
                         message += "<b>Repository Actions</b> pop-up menu.  "
                     if len( repo_info_dicts ) == 1:
+                        created_or_updated_tool_shed_repositories.append( installed_tool_shed_repository )
                         return created_or_updated_tool_shed_repositories, all_repo_info_dicts, filtered_repo_info_dicts, message
             else:
                 # A tool shed repository is being installed into a Galaxy instance for the first time.  We may have the case where a repository

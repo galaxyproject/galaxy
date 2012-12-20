@@ -1138,6 +1138,7 @@ class AdminToolshed( AdminGalaxy ):
             created_or_updated_tool_shed_repositories, repo_info_dicts, filtered_repo_info_dicts, message = \
                 shed_util.create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, reinstalling=False )
             if message and len( repo_info_dicts ) == 1:
+                installed_tool_shed_repository = created_or_updated_tool_shed_repositories[ 0 ]
                 message+= 'Click <a href="%s">here</a> to manage the repository.  ' % \
                     ( web.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( installed_tool_shed_repository.id ) ) )
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
