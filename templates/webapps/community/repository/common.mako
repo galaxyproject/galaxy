@@ -509,7 +509,7 @@
             </div>
         </div>
     %endif
-    %if repository_dependencies_root_folder or tool_dependencies_root_folder:
+    %if repository_dependencies_root_folder or tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
         <div class="toolForm">
             <div class="toolFormTitle">Dependencies of this repository</div>
             <div class="toolFormBody">

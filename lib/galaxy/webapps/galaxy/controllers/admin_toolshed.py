@@ -898,7 +898,7 @@ class AdminToolshed( AdminGalaxy ):
             repository_dependencies_dict_for_display[ 'root_key' ] = root_key
             repository_dependencies_dict_for_display[ root_key ] = rd_tups
             repository_dependencies_dict_for_display[ 'description' ] = repository_dependencies[ 'description' ]
-        all_tool_dependencies = metadata.get( 'tool_dependencies', None )        
+        all_tool_dependencies = metadata.get( 'tool_dependencies', None )
         tool_dependencies, missing_tool_dependencies = shed_util.get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies )
         valid_tools = metadata.get( 'tools', None )
         workflows = metadata.get( 'workflows', None )
@@ -1126,7 +1126,7 @@ class AdminToolshed( AdminGalaxy ):
         if ( not includes_tools and not includes_repository_dependencies ) or \
             ( ( includes_tools or includes_repository_dependencies ) and kwd.get( 'select_tool_panel_section_button', False ) ):
             install_repository_dependencies = CheckboxField.is_checked( install_repository_dependencies )
-            if includes_tools:
+            if includes_tool_dependencies:
                 install_tool_dependencies = CheckboxField.is_checked( install_tool_dependencies )
                 shed_tool_conf = kwd[ 'shed_tool_conf' ]
             else:
@@ -1134,17 +1134,7 @@ class AdminToolshed( AdminGalaxy ):
                 # If installing a repository that includes no tools, get the relative tool_path from the file to which the migrated_tools_config
                 # setting points.
                 shed_tool_conf = trans.app.config.migrated_tools_config
-            # Get the tool path by searching the list of shed_tool_confs for the dictionary that contains the information about shed_tool_conf.
-            for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
-                config_filename = shed_tool_conf_dict[ 'config_filename' ]
-                if config_filename == shed_tool_conf:
-                    tool_path = shed_tool_conf_dict[ 'tool_path' ]
-                    break
-                else:
-                    file_name = suc.strip_path( config_filename )
-                    if file_name == shed_tool_conf:
-                        tool_path = shed_tool_conf_dict[ 'tool_path' ]
-                        break
+            tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf )
             created_or_updated_tool_shed_repositories, repo_info_dicts, filtered_repo_info_dicts, message = \
                 shed_util.create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, reinstalling=False )
             if message and len( repo_info_dicts ) == 1:
@@ -1232,6 +1222,8 @@ class AdminToolshed( AdminGalaxy ):
             raw_text = response.read()
             response.close()
             readme_files_dict = from_json_string( raw_text )
+            # Since we are installing a new repository, no tool dependencies will be considered "missing".  Most of the repository contents
+            # are set to None since we don't yet know what they are.
             containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
                                                                           toolshed_base_url=tool_shed_url,
                                                                           repository_name=name,
@@ -1247,7 +1239,13 @@ class AdminToolshed( AdminGalaxy ):
                                                                           valid_tools=None,
                                                                           workflows=None )
         else:
-            containers_dict = dict( readme_files_dict=None, repository_dependencies=None, tool_dependencies=None )
+            containers_dict = dict( datatypes=None,
+                                    invalid_tools=None,
+                                    readme_files_dict=None,
+                                    repository_dependencies=None,
+                                    tool_dependencies=None,
+                                    valid_tools=None,
+                                    workflows=None )
         # Handle tool dependencies chack box.
         if trans.app.config.tool_dependency_dir is None:
             if includes_tool_dependencies:
@@ -1260,6 +1258,17 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
+        log.debug("PPPPP In prepare_for_install, containers_dict: %s" % str( containers_dict ))
+        """
+        PPPPP In prepare_for_install, 
+        containers_dict: 
+        {'repository_dependencies': None, 
+         'missing_tool_dependencies': <galaxy.webapps.community.util.container_util.Folder object at 0x108a56f0>, 
+         'readme_files': None, 
+         'tool_dependencies': None}
+        FAIL
+
+        """
         return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
                                     encoded_repo_info_dicts=encoded_repo_info_dicts,
                                     includes_tools=includes_tools,
@@ -1456,6 +1465,7 @@ class AdminToolshed( AdminGalaxy ):
             includes_repository_dependencies = True
         else:
             includes_repository_dependencies = False
+        includes_tool_dependencies = tool_shed_repository.includes_tool_dependencies
         repo_info_dict = suc.create_repo_info_dict( trans=trans,
                                                     repository_clone_url=repository_clone_url,
                                                     changeset_revision=tool_shed_repository.installed_changeset_revision,
@@ -1527,6 +1537,10 @@ class AdminToolshed( AdminGalaxy ):
                                                                                                                   all_tool_dependencies )
             valid_tools = metadata.get( 'tools', None )
             workflows = metadata.get( 'workflows', None )
+            # All tool dependencies will be considered missing since we are reinstalling the repository.
+            for td in tool_dependencies:
+                missing_tool_dependencies.append( td )
+            tool_dependencies = None
             containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
                                                                           toolshed_base_url=tool_shed_url,
                                                                           repository_name=tool_shed_repository.name,
@@ -1538,16 +1552,22 @@ class AdminToolshed( AdminGalaxy ):
                                                                           missing_tool_dependencies=missing_tool_dependencies,
                                                                           readme_files_dict=readme_files_dict,
                                                                           repository_dependencies=repository_dependencies,
-                                                                          tool_dependencies=tool_dependencies,
+                                                                          tool_dependencies=missing_tool_dependencies,
                                                                           valid_tools=valid_tools,
                                                                           workflows=workflows )
         else:
-            containers_dict = dict( readme_files_dict=None, repository_dependencies=None, tool_dependencies=None )
+            containers_dict = dict( datatypes=None,
+                                    invalid_tools=None,
+                                    readme_files_dict=None,
+                                    repository_dependencies=None,
+                                    tool_dependencies=None,
+                                    valid_tools=None,
+                                    workflows=None )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
         # Handle tool dependencies check box.
         if trans.app.config.tool_dependency_dir is None:
-            if tool_shed_repository.includes_tool_dependencies:
+            if includes_tool_dependencies:
                 message += "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b> "
                 message += "setting in your Galaxy config file (universe_wsgi.ini) and restart your Galaxy server before installing the repository.  "
                 status = "warning"

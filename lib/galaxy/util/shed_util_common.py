@@ -1749,14 +1749,31 @@ def get_tool_panel_config_tool_path_install_dir( app, repository ):
     relative_install_dir = None
     shed_config_dict = repository.get_shed_config_dict( app )
     if not shed_config_dict:
-        #just pick a semi-random shed config
+        # Just pick a semi-random shed config.
         for shed_config_dict in app.toolbox.shed_tool_confs:
-            if ( repository.dist_to_shed and shed_config_dict['config_filename'] == app.config.migrated_tools_config ) or ( not repository.dist_to_shed and shed_config_dict['config_filename'] != app.config.migrated_tools_config ):
+            if ( repository.dist_to_shed and shed_config_dict[ 'config_filename' ] == app.config.migrated_tools_config ) \
+                or ( not repository.dist_to_shed and shed_config_dict[ 'config_filename' ] != app.config.migrated_tools_config ):
                 break
     shed_tool_conf = shed_config_dict[ 'config_filename' ]
     tool_path = shed_config_dict[ 'tool_path' ]
     relative_install_dir = partial_install_dir
     return shed_tool_conf, tool_path, relative_install_dir
+def get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf ):
+    """
+    Return the tool_path config setting for the received shed_tool_conf file by searching the tool box's in-memory list of shed_tool_confs for the
+    dictionary whose config_filename key has a value matching the received shed_tool_conf.
+    """
+    for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+        config_filename = shed_tool_conf_dict[ 'config_filename' ]
+        if config_filename == shed_tool_conf:
+            tool_path = shed_tool_conf_dict[ 'tool_path' ]
+            break
+        else:
+            file_name = strip_path( config_filename )
+            if file_name == shed_tool_conf:
+                tool_path = shed_tool_conf_dict[ 'tool_path' ]
+                break
+    return tool_path
 def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
     # This method is used only in Galaxy, not the tool shed.
     sa_session = app.model.context.current
