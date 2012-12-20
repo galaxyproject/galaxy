@@ -1374,7 +1374,6 @@ class AdminToolshed( AdminGalaxy ):
                                                                             changeset_revision=tool_shed_repository.installed_changeset_revision )
             else:
                 repository_dependencies = None
-            repo = hg.repository( suc.get_configured_ui(), path=os.path.abspath( tool_shed_repository.repo_path( trans.app ) ) )
             repo_info_dict = suc.create_repo_info_dict( trans=trans,
                                                         repository_clone_url=repository_clone_url,
                                                         changeset_revision=tool_shed_repository.installed_changeset_revision,
