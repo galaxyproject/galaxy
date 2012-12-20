@@ -258,7 +258,7 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
     def test_0015_reset_metadata_on_all_repositories( self ):
         '''Reset metadata on all repositories, then verify that it has not changed.'''
         repository_metadata = dict()
-        repositories = test_db_util.get_all_installed_repositories()
+        repositories = test_db_util.get_all_installed_repositories( actually_installed=True )
         for repository in repositories:
             repository_metadata[ self.security.encode_id( repository.id ) ] = repository.metadata
         self.reset_metadata_on_selected_installed_repositories( repository_metadata.keys() )

@@ -65,9 +65,18 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
         self.preview_repository_in_tool_shed( 'emboss_0020', common.test_user_1_name, strings_displayed=[ 'emboss_0020', 'Valid tools' ] )
     def test_0015_install_emboss_repository( self ):
         '''Install the emboss repository without installing tool dependencies.'''
-        self.install_repository( 'emboss_0020', common.test_user_1_name, 'Test 0020 Basic Repository Dependencies', install_tool_dependencies=False )
+        self.install_repository( 'emboss_0020', 
+                                 common.test_user_1_name, 
+                                 'Test 0020 Basic Repository Dependencies', 
+                                 install_tool_dependencies=False, 
+                                 new_tool_panel_section='test_1020' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0020', common.test_user_1_name )
-        self.verify_installed_repository_on_browse_page( installed_repository )
+        strings_displayed = [ installed_repository.name,
+                              installed_repository.description,
+                              installed_repository.owner, 
+                              installed_repository.tool_shed, 
+                              installed_repository.installed_changeset_revision ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         self.display_installed_repository_manage_page( installed_repository, 
                                                        strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'antigenic' ] )
         self.check_installed_repository_tool_dependencies( installed_repository, dependencies_installed=False )

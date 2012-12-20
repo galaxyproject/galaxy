@@ -196,6 +196,10 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def display_galaxy_browse_repositories_page( self, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/admin_toolshed/browse_repositories'
+        self.visit_galaxy_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_installed_repository_manage_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
@@ -392,7 +396,20 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "3", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def install_repository( self, name, owner, category_name, install_tool_dependencies=False, changeset_revision=None, strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[] ):
+    def initiate_installation_process( self ):
+        html = self.last_page()
+        # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the 
+        # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in 
+        # group(2), and the reinstalling flag in group(3) and pass them to the manage_repositories method in the Galaxy 
+        # admin_toolshed controller.
+        install_parameters = re.search( 'initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html )
+        iri_ids = install_parameters.group(1)
+        encoded_kwd = install_parameters.group(2)
+        reinstalling = install_parameters.group(3)
+        url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
+            ( iri_ids, encoded_kwd, reinstalling )
+        self.visit_galaxy_url( url )
+    def install_repository( self, name, owner, category_name, install_tool_dependencies=False, changeset_revision=None, strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[], **kwd ):
         if test_db_util.get_installed_repository_by_name_owner( name, owner ) is not None:
             return
         self.browse_tool_shed( url=self.url )
@@ -406,27 +423,16 @@ class ShedTwillTestCase( TwillTestCase ):
               ( changeset_revision, repository_id, self.galaxy_url )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        form = tc.browser.get_form( 'select_tool_panel_section' )
         if 'install_tool_dependencies' in self.last_page():
-            form = tc.browser.get_form( 'select_tool_panel_section' )
             checkbox = form.find_control( id="install_tool_dependencies" )
             checkbox.disabled = False
             if install_tool_dependencies:
                 checkbox.selected = True
             else:
                 checkbox.selected = False
-        tc.submit( 'select_tool_panel_section_button' )
-        html = self.last_page()
-        # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the 
-        # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in 
-        # group(2), and the reinstalling flag in group(3) and pass them to the manage_repositories method in the Galaxy 
-        # admin_toolshed controller.
-        install_parameters = re.search( 'initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html )
-        iri_ids = install_parameters.group(1)
-        encoded_kwd = install_parameters.group(2)
-        reinstalling = install_parameters.group(3)
-        url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
-            ( iri_ids, encoded_kwd, reinstalling )
-        self.visit_galaxy_url( url )
+        self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
+        self.initiate_installation_process()
         self.wait_for_repository_installation( repository, changeset_revision )
     def load_invalid_tool_page( self, repository, tool_xml, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
@@ -451,6 +457,12 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( '/repository/preview_tools_in_changeset?repository_id=%s&changeset_revision=%s' % \
                         ( self.security.encode_id( repository.id ), changeset_revision ) )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def reinstall_repository( self, installed_repository ):
+        url = '/admin_toolshed/reinstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
+        self.visit_galaxy_url( url )
+        self.initiate_installation_process()
+        tool_shed_repository = test_db_util.get_repository_by_name_and_owner( installed_repository.name, installed_repository.owner )
+        self.wait_for_repository_installation( tool_shed_repository, installed_repository.installed_changeset_revision )
     def repository_is_new( self, repository ):
         repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
@@ -495,6 +507,17 @@ class ShedTwillTestCase( TwillTestCase ):
     def tip_has_metadata( self, repository ):
         tip = self.get_repository_tip( repository )
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision( repository.id, tip )
+    def uninstall_repository( self, installed_repository, remove_from_disk=True ):
+        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
+        self.visit_galaxy_url( url )
+#        form = tc.browser.get_form( 'deactivate_or_uninstall_repository' )
+        tc.fv ( 1, "remove_from_disk", '1' )
+#        checkbox.readonly = False
+#        if remove_from_disk:
+#            checkbox.selected = True
+        tc.submit( 'deactivate_or_uninstall_repository_button' )
+        strings_displayed = [ 'has been uninstalled', 'The repository named' ]
+        self.check_for_strings( strings_displayed, strings_not_displayed=[] )
     def update_installed_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/check_for_updates?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
@@ -521,15 +544,6 @@ class ShedTwillTestCase( TwillTestCase ):
         self.reset_installed_repository_metadata( installed_repository )
         new_metadata = installed_repository.metadata
         assert metadata == new_metadata, 'Metadata for installed repository %s differs after metadata reset.' % name
-    def verify_installed_repository_on_browse_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
-        url = '/admin_toolshed/browse_repositories'
-        self.visit_galaxy_url( url )
-        strings_displayed.extend( [ installed_repository.name, 
-                                    installed_repository.description, 
-                                    installed_repository.owner, 
-                                    installed_repository.tool_shed, 
-                                    installed_repository.installed_changeset_revision ] )
-        self.check_for_strings( strings_displayed, strings_not_displayed )
     def verify_installed_repository_data_table_entries( self, data_tables=[] ):
         data_table = util.parse_xml( self.shed_tool_data_table_conf )
         found = False

@@ -70,9 +70,15 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
                                  common.test_user_1_name,
                                  'Test 0010 Repository With Tool Dependencies', 
                                  strings_displayed=strings_displayed,
-                                 install_tool_dependencies=False )
+                                 install_tool_dependencies=False, 
+                                 new_tool_panel_section='test_1010' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'freebayes_0010', common.test_user_1_name )
-        self.verify_installed_repository_on_browse_page( installed_repository )
+        strings_displayed = [ installed_repository.name,
+                              installed_repository.description,
+                              installed_repository.owner, 
+                              installed_repository.tool_shed, 
+                              installed_repository.installed_changeset_revision ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         self.display_installed_repository_manage_page( installed_repository, 
                                                        strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'FreeBayes' ] )
         self.check_installed_repository_tool_dependencies( installed_repository, dependencies_installed=False )

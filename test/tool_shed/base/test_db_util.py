@@ -16,8 +16,15 @@ def flush( obj ):
     sa_session.flush()
 def get_all_repositories():
     return sa_session.query( model.Repository ).all()
-def get_all_installed_repositories():
-    return ga_session.query( galaxy.model.ToolShedRepository ).all()
+def get_all_installed_repositories( actually_installed=False ):
+    if actually_installed:
+        return ga_session.query( galaxy.model.ToolShedRepository ) \
+                         .filter( and_( galaxy.model.ToolShedRepository.table.c.deleted == False,
+                                        galaxy.model.ToolShedRepository.table.c.uninstalled == False,
+                                        galaxy.model.ToolShedRepository.table.c.status == galaxy.model.ToolShedRepository.installation_status.INSTALLED ) ) \
+                         .all()
+    else:
+        return ga_session.query( galaxy.model.ToolShedRepository ).all()
 def get_category_by_name( name ):
     return sa_session.query( model.Category ) \
                      .filter( model.Category.table.c.name == name ) \
