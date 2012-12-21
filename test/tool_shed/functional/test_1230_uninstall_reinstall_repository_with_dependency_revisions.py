@@ -11,10 +11,15 @@ emboss_6_repository_name = 'emboss_6_0030'
 emboss_repository_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
 emboss_repository_long_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
 
-class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
-    '''Test installing a repository with dependency revisions.'''
+class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
+    '''Test uninstalling and reinstalling a repository with repository dependency revisions.'''
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
+        self.galaxy_logout()
+        self.galaxy_login( email=common.admin_email, username=common.admin_username )
+        admin_user = test_db_util.get_galaxy_user( common.admin_email )
+        assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
+        admin_user_private_role = test_db_util.get_galaxy_private_role( admin_user )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = test_db_util.get_user( common.test_user_1_email )
@@ -25,14 +30,9 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         admin_user = test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
         admin_user_private_role = test_db_util.get_private_role( admin_user )
-        self.galaxy_logout()
-        self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        galaxy_admin_user = test_db_util.get_galaxy_user( common.admin_email )
-        assert galaxy_admin_user is not None, 'Problem retrieving user with email %s from the database' % common.admin_email
-        galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
     def test_0005_ensure_repositories_and_categories_exist( self ):
-        '''Create the 0030 category and add repositories to it, if necessary.'''
-        category = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Test 0030 Repository Dependency Revisions' )
+        '''Create the 0030 category and upload the emboss repository to the tool shed, if necessary.'''
+        category = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Tests for a repository with tool dependencies.' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         datatypes_repository = self.get_or_create_repository( name=datatypes_repository_name, 
@@ -91,24 +91,31 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
                               'repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
                               commit_message='Uploaded repository_dependencies.xml' )
-    def test_0010_browse_tool_shed( self ):
-        """Browse the available tool sheds in this Galaxy instance and preview the emboss tool."""
+    def test_0010_install_emboss_repository( self ):
+        '''Install the emboss repository into the Galaxy instance.'''
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
-        self.browse_tool_shed( url=self.url, strings_displayed=[ 'Test 0030 Repository Dependency Revisions' ] )
-        category = test_db_util.get_category_by_name( 'Test 0030 Repository Dependency Revisions' )
-        self.browse_category( category, strings_displayed=[ 'emboss_0030' ] )
-        self.preview_repository_in_tool_shed( 'emboss_0030', common.test_user_1_name, strings_displayed=[ 'emboss_0030', 'Valid tools' ] )
-    def test_0015_install_emboss_repository( self ):
-        '''Install the emboss repository without installing tool dependencies.'''
-        repository = test_db_util.get_repository_by_name_and_owner( 'emboss_0030', common.test_user_1_name )
-        old_datatypes = self.get_datatypes_count()
-        self.install_repository( 'emboss_0030', 
+        self.install_repository( emboss_repository_name, 
                                  common.test_user_1_name, 
                                  'Test 0030 Repository Dependency Revisions', 
-                                 install_tool_dependencies=False, 
-                                 new_tool_panel_section='test_1030' )
-        installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0030', common.test_user_1_name )
+                                 new_tool_panel_section='test_1210' )
+        installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
+        strings_displayed = [ installed_repository.name,
+                              installed_repository.description,
+                              installed_repository.owner, 
+                              installed_repository.tool_shed, 
+                              installed_repository.installed_changeset_revision ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
+    def test_0015_uninstall_emboss_repository( self ):
+        '''Uninstall the emboss repository.'''
+        installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
+        self.uninstall_repository( installed_repository, remove_from_disk=True )
+        strings_not_displayed = [ installed_repository.installed_changeset_revision ]
+        self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
+    def test_0020_reinstall_emboss_repository( self ):
+        '''Reinstall the emboss repository.'''
+        installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
+        self.reinstall_repository( installed_repository )
         strings_displayed = [ installed_repository.name,
                               installed_repository.description,
                               installed_repository.owner, 
@@ -116,12 +123,24 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'antigenic' ] )
-        self.check_installed_repository_tool_dependencies( installed_repository, dependencies_installed=False )
+                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'emboss' ] )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
-        self.update_installed_repository( installed_repository, strings_displayed=[ "there are no updates available" ] )
-        new_datatypes = self.get_datatypes_count()
-        assert new_datatypes > old_datatypes, 'Installing emboss did not add datatypes to the registry.'
-    def test_0025_verify_installed_repository_metadata( self ):
-        '''Verify that resetting the metadata on an installed repository does not change the metadata.'''
-        self.verify_installed_repository_metadata_unchanged( 'emboss_0030', common.test_user_1_name )
+    def test_0025_deactivate_emboss_repository( self ):
+        '''Deactivate the emboss repository without removing it from disk.'''
+        installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
+        self.uninstall_repository( installed_repository, remove_from_disk=False )
+        strings_not_displayed = [ installed_repository.installed_changeset_revision ]
+        self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
+    def test_0030_reactivate_emboss_repository( self ):
+        '''Reactivate the emboss repository and verify that it now shows up in the list of installed repositories.'''
+        installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
+        self.reactivate_repository( installed_repository )
+        strings_displayed = [ installed_repository.name,
+                              installed_repository.description,
+                              installed_repository.owner, 
+                              installed_repository.tool_shed, 
+                              installed_repository.installed_changeset_revision ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
+        self.display_installed_repository_manage_page( installed_repository, 
+                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'emboss' ] )
+        self.verify_tool_metadata_for_installed_repository( installed_repository )

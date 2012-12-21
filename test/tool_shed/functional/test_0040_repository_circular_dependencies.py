@@ -26,7 +26,7 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
     def test_0005_create_category( self ):
         """Create a category for this test suite"""
         self.create_category( name='test_0040_repository_circular_dependencies', description='Testing handling of circular repository dependencies.' )
-    def test_0010_create_freebayes_repository_name( self ):
+    def test_0010_create_freebayes_repository( self ):
         '''Create and populate freebayes_0040.'''
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )

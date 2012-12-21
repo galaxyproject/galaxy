@@ -1,8 +1,8 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 
-class BasicToolShedFeatures( ShedTwillTestCase ):
-    '''Test installing a basic repository.'''
+class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
+    '''Test uninstalling and reinstalling a basic repository.'''
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
@@ -54,7 +54,6 @@ class BasicToolShedFeatures( ShedTwillTestCase ):
     def test_0015_uninstall_filtering_repository( self ):
         '''Uninstall the filtering repository.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
-        old_metadata = installed_repository.metadata
         self.uninstall_repository( installed_repository, remove_from_disk=True )
         strings_not_displayed = [ installed_repository.name,
                               installed_repository.description,
@@ -84,7 +83,7 @@ class BasicToolShedFeatures( ShedTwillTestCase ):
     def test_0030_reactivate_filtering_repository( self ):
         '''Reactivate the filtering repository and verify that it now shows up in the list of installed repositories.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
-        self.reinstall_repository( installed_repository )
+        self.reactivate_repository( installed_repository )
         strings_displayed = [ installed_repository.name,
                               installed_repository.description,
                               installed_repository.owner, 

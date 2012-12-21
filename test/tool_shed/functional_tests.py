@@ -270,7 +270,7 @@ def main():
                                                file_path = galaxy_file_path,
                                                tool_path = tool_path,
                                                tool_data_path = tool_data_path,
-                                               shed_tool_path=galaxy_shed_tool_path,
+                                               shed_tool_path = galaxy_shed_tool_path,
                                                update_integrated_tool_panel = False,
                                                tool_config_file = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
                                                tool_sheds_config_file = galaxy_tool_sheds_conf_file,

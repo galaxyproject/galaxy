@@ -68,13 +68,10 @@ class ShedTwillTestCase( TwillTestCase ):
         for dependency in installed_repository.metadata[ 'tool_dependencies' ]:
             tool_dependency = installed_repository.metadata[ 'tool_dependencies' ][ dependency ]
             strings_displayed.extend( [ tool_dependency[ 'name' ], tool_dependency[ 'version' ], tool_dependency[ 'type' ] ] )
-            """
-            TODO: Uncomment these when Greg enhances the tool dependencies and missing tool dependencies containers to display the status.
             if dependencies_installed:
                 strings_displayed.append( 'Installed' )
             else:
                 strings_displayed.append( 'Never installed' )
-            """
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
@@ -322,6 +319,14 @@ class ShedTwillTestCase( TwillTestCase ):
         file( xml_filename, 'w' ).write( repository_dependency_xml )
     def generate_temp_path( self, test_script_path, additional_paths=[] ):
         return os.path.join( self.tool_shed_test_tmp_dir, test_script_path, os.sep.join( additional_paths ) )
+    def get_datatypes_count( self ):
+        url = '/admin/view_datatypes_registry'
+        self.visit_galaxy_url( url )
+        html = self.last_page()
+        datatypes_count = re.search( 'registry contains (\d+) data types', html )
+        if datatypes_count:
+            return datatypes_count.group( 1 )
+        return None
     def get_filename( self, filename, filepath=None ):
         if filepath is not None:
             return os.path.abspath( os.path.join( filepath, filename ) )
@@ -404,15 +409,16 @@ class ShedTwillTestCase( TwillTestCase ):
         # group(2), and the reinstalling flag in group(3) and pass them to the manage_repositories method in the Galaxy 
         # admin_toolshed controller.
         install_parameters = re.search( 'initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html )
-        iri_ids = install_parameters.group(1)
-        encoded_kwd = install_parameters.group(2)
-        reinstalling = install_parameters.group(3)
-        url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
-            ( iri_ids, encoded_kwd, reinstalling )
-        self.visit_galaxy_url( url )
-    def install_repository( self, name, owner, category_name, install_tool_dependencies=False, changeset_revision=None, strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[], **kwd ):
-        if test_db_util.get_installed_repository_by_name_owner( name, owner ) is not None:
-            return
+        if install_parameters:
+            iri_ids = install_parameters.group(1)
+            encoded_kwd = install_parameters.group(2)
+            reinstalling = install_parameters.group(3)
+            url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
+                ( iri_ids, encoded_kwd, reinstalling )
+            self.visit_galaxy_url( url )
+    def install_repository( self, name, owner, category_name, install_tool_dependencies=False, 
+                            changeset_revision=None, strings_displayed=[], strings_not_displayed=[], 
+                            preview_strings_displayed=[], post_submit_strings_displayed=[], **kwd ):
         self.browse_tool_shed( url=self.url )
         self.browse_category( test_db_util.get_category_by_name( category_name ) )
         self.preview_repository_in_tool_shed( name, common.test_user_1_name, strings_displayed=preview_strings_displayed )
@@ -435,6 +441,7 @@ class ShedTwillTestCase( TwillTestCase ):
         if 'shed_tool_conf' not in kwd:
             kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
         self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
+        self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         self.initiate_installation_process()
         self.wait_for_repository_installation( repository, changeset_revision )
     def load_invalid_tool_page( self, repository, tool_xml, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
@@ -460,6 +467,11 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( '/repository/preview_tools_in_changeset?repository_id=%s&changeset_revision=%s' % \
                         ( self.security.encode_id( repository.id ), changeset_revision ) )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def reactivate_repository( self, installed_repository ):
+        url = '/admin_toolshed/browse_repositories?operation=activate+or+reinstall&id=%s' % self.security.encode_id( installed_repository.id )
+        self.visit_galaxy_url( url )
+        strings_displayed = [ installed_repository.name, 'repository has been activated' ]
+        self.check_for_strings( strings_displayed, [] )
     def reinstall_repository( self, installed_repository ):
         url = '/admin_toolshed/reinstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
@@ -513,13 +525,16 @@ class ShedTwillTestCase( TwillTestCase ):
     def uninstall_repository( self, installed_repository, remove_from_disk=True ):
         url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
-#        form = tc.browser.get_form( 'deactivate_or_uninstall_repository' )
-        tc.fv ( 1, "remove_from_disk", '1' )
-#        checkbox.readonly = False
-#        if remove_from_disk:
-#            checkbox.selected = True
+        if remove_from_disk:
+            tc.fv ( 1, "remove_from_disk", 'true' )
+        else:
+            tc.fv ( 1, "remove_from_disk", 'false' )
         tc.submit( 'deactivate_or_uninstall_repository_button' )
-        strings_displayed = [ 'has been uninstalled', 'The repository named' ]
+        strings_displayed = [ 'The repository named' ]
+        if remove_from_disk:
+            strings_displayed.append( 'has been uninstalled' )
+        else:
+            strings_displayed.append( 'has been deactivated' )
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
     def update_installed_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/check_for_updates?id=%s' % self.security.encode_id( installed_repository.id )

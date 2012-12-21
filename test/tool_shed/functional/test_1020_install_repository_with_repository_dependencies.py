@@ -65,6 +65,7 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
         self.preview_repository_in_tool_shed( 'emboss_0020', common.test_user_1_name, strings_displayed=[ 'emboss_0020', 'Valid tools' ] )
     def test_0015_install_emboss_repository( self ):
         '''Install the emboss repository without installing tool dependencies.'''
+        old_datatypes = self.get_datatypes_count()
         self.install_repository( 'emboss_0020', 
                                  common.test_user_1_name, 
                                  'Test 0020 Basic Repository Dependencies', 
@@ -81,6 +82,8 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                                        strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'antigenic' ] )
         self.check_installed_repository_tool_dependencies( installed_repository, dependencies_installed=False )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
+        new_datatypes = self.get_datatypes_count()
+        assert new_datatypes > old_datatypes, 'Installing emboss did not add datatypes to the registry'
     def test_0020_verify_installed_repository_metadata( self ):
         '''Verify that resetting the metadata on an installed repository does not change the metadata.'''
         self.verify_installed_repository_metadata_unchanged( 'emboss_0020', common.test_user_1_name )
