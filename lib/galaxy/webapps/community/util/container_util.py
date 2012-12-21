@@ -98,7 +98,8 @@ class Tool( object ):
 
 class ToolDependency( object ):
     """Tool dependency object"""
-    def __init__( self, id=None, name=None, version=None, type=None, install_dir=None, readme=None, installation_status=None, repository_id=None,  ):
+    def __init__( self, id=None, name=None, version=None, type=None, install_dir=None, readme=None, installation_status=None, repository_id=None,
+                  tool_dependency_id=None ):
         self.id = id
         self.name = name
         self.version = version
@@ -107,6 +108,7 @@ class ToolDependency( object ):
         self.readme = readme
         self.installation_status = installation_status
         self.repository_id = repository_id
+        self.tool_dependency_id = tool_dependency_id
 
 class Workflow( object ):
     """Workflow object"""
@@ -279,8 +281,7 @@ def build_tools_folder( folder_id, tool_dicts, repository, changeset_revision, v
     else:
         tools_root_folder = None
     return folder_id, tools_root_folder
-def build_tool_dependencies_folder( folder_id, tool_dependencies, label='Installed tool dependencies', for_galaxy=False, repository_id=None, description=None,
-                                    display_status=False ):
+def build_tool_dependencies_folder( folder_id, tool_dependencies, label='Tool dependencies', for_galaxy=False, description=None, display_status=False ):
     """Return a folder hierarchy containing tool dependencies."""
     if tool_dependencies:
         tool_dependency_id = 0
@@ -298,8 +299,7 @@ def build_tool_dependencies_folder( folder_id, tool_dependencies, label='Install
             tool_dependency = ToolDependency( id=tool_dependency_id,
                                               name='Name',
                                               version='Version',
-                                              type='Type',
-                                              repository_id=repository_id )
+                                              type='Type' )
             if display_status:
                 tool_dependency.installation_status = 'Status'
             else:
@@ -308,8 +308,7 @@ def build_tool_dependencies_folder( folder_id, tool_dependencies, label='Install
             tool_dependency = ToolDependency( id=tool_dependency_id,
                                               name='Name',
                                               version='Version',
-                                              type='Type',
-                                              repository_id=repository_id )
+                                              type='Type' )
             if display_status:
                 tool_dependency.installation_status = 'Status'
         folder.tool_dependencies.append( tool_dependency )
@@ -317,25 +316,30 @@ def build_tool_dependencies_folder( folder_id, tool_dependencies, label='Install
             tool_dependency_id += 1
             if dependency_key == 'set_environment':
                 for set_environment_dict in requirements_dict:
-                    name = set_environment_dict[ 'name' ]
+                    name = set_environment_dict.get( 'name', None )
                     type = set_environment_dict[ 'type' ]
+                    repository_id = set_environment_dict.get( 'repository_id', None )
+                    td_id = set_environment_dict.get( 'tool_dependency_id', None )
                     if display_status:
-                        installation_status = set_environment_dict[ 'status' ]
+                        installation_status = set_environment_dict.get( 'status', None )
                     else:
                         installation_status = None
                     tool_dependency = ToolDependency( id=tool_dependency_id,
                                                       name=name,
                                                       type=type,
                                                       installation_status=installation_status,
-                                                      repository_id=repository_id )
+                                                      repository_id=repository_id,
+                                                      tool_dependency_id=td_id )
                     folder.tool_dependencies.append( tool_dependency )
             else:
                 name = requirements_dict[ 'name' ]
                 version = requirements_dict[ 'version' ]
                 type = requirements_dict[ 'type' ]
                 install_dir = requirements_dict.get( 'install_dir', None )
+                repository_id = requirements_dict.get( 'repository_id', None )
+                td_id = requirements_dict.get( 'tool_dependency_id', None )
                 if display_status:
-                    installation_status = requirements_dict[ 'status' ]
+                    installation_status = requirements_dict.get( 'status', None )
                 else:
                     installation_status = None
                 tool_dependency = ToolDependency( id=tool_dependency_id,
@@ -344,7 +348,8 @@ def build_tool_dependencies_folder( folder_id, tool_dependencies, label='Install
                                                   type=type,
                                                   install_dir=install_dir,
                                                   installation_status=installation_status,
-                                                  repository_id=repository_id )
+                                                  repository_id=repository_id,
+                                                  tool_dependency_id=td_id )
                 folder.tool_dependencies.append( tool_dependency )
     else:
         tool_dependencies_root_folder = None

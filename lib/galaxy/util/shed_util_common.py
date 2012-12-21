@@ -135,8 +135,8 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
             description = 'click the name to browse the dependency installation directory'
             folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id,
                                                                                                       tool_dependencies,
+                                                                                                      label='Installed tool dependencies',
                                                                                                       for_galaxy=True,
-                                                                                                      repository_id=repository_id ,
                                                                                                       description=description,
                                                                                                       display_status=False )
             containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
@@ -148,7 +148,6 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
                                                                                                               missing_tool_dependencies,
                                                                                                               label='Missing tool dependencies',
                                                                                                               for_galaxy=True,
-                                                                                                              repository_id=repository_id,
                                                                                                               description=description,
                                                                                                               display_status=True )
             containers_dict[ 'missing_tool_dependencies' ] = missing_tool_dependencies_root_folder
@@ -220,7 +219,6 @@ def build_repository_containers_for_tool_shed( repository, changeset_revision, r
                 folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( folder_id,
                                                                                                           tool_dependencies,
                                                                                                           for_galaxy=False,
-                                                                                                          repository_id=None,
                                                                                                           description=None,
                                                                                                           display_status=False )
                 containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
@@ -837,7 +835,7 @@ def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
         env_name = env_elem.get( 'name', None )
         if env_name:
             requirements_dict [ 'name' ] = env_name
-            requirements_dict [ 'type' ] = 'environment variable'
+            requirements_dict [ 'type' ] = 'set_environment'
         if requirements_dict:
             if 'set_environment' in tool_dependencies_dict:
                 tool_dependencies_dict[ 'set_environment' ].append( requirements_dict )

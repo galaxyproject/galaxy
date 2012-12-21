@@ -499,6 +499,8 @@ def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dep
                     type = td_info_dict[ 'type' ]
                     tool_dependency = get_tool_dependency_by_name_type_repository( trans, repository, name, type )
                     if tool_dependency:
+                        td_info_dict[ 'repository_id' ] = repository.id
+                        td_info_dict[ 'tool_dependency_id' ] = tool_dependency.id
                         td_info_dict[ 'status' ] = str( tool_dependency.status )
                         val[ index ] = td_info_dict
                         if tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLED:
@@ -510,12 +512,14 @@ def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dep
                 version = val[ 'version' ]
                 type = val[ 'type' ]
                 tool_dependency = get_tool_dependency_by_name_version_type_repository( trans, repository, name, version, type )
-                val[ 'status' ] = str( tool_dependency.status )
-            if tool_dependency:
-                if tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLED:
-                    tool_dependencies[ td_key ] = val
-                else:
-                    missing_tool_dependencies[ td_key ] = val
+                if tool_dependency:
+                    val[ 'repository_id' ] = repository.id
+                    val[ 'tool_dependency_id' ] = tool_dependency.id
+                    val[ 'status' ] = str( tool_dependency.status )
+                    if tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLED:
+                        tool_dependencies[ td_key ] = val
+                    else:
+                        missing_tool_dependencies[ td_key ] = val
     else:
         tool_dependencies = None
         missing_tool_dependencies = None

@@ -430,17 +430,15 @@
         <${cell_type} style="padding-left: ${pad+20}px;">
             %if row_is_header:
                 ${tool_dependency.name | h}
-            %elif tool_dependency.repository_id:
-                %if not tool_dependency.installation_status:
-                    ## tool_dependency.installation_status will be None if the status value in the database is 'Installed'.
-                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.id ), repository_id=trans.security.encode_id( tool_dependency.repository_id ) )}">
-                        ${tool_dependency.name | h}
-                    </a>
-                 %else:
-                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( tool_dependency.id ) )}">
-                        ${tool_dependency.name}
-                    </a>
-                 %endif
+            %elif trans.webapp.name == 'galaxy' and tool_dependency.tool_dependency_id and tool_dependency.repository_id and not tool_dependency.installation_status:
+                ## tool_dependency.installation_status will be None if the status value in the database is 'Installed'.
+                <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ), repository_id=trans.security.encode_id( tool_dependency.repository_id ) )}">
+                    ${tool_dependency.name | h}
+                </a>
+            %elif trans.webapp.name == 'galaxy' and tool_dependency.tool_dependency_id and tool_dependency.installation_status:
+                <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
+                    ${tool_dependency.name}
+                </a>
             %else:
                 ${tool_dependency.name | h}
             %endif
