@@ -158,17 +158,16 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
                 if len( regions ) > 1:
                     # Sort by chrom name, start so that data is not fetched out of order.
-                    regions.sort( key=lambda r: r.chrom )
-                    regions.sort( key=lambda r: r.start )
-
+                    regions = sorted(regions, key=lambda r: (r.chrom.lower(), r.start))
+                    
                     # Merge overlapping regions so that regions do not overlap 
                     # and hence data is not included multiple times.
                     prev = regions[0]
                     cur = regions[1]
                     index = 1
                     while True:
-                        if cur.start <= prev.end:
-                            # Found overlapping regions, so join them.
+                        if cur.chrom == prev.chrom and cur.start <= prev.end:
+                            # Found overlapping regions, so join them into prev.
                             prev.end = cur.end
                             del regions[ index ]
                         else:
@@ -182,7 +181,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                             break
                         else:
                             cur = regions[ index ]
-            
+                    
             run_on_regions = True
             
         # Dataset check.
