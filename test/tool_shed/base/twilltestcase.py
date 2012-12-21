@@ -28,6 +28,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.file_dir = os.environ.get( 'TOOL_SHED_TEST_FILE_DIR', None )
         self.tool_shed_test_file = None
         self.tool_data_path = os.environ.get( 'GALAXY_TEST_TOOL_DATA_PATH' )
+        self.shed_tool_conf = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF' )
         # TODO: Figure out a way to alter these attributes during tests.
         self.galaxy_tool_dependency_dir = None # os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
@@ -431,6 +432,8 @@ class ShedTwillTestCase( TwillTestCase ):
                 checkbox.selected = True
             else:
                 checkbox.selected = False
+        if 'shed_tool_conf' not in kwd:
+            kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
         self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
         self.initiate_installation_process()
         self.wait_for_repository_installation( repository, changeset_revision )

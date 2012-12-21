@@ -256,6 +256,7 @@ def main():
         shed_tool_conf_template_parser = string.Template( shed_tool_conf_xml_template )
         shed_tool_conf_xml = shed_tool_conf_template_parser.safe_substitute( shed_tool_path=galaxy_shed_tool_path )
         file( galaxy_shed_tool_conf_file, 'w' ).write( shed_tool_conf_xml )
+        os.environ[ 'GALAXY_TEST_SHED_TOOL_CONF' ] = galaxy_shed_tool_conf_file
     
         # ---- Build Galaxy Application -------------------------------------------------- 
         galaxy_global_conf = { '__file__' : 'universe_wsgi.ini.sample' }
