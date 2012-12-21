@@ -75,8 +75,9 @@ def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_rev
     # Replace the old list of in-memory config_elems with the new list for this shed_tool_conf_dict.
     shed_tool_conf_dict[ 'config_elems' ] = config_elems
     app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
-    # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
-    app.toolbox.write_integrated_tool_panel_config_file()
+    if app.config.update_integrated_tool_panel:
+        # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
+        app.toolbox.write_integrated_tool_panel_config_file()
     app.toolbox_search = ToolBoxSearch( app.toolbox )
 def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_install_dir, deactivate=False, override=True ):
     """
@@ -1055,7 +1056,7 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     shed_tool_conf_dict[ 'config_elems' ] = config_elems
     trans.app.toolbox.shed_tool_confs[ index ] = shed_tool_conf_dict
     trans.app.toolbox_search = ToolBoxSearch( trans.app.toolbox )
-    if uninstall:
+    if uninstall and trans.app.config.update_integrated_tool_panel:
         # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
         trans.app.toolbox.write_integrated_tool_panel_config_file()
 def remove_tool_dependency( trans, tool_dependency ):

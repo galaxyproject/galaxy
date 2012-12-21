@@ -1088,14 +1088,16 @@ class AdminToolshed( AdminGalaxy ):
         if ( not includes_tools and not includes_repository_dependencies ) or \
             ( ( includes_tools or includes_repository_dependencies ) and kwd.get( 'select_tool_panel_section_button', False ) ):
             install_repository_dependencies = CheckboxField.is_checked( install_repository_dependencies )
-            if includes_tool_dependencies:
-                install_tool_dependencies = CheckboxField.is_checked( install_tool_dependencies )
+            if includes_tools:
                 shed_tool_conf = kwd[ 'shed_tool_conf' ]
             else:
-                install_tool_dependencies = False
                 # If installing a repository that includes no tools, get the relative tool_path from the file to which the migrated_tools_config
                 # setting points.
                 shed_tool_conf = trans.app.config.migrated_tools_config
+            if includes_tool_dependencies:
+                install_tool_dependencies = CheckboxField.is_checked( install_tool_dependencies )
+            else:
+                install_tool_dependencies = False
             tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf )
             created_or_updated_tool_shed_repositories, repo_info_dicts, filtered_repo_info_dicts, message = \
                 shed_util.create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, reinstalling=False )
