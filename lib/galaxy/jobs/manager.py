@@ -68,7 +68,8 @@ class JobManagerQueue( object ):
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
         self.running = True
-        self.monitor_thread = threading.Thread( target=self.__monitor )
+        self.monitor_thread = threading.Thread( name="JobManagerQueue.monitor_thread", target=self.__monitor )
+        self.monitor_thread.setDaemon( True )
         # Recover jobs at startup
         self.__check_jobs_at_startup()
         # Start the queue
@@ -219,7 +220,8 @@ class JobManagerStopQueue( object ):
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
         self.running = True
-        self.monitor_thread = threading.Thread( target=self.monitor )
+        self.monitor_thread = threading.Thread( name="JobManagerStopQueue.monitor_thread", target=self.monitor )
+        self.monitor_thread.setDaemon( True )
         self.monitor_thread.start()
         log.info( "job manager stop queue started" )
 

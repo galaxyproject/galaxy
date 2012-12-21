@@ -38,6 +38,8 @@ def app_factory( global_conf, **kwargs ):
             import traceback, sys
             traceback.print_exc()
             sys.exit( 1 )
+    # Call app's shutdown method when the interpeter exits, this cleanly stops
+    # the various Galaxy application daemon threads
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )

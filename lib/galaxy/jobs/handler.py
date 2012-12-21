@@ -61,7 +61,8 @@ class JobHandlerQueue( object ):
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
         self.running = True
-        self.monitor_thread = threading.Thread( target=self.__monitor )
+        self.monitor_thread = threading.Thread( name="JobHandlerQueue.monitor_thread", target=self.__monitor )
+        self.monitor_thread.setDaemon( True )
 
     def start( self ):
         """
@@ -353,7 +354,8 @@ class JobHandlerStopQueue( object ):
         # Helper for interruptable sleep
         self.sleeper = Sleeper()
         self.running = True
-        self.monitor_thread = threading.Thread( target=self.monitor )
+        self.monitor_thread = threading.Thread( name="JobHandlerStopQueue.monitor_thread", target=self.monitor )
+        self.monitor_thread.setDaemon( True )
         self.monitor_thread.start()
         log.info( "job handler stop queue started" )
 

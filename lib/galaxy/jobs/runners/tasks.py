@@ -29,7 +29,8 @@ class TaskedJobRunner( object ):
         nworkers = app.config.local_task_queue_workers
         log.info( "Starting tasked-job runners" )
         for i in range( nworkers  ):
-            worker = threading.Thread( target=self.run_next )
+            worker = threading.Thread( name=( "TaskedJobRunner-%d" % i ), target=self.run_next )
+            worker.setDaemon( True )
             worker.start()
             self.threads.append( worker )
         log.debug( "%d workers ready", nworkers )

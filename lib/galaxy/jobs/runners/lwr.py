@@ -229,7 +229,8 @@ class LwrJobRunner( BaseJobRunner ):
         nworkers = app.config.local_job_queue_workers
         log.info( "starting workers" )
         for i in range( nworkers  ):
-            worker = threading.Thread( target=self.run_next )
+            worker = threading.Thread( ( name="LwrJobRunner.thread-%d" % i ), target=self.run_next )
+            worker.setDaemon( True )
             worker.start()
             self.threads.append( worker )
         log.debug( "%d workers ready", nworkers )
