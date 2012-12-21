@@ -214,6 +214,8 @@
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
                     else:
                         folder_label = "%s<i> - this repository requires installation of these additional repositories</i>" % folder_label
+                    if trans.webapp.name == 'galaxy':
+                        col_span_str = 'colspan="4"'
                 elif folder.label == 'Valid tools':
                     col_span_str = 'colspan="3"'
                     if folder.description:
@@ -252,8 +254,9 @@
     %for readme in folder.readme_files:
         ${render_readme( readme, pad, my_row, row_counter )}
     %endfor
-    %for repository_dependency in folder.repository_dependencies:
-        ${render_repository_dependency( repository_dependency, pad, my_row, row_counter )}
+    %for index, repository_dependency in enumerate( folder.repository_dependencies ):
+        <% row_is_header = index == 0 %>
+        ${render_repository_dependency( repository_dependency, pad, my_row, row_counter, row_is_header )}
     %endfor
     %for index, tool_dependency in enumerate( folder.tool_dependencies ):
         <% row_is_header = index == 0 %>
@@ -349,21 +352,60 @@
     %>
 </%def>
 
-<%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter )">
+<%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False )">
                 
     <%
         encoded_id = trans.security.encode_id( repository_dependency.id )
+        if trans.webapp.name == 'galaxy':
+            if repository_dependency.tool_shed_repository_id:
+                encoded_required_repository_id = trans.security.encode_id( repository_dependency.tool_shed_repository_id )
+            else:
+                encoded_required_repository_id = None
+            if repository_dependency.installation_status:
+                installation_status = str( repository_dependency.installation_status )
+            else:
+                installation_status = None
         repository_name = str( repository_dependency.repository_name )
         changeset_revision = str( repository_dependency.changeset_revision )
         repository_owner = str( repository_dependency.repository_owner )
+
+        if trans.webapp.name == 'galaxy':
+            if row_is_header:
+                cell_type = 'th'
+            else:
+                cell_type = 'td'
+        else:
+            cell_type = 'td'
     %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        ##<td style="padding-left: ${pad+20}px;">${repository_dependency.toolshed | h}</td>
-        <td style="padding-left: ${pad+20}px;">Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b></td>
+        %if trans.webapp.name == 'galaxy':
+            <${cell_type} style="padding-left: ${pad+20}px;">
+                %if row_is_header:
+                    ${repository_name | h}
+                %elif encoded_required_repository_id:
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=encoded_required_repository_id )}">${repository_name | h}</a>
+                %else:
+                   ${repository_name | h} 
+                %endif
+            </${cell_type}>
+            <${cell_type}>
+                ${changeset_revision | h}
+            </${cell_type}>
+            <${cell_type}>
+                ${repository_owner | h}
+            </${cell_type}>
+            <${cell_type}>
+                ${installation_status}
+            </${cell_type}>
+        %else:
+            <td style="padding-left: ${pad+20}px;">
+                Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>
+            </td>
+        %endif
     </tr>
     <%
         my_row = row_counter.count

@@ -1850,7 +1850,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
-        containers_dict = suc.build_repository_containers_for_tool_shed( repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
                                     cntrller=cntrller,
                                     repo_name=repo_name,
@@ -1953,7 +1953,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                                                                                  selected_value=changeset_revision,
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
-        containers_dict = suc.build_repository_containers_for_tool_shed( repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
                                     containers_dict=containers_dict,
@@ -2481,7 +2481,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
-        containers_dict = suc.build_repository_containers_for_tool_shed( repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     cntrller=cntrller,
                                     repo=repo,
