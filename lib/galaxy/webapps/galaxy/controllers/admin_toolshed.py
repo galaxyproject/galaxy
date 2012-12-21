@@ -877,45 +877,7 @@ class AdminToolshed( AdminGalaxy ):
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
             message = "The repository information has been updated."
-        metadata = repository.metadata
-        datatypes = metadata.get( 'datatypes', None )
-        invalid_tools = metadata.get( 'invalid_tools', None )
-        if repository.has_readme_files:
-            readme_files_dict = suc.build_readme_files_dict( repository.metadata, tool_path )
-        else:
-            readme_files_dict = None
-        repository_dependencies = metadata.get( 'repository_dependencies', None )
-        repository_dependencies_dict_for_display = {}
-        if repository_dependencies:
-            # We need to add a root_key entry to the repository_dependencies dictionary since it will not be included in the installed tool
-            # shed repository metadata.
-            root_key = container_util.generate_repository_dependencies_key_for_repository( repository.tool_shed,
-                                                                                           repository.name,
-                                                                                           repository.owner,
-                                                                                           repository.installed_changeset_revision )
-            rd_tups_for_display = []
-            rd_tups = repository_dependencies[ 'repository_dependencies' ]
-            repository_dependencies_dict_for_display[ 'root_key' ] = root_key
-            repository_dependencies_dict_for_display[ root_key ] = rd_tups
-            repository_dependencies_dict_for_display[ 'description' ] = repository_dependencies[ 'description' ]
-        all_tool_dependencies = metadata.get( 'tool_dependencies', None )
-        tool_dependencies, missing_tool_dependencies = shed_util.get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies )
-        valid_tools = metadata.get( 'tools', None )
-        workflows = metadata.get( 'workflows', None )
-        containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
-                                                                      toolshed_base_url=tool_shed_url,
-                                                                      repository_name=repository.name,
-                                                                      repository_owner=repository.owner,
-                                                                      changeset_revision=repository.installed_changeset_revision,
-                                                                      repository=repository,
-                                                                      datatypes=datatypes,
-                                                                      invalid_tools=invalid_tools,
-                                                                      missing_tool_dependencies=missing_tool_dependencies,
-                                                                      readme_files_dict=readme_files_dict,
-                                                                      repository_dependencies=repository_dependencies_dict_for_display,
-                                                                      tool_dependencies=tool_dependencies,
-                                                                      valid_tools=valid_tools,
-                                                                      workflows=workflows )
+        containers_dict = shed_util.populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository )
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,
                                     description=description,
@@ -1668,7 +1630,10 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def set_tool_versions( self, trans, **kwd ):
-        # Get the tool_versions from the tool shed for each tool in the installed change set.
+        """
+        Get the tool_versions from the tool shed for each tool in the installed revision of a selected tool shed repository and update the
+        metadata for the repository's revision in the Galaxy database.
+        """
         repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
         tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
         url = suc.url_join( tool_shed_url,
@@ -1689,10 +1654,12 @@ class AdminToolshed( AdminGalaxy ):
             status = 'error'
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
+        containers_dict = shed_util.populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository )
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,
                                     description=repository.description,
                                     repo_files_dir=repo_files_dir,
+                                    containers_dict=containers_dict,
                                     message=message,
                                     status=status )
     @web.json

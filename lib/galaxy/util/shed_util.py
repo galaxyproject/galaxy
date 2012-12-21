@@ -852,6 +852,60 @@ def panel_entry_per_tool( tool_section_dict ):
         if k not in [ 'id', 'version', 'name' ]:
             return True
     return False
+def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository ):
+    """
+    Retrieve necessary information from the received repository's metadata to populate the containers_dict for display.  This methos is called only
+    from Galaxy and not the tool shed.
+    """
+    metadata = repository.metadata
+    if metadata:
+        datatypes = metadata.get( 'datatypes', None )
+        invalid_tools = metadata.get( 'invalid_tools', None )
+        if repository.has_readme_files:
+            readme_files_dict = suc.build_readme_files_dict( repository.metadata, tool_path )
+        else:
+            readme_files_dict = None
+        repository_dependencies = metadata.get( 'repository_dependencies', None )
+        repository_dependencies_dict_for_display = {}
+        if repository_dependencies:
+            # We need to add a root_key entry to the repository_dependencies dictionary since it will not be included in the installed tool
+            # shed repository metadata.
+            root_key = container_util.generate_repository_dependencies_key_for_repository( repository.tool_shed,
+                                                                                           repository.name,
+                                                                                           repository.owner,
+                                                                                           repository.installed_changeset_revision )
+            rd_tups_for_display = []
+            rd_tups = repository_dependencies[ 'repository_dependencies' ]
+            repository_dependencies_dict_for_display[ 'root_key' ] = root_key
+            repository_dependencies_dict_for_display[ root_key ] = rd_tups
+            repository_dependencies_dict_for_display[ 'description' ] = repository_dependencies[ 'description' ]
+        all_tool_dependencies = metadata.get( 'tool_dependencies', None )
+        tool_dependencies, missing_tool_dependencies = get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies )
+        valid_tools = metadata.get( 'tools', None )
+        workflows = metadata.get( 'workflows', None )
+        containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
+                                                                      toolshed_base_url=tool_shed_url,
+                                                                      repository_name=repository.name,
+                                                                      repository_owner=repository.owner,
+                                                                      changeset_revision=repository.installed_changeset_revision,
+                                                                      repository=repository,
+                                                                      datatypes=datatypes,
+                                                                      invalid_tools=invalid_tools,
+                                                                      missing_tool_dependencies=missing_tool_dependencies,
+                                                                      readme_files_dict=readme_files_dict,
+                                                                      repository_dependencies=repository_dependencies_dict_for_display,
+                                                                      tool_dependencies=tool_dependencies,
+                                                                      valid_tools=valid_tools,
+                                                                      workflows=workflows )
+    else:
+        containers_dict = dict( datatypes=None,
+                                invalid_tools=None,
+                                readme_files_dict=None,
+                                repository_dependencies=None,
+                                tool_dependencies=None,
+                                valid_tools=None,
+                                workflows=None )
+    return containers_dict
 def pull_repository( repo, repository_clone_url, ctx_rev ):
     """Pull changes from a remote repository to a local one."""
     commands.pull( suc.get_configured_ui(), repo, source=repository_clone_url, rev=[ ctx_rev ] )
