@@ -856,7 +856,8 @@ def panel_entry_per_tool( tool_section_dict ):
 def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository, reinstalling=False ):
     """
     Retrieve necessary information from the received repository's metadata to populate the containers_dict for display.  This methos is called only
-    from Galaxy and not the tool shed.
+    from Galaxy (not the tool shed) when displaying repository dependencies for installed repositories and when displaying them for uninstalled
+    repositories that are being reinstalled.
     """
     metadata = repository.metadata
     if metadata:
@@ -876,43 +877,24 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                 readme_files_dict = suc.build_readme_files_dict( repository.metadata, tool_path )
         else:
             readme_files_dict = None
-        repository_dependencies = metadata.get( 'repository_dependencies', None )
         repository_dependencies_dict_for_display = {}
-        if repository_dependencies:
-            # We need to add a root_key entry to the repository_dependencies dictionary since it will not be included in the installed tool shed repository metadata.
+        if repository.has_repository_dependencies:
+            rd_tups = []
+            # We need to add a root_key entry to the repository_dependencies dictionary for proper display parsing.
             root_key = container_util.generate_repository_dependencies_key_for_repository( repository.tool_shed,
                                                                                            repository.name,
                                                                                            repository.owner,
-                                                                                           repository.installed_changeset_revision )
-            rd_tups_for_display = []
-            rd_tups = repository_dependencies[ 'repository_dependencies' ]
-            for index, rd_tup in enumerate( rd_tups ):
-                # Get the id and the installation status of the required repository.
-                tool_shed, name, owner, changeset_revision = rd_tup
-                required_repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
-                # TODO: Since the changeset revision defined in the tool shed repository's repository_dependencies.xml file may have a changeset_revision
-                # value that is outdated, we ened to make a call to the tool shed get the update dchangeset revision if repository is still None here.
-                if required_repository:
-                    rd_tup.append( required_repository.id )
-                    rd_tup.append( str( required_repository.status ) )
-                else:
-                    # See above TODO.  For now, we'll take a short cut and attempt to find the repository by name and owner only.  This will not work long
-                    # term because multiple revisions of a reposiory with the same name and owner could be installed into a Galaxy instance.  The long term
-                    # fix is to call get_update_to_changeset_revision_and_ctx_rev( trans, repository ) for each required repository.
-                    required_repository = trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                                          .filter( and_( trans.model.ToolShedRepository.table.c.name == name,
-                                                                         trans.model.ToolShedRepository.table.c.owner == owner ) ) \
-                                                          .first()
-                    if required_repository:
-                        rd_tup.append( required_repository.id )
-                        rd_tup.append( str( required_repository.status ) )
-                    else:
-                        rd_tup.append( None )
-                        rd_tup.append( None )
-                rd_tups[ index ] = rd_tup
+                                                                                           repository.installed_changeset_revision )            
+            # The repository dependencies container will include only the immediate repository dependencies of this repository, so
+            # the container will be only a single level in depth.
+            for rr in repository.required_repositories:
+                rd_tup = [ rr.tool_shed, rr.name, rr.owner, rr.changeset_revision, rr.id, rr.status ]
+                rd_tups.append( rd_tup )
             repository_dependencies_dict_for_display[ 'root_key' ] = root_key
             repository_dependencies_dict_for_display[ root_key ] = rd_tups
-            repository_dependencies_dict_for_display[ 'description' ] = repository_dependencies[ 'description' ]
+            # Get the description from the metadata in case it has a value.
+            repository_dependencies = metadata.get( 'repository_dependencies', {} )
+            repository_dependencies_dict_for_display[ 'description' ] = repository_dependencies.get( 'description', None )
         all_tool_dependencies = metadata.get( 'tool_dependencies', None )
         tool_dependencies, missing_tool_dependencies = get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies )
         if reinstalling:

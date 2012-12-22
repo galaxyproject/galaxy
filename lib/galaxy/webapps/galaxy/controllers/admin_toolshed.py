@@ -32,6 +32,7 @@ class InstalledRepositoryGrid( grids.Grid ):
             status_label = tool_shed_repository.status
             if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING,
                                                trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
+                                               trans.model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
                                                trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
                                                trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES ]:
                 bgcolor = trans.model.ToolShedRepository.states.INSTALLING
@@ -43,9 +44,12 @@ class InstalledRepositoryGrid( grids.Grid ):
             elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED ]:
                 bgcolor = trans.model.ToolShedRepository.states.WARNING
             elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
-                if tool_shed_repository.missing_tool_dependencies:
+                if tool_shed_repository.missing_required_repositories:
                     bgcolor = trans.model.ToolShedRepository.states.WARNING
-                    status_label = '%s, missing dependencies' % status_label
+                    status_label = '%s, missing repository dependencies' % status_label
+                elif tool_shed_repository.missing_tool_dependencies:
+                    bgcolor = trans.model.ToolShedRepository.states.WARNING
+                    status_label = '%s, missing tool dependencies' % status_label
                 else:
                     bgcolor = trans.model.ToolShedRepository.states.OK
             else:
@@ -182,6 +186,7 @@ class RepositoryInstallationGrid( grids.Grid ):
                                              [ model.ToolShedRepository.installation_status.NEW,
                                                model.ToolShedRepository.installation_status.CLONING,
                                                model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
+                                               model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
                                                model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
                                                model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES,
                                                model.ToolShedRepository.installation_status.UNINSTALLED ], \
@@ -500,7 +505,7 @@ class AdminToolshed( AdminGalaxy ):
                         removed = False
                 if removed:
                     tool_shed_repository.uninstalled = True
-                    # Remove all installed tool dependencies.
+                    # Remove all installed tool dependencies, but don't touch any repository dependencies..
                     for tool_dependency in tool_shed_repository.installed_tool_dependencies:
                         uninstalled, error_message = shed_util.remove_tool_dependency( trans, tool_dependency )
                         if error_message:

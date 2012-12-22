@@ -3014,6 +3014,7 @@ class ToolShedRepository( object ):
     installation_status = Bunch( NEW='New',
                                  CLONING='Cloning',
                                  SETTING_TOOL_VERSIONS='Setting tool versions',
+                                 INSTALLING_REPOSITORY_DEPENDENCIES='Installing repository dependencies',
                                  INSTALLING_TOOL_DEPENDENCIES='Installing tool dependencies',
                                  LOADING_PROPRIETARY_DATATYPES='Loading proprietary datatypes',
                                  INSTALLED='Installed',
@@ -3165,6 +3166,62 @@ class ToolShedRepository( object ):
     @property
     def has_readme_files( self ):
         return self.metadata and 'readme_files' in self.metadata
+    @property
+    def required_repositories( self ):
+        required_repositories = []
+        for rrda in self.repository_dependencies:
+            repository_dependency = rrda.repository_dependency
+            required_repository = repository_dependency.repository
+            required_repositories.append( required_repository )
+        return required_repositories
+    @property
+    def installed_required_repositories( self ):
+        """Return the repository's repository dependencies that are currently installed."""
+        installed_required_repositories = []
+        for required_repository in self.required_repositories:
+            if required_repository.status == self.installation_status.INSTALLED:
+                installed_required_repositories.append( required_repository )
+        return installed_required_repositories
+    @property
+    def missing_required_repositories( self ):
+        """Return the repository's repository dependencies that are not currently installed, and may not ever have been installed."""
+        missing_required_repositories = []
+        for required_repository in self.required_repositories:
+            if required_repository.status not in [ self.installation_status.INSTALLED ]:
+                missing_required_repositories.append( required_repository )
+        return missing_required_repositories
+    @property
+    def required_repositories_being_installed( self ):
+        required_repositories_being_installed = []
+        for required_repository in self.required_repositories:
+            if tool_dependency.status == ToolDependency.installation_status.INSTALLING:
+                required_repositories_being_installed.append( required_repository )
+        return required_repositories_being_installed
+    @property
+    def required_repositories_missing_or_being_installed( self ):
+        required_repositories_missing_or_being_installed = []
+        for required_repository in self.required_repositories:
+            if required_repository.status in [ self.installation_status.ERROR,
+                                              self.installation_status.INSTALLING,
+                                              self.installation_status.NEVER_INSTALLED,
+                                              self.installation_status.UNINSTALLED ]:
+                required_repositories_missing_or_being_installed.append( required_repository )
+        return required_repositories_missing_or_being_installed
+    @property
+    def required_repositories_with_installation_errors( self ):
+        required_repositories_with_installation_errors = []
+        for required_repository in self.required_repositories:
+            if required_repository.status == self.installation_status.ERROR:
+                required_repositories_with_installation_errors.append( required_repository )
+        return required_repositories_with_installation_errors
+    @property
+    def uninstalled_required_repositories( self ):
+        """Return the repository's repository dependencies that have been uninstalled."""
+        uninstalled_required_repositories = []
+        for required_repository in self.required_repositories:
+            if required_repository.status == self.installation_status.UNINSTALLED:
+                uninstalled_required_repositories.append( required_repository )
+        return uninstalled_required_repositories
     @property
     def installed_tool_dependencies( self ):
         """Return the repository's tool dependencies that are currently installed."""
