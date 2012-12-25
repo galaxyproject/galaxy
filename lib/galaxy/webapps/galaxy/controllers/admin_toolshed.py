@@ -44,7 +44,7 @@ class InstalledRepositoryGrid( grids.Grid ):
             elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED ]:
                 bgcolor = trans.model.ToolShedRepository.states.WARNING
             elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
-                if tool_shed_repository.missing_required_repositories:
+                if tool_shed_repository.missing_repository_dependencies:
                     bgcolor = trans.model.ToolShedRepository.states.WARNING
                     status_label = '%s, missing repository dependencies' % status_label
                 elif tool_shed_repository.missing_tool_dependencies:
@@ -1202,6 +1202,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                           repository=None,
                                                                           datatypes=None,
                                                                           invalid_tools=None,
+                                                                          missing_repository_dependencies=None,
                                                                           missing_tool_dependencies=None,
                                                                           readme_files_dict=readme_files_dict,
                                                                           repository_dependencies=repository_dependencies,

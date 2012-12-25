@@ -201,7 +201,7 @@ def build_readme_files_folder( trans, folder_id, readme_files_dict, label='Readm
         readme_files_root_folder = None
     return folder_id, readme_files_root_folder
 def build_repository_dependencies_folder( trans, toolshed_base_url, repository_name, repository_owner, changeset_revision, folder_id, repository_dependencies,
-                                          label='Repository dependencies' ):
+                                          label='Repository dependencies', installed=False ):
     """Return a folder hierarchy containing repository dependencies."""
     if repository_dependencies:
         repository_dependency_id = 0
@@ -274,8 +274,11 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
     else:
         tools_root_folder = None
     return folder_id, tools_root_folder
-def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='Tool dependencies', display_status=False ):
+def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='Tool dependencies', installed=False ):
     """Return a folder hierarchy containing tool dependencies."""
+    # The status will be displayed only if the values of the received installed is False.  When this is the case, we're in Galaxy
+    # (not the tool shed), and the tool dependencies are not installed or are in an error state, so they are considered missing.
+    # The tool dependency status will be displayed only if the tool dependency is not installed.
     if tool_dependencies:
         tool_dependency_id = 0
         folder_id += 1
@@ -283,11 +286,10 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
         folder_id += 1
         folder = Folder( id=folder_id, key='tool_dependencies', label=label, parent=tool_dependencies_root_folder )
         if trans.webapp.name == 'galaxy':
-            if display_status:
-                # The status will be displayed only if the tool dependency status is not 'Installed'.
-                folder.description = 'click the name to install the missing dependency'
-            else:
+            if installed:
                 folder.description = 'click the name to browse the dependency installation directory'
+            else:
+                folder.description = 'click the name to install the missing dependency'
         tool_dependencies_root_folder.folders.append( folder )
         # Insert a header row.
         tool_dependency_id += 1
@@ -297,17 +299,15 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                               name='Name',
                                               version='Version',
                                               type='Type' )
-            if display_status:
-                tool_dependency.installation_status = 'Status'
-            else:
+            if installed:
                 tool_dependency.install_dir = 'Install directory'
+            else:
+                tool_dependency.installation_status = 'Status'
         else:
             tool_dependency = ToolDependency( id=tool_dependency_id,
                                               name='Name',
                                               version='Version',
                                               type='Type' )
-            if display_status:
-                tool_dependency.installation_status = 'Status'
         folder.tool_dependencies.append( tool_dependency )
         for dependency_key, requirements_dict in tool_dependencies.items():
             tool_dependency_id += 1
@@ -317,7 +317,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                     type = set_environment_dict[ 'type' ]
                     repository_id = set_environment_dict.get( 'repository_id', None )
                     td_id = set_environment_dict.get( 'tool_dependency_id', None )
-                    if display_status:
+                    if trans.webapp.name == 'galaxy':
                         installation_status = set_environment_dict.get( 'status', None )
                     else:
                         installation_status = None
@@ -335,7 +335,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                 install_dir = requirements_dict.get( 'install_dir', None )
                 repository_id = requirements_dict.get( 'repository_id', None )
                 td_id = requirements_dict.get( 'tool_dependency_id', None )
-                if display_status:
+                if trans.webapp.name == 'galaxy':
                     installation_status = requirements_dict.get( 'status', None )
                 else:
                     installation_status = None

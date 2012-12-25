@@ -472,15 +472,18 @@
         <${cell_type} style="padding-left: ${pad+20}px;">
             %if row_is_header:
                 ${tool_dependency.name | h}
-            %elif trans.webapp.name == 'galaxy' and tool_dependency.tool_dependency_id and tool_dependency.repository_id and not tool_dependency.installation_status:
-                ## tool_dependency.installation_status will be None if the status value in the database is 'Installed'.
-                <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ), repository_id=trans.security.encode_id( tool_dependency.repository_id ) )}">
+            %elif trans.webapp.name == 'galaxy' and tool_dependency.tool_dependency_id:
+                %if tool_dependency.repository_id and tool_dependency.installation_status == 'Installed':
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_tool_dependency', id=trans.security.encode_id( tool_dependency.tool_dependency_id ), repository_id=trans.security.encode_id( tool_dependency.repository_id ) )}">
+                        ${tool_dependency.name | h}
+                    </a>
+                %elif tool_dependency.installation_status != 'Installed':
+                    <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
+                        ${tool_dependency.name}
+                    </a>
+                %else:
                     ${tool_dependency.name | h}
-                </a>
-            %elif trans.webapp.name == 'galaxy' and tool_dependency.tool_dependency_id and tool_dependency.installation_status:
-                <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_tool_dependencies', id=trans.security.encode_id( tool_dependency.tool_dependency_id ) )}">
-                    ${tool_dependency.name}
-                </a>
+                %endif
             %else:
                 ${tool_dependency.name | h}
             %endif
@@ -551,6 +554,7 @@
         invalid_tools_root_folder = containers_dict.get( 'invalid_tools', None )
         readme_files_root_folder = containers_dict.get( 'readme_files', None )
         repository_dependencies_root_folder = containers_dict.get( 'repository_dependencies', None )
+        missing_repository_dependencies_root_folder = containers_dict.get( 'missing_repository_dependencies', None )
         tool_dependencies_root_folder = containers_dict.get( 'tool_dependencies', None )
         missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
         valid_tools_root_folder = containers_dict.get( 'valid_tools', none )
@@ -578,10 +582,17 @@
             </div>
         </div>
     %endif
-    %if repository_dependencies_root_folder or tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
+    %if missing_repository_dependencies_root_folder or repository_dependencies_root_folder or tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
         <div class="toolForm">
             <div class="toolFormTitle">Dependencies of this repository</div>
             <div class="toolFormBody">
+                %if missing_repository_dependencies_root_folder:
+                    <p/>
+                    <% row_counter = RowCounter() %>
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="missing_repository_dependencies">
+                        ${render_folder( missing_repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    </table>
+                %endif
                 %if repository_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>

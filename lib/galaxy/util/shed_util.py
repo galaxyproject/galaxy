@@ -488,6 +488,40 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
         if idx == count:
             break
     return headers
+def get_installed_and_missing_repository_dependencies( trans, repository ):
+    missing_repository_dependencies = {}
+    installed_repository_dependencies = {}
+    if repository.has_repository_dependencies:
+        metadata = repository.metadata
+        installed_rd_tups = []
+        missing_rd_tups = []
+        # The repository dependencies container will include only the immediate repository dependencies of this repository, so
+        # the container will be only a single level in depth.
+        for rd in repository.repository_dependencies:
+            rd_tup = [ rd.tool_shed, rd.name, rd.owner, rd.changeset_revision, rd.id, rd.status ]
+            if rd.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
+                installed_rd_tups.append( rd_tup )
+            else:
+               missing_rd_tups.append( rd_tup )
+        if installed_rd_tups or missing_rd_tups:
+            # Get the description from the metadata in case it has a value.
+            repository_dependencies = metadata.get( 'repository_dependencies', {} )
+            description = repository_dependencies.get( 'description', None )
+            # We need to add a root_key entry to one or both of installed_repository_dependencies dictionary and the
+            # missing_repository_dependencies dictionary for proper display parsing.
+            root_key = container_util.generate_repository_dependencies_key_for_repository( repository.tool_shed,
+                                                                                           repository.name,
+                                                                                           repository.owner,
+                                                                                           repository.installed_changeset_revision )
+            if installed_rd_tups:
+                installed_repository_dependencies[ 'root_key' ] = root_key
+                installed_repository_dependencies[ root_key ] = installed_rd_tups
+                installed_repository_dependencies[ 'description' ] = description
+            if missing_rd_tups:
+                missing_repository_dependencies[ 'root_key' ] = root_key
+                missing_repository_dependencies[ root_key ] = missing_rd_tups
+                missing_repository_dependencies[ 'description' ] = description 
+    return installed_repository_dependencies, missing_repository_dependencies
 def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies ):
     if all_tool_dependencies:
         tool_dependencies = {}
@@ -861,8 +895,11 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
     """
     metadata = repository.metadata
     if metadata:
+        # Handle proprietary datatypes.
         datatypes = metadata.get( 'datatypes', None )
+        # Handle invalid tools.
         invalid_tools = metadata.get( 'invalid_tools', None )
+        # Handle README files.
         if repository.has_readme_files:
             if reinstalling:
                 # Since we're reinstalling, we need to sned a request to the tool shed to get the README files.
@@ -877,33 +914,20 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                 readme_files_dict = suc.build_readme_files_dict( repository.metadata, tool_path )
         else:
             readme_files_dict = None
-        repository_dependencies_dict_for_display = {}
-        if repository.has_repository_dependencies:
-            rd_tups = []
-            # We need to add a root_key entry to the repository_dependencies dictionary for proper display parsing.
-            root_key = container_util.generate_repository_dependencies_key_for_repository( repository.tool_shed,
-                                                                                           repository.name,
-                                                                                           repository.owner,
-                                                                                           repository.installed_changeset_revision )            
-            # The repository dependencies container will include only the immediate repository dependencies of this repository, so
-            # the container will be only a single level in depth.
-            for rr in repository.required_repositories:
-                rd_tup = [ rr.tool_shed, rr.name, rr.owner, rr.changeset_revision, rr.id, rr.status ]
-                rd_tups.append( rd_tup )
-            repository_dependencies_dict_for_display[ 'root_key' ] = root_key
-            repository_dependencies_dict_for_display[ root_key ] = rd_tups
-            # Get the description from the metadata in case it has a value.
-            repository_dependencies = metadata.get( 'repository_dependencies', {} )
-            repository_dependencies_dict_for_display[ 'description' ] = repository_dependencies.get( 'description', None )
+        # Handle repository dependencies.
+        installed_repository_dependencies, missing_repository_dependencies = get_installed_and_missing_repository_dependencies( trans, repository )
+        # Handle tool dependencies.
         all_tool_dependencies = metadata.get( 'tool_dependencies', None )
-        tool_dependencies, missing_tool_dependencies = get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies )
+        installed_tool_dependencies, missing_tool_dependencies = get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies )
         if reinstalling:
             # All tool dependencies will be considered missing since we are reinstalling the repository.
-            if tool_dependencies:
-                for td in tool_dependencies:
+            if installed_tool_dependencies:
+                for td in installed_tool_dependencies:
                     missing_tool_dependencies.append( td )
-                tool_dependencies = None
+                installed_tool_dependencies = None
+        # Handle valid tools.
         valid_tools = metadata.get( 'tools', None )
+        # Handle workflows.
         workflows = metadata.get( 'workflows', None )
         containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
                                                                       toolshed_base_url=tool_shed_url,
@@ -913,10 +937,11 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                                                                       repository=repository,
                                                                       datatypes=datatypes,
                                                                       invalid_tools=invalid_tools,
+                                                                      missing_repository_dependencies=missing_repository_dependencies,
                                                                       missing_tool_dependencies=missing_tool_dependencies,
                                                                       readme_files_dict=readme_files_dict,
-                                                                      repository_dependencies=repository_dependencies_dict_for_display,
-                                                                      tool_dependencies=tool_dependencies,
+                                                                      repository_dependencies=installed_repository_dependencies,
+                                                                      tool_dependencies=installed_tool_dependencies,
                                                                       valid_tools=valid_tools,
                                                                       workflows=workflows )
     else:

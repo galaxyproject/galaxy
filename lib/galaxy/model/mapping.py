@@ -1758,8 +1758,8 @@ assign_mapper( context, ToolShedRepository, ToolShedRepository.table,
                                                  primaryjoin=( ToolShedRepository.table.c.id == ToolDependency.table.c.tool_shed_repository_id ),
                                                  order_by=ToolDependency.table.c.name,
                                                  backref='tool_shed_repository' ),
-                     repository_dependencies=relation( RepositoryRepositoryDependencyAssociation,
-                                                       primaryjoin=( ToolShedRepository.table.c.id == RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id ) ) ) )
+                     required_repositories=relation( RepositoryRepositoryDependencyAssociation,
+                                                    primaryjoin=( ToolShedRepository.table.c.id == RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id ) ) ) )
 
 assign_mapper( context, RepositoryRepositoryDependencyAssociation, RepositoryRepositoryDependencyAssociation.table,
     properties=dict( repository=relation( ToolShedRepository,
