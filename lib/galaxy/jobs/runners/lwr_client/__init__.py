@@ -149,12 +149,7 @@ class FileStager(object):
 
         self.file_renames = {}
 
-        job_config = client.setup()
-
-        self.new_working_directory = job_config['working_directory']
-        self.new_outputs_directory = job_config['outputs_directory']
-        self.remote_path_separator = job_config['path_separator']
-
+        self.__handle_setup()
         self.__initialize_referenced_tool_files()
         self.__upload_tool_files()
         self.__upload_input_files()
@@ -164,6 +159,21 @@ class FileStager(object):
         self.__initialize_config_file_renames()
         self.__handle_rewrites()
         self.__upload_rewritten_config_files()
+
+    def __handle_setup(self):
+        job_config = self.client.setup()
+
+        self.new_working_directory = job_config['working_directory']
+        self.new_outputs_directory = job_config['outputs_directory']
+        self.remote_path_separator = job_config['path_separator']
+        # If remote LWR server assigned job id, use that otherwise
+        # just use local job_id assigned.
+        galaxy_job_id = self.client.job_id
+        self.job_id = job_config.get('job_id', galaxy_job_id)
+        if self.job_id != galaxy_job_id:
+            # Remote LWR server assigned an id different than the
+            # Galaxy job id, update client to reflect this.
+            self.client.job_id = self.job_id
 
     def __initialize_referenced_tool_files(self):
         self.referenced_tool_files = self.job_inputs.find_referenced_subfiles(self.tool_dir)
