@@ -7,7 +7,7 @@ import re
 
 from galaxy import model
 from galaxy.datatypes.data import nice_size
-from galaxy.jobs.runners import BaseJobRunner
+from galaxy.jobs.runners import ClusterJobState, ClusterJobRunner
 
 import os, errno
 from time import sleep
@@ -199,11 +199,17 @@ class Client(object):
     def wait(self):
         """ """
         while True:
-            check_complete_response = self.__raw_execute_and_parse("check_complete", {"job_id" : self.job_id })
-            complete = check_complete_response["complete"] == "true"
+            complete = self.check_complete()
             if complete:
                 return check_complete_response
             time.sleep(1)
+
+    def raw_check_complete(self):
+        check_complete_response = self.__raw_execute_and_parse("check_complete", {"job_id" : self.job_id })
+        return check_complete_response
+
+    def check_complete(self):
+        return self.raw_check_complete()["complete"] == "true"
 
     def clean(self):
         self.__raw_execute("clean", { "job_id" : self.job_id })
@@ -213,51 +219,34 @@ class Client(object):
 
 
 
-class LwrJobRunner( BaseJobRunner ):
+class LwrJobRunner( ClusterJobRunner ):
     """
-    Lwr Job Runner
+    LWR Job Runner
     """
-    STOP_SIGNAL = object()
+    runner_name = "LWRRunner"
+
     def __init__( self, app ):
-        """Start the job runner with 'nworkers' worker threads"""
-        self.app = app
-        self.sa_session = app.model.context
+        """Start the job runner """
+        super( LwrJobRunner, self ).__init__( app )
+        self._init_monitor_thread()
+        log.info( "starting LWR workers" )
+        self._init_worker_threads()
 
-        # start workers
-        self.queue = Queue()
-        self.threads = []
-        nworkers = app.config.local_job_queue_workers
-        log.info( "starting workers" )
-        for i in range( nworkers  ):
-            worker = threading.Thread( ( name="LwrJobRunner.thread-%d" % i ), target=self.run_next )
-            worker.setDaemon( True )
-            worker.start()
-            self.threads.append( worker )
-        log.debug( "%d workers ready", nworkers )
+    def check_watched_item(self, job_state):
+        try:
+            client = self.get_client_from_state(job_state)
+            complete = client.check_complete()
+        except Exception:
+            # An orphaned job was put into the queue at app startup, so remote server went down
+            # either way we are done I guess.
+            self.mark_as_finished(job_state)
+            return None
+        if complete:
+            self.mark_as_finished(job_state)
+            return None
+        return job_state
 
-    def run_next( self ):
-        """Run the next job, waiting until one is available if neccesary"""
-        while 1:
-            job_wrapper = self.queue.get()
-            if job_wrapper is self.STOP_SIGNAL:
-                return
-            try:
-                self.run_job( job_wrapper )
-            except:
-                log.exception( "Uncaught exception running job" )
-
-    def determine_lwr_url(self, url):
-        lwr_url = url[ len( 'lwr://' ) : ]
-        return  lwr_url 
-
-    def get_client_from_wrapper(self, job_wrapper):
-        return self.get_client( job_wrapper.get_job_runner_url(), job_wrapper.job_id )
-
-    def get_client(self, job_runner, job_id):
-        lwr_url = self.determine_lwr_url( job_runner )
-        return Client(lwr_url, job_id)   
-
-    def run_job( self, job_wrapper ):
+    def queue_job(self, job_wrapper):
         stderr = stdout = command_line = ''
 
         runner_url = job_wrapper.get_job_runner_url()
@@ -277,35 +266,76 @@ class LwrJobRunner( BaseJobRunner ):
             return
 
         # If we were able to get a command line, run the job
-        if command_line:
-            try:                
-                #log.debug( 'executing: %s' % command_line )
-                client = self.get_client_from_wrapper(job_wrapper)
-                output_fnames = job_wrapper.get_output_fnames()
-                output_files = [ str( o ) for o in output_fnames ]
-                input_files = job_wrapper.get_input_fnames()
-                file_stager = FileStager(client, command_line, job_wrapper.extra_filenames, input_files, output_files, job_wrapper.tool.tool_dir)
-                rebuilt_command_line = file_stager.get_rewritten_command_line()
-                client.launch( rebuilt_command_line )
+        if not command_line:
+            job_wrapper.finish( '', '' )
+            return
 
-                job_wrapper.set_runner( runner_url, job_wrapper.job_id )
-                job_wrapper.change_state( model.Job.states.RUNNING )
+        try:
+            #log.debug( 'executing: %s' % command_line )
+            client = self.get_client_from_wrapper(job_wrapper)
+            output_files = self.get_output_files(job_wrapper)
+            input_files = job_wrapper.get_input_fnames()
+            file_stager = FileStager(client, command_line, job_wrapper.extra_filenames, input_files, output_files, job_wrapper.tool.tool_dir)
+            rebuilt_command_line = file_stager.get_rewritten_command_line()
+            client.launch( rebuilt_command_line )
+            job_wrapper.set_runner( runner_url, job_wrapper.job_id )
+            job_wrapper.change_state( model.Job.states.RUNNING )
 
-                run_results = client.wait()
-                log.debug('run_results %s' % run_results )
-                stdout = run_results['stdout']
-                stderr = run_results['stderr']
+        except Exception, exc:
+            job_wrapper.fail( "failure running job", exception=True )
+            log.exception("failure running job %d" % job_wrapper.job_id)
+            return
 
-                
-                if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]:
-                    for output_file in output_files:
-                        client.download_output(output_file)
-                client.clean()
-                log.debug('execution finished: %s' % command_line)
-            except Exception, exc:
-                job_wrapper.fail( "failure running job", exception=True )
-                log.exception("failure running job %d" % job_wrapper.job_id)
-                return
+        lwr_job_state = ClusterJobState()
+        lwr_job_state.job_wrapper = job_wrapper
+        lwr_job_state.job_id = job_wrapper.job_id
+        lwr_job_state.old_state = True
+        lwr_job_state.running = True
+        lwr_job_state.runner_url = runner_url
+        self.monitor_job(lwr_job_state)
+
+    def get_output_files(self, job_wrapper):
+        output_fnames = job_wrapper.get_output_fnames()
+        return [ str( o ) for o in output_fnames ]
+
+
+    def determine_lwr_url(self, url):
+        lwr_url = url[ len( 'lwr://' ) : ]
+        return  lwr_url 
+
+    def get_client_from_wrapper(self, job_wrapper):
+        return self.get_client( job_wrapper.get_job_runner_url(), job_wrapper.job_id )
+
+    def get_client_from_state(self, job_state):
+        job_runner = job_state.runner_url
+        job_id = job_state.job_id
+        return self.get_client(job_runner, job_id)
+
+    def get_client(self, job_runner, job_id):
+        lwr_url = self.determine_lwr_url( job_runner )
+        return Client(lwr_url, job_id)   
+
+    def finish_job( self, job_state ):
+        stderr = stdout = command_line = ''
+        job_wrapper = job_state.job_wrapper
+        try:
+            client = self.get_client_from_state(job_state)
+
+            run_results = client.raw_check_complete()
+            log.debug('run_results %s' % run_results )
+            stdout = run_results['stdout']
+            stderr = run_results['stderr']
+
+            if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]:
+                output_files = self.get_output_files(job_wrapper)
+                for output_file in output_files:
+                    client.download_output(output_file)
+            client.clean()
+            log.debug('execution finished: %s' % command_line)
+        except Exception, exc:
+            job_wrapper.fail( "failure running job", exception=True )
+            log.exception("failure running job %d" % job_wrapper.job_id)
+            return
         #run the metadata setting script here
         #this is terminate-able when output dataset/job is deleted
         #so that long running set_meta()s can be canceled without having to reboot the server
@@ -321,7 +351,7 @@ class LwrJobRunner( BaseJobRunner ):
             job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
             external_metadata_proc.wait()
             log.debug( 'execution of external set_meta finished for job %d' % job_wrapper.job_id )
-        
+
         # Finish the job                
         try:
             job_wrapper.finish( stdout, stderr )
@@ -329,12 +359,13 @@ class LwrJobRunner( BaseJobRunner ):
             log.exception("Job wrapper finish method failed")
             job_wrapper.fail("Unable to finish job", exception=True)
 
-    def put( self, job_wrapper ):
-        """Add a job to the queue (by job identifier)"""
-        # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state( model.Job.states.QUEUED )
-        self.queue.put( job_wrapper )
-    
+    def fail_job( self, job_state ):
+        """
+        Seperated out so we can use the worker threads for it.
+        """
+        self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
+        job_state.job_wrapper.fail( job_state.fail_message )
+
     def shutdown( self ):
         """Attempts to gracefully shut down the worker threads"""
         log.info( "sending stop signal to worker threads" )
@@ -383,7 +414,21 @@ class LwrJobRunner( BaseJobRunner ):
             log.debug("Attempt remote lwr kill of job with url %s and id %s" % (lwr_url, job_id))
             client = self.get_client(lwr_url, job_id)
             client.kill()
-    def recover( self, job, job_wrapper ):
-        # local jobs can't be recovered
-        job_wrapper.change_state( model.Job.states.ERROR, info = "This job was killed when Galaxy was restarted.  Please retry the job." )
 
+
+    def recover( self, job, job_wrapper ):
+        """Recovers jobs stuck in the queued/running state when Galaxy started"""
+        job_state = ClusterJobState()
+        job_state.job_id = str( job.get_job_runner_external_id() )
+        job_state.runner_url = job_wrapper.get_job_runner_url()
+        job_wrapper.command_line = job.get_command_line()
+        job_state.job_wrapper = job_wrapper
+        if job.get_state() == model.Job.states.RUNNING:
+            log.debug( "(LWR/%s) is still in running state, adding to the LWR queue" % ( job.get_id()) )
+            job_state.old_state = True
+            job_state.running = True
+            self.monitor_queue.put( job_state )
+        elif job.get_state() == model.Job.states.QUEUED:
+            # LWR doesn't queue currently, so this indicates galaxy was shutoff while 
+            # job was being staged. Not sure how to recover from that. 
+            job_state.job_wrapper.fail( "This job was killed when Galaxy was restarted.  Please retry the job." )
