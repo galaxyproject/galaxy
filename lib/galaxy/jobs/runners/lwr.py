@@ -27,13 +27,14 @@ import simplejson
 
 class FileStager(object):
     
-    def __init__(self, client, command_line, config_files, input_files, output_files, tool_dir):
+    def __init__(self, client, command_line, config_files, input_files, output_files, tool_dir, working_directory):
         self.client = client
         self.command_line = command_line
         self.config_files = config_files
         self.input_files = input_files
         self.output_files = output_files
         self.tool_dir = os.path.abspath(tool_dir)
+        self.working_directory = working_directory
 
         self.file_renames = {}
 
@@ -46,7 +47,9 @@ class FileStager(object):
         self.__initialize_referenced_tool_files()
         self.__upload_tool_files()
         self.__upload_input_files()
+        self.__upload_working_directory_files()
         self.__initialize_output_file_renames()
+        self.__initialize_task_output_file_renames()
         self.__initialize_config_file_renames()
         self.__rewrite_and_upload_config_files()
         self.__rewrite_command_line()
@@ -69,12 +72,26 @@ class FileStager(object):
         for input_file in self.input_files:
             input_upload_response = self.client.upload_input(input_file)
             self.file_renames[input_file] = input_upload_response['path']
-            
+
+    def __upload_working_directory_files(self):
+        # Task manager stages files into working directory, these need to be uploaded
+        for working_directory_file in os.listdir(self.working_directory):
+            path = os.path.join(self.working_directory, working_directory_file)
+            working_file_response = self.client.upload_working_directory_file(path)
+            self.file_renames[path] = working_file_response['path']
+
     def __initialize_output_file_renames(self):
         for output_file in self.output_files:
             self.file_renames[output_file] = r'%s%s%s' % (self.new_outputs_directory, 
                                                          self.remote_path_separator, 
                                                          os.path.basename(output_file))
+
+    def __initialize_task_output_file_renames(self):
+        for output_file in self.output_files:
+            name = os.path.basename(output_file)
+            self.file_renames[os.path.join(self.working_directory, name)] = r'%s%s%s' % (self.new_working_directory,
+                                                                                         self.remote_path_separator,
+                                                                                         name)
 
     def __initialize_config_file_renames(self):
         for config_file in self.config_files:
@@ -172,13 +189,27 @@ class Client(object):
 
     def upload_config_file(self, path, contents):
         return self.__upload_contents("upload_config_file", path, contents)
-        
-    def download_output(self, path):
+
+    def upload_working_directory_file(self, path):
+        return self.__upload_file("upload_working_directory_file", path)
+
+    def _get_output_type(self, name):
+        return self.__raw_execute_and_parse('get_output_type', {'name': name,
+                                                                'job_id': self.job_id})
+
+    def download_output(self, path, working_directory):
         """ """
         name = os.path.basename(path)
-        response = self.__raw_execute('download_output', {'name' : name, 
-                                                          "job_id" : self.job_id})
-        output = open(path, 'wb')
+        output_type = self._get_output_type(name)
+        response = self.__raw_execute('download_output', {'name' : name,
+                                                          "job_id" : self.job_id,
+                                                          'output_type': output_type})
+        if output_type == 'direct':
+            output = open(path, 'wb')
+        elif output_type == 'task':
+            output = open(os.path.join(working_directory, name), 'wb')
+        else:
+            raise Exception("No remote output found for dataset with path %s" % path)
         try:
             while True:
                 buffer = response.read(1024)
@@ -254,7 +285,7 @@ class LwrJobRunner( ClusterJobRunner ):
         try:
             job_wrapper.prepare()
             if hasattr(job_wrapper, 'prepare_input_files_cmds') and job_wrapper.prepare_input_files_cmds is not None:
-                for cmd in job_wrapper.prepare_input_file_cmds: # run the commands to stage the input files
+                for cmd in job_wrapper.prepare_input_files_cmds: # run the commands to stage the input files
                     #log.debug( 'executing: %s' % cmd )
                     if 0 != os.system(cmd):
                         raise Exception('Error running file staging command: %s' % cmd)
@@ -275,7 +306,8 @@ class LwrJobRunner( ClusterJobRunner ):
             client = self.get_client_from_wrapper(job_wrapper)
             output_files = self.get_output_files(job_wrapper)
             input_files = job_wrapper.get_input_fnames()
-            file_stager = FileStager(client, command_line, job_wrapper.extra_filenames, input_files, output_files, job_wrapper.tool.tool_dir)
+            working_directory = job_wrapper.working_directory
+            file_stager = FileStager(client, command_line, job_wrapper.extra_filenames, input_files, output_files, job_wrapper.tool.tool_dir, working_directory)
             rebuilt_command_line = file_stager.get_rewritten_command_line()
             client.launch( rebuilt_command_line )
             job_wrapper.set_runner( runner_url, job_wrapper.job_id )
@@ -304,7 +336,10 @@ class LwrJobRunner( ClusterJobRunner ):
         return  lwr_url 
 
     def get_client_from_wrapper(self, job_wrapper):
-        return self.get_client( job_wrapper.get_job_runner_url(), job_wrapper.job_id )
+        job_id = job_wrapper.job_id
+        if hasattr(job_wrapper, 'task_id'):
+            job_id = "%s_%s" % (job_id, job_wrapper.task_id)
+        return self.get_client( job_wrapper.get_job_runner_url(), job_id )
 
     def get_client_from_state(self, job_state):
         job_runner = job_state.runner_url
@@ -329,7 +364,7 @@ class LwrJobRunner( ClusterJobRunner ):
             if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]:
                 output_files = self.get_output_files(job_wrapper)
                 for output_file in output_files:
-                    client.download_output(output_file)
+                    client.download_output(output_file, working_directory=job_wrapper.working_directory)
             client.clean()
             log.debug('execution finished: %s' % command_line)
         except Exception, exc:
@@ -386,8 +421,9 @@ class LwrJobRunner( ClusterJobRunner ):
 
     def stop_job( self, job ):
         #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
-        if job.external_output_metadata:
-            pid = job.external_output_metadata[0].job_runner_external_pid #every JobExternalOutputMetadata has a pid set, we just need to take from one of them
+        job_ext_output_metadata = job.get_external_output_metadata()
+        if job_ext_output_metadata: 
+            pid = job_ext_output_metadata[0].job_runner_external_pid #every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             if pid in [ None, '' ]:
                 log.warning( "stop_job(): %s: no PID in database for job, unable to stop" % job.id )
                 return
