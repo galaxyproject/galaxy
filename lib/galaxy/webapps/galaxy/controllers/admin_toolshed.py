@@ -1,10 +1,10 @@
 import urllib2, tempfile
 from admin import *
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util import json
 import galaxy.util.shed_util as shed_util
 import galaxy.util.shed_util_common as suc
 from galaxy.tool_shed import encoding_util
-from galaxy.webapps.community.util import container_util
+from galaxy.webapps.community.util import container_util, workflow_util
 from galaxy import eggs, tools
 
 eggs.require( 'mercurial' )
@@ -552,6 +552,11 @@ class AdminToolshed( AdminGalaxy ):
         galaxy_url = url_for( '/', qualified=True )
         url = suc.url_join( tool_shed_url, 'repository/find_workflows?galaxy_url=%s' % galaxy_url )
         return trans.response.send_redirect( url )
+    @web.expose
+    @web.require_admin
+    def generate_workflow_image( self, trans, workflow_name, repository_id=None ):
+        """Return an svg image representation of a workflow dictionary created when the workflow was exported."""
+        return workflow_util.generate_workflow_image( trans, workflow_name, repository_metadata_id=None, repository_id=repository_id )
     @web.json
     @web.require_admin
     def get_file_contents( self, trans, file_path ):
@@ -576,7 +581,7 @@ class AdminToolshed( AdminGalaxy ):
         raw_text = response.read()
         response.close()
         if len( raw_text ) > 2:
-            encoded_text = from_json_string( raw_text )
+            encoded_text = json.from_json_string( raw_text )
             text = encoding_util.tool_shed_decode( encoded_text )
         else:
             text = ''
@@ -584,6 +589,71 @@ class AdminToolshed( AdminGalaxy ):
     def get_versions_of_tool( self, app, guid ):
         tool_version = shed_util.get_tool_version( app, guid )
         return tool_version.get_version_ids( app, reverse=True )
+    @web.expose
+    @web.require_admin
+    def import_workflow( self, trans, workflow_name, repository_id, **kwd ):
+        # FIXME: importing doesn't yet work...
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        if workflow_name:
+            workflow_name = encoding_util.tool_shed_decode( workflow_name )
+        repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
+        changeset_revision = repository.changeset_revision
+        metadata = repository.metadata
+        workflows = metadata[ 'workflows' ]
+        tools_metadata = metadata[ 'tools' ]
+        workflow_dict = None
+        for workflow_data_tuple in workflows:
+            # The value of workflow_data_tuple is ( relative_path_to_workflow_file, exported_workflow_dict ).
+            relative_path_to_workflow_file, exported_workflow_dict = workflow_data_tuple
+            if exported_workflow_dict[ 'name' ] == workflow_name:
+                # If the exported workflow is available on disk, import it.
+                if os.path.exists( relative_path_to_workflow_file ):
+                    workflow_file = open( relative_path_to_workflow_file, 'rb' )
+                    workflow_data = workflow_file.read()
+                    workflow_file.close()
+                    workflow_dict = json.from_json_string( workflow_data )
+                else:
+                    # Use the current exported_workflow_dict.
+                    workflow_dict = exported_workflow_dict
+                break
+        if workflow_dict:
+            # Create workflow if possible.  If a required tool is not available in the local
+            # Galaxy instance, the tool information will be available in the step_dict.
+            src = None
+            workflow, missing_tool_tups = workflow_util.get_workflow_from_dict( trans,
+                                                                                workflow_dict,
+                                                                                tools_metadata,
+                                                                                repository_id,
+                                                                                changeset_revision )
+            if workflow_name:
+                workflow.name = workflow_name
+            # Provide user feedback and show workflow list.
+            if workflow.has_errors:
+                message += "Imported, but some steps in this workflow have validation errors. "
+                status = "error"
+            if workflow.has_cycles:
+                message += "Imported, but this workflow contains cycles.  "
+                status = "error"
+            else:
+                message += "Workflow <b>%s</b> imported successfully.  " % workflow.name
+            if missing_tool_tups:
+                # TODO: rework this since it is used in the tool shed, but shoudn't be used in Galaxy.
+                name_and_id_str = ''
+                for missing_tool_tup in missing_tool_tups:
+                    tool_id, tool_name, other = missing_tool_tup
+                    name_and_id_str += 'name: %s, id: %s' % ( str( tool_id ), str( tool_name ) )
+                log.debug( "The following tools required by this workflow are missing from this Galaxy instance: %s" % name_and_id_str )
+        else:
+            message += 'The workflow named %s is not included in the metadata for revision %s of repository %s' % \
+                ( str( workflow_name ), str( changeset_revision ), str( repository.name ) )
+            status = 'error'
+        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                          action='browse_repository',
+                                                          id=repository_id,
+                                                          message=message,
+                                                          status=status ) )
     @web.expose
     @web.require_admin
     def initiate_repository_installation( self, trans, shed_repository_ids, encoded_kwd, reinstalling=False ):
@@ -728,7 +798,7 @@ class AdminToolshed( AdminGalaxy ):
                     text = response.read()
                     response.close()
                     if text:
-                        tool_version_dicts = from_json_string( text )
+                        tool_version_dicts = json.from_json_string( text )
                         shed_util.handle_tool_versions( trans.app, tool_version_dicts, tool_shed_repository )
                     else:
                         message += "Version information for the tools included in the <b>%s</b> repository is missing.  " % name
@@ -1084,7 +1154,7 @@ class AdminToolshed( AdminGalaxy ):
             response = urllib2.urlopen( url )
             raw_text = response.read()
             response.close()
-            repo_information_dict = from_json_string( raw_text )
+            repo_information_dict = json.from_json_string( raw_text )
             includes_tools = util.string_as_bool( repo_information_dict.get( 'includes_tools', False ) )
             includes_repository_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_repository_dependencies', False ) )
             includes_tool_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_tool_dependencies', False ) )
@@ -1191,7 +1261,7 @@ class AdminToolshed( AdminGalaxy ):
             response = urllib2.urlopen( url )
             raw_text = response.read()
             response.close()
-            readme_files_dict = from_json_string( raw_text )
+            readme_files_dict = json.from_json_string( raw_text )
             # Since we are installing a new repository, no tool dependencies will be considered "missing".  Most of the repository contents
             # are set to None since we don't yet know what they are.
             containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
@@ -1593,7 +1663,7 @@ class AdminToolshed( AdminGalaxy ):
         text = response.read()
         response.close()
         if text:
-            tool_version_dicts = from_json_string( text )
+            tool_version_dicts = json.from_json_string( text )
             shed_util.handle_tool_versions( trans.app, tool_version_dicts, repository )
             message = "Tool versions have been set for all included tools."
             status = 'done'
@@ -1785,7 +1855,26 @@ class AdminToolshed( AdminGalaxy ):
                                     tool_lineage=tool_lineage,
                                     message=message,
                                     status=status )
-
+    @web.expose
+    @web.require_admin
+    def view_workflow( self, trans, workflow_name=None, repository_id=None, **kwd ):
+        """Retrieve necessary information about a workflow from the database so that it can be displayed in an svg image."""
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        if workflow_name:
+            workflow_name = encoding_util.tool_shed_decode( workflow_name )
+        repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
+        changeset_revision = repository.changeset_revision
+        metadata = repository.metadata
+        return trans.fill_template( "/admin/tool_shed_repository/view_workflow.mako",
+                                    repository=repository,
+                                    changeset_revision=changeset_revision,
+                                    repository_id=repository_id,
+                                    workflow_name=workflow_name,
+                                    metadata=metadata,
+                                    message=message,
+                                    status=status )
 ## ---- Utility methods -------------------------------------------------------
 
 def build_shed_tool_conf_select_field( trans ):

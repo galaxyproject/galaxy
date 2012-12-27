@@ -56,11 +56,12 @@ class Datatype( object ):
 
 class InvalidTool( object ):
     """Invalid tool object"""
-    def __init__( self, id=None, tool_config=None, repository_id=None, changeset_revision=None ):
+    def __init__( self, id=None, tool_config=None, repository_id=None, changeset_revision=None, repository_installation_status=None ):
         self.id = id
         self.tool_config = tool_config
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
+        self.repository_installation_status = repository_installation_status
 
 class ReadMe( object ):
     """Readme text object"""
@@ -86,7 +87,7 @@ class RepositoryDependency( object ):
 class Tool( object ):
     """Tool object"""
     def __init__( self, id=None, tool_config=None, tool_id=None, name=None, description=None, version=None, requirements=None,
-                  repository_id=None, changeset_revision=None ):
+                  repository_id=None, changeset_revision=None, repository_installation_status=None ):
         self.id = id
         self.tool_config = tool_config
         self.tool_id = tool_id
@@ -96,6 +97,7 @@ class Tool( object ):
         self.requirements = requirements
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
+        self.repository_installation_status = repository_installation_status
 
 class ToolDependency( object ):
     """Tool dependency object"""
@@ -112,14 +114,17 @@ class ToolDependency( object ):
         self.tool_dependency_id = tool_dependency_id
 
 class Workflow( object ):
-    """Workflow object"""
-    def __init__( self, id=None, repository_metadata_id=None, workflow_name=None, steps=None, format_version=None, annotation=None ):
+    """Workflow object."""
+    def __init__( self, id=None, workflow_name=None, steps=None, format_version=None, annotation=None, repository_metadata_id=None, repository_id=None ):
+        # When rendered in the tool shed, repository_metadata_id will have a value and repository_id will be None.  When rendered in Galaxy, repository_id
+        # will have a value and repository_metadata_id will be None.
         self.id = id
-        self.repository_metadata_id = repository_metadata_id
         self.workflow_name = workflow_name
         self.steps = steps
         self.format_version = format_version
         self.annotation = annotation
+        self.repository_metadata_id = repository_metadata_id
+        self.repository_id = repository_id
 
 def build_datatypes_folder( trans, folder_id, datatypes, label='Datatypes' ):
     """Return a folder hierarchy containing datatypes."""
@@ -163,12 +168,18 @@ def build_invalid_tools_folder( trans, folder_id, invalid_tool_configs, changese
             invalid_tool_id += 1
             if repository:
                 repository_id = repository.id
+                if trans.webapp.name == 'galaxy':
+                    repository_installation_status = repository.status
+                else:
+                    repository_installation_status = None
             else:
                 repository_id = None
+                repository_installation_status = None
             invalid_tool = InvalidTool( id=invalid_tool_id,
                                         tool_config=invalid_tool_config,
                                         repository_id=repository_id,
-                                        changeset_revision=changeset_revision )
+                                        changeset_revision=changeset_revision,
+                                        repository_installation_status=repository_installation_status )
             folder.invalid_tools.append( invalid_tool )
     else:
         invalid_tools_root_folder = None
@@ -249,8 +260,13 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
         folder.valid_tools.append( tool )
         if repository:
             repository_id = repository.id
+            if trans.webapp.name == 'galaxy':
+                repository_installation_status = repository.status
+            else:
+                repository_installation_status = None
         else:
-            repository_id = ''
+            repository_id = None
+            repository_installation_status = None
         for tool_dict in tool_dicts:
             tool_id += 1
             if 'requirements' in tool_dict:
@@ -269,7 +285,8 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
                          version=tool_dict[ 'version' ],
                          requirements=requirements_str,
                          repository_id=repository_id,
-                         changeset_revision=changeset_revision )
+                         changeset_revision=changeset_revision,
+                         repository_installation_status=repository_installation_status )
             folder.valid_tools.append( tool )
     else:
         tools_root_folder = None
@@ -351,8 +368,13 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
     else:
         tool_dependencies_root_folder = None
     return folder_id, tool_dependencies_root_folder
-def build_workflows_folder( trans, folder_id, workflows, repository_metadata, label='Workflows' ):
-    """Return a folder hierarchy containing invalid tools."""
+def build_workflows_folder( trans, folder_id, workflows, repository_metadata_id=None, repository_id=None, label='Workflows' ):
+    """
+    Return a folder hierarchy containing workflow objects for each workflow dictionary in the received workflows list.  When
+    this method is called from the tool shed, repository_metadata_id will have a value and repository_id will be None.  When
+    this method is called from Galaxy, repository_id will have a value only if the repository is not currenlty being installed
+    and repository_metadata_id will be None.
+    """
     if workflows:
         workflow_id = 0
         folder_id += 1
@@ -363,11 +385,12 @@ def build_workflows_folder( trans, folder_id, workflows, repository_metadata, la
         # Insert a header row.
         workflow_id += 1
         workflow = Workflow( id=workflow_id,
-                             repository_metadata_id=None,
                              workflow_name='Name',
                              steps='steps',
                              format_version='format-version',
-                             annotation='annotation' )
+                             annotation='annotation',
+                             repository_metadata_id=repository_metadata_id,
+                             repository_id=repository_id )
         folder.workflows.append( workflow )
         for workflow_tup in workflows:
             workflow_dict=workflow_tup[ 1 ]
@@ -378,11 +401,12 @@ def build_workflows_folder( trans, folder_id, workflows, repository_metadata, la
                 steps = 'unknown'
             workflow_id += 1
             workflow = Workflow( id=workflow_id,
-                                 repository_metadata_id=repository_metadata.id,
                                  workflow_name=workflow_dict[ 'name' ],
                                  steps=steps,
                                  format_version=workflow_dict[ 'format-version' ],
-                                 annotation=workflow_dict[ 'annotation' ] )
+                                 annotation=workflow_dict[ 'annotation' ],
+                                 repository_metadata_id=repository_metadata_id,
+                                 repository_id=repository_id )
             folder.workflows.append( workflow )
     else:
         workflows_root_folder = None

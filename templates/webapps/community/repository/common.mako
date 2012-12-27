@@ -231,6 +231,10 @@
                         folder_label = "%s<i> - this repository's tools require handling of these dependencies</i>" % folder_label
                     col_span_str = 'colspan="4"'
                 elif folder.workflows:
+                    if folder.description:
+                        folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
+                    else:
+                        folder_label = "%s<i> - click the name to view an SVG image of the workflow</i>" % folder_label
                     col_span_str = 'colspan="4"'
             %>
             <td ${col_span_str} style="padding-left: ${folder_pad}px;">
@@ -439,7 +443,11 @@
                             <a class="action-button" href="${h.url_for( controller='repository', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">View tool metadata</a>
                         </div>
                     %else:
-                        <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">${tool.name | h}</a>
+                        %if tool.repository_installation_status == trans.model.ToolShedRepository.installation_status.INSTALLED:
+                            <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='view_tool_metadata', repository_id=trans.security.encode_id( tool.repository_id ), changeset_revision=tool.changeset_revision, tool_id=tool.tool_id )}">${tool.name | h}</a>
+                        %else:
+                            ${tool.name | h}
+                        %endif
                     %endif
                 %else:
                     ${tool.name | h}
@@ -515,6 +523,13 @@
     <%
         from galaxy.tool_shed.encoding_util import tool_shed_encode
         encoded_id = trans.security.encode_id( workflow.id )
+        encoded_workflow_name = tool_shed_encode( workflow.workflow_name )
+        if trans.webapp.name == 'community':
+            encoded_repository_metadata_id = trans.security.encode_id( workflow.repository_metadata_id )
+            encoded_repository_id = None
+        else:
+            encoded_repository_metadata_id = None
+            encoded_repository_id = trans.security.encode_id( workflow.repository_id )
         if row_is_header:
             cell_type = 'th'
         else:
@@ -528,8 +543,12 @@
         <${cell_type} style="padding-left: ${pad+20}px;">
             %if row_is_header:
                 ${workflow.workflow_name | h}
+            %elif trans.webapp.name == 'community' and encoded_repository_metadata_id:
+                <a href="${h.url_for( controller='repository', action='view_workflow', workflow_name=encoded_workflow_name, repository_metadata_id=encoded_repository_metadata_id )}">${workflow.workflow_name | h}</a>
+            %elif trans.webapp.name == 'galaxy' and encoded_repository_id:
+                <a href="${h.url_for( controller='admin_toolshed', action='view_workflow', workflow_name=encoded_workflow_name, repository_id=encoded_repository_id )}">${workflow.workflow_name | h}</a>
             %else:
-                <a href="${h.url_for( controller='workflow', action='view_workflow', repository_metadata_id=trans.security.encode_id( workflow.repository_metadata_id ), workflow_name=tool_shed_encode( workflow.workflow_name ) )}">${workflow.workflow_name | h}</a>
+                ${workflow.workflow_name | h}
             %endif
         </${cell_type}>
         <${cell_type}>${workflow.steps | h}</${cell_type}>
@@ -557,7 +576,7 @@
         missing_repository_dependencies_root_folder = containers_dict.get( 'missing_repository_dependencies', None )
         tool_dependencies_root_folder = containers_dict.get( 'tool_dependencies', None )
         missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
-        valid_tools_root_folder = containers_dict.get( 'valid_tools', none )
+        valid_tools_root_folder = containers_dict.get( 'valid_tools', None )
         workflows_root_folder = containers_dict.get( 'workflows', None )
         
         has_contents = datatypes_root_folder or invalid_tools_root_folder or valid_tools_root_folder or workflows_root_folder

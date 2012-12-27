@@ -1,18 +1,20 @@
-import os, logging, tempfile, shutil, ConfigParser
+import os, logging, re, tempfile, shutil, ConfigParser
 from time import gmtime, strftime
 from datetime import date, datetime
-from galaxy import util
+from galaxy import util, web
 from galaxy.util.odict import odict
-from galaxy.web.base.controller import *
-from galaxy.web.form_builder import CheckboxField
+from galaxy.web.base.controller import BaseUIController
+from galaxy.web.form_builder import CheckboxField, SelectField, build_select_field
 from galaxy.webapps.community import model
 from galaxy.webapps.community.model import directory_hash_id
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.util.json import from_json_string, to_json_string
-from galaxy.model.orm import and_
+from galaxy.web.framework.helpers import grids
+from galaxy.util import json
+from galaxy.model.orm import and_, or_
 import galaxy.util.shed_util_common as suc
 from galaxy.tool_shed import encoding_util
+from galaxy.webapps.community.util import workflow_util
 import common
+import galaxy.tools
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -157,7 +159,7 @@ class RepositoryGrid( grids.Grid ):
                                        model.User.table.c.email == column_filter ) )
     class EmailAlertsColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
-            if trans.user and repository.email_alerts and trans.user.email in from_json_string( repository.email_alerts ):
+            if trans.user and repository.email_alerts and trans.user.email in json.from_json_string( repository.email_alerts ):
                 return 'yes'
             return ''
     class DeprecatedColumn( grids.TextColumn ):
@@ -833,7 +835,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             # Start building up the url to redirect back to the calling Galaxy instance.            
             url = suc.url_join( galaxy_url,
                                 'admin_toolshed/update_to_changeset_revision?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
-                                ( url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
+                                ( web.url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
         if changeset_revision == repository.tip( trans.app ):
             # If changeset_revision is the repository tip, there are no additional updates.
             if from_update_manager:
@@ -1020,7 +1022,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        repository, tool, message = common.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, message = suc.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         if message:
             status = 'error'
         tool_state = self.__new_state( trans )
@@ -1087,7 +1089,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                 is_admin = trans.user_is_admin()
                 if operation == "view_or_manage_repository":
                     # The received id is a RepositoryMetadata id, so we have to get the repository id.
-                    repository_metadata = common.get_repository_metadata_by_id( trans, item_id )
+                    repository_metadata = suc.get_repository_metadata_by_id( trans, item_id )
                     repository_id = trans.security.encode_id( repository_metadata.repository.id )
                     repository = suc.get_repository_in_tool_shed( trans, repository_id )
                     kwd[ 'id' ] = repository_id
@@ -1104,7 +1106,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                     encoded_repository_ids = []
                     changeset_revisions = []
                     for repository_metadata_id in util.listify( item_id ):
-                        repository_metadata = common.get_repository_metadata_by_id( trans, repository_metadata_id )
+                        repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
                         encoded_repository_ids.append( trans.security.encode_id( repository_metadata.repository.id ) )
                         changeset_revisions.append( repository_metadata.changeset_revision )
                     new_kwd[ 'repository_ids' ] = encoded_repository_ids
@@ -1172,7 +1174,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                 is_admin = trans.user_is_admin()
                 if operation == "view_or_manage_repository":
                     # The received id is a RepositoryMetadata id, so we have to get the repository id.
-                    repository_metadata = common.get_repository_metadata_by_id( trans, item_id )
+                    repository_metadata = suc.get_repository_metadata_by_id( trans, item_id )
                     repository_id = trans.security.encode_id( repository_metadata.repository.id )
                     repository = suc.get_repository_in_tool_shed( trans, repository_id )
                     kwd[ 'id' ] = repository_id
@@ -1189,7 +1191,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                     encoded_repository_ids = []
                     changeset_revisions = []
                     for repository_metadata_id in util.listify( item_id ):
-                        repository_metadata = common.get_repository_metadata_by_id( trans, item_id )
+                        repository_metadata = suc.get_repository_metadata_by_id( trans, item_id )
                         encoded_repository_ids.append( trans.security.encode_id( repository_metadata.repository.id ) )
                         changeset_revisions.append( repository_metadata.changeset_revision )
                     new_kwd = {}
@@ -1244,6 +1246,10 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
                                     status=status )
+    @web.expose
+    def generate_workflow_image( self, trans, workflow_name, repository_metadata_id=None ):
+        """Return an svg image representation of a workflow dictionary created when the workflow was exported."""
+        return workflow_util.generate_workflow_image( trans, workflow_name, repository_metadata_id=repository_metadata_id, repository_id=None )
     @web.expose
     def get_changeset_revision_and_ctx_rev( self, trans, **kwd ):
         """Handle a request from a local Galaxy instance to retrieve the changeset revision hash to which an installed repository can be updated."""
@@ -1355,7 +1361,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                 repository_dependencies = suc.get_repository_dependencies_for_changeset_revision( trans=trans,
                                                                                                   repository=repository,
                                                                                                   repository_metadata=repository_metadata,
-                                                                                                  toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                                  toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
                                                                                                   key_rd_dicts_to_be_processed=None,
                                                                                                   all_repository_dependencies=None,
                                                                                                   handled_key_rd_dicts=None,
@@ -1418,7 +1424,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
             changeset_revisions.append( changeset_revision )
         if encoded_repository_ids and changeset_revisions:
-            repo_info_dict = from_json_string( self.get_repository_information( trans, encoded_repository_ids, changeset_revisions ) )
+            repo_info_dict = json.from_json_string( self.get_repository_information( trans, encoded_repository_ids, changeset_revisions ) )
         else:
             repo_info_dict = {}
         return repo_info_dict
@@ -1465,7 +1471,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                 if current_changeset_revision == changeset_revision:
                     break
         if tool_version_dicts:
-            return to_json_string( tool_version_dicts )
+            return json.to_json_string( tool_version_dicts )
         return ''
     def get_versions_of_tool( self, trans, repository, repository_metadata, guid ):
         """Return the tool lineage in descendant order for the received guid contained in the received repsitory_metadata.tool_versions."""
@@ -1595,14 +1601,14 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         # Redirect back to local Galaxy to perform install.
         url = suc.url_join( galaxy_url,
                             'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
-                            ( url_for( '/', qualified=True ), ','.join( util.listify( repository_ids ) ), ','.join( util.listify( changeset_revisions ) ) ) )
+                            ( web.url_for( '/', qualified=True ), ','.join( util.listify( repository_ids ) ), ','.join( util.listify( changeset_revisions ) ) ) )
         return trans.response.send_redirect( url )
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'error' )
-        repository, tool, error_message = common.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, error_message = suc.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = common.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         invalid_file_tups = []
@@ -1701,7 +1707,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         alerts_checked = CheckboxField.is_checked( alerts )
         category_ids = util.listify( params.get( 'category_id', '' ) )
         if repository.email_alerts:
-            email_alerts = from_json_string( repository.email_alerts )
+            email_alerts = json.from_json_string( repository.email_alerts )
         else:
             email_alerts = []
         allow_push = params.get( 'allow_push', '' )
@@ -1776,12 +1782,12 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             if alerts_checked:
                 if user.email not in email_alerts:
                     email_alerts.append( user.email )
-                    repository.email_alerts = to_json_string( email_alerts )
+                    repository.email_alerts = json.to_json_string( email_alerts )
                     flush_needed = True
             else:
                 if user.email in email_alerts:
                     email_alerts.remove( user.email )
-                    repository.email_alerts = to_json_string( email_alerts )
+                    repository.email_alerts = json.to_json_string( email_alerts )
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository )
@@ -1830,7 +1836,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                 repository_dependencies = suc.get_repository_dependencies_for_changeset_revision( trans=trans,
                                                                                                   repository=repository,
                                                                                                   repository_metadata=repository_metadata,
-                                                                                                  toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                                  toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
                                                                                                   key_rd_dicts_to_be_processed=None,
                                                                                                   all_repository_dependencies=None,
                                                                                                   handled_key_rd_dicts=None )
@@ -1913,7 +1919,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         Only inputs on the first page will be initialized unless `all_pages` is
         True, in which case all inputs regardless of page are initialized.
         """
-        state = DefaultToolState()
+        state = galaxy.tools.DefaultToolState()
         state.inputs = {}
         return state
     @web.json
@@ -1939,7 +1945,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             repository_dependencies = suc.get_repository_dependencies_for_changeset_revision( trans=trans,
                                                                                               repository=repository,
                                                                                               repository_metadata=repository_metadata,
-                                                                                              toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                              toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
                                                                                               key_rd_dicts_to_be_processed=None,
                                                                                               all_repository_dependencies=None,
                                                                                               handled_key_rd_dicts=None )
@@ -2257,18 +2263,18 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             for repository_id in repository_ids:
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
                 if repository.email_alerts:
-                    email_alerts = from_json_string( repository.email_alerts )
+                    email_alerts = json.from_json_string( repository.email_alerts )
                 else:
                     email_alerts = []
                 if user.email in email_alerts:
                     email_alerts.remove( user.email )
-                    repository.email_alerts = to_json_string( email_alerts )
+                    repository.email_alerts = json.to_json_string( email_alerts )
                     trans.sa_session.add( repository )
                     flush_needed = True
                     total_alerts_removed += 1
                 else:
                     email_alerts.append( user.email )
-                    repository.email_alerts = to_json_string( email_alerts )
+                    repository.email_alerts = json.to_json_string( email_alerts )
                     trans.sa_session.add( repository )
                     flush_needed = True
                     total_alerts_added += 1
@@ -2424,7 +2430,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         alerts = params.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
         if repository.email_alerts:
-            email_alerts = from_json_string( repository.email_alerts )
+            email_alerts = json.from_json_string( repository.email_alerts )
         else:
             email_alerts = []
         repository_dependencies = None
@@ -2434,12 +2440,12 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             if alerts_checked:
                 if user.email not in email_alerts:
                     email_alerts.append( user.email )
-                    repository.email_alerts = to_json_string( email_alerts )
+                    repository.email_alerts = json.to_json_string( email_alerts )
                     flush_needed = True
             else:
                 if user.email in email_alerts:
                     email_alerts.remove( user.email )
-                    repository.email_alerts = to_json_string( email_alerts )
+                    repository.email_alerts = json.to_json_string( email_alerts )
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add( repository )
@@ -2460,7 +2466,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             repository_dependencies = suc.get_repository_dependencies_for_changeset_revision( trans=trans,
                                                                                               repository=repository,
                                                                                               repository_metadata=repository_metadata,
-                                                                                              toolshed_base_url=str( url_for( '/', qualified=True ) ).rstrip( '/' ),
+                                                                                              toolshed_base_url=str( web.url_for( '/', qualified=True ) ).rstrip( '/' ),
                                                                                               key_rd_dicts_to_be_processed=None,
                                                                                               all_repository_dependencies=None,
                                                                                               handled_key_rd_dicts=None )
@@ -2527,7 +2533,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                             guid = tool_metadata_dict[ 'guid' ]
                             full_path_to_tool_config = os.path.abspath( relative_path_to_tool_config )
                             full_path_to_dir, tool_config_filename = os.path.split( full_path_to_tool_config )
-                            can_use_disk_file = common.can_use_tool_config_disk_file( trans, repository, repo, full_path_to_tool_config, changeset_revision )
+                            can_use_disk_file = suc.can_use_tool_config_disk_file( trans, repository, repo, full_path_to_tool_config, changeset_revision )
                             if can_use_disk_file:
                                 trans.app.config.tool_data_path = work_dir
                                 tool, valid, message, sample_files = suc.handle_sample_files_and_load_tool_from_disk( trans,
@@ -2576,7 +2582,26 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                                     review_id=review_id,
                                     message=message,
                                     status=status )
-
+    @web.expose
+    def view_workflow( self, trans, workflow_name, repository_metadata_id, **kwd ):
+        """Retrieve necessary information about a workflow from the database so that it can be displayed in an svg image."""
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        if workflow_name:
+            workflow_name = encoding_util.tool_shed_decode( workflow_name )
+        repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+        repository = suc.get_repository_in_tool_shed( trans, trans.security.encode_id( repository_metadata.repository_id ) )
+        changeset_revision = repository_metadata.changeset_revision
+        metadata = repository_metadata.metadata
+        return trans.fill_template( "/webapps/community/repository/view_workflow.mako",
+                                    repository=repository,
+                                    changeset_revision=changeset_revision,
+                                    repository_metadata_id=repository_metadata_id,
+                                    workflow_name=workflow_name,
+                                    metadata=metadata,
+                                    message=message,
+                                    status=status )
 # ----- Utility methods -----
 
 def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True,

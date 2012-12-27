@@ -46,7 +46,7 @@ class TestToolShedWorkflowFeatures( ShedTwillTestCase ):
                           workflow_filename, 
                           filepath=workflow_filepath, 
                           commit_message='Uploaded filtering workflow.' )
-        self.load_workflow_image( repository, workflow_name, strings_displayed=[ '#EBBCB2' ] )
+        self.load_workflow_image_in_tool_shed( repository, workflow_name, strings_displayed=[ '#EBBCB2' ] )
     def test_0020_upload_tool( self ):
         '''Upload the missing tool for the workflow in the previous step, and verify that the error is no longer present.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
@@ -54,7 +54,7 @@ class TestToolShedWorkflowFeatures( ShedTwillTestCase ):
                           'filtering/filtering_2.2.0.tar', 
                           commit_message="Uploaded filtering 2.2.0", 
                           remove_repo_files_not_in_tar='No' )
-        self.load_workflow_image( repository, workflow_name, strings_not_displayed=[ '#EBBCB2' ] )
+        self.load_workflow_image_in_tool_shed( repository, workflow_name, strings_not_displayed=[ '#EBBCB2' ] )
     def test_0025_verify_repository_metadata( self ):
         '''Verify that resetting the metadata does not change it.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )

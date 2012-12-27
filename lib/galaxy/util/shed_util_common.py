@@ -1,14 +1,14 @@
 import os, shutil, tempfile, logging, string, threading, urllib2
 from galaxy import util
 from galaxy.tools import parameters
-from galaxy.util import inflector
-from galaxy.util import json
+from galaxy.util import inflector, json
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from galaxy.webapps.community.util import container_util
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 from galaxy.tools.parameters import dynamic_options
+from galaxy.tool_shed import encoding_util
 
 from galaxy import eggs
 import pkg_resources
@@ -176,7 +176,12 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
             containers_dict[ 'valid_tools' ] = valid_tools_root_folder
         # Workflows container.
         if workflows:
-            folder_id, workflows_root_folder = container_util.build_workflows_folder( trans, folder_id, workflows, repository_metadata, label='Workflows' )
+            folder_id, workflows_root_folder = container_util.build_workflows_folder( trans=trans,
+                                                                                      folder_id=folder_id,
+                                                                                      workflows=workflows,
+                                                                                      repository_metadata_id=None,
+                                                                                      repository_id=repository_id,
+                                                                                      label='Workflows' )
             containers_dict[ 'workflows' ] = workflows_root_folder
     except Exception, e:
         log.debug( "Exception in build_repository_containers_for_galaxy: %s" % str( e ) )
@@ -252,7 +257,12 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             # Workflows container.
             if metadata and 'workflows' in metadata:
                 workflows = metadata[ 'workflows' ]
-                folder_id, workflows_root_folder = container_util.build_workflows_folder( trans, folder_id, workflows, repository_metadata, label='Workflows' )
+                folder_id, workflows_root_folder = container_util.build_workflows_folder( trans=trans,
+                                                                                          folder_id=folder_id,
+                                                                                          workflows=workflows,
+                                                                                          repository_metadata_id=repository_metadata.id,
+                                                                                          repository_id=None,
+                                                                                          label='Workflows' )
                 containers_dict[ 'workflows' ] = workflows_root_folder
         except Exception, e:
             log.debug( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
@@ -400,6 +410,25 @@ def can_generate_tool_dependency_metadata( root, metadata_dict ):
                             # tag for any tool in the repository.
                             break
     return can_generate_dependency_metadata
+def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset_revision ):
+    """
+    Determine if repository's tool config file on disk can be used.  This method is restricted to tool config files since, with the
+    exception of tool config files, multiple files with the same name will likely be in various directories in the repository and we're
+    comparing file names only (not relative paths).
+    """
+    if not file_path or not os.path.exists( file_path ):
+        # The file no longer exists on disk, so it must have been deleted at some previous point in the change log.
+        return False
+    if changeset_revision == repository.tip( trans.app ):
+        return True
+    file_name = strip_path( file_path )
+    latest_version_of_file = get_latest_tool_config_revision_from_repository_manifest( repo, file_name, changeset_revision )
+    can_use_disk_file = filecmp.cmp( file_path, latest_version_of_file )
+    try:
+        os.unlink( latest_version_of_file )
+    except:
+        pass
+    return can_use_disk_file
 def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files ):
     """
     Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make 
@@ -1339,6 +1368,16 @@ def generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_
     else:
         metadata_dict[ 'workflows' ] = [ ( relative_path, exported_workflow_dict ) ]
     return metadata_dict
+def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
+    """Return the absolute path to a specified disk file containe in a repository."""
+    stripped_file_name = strip_path( file_name )
+    file_path = None
+    for root, dirs, files in os.walk( repo_files_dir ):
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name == stripped_file_name:
+                    return os.path.abspath( os.path.join( root, name ) )
+    return file_path
 def get_changectx_for_changeset( repo, changeset_revision, **kwd ):
     """Retrieve a specified changectx from a repository"""
     for changeset in repo.changelog:
@@ -1487,14 +1526,14 @@ def get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset
         repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
         ctx_rev = get_ctx_rev( tool_shed_url, name, owner, installed_changeset_revision )
         print "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name
-        repository = create_or_update_tool_shed_repository( app=self.app,
+        repository = create_or_update_tool_shed_repository( app=trans.app,
                                                             name=name,
                                                             description=None,
                                                             installed_changeset_revision=changeset_revision,
                                                             ctx_rev=ctx_rev,
                                                             repository_clone_url=repository_clone_url,
                                                             metadata_dict={},
-                                                            status=self.app.model.ToolShedRepository.installation_status.NEW,
+                                                            status=trans.model.ToolShedRepository.installation_status.NEW,
                                                             current_changeset_revision=None,
                                                             owner=sowner,
                                                             dist_to_shed=False )
@@ -1712,6 +1751,9 @@ def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision
     elif all_metadata_records:
         return all_metadata_records[ 0 ]
     return None
+def get_repository_metadata_by_id( trans, id ):
+    """Get repository metadata from the database"""
+    return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
 def get_repository_metadata_by_repository_id_changset_revision( trans, id, changeset_revision ):
     """Get a specified metadata record for a specified repository."""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
@@ -1822,6 +1864,10 @@ def get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf ):
                 tool_path = shed_tool_conf_dict[ 'tool_path' ]
                 break
     return tool_path
+def get_tool_shed_repository_by_id( trans, repository_id ):
+    return trans.sa_session.query( trans.model.ToolShedRepository ) \
+                           .filter( trans.model.ToolShedRepository.table.c.id == trans.security.decode_id( repository_id ) ) \
+                           .first()
 def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
     # This method is used only in Galaxy, not the tool shed.
     sa_session = app.model.context.current
@@ -2110,6 +2156,46 @@ def initialize_all_repository_dependencies( current_repository_key, repository_d
     description = repository_dependencies_dict.get( 'description', None )
     all_repository_dependencies[ 'description' ] = description
     return all_repository_dependencies
+def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config_filename ):
+    """
+    Return a loaded tool whose tool config file name (e.g., filtering.xml) is the value of tool_config_filename.  The value of changeset_revision
+    is a valid (downloadable) changset revision.  The tool config will be located in the repository manifest between the received valid changeset
+    revision and the first changeset revision in the repository, searching backwards.
+    """
+    original_tool_data_path = trans.app.config.tool_data_path
+    repository = get_repository_in_tool_shed( trans, repository_id )
+    repo_files_dir = repository.repo_path( trans.app )
+    repo = hg.repository( get_configured_ui(), repo_files_dir )
+    message = ''
+    tool = None
+    can_use_disk_file = False
+    tool_config_filepath = get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
+    work_dir = tempfile.mkdtemp()
+    can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
+    if can_use_disk_file:
+        trans.app.config.tool_data_path = work_dir
+        tool, valid, message, sample_files = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir )
+        if tool is not None:
+            invalid_files_and_errors_tups = check_tool_input_params( trans.app,
+                                                                     repo_files_dir,
+                                                                     tool_config_filename,
+                                                                     tool,
+                                                                     sample_files )
+            if invalid_files_and_errors_tups:
+                message2 = generate_message_for_invalid_tools( trans,
+                                                               invalid_files_and_errors_tups,
+                                                               repository,
+                                                               metadata_dict=None,
+                                                               as_html=True,
+                                                               displaying_invalid_tool=True )
+                message = concat_messages( message, message2 )
+    else:
+        tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
+    remove_dir( work_dir )
+    trans.app.config.tool_data_path = original_tool_data_path
+    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+    reset_tool_data_tables( trans.app )
+    return repository, tool, message
 def load_tool_from_config( app, full_path ):
     try:
         tool = app.toolbox.load_tool( full_path )

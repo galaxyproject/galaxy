@@ -113,25 +113,6 @@ def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
         repository_metadata.tool_versions = tool_versions_dict
         trans.sa_session.add( repository_metadata )
         trans.sa_session.flush()
-def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset_revision ):
-    """
-    Determine if repository's tool config file on disk can be used.  This method is restricted to tool config files since, with the
-    exception of tool config files, multiple files with the same name will likely be in various directories in the repository and we're
-    comparing file names only (not relative paths).
-    """
-    if not file_path or not os.path.exists( file_path ):
-        # The file no longer exists on disk, so it must have been deleted at some previous point in the change log.
-        return False
-    if changeset_revision == repository.tip( trans.app ):
-        return True
-    file_name = suc.strip_path( file_path )
-    latest_version_of_file = get_latest_tool_config_revision_from_repository_manifest( repo, file_name, changeset_revision )
-    can_use_disk_file = filecmp.cmp( file_path, latest_version_of_file )
-    try:
-        os.unlink( latest_version_of_file )
-    except:
-        pass
-    return can_use_disk_file
 def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -155,15 +136,6 @@ def check_file_contents( trans ):
             if user_email in admin_users:
                 return True
     return False
-def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
-    stripped_file_name = suc.strip_path( file_name )
-    file_path = None
-    for root, dirs, files in os.walk( repo_files_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name == stripped_file_name:
-                    return os.path.abspath( os.path.join( root, name ) )
-    return file_path
 def get_category( trans, id ):
     """Get a category from the database"""
     return trans.sa_session.query( trans.model.Category ).get( trans.security.decode_id( id ) )
@@ -249,9 +221,6 @@ def get_previous_repository_reviews( trans, repository, changeset_revision ):
 def get_repository_by_name( trans, name ):
     """Get a repository from the database via name"""
     return trans.sa_session.query( trans.model.Repository ).filter_by( name=name ).one()
-def get_repository_metadata_by_id( trans, id ):
-    """Get repository metadata from the database"""
-    return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
 def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
     repository_metadata_revisions = []
     metadata_changeset_revision_hashes = []
@@ -425,46 +394,6 @@ def has_previous_repository_reviews( trans, repository, changeset_revision ):
         if previous_changeset_revision in reviewed_revision_hashes:
             return True
     return False
-def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config_filename ):
-    """
-    Return a loaded tool whose tool config file name (e.g., filtering.xml) is the value of tool_config_filename.  The value of changeset_revision
-    is a valid (downloadable) changset revision.  The tool config will be located in the repository manifest between the received valid changeset
-    revision and the first changeset revision in the repository, searching backwards.
-    """
-    original_tool_data_path = trans.app.config.tool_data_path
-    repository = suc.get_repository_in_tool_shed( trans, repository_id )
-    repo_files_dir = repository.repo_path( trans.app )
-    repo = hg.repository( suc.get_configured_ui(), repo_files_dir )
-    message = ''
-    tool = None
-    can_use_disk_file = False
-    tool_config_filepath = get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
-    work_dir = tempfile.mkdtemp()
-    can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
-    if can_use_disk_file:
-        trans.app.config.tool_data_path = work_dir
-        tool, valid, message, sample_files = suc.handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir )
-        if tool is not None:
-            invalid_files_and_errors_tups = suc.check_tool_input_params( trans.app,
-                                                                         repo_files_dir,
-                                                                         tool_config_filename,
-                                                                         tool,
-                                                                         sample_files )
-            if invalid_files_and_errors_tups:
-                message2 = suc.generate_message_for_invalid_tools( trans,
-                                                                   invalid_files_and_errors_tups,
-                                                                   repository,
-                                                                   metadata_dict=None,
-                                                                   as_html=True,
-                                                                   displaying_invalid_tool=True )
-                message = suc.concat_messages( message, message2 )
-    else:
-        tool, message, sample_files = suc.handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
-    suc.remove_dir( work_dir )
-    trans.app.config.tool_data_path = original_tool_data_path
-    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-    suc.reset_tool_data_tables( trans.app )
-    return repository, tool, message
 def new_repository_dependency_metadata_required( trans, repository, metadata_dict ):
     """
     Compare the last saved metadata for each repository dependency in the repository with the new 

@@ -454,9 +454,11 @@ class ShedTwillTestCase( TwillTestCase ):
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def load_workflow_image( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
+    def load_workflow_image_in_tool_shed( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
+        # FIXME: Can not always assume the first repository_metadata record is the correct one.
+        # TODO: Add a method for displaying a workflow image in Galaxy.
         metadata = self.get_repository_metadata( repository )
-        url = '/workflow/generate_workflow_image?repository_metadata_id=%s&workflow_name=%s' % \
+        url = '/repository/generate_workflow_image?repository_metadata_id=%s&workflow_name=%s' % \
               ( self.security.encode_id( metadata[0].id ), tool_shed_encode( workflow_name ) )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )

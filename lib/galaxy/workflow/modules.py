@@ -2,7 +2,7 @@ import re
 from elementtree.ElementTree import Element
 from galaxy import web
 from galaxy.tools.parameters import DataToolParameter, DummyDataset, RuntimeValue, check_param, visit_input_values
-from galaxy.tools import DefaultToolState
+import galaxy.tools
 from galaxy.util.bunch import Bunch
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.jobs.actions.post import ActionBox
@@ -139,7 +139,7 @@ class InputDataModule( WorkflowModule ):
         return dict( input=DataToolParameter( None, Element( "param", name="input", label=label, multiple=True, type="data", format=', '.join(filter_set) ), self.trans ) )
 
     def get_runtime_state( self ):
-        state = DefaultToolState()
+        state = galaxy.tools.DefaultToolState()
         state.inputs = dict( input=None )
         return state
 
@@ -149,7 +149,7 @@ class InputDataModule( WorkflowModule ):
 
     def decode_runtime_state( self, trans, string ):
         fake_tool = Bunch( inputs = self.get_runtime_inputs() )
-        state = DefaultToolState()
+        state = galaxy.tools.DefaultToolState()
         state.decode( string, fake_tool, trans.app )
         return state
 
@@ -192,7 +192,7 @@ class ToolModule( WorkflowModule ):
     def from_dict( Class, trans, d, secure=True ):
         tool_id = d[ 'tool_id' ]
         module = Class( trans, tool_id )
-        module.state = DefaultToolState()
+        module.state = galaxy.tools.DefaultToolState()
         if module.tool is not None:
             module.state.decode( d[ "tool_state" ], module.tool, module.trans.app, secure=secure )
         module.errors = d.get( "tool_errors", None )
@@ -213,7 +213,7 @@ class ToolModule( WorkflowModule ):
                 tool_id = tool.id
         if ( trans.app.toolbox and tool_id in trans.app.toolbox.tools_by_id ):
             module = Class( trans, tool_id )
-            module.state = DefaultToolState()
+            module.state = galaxy.tools.DefaultToolState()
             module.state.inputs = module.tool.params_from_strings( step.tool_inputs, trans.app, ignore_errors=True )
             module.errors = step.tool_errors
             # module.post_job_actions = step.post_job_actions
