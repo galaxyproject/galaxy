@@ -449,13 +449,24 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def check_for_updates( self, trans, **kwd ):
-        # Send a request to the relevant tool shed to see if there are any updates.
-        repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
+        """Send a request to the relevant tool shed to see if there are any updates."""
+        params = util.Params( kwd )
+        repository_id = params.get( 'id', None )
+        repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
         url = suc.url_join( tool_shed_url,
                             'repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
                             ( url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision ) )
-        return trans.response.send_redirect( url )
+        try:
+            return trans.response.send_redirect( url )
+        except Exception, e:
+            message = util.sanitize_text( 'Unable to connect to the tool shed at <b>%s</b> due to the error:\n%s' % ( str( tool_shed_url ), str( e ) ) )
+            status = 'error'
+            return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                              action='manage_repository',
+                                                              id=repository_id,
+                                                              message=message,
+                                                              status=status ) )
     @web.expose
     @web.require_admin
     def deactivate_or_uninstall_repository( self, trans, **kwd ):
