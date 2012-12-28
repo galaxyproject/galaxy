@@ -107,6 +107,11 @@ def app_factory( global_conf, **kwargs ):
     _add_item_tags_controller( webapp, 
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
+
+    _add_item_extended_metadata_controller( webapp, 
+                               name_prefix="library_dataset_",
+                               path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+
     webapp.api_mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
     webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
@@ -185,6 +190,12 @@ def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
     map.connect("%s_show" % name, "%s/tags/:tag_name" % path_prefix,
         controller=controller, action="show",
         conditions=dict(method=["GET"]))
+
+
+def _add_item_extended_metadata_controller( webapp, name_prefix, path_prefix, **kwd ):
+    controller = "%sextended_metadata" % name_prefix
+    name = "%sextended_metadata" % name_prefix
+    webapp.api_mapper.resource(name, "extended_metadata", path_prefix=path_prefix, controller=controller)
 
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
