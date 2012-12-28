@@ -592,7 +592,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def import_workflow( self, trans, workflow_name, repository_id, **kwd ):
-        # FIXME: importing doesn't yet work...
+        """Import a workflow contained in an installed tool shed repository into the Galaxy instance."""
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -619,14 +619,16 @@ class AdminToolshed( AdminGalaxy ):
                     workflow_dict = exported_workflow_dict
                 break
         if workflow_dict:
-            # Create workflow if possible.  If a required tool is not available in the local
-            # Galaxy instance, the tool information will be available in the step_dict.
-            src = None
-            workflow, missing_tool_tups = workflow_util.get_workflow_from_dict( trans,
-                                                                                workflow_dict,
-                                                                                tools_metadata,
-                                                                                repository_id,
-                                                                                changeset_revision )
+            # Create workflow if possible.
+            workflow, missing_tool_tups = workflow_util.get_workflow_from_dict( trans=trans,
+                                                                                workflow_dict=workflow_dict,
+                                                                                tools_metadata=tools_metadata,
+                                                                                repository_id=repository_id,
+                                                                                changeset_revision=changeset_revision )
+            # Save the workflow in the Galaxy database.
+            stored_workflow = workflow_util.save_workflow( trans, workflow )
+            # Use the latest version of the saved workflow.
+            workflow = stored_workflow.latest_workflow
             if workflow_name:
                 workflow.name = workflow_name
             # Provide user feedback and show workflow list.
@@ -649,9 +651,11 @@ class AdminToolshed( AdminGalaxy ):
             message += 'The workflow named %s is not included in the metadata for revision %s of repository %s' % \
                 ( str( workflow_name ), str( changeset_revision ), str( repository.name ) )
             status = 'error'
+        workflow_name = encoding_util.tool_shed_encode( workflow.name ),
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                          action='browse_repository',
-                                                          id=repository_id,
+                                                          action='view_workflow',
+                                                          workflow_name=workflow_name,
+                                                          repository_id=repository_id,
                                                           message=message,
                                                           status=status ) )
     @web.expose
