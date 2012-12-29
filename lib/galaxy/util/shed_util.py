@@ -491,7 +491,8 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
 def get_installed_and_missing_repository_dependencies( trans, repository ):
     missing_repository_dependencies = {}
     installed_repository_dependencies = {}
-    if repository.has_repository_dependencies:
+    has_repository_dependencies = repository.has_repository_dependencies
+    if has_repository_dependencies:
         metadata = repository.metadata
         installed_rd_tups = []
         missing_rd_tups = []
@@ -902,7 +903,7 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         # Handle README files.
         if repository.has_readme_files:
             if reinstalling:
-                # Since we're reinstalling, we need to sned a request to the tool shed to get the README files.
+                # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
                 url = suc.url_join( tool_shed_url,
                                     'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
                                     ( repository.name, repository.owner, repository.installed_changeset_revision ) )

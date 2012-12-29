@@ -60,20 +60,21 @@ def add_installation_directories_to_tool_dependencies( trans, repository_name, r
 def build_readme_files_dict( metadata, tool_path=None ):
     """Return a dictionary of valid readme file name <-> readme file content pairs for all readme files contained in the received repository_metadata."""
     readme_files_dict = {}
-    if metadata and 'readme_files' in metadata:
-        for relative_path_to_readme_file in metadata[ 'readme_files' ]:
-            readme_file_name = os.path.split( relative_path_to_readme_file )[ 1 ]
-            if tool_path:
-                full_path_to_readme_file = os.path.abspath( os.path.join( tool_path, relative_path_to_readme_file ) )
-            else:
-                full_path_to_readme_file = os.path.abspath( relative_path_to_readme_file )
-            try:
-                f = open( full_path_to_readme_file, 'r' )
-                text = f.read()
-                f.close()
-                readme_files_dict[ readme_file_name ] = translate_string( text, to_html=False )
-            except Exception, e:
-                log.debug( "Error reading README file '%s' defined in metadata: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
+    if metadata:
+        if 'readme_files' in metadata:
+            for relative_path_to_readme_file in metadata[ 'readme_files' ]:
+                readme_file_name = os.path.split( relative_path_to_readme_file )[ 1 ]
+                if tool_path:
+                    full_path_to_readme_file = os.path.abspath( os.path.join( tool_path, relative_path_to_readme_file ) )
+                else:
+                    full_path_to_readme_file = os.path.abspath( relative_path_to_readme_file )
+                try:
+                    f = open( full_path_to_readme_file, 'r' )
+                    text = f.read()
+                    f.close()
+                    readme_files_dict[ readme_file_name ] = translate_string( text, to_html=False )
+                except Exception, e:
+                    log.debug( "Error reading README file '%s' defined in metadata: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
     return readme_files_dict
 def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository_name, repository_owner, changeset_revision, repository, datatypes,
                                             invalid_tools, missing_repository_dependencies, missing_tool_dependencies, readme_files_dict,
@@ -204,25 +205,28 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
         try:
             folder_id = 0
             # Datatypes container.
-            if metadata and 'datatypes' in metadata:
-                datatypes = metadata[ 'datatypes' ]
-                folder_id, datatypes_root_folder = container_util.build_datatypes_folder( trans, folder_id, datatypes )
-                containers_dict[ 'datatypes' ] = datatypes_root_folder
+            if metadata:
+                if 'datatypes' in metadata:
+                    datatypes = metadata[ 'datatypes' ]
+                    folder_id, datatypes_root_folder = container_util.build_datatypes_folder( trans, folder_id, datatypes )
+                    containers_dict[ 'datatypes' ] = datatypes_root_folder
             # Invalid tools container.
-            if metadata and 'invalid_tools' in metadata:
-                invalid_tool_configs = metadata[ 'invalid_tools' ]
-                folder_id, invalid_tools_root_folder = container_util.build_invalid_tools_folder( trans,
-                                                                                                  folder_id,
-                                                                                                  invalid_tool_configs,
-                                                                                                  changeset_revision,
-                                                                                                  repository=repository,
-                                                                                                  label='Invalid tools' )
-                containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
+            if metadata:
+                if 'invalid_tools' in metadata:
+                    invalid_tool_configs = metadata[ 'invalid_tools' ]
+                    folder_id, invalid_tools_root_folder = container_util.build_invalid_tools_folder( trans,
+                                                                                                      folder_id,
+                                                                                                      invalid_tool_configs,
+                                                                                                      changeset_revision,
+                                                                                                      repository=repository,
+                                                                                                      label='Invalid tools' )
+                    containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
             # Readme files container.
-            if metadata and 'readme_files' in metadata:
-                readme_files_dict = build_readme_files_dict( metadata )
-                folder_id, readme_files_root_folder = container_util.build_readme_files_folder( trans, folder_id, readme_files_dict )
-                containers_dict[ 'readme_files' ] = readme_files_root_folder
+            if metadata:
+                if 'readme_files' in metadata:
+                    readme_files_dict = build_readme_files_dict( metadata )
+                    folder_id, readme_files_root_folder = container_util.build_readme_files_folder( trans, folder_id, readme_files_dict )
+                    containers_dict[ 'readme_files' ] = readme_files_root_folder
             # Repository dependencies container.
             toolshed_base_url = str( url_for( '/', qualified=True ) ).rstrip( '/' )
             folder_id, repository_dependencies_root_folder = container_util.build_repository_dependencies_folder( trans=trans,
@@ -237,33 +241,36 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             if repository_dependencies_root_folder:
                 containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
             # Tool dependencies container.
-            if metadata and 'tool_dependencies' in metadata:
-                tool_dependencies = metadata[ 'tool_dependencies' ]
-                folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( trans,
-                                                                                                          folder_id,
-                                                                                                          tool_dependencies,
-                                                                                                          installed=False )
-                containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
+            if metadata:
+                if 'tool_dependencies' in metadata:
+                    tool_dependencies = metadata[ 'tool_dependencies' ]
+                    folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( trans,
+                                                                                                              folder_id,
+                                                                                                              tool_dependencies,
+                                                                                                              installed=False )
+                    containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
             # Valid tools container.
-            if metadata and 'tools' in metadata:
-                valid_tools = metadata[ 'tools' ]
-                folder_id, valid_tools_root_folder = container_util.build_tools_folder( trans,
-                                                                                        folder_id,
-                                                                                        valid_tools,
-                                                                                        repository,
-                                                                                        changeset_revision,
-                                                                                        label='Valid tools' )
-                containers_dict[ 'valid_tools' ] = valid_tools_root_folder
+            if metadata:
+                if 'tools' in metadata:
+                    valid_tools = metadata[ 'tools' ]
+                    folder_id, valid_tools_root_folder = container_util.build_tools_folder( trans,
+                                                                                            folder_id,
+                                                                                            valid_tools,
+                                                                                            repository,
+                                                                                            changeset_revision,
+                                                                                            label='Valid tools' )
+                    containers_dict[ 'valid_tools' ] = valid_tools_root_folder
             # Workflows container.
-            if metadata and 'workflows' in metadata:
-                workflows = metadata[ 'workflows' ]
-                folder_id, workflows_root_folder = container_util.build_workflows_folder( trans=trans,
-                                                                                          folder_id=folder_id,
-                                                                                          workflows=workflows,
-                                                                                          repository_metadata_id=repository_metadata.id,
-                                                                                          repository_id=None,
-                                                                                          label='Workflows' )
-                containers_dict[ 'workflows' ] = workflows_root_folder
+            if metadata:
+                if 'workflows' in metadata:
+                    workflows = metadata[ 'workflows' ]
+                    folder_id, workflows_root_folder = container_util.build_workflows_folder( trans=trans,
+                                                                                              folder_id=folder_id,
+                                                                                              workflows=workflows,
+                                                                                              repository_metadata_id=repository_metadata.id,
+                                                                                              repository_id=None,
+                                                                                              label='Workflows' )
+                    containers_dict[ 'workflows' ] = workflows_root_folder
         except Exception, e:
             log.debug( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
         finally:
@@ -312,7 +319,7 @@ def build_repository_dependency_relationships( trans, repo_info_dicts, tool_shed
                         # Ensure there is a repository_dependency relationship between dependent_repository and required_repository.
                         rrda = None
                         for rd in dependent_repository.repository_dependencies:
-                            if rd.repository_dependency.tool_shed_repository_id == required_repository.id:
+                            if rd.id == required_repository.id:
                                 rrda = rd
                                 break
                         if not rrda:
@@ -1639,23 +1646,24 @@ def get_repository_dependencies_for_changeset_revision( trans, repository, repos
     # Assume the current repository does not have repository dependencies defined for it.
     current_repository_key = None
     metadata = repository_metadata.metadata
-    if metadata and 'repository_dependencies' in metadata:
-        current_repository_key = get_key_for_repository_changeset_revision( toolshed_base_url, repository, repository_metadata )
-        repository_dependencies_dict = metadata[ 'repository_dependencies' ]
-        if not all_repository_dependencies:
-            all_repository_dependencies = initialize_all_repository_dependencies( current_repository_key,
-                                                                                  repository_dependencies_dict,
-                                                                                  all_repository_dependencies )
-        # Handle the repository dependencies defined in the current repository, if any, and populate the various repository dependency objects for
-        # this round of processing.
-        current_repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts, all_repository_dependencies = \
-            populate_repository_dependency_objects_for_processing( trans,
-                                                                   current_repository_key,
-                                                                   repository_dependencies_dict,
-                                                                   key_rd_dicts_to_be_processed,
-                                                                   handled_key_rd_dicts,
-                                                                   circular_repository_dependencies,
-                                                                   all_repository_dependencies )
+    if metadata:
+        if 'repository_dependencies' in metadata:
+            current_repository_key = get_key_for_repository_changeset_revision( toolshed_base_url, repository, repository_metadata )
+            repository_dependencies_dict = metadata[ 'repository_dependencies' ]
+            if not all_repository_dependencies:
+                all_repository_dependencies = initialize_all_repository_dependencies( current_repository_key,
+                                                                                      repository_dependencies_dict,
+                                                                                      all_repository_dependencies )
+            # Handle the repository dependencies defined in the current repository, if any, and populate the various repository dependency objects for
+            # this round of processing.
+            current_repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts, all_repository_dependencies = \
+                populate_repository_dependency_objects_for_processing( trans,
+                                                                       current_repository_key,
+                                                                       repository_dependencies_dict,
+                                                                       key_rd_dicts_to_be_processed,
+                                                                       handled_key_rd_dicts,
+                                                                       circular_repository_dependencies,
+                                                                       all_repository_dependencies )
     if current_repository_key:
         if current_repository_key_rd_dicts:
             # There should be only a single current_repository_key_rd_dict in this list.
@@ -2237,6 +2245,18 @@ def load_tool_from_tmp_config( trans, repo, ctx, ctx_file, work_dir ):
         except:
             pass
     return tool, message
+def merge_missing_repository_dependencies_to_installed_container( containers_dict ):
+    """ Merge the list of missing repository dependencies into the list of installed repository dependencies."""
+    missing_rd_container = containers_dict.get( 'missing_repository_dependencies', None )
+    if missing_rd_container:
+        installed_rd_container = containers_dict.get( 'repository_dependencies', None )
+        if installed_rd_container:
+            for rd in missing_rd_container.repository_dependencies:
+                installed_rd_container.repository_dependencies.append( rd )
+        else:
+            containers_dict[ 'repository_dependencies' ] = containers_dict[ 'missing_repository_dependencies' ]
+    containers_dict[ 'missing_repository_dependencies' ] = None
+    return containers_dict
 def open_repository_files_folder( trans, folder_path ):
     try:
         files_list = get_repository_files( trans, folder_path )

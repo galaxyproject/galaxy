@@ -404,16 +404,17 @@ def new_repository_dependency_metadata_required( trans, repository, metadata_dic
         repository_metadata = get_latest_repository_metadata( trans, repository.id )
         if repository_metadata:
             metadata = repository_metadata.metadata
-            if metadata and 'repository_dependencies' in metadata:
-                saved_repository_dependencies = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
-                new_repository_dependencies = metadata_dict[ 'repository_dependencies' ][ 'repository_dependencies' ]
-                # The saved metadata must be a subset of the new metadata.
-                for new_repository_dependency_metadata in new_repository_dependencies:
-                    if new_repository_dependency_metadata not in saved_repository_dependencies:
-                        return True
-                for saved_repository_dependency_metadata in saved_repository_dependencies:
-                    if saved_repository_dependency_metadata not in new_repository_dependencies:
-                        return True
+            if metadata:
+                if 'repository_dependencies' in metadata:
+                    saved_repository_dependencies = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
+                    new_repository_dependencies = metadata_dict[ 'repository_dependencies' ][ 'repository_dependencies' ]
+                    # The saved metadata must be a subset of the new metadata.
+                    for new_repository_dependency_metadata in new_repository_dependencies:
+                        if new_repository_dependency_metadata not in saved_repository_dependencies:
+                            return True
+                    for saved_repository_dependency_metadata in saved_repository_dependencies:
+                        if saved_repository_dependency_metadata not in new_repository_dependencies:
+                            return True
             else:
                 # We have repository metadata that does not include metadata for any repository dependencies in the
                 # repository, so we can update the existing repository metadata.
@@ -432,26 +433,27 @@ def new_tool_metadata_required( trans, repository, metadata_dict ):
         repository_metadata = get_latest_repository_metadata( trans, repository.id )
         if repository_metadata:
             metadata = repository_metadata.metadata
-            if metadata and 'tools' in metadata:
-                saved_tool_ids = []
-                # The metadata for one or more tools was successfully generated in the past
-                # for this repository, so we first compare the version string for each tool id
-                # in metadata_dict with what was previously saved to see if we need to create
-                # a new table record or if we can simply update the existing record.
-                for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
-                    for saved_tool_metadata_dict in metadata[ 'tools' ]:
-                        if saved_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
-                            saved_tool_ids.append( saved_tool_metadata_dict[ 'id' ] )
-                        if new_tool_metadata_dict[ 'id' ] == saved_tool_metadata_dict[ 'id' ]:
-                            if new_tool_metadata_dict[ 'version' ] != saved_tool_metadata_dict[ 'version' ]:
-                                return True
-                # So far, a new metadata record is not required, but we still have to check to see if
-                # any new tool ids exist in metadata_dict that are not in the saved metadata.  We do
-                # this because if a new tarball was uploaded to a repository that included tools, it
-                # may have removed existing tool files if they were not included in the uploaded tarball.
-                for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
-                    if new_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
-                        return True
+            if metadata:
+                if 'tools' in metadata:
+                    saved_tool_ids = []
+                    # The metadata for one or more tools was successfully generated in the past
+                    # for this repository, so we first compare the version string for each tool id
+                    # in metadata_dict with what was previously saved to see if we need to create
+                    # a new table record or if we can simply update the existing record.
+                    for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
+                        for saved_tool_metadata_dict in metadata[ 'tools' ]:
+                            if saved_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
+                                saved_tool_ids.append( saved_tool_metadata_dict[ 'id' ] )
+                            if new_tool_metadata_dict[ 'id' ] == saved_tool_metadata_dict[ 'id' ]:
+                                if new_tool_metadata_dict[ 'version' ] != saved_tool_metadata_dict[ 'version' ]:
+                                    return True
+                    # So far, a new metadata record is not required, but we still have to check to see if
+                    # any new tool ids exist in metadata_dict that are not in the saved metadata.  We do
+                    # this because if a new tarball was uploaded to a repository that included tools, it
+                    # may have removed existing tool files if they were not included in the uploaded tarball.
+                    for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
+                        if new_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
+                            return True
             else:
                 # We have repository metadata that does not include metadata for any tools in the
                 # repository, so we can update the existing repository metadata.
