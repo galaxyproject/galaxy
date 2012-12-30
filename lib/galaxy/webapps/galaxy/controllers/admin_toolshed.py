@@ -162,10 +162,15 @@ class RepositoryInstallationGrid( grids.Grid ):
             elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED ]:
                 bgcolor = trans.model.ToolShedRepository.states.WARNING
             elif tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED ]:
-                if tool_shed_repository.missing_tool_dependencies:
+                if tool_shed_repository.missing_tool_dependencies or tool_shed_repository.missing_repository_dependencies:
                     bgcolor = trans.model.ToolShedRepository.states.WARNING
-                    status_label = '%s, missing dependencies' % status_label
-                else:
+                if tool_shed_repository.missing_tool_dependencies and not tool_shed_repository.missing_repository_dependencies:
+                    status_label = '%s, missing tool dependencies' % status_label
+                if tool_shed_repository.missing_repository_dependencies and not tool_shed_repository.missing_tool_dependencies:
+                    status_label = '%s, missing repository dependencies' % status_label
+                if tool_shed_repository.missing_tool_dependencies and tool_shed_repository.missing_repository_dependencies:
+                    status_label = '%s, missing both tool and repository dependencies' % status_label
+                if not tool_shed_repository.missing_tool_dependencies and not tool_shed_repository.missing_repository_dependencies:
                     bgcolor = trans.model.ToolShedRepository.states.OK
             else:
                 bgcolor = trans.model.ToolShedRepository.states.ERROR
@@ -314,7 +319,8 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def activate_repository( self, trans, **kwd ):
         """Activate a repository that was deactivated but not uninstalled."""
-        repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
+        repository_id = kwd[ 'id' ]
+        repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
         repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
         repository.deleted = False
@@ -343,7 +349,7 @@ class AdminToolshed( AdminGalaxy ):
         trans.sa_session.flush()
         if repository.includes_datatypes:
             repository_install_dir = os.path.abspath ( relative_install_dir )
-            # Deactivate proprietary datatypes.
+            # Activate proprietary datatypes.
             installed_repository_dict = shed_util.load_installed_datatypes( trans.app, repository, repository_install_dir, deactivate=False )
             if installed_repository_dict and 'converter_path' in installed_repository_dict:
                 shed_util.load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=False )
@@ -591,6 +597,81 @@ class AdminToolshed( AdminGalaxy ):
     def get_versions_of_tool( self, app, guid ):
         tool_version = shed_util.get_tool_version( app, guid )
         return tool_version.get_version_ids( app, reverse=True )
+    def handle_repository_contents( self, trans, tool_shed_repository, tool_path, repository_clone_url, relative_install_dir, tool_shed=None,
+                                    tool_section=None, shed_tool_conf=None, reinstalling=False ):
+        """
+        Generate the metadata for the installed tool shed repository, among other things.  This method is called from Galaxy (never the tool shed)
+        when an admin is installing a new repository or reinstalling an uninstalled repository.
+        """
+        shed_config_dict = trans.app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf )
+        metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
+                                                                                         repository=tool_shed_repository,
+                                                                                         repository_clone_url=repository_clone_url,
+                                                                                         shed_config_dict=shed_config_dict,
+                                                                                         relative_install_dir=relative_install_dir,
+                                                                                         repository_files_dir=None,
+                                                                                         resetting_all_metadata_on_repository=False,
+                                                                                         updating_installed_repository=False,
+                                                                                         persist=True )
+        tool_shed_repository.metadata = metadata_dict
+        trans.sa_session.add( tool_shed_repository )
+        trans.sa_session.flush()
+        if 'tool_dependencies' in metadata_dict and not reinstalling:
+            tool_dependencies = shed_util.create_tool_dependency_objects( trans.app, tool_shed_repository, relative_install_dir, set_status=True )
+        if 'tools' in metadata_dict:
+            tool_panel_dict = shed_util.generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
+            sample_files = metadata_dict.get( 'sample_files', [] )
+            tool_index_sample_files = shed_util.get_tool_index_sample_files( sample_files )
+            shed_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=tool_path )
+            sample_files_copied = [ str( s ) for s in tool_index_sample_files ]
+            repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata_dict )
+            if repository_tools_tups:
+                # Handle missing data table entries for tool parameters that are dynamically generated select lists.
+                repository_tools_tups = shed_util.handle_missing_data_table_entry( trans.app, relative_install_dir, tool_path, repository_tools_tups )
+                # Handle missing index files for tool parameters that are dynamically generated select lists.
+                repository_tools_tups, sample_files_copied = shed_util.handle_missing_index_file( trans.app,
+                                                                                                  tool_path,
+                                                                                                  sample_files,
+                                                                                                  repository_tools_tups,
+                                                                                                  sample_files_copied )
+                # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
+                shed_util.copy_sample_files( trans.app, sample_files, tool_path=tool_path, sample_files_copied=sample_files_copied )
+                shed_util.add_to_tool_panel( app=trans.app,
+                                             repository_name=tool_shed_repository.name,
+                                             repository_clone_url=repository_clone_url,
+                                             changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                             repository_tools_tups=repository_tools_tups,
+                                             owner=tool_shed_repository.owner,
+                                             shed_tool_conf=shed_tool_conf,
+                                             tool_panel_dict=tool_panel_dict,
+                                             new_install=True )
+        if 'datatypes' in metadata_dict:
+            tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
+            if not tool_shed_repository.includes_datatypes:
+                tool_shed_repository.includes_datatypes = True
+            trans.sa_session.add( tool_shed_repository )
+            trans.sa_session.flush()
+            files_dir = relative_install_dir
+            if shed_config_dict.get( 'tool_path' ):
+                files_dir = os.path.join( shed_config_dict['tool_path'], files_dir )
+            datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', files_dir )
+            # Load data types required by tools.
+            converter_path, display_path = shed_util.alter_config_and_load_prorietary_datatypes( trans.app, datatypes_config, files_dir, override=False )
+            if converter_path or display_path:
+                # Create a dictionary of tool shed repository related information.
+                repository_dict = shed_util.create_repository_dict_for_proprietary_datatypes( tool_shed=tool_shed,
+                                                                                              name=tool_shed_repository.name,
+                                                                                              owner=tool_shed_repository.owner,
+                                                                                              installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
+                                                                                              tool_dicts=metadata_dict.get( 'tools', [] ),
+                                                                                              converter_path=converter_path,
+                                                                                              display_path=display_path )
+            if converter_path:
+                # Load proprietary datatype converters
+                trans.app.datatypes_registry.load_datatype_converters( trans.app.toolbox, installed_repository_dict=repository_dict )
+            if display_path:
+                # Load proprietary datatype display applications
+                trans.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
     @web.expose
     @web.require_admin
     def import_workflow( self, trans, workflow_name, repository_id, **kwd ):
@@ -762,7 +843,8 @@ class AdminToolshed( AdminGalaxy ):
             tool_section = None
         for tup in zip( tool_shed_repositories, repo_info_dicts ):
             tool_shed_repository, repo_info_dict = tup
-            repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
+            if isinstance( repo_info_dict, basestring ):
+                repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
             # Clone each repository to the configured location.
             shed_util.update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.CLONING )
             repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
@@ -841,81 +923,6 @@ class AdminToolshed( AdminGalaxy ):
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='monitor_repository_installation',
                                                           tool_shed_repository_ids=tsr_ids_for_monitoring ) )
-    def handle_repository_contents( self, trans, tool_shed_repository, tool_path, repository_clone_url, relative_install_dir, tool_shed=None,
-                                    tool_section=None, shed_tool_conf=None, reinstalling=False ):
-        """
-        Generate the metadata for the installed tool shed repository, among other things.  This method is called from Galaxy (never the tool shed)
-        when an admin is installing a new repository or reinstalling an uninstalled repository.
-        """
-        shed_config_dict = trans.app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf )
-        metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
-                                                                                         repository=tool_shed_repository,
-                                                                                         repository_clone_url=repository_clone_url,
-                                                                                         shed_config_dict=shed_config_dict,
-                                                                                         relative_install_dir=relative_install_dir,
-                                                                                         repository_files_dir=None,
-                                                                                         resetting_all_metadata_on_repository=False,
-                                                                                         updating_installed_repository=False,
-                                                                                         persist=True )
-        tool_shed_repository.metadata = metadata_dict
-        trans.sa_session.add( tool_shed_repository )
-        trans.sa_session.flush()
-        if 'tool_dependencies' in metadata_dict and not reinstalling:
-            tool_dependencies = shed_util.create_tool_dependency_objects( trans.app, tool_shed_repository, relative_install_dir, set_status=True )
-        if 'tools' in metadata_dict:
-            tool_panel_dict = shed_util.generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
-            sample_files = metadata_dict.get( 'sample_files', [] )
-            tool_index_sample_files = shed_util.get_tool_index_sample_files( sample_files )
-            shed_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=tool_path )
-            sample_files_copied = [ str( s ) for s in tool_index_sample_files ]
-            repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata_dict )
-            if repository_tools_tups:
-                # Handle missing data table entries for tool parameters that are dynamically generated select lists.
-                repository_tools_tups = shed_util.handle_missing_data_table_entry( trans.app, relative_install_dir, tool_path, repository_tools_tups )
-                # Handle missing index files for tool parameters that are dynamically generated select lists.
-                repository_tools_tups, sample_files_copied = shed_util.handle_missing_index_file( trans.app,
-                                                                                                  tool_path,
-                                                                                                  sample_files,
-                                                                                                  repository_tools_tups,
-                                                                                                  sample_files_copied )
-                # Copy remaining sample files included in the repository to the ~/tool-data directory of the local Galaxy instance.
-                shed_util.copy_sample_files( trans.app, sample_files, tool_path=tool_path, sample_files_copied=sample_files_copied )
-                shed_util.add_to_tool_panel( app=trans.app,
-                                             repository_name=tool_shed_repository.name,
-                                             repository_clone_url=repository_clone_url,
-                                             changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                             repository_tools_tups=repository_tools_tups,
-                                             owner=tool_shed_repository.owner,
-                                             shed_tool_conf=shed_tool_conf,
-                                             tool_panel_dict=tool_panel_dict,
-                                             new_install=True )
-        if 'datatypes' in metadata_dict:
-            tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
-            if not tool_shed_repository.includes_datatypes:
-                tool_shed_repository.includes_datatypes = True
-            trans.sa_session.add( tool_shed_repository )
-            trans.sa_session.flush()
-            files_dir = relative_install_dir
-            if shed_config_dict.get( 'tool_path' ):
-                files_dir = os.path.join( shed_config_dict['tool_path'], files_dir )
-            datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', files_dir )
-            # Load data types required by tools.
-            converter_path, display_path = shed_util.alter_config_and_load_prorietary_datatypes( trans.app, datatypes_config, files_dir, override=False )
-            if converter_path or display_path:
-                # Create a dictionary of tool shed repository related information.
-                repository_dict = shed_util.create_repository_dict_for_proprietary_datatypes( tool_shed=tool_shed,
-                                                                                              name=tool_shed_repository.name,
-                                                                                              owner=tool_shed_repository.owner,
-                                                                                              installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                                                                                              tool_dicts=metadata_dict.get( 'tools', [] ),
-                                                                                              converter_path=converter_path,
-                                                                                              display_path=display_path )
-            if converter_path:
-                # Load proprietary datatype converters
-                trans.app.datatypes_registry.load_datatype_converters( trans.app.toolbox, installed_repository_dict=repository_dict )
-            if display_path:
-                # Load proprietary datatype display applications
-                trans.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
     @web.expose
     @web.require_admin
     def manage_repository( self, trans, **kwd ):
@@ -1429,7 +1436,8 @@ class AdminToolshed( AdminGalaxy ):
         repo_info_dicts = []
         repo_info_dict = kwd.get( 'repo_info_dict', None )
         if repo_info_dict:
-            repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
+            if isinstance( repo_info_dict, basestring ):
+                repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
         else:
             # Entering this else block used to happen only if the tool_shed_repository does not include any valid tools.  After repository dependencies
             # were introduced, it may never happen, but we'll keep the block just in case.
@@ -1565,8 +1573,8 @@ class AdminToolshed( AdminGalaxy ):
             message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section.  "
             status = 'warning'
         containers_dict = shed_util.populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, tool_shed_repository, reinstalling=True )
-        # Since we're reinstalling we'll merge the list of missing repository dependencies into the list of installed repository
-        # dependencies since separating the categories is not appropriate in this context.
+        # Since we're reinstalling we'll merge the list of missing repository dependencies into the list of installed repository dependencies since separating the
+        # containers is not appropriate in this context.
         containers_dict = suc.merge_missing_repository_dependencies_to_installed_container( containers_dict )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
