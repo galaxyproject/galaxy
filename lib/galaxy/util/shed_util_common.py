@@ -1453,6 +1453,32 @@ def get_file_context_from_ctx( ctx, filename ):
 def get_installed_tool_shed_repository( trans, id ):
     """Get a repository on the Galaxy side from the database via id"""
     return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
+def get_latest_tool_config_revision_from_repository_manifest( repo, filename, changeset_revision ):
+    """
+    Get the latest revision of a tool config file named filename from the repository manifest up to the value of changeset_revision.
+    This method is restricted to tool_config files rather than any file since it is likely that, with the exception of tool config files,
+    multiple files will have the same name in various directories within the repository.
+    """
+    stripped_filename = strip_path( filename )
+    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
+        manifest_ctx = repo.changectx( changeset )
+        for ctx_file in manifest_ctx.files():
+            ctx_file_name = strip_path( ctx_file )
+            if ctx_file_name == stripped_filename:
+                try:
+                    fctx = manifest_ctx[ ctx_file ]
+                except LookupError:
+                    # The ctx_file may have been moved in the change set.  For example, 'ncbi_blastp_wrapper.xml' was moved to
+                    # 'tools/ncbi_blast_plus/ncbi_blastp_wrapper.xml', so keep looking for the file until we find the new location.
+                    continue
+                fh = tempfile.NamedTemporaryFile( 'wb' )
+                tmp_filename = fh.name
+                fh.close()
+                fh = open( tmp_filename, 'wb' )
+                fh.write( fctx.data() )
+                fh.close()
+                return tmp_filename
+    return None
 def get_list_of_copied_sample_files( repo, ctx, dir ):
     """
     Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
