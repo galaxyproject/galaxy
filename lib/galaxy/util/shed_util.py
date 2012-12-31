@@ -1133,7 +1133,6 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
     text = response.read()
     response.close()
     if text:
-        #clone_path, clone_directory = os.path.split( clone_dir )
         changeset_revisions = util.listify( text )
         for previous_changeset_revision in changeset_revisions:
             tool_shed_repository = suc.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( trans.app,
