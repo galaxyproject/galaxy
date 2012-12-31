@@ -1,4 +1,4 @@
-import os, shutil, tempfile, logging, string, threading, urllib2
+import os, shutil, tempfile, logging, string, threading, urllib2, filecmp
 from galaxy import util
 from galaxy.tools import parameters
 from galaxy.util import inflector, json

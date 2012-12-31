@@ -1,4 +1,4 @@
-import os, string, socket, logging, simplejson, binascii, tempfile, filecmp
+import os, string, socket, logging, simplejson, binascii, tempfile
 from time import gmtime, strftime
 from datetime import *
 from galaxy.tools import *
