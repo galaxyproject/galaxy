@@ -1852,7 +1852,10 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         # Determine if the current changeset revision has been reviewed by the current user.
         reviewed_by_user = common.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
-            review = common.get_review_by_repository_id_changeset_revision_user_id( trans, id, changeset_revision, trans.security.encode_id( trans.user.id ) )
+            review = common.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+                                                                                    repository_id=id,
+                                                                                    changeset_revision=changeset_revision,
+                                                                                    user_id=trans.security.encode_id( trans.user.id ) )
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
@@ -2483,7 +2486,10 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         # Determine if the current changeset revision has been reviewed by the current user.
         reviewed_by_user = common.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
-            review = common.get_review_by_repository_id_changeset_revision_user_id( trans, id, changeset_revision, trans.security.encode_id( trans.user.id ) )
+            review = common.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+                                                                                    repository_id=id,
+                                                                                    changeset_revision=changeset_revision,
+                                                                                    user_id=trans.security.encode_id( trans.user.id ) )
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
@@ -2564,7 +2570,10 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         trans.app.config.tool_data_path = original_tool_data_path
         reviewed_by_user = common.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
-            review = common.get_review_by_repository_id_changeset_revision_user_id( trans, id, changeset_revision, trans.security.encode_id( trans.user.id ) )
+            review = common.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+                                                                                    repository_id=repository_id,
+                                                                                    changeset_revision=changeset_revision,
+                                                                                    user_id=trans.security.encode_id( trans.user.id ) )
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None

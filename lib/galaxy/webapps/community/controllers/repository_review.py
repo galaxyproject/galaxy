@@ -377,10 +377,10 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
         if repository_id:
             if changeset_revision:
                 # Make sure there is not already a review of the revision by the user.
-                if common.get_review_by_repository_id_changeset_revision_user_id( trans,
-                                                                                  repository_id,
-                                                                                  changeset_revision,
-                                                                                  trans.security.encode_id( trans.user.id ) ):
+                if common.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+                                                                                  repository_id=repository_id,
+                                                                                  changeset_revision=changeset_revision,
+                                                                                  user_id=trans.security.encode_id( trans.user.id ) ):
                     message = "You have already created a review for revision <b>%s</b> of repository <b>%s</b>." % ( changeset_revision, repository.name )
                     status = "error"
                 else:
