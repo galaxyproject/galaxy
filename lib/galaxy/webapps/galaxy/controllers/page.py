@@ -2,8 +2,9 @@ from sqlalchemy import desc, and_
 from galaxy import model, web
 from galaxy.web import error, url_for
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin, VALID_SLUG_RE
 from galaxy.web.framework.helpers import time_ago, grids
+from galaxy import util
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
 from galaxy.util.odict import odict
 from galaxy.util.json import from_json_string
