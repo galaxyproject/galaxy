@@ -348,7 +348,10 @@ class AdminToolshed( AdminGalaxy ):
         trans.sa_session.add( repository )
         trans.sa_session.flush()
         if repository.includes_datatypes:
-            repository_install_dir = os.path.abspath ( relative_install_dir )
+            if tool_path:
+                repository_install_dir = os.path.abspath ( os.path.join( tool_path, relative_install_dir ) )
+            else:
+                repository_install_dir = os.path.abspath ( relative_install_dir )
             # Activate proprietary datatypes.
             installed_repository_dict = shed_util.load_installed_datatypes( trans.app, repository, repository_install_dir, deactivate=False )
             if installed_repository_dict and 'converter_path' in installed_repository_dict:
