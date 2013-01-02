@@ -489,6 +489,10 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
             break
     return headers
 def get_installed_and_missing_repository_dependencies( trans, repository ):
+    """
+    Return the installed and missing repository dependencies for a tool shed repository that has a record in the Galaxy database, but
+    may or may not be installed.  In this case, the repository dependencies are associated with the repository in the database.
+    """
     missing_repository_dependencies = {}
     installed_repository_dependencies = {}
     has_repository_dependencies = repository.has_repository_dependencies
@@ -522,6 +526,46 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
                 missing_repository_dependencies[ 'root_key' ] = root_key
                 missing_repository_dependencies[ root_key ] = missing_rd_tups
                 missing_repository_dependencies[ 'description' ] = description 
+    return installed_repository_dependencies, missing_repository_dependencies
+def get_installed_and_missing_repository_dependencies_for_new_install( trans, repository_dependencies ):
+    """
+    Parse the received repository_dependencies dictionary that is associated with a repository being installed into Galaxy for the first time
+    and attempt to determine repository dependencies that are already installed and those that are not.
+    """
+    missing_repository_dependencies = {}
+    installed_repository_dependencies = {}
+    description = repository_dependencies[ 'description' ]
+    root_key = repository_dependencies[ 'root_key' ]
+    # The repository dependencies container will include only the immediate repository dependencies of this repository, so the container will be
+    # only a single level in depth.
+    for key, rd_tups in repository_dependencies.items():
+        if key in [ 'description', 'root_key' ]:
+            continue
+        installed_rd_tups = []
+        missing_rd_tups = []
+        for rd_tup in rd_tups:
+            tool_shed, name, owner, changeset_revision = rd_tup
+            # This is tricky because updates to installed repository revisions may have occurred making it difficult to discover installed repository
+            # revisions.  If installed repositories are not discovered in this method, they will be returned in the list of missing_repository_dependencies,
+            # but should be discovered later during the installation process since that process inspects all appropriate changeset revisions.
+            repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
+            if repository:
+                new_rd_tup = [ tool_shed, name, owner, changeset_revision, repository.id, repository.status ]
+                if repository.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
+                    installed_rd_tups.append( new_rd_tup )
+                else:
+                   missing_rd_tups.append( new_rd_tup )
+            else:
+                new_rd_tup = [ tool_shed, name, owner, changeset_revision, None, 'Never installed' ]
+                missing_rd_tups.append( new_rd_tup )
+        if installed_rd_tups:
+            installed_repository_dependencies[ 'root_key' ] = root_key
+            installed_repository_dependencies[ root_key ] = installed_rd_tups
+            installed_repository_dependencies[ 'description' ] = description
+        if missing_rd_tups:
+            missing_repository_dependencies[ 'root_key' ] = root_key
+            missing_repository_dependencies[ root_key ] = missing_rd_tups
+            missing_repository_dependencies[ 'description' ] = description
     return installed_repository_dependencies, missing_repository_dependencies
 def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies ):
     if all_tool_dependencies:
@@ -890,7 +934,7 @@ def panel_entry_per_tool( tool_section_dict ):
     return False
 def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository, reinstalling=False ):
     """
-    Retrieve necessary information from the received repository's metadata to populate the containers_dict for display.  This methos is called only
+    Retrieve necessary information from the received repository's metadata to populate the containers_dict for display.  This method is called only
     from Galaxy (not the tool shed) when displaying repository dependencies for installed repositories and when displaying them for uninstalled
     repositories that are being reinstalled.
     """
@@ -944,7 +988,8 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                                                                       repository_dependencies=installed_repository_dependencies,
                                                                       tool_dependencies=installed_tool_dependencies,
                                                                       valid_tools=valid_tools,
-                                                                      workflows=workflows )
+                                                                      workflows=workflows,
+                                                                      new_install=False )
     else:
         containers_dict = dict( datatypes=None,
                                 invalid_tools=None,

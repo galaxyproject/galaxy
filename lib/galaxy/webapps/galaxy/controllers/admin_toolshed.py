@@ -956,7 +956,7 @@ class AdminToolshed( AdminGalaxy ):
             repo_files_dir = None
         if repository.in_error_state:
             message = "This repository is not installed correctly (see the <b>Repository installation error</b> below).  Choose "
-            message += "<b>Reset to install</b> from the <b>Repository Actions</b> menu, correct problems if necessary, and try "
+            message += "<b>Reset to install</b> from the <b>Repository Actions</b> menu, correct problems if necessary and try "
             message += "installing the repository again."
             status = "error"
         elif repository.can_install:
@@ -1272,7 +1272,7 @@ class AdminToolshed( AdminGalaxy ):
             repo_info_tuple = repo_info_dict[ name ]
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
                 suc.get_repo_info_tuple_contents( repo_info_tuple )
-           # Handle README files.
+            # Handle README files.
             url = suc.url_join( tool_shed_url,
                                 'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
                                 ( name, repository_owner, changeset_revision ) )
@@ -1288,8 +1288,8 @@ class AdminToolshed( AdminGalaxy ):
                     installed_repository_dependencies, missing_repository_dependencies = \
                         shed_util.get_installed_and_missing_repository_dependencies( trans, repository )
                 else:
-                    installed_repository_dependencies = None
-                    missing_repository_dependencies = None
+                    installed_repository_dependencies, missing_repository_dependencies = \
+                        shed_util.get_installed_and_missing_repository_dependencies_for_new_install( trans, repository_dependencies )
             else:
                 installed_repository_dependencies = None
                 missing_repository_dependencies = None
@@ -1309,9 +1309,13 @@ class AdminToolshed( AdminGalaxy ):
                                                                           repository_dependencies=installed_repository_dependencies,
                                                                           tool_dependencies=tool_dependencies,
                                                                           valid_tools=None,
-                                                                          workflows=None )
-            # Since we're installing we'll merge the list of missing repository dependencies into the list of installed repository
-            # dependencies since separating the categories is not appropriate in this context.
+                                                                          workflows=None,
+                                                                          new_install=True )
+            # We're handling 1 of 2 scenarios here: (1) we're installing a tool shed repository for the first time, so we're retrieved the list of installed
+            # and missing repository dependencies from the database (2) we're handling the scenario where an error occurred during the installation process,
+            # so we have a tool_shed_repository record in the database with associated repository dependency records.  Since we have the repository
+            # dependencies in either case, we'll merge the list of missing repository dependencies into the list of installed repository dependencies since
+            # each displayed repository dependency will display a status, whether installed or missing.
             containers_dict = suc.merge_missing_repository_dependencies_to_installed_container( containers_dict )
         else:
             containers_dict = dict( datatypes=None,
@@ -1351,10 +1355,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def reinstall_repository( self, trans, **kwd ):
-        """
-        Reinstall a tool shed repository that has been previously uninstalled, making sure to handle all repository and tool dependencies of the
-        repository.
-        """
+        """Reinstall a tool shed repository that has been previously uninstalled, making sure to handle all repository and tool dependencies of the repository."""
         message = kwd.get( 'message', '' )
         status = kwd.get( 'status', 'done' )
         repository_id = kwd[ 'id' ]
@@ -1576,8 +1577,8 @@ class AdminToolshed( AdminGalaxy ):
             message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section.  "
             status = 'warning'
         containers_dict = shed_util.populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, tool_shed_repository, reinstalling=True )
-        # Since we're reinstalling we'll merge the list of missing repository dependencies into the list of installed repository dependencies since separating the
-        # containers is not appropriate in this context.
+        # Since we're reinstalling we'll merge the list of missing repository dependencies into the list of installed repository dependencies since each displayed
+        # repository dependency will display a status, whether installed or missing.
         containers_dict = suc.merge_missing_repository_dependencies_to_installed_container( containers_dict )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )

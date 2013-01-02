@@ -114,13 +114,11 @@
             <div style="clear: both"></div>
         %endif
         <div class="form-row">
-            %if repository_dependencies_root_folder:
-                <p/>
-                <% row_counter = RowCounter() %>
-                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table">
-                    ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
-                </table>
-            %endif
+            <p/>
+            <% row_counter = RowCounter() %>
+            <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table">
+                ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+            </table>
             <div style="clear: both"></div>
         </div>
     %endif
@@ -141,13 +139,11 @@
             <div style="clear: both"></div>
         %endif
         <div class="form-row">
-            %if tool_dependencies_root_folder:
-                <p/>
-                <% row_counter = RowCounter() %>
-                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="dependency_table">
-                    ${render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
-                </table>
-            %endif
+            <p/>
+            <% row_counter = RowCounter() %>
+            <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="dependency_table">
+                ${render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+            </table>
             <div style="clear: both"></div>
         </div>
     %endif

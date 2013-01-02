@@ -209,7 +209,7 @@
                     else:
                         folder_label = "%s<i> - this repository's tools require handling of these missing dependencies</i>" % folder_label
                     col_span_str = 'colspan="5"'
-                elif folder.label == 'Repository dependencies':
+                elif folder.label in [ 'Repository dependencies', 'Missing repository dependencies' ]:
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
                     else:

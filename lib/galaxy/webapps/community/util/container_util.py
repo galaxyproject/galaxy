@@ -291,11 +291,12 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
     else:
         tools_root_folder = None
     return folder_id, tools_root_folder
-def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='Tool dependencies', installed=False ):
+def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='Tool dependencies', missing=False, new_install=False ):
     """Return a folder hierarchy containing tool dependencies."""
-    # The status will be displayed only if the values of the received installed is False.  When this is the case, we're in Galaxy
-    # (not the tool shed), and the tool dependencies are not installed or are in an error state, so they are considered missing.
-    # The tool dependency status will be displayed only if the tool dependency is not installed.
+    # The status will be displayed only if the received value for missing is True.  When this is the case, we're in Galaxy (not the tool shed)
+    # and the tool dependencies are not installed or are in an error state, so they are considered missing.  The tool dependency status will be
+    # displayed only if a record exists for the tool dependency in the database, but the tool dependency is not installed.  The value for new_install
+    # will be True only if the associated repository in being installed for the first time.  This value is used in setting the container description.
     if tool_dependencies:
         tool_dependency_id = 0
         folder_id += 1
@@ -303,10 +304,13 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
         folder_id += 1
         folder = Folder( id=folder_id, key='tool_dependencies', label=label, parent=tool_dependencies_root_folder )
         if trans.webapp.name == 'galaxy':
-            if installed:
-                folder.description = 'click the name to browse the dependency installation directory'
-            else:
+            if missing:
                 folder.description = 'click the name to install the missing dependency'
+            else:
+                if new_install:
+                    folder.description = "this repository's tools require handling of these dependencies"
+                else:
+                    folder.description = 'click the name to browse the dependency installation directory'
         tool_dependencies_root_folder.folders.append( folder )
         # Insert a header row.
         tool_dependency_id += 1
@@ -316,10 +320,10 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                               name='Name',
                                               version='Version',
                                               type='Type' )
-            if installed:
-                tool_dependency.install_dir = 'Install directory'
-            else:
+            if missing:
                 tool_dependency.installation_status = 'Status'
+            else:
+                tool_dependency.install_dir = 'Install directory'
         else:
             tool_dependency = ToolDependency( id=tool_dependency_id,
                                               name='Name',
