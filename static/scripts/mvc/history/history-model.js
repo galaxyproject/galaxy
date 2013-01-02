@@ -224,7 +224,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
                     // if this model is new and isn't in the hda collection, cache it to be created
                     } else {
                         history.log( 'NO existing model for id ' + hdaData.id + ', creating...:' );
-                        modelsToAdd.push( hdaData );
+                        hdasToAdd.push( hdaData );
                     }
                 });
                 if( hdasToAdd.length ){
@@ -243,8 +243,10 @@ var History = BaseModel.extend( LoggableMixin ).extend(
         _.each( hdaDataList, function( hdaData, index ){
             var indexFromHid = history.hdas.hidToCollectionIndex( hdaData.hid );
             hdaData.history_id = history.get( 'id' );
-            history.hdas.add( new HistoryDatasetAssociation( hdaData ), { at: indexFromHid });
+            history.hdas.add( new HistoryDatasetAssociation( hdaData ), { at: indexFromHid, silent: true });
         });
+        // fire only once
+        history.hdas.trigger( 'add', hdaDataList );
     },
 
     toString : function(){
