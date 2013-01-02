@@ -284,7 +284,6 @@ class InstallManager( object ):
             relative_install_dir = os.path.join( relative_clone_dir, name )
             install_dir = os.path.join( clone_dir, name )
             ctx_rev = suc.get_ctx_rev( tool_shed_url, name, self.repository_owner, installed_changeset_revision )
-            print "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name
             tool_shed_repository = suc.create_or_update_tool_shed_repository( app=self.app,
                                                                               name=name,
                                                                               description=description,

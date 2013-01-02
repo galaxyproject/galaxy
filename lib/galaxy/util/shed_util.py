@@ -234,7 +234,6 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                 metadata_dict={}
                 dist_to_shed = False
             if can_update:
-                log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name )
                 tool_shed_repository = suc.create_or_update_tool_shed_repository( app=trans.app,
                                                                                   name=name,
                                                                                   description=description,
@@ -620,8 +619,8 @@ def get_required_repo_info_dicts( tool_shed_url, repo_info_dicts ):
     repository_dependencies entries in each of the received repo_info_dicts includes all required repositories, so only one pass through
     this methid is required to retrieve all repository dependencies.
     """
+    all_repo_info_dicts = []
     if repo_info_dicts:
-        all_repo_info_dicts = [ rid for rid in repo_info_dicts ]
         # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool shed to discover repository ids.
         required_repository_tups = []
         for repo_info_dict in repo_info_dicts:
