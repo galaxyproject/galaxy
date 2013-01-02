@@ -347,6 +347,12 @@ class ShedTwillTestCase( TwillTestCase ):
             return self.hgweb_config_manager.get_entry( lhs )
         except:
             raise Exception( "Entry for repository %s missing in hgweb config file %s." % ( lhs, self.hgweb_config_manager.hgweb_config ) )
+    def get_repository_datatypes_count( self, repository ):
+        metadata = self.get_repository_metadata( repository )[0].metadata
+        if 'datatypes' not in metadata:
+            return 0
+        else:
+            return len( metadata[ 'datatypes' ] )
     def get_repository_file_list( self, base_path, current_path=None ):
         '''Recursively load repository folder contents and append them to a list. Similar to os.walk but via /repository/open_folder.'''
         if current_path is None:

@@ -11,6 +11,10 @@ emboss_6_repository_name = 'emboss_6_0030'
 emboss_repository_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
 emboss_repository_long_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
 
+base_datatypes_count = 0
+repository_datatypes_count = 0
+running_standalone = False
+
 class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
     '''Test uninstalling and reinstalling a repository with repository dependency revisions.'''
     def test_0000_initiate_users( self ):
@@ -32,6 +36,8 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         admin_user_private_role = test_db_util.get_private_role( admin_user )
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 0030 category and upload the emboss repository to the tool shed, if necessary.'''
+        global repository_datatypes_count
+        global running_standalone
         category = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Tests for a repository with tool dependencies.' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
@@ -42,6 +48,7 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                                               category_id=self.security.encode_id( category.id ), 
                                                               strings_displayed=[] )
         if self.repository_is_new( datatypes_repository ):
+            running_standalone = True
             self.upload_file( datatypes_repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
             emboss_5_repository = self.get_or_create_repository( name=emboss_5_repository_name, 
                                                                  description=emboss_repository_description, 
@@ -91,10 +98,15 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               'repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
                               commit_message='Uploaded repository_dependencies.xml' )
+        repository_datatypes_count = int( self.get_repository_datatypes_count( datatypes_repository ) ) 
     def test_0010_install_emboss_repository( self ):
         '''Install the emboss repository into the Galaxy instance.'''
+        global repository_datatypes_count
+        global base_datatypes_count
+        global running_standalone
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
+        base_datatypes_count = int( self.get_datatypes_count() )
         self.install_repository( emboss_repository_name, 
                                  common.test_user_1_name, 
                                  'Test 0030 Repository Dependency Revisions', 
@@ -106,6 +118,14 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               installed_repository.tool_shed, 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
+        current_datatypes = int( self.get_datatypes_count() )
+        # If we are running this test by itself, installing the emboss repository should also install the emboss_datatypes
+        # repository, and this should add datatypes to the datatypes registry. If that is the case, verify that datatypes
+        # have been added, otherwise verify that the count is unchanged.
+        if running_standalone:
+            assert current_datatypes == base_datatypes_count + repository_datatypes_count, 'Installing emboss did not add new datatypes.'
+        else:
+            assert current_datatypes == base_datatypes_count, 'Installing emboss added new datatypes.'
     def test_0015_uninstall_emboss_repository( self ):
         '''Uninstall the emboss repository.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )

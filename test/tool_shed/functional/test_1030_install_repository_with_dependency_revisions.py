@@ -11,6 +11,10 @@ emboss_6_repository_name = 'emboss_6_0030'
 emboss_repository_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
 emboss_repository_long_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
 
+base_datatypes_count = 0
+repository_datatypes_count = 0
+running_standalone = False
+
 class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
     '''Test installing a repository with dependency revisions.'''
     def test_0000_initiate_users( self ):
@@ -32,6 +36,8 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         galaxy_admin_user_private_role = test_db_util.get_galaxy_private_role( galaxy_admin_user )
     def test_0005_ensure_repositories_and_categories_exist( self ):
         '''Create the 0030 category and add repositories to it, if necessary.'''
+        global repository_datatypes_count
+        global running_standalone
         category = self.create_category( name='Test 0030 Repository Dependency Revisions', description='Test 0030 Repository Dependency Revisions' )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
@@ -42,6 +48,7 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
                                                               category_id=self.security.encode_id( category.id ), 
                                                               strings_displayed=[] )
         if self.repository_is_new( datatypes_repository ):
+            running_standalone = True
             self.upload_file( datatypes_repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
             emboss_5_repository = self.get_or_create_repository( name=emboss_5_repository_name, 
                                                                  description=emboss_repository_description, 
@@ -91,6 +98,7 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
                               'repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
                               commit_message='Uploaded repository_dependencies.xml' )
+        repository_datatypes_count = int( self.get_repository_datatypes_count( datatypes_repository ) )
     def test_0010_browse_tool_shed( self ):
         """Browse the available tool sheds in this Galaxy instance and preview the emboss tool."""
         self.galaxy_logout()
@@ -101,8 +109,10 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         self.preview_repository_in_tool_shed( 'emboss_0030', common.test_user_1_name, strings_displayed=[ 'emboss_0030', 'Valid tools' ] )
     def test_0015_install_emboss_repository( self ):
         '''Install the emboss repository without installing tool dependencies.'''
-        repository = test_db_util.get_repository_by_name_and_owner( 'emboss_0030', common.test_user_1_name )
-        old_datatypes = self.get_datatypes_count()
+        global repository_datatypes_count
+        global base_datatypes_count
+        global running_standalone
+        base_datatypes_count = int( self.get_datatypes_count() )
         self.install_repository( 'emboss_0030', 
                                  common.test_user_1_name, 
                                  'Test 0030 Repository Dependency Revisions', 
@@ -120,8 +130,11 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         self.check_installed_repository_tool_dependencies( installed_repository, dependencies_installed=False )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
         self.update_installed_repository( installed_repository, strings_displayed=[ "there are no updates available" ] )
-        new_datatypes = self.get_datatypes_count()
-        assert new_datatypes > old_datatypes, 'Installing emboss did not add datatypes to the registry.'
+        current_datatypes = int( self.get_datatypes_count() )
+        if running_standalone:
+            assert current_datatypes == base_datatypes_count + repository_datatypes_count, 'Installing emboss did not add new datatypes.'
+        else:
+            assert current_datatypes == base_datatypes_count, 'Installing emboss added new datatypes.'
     def test_0025_verify_installed_repository_metadata( self ):
         '''Verify that resetting the metadata on an installed repository does not change the metadata.'''
         self.verify_installed_repository_metadata_unchanged( 'emboss_0030', common.test_user_1_name )
