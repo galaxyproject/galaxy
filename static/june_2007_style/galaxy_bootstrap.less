@@ -1,6 +1,6 @@
 /*
  * bootsrap.less modified for Galaxy. 
- * 	- only a subset of bootsrap components are used
+ *  - only a subset of bootsrap components are used
  *  - include 'galaxy_bootsrap_variables' instead of 'variables'
  *  - overrides that can't be set with variables at end 
  *
@@ -75,22 +75,22 @@
 // Galaxy overrides 
 
 .btn {
-	padding: 2px 10px 2px;
-	// These are hardcoded in buttons.less
-	border-color: @btnBorder;
-	border-color: rgba(0,0,0,.4) rgba(0,0,0,.4) rgba(0,0,0,.4);
+    padding: 2px 10px 2px;
+    // These are hardcoded in buttons.less
+    border-color: @btnBorder;
+    border-color: rgba(0,0,0,.4) rgba(0,0,0,.4) rgba(0,0,0,.4);
 }
 
 .btn.hover {
-	@btn:hover();
+    @btn:hover();
 }
 
 .btn.active, .btn:active {
-	color: inherit;
+    color: inherit;
 }
 
 .dropdown-menu {
-	max-width: auto;
+    max-width: auto;
 }
 
 input[type="checkbox"],input[type="radio"] {
@@ -115,36 +115,67 @@ input[type="checkbox"],input[type="radio"] {
 }
 
 // Tooltips -- we use the class tooltip to indicate that an element has a tooltip, so we need to define these differently
-.bs-tooltip {
-	position: absolute;
-	z-index: @zindexTooltip;
-	display: block;
-	visibility: visible;
-	padding: 5px;
-	font-size: 11px;
-	.opacity(0);
-	&.in     { .opacity(80); }
-	&.top    { margin-top:  -2px; }
-	&.right  { margin-left:  2px; }
-	&.bottom { margin-top:   2px; }
-	&.left   { margin-left: -2px; }
-	&.top .tooltip-arrow    { #popoverArrow > .top(); }
-	&.left .tooltip-arrow   { #popoverArrow > .left(); }
-	&.bottom .tooltip-arrow { #popoverArrow > .bottom(); }
-	&.right .tooltip-arrow  { #popoverArrow > .right(); }
 
-	.tooltip-inner {
-	  max-width: 200px;
-	  padding: 3px 8px;
-	  color: @white;
-	  text-align: center;
-	  text-decoration: none;
-	  background-color: @black;
-	  //.border-radius(4px);
-	}
-	.tooltip-arrow {
-	  position: absolute;
-	  width: 0;
-	  height: 0;
-	}
+.bs-tooltip {
+    position: absolute;
+    z-index: @zindexTooltip;
+    display: block;
+    visibility: visible;
+    padding: 5px;
+    font-size: 11px;
+    .opacity(0);
+    &.in     { .opacity(80); }
+    &.top    { margin-top:  -3px; }
+    &.right  { margin-left:  3px; }
+    &.bottom { margin-top:   3px; }
+    &.left   { margin-left: -3px; }
+
+    // Wrapper for the tooltip content
+    .tooltip-inner {
+      max-width: 200px;
+      padding: 3px 8px;
+      color: @tooltipColor;
+      text-align: center;
+      text-decoration: none;
+      background-color: @tooltipBackground;
+      // .border-radius(@baseBorderRadius);
+    }
+
+    // Arrows
+    .tooltip-arrow {
+      position: absolute;
+      width: 0;
+      height: 0;
+      border-color: transparent;
+      border-style: solid;
+    }
+
+    &.top .tooltip-arrow {
+        bottom: 0;
+        left: 50%;
+        margin-left: -@tooltipArrowWidth;
+        border-width: @tooltipArrowWidth @tooltipArrowWidth 0;
+        border-top-color: @tooltipArrowColor;
+    }
+    &.right .tooltip-arrow {
+        top: 50%;
+        left: 0;
+        margin-top: -@tooltipArrowWidth;
+        border-width: @tooltipArrowWidth @tooltipArrowWidth @tooltipArrowWidth 0;
+        border-right-color: @tooltipArrowColor;
+    }
+    &.left .tooltip-arrow {
+        top: 50%;
+        right: 0;
+        margin-top: -@tooltipArrowWidth;
+        border-width: @tooltipArrowWidth 0 @tooltipArrowWidth @tooltipArrowWidth;
+        border-left-color: @tooltipArrowColor;
+    }
+    &.bottom .tooltip-arrow {
+        top: 0;
+        left: 50%;
+        margin-left: -@tooltipArrowWidth;
+        border-width: 0 @tooltipArrowWidth @tooltipArrowWidth;
+        border-bottom-color: @tooltipArrowColor;
+    }
 }

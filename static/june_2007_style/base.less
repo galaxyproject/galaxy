@@ -231,26 +231,29 @@ th {
 // Needs to be outside panel to show when hidden
 .panel-collapse {
     .unified-panel-footer();
-    z-index: 10000;
-    position: fixed;
-    left: 0;
-    top: inherit;
-    bottom: 0;
-    padding: 0 5px;
-    text-align: center;
-    width: @panel_footer_height - 5;
-    background: none;
-    border-right: solid @layout_border 1px;
-    border-top: solid @layout_border 1px;
-    #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
-    .ficon();
-     font-size: 4/3em;
+    .fa-icon();
+    font-size: 4/3em;
     &:before {
         content:'\f053';
     }
     &.hidden:before {
         content:'\f054';
     }
+    z-index: 10000;
+    display: block;
+    position: fixed;
+    left: 0;
+    top: inherit;
+    bottom: 0;
+    padding: 0 5px;
+    text-align: center;
+    height: @panel_footer_height;
+    line-height: @panel_footer_height;
+    width: @panel_footer_height - 5;
+    background: none;
+    border-right: solid @layout_border 1px;
+    border-top: solid @layout_border 1px;
+    #gradient > .vertical-three-colors(darken(@white, 5%), darken(@white, 5%), 25%, darken(@white, 10%));
     &.right {
         left: inherit;
         right: 0;
@@ -424,7 +427,7 @@ div.unified-panel-body {
 
     .nav > li > a {
         // Override height of navbar links
-        padding: 6px 10px 8px;
+        padding: 8px 10px 8px;
         // Force cursor to be pointer since tabs are either a link of a button
         cursor: pointer;
         &:hover {
@@ -434,6 +437,15 @@ div.unified-panel-body {
     
     .dropdown-menu a, .dropdown-menu a:hover {
         text-decoration: none;
+    }
+
+    .dropdown-toggle .caret {
+        margin-top: 7px;
+    }
+
+    li.dropdown > a:hover .caret {
+        border-top-color: gold;
+        border-bottom-color: gold;
     }
 
     .title {
@@ -466,6 +478,8 @@ div.unified-panel-body {
     .masthead-inner {
         .navbar-inner();
         .navbar-fixed-top.navbar-inner();
+        border: none;
+        border-width: 0px;
         height: 32px;
     }
 }
@@ -769,7 +783,7 @@ textarea, input[type="text"], input[type="password"] {
     font-size: 1.4em;
     text-decoration: none;
     color: #888;
-    .ficon();
+    .fa-icon();
     &:before {
         content: "\f057";
     }
@@ -1641,7 +1655,7 @@ div.historyItem-paused {
     // border-color: @history_paused_border;
     background: @history_paused_bg;
     .state-icon {
-        .ficon();
+        .fa-icon();
         &:before {
             content: "\f04c";
         }

@@ -94,9 +94,6 @@
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>
-            ## <div style="float: right">
-            ##     <a class='panel-header-button' id="tools-options-button" href="#"><span class="ficon large cog"></span></a>
-            ## </div>
             ${n_('Tools')}
         </div>
     </div>
@@ -131,11 +128,11 @@
             <div style="float: right">
                 <a id="history-refresh-button" class='panel-header-button'
                    href="${h.url_for( controller='root', action='history' )}" target="galaxy_history">
-                    <span class="ficon large refresh"></span>
+                    <span class="fa-icon-refresh"></span>
                 </a>
                 <a id="history-options-button" class='panel-header-button'
                    href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main">
-                    <span class="ficon large cog"></span>
+                    <span class="fa-icon-cog"></span>
                 </a>
             </div>
             <div class="panel-header-text">${_('History')}</div>
