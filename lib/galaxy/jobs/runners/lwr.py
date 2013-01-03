@@ -2,7 +2,7 @@ import logging
 import subprocess
 
 from galaxy import model
-from galaxy.jobs.runners import ClusterJobState, ClusterJobRunner, STOP_SIGNAL
+from galaxy.jobs.runners import ClusterJobState, ClusterJobRunner
 
 import errno
 from time import sleep
@@ -174,9 +174,8 @@ class LwrJobRunner( ClusterJobRunner ):
     def shutdown( self ):
         """Attempts to gracefully shut down the worker threads"""
         log.info( "sending stop signal to worker threads" )
-        self.monitor_queue.put( STOP_SIGNAL )
         for i in range( len( self.work_threads ) ):
-            self.work_queue.put( ( STOP_SIGNAL, None ) )
+            self.queue.put( self.STOP_SIGNAL )
         log.info( "local job runner stopped" )
 
     def check_pid( self, pid ):
