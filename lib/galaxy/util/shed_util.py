@@ -187,6 +187,8 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     filtered_repo_info_dicts = []
     # Discover all repository dependencies and retrieve information for installing them.
     all_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, repo_info_dicts )
+    if not all_repo_info_dicts:
+        all_repo_info_dicts = [ rid for rid in repo_info_dicts ]
     for repo_info_dict in all_repo_info_dicts:
         for name, repo_info_tuple in repo_info_dict.items():
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
