@@ -194,6 +194,10 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def display_all_workflows( self, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/workflow'
+        self.visit_galaxy_url( url )              
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_galaxy_browse_repositories_page( self, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/browse_repositories'
         self.visit_galaxy_url( url )
@@ -206,6 +210,11 @@ class ShedTwillTestCase( TwillTestCase ):
                                     installed_repository.owner, 
                                     installed_repository.tool_shed, 
                                     installed_repository.installed_changeset_revision ] )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def display_installed_workflow_image( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/admin_toolshed/generate_workflow_image?repository_id=%s&workflow_name=%s' % \
+              ( self.security.encode_id( repository.id ), tool_shed_encode( workflow_name ) )
+        self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_manage_repository_page( self, repository, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         base_url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
@@ -386,6 +395,10 @@ class ShedTwillTestCase( TwillTestCase ):
         return returned_file_list
     def get_repository_metadata( self, repository ):
         return [ metadata_revision for metadata_revision in repository.metadata_revisions ]
+    def get_repository_metadata_by_changeset_revision( self, repository, changeset_revision ):
+        for metadata_revision in repository.metadata_revisions:
+            if metadata_revision.changeset_revision == changeset_revision:
+                return metadata_revision
     def get_repository_metadata_revisions( self, repository ):
         return [ str( repository_metadata.changeset_revision ) for repository_metadata in repository.metadata_revisions ]
     def get_repository_tip( self, repository ):
@@ -408,6 +421,13 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "3", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def import_workflow( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/admin_toolshed/import_workflow?repository_id=%s&workflow_name=%s' % \
+            ( self.security.encode_id( repository.id ), tool_shed_encode( workflow_name ) )
+        self.visit_galaxy_url( url )
+        if workflow_name not in strings_displayed:
+            strings_displayed.append( workflow_name )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def initiate_installation_process( self ):
         html = self.last_page()
         # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the 
@@ -427,7 +447,7 @@ class ShedTwillTestCase( TwillTestCase ):
                             preview_strings_displayed=[], post_submit_strings_displayed=[], **kwd ):
         self.browse_tool_shed( url=self.url )
         self.browse_category( test_db_util.get_category_by_name( category_name ) )
-        self.preview_repository_in_tool_shed( name, common.test_user_1_name, strings_displayed=preview_strings_displayed )
+        self.preview_repository_in_tool_shed( name, owner, strings_displayed=preview_strings_displayed )
         repository = test_db_util.get_repository_by_name_and_owner( name, owner )
         repository_id = self.security.encode_id( repository.id )
         if changeset_revision is None:
@@ -436,8 +456,8 @@ class ShedTwillTestCase( TwillTestCase ):
               ( changeset_revision, repository_id, self.galaxy_url )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-        form = tc.browser.get_form( 'select_tool_panel_section' )
         if 'install_tool_dependencies' in self.last_page():
+            form = tc.browser.get_form( 'select_tool_panel_section' )
             checkbox = form.find_control( id="install_tool_dependencies" )
             checkbox.disabled = False
             if install_tool_dependencies:
@@ -460,20 +480,27 @@ class ShedTwillTestCase( TwillTestCase ):
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def load_workflow_image_in_tool_shed( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
-        # FIXME: Can not always assume the first repository_metadata record is the correct one.
-        # TODO: Add a method for displaying a workflow image in Galaxy.
-        metadata = self.get_repository_metadata( repository )
+    def load_workflow_image_in_tool_shed( self, repository, workflow_name, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
+        if not changeset_revision:
+            changeset_revision = self.get_repository_tip( repository )
+        metadata = self.get_repository_metadata_by_changeset_revision( repository, changeset_revision )
         url = '/repository/generate_workflow_image?repository_metadata_id=%s&workflow_name=%s' % \
-              ( self.security.encode_id( metadata[0].id ), tool_shed_encode( workflow_name ) )
+              ( self.security.encode_id( metadata.id ), tool_shed_encode( workflow_name ) )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def preview_repository_in_tool_shed( self, name, owner, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         repository = test_db_util.get_repository_by_name_and_owner( name, owner )
-        if changeset_revision is None:
+        if not changeset_revision:
             changeset_revision = self.get_repository_tip( repository )
         self.visit_url( '/repository/preview_tools_in_changeset?repository_id=%s&changeset_revision=%s' % \
                         ( self.security.encode_id( repository.id ), changeset_revision ) )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def preview_workflow_in_tool_shed( self, repository_name, owner, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
+        repository = test_db_util.get_repository_by_name_and_owner( repository_name, owner )
+        metadata = self.get_repository_metadata( repository )
+        url = '/repository/view_workflow?workflow_name=%s&repository_metadata_id=%s' % \
+              ( tool_shed_encode( workflow_name ), self.security.encode_id( metadata[0].id ) )
+        self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def reactivate_repository( self, installed_repository ):
         url = '/admin_toolshed/browse_repositories?operation=activate+or+reinstall&id=%s' % self.security.encode_id( installed_repository.id )
@@ -598,6 +625,11 @@ class ShedTwillTestCase( TwillTestCase ):
         for metadata in self.get_repository_metadata( repository ):
             new_metadata[ metadata.changeset_revision ] = metadata.metadata
         assert old_metadata == new_metadata, 'Metadata changed after reset on repository %s.' % repository.name 
+    def view_installed_workflow( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/admin_toolshed/view_workflow?repository_id=%s&workflow_name=%s' % \
+            ( self.security.encode_id( repository.id ), tool_shed_encode( workflow_name ) )
+        self.visit_galaxy_url( url )
+        self.check_for_strings( strings, strings_not_displayed )
     def visit_galaxy_url( self, url ):
         url = '%s%s' % ( self.galaxy_url, url )
         self.visit_url( url )
