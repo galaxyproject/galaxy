@@ -274,7 +274,9 @@ nglims_config_file = tool-data/nglims.yaml
 #terms_url = None
 
 # The URL linked by the "Galaxy Q&A" link in the "Help" menu
-qa_url = http://slyfox.bx.psu.edu:8080/
+# The Galaxy Q&A site is under development; when the site is done, this URL
+# will be set and uncommented.
+# qa_url = 
 
 # Serve static content, which must be enabled if you're not serving it via a
 # proxy server.  These options should be self explanatory and so are not
