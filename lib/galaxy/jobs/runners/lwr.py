@@ -72,16 +72,6 @@ class FileStager(object):
         for input_file in self.input_files:
             input_upload_response = self.client.upload_input(input_file)
             self.file_renames[input_file] = input_upload_response['path']
-            # TODO: Determine if this is object store safe and what needs to be
-            # done if it is not.
-            files_path = "%s_files" % input_file[0:-len(".dat")]
-            if os.path.exists(files_path):
-                for extra_file in os.listdir(files_path):
-                    extra_file_path = os.path.join(files_path, extra_file)
-                    relative_path = os.path.basename(files_path)
-                    extra_file_relative_path = os.path.join(relative_path, extra_file)
-                    response = self.client.upload_extra_input(extra_file_path, extra_file_relative_path)
-                    self.file_renames[extra_file_path] = response['path']
 
     def __upload_working_directory_files(self):
         # Task manager stages files into working directory, these need to be uploaded
@@ -177,18 +167,17 @@ class Client(object):
         response = self.__raw_execute(command, args, data)
         return simplejson.loads(response.read())
 
-    def __upload_file(self, action, path, name=None, contents = None):
+    def __upload_file(self, action, path, contents = None):
         """ """
         input = open(path, 'rb')
         try:
             mmapped_input = mmap.mmap(input.fileno(), 0, access = mmap.ACCESS_READ)
-            return self.__upload_contents(action, path, mmapped_input, name)
+            return self.__upload_contents(action, path, mmapped_input)
         finally:
             input.close()
 
-    def __upload_contents(self, action, path, contents, name=None):
-        if not name:
-            name = os.path.basename(path)
+    def __upload_contents(self, action, path, contents):
+        name = os.path.basename(path)
         args = {"job_id" : self.job_id, "name" : name}
         return self.__raw_execute_and_parse(action, args, contents)
     
@@ -197,9 +186,6 @@ class Client(object):
 
     def upload_input(self, path):
         return self.__upload_file("upload_input", path)
-
-    def upload_extra_input(self, path, relative_name):
-        return self.__upload_file("upload_extra_input", path, name=relative_name)
 
     def upload_config_file(self, path, contents):
         return self.__upload_contents("upload_config_file", path, contents)
