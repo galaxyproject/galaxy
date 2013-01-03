@@ -533,6 +533,8 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
     """
     missing_repository_dependencies = {}
     installed_repository_dependencies = {}
+    missing_rd_tups = []
+    installed_rd_tups = []
     description = repository_dependencies[ 'description' ]
     root_key = repository_dependencies[ 'root_key' ]
     # The repository dependencies container will include only the immediate repository dependencies of this repository, so the container will be
@@ -540,8 +542,6 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
     for key, rd_tups in repository_dependencies.items():
         if key in [ 'description', 'root_key' ]:
             continue
-        installed_rd_tups = []
-        missing_rd_tups = []
         for rd_tup in rd_tups:
             tool_shed, name, owner, changeset_revision = rd_tup
             # This is tricky because updates to installed repository revisions may have occurred making it difficult to discover installed repository
@@ -557,14 +557,14 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
             else:
                 new_rd_tup = [ tool_shed, name, owner, changeset_revision, None, 'Never installed' ]
                 missing_rd_tups.append( new_rd_tup )
-        if installed_rd_tups:
-            installed_repository_dependencies[ 'root_key' ] = root_key
-            installed_repository_dependencies[ root_key ] = installed_rd_tups
-            installed_repository_dependencies[ 'description' ] = description
-        if missing_rd_tups:
-            missing_repository_dependencies[ 'root_key' ] = root_key
-            missing_repository_dependencies[ root_key ] = missing_rd_tups
-            missing_repository_dependencies[ 'description' ] = description
+    if installed_rd_tups:
+        installed_repository_dependencies[ 'root_key' ] = root_key
+        installed_repository_dependencies[ root_key ] = installed_rd_tups
+        installed_repository_dependencies[ 'description' ] = description
+    if missing_rd_tups:
+        missing_repository_dependencies[ 'root_key' ] = root_key
+        missing_repository_dependencies[ root_key ] = missing_rd_tups
+        missing_repository_dependencies[ 'description' ] = description
     return installed_repository_dependencies, missing_repository_dependencies
 def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies ):
     if all_tool_dependencies:

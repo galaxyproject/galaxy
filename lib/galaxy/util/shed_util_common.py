@@ -2302,8 +2302,7 @@ def merge_missing_repository_dependencies_to_installed_container( containers_dic
             for sub_container in root_container.folders:
                 # There should only be 1 subfolder.
                 sub_container.label = 'Repository dependencies'
-            containers_dict[ 'missing_repository_dependencies' ] = root_container
-            containers_dict[ 'repository_dependencies' ] = containers_dict[ 'missing_repository_dependencies' ]
+            containers_dict[ 'repository_dependencies' ] = root_container
     containers_dict[ 'missing_repository_dependencies' ] = None
     return containers_dict
 def open_repository_files_folder( trans, folder_path ):
