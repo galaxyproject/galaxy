@@ -1192,7 +1192,12 @@ class AdminToolshed( AdminGalaxy ):
                 install_tool_dependencies = False
             tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf )
             created_or_updated_tool_shed_repositories, repo_info_dicts, filtered_repo_info_dicts, message = \
-                shed_util.create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, reinstalling=False )
+                shed_util.create_repository_dependency_objects( trans,
+                                                                tool_path,
+                                                                tool_shed_url,
+                                                                repo_info_dicts,
+                                                                reinstalling=False,
+                                                                install_repository_dependencies=install_repository_dependencies )
             if message and len( repo_info_dicts ) == 1:
                 installed_tool_shed_repository = created_or_updated_tool_shed_repositories[ 0 ]
                 message+= 'Click <a href="%s">here</a> to manage the repository.  ' % \
@@ -1471,7 +1476,12 @@ class AdminToolshed( AdminGalaxy ):
             # This is a bit screwy because filtered_repo_info_dicts in this block is a list of tool_shed_encoded dictionaries, but
             # in the associated else block, it is a list of unencoded dictionaries - not sure if this should be corrected...
             created_or_updated_tool_shed_repositories, repo_info_dicts, filtered_repo_info_dicts, message = \
-                shed_util.create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, reinstalling=True )
+                shed_util.create_repository_dependency_objects( trans,
+                                                                tool_path,
+                                                                tool_shed_url,
+                                                                repo_info_dicts,
+                                                                reinstalling=True,
+                                                                install_repository_dependencies=install_repository_dependencies )
             if len( created_or_updated_tool_shed_repositories ) > 1:
                 # Build repository dependency relationships.
                 suc.build_repository_dependency_relationships( trans, repo_info_dicts, created_or_updated_tool_shed_repositories )

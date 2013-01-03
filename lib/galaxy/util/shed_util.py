@@ -175,7 +175,7 @@ def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=No
             # Attempt to ensure we're copying an appropriate file.
             if is_data_index_sample_file( filename ):
                 suc.copy_sample_file( app, filename, dest_path=dest_path )
-def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, reinstalling=False ):
+def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, reinstalling=False, install_repository_dependencies=False ):
     """
     Discover all repository dependencies and make sure all tool_shed_repository and associated repository_dependency records exist as well as
     the dependency relationships between installed repositories.  This method is called when new repositories are being installed into a Galaxy
@@ -185,9 +185,14 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     created_or_updated_tool_shed_repositories = []
     # Repositories will be filtered (e.g., if already installed, etc), so filter the associated repo_info_dicts accordingly.
     filtered_repo_info_dicts = []
-    # Discover all repository dependencies and retrieve information for installing them.
-    all_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, repo_info_dicts )
-    if not all_repo_info_dicts:
+    if install_repository_dependencies:
+        # Discover all repository dependencies and retrieve information for installing them.
+        all_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, repo_info_dicts )
+        if not all_repo_info_dicts:
+            # No repository dependencies were discovered so process the received repositories.
+            all_repo_info_dicts = [ rid for rid in repo_info_dicts ]
+    else:
+        # The user chose to not install repository dependencies, so process the received repositories.
         all_repo_info_dicts = [ rid for rid in repo_info_dicts ]
     for repo_info_dict in all_repo_info_dicts:
         for name, repo_info_tuple in repo_info_dict.items():
@@ -199,7 +204,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
             installed_tool_shed_repository, installed_changeset_revision = \
                 repository_was_previously_installed( trans, tool_shed_url, name, repo_info_tuple, clone_dir )
             if installed_tool_shed_repository:
-                if reinstalling:
+                if reinstalling or install_repository_dependencies:
                     if installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR,
                                                                   trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
                         can_update = True
@@ -225,9 +230,11 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     if installed_changeset_revision != changeset_revision:
                         message += "You can get the latest updates for the repository using the <b>Get updates</b> option from the repository's "
                         message += "<b>Repository Actions</b> pop-up menu.  "
-                    if len( repo_info_dicts ) == 1:
+                    if len( all_repo_info_dicts ) == 1:
                         created_or_updated_tool_shed_repositories.append( installed_tool_shed_repository )
                         return created_or_updated_tool_shed_repositories, all_repo_info_dicts, filtered_repo_info_dicts, message
+                    else:
+                       can_update = True 
             else:
                 # A tool shed repository is being installed into a Galaxy instance for the first time.  We may have the case where a repository
                 # is being reinstalled where because the repository being newly installed here may be a dependency of the repository being reinstalled.
