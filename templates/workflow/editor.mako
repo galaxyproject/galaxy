@@ -59,41 +59,6 @@
             return;
         }
 
-        // Init tool options.
-        make_popupmenu( $("#tools-options-button"), {
-            ## Search tools menu item.
-            <%
-                show_tool_search = False
-                if trans.user:
-                    show_tool_search = trans.user.preferences.get( "workflow.show_tool_search", "True" )
-
-                if show_tool_search == "True":
-                    initial_text = "Hide Search"
-                else:
-                    initial_text = "Search Tools"
-            %>
-            "${initial_text}": function() {
-                // Show/hide menu and update vars, user preferences.
-                var menu = $('#tool-search');
-                if (menu.is(":visible")) {
-                    // Hide menu.
-                    pref_value = "False";
-                    menu_option_text = "Search Tools";
-                    menu.toggle();
-                    // Reset search.
-                    reset_tool_search(true);
-                } else {
-                    // Show menu.
-                    pref_value = "True";
-                    menu_option_text = "Hide Search";
-                    menu.toggle();
-                }
-                // Update menu option.
-                $("#tools-options-button-menu").find("li").eq(0).text(menu_option_text);
-                galaxy_async.set_user_pref("workflow.show_tool_search", pref_value);
-            }
-        });
-
         // Init searching.
         $("#tool-search-query").click( function (){
             $(this).focus();
@@ -929,26 +894,13 @@
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>
-            <div style="float: right">
-                <a class='panel-header-button popup' id="tools-options-button" href="#">${_('Options')}</a>
-            </div>
             ${n_('Tools')}
         </div>
     </div>
 
     <div class="unified-panel-body" style="overflow: auto;">
             <div class="toolMenu">
-            ## Tool search.
-            <%
-                show_tool_search = False
-                if trans.user:
-                    show_tool_search = trans.user.preferences.get( "workflow.show_tool_search", "True" )
-                if show_tool_search == "True":
-                    display = "block"
-                else:
-                    display = "none"
-            %>
-            <div id="tool-search" style="padding-bottom: 5px; position: relative; display: ${display}; width: 100%">
+            <div id="tool-search" style="padding-bottom: 5px; position: relative; display: block; width: 100%">
                 <input type="text" name="query" value="search tools" id="tool-search-query" class="search-query parent-width" />
                 <img src="${h.url_for('/static/images/loading_small_white_bg.gif')}" id="search-spinner" class="search-spinner" />
             </div>
@@ -976,7 +928,6 @@
                     %elif key.startswith( 'label' ):
                         ${render_label( val )}
                     %endif
-                    <div class="toolSectionPad"></div>
                     </div>
                 %endfor
             </div>
@@ -1005,7 +956,7 @@
 
     <div class="unified-panel-header" unselectable="on">
         <div class="unified-panel-header-inner" style="float: right">
-            <a id="workflow-options-button" class="panel-header-button popup" href="#">Options</a>
+            <a id="workflow-options-button" class="panel-header-button" href="#"><span class="fa-icon-cog"></span></a>
         </div>
         <div class="unified-panel-header-inner">
             Workflow Canvas | ${h.to_unicode( stored.name ) | h}
