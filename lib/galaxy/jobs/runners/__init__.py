@@ -8,7 +8,7 @@ import threading
 log = logging.getLogger( __name__ )
 
 class BaseJobRunner( object ):
-    def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
+    def build_command_line( self, job_wrapper, include_metadata=False ):
         """
         Compose the sequence of commands necessary to execute a job. This will
         currently include:
@@ -18,6 +18,18 @@ class BaseJobRunner( object ):
             - command line taken from job wrapper
             - commands to set metadata (if include_metadata is True)
         """
+
+        def in_directory( file, directory ):
+            """
+            Return true, if the common prefix of both is equal to directory
+            e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
+            """
+
+            # Make both absolute.
+            directory = os.path.abspath( directory )
+            file = os.path.abspath( file )
+
+            return os.path.commonprefix( [ file, directory ] ) == directory
 
         commands = job_wrapper.get_command_line()
         # All job runners currently handle this case which should never
@@ -35,41 +47,6 @@ class BaseJobRunner( object ):
             commands = "; ".join( job_wrapper.dependency_shell_commands + [ commands ] ) 
 
         # -- Append commands to copy job outputs based on from_work_dir attribute. --
-        if include_work_dir_outputs:
-            work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
-            if work_dir_outputs:
-                commands += "; " + "; ".join( [ "cp %s %s" % ( source_file, destination ) for ( source_file, destination ) in work_dir_outputs ] )
-
-        # Append metadata setting commands, we don't want to overwrite metadata
-        # that was copied over in init_meta(), as per established behavior
-        if include_metadata and self.app.config.set_metadata_externally:
-            commands += "; cd %s; " % os.path.abspath( os.getcwd() )
-            commands += job_wrapper.setup_external_metadata( 
-                            exec_dir = os.path.abspath( os.getcwd() ),
-                            tmp_dir = job_wrapper.working_directory,
-                            dataset_files_path = self.app.model.Dataset.file_path,
-                            output_fnames = job_wrapper.get_output_fnames(),
-                            set_extension = False,
-                            kwds = { 'overwrite' : False } ) 
-        return commands
-
-    def get_work_dir_outputs( self, job_wrapper ):
-        """
-        Returns list of pairs (source_file, destination) describing path
-        to work_dir output file and ultimate destination.
-        """
-
-        def in_directory( file, directory ):
-            """
-            Return true, if the common prefix of both is equal to directory
-            e.g. /a/b/c/d.rst and directory is /a/b, the common prefix is /a/b
-            """
-
-            # Make both absolute.
-            directory = os.path.abspath( directory )
-            file = os.path.abspath( file )
-
-            return os.path.commonprefix( [ file, directory ] ) == directory
 
         # Set up dict of dataset id --> output path; output path can be real or 
         # false depending on outputs_to_working_directory
@@ -80,7 +57,6 @@ class BaseJobRunner( object ):
                 path = dataset_path.false_path
             output_paths[ dataset_path.dataset_id ] = path
 
-        output_pairs = []
         # Walk job's output associations to find and use from_work_dir attributes.
         job = job_wrapper.get_job()
         job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
@@ -96,13 +72,29 @@ class BaseJobRunner( object ):
                             source_file = os.path.join( os.path.abspath( job_wrapper.working_directory ), hda_tool_output.from_work_dir )
                             destination = output_paths[ dataset.dataset_id ]
                             if in_directory( source_file, job_wrapper.working_directory ):
-                                output_pairs.append( ( source_file, destination ) )
-                                log.debug( "Copying %s to %s as directed by from_work_dir" % ( source_file, destination ) )
+                                try:
+                                    commands += "; cp %s %s" % ( source_file, destination )
+                                    log.debug( "Copying %s to %s as directed by from_work_dir" % ( source_file, destination ) )
+                                except ( IOError, OSError ):
+                                    log.debug( "Could not copy %s to %s as directed by from_work_dir" % ( source_file, destination ) )
                             else:
                                 # Security violation.
                                 log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
-        return output_pairs
 
+
+
+        # Append metadata setting commands, we don't want to overwrite metadata
+        # that was copied over in init_meta(), as per established behavior
+        if include_metadata and self.app.config.set_metadata_externally:
+            commands += "; cd %s; " % os.path.abspath( os.getcwd() )
+            commands += job_wrapper.setup_external_metadata( 
+                            exec_dir = os.path.abspath( os.getcwd() ),
+                            tmp_dir = job_wrapper.working_directory,
+                            dataset_files_path = self.app.model.Dataset.file_path,
+                            output_fnames = job_wrapper.get_output_fnames(),
+                            set_extension = False,
+                            kwds = { 'overwrite' : False } ) 
+        return commands
 
 class ClusterJobState( object ):
     """

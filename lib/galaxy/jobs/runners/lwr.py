@@ -54,7 +54,7 @@ class LwrJobRunner( ClusterJobRunner ):
                     if 0 != os.system(cmd):
                         raise Exception('Error running file staging command: %s' % cmd)
                 job_wrapper.prepare_input_files_cmds = None # prevent them from being used in-line
-            command_line = self.build_command_line( job_wrapper, include_metadata=False, include_work_dir_outputs=False )
+            command_line = self.build_command_line( job_wrapper, include_metadata=False )
         except:
             job_wrapper.fail( "failure preparing job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
@@ -126,12 +126,7 @@ class LwrJobRunner( ClusterJobRunner ):
             stderr = run_results['stderr']
 
             if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ]:
-                work_dir_outputs = self.get_work_dir_outputs(job_wrapper)
                 output_files = self.get_output_files(job_wrapper)
-                for source_file, output_file in work_dir_outputs:
-                    client.download_work_dir_output(source_file, job_wrapper.working_directory, output_file)
-                    # Remove from full output_files list so don't try to download directly.
-                    output_files.remove(output_file)
                 for output_file in output_files:
                     client.download_output(output_file, working_directory=job_wrapper.working_directory)
             client.clean()
