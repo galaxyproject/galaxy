@@ -174,7 +174,7 @@ class LwrJobRunner( ClusterJobRunner ):
     def shutdown( self ):
         """Attempts to gracefully shut down the worker threads"""
         log.info( "sending stop signal to worker threads" )
-        for i in range( len( self.work_threads ) ):
+        for i in range( len( self.threads ) ):
             self.queue.put( self.STOP_SIGNAL )
         log.info( "local job runner stopped" )
 
