@@ -97,7 +97,7 @@ class ShedTwillTestCase( TwillTestCase ):
         Loop through each tool dictionary in the repository metadata associated with the received changeset_revision. 
         For each of these, check for a tools attribute, and load the tool metadata page if it exists, then display that tool's page.
         '''
-        repository_metadata = test_db_util.get_repository_metadata_by_repository_id_changeset_revision( repository.id, changeset_revision )
+        repository_metadata = self.get_repository_metadata_by_changeset_revision( repository, changeset_revision )
         metadata = repository_metadata.metadata
         if 'tools' not in metadata:
             raise AssertionError( 'No tools in %s revision %s.' % ( repository.name, changeset_revision ) )
@@ -118,10 +118,9 @@ class ShedTwillTestCase( TwillTestCase ):
                                          strings_not_displayed=[] )
     def check_repository_invalid_tools_for_changeset_revision( self, repository, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         '''Load the invalid tool page for each invalid tool associated with this changeset revision and verify the received error messages.'''
-        repository_metadata = test_db_util.get_repository_metadata_by_repository_id_changeset_revision( repository.id, changeset_revision )
+        repository_metadata = self.get_repository_metadata_by_changeset_revision( repository, changeset_revision )
         metadata = repository_metadata.metadata
-        if 'invalid_tools' not in metadata:
-            return
+        assert 'invalid_tools' in metadata, 'Metadata for changeset revision %s does not define invalid tools' % changeset_revision
         for tool_xml in metadata[ 'invalid_tools' ]:
             self.load_invalid_tool_page( repository, 
                                          tool_xml=tool_xml,
@@ -396,9 +395,11 @@ class ShedTwillTestCase( TwillTestCase ):
     def get_repository_metadata( self, repository ):
         return [ metadata_revision for metadata_revision in repository.metadata_revisions ]
     def get_repository_metadata_by_changeset_revision( self, repository, changeset_revision ):
-        for metadata_revision in repository.metadata_revisions:
+        found = None
+        for metadata_revision in self.get_repository_metadata( repository ):
             if metadata_revision.changeset_revision == changeset_revision:
-                return metadata_revision
+                found = metadata_revision
+        return found
     def get_repository_metadata_revisions( self, repository ):
         return [ str( repository_metadata.changeset_revision ) for repository_metadata in repository.metadata_revisions ]
     def get_repository_tip( self, repository ):
@@ -484,6 +485,8 @@ class ShedTwillTestCase( TwillTestCase ):
         if not changeset_revision:
             changeset_revision = self.get_repository_tip( repository )
         metadata = self.get_repository_metadata_by_changeset_revision( repository, changeset_revision )
+        if not metadata:
+            raise AssertionError( 'Metadata not found for changeset revision %s.' % changeset_revision )
         url = '/repository/generate_workflow_image?repository_metadata_id=%s&workflow_name=%s' % \
               ( self.security.encode_id( metadata.id ), tool_shed_encode( workflow_name ) )
         self.visit_url( url )

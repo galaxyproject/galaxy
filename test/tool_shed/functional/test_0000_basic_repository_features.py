@@ -2,8 +2,8 @@ from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 
 repository_name = 'filtering_0000'
-repository_description = "Galaxy's filtering tool"
-repository_long_description = "Long description of Galaxy's filtering tool"
+repository_description = "Galaxy's filtering tool for test 0000"
+repository_long_description = "Long description of Galaxy's filtering tool for test 0000"
 
 class TestBasicRepositoryFeatures( ShedTwillTestCase ):
  
