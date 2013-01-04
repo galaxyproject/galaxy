@@ -124,7 +124,9 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 
     url_dict = {
         # ................................................................ warning message links
-        'purge' : h.url_for( controller='dataset', action='purge',
+        #'purge' : h.url_for( controller='dataset', action='purge',
+        #    dataset_id=encoded_id_template ),
+        'purge' : h.url_for( controller='dataset', action='purge_async',
             dataset_id=encoded_id_template ),
         #TODO: hide (via api)
         'unhide' : h.url_for( controller='dataset', action='unhide',
@@ -143,7 +145,6 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
             dataset_id=encoded_id_template ),
 
         #TODO: via api
-        #TODO: show deleted handled by history
         'delete' : h.url_for( controller='dataset', action='delete_async', dataset_id=encoded_id_template ),
 
         # ................................................................ download links (and associated meta files),
@@ -203,7 +204,6 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 <%def name="get_hdas( history_id, hdas )">
 <%
     #BUG: one inaccessible dataset will error entire list
-
     if not hdas:
         return '[]'
     # rather just use the history.id (wo the datasets), but...
@@ -256,7 +256,6 @@ ${h.js(
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-base",
     "mvc/dataset/hda-edit",
-    ##"mvc/dataset/hda-readonly",
 
     ##"mvc/tags", "mvc/annotations"
 
@@ -302,9 +301,15 @@ galaxy_paths.set( 'history', ${get_history_url_templates()} );
 
 $(function(){
     galaxyPageSetUp();
-    //Galaxy.historyFrame = window;
 
-    var debugging = ( new PersistantStorage( '__history_panel' ).get( 'debugging' ) || false );
+    //NOTE: for debugging on non-local instances (main/test)
+    //  1. load history panel in own tab
+    //  2. from console: new PersistantStorage( '__history_panel' ).set( 'debugging', true )
+    //  -> history panel and hdas will display console logs in console
+    var debugging = false;
+    if( jQuery.jStorage.get( '__history_panel' ) ){
+        debugging = new PersistantStorage( '__history_panel' ).get( 'debugging' );
+    }
 
     // ostensibly, this is the App
     // LOAD INITIAL DATA IN THIS PAGE - since we're already sending it...
