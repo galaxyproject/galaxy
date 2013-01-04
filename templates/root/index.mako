@@ -76,7 +76,7 @@
         if( navigator.userAgent.match( /(iPhone|iPod|iPad)/i ) ) {
             $("iframe").parent().css( {
                 "overflow": "scroll",
-                "-webkit-overflow-scrolling": "touch",
+                "-webkit-overflow-scrolling": "touch"
             })
         }
 
