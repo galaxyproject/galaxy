@@ -5,6 +5,7 @@ from galaxy import util
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.webapps.community.util import container_util
 import shed_util_common as suc
+import galaxy.tools
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.tool_shed.tool_dependencies.install_util import create_or_update_tool_dependency, install_package, set_environment
 from galaxy.tool_shed import encoding_util
@@ -175,14 +176,17 @@ def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=No
             # Attempt to ensure we're copying an appropriate file.
             if is_data_index_sample_file( filename ):
                 suc.copy_sample_file( app, filename, dest_path=dest_path )
-def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, reinstalling=False, install_repository_dependencies=False ):
+def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, reinstalling=False, install_repository_dependencies=False,
+                                          no_changes_checked=False, tool_panel_section=None, new_tool_panel_section=None ):
     """
     Discover all repository dependencies and make sure all tool_shed_repository and associated repository_dependency records exist as well as
     the dependency relationships between installed repositories.  This method is called when new repositories are being installed into a Galaxy
     instance and when uninstalled repositories are being reinstalled.
     """
     message = ''
+    # There will be a one-to-one mapping between items in created_or_updated_tool_shed_repositories and tool_panel_section_keys.
     created_or_updated_tool_shed_repositories = []
+    tool_panel_section_keys = []
     # Repositories will be filtered (e.g., if already installed, etc), so filter the associated repo_info_dicts accordingly.
     filtered_repo_info_dicts = []
     if install_repository_dependencies:
@@ -204,6 +208,11 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
             installed_tool_shed_repository, installed_changeset_revision = \
                 repository_was_previously_installed( trans, tool_shed_url, name, repo_info_tuple, clone_dir )
             if installed_tool_shed_repository:
+                tool_section, new_tool_panel_section, tool_panel_section_key = handle_tool_panel_selection( trans=trans,
+                                                                                                            metadata=installed_tool_shed_repository.metadata,
+                                                                                                            no_changes_checked=no_changes_checked,
+                                                                                                            tool_panel_section=tool_panel_section,
+                                                                                                            new_tool_panel_section=new_tool_panel_section )
                 if reinstalling or install_repository_dependencies:
                     if installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR,
                                                                   trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
@@ -217,22 +226,23 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                         # There is a repository already installed which is a dependency of the repository being reinstalled.
                         can_update = False
                 else:
-                    # An attempt is being made to install a tool shed repository into a Galaxy instance when the same repository was previously installed.
-                    message += "Revision <b>%s</b> of tool shed repository <b>%s</b> owned by <b>%s</b> " % ( changeset_revision, name, repository_owner )
-                    if installed_changeset_revision != changeset_revision:
-                        message += "was previously installed using changeset revision <b>%s</b>.  " % installed_changeset_revision
-                    else:
-                        message += "was previously installed.  "
-                    if installed_tool_shed_repository.uninstalled:
-                        message += "The repository has been uninstalled, however, so reinstall the original repository instead of installing it again.  "
-                    elif installed_tool_shed_repository.deleted:
-                        message += "The repository has been deactivated, however, so activate the original repository instead of installing it again.  "
-                    if installed_changeset_revision != changeset_revision:
-                        message += "You can get the latest updates for the repository using the <b>Get updates</b> option from the repository's "
-                        message += "<b>Repository Actions</b> pop-up menu.  "
                     if len( all_repo_info_dicts ) == 1:
+                        # An attempt is being made to install a tool shed repository into a Galaxy instance when the same repository was previously installed.
+                        message += "Revision <b>%s</b> of tool shed repository <b>%s</b> owned by <b>%s</b> " % ( changeset_revision, name, repository_owner )
+                        if installed_changeset_revision != changeset_revision:
+                            message += "was previously installed using changeset revision <b>%s</b>.  " % installed_changeset_revision
+                        else:
+                            message += "was previously installed.  "
+                        if installed_tool_shed_repository.uninstalled:
+                            message += "The repository has been uninstalled, however, so reinstall the original repository instead of installing it again.  "
+                        elif installed_tool_shed_repository.deleted:
+                            message += "The repository has been deactivated, however, so activate the original repository instead of installing it again.  "
+                        if installed_changeset_revision != changeset_revision:
+                            message += "You can get the latest updates for the repository using the <b>Get updates</b> option from the repository's "
+                            message += "<b>Repository Actions</b> pop-up menu.  "
                         created_or_updated_tool_shed_repositories.append( installed_tool_shed_repository )
-                        return created_or_updated_tool_shed_repositories, all_repo_info_dicts, filtered_repo_info_dicts, message
+                        tool_panel_section_keys.append( tool_panel_section_key )
+                        return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
                     else:
                        can_update = True 
             else:
@@ -243,6 +253,36 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                 metadata_dict={}
                 dist_to_shed = False
             if can_update:
+                if reinstalling or install_repository_dependencies:
+                    # Get the repository metadata to see where it was previously located in the tool panel.
+                    installed_tool_shed_repository = suc.get_repository_for_dependency_relationship( app=trans.app,
+                                                                                                     tool_shed=tool_shed_url,
+                                                                                                     name=name,
+                                                                                                     owner=repository_owner,
+                                                                                                     changeset_revision=changeset_revision )
+                    if installed_tool_shed_repository:
+                        tool_section, new_tool_panel_section, tool_panel_section_key = \
+                            handle_tool_panel_selection( trans=trans,
+                                                         metadata=installed_tool_shed_repository.metadata,
+                                                         no_changes_checked=no_changes_checked,
+                                                         tool_panel_section=tool_panel_section,
+                                                         new_tool_panel_section=new_tool_panel_section )
+                    else:
+                        if new_tool_panel_section:
+                            section_id = new_tool_panel_section.lower().replace( ' ', '_' )
+                            tool_panel_section_key = 'section_%s' % str( section_id )
+                        elif tool_panel_section:
+                            tool_panel_section_key = 'section_%s' % tool_panel_section
+                        else:
+                            tool_panel_section_key = None
+                else:
+                    if new_tool_panel_section:
+                        section_id = new_tool_panel_section.lower().replace( ' ', '_' )
+                        tool_panel_section_key = 'section_%s' % str( section_id )
+                    elif tool_panel_section:
+                        tool_panel_section_key = 'section_%s' % tool_panel_section
+                    else:
+                        tool_panel_section_key = None
                 tool_shed_repository = suc.create_or_update_tool_shed_repository( app=trans.app,
                                                                                   name=name,
                                                                                   description=description,
@@ -255,8 +295,9 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                                                                                   owner=repository_owner,
                                                                                   dist_to_shed=False )
                 created_or_updated_tool_shed_repositories.append( tool_shed_repository )
+                tool_panel_section_keys.append( tool_panel_section_key )
                 filtered_repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
-    return created_or_updated_tool_shed_repositories, all_repo_info_dicts, filtered_repo_info_dicts, message
+    return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
 def create_repository_dict_for_proprietary_datatypes( tool_shed, name, owner, installed_changeset_revision, tool_dicts, converter_path=None, display_path=None ):
     return dict( tool_shed=tool_shed,
                  repository_name=name,
@@ -836,6 +877,60 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                                                app.model.ToolDependency.installation_status.ERROR ]:
                 installed_tool_dependencies.append( tool_dependency )
     return installed_tool_dependencies
+def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel_section, new_tool_panel_section ):
+    """Handle the selected tool panel location for loading tools included in tool shed repositories when installing or reinstalling them."""
+    # Get the location in the tool panel in which each tool was originally loaded.
+    tool_section = None
+    tool_panel_section_key = None
+    if 'tools' in metadata:
+        if 'tool_panel_section' in metadata:
+            tool_panel_dict = metadata[ 'tool_panel_section' ]
+            if not tool_panel_dict:
+                tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
+        else:
+            tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
+        # This forces everything to be loaded into the same section (or no section) in the tool panel.
+        tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+        tool_section_dict = tool_section_dicts[ 0 ]
+        original_section_id = tool_section_dict[ 'id' ]
+        original_section_name = tool_section_dict[ 'name' ]
+        if no_changes_checked:
+            if original_section_id:
+                tool_panel_section_key = 'section_%s' % str( original_section_id )
+                if tool_panel_section_key in trans.app.toolbox.tool_panel:
+                    tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+                else:
+                    # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
+                    elem = Element( 'section' )
+                    elem.attrib[ 'name' ] = original_section_name
+                    elem.attrib[ 'id' ] = original_section_id
+                    elem.attrib[ 'version' ] = ''
+                    tool_section = galaxy.tools.ToolSection( elem )
+                    trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
+        else:
+            # The user elected to change the tool panel section to contain the tools.
+            if new_tool_panel_section:
+                section_id = new_tool_panel_section.lower().replace( ' ', '_' )
+                tool_panel_section_key = 'section_%s' % str( section_id )
+                if tool_panel_section_key in trans.app.toolbox.tool_panel:
+                    # Appending a tool to an existing section in trans.app.toolbox.tool_panel
+                    log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
+                    tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+                else:
+                    # Appending a new section to trans.app.toolbox.tool_panel
+                    log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
+                    elem = Element( 'section' )
+                    elem.attrib[ 'name' ] = new_tool_panel_section
+                    elem.attrib[ 'id' ] = section_id
+                    elem.attrib[ 'version' ] = ''
+                    tool_section = galaxy.tools.ToolSection( elem )
+                    trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
+            elif tool_panel_section:
+                tool_panel_section_key = 'section_%s' % tool_panel_section
+                tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+            else:
+                tool_section = None
+    return tool_section, new_tool_panel_section, tool_panel_section_key
 def handle_tool_versions( app, tool_version_dicts, tool_shed_repository ):
     """
     Using the list of tool_version_dicts retrieved from the tool shed (one per changeset revison up to the currently installed changeset revision),

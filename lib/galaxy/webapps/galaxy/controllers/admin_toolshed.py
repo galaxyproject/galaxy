@@ -396,7 +396,7 @@ class AdminToolshed( AdminGalaxy ):
             if operation == "activate or reinstall":
                 repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
                 if repository.uninstalled:
-                    if repository.includes_tools:
+                    if repository.includes_tools or repository.has_repository_dependencies:
                         # Only allow selecting a different section in the tool panel if the repository was uninstalled.
                         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                           action='reselect_tool_panel_section',
@@ -835,17 +835,19 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def install_tool_shed_repositories( self, trans, tool_shed_repositories, reinstalling=False, **kwd  ):
         """Install specified tool shed repositories."""
-        repo_info_dicts = util.listify( kwd[ 'repo_info_dicts' ] )
         tool_path = kwd[ 'tool_path' ]
         includes_tool_dependencies = util.string_as_bool( kwd[ 'includes_tool_dependencies' ] )
         install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
-        tool_panel_section_key = kwd.get( 'tool_panel_section_key', None )
-        if tool_panel_section_key:
-            tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-        else:
-            tool_section = None
-        for tup in zip( tool_shed_repositories, repo_info_dicts ):
-            tool_shed_repository, repo_info_dict = tup
+        # There must be a one-to-one mapping between items in the 3 lists:tool_shed_repositories, tool_panel_section_keys, repo_info_dicts.
+        tool_panel_section_keys = util.listify( kwd[ 'tool_panel_section_keys' ] )
+        repo_info_dicts = util.listify( kwd[ 'repo_info_dicts' ] )
+        for index, tool_shed_repository in enumerate( tool_shed_repositories ):
+            repo_info_dict = repo_info_dicts[ index ]
+            tool_panel_section_key = tool_panel_section_keys[ index ]
+            if tool_panel_section_key:
+                tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+            else:
+                tool_section = None
             if isinstance( repo_info_dict, basestring ):
                 repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
             # Clone each repository to the configured location.
@@ -1021,13 +1023,17 @@ class AdminToolshed( AdminGalaxy ):
                 encoded_kwd = kwd[ 'encoded_kwd' ]
                 decoded_kwd = encoding_util.tool_shed_decode( encoded_kwd )
                 tsr_ids = decoded_kwd[ 'tool_shed_repository_ids' ]
+                tool_panel_section_keys = decoded_kwd[ 'tool_panel_section_keys' ]
+                filtered_tool_panel_section_keys = []
                 repositories_for_installation = []
-                for tsr_id in tsr_ids:
+                for index, tsr_id in enumerate( tsr_ids ):
                     repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
                     if repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
                                               trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
                         repositories_for_installation.append( repository )
+                        filtered_tool_panel_section_keys.append( tool_panel_section_keys[ index ] )
                 if repositories_for_installation:
+                    decoded_kwd[ 'tool_panel_section_keys' ] = filtered_tool_panel_section_keys
                     self.install_tool_shed_repositories( trans, repositories_for_installation, reinstalling=reinstalling, **decoded_kwd )
                 else:
                     kwd[ 'message' ] = 'All selected tool shed repositories are already installed.'
@@ -1154,6 +1160,7 @@ class AdminToolshed( AdminGalaxy ):
         # Every repository will be installed into the same tool panel section or all will be installed outside of any sections.
         new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
         tool_panel_section = kwd.get( 'tool_panel_section', '' )
+        tool_panel_section_keys = []
         # One or more repositories may include tools, but not necessarily all of them.
         includes_tools = util.string_as_bool( kwd.get( 'includes_tools', False ) )
         includes_tool_dependencies = util.string_as_bool( kwd.get( 'includes_tool_dependencies', False ) )
@@ -1191,13 +1198,16 @@ class AdminToolshed( AdminGalaxy ):
             else:
                 install_tool_dependencies = False
             tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf )
-            created_or_updated_tool_shed_repositories, repo_info_dicts, filtered_repo_info_dicts, message = \
+            created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
                 shed_util.create_repository_dependency_objects( trans,
                                                                 tool_path,
                                                                 tool_shed_url,
                                                                 repo_info_dicts,
                                                                 reinstalling=False,
-                                                                install_repository_dependencies=install_repository_dependencies )
+                                                                install_repository_dependencies=install_repository_dependencies,
+                                                                no_changes_checked=False,
+                                                                tool_panel_section=tool_panel_section,
+                                                                new_tool_panel_section=new_tool_panel_section )
             if message and len( repo_info_dicts ) == 1:
                 installed_tool_shed_repository = created_or_updated_tool_shed_repositories[ 0 ]
                 message+= 'Click <a href="%s">here</a> to manage the repository.  ' % \
@@ -1235,6 +1245,10 @@ class AdminToolshed( AdminGalaxy ):
                     tool_panel_section_key = None
                     tool_section = None
                 tsrids_list = [ trans.security.encode_id( tsr.id ) for tsr in created_or_updated_tool_shed_repositories ]
+                # Create a one-to-one mapping of tool shed repository id and tool panel section key.  All tools contained in the repositories
+                # being installed will be loaded into the same section in the tool panel.
+                for tsr in created_or_updated_tool_shed_repositories:
+                    tool_panel_section_keys.append( tool_panel_section_key )
                 new_kwd = dict( includes_tools=includes_tools,
                                 includes_repository_dependencies=includes_repository_dependencies,
                                 install_repository_dependencies=install_repository_dependencies,
@@ -1245,7 +1259,8 @@ class AdminToolshed( AdminGalaxy ):
                                 shed_tool_conf=shed_tool_conf,
                                 status=status,
                                 tool_path=tool_path,
-                                tool_panel_section_key=tool_panel_section_key,
+                                
+                                tool_panel_section_keys=tool_panel_section_keys,
                                 tool_shed_repository_ids=tsrids_list,
                                 tool_shed_url=tool_shed_url )
                 encoded_kwd = encoding_util.tool_shed_encode( new_kwd )
@@ -1369,66 +1384,25 @@ class AdminToolshed( AdminGalaxy ):
         no_changes_checked = CheckboxField.is_checked( no_changes )
         install_repository_dependencies = CheckboxField.is_checked( kwd.get( 'install_repository_dependencies', '' ) )
         install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
-        new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
-        tool_panel_section = kwd.get( 'tool_panel_section', '' )
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
         repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, tool_shed_repository )
         clone_dir = os.path.join( tool_path, shed_util.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision ) )
         relative_install_dir = os.path.join( clone_dir, tool_shed_repository.name )
         tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, tool_shed_repository )
         tool_section = None
+        tool_panel_section = kwd.get( 'tool_panel_section', '' )
+        new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
         tool_panel_section_key = None
+        tool_panel_section_keys = []
         metadata = tool_shed_repository.metadata
         if tool_shed_repository.includes_tools:
-            # Get the location in the tool panel in which each tool was originally loaded.
-            if 'tool_panel_section' in metadata:
-                tool_panel_dict = metadata[ 'tool_panel_section' ]
-                if not tool_panel_dict:
-                    tool_panel_dict = shed_util.generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
-            else:
-                tool_panel_dict = shed_util.generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
-            # Fix this to handle the case where the tools are distributed across in more than 1 ToolSection - this assumes everything was loaded into 1
-            # section (or no section) in the tool panel.
-            tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
-            tool_section_dict = tool_section_dicts[ 0 ]
-            original_section_id = tool_section_dict[ 'id' ]
-            original_section_name = tool_section_dict[ 'name' ]
-            if no_changes_checked:
-                if original_section_id:
-                    tool_panel_section_key = 'section_%s' % str( original_section_id )
-                    if tool_panel_section_key in trans.app.toolbox.tool_panel:
-                        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-                    else:
-                        # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
-                        elem = Element( 'section' )
-                        elem.attrib[ 'name' ] = original_section_name
-                        elem.attrib[ 'id' ] = original_section_id
-                        elem.attrib[ 'version' ] = ''
-                        tool_section = tools.ToolSection( elem )
-                        trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
-            else:
-                # The user elected to change the tool panel section to contain the tools.
-                if new_tool_panel_section:
-                    section_id = new_tool_panel_section.lower().replace( ' ', '_' )
-                    tool_panel_section_key = 'section_%s' % str( section_id )
-                    if tool_panel_section_key in trans.app.toolbox.tool_panel:
-                        # Appending a tool to an existing section in trans.app.toolbox.tool_panel
-                        log.debug( "Appending to tool panel section: %s" % new_tool_panel_section )
-                        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-                    else:
-                        # Appending a new section to trans.app.toolbox.tool_panel
-                        log.debug( "Loading new tool panel section: %s" % new_tool_panel_section )
-                        elem = Element( 'section' )
-                        elem.attrib[ 'name' ] = new_tool_panel_section
-                        elem.attrib[ 'id' ] = section_id
-                        elem.attrib[ 'version' ] = ''
-                        tool_section = tools.ToolSection( elem )
-                        trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
-                elif tool_panel_section:
-                    tool_panel_section_key = 'section_%s' % tool_panel_section
-                    tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-                else:
-                    tool_section = None
+            # Handle the selected tool panel location for loading tools included in the tool shed repository.
+            tool_section, new_tool_panel_section, tool_panel_section_key = \
+                shed_util.handle_tool_panel_selection( trans=trans,
+                                                       metadata=metadata,
+                                                       no_changes_checked=no_changes_checked,
+                                                       tool_panel_section=tool_panel_section,
+                                                       new_tool_panel_section=new_tool_panel_section )
         # The repository's status must be updated from 'Uninstall' to 'New' when initiating reinstall so the repository_installation_updater will function.
         tool_shed_repository = suc.create_or_update_tool_shed_repository( trans.app,
                                                                           tool_shed_repository.name,
@@ -1471,22 +1445,31 @@ class AdminToolshed( AdminGalaxy ):
             repo_info_dict = encoding_util.tool_shed_encode( repo_info_dict )
         repo_info_dicts.append( repo_info_dict )
         # Make sure all tool_shed_repository records exist.
-        created_or_updated_tool_shed_repositories = [ tool_shed_repository ]
         if install_repository_dependencies:
             # This is a bit screwy because filtered_repo_info_dicts in this block is a list of tool_shed_encoded dictionaries, but
             # in the associated else block, it is a list of unencoded dictionaries - not sure if this should be corrected...
-            created_or_updated_tool_shed_repositories, repo_info_dicts, filtered_repo_info_dicts, message = \
+            created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
                 shed_util.create_repository_dependency_objects( trans,
                                                                 tool_path,
                                                                 tool_shed_url,
                                                                 repo_info_dicts,
                                                                 reinstalling=True,
-                                                                install_repository_dependencies=install_repository_dependencies )
+                                                                install_repository_dependencies=install_repository_dependencies,
+                                                                no_changes_checked=no_changes_checked,
+                                                                tool_panel_section=tool_panel_section,
+                                                                new_tool_panel_section=new_tool_panel_section )
             if len( created_or_updated_tool_shed_repositories ) > 1:
                 # Build repository dependency relationships.
                 suc.build_repository_dependency_relationships( trans, repo_info_dicts, created_or_updated_tool_shed_repositories )
         else:
             filtered_repo_info_dicts = [ repo_info_dict for repo_info_dict in repo_info_dicts ]
+            created_or_updated_tool_shed_repositories = [ tool_shed_repository ]
+            tool_panel_section_keys.append( tool_panel_section_key )
+        # Defaulot the selected tool panel location for loading tools included in each newly installed required tool shed repository to the location
+        # selected for the repository selected for reinstallation.
+        for index, tps_key in enumerate( tool_panel_section_keys ):
+            if tps_key is None:
+                tool_panel_section_keys[ index ] = tool_panel_section_key
         encoded_repository_ids = [ trans.security.encode_id( r.id ) for r in created_or_updated_tool_shed_repositories ]
         new_kwd = dict( includes_tool_dependencies=tool_shed_repository.includes_tool_dependencies,
                         includes_tools=tool_shed_repository.includes_tools,
@@ -1498,7 +1481,7 @@ class AdminToolshed( AdminGalaxy ):
                         status=status,
                         tool_panel_section=tool_panel_section,
                         tool_path=tool_path,
-                        tool_panel_section_key=tool_panel_section_key,
+                        tool_panel_section_keys=tool_panel_section_keys,
                         tool_shed_repository_ids=encoded_repository_ids,
                         tool_shed_url=tool_shed_url )
         encoded_kwd = encoding_util.tool_shed_encode( new_kwd )
@@ -1530,6 +1513,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.expose
     @web.require_admin
     def reselect_tool_panel_section( self, trans, **kwd ):
+        """Select or change the tool panel section to contain the tools included in the tool shed repositories being reinstalled."""
         message = ''
         repository_id = kwd[ 'id' ]
         tool_shed_repository = suc.get_installed_tool_shed_repository( trans, repository_id )
