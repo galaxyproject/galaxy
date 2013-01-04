@@ -1056,6 +1056,7 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                                 tool, valid, error_message = load_tool_from_config( app, full_path )
                                 if tool is None:
                                     if not valid:
+                                        invalid_tool_configs.append( name )
                                         invalid_file_tups.append( ( name, error_message ) )
                                 else:
                                     invalid_files_and_errors_tups = check_tool_input_params( app, files_dir, name, tool, sample_file_copy_paths )
