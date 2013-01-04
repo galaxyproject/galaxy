@@ -123,8 +123,16 @@ class WebApplication( object ):
         # Immediately create request_id which we will use for logging
         self.request_id = request_id = uuid.uuid1().hex
         if self.trace_logger:
-            self.trace_logger.context_push( dict( request_id = request_id ) )
-        self.trace( message= "Starting request" )
+            self.trace_logger.context_set( "request_id", request_id )
+        self.trace( message="Starting request" )
+        try:
+            return self.handle_request( environ, start_response )
+        finally:
+            self.trace( message="Handle request finished" )
+            if self.trace_logger:
+                self.trace_logger.context_remove( "request_id" )
+
+    def handle_request( self, environ, start_response ):
         # Map url using routes
         path_info = environ.get( 'PATH_INFO', '' )
         map = self.mapper.match( path_info, environ )
