@@ -1958,8 +1958,12 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     Dataset.object_store = object_store
     # Load the appropriate db module
     load_egg_for_url( url )
+    # Should we use the logging proxy?
+    if database_query_profiling_proxy:
+        import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
+        proxy = logging_connection_proxy.LoggingProxy()
     # If metlog is enabled, do micrologging
-    if trace_logger:
+    elif trace_logger:
         import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
         proxy = logging_connection_proxy.TraceLoggerProxy( trace_logger )
     else:
