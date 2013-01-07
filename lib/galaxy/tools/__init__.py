@@ -2181,7 +2181,12 @@ class Tool:
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix )
                 else:
                     # Regular tool parameter, no recursion needed
-                    pass        
+                    try:
+                        #this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
+                        input.value_from_basic( values[ input.name ], trans.app, ignore_errors=False )
+                    except:
+                        messages[ input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, input.label )
+                        values[ input.name ] = input.get_initial_value( trans, context )
     def handle_unvalidated_param_values( self, input_values, app ):
         """
         Find any instances of `UnvalidatedValue` within input_values and
