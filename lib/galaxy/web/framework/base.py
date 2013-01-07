@@ -73,6 +73,8 @@ class WebApplication( object ):
         # Each request will have a unique id. Since we are assuming
         # a threaded model for the moment we can store that here
         self.request_id = threading.local()
+        # Set if trace logging is enabled
+        self.trace_logger = None
     def add_ui_controller( self, controller_name, controller ):
         """
         Add a controller class to this application. A controller class has
@@ -114,6 +116,7 @@ class WebApplication( object ):
     def trace( self, **fields ):
         if self.trace_logger:
             self.trace_logger.log( "WebApplication", **fields )
+
     def __call__( self, environ, start_response ):
         """
         Call interface as specified by WSGI. Wraps the environment in user
