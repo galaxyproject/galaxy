@@ -261,6 +261,10 @@ class Configuration( object ):
         self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool( kwargs.get( 'new_lib_browse', False ) )
+        # Logging with fluentd
+        self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
+        self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
+        self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
 
     def __read_tool_job_config( self, global_conf_parser, section, key ):
         try:
