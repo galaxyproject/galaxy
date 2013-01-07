@@ -848,8 +848,7 @@ class AdminToolshed( AdminGalaxy ):
                 tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
             else:
                 tool_section = None
-            if isinstance( repo_info_dict, basestring ):
-                repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
+            repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
             # Clone each repository to the configured location.
             shed_util.update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.CLONING )
             repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
@@ -1419,8 +1418,7 @@ class AdminToolshed( AdminGalaxy ):
         repo_info_dicts = []
         repo_info_dict = kwd.get( 'repo_info_dict', None )
         if repo_info_dict:
-            if isinstance( repo_info_dict, basestring ):
-                repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
+            repo_info_dict = encoding_util.tool_shed_decode( repo_info_dict )
         else:
             # Entering this else block used to happen only if the tool_shed_repository does not include any valid tools.  After repository dependencies
             # were introduced, it may never happen, but we'll keep the block just in case.
@@ -1442,12 +1440,9 @@ class AdminToolshed( AdminGalaxy ):
                                                         repository_metadata=None,
                                                         metadata=metadata,
                                                         repository_dependencies=repository_dependencies )
-            repo_info_dict = encoding_util.tool_shed_encode( repo_info_dict )
         repo_info_dicts.append( repo_info_dict )
         # Make sure all tool_shed_repository records exist.
         if install_repository_dependencies:
-            # This is a bit screwy because filtered_repo_info_dicts in this block is a list of tool_shed_encoded dictionaries, but
-            # in the associated else block, it is a list of unencoded dictionaries - not sure if this should be corrected...
             created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
                 shed_util.create_repository_dependency_objects( trans,
                                                                 tool_path,
