@@ -2,8 +2,8 @@ from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 
 freebayes_repository_name = 'freebayes_0040'
-freebayes_repository_name_description = "Galaxy's freebayes tool"
-freebayes_repository_name_long_description = "Long description of Galaxy's freebayes tool"
+freebayes_repository_description = "Galaxy's freebayes tool"
+freebayes_repository_long_description = "Long description of Galaxy's freebayes tool"
 
 filtering_repository_name = 'filtering_0040'
 filtering_repository_description = "Galaxy's filtering tool"
@@ -31,8 +31,8 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=freebayes_repository_name, 
-                                                    description=freebayes_repository_name_description, 
-                                                    long_description=freebayes_repository_name_long_description, 
+                                                    description=freebayes_repository_description, 
+                                                    long_description=freebayes_repository_long_description, 
                                                     owner=common.test_user_1_name,
                                                     categories=[ 'test_0040_repository_circular_dependencies' ], 
                                                     strings_displayed=[] )

@@ -1,13 +1,15 @@
 import galaxy.webapps.community.util.hgweb_config
 import galaxy.model as galaxy_model
-import common, string, os, re, test_db_util, simplejson
+import common, string, os, re, test_db_util, simplejson, logging, time
 import galaxy.util as util
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
-from galaxy.tool_shed.encoding_util import tool_shed_encode
+from galaxy.tool_shed.encoding_util import tool_shed_encode, tool_shed_decode
 
 from galaxy import eggs
 eggs.require('mercurial')
 from mercurial import hg, ui
+
+log = logging.getLogger( __name__ )
 
 class ShedTwillTestCase( TwillTestCase ):
     def setUp( self ):
@@ -429,7 +431,7 @@ class ShedTwillTestCase( TwillTestCase ):
         if workflow_name not in strings_displayed:
             strings_displayed.append( workflow_name )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def initiate_installation_process( self ):
+    def initiate_installation_process( self, install_tool_dependencies=False, install_repository_dependencies=True ):
         html = self.last_page()
         # Since the installation process is by necessity asynchronous, we have to get the parameters to 'manually' initiate the 
         # installation process. This regex will return the tool shed repository IDs in group(1), the encoded_kwd parameter in 
@@ -438,11 +440,20 @@ class ShedTwillTestCase( TwillTestCase ):
         install_parameters = re.search( 'initiate_repository_installation\( "([^"]+)", "([^"]+)", "([^"]+)" \);', html )
         if install_parameters:
             iri_ids = install_parameters.group(1)
-            encoded_kwd = install_parameters.group(2)
+            # In some cases, the returned iri_ids are of the form: "[u'<encoded id>', u'<encoded id>']"
+            # This ensures that non-hex characters are stripped out of the list, so that util.listify/decode_id will handle them correctly.
+            repository_ids = str( iri_ids )
+            repository_ids = re.sub( '[^a-fA-F0-9,]+', '', repository_ids )
+            decoded_kwd = tool_shed_decode( install_parameters.group(2) )
+            if 'install_tool_dependencies' in decoded_kwd:
+                decoded_kwd[ 'install_tool_dependencies' ] = install_tool_dependencies
+            if 'install_repository_dependencies' in decoded_kwd:
+                decoded_kwd[ 'install_repository_dependencies' ] = install_repository_dependencies
             reinstalling = install_parameters.group(3)
             url = '/admin_toolshed/manage_repositories?operation=install&tool_shed_repository_ids=%s&encoded_kwd=%s&reinstalling=%s' % \
-                ( iri_ids, encoded_kwd, reinstalling )
+                ( ','.join( util.listify( repository_ids ) ), tool_shed_encode( decoded_kwd ), reinstalling )
             self.visit_galaxy_url( url )
+            return util.listify( repository_ids )
     def install_repository( self, name, owner, category_name, install_tool_dependencies=False, 
                             changeset_revision=None, strings_displayed=[], strings_not_displayed=[], 
                             preview_strings_displayed=[], post_submit_strings_displayed=[], **kwd ):
@@ -469,8 +480,8 @@ class ShedTwillTestCase( TwillTestCase ):
             kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
         self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
         self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
-        self.initiate_installation_process()
-        self.wait_for_repository_installation( repository, changeset_revision )
+        repository_ids = self.initiate_installation_process( install_tool_dependencies )
+        self.wait_for_repository_installation( repository_ids )
     def load_invalid_tool_page( self, repository, tool_xml, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml, changeset_revision )
@@ -510,12 +521,17 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( url )
         strings_displayed = [ installed_repository.name, 'repository has been activated' ]
         self.check_for_strings( strings_displayed, [] )
-    def reinstall_repository( self, installed_repository ):
-        url = '/admin_toolshed/reinstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
+    def reinstall_repository( self, 
+                              installed_repository, 
+                              install_repository_dependencies='true', 
+                              install_tool_dependencies='false' ):
+        url = '/admin_toolshed/reselect_tool_panel_section?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
-        self.initiate_installation_process()
-        tool_shed_repository = test_db_util.get_repository_by_name_and_owner( installed_repository.name, installed_repository.owner )
-        self.wait_for_repository_installation( tool_shed_repository, installed_repository.installed_changeset_revision )
+        url = '/admin_toolshed/reinstall_repository?id=%s&install_repository_dependencies=%s&install_repository_dependencies=%s' % \
+            ( self.security.encode_id( installed_repository.id ), install_repository_dependencies, install_repository_dependencies )
+        self.visit_galaxy_url( url )
+        repository_ids = self.initiate_installation_process( install_tool_dependencies, install_repository_dependencies )
+        self.wait_for_repository_installation( repository_ids )
     def repository_is_new( self, repository ):
         repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
@@ -636,22 +652,18 @@ class ShedTwillTestCase( TwillTestCase ):
     def visit_galaxy_url( self, url ):
         url = '%s%s' % ( self.galaxy_url, url )
         self.visit_url( url )
-    def wait_for_repository_installation( self, repository, changeset_revision ):
+    def wait_for_repository_installation( self, repository_ids ):
         final_states = [ galaxy_model.ToolShedRepository.installation_status.ERROR,
-                         galaxy_model.ToolShedRepository.installation_status.INSTALLED, 
-                         galaxy_model.ToolShedRepository.installation_status.UNINSTALLED,
-                         galaxy_model.ToolShedRepository.installation_status.DEACTIVATED ]
-        repository_name = repository.name
-        owner = repository.user.username
-        if changeset_revision is None:
-            changeset_revision = self.get_repository_tip( repository )
-        galaxy_repository = test_db_util.get_galaxy_repository_by_name_owner_changeset_revision( repository_name, owner, changeset_revision )
-        timeout_counter = 0
-        while galaxy_repository.status not in final_states:
-            ga_refresh( galaxy_repository )
-            timeout_counter = timeout_counter + 1
-            if timeout_counter > common.repository_installation_timeout:
-                raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \
-                                      ( timeout_counter, repository.status ) )
-                break
-            time.sleep( 1 )
+                         galaxy_model.ToolShedRepository.installation_status.INSTALLED ]
+        if repository_ids:
+            for repository_id in repository_ids:
+                galaxy_repository = test_db_util.get_installed_repository_by_id( self.security.decode_id( repository_id ) )
+                timeout_counter = 0
+                while galaxy_repository.status not in final_states:
+                    test_db_util.ga_refresh( galaxy_repository )
+                    timeout_counter = timeout_counter + 1
+                    if timeout_counter > common.repository_installation_timeout:
+                        raise AssertionError( 'Repository installation timed out, %d seconds elapsed, repository state is %s.' % \
+                                              ( timeout_counter, repository.status ) )
+                        break
+                    time.sleep( 1 )
