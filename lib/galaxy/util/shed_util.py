@@ -2,7 +2,7 @@ import os, tempfile, shutil, logging, urllib2
 from galaxy.datatypes import checkers
 from galaxy.web import url_for
 from galaxy import util
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy.util import json
 from galaxy.webapps.community.util import container_util
 import shed_util_common as suc
 import galaxy.tools
@@ -184,19 +184,20 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     instance and when uninstalled repositories are being reinstalled.
     """
     message = ''
-    # There will be a one-to-one mapping between items in created_or_updated_tool_shed_repositories and tool_panel_section_keys.
+    # The following list will be maintained within this method to contain all created or updated tool shed repositories, including repository
+    # dependencies that may not be installed.
+    all_created_or_updated_tool_shed_repositories = []
+    # There will be a one-to-one mapping between items in created_or_updated_tool_shed_repositories and tool_panel_section_keys.  The following
+    # list will filter out repository dependencies that are not to be installed.
     created_or_updated_tool_shed_repositories = []
     tool_panel_section_keys = []
     # Repositories will be filtered (e.g., if already installed, etc), so filter the associated repo_info_dicts accordingly.
     filtered_repo_info_dicts = []
-    if install_repository_dependencies:
-        # Discover all repository dependencies and retrieve information for installing them.
-        all_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, repo_info_dicts )
-        if not all_repo_info_dicts:
-            # No repository dependencies were discovered so process the received repositories.
-            all_repo_info_dicts = [ rid for rid in repo_info_dicts ]
-    else:
-        # The user chose to not install repository dependencies, so process the received repositories.
+    # Discover all repository dependencies and retrieve information for installing them.  Even if the user elected to not install repository dependencies,
+    # we have to make sure all repository dependency objects exist so that the appropriate repository dependency relationships can be built.
+    all_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, repo_info_dicts )
+    if not all_repo_info_dicts:
+        # No repository dependencies were discovered so process the received repositories.
         all_repo_info_dicts = [ rid for rid in repo_info_dicts ]
     for repo_info_dict in all_repo_info_dicts:
         for name, repo_info_tuple in repo_info_dict.items():
@@ -214,16 +215,19 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                                                                                                             tool_panel_section=tool_panel_section,
                                                                                                             new_tool_panel_section=new_tool_panel_section )
                 if reinstalling or install_repository_dependencies:
-                    if installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR,
-                                                                  trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
-                        can_update = True
-                        name = installed_tool_shed_repository.name
-                        description = installed_tool_shed_repository.description
-                        installed_changeset_revision = installed_tool_shed_repository.installed_changeset_revision
-                        metadata_dict = installed_tool_shed_repository.metadata
-                        dist_to_shed = installed_tool_shed_repository.dist_to_shed
+                    if is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ) or install_repository_dependencies:
+                        if installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR,
+                                                                      trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+                            can_update = True
+                            name = installed_tool_shed_repository.name
+                            description = installed_tool_shed_repository.description
+                            installed_changeset_revision = installed_tool_shed_repository.installed_changeset_revision
+                            metadata_dict = installed_tool_shed_repository.metadata
+                            dist_to_shed = installed_tool_shed_repository.dist_to_shed
+                        else:
+                            # There is a repository already installed which is a dependency of the repository being reinstalled.
+                            can_update = False
                     else:
-                        # There is a repository already installed which is a dependency of the repository being reinstalled.
                         can_update = False
                 else:
                     if len( all_repo_info_dicts ) == 1:
@@ -243,14 +247,16 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                         created_or_updated_tool_shed_repositories.append( installed_tool_shed_repository )
                         tool_panel_section_keys.append( tool_panel_section_key )
                         return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
+                    elif is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ):
+                       can_update = True
                     else:
-                       can_update = True 
+                        can_update = False
             else:
                 # A tool shed repository is being installed into a Galaxy instance for the first time.  We may have the case where a repository
                 # is being reinstalled where because the repository being newly installed here may be a dependency of the repository being reinstalled.
                 can_update = True
                 installed_changeset_revision = changeset_revision
-                metadata_dict={}
+                metadata_dict = {}
                 dist_to_shed = False
             if can_update:
                 if reinstalling or install_repository_dependencies:
@@ -294,9 +300,14 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                                                                                   current_changeset_revision=changeset_revision,
                                                                                   owner=repository_owner,
                                                                                   dist_to_shed=False )
-                created_or_updated_tool_shed_repositories.append( tool_shed_repository )
-                tool_panel_section_keys.append( tool_panel_section_key )
-                filtered_repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
+                all_created_or_updated_tool_shed_repositories.append( tool_shed_repository )
+                # Only append the tool_shed_repository to the list of created_or_updated_tool_shed_repositories if it is supposed to be installed.
+                if install_repository_dependencies or is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ):
+                    created_or_updated_tool_shed_repositories.append( tool_shed_repository )
+                    tool_panel_section_keys.append( tool_panel_section_key )
+                    filtered_repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
+    # Build repository dependency relationships even if the user chose to not install repository dependencies.
+    suc.build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )                     
     return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
 def create_repository_dict_for_proprietary_datatypes( tool_shed, name, owner, installed_changeset_revision, tool_dicts, converter_path=None, display_path=None ):
     return dict( tool_shed=tool_shed,
@@ -679,6 +690,73 @@ def get_repository_owner_from_clone_url( repository_clone_url ):
     tmp_url = suc.clean_repository_clone_url( repository_clone_url )
     tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
     return get_repository_owner( tmp_url )
+def get_repository_readme_and_dependencies_for_display( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies ):
+    # If we're installing a single repository, see if it contains a readme or dependencies that we can display.
+    name = repo_info_dict.keys()[ 0 ]
+    repo_info_tuple = repo_info_dict[ name ]
+    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = \
+        suc.get_repo_info_tuple_contents( repo_info_tuple )
+    # Handle README files.
+    url = suc.url_join( tool_shed_url,
+                        'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
+                        ( name, repository_owner, changeset_revision ) )
+    response = urllib2.urlopen( url )
+    raw_text = response.read()
+    response.close()
+    readme_files_dict = json.from_json_string( raw_text )
+    if repository_dependencies:
+        missing_td = {}
+        # Handle the scenario where a repository was installed, then uninstalled and an error occurred during the reinstallation process.
+        # In this case, a record for the repository will exist in the database with the status of 'New'.
+        repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed_url, name, repository_owner, changeset_revision )
+        if repository and repository.metadata:
+            installed_rd, missing_rd = \
+                get_installed_and_missing_repository_dependencies( trans, repository )
+        else:
+            installed_rd, missing_rd = \
+                get_installed_and_missing_repository_dependencies_for_new_install( trans, repository_dependencies )
+        # Discover all repository dependencies and retrieve information for installing them.
+        required_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
+        # Display tool dependencies defined for each of the repository dependencies.
+        if required_repo_info_dicts:
+            all_tool_dependencies = {}
+            for rid in required_repo_info_dicts:
+                for name, repo_info_tuple in rid.items():
+                    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, rid_installed_td = \
+                        suc.get_repo_info_tuple_contents( repo_info_tuple )
+                    if rid_installed_td:
+                        for td_key, td_dict in rid_installed_td.items():
+                            if td_key not in all_tool_dependencies:
+                                all_tool_dependencies[ td_key ] = td_dict
+            if all_tool_dependencies:
+                if installed_td is None:
+                    installed_td = {}
+                else:
+                    # Move all tool dependencies to the missing_tool_dependencies container.
+                    for td_key, td_dict in installed_td.items():
+                        if td_key not in missing_td:
+                            missing_td[ td_key ] = td_dict
+                    installed_td = {}
+                # Discover and categorize all tool dependencies defined for this repository's repository dependencies.
+                required_tool_dependencies, required_missing_tool_dependencies = \
+                    get_installed_and_missing_tool_dependencies_for_new_install( trans, all_tool_dependencies )
+                if required_tool_dependencies:
+                    if not includes_tool_dependencies:
+                        includes_tool_dependencies = True
+                    for td_key, td_dict in required_tool_dependencies.items():
+                        if td_key not in installed_td:
+                            installed_td[ td_key ] = td_dict
+                if required_missing_tool_dependencies:
+                    if not includes_tool_dependencies:
+                        includes_tool_dependencies = True
+                    for td_key, td_dict in required_missing_tool_dependencies.items():
+                        if td_key not in missing_td:
+                            missing_td[ td_key ] = td_dict
+    else:
+        installed_rd = None
+        missing_rd = None
+        missing_td = None
+    return name, repository_owner, changeset_revision, readme_files_dict, includes_tool_dependencies, installed_rd, missing_rd, installed_td, missing_td
 def get_required_repo_info_dicts( tool_shed_url, repo_info_dicts ):
     """
     Inspect the list of repo_info_dicts for repository dependencies and append a repo_info_dict for each of them to the list.  All
@@ -716,7 +794,7 @@ def get_required_repo_info_dicts( tool_shed_url, repo_info_dicts ):
                 text = response.read()
                 response.close()
                 if text:
-                    required_repo_info_dict = from_json_string( text )                        
+                    required_repo_info_dict = json.from_json_string( text )                        
                     required_repo_info_dicts = []
                     encoded_dict_strings = required_repo_info_dict[ 'repo_info_dicts' ]
                     for encoded_dict_str in encoded_dict_strings:
@@ -1015,6 +1093,18 @@ def is_data_index_sample_file( file_path ):
         return False
     # Default to copying the file if none of the above are true.
     return True
+def is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ):
+    """Return True if the received repo_info_dict is contained in the list of received repo_info_dicts."""
+    for name, repo_info_tuple in repo_info_dict.items():
+        for rid in repo_info_dicts:
+            for rid_name, rid_repo_info_tuple in rid.items():
+                if rid_name == name:
+                    if len( rid_repo_info_tuple ) == len( repo_info_tuple ):
+                        for item in rid_repo_info_tuple:
+                            if item not in repo_info_tuple:
+                                return False
+                        return True
+        return False
 def load_installed_datatype_converters( app, installed_repository_dict, deactivate=False ):
     # Load or deactivate proprietary datatype converters
     app.datatypes_registry.load_datatype_converters( app.toolbox, installed_repository_dict=installed_repository_dict, deactivate=deactivate )
@@ -1073,7 +1163,7 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                 response = urllib2.urlopen( url )
                 raw_text = response.read()
                 response.close()
-                readme_files_dict = from_json_string( raw_text )
+                readme_files_dict = json.from_json_string( raw_text )
             else:
                 readme_files_dict = suc.build_readme_files_dict( repository.metadata, tool_path )
         else:
