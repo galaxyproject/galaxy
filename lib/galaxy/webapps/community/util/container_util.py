@@ -291,7 +291,7 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
     else:
         tools_root_folder = None
     return folder_id, tools_root_folder
-def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='Tool dependencies', missing=False, new_install=False ):
+def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='Tool dependencies', missing=False, new_install=False, reinstalling=False ):
     """Return a folder hierarchy containing tool dependencies."""
     # The status will be displayed only if the received value for missing is True.  When this is the case, we're in Galaxy (not the tool shed)
     # and the tool dependencies are not installed or are in an error state, so they are considered missing.  The tool dependency status will be
@@ -304,7 +304,9 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
         folder_id += 1
         folder = Folder( id=folder_id, key='tool_dependencies', label=label, parent=tool_dependencies_root_folder )
         if trans.webapp.name == 'galaxy':
-            if missing:
+            if reinstalling:
+                folder.description = "this repository's tools require handling of these dependencies"
+            elif missing and not reinstalling:
                 folder.description = 'click the name to install the missing dependency'
             else:
                 if new_install:

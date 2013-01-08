@@ -653,6 +653,22 @@ def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dep
         tool_dependencies = None
         missing_tool_dependencies = None
     return tool_dependencies, missing_tool_dependencies
+def get_installed_and_missing_tool_dependencies_for_new_install( trans, all_tool_dependencies ):
+    """Return the lists of installed tool dependencies and missing tool dependencies for a set of repositories being installed into Galaxy."""
+    # FIXME: this method currently populates and returns only missing tool dependencies since tool dependencies defined for complex repository dependency
+    # relationships is not currently supported.  This method should be enhanced to search for installed tool dependencies defined as complex repository
+    # dependency relationships when that feature is implemented.
+    if all_tool_dependencies:
+        tool_dependencies = {}
+        missing_tool_dependencies = {}
+        for td_key, val in all_tool_dependencies.items():
+            # Since we have a new install, missing tool dependencies have never been installed.
+            val[ 'status' ] = trans.model.ToolDependency.installation_status.NEVER_INSTALLED
+            missing_tool_dependencies[ td_key ] = val
+    else:
+        tool_dependencies = None
+        missing_tool_dependencies = None
+    return tool_dependencies, missing_tool_dependencies
 def get_repository_owner( cleaned_repository_url ):
     items = cleaned_repository_url.split( 'repos' )
     repo_path = items[ 1 ]
@@ -667,7 +683,7 @@ def get_required_repo_info_dicts( tool_shed_url, repo_info_dicts ):
     """
     Inspect the list of repo_info_dicts for repository dependencies and append a repo_info_dict for each of them to the list.  All
     repository_dependencies entries in each of the received repo_info_dicts includes all required repositories, so only one pass through
-    this methid is required to retrieve all repository dependencies.
+    this method is required to retrieve all repository dependencies.
     """
     all_repo_info_dicts = []
     if repo_info_dicts:
@@ -1035,7 +1051,7 @@ def panel_entry_per_tool( tool_section_dict ):
         if k not in [ 'id', 'version', 'name' ]:
             return True
     return False
-def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository, reinstalling=False ):
+def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository, reinstalling=False, required_repo_info_dicts=None ):
     """
     Retrieve necessary information from the received repository's metadata to populate the containers_dict for display.  This method is called only
     from Galaxy (not the tool shed) when displaying repository dependencies for installed repositories and when displaying them for uninstalled
@@ -1064,15 +1080,51 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
             readme_files_dict = None
         # Handle repository dependencies.
         installed_repository_dependencies, missing_repository_dependencies = get_installed_and_missing_repository_dependencies( trans, repository )
-        # Handle tool dependencies.
-        all_tool_dependencies = metadata.get( 'tool_dependencies', None )
-        installed_tool_dependencies, missing_tool_dependencies = get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dependencies )
+        # Handle the current repository's tool dependencies.
+        repository_tool_dependencies = metadata.get( 'tool_dependencies', None )
+        repository_installed_tool_dependencies, repository_missing_tool_dependencies = \
+            get_installed_and_missing_tool_dependencies( trans, repository, repository_tool_dependencies )
         if reinstalling:
-            # All tool dependencies will be considered missing since we are reinstalling the repository.
-            if installed_tool_dependencies:
-                for td in installed_tool_dependencies:
-                    missing_tool_dependencies.append( td )
-                installed_tool_dependencies = None
+            installed_tool_dependencies = None
+            missing_tool_dependencies = None
+            if repository_installed_tool_dependencies is None:
+                repository_installed_tool_dependencies = {}
+            if repository_missing_tool_dependencies is None:
+                repository_missing_tool_dependencies = {}
+            if required_repo_info_dicts:
+                # Handle the tool dependencies defined for each of the repository's repository dependencies.
+                for rid in required_repo_info_dicts:
+                    for name, repo_info_tuple in rid.items():
+                        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+                            suc.get_repo_info_tuple_contents( repo_info_tuple )
+                        if tool_dependencies:
+                            tool_shed = suc.get_tool_shed_from_clone_url( repository_clone_url )
+                            required_repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, name, repository_owner, changeset_revision )
+                            if not required_repository:
+                                # The required_repository may have been installed with a different changeset revision.
+                                required_repository, installed_changeset_revision = repository_was_previously_installed( trans,
+                                                                                                                         tool_shed_url,
+                                                                                                                         name,
+                                                                                                                         repo_info_tuple,
+                                                                                                                         clone_dir )
+                            if required_repository:
+                                required_repository_installed_tool_dependencies, required_repository_missing_tool_dependencies = \
+                                    get_installed_and_missing_tool_dependencies( trans, required_repository, tool_dependencies )
+                                if required_repository_installed_tool_dependencies:
+                                    for td_key, td_dict in required_repository_installed_tool_dependencies.items():
+                                        if td_key not in repository_installed_tool_dependencies:
+                                            repository_installed_tool_dependencies[ td_key ] = td_dict
+                                if required_repository_missing_tool_dependencies:
+                                    for td_key, td_dict in required_repository_missing_tool_dependencies.items():
+                                        if td_key not in repository_missing_tool_dependencies:
+                                            repository_missing_tool_dependencies[ td_key ] = td_dict
+            if repository_installed_tool_dependencies:
+                installed_tool_dependencies = repository_installed_tool_dependencies
+            if repository_missing_tool_dependencies:
+                missing_tool_dependencies = repository_missing_tool_dependencies
+        else:
+            installed_tool_dependencies = repository_installed_tool_dependencies
+            missing_tool_dependencies = repository_missing_tool_dependencies
         # Handle valid tools.
         valid_tools = metadata.get( 'tools', None )
         # Handle workflows.
@@ -1092,7 +1144,8 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                                                                       tool_dependencies=installed_tool_dependencies,
                                                                       valid_tools=valid_tools,
                                                                       workflows=workflows,
-                                                                      new_install=False )
+                                                                      new_install=False,
+                                                                      reinstalling=reinstalling )
     else:
         containers_dict = dict( datatypes=None,
                                 invalid_tools=None,

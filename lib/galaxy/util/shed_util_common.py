@@ -78,7 +78,7 @@ def build_readme_files_dict( metadata, tool_path=None ):
     return readme_files_dict
 def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository_name, repository_owner, changeset_revision, repository, datatypes,
                                             invalid_tools, missing_repository_dependencies, missing_tool_dependencies, readme_files_dict,
-                                            repository_dependencies, tool_dependencies, valid_tools, workflows, new_install=False ):
+                                            repository_dependencies, tool_dependencies, valid_tools, workflows, new_install=False, reinstalling=False ):
     """Return a dictionary of containers for the received repository's dependencies and readme files for display during installation to Galaxy."""
     containers_dict = dict( datatypes=None,
                             invalid_tools=None,
@@ -160,7 +160,8 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
                                                                                                       tool_dependencies,
                                                                                                       label=label,
                                                                                                       missing=False,
-                                                                                                      new_install=new_install )
+                                                                                                      new_install=new_install,
+                                                                                                      reinstalling=reinstalling )
             containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
         # Missing tool dependencies container.
         if missing_tool_dependencies:
@@ -170,7 +171,8 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
                                                                                                               missing_tool_dependencies,
                                                                                                               label='Missing tool dependencies',
                                                                                                               missing=True,
-                                                                                                              new_install=new_install )
+                                                                                                              new_install=new_install,
+                                                                                                              reinstalling=reinstalling )
             containers_dict[ 'missing_tool_dependencies' ] = missing_tool_dependencies_root_folder
         # Valid tools container.
         if valid_tools:
@@ -790,7 +792,7 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
     Return a dictionary that includes all of the information needed to install a repository into a local Galaxy instance.  The dictionary will also
     contain the recursive list of repository dependencies defined for the repository, as well as the defined tool dependencies.  
     
-    This method is called from Galaxy from two places:
+    This method is called from Galaxy in two places:
     1. During the tool shed repository installation process (via the tool shed's get_repository_information() method)- in this case both the received
     repository and repository_metadata will be objects.
     2. When a tool shed repository that was uninstalled from a Galaxy instance is being re-installed - in this case, both repository and
@@ -2414,6 +2416,47 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
         removed = True
         error_message = ''
     return removed, error_message
+def repository_dependencies_have_tool_dependencies( trans, repository_dependencies ):
+    """
+    repository_dependencies': 
+    {'http://localhost:9009__ESEP__emboss_6__ESEP__test__ESEP__92bedb60b0c9': 
+        [['http://localhost:9009', 'emboss_datatypes', 'test', '27df73fe48a6']], 
+     'root_key': 'http://localhost:9009__ESEP__emboss__ESEP__test__ESEP__06d729cb3f34', 
+     'description': 'required to enable emboss 6 tools', 
+     'http://localhost:9009__ESEP__emboss__ESEP__test__ESEP__06d729cb3f34': 
+         [['http://localhost:9009', 'emboss_6', 'test', '92bedb60b0c9']]}}
+    """
+    rd_tups_processed = []
+    for key, rd_tups in repository_dependencies.items():
+        if key in [ 'root_key', 'description' ]:
+            continue
+        rd_tup = container_util.get_components_from_key( key )
+        if rd_tup not in rd_tups_processed:
+            toolshed, name, owner, changeset_revision = rd_tup
+            repository = get_repository_by_name_and_owner( trans, name, owner )
+            repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
+                                                                                              trans.security.encode_id( repository.id ),
+                                                                                              changeset_revision )
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    if 'tool_dependencies' in metadata:
+                        return True
+            rd_tups_processed.append( rd_tup )
+        for rd_tup in rd_tups:
+            if rd_tup not in rd_tups_processed:
+                toolshed, name, owner, changeset_revision = rd_tup
+                repository = get_repository_by_name_and_owner( trans, name, owner )
+                repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
+                                                                                                  trans.security.encode_id( repository.id ),
+                                                                                                  changeset_revision )
+                if repository_metadata:
+                    metadata = repository_metadata.metadata
+                    if metadata:
+                        if 'tool_dependencies' in metadata:
+                            return True
+                rd_tups_processed.append( rd_tup )
+    return False
 def reset_all_metadata_on_installed_repository( trans, id ):
     """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
     repository = get_installed_tool_shed_repository( trans, id )

@@ -786,9 +786,9 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                          operation='preview_tools_in_changeset',
                          repository_id=repository_id )
         self.valid_repository_grid.operations = [ grids.GridOperation( "Preview and install",
-                                                                            url_args=url_args,
-                                                                            allow_multiple=False,
-                                                                            async_compatible=False ) ]
+                                                                        url_args=url_args,
+                                                                        allow_multiple=False,
+                                                                        async_compatible=False ) ]
         return self.valid_repository_grid( trans, **kwd )
     def __build_allow_push_select_field( self, trans, current_push_list, selected_value='none' ):
         options = []
@@ -1410,7 +1410,10 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                      repo_info_dicts=repo_info_dicts )
     @web.json
     def get_required_repo_info_dict( self, trans, encoded_str ):
-        """Retrive a list of dictionaries that each contain all of the information needed to install the list of repositories defined by encoded_str."""
+        """
+        Retrieve and return a dictionary that includes a list of dictionaries that each contain all of the information needed to install the list of
+        repositories defined by the received encoded_str.
+        """
         encoded_required_repository_str = encoding_util.tool_shed_decode( encoded_str )
         encoded_required_repository_tups = encoded_required_repository_str.split( encoding_util.encoding_sep2 )
         decoded_required_repository_tups = []
@@ -1430,7 +1433,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         return repo_info_dict
     @web.expose
     def get_tool_dependencies( self, trans, **kwd ):
-        """Handle a request from the InstallManager of a local Galaxy instance."""
+        """Handle a request from a Galaxy instance."""
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
