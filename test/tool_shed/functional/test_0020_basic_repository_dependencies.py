@@ -63,12 +63,19 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
                           'repository_dependencies.xml', 
                           filepath=repository_dependencies_path, 
                           commit_message='Uploaded repository_dependencies.xml' )
-    def test_0030_verify_emboss_5_repository_dependency_on_emboss_datatypes( self ):
+    def test_0030_verify_emboss_5_dependencies( self ):
         '''Verify that the emboss_5 repository now depends on the emboss_datatypes repository with correct name, owner, and changeset revision.'''
         repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         datatypes_repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
         changeset_revision = self.get_repository_tip( datatypes_repository )
-        strings_displayed = [ datatypes_repository_name, common.test_user_1_name, changeset_revision, 'Repository dependencies' ]
+        strings_displayed = [ 'Tool dependencies',
+                              'emboss',
+                              '5.0.0',
+                              'package',
+                              datatypes_repository_name, 
+                              common.test_user_1_name,
+                              changeset_revision,
+                              'Repository dependencies' ]
         self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
     def test_0040_verify_repository_metadata( self ):
         '''Verify that resetting the metadata does not change it.'''

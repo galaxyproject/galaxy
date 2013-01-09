@@ -113,9 +113,11 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         global base_datatypes_count
         global running_standalone
         base_datatypes_count = int( self.get_datatypes_count() )
+        strings_displayed = [ 'Handle', 'Missing', 'tool dependencies', 'emboss', '5.0.0', 'package' ]
         self.install_repository( 'emboss_0030', 
                                  common.test_user_1_name, 
-                                 'Test 0030 Repository Dependency Revisions', 
+                                 'Test 0030 Repository Dependency Revisions',
+                                 strings_displayed=strings_displayed,
                                  install_tool_dependencies=False, 
                                  new_tool_panel_section='test_1030' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0030', common.test_user_1_name )

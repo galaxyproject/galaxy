@@ -148,7 +148,14 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
             self.check_repository_dependency( freebayes_repository, emboss_repository, changeset_revision )
         self.display_manage_repository_page( freebayes_repository, 
                                              strings_displayed=[ 'Freebayes depends on the filtering repository.' ] )
-    def test_0035_verify_repository_metadata( self ):
+    def test_0035_verify_tool_dependencies( self ):
+        '''Check that freebayes and emboss display tool dependencies.'''
+        freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
+        self.display_manage_repository_page( freebayes_repository, 
+                                             strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Tool dependencies' ] )
+        self.display_manage_repository_page( emboss_repository, strings_displayed=[ 'Tool dependencies', 'emboss', '5.0.0', 'package' ] )
+    def test_0040_verify_repository_metadata( self ):
         '''Verify that resetting the metadata does not change it.'''
         emboss_datatypes_repository = test_db_util.get_repository_by_name_and_owner( emboss_datatypes_repository_name, common.test_user_1_name )
         emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )

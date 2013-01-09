@@ -74,9 +74,11 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
         '''Install the emboss repository without installing tool dependencies.'''
         global repository_datatypes_count
         global base_datatypes_count
+        strings_displayed = [ 'Handle', 'Missing', 'tool dependencies', 'emboss', '5.0.0', 'package' ]
         self.install_repository( 'emboss_0020', 
                                  common.test_user_1_name, 
-                                 'Test 0020 Basic Repository Dependencies', 
+                                 'Test 0020 Basic Repository Dependencies',
+                                 strings_displayed=strings_displayed,
                                  install_tool_dependencies=False, 
                                  new_tool_panel_section='test_1020' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0020', common.test_user_1_name )
