@@ -2,7 +2,7 @@ from sqlalchemy import desc, and_
 from galaxy import model, web
 from galaxy.web import error, url_for
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin, VALID_SLUG_RE
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHistoryMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy import util
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
@@ -342,7 +342,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
                 page_title_err = "Page name is required"
             elif not page_slug:
                 page_slug_err = "Page id is required"
-            elif not VALID_SLUG_RE.match( page_slug ):
+            elif not self._is_valid_slug( page_slug ):
                 page_slug_err = "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
             elif trans.sa_session.query( model.Page ).filter_by( user=user, slug=page_slug, deleted=False ).first():
                 page_slug_err = "Page id must be unique"
@@ -398,7 +398,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
                 page_title_err = "Page name is required"
             elif not page_slug:
                 page_slug_err = "Page id is required"
-            elif not VALID_SLUG_RE.match( page_slug ):
+            elif not self._is_valid_slug( page_slug ):
                 page_slug_err = "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
             elif page_slug != page.slug and trans.sa_session.query( model.Page ).filter_by( user=user, slug=page_slug, deleted=False ).first():
                 page_slug_err = "Page id must be unique"

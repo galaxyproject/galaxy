@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from sqlalchemy import desc, or_, and_
 from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin, VALID_SLUG_RE
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids, iff
 from galaxy import util
 from galaxy.util.json import from_json_string
@@ -636,7 +636,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 visualization_title_err = "Visualization name is required"
             elif not visualization_slug:
                 visualization_slug_err = "Visualization id is required"
-            elif not VALID_SLUG_RE.match( visualization_slug ):
+            elif not self._is_valid_slug( visualization_slug ):
                 visualization_slug_err = "Visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
             elif visualization_slug != visualization.slug and trans.sa_session.query( model.Visualization ).filter_by( user=visualization.user, slug=visualization_slug, deleted=False ).first():
                 visualization_slug_err = "Visualization id must be unique"
