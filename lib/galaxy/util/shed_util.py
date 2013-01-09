@@ -184,17 +184,17 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     instance and when uninstalled repositories are being reinstalled.
     """
     message = ''
-    # The following list will be maintained within this method to contain all created or updated tool shed repositories, including repository
-    # dependencies that may not be installed.
+    # The following list will be maintained within this method to contain all created or updated tool shed repositories, including repository dependencies
+    # that may not be installed.
     all_created_or_updated_tool_shed_repositories = []
-    # There will be a one-to-one mapping between items in created_or_updated_tool_shed_repositories and tool_panel_section_keys.  The following
-    # list will filter out repository dependencies that are not to be installed.
+    # There will be a one-to-one mapping between items in 3 lists: created_or_updated_tool_shed_repositories, tool_panel_section_keys and filtered_repo_info_dicts.
+    # The 3 lists will filter out repository dependencies that are not to be installed.
     created_or_updated_tool_shed_repositories = []
     tool_panel_section_keys = []
-    # Repositories will be filtered (e.g., if already installed, etc), so filter the associated repo_info_dicts accordingly.
+    # Repositories will be filtered (e.g., if already installed, if elected to not be installed, etc), so filter the associated repo_info_dicts accordingly.
     filtered_repo_info_dicts = []
-    # Discover all repository dependencies and retrieve information for installing them.  Even if the user elected to not install repository dependencies,
-    # we have to make sure all repository dependency objects exist so that the appropriate repository dependency relationships can be built.
+    # Discover all repository dependencies and retrieve information for installing them.  Even if the user elected to not install repository dependencies we have
+    # to make sure all repository dependency objects exist so that the appropriate repository dependency relationships can be built.
     all_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, repo_info_dicts )
     if not all_repo_info_dicts:
         # No repository dependencies were discovered so process the received repositories.
@@ -215,9 +215,12 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                                                                                                             tool_panel_section=tool_panel_section,
                                                                                                             new_tool_panel_section=new_tool_panel_section )
                 if reinstalling or install_repository_dependencies:
+                    # If the user elected to install repository dependencies, all items in the all_repo_info_dicts list will be processed.  However, if
+                    # repository dependencies are not to be installed, only those items contained in the received repo_info_dicts list will be processed.
                     if is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ) or install_repository_dependencies:
                         if installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.ERROR,
                                                                       trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+                            # The current tool shed repository is not currently installed, so we can update it's record in the database.
                             can_update = True
                             name = installed_tool_shed_repository.name
                             description = installed_tool_shed_repository.description
@@ -225,13 +228,19 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                             metadata_dict = installed_tool_shed_repository.metadata
                             dist_to_shed = installed_tool_shed_repository.dist_to_shed
                         else:
-                            # There is a repository already installed which is a dependency of the repository being reinstalled.
+                            # The tool shed repository currently being processed is already installed or is in the process of being installed, so it's record
+                            # in the database cannot be updated.
                             can_update = False
                     else:
+                        # This block will be reached only if reinstalling is True, install_repository_dependencies is False and is_in_repo_info_dicts is False.
+                        # The tool shed repository currently being processed must be a repository dependency that the user elected to not install, so it's
+                        # record in the database cannot be updated.
                         can_update = False
                 else:
+                    # This block will be reached only if reinstalling is False and install_repository_dependencies is False.  This implies that the tool shed
+                    # repository currently being processed has already been installed.
                     if len( all_repo_info_dicts ) == 1:
-                        # An attempt is being made to install a tool shed repository into a Galaxy instance when the same repository was previously installed.
+                        # If only a single repository is being installed, return an informative message to the user.
                         message += "Revision <b>%s</b> of tool shed repository <b>%s</b> owned by <b>%s</b> " % ( changeset_revision, name, repository_owner )
                         if installed_changeset_revision != changeset_revision:
                             message += "was previously installed using changeset revision <b>%s</b>.  " % installed_changeset_revision
@@ -247,26 +256,24 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                         created_or_updated_tool_shed_repositories.append( installed_tool_shed_repository )
                         tool_panel_section_keys.append( tool_panel_section_key )
                         return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
-                    elif is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ):
-                       can_update = True
                     else:
+                        # We're in the process of installing multiple tool shed repositories into Galaxy.  Since the repository currently being processed
+                        # has already been installed, skip it and process the next repository in the list.
                         can_update = False
             else:
-                # A tool shed repository is being installed into a Galaxy instance for the first time.  We may have the case where a repository
-                # is being reinstalled where because the repository being newly installed here may be a dependency of the repository being reinstalled.
+                # A tool shed repository is being installed into a Galaxy instance for the first time, or we're attempting to install it or reinstall it resulted
+                # in an error.  In the latter case, the repository record in the database has no metadata and it's status has been set to 'New'.  In either case,
+                # the repository's database record may be updated.
                 can_update = True
                 installed_changeset_revision = changeset_revision
                 metadata_dict = {}
                 dist_to_shed = False
             if can_update:
+                # The database record for the tool shed repository currently being processed can be updated.
                 if reinstalling or install_repository_dependencies:
                     # Get the repository metadata to see where it was previously located in the tool panel.
-                    installed_tool_shed_repository = suc.get_repository_for_dependency_relationship( app=trans.app,
-                                                                                                     tool_shed=tool_shed_url,
-                                                                                                     name=name,
-                                                                                                     owner=repository_owner,
-                                                                                                     changeset_revision=changeset_revision )
                     if installed_tool_shed_repository:
+                        # The tool shed repository status is one of 'New', 'Uninstalled', or 'Error'.
                         tool_section, new_tool_panel_section, tool_panel_section_key = \
                             handle_tool_panel_selection( trans=trans,
                                                          metadata=installed_tool_shed_repository.metadata,
@@ -274,6 +281,8 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                                                          tool_panel_section=tool_panel_section,
                                                          new_tool_panel_section=new_tool_panel_section )
                     else:
+                        # We're installing a new tool shed repository that does not yet have a database record.  This repository is a repository dependency
+                        # of a different repository being installed.
                         if new_tool_panel_section:
                             section_id = new_tool_panel_section.lower().replace( ' ', '_' )
                             tool_panel_section_key = 'section_%s' % str( section_id )
@@ -282,6 +291,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                         else:
                             tool_panel_section_key = None
                 else:
+                    # We're installing a new tool shed repository that does not yet have a database record.
                     if new_tool_panel_section:
                         section_id = new_tool_panel_section.lower().replace( ' ', '_' )
                         tool_panel_section_key = 'section_%s' % str( section_id )
@@ -300,9 +310,11 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                                                                                   current_changeset_revision=changeset_revision,
                                                                                   owner=repository_owner,
                                                                                   dist_to_shed=False )
+                # Add the processed tool shed repository to the list of all processed repositories maintained within this method.
                 all_created_or_updated_tool_shed_repositories.append( tool_shed_repository )
-                # Only append the tool_shed_repository to the list of created_or_updated_tool_shed_repositories if it is supposed to be installed.
+                # Only append the tool shed repository to the list of created_or_updated_tool_shed_repositories if it is supposed to be installed.
                 if install_repository_dependencies or is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ):
+                    # Keep the one-to-one mapping between items in 3 lists.
                     created_or_updated_tool_shed_repositories.append( tool_shed_repository )
                     tool_panel_section_keys.append( tool_panel_section_key )
                     filtered_repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
