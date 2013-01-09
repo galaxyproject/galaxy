@@ -1335,7 +1335,9 @@ class DatasetInstance( object ):
                 # Loop through sources until viable one is found.
                 for source in source_list:
                     msg = self.convert_dataset( trans, source )
-                    if msg == self.conversion_messages.PENDING:
+                    # No message or PENDING means that source is viable. No
+                    # message indicates conversion was done and is successful.
+                    if not msg or msg == self.conversion_messages.PENDING:
                         data_source = source
                         break
 
