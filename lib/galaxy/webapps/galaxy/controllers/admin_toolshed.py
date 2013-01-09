@@ -321,43 +321,19 @@ class AdminToolshed( AdminGalaxy ):
         """Activate a repository that was deactivated but not uninstalled."""
         repository_id = kwd[ 'id' ]
         repository = suc.get_installed_tool_shed_repository( trans, repository_id )
-        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
-        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
-        repository.deleted = False
-        repository.status = trans.model.ToolShedRepository.installation_status.INSTALLED
-        if repository.includes_tools:
-            metadata = repository.metadata
-            try:
-                repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata )
-            except Exception, e:
-                error = "Error activating repository %s: %s" % ( repository.name, str( e ) )
-                log.debug( error )
-                return trans.show_error_message( '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.' 
-                                                 % ( error, web.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) ) ) )
-            # Reload tools into the appropriate tool panel section.
-            tool_panel_dict = repository.metadata[ 'tool_panel_section' ]
-            shed_util.add_to_tool_panel( trans.app,
-                                         repository.name,
-                                         repository_clone_url,
-                                         repository.installed_changeset_revision,
-                                         repository_tools_tups,
-                                         repository.owner,
-                                         shed_tool_conf,
-                                         tool_panel_dict,
-                                         new_install=False )
-        trans.sa_session.add( repository )
-        trans.sa_session.flush()
-        if repository.includes_datatypes:
-            if tool_path:
-                repository_install_dir = os.path.abspath ( os.path.join( tool_path, relative_install_dir ) )
-            else:
-                repository_install_dir = os.path.abspath ( relative_install_dir )
-            # Activate proprietary datatypes.
-            installed_repository_dict = shed_util.load_installed_datatypes( trans.app, repository, repository_install_dir, deactivate=False )
-            if installed_repository_dict and 'converter_path' in installed_repository_dict:
-                shed_util.load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=False )
-            if installed_repository_dict and 'display_path' in installed_repository_dict:
-                shed_util.load_installed_display_applications( trans.app, installed_repository_dict, deactivate=False )
+        try:
+            shed_util.activate_repository( trans, repository )
+        except Exception, e:
+            error_message = "Error activating repository %s: %s" % ( repository.name, str( e ) )
+            log.debug( error_message )
+            message = '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.' \
+                % ( error_message, web.url_for( controller='admin_toolshed', action='deactivate_or_uninstall_repository', id=trans.security.encode_id( repository.id ) ) )
+            status = 'error'
+            return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                              action='manage_repository',
+                                                              id=repository_id,
+                                                              message=message,
+                                                              status=status ) )
         message = 'The <b>%s</b> repository has been activated.' % repository.name
         status = 'done'
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',

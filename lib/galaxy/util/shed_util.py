@@ -23,6 +23,38 @@ from elementtree.ElementTree import Element, SubElement
 
 log = logging.getLogger( __name__ )
 
+def activate_repository( trans, repository ):
+    repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
+    shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
+    repository.deleted = False
+    repository.status = trans.model.ToolShedRepository.installation_status.INSTALLED
+    if repository.includes_tools:
+        metadata = repository.metadata
+        repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata )
+        # Reload tools into the appropriate tool panel section.
+        tool_panel_dict = repository.metadata[ 'tool_panel_section' ]
+        add_to_tool_panel( trans.app,
+                           repository.name,
+                           repository_clone_url,
+                           repository.installed_changeset_revision,
+                           repository_tools_tups,
+                           repository.owner,
+                           shed_tool_conf,
+                           tool_panel_dict,
+                           new_install=False )
+    trans.sa_session.add( repository )
+    trans.sa_session.flush()
+    if repository.includes_datatypes:
+        if tool_path:
+            repository_install_dir = os.path.abspath ( os.path.join( tool_path, relative_install_dir ) )
+        else:
+            repository_install_dir = os.path.abspath ( relative_install_dir )
+        # Activate proprietary datatypes.
+        installed_repository_dict = load_installed_datatypes( trans.app, repository, repository_install_dir, deactivate=False )
+        if installed_repository_dict and 'converter_path' in installed_repository_dict:
+            load_installed_datatype_converters( trans.app, installed_repository_dict, deactivate=False )
+        if installed_repository_dict and 'display_path' in installed_repository_dict:
+            load_installed_display_applications( trans.app, installed_repository_dict, deactivate=False )
 def add_to_shed_tool_config( app, shed_tool_conf_dict, elem_list ):
     # A tool shed repository is being installed so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have
@@ -227,6 +259,10 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                             installed_changeset_revision = installed_tool_shed_repository.installed_changeset_revision
                             metadata_dict = installed_tool_shed_repository.metadata
                             dist_to_shed = installed_tool_shed_repository.dist_to_shed
+                        elif installed_tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED ]:
+                            # The current tool shed repository is deactivated, so updating it's database record is not necessary - just activate it.
+                            activate_repository( trans, installed_tool_shed_repository )
+                            can_update = False
                         else:
                             # The tool shed repository currently being processed is already installed or is in the process of being installed, so it's record
                             # in the database cannot be updated.
