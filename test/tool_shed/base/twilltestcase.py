@@ -60,6 +60,10 @@ class ShedTwillTestCase( TwillTestCase ):
     def check_for_valid_tools( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         strings_displayed.append( 'Valid tools' )
         self.display_manage_repository_page( repository, strings_displayed, strings_not_displayed )
+    def check_galaxy_repository_db_status( self, repository_name, owner, expected_status ):
+        installed_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, owner )
+        assert installed_repository.status == expected_status, 'Status in database is %s, expected %s' % \
+            ( installed_repository.status, expected_status )
     def check_galaxy_repository_tool_panel_section( self, repository, expected_tool_panel_section ):
         metadata = repository.metadata
         assert 'tools' in metadata, 'Tools not found in metadata: %s' % metadata
