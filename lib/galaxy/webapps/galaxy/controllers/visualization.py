@@ -5,6 +5,7 @@ from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin, VALID_SLUG_RE
 from galaxy.web.framework.helpers import time_ago, grids, iff
+from galaxy import util
 from galaxy.util.json import from_json_string
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
