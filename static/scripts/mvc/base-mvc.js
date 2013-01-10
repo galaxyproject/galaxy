@@ -78,7 +78,11 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
      */
     log : function(){
         if( this.logger ){
-            return this.logger.log.apply( this.logger, arguments );
+            var log = this.logger.log;
+            if( typeof this.logger.log == 'object' ){
+                log = Function.prototype.bind.call( this.logger.log, this.logger );
+            }
+            return log.apply( this.logger, arguments );
         }
         return undefined;
     }
@@ -288,7 +292,7 @@ var PersistantStorage = function( storageKey, storageDefaults ){
         },
         /** String representation.
          */
-        toString : function(){ return 'PersistantStorage(' + data + ')'; }
+        toString : function(){ return 'PersistantStorage(' + storageKey + ')'; }
     });
     
     return returnedStorage;

@@ -188,7 +188,7 @@ var TracksterUI = base.Base.extend({
         var self = this,
             view = new tracks.TracksterView(view_config);
         view.editor = true;
-        $.when( view.load_chroms_deferred ).then(function() {
+        $.when( view.load_chroms_deferred ).then(function(chrom_info) {
             // Viewport config.
             if (viewport_config) {
                 var 
@@ -200,6 +200,10 @@ var TracksterUI = base.Base.extend({
                 if (chrom && (start !== undefined) && end) {
                     view.change_chrom(chrom, start, end);
                 }
+            }
+            else {
+                // No viewport, so use first chromosome.
+                view.change_chrom(chrom_info[0].chrom);
             }
             
             // Add drawables to view.

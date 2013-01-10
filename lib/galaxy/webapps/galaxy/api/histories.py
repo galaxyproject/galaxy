@@ -75,14 +75,10 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
             # cycle through datasets saving each ds' state
             for dataset in datasets:
-                dataset_dict = dataset.get_api_value( view='element' )
-                item_state = dataset_dict[ 'state' ]
-
-                if not dataset_dict['deleted']:
+                item_state = dataset.state
+                if not dataset.deleted:
                     state_counts[ item_state ] = state_counts[ item_state ] + 1
-
-                state_ids[ item_state ].append( trans.security.encode_id( dataset_dict[ 'id' ] ) )
-
+                state_ids[ item_state ].append( trans.security.encode_id( dataset.id ) )
             return ( state_counts, state_ids )
 
         # try to load the history, by most_recently_used or the given id

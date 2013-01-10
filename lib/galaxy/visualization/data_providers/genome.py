@@ -1035,13 +1035,20 @@ class BBIDataProvider( GenomeDataProvider ):
         
     def has_data( self, chrom ):
         f, bbi = self._get_dataset()
-        all_dat = bbi.query(chrom, 0, 2147483647, 1)
+        all_dat = bbi.query( chrom, 0, 2147483647, 1 ) or \
+                  bbi.query( _convert_between_ucsc_and_ensemble_naming( chrom ), 0, 2147483647, 1 )
         f.close()
         return all_dat is not None
 
     def get_data( self, chrom, start, end, start_val=0, max_vals=None, num_samples=1000, **kwargs ):
         start = int( start )
         end = int( end )
+
+        # Helper function for getting summary data regardless of chromosome
+        # naming convention.
+        def _summarize_bbi( bbi, chrom, start, end, num_points ):
+            return bbi.summarize( chrom, start, end, num_points ) or \
+                   bbi.summarize( _convert_between_ucsc_and_ensemble_naming( chrom ) , start, end, num_points )
 
         # Bigwig can be a standalone bigwig file, in which case we use 
         # original_dataset, or coming from wig->bigwig conversion in 
@@ -1052,7 +1059,7 @@ class BBIDataProvider( GenomeDataProvider ):
         # start:endbut no reduced data. This is currently used by client 
         # to determine the default range.
         if 'stats' in kwargs:
-            summary = bbi.summarize( chrom, start, end, 1 )
+            summary = _summarize_bbi( bbi, chrom, start, end, 1 )
             f.close()
             
             min = 0
@@ -1086,7 +1093,7 @@ class BBIDataProvider( GenomeDataProvider ):
             # Get summary; this samples at intervals of length
             # (end - start)/num_points -- i.e. drops any fractional component
             # of interval length.
-            summary = bbi.summarize( chrom, start, end, num_points )
+            summary = _summarize_bbi( bbi, chrom, start, end, num_points )
             if summary:
                 #mean = summary.sum_data / summary.valid_count
                 

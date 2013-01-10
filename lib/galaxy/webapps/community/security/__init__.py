@@ -5,7 +5,7 @@ import os, logging, ConfigParser
 from datetime import datetime, timedelta
 from galaxy.util.bunch import Bunch
 from galaxy.util import listify
-from galaxy.model.orm import *
+from galaxy.model.orm import and_
 
 log = logging.getLogger(__name__)
 

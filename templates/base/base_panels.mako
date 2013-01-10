@@ -56,9 +56,17 @@
         'libs/backbone/backbone',
         'libs/backbone/backbone-relational',
         'libs/handlebars.runtime',
-        'mvc/ui',
         'galaxy.base'
     )}
+
+    ${h.templates(
+        "template-popupmenu-menu"
+    )}
+
+    ${h.js(
+        "mvc/ui"
+    )}
+
     <script type="text/javascript">
         // console protection
         window.console = window.console || {
@@ -67,7 +75,7 @@
             info    : function(){},
             warn    : function(){},
             error   : function(){},
-            assert  : function(){},
+            assert  : function(){}
         };
 
         // Set up needed paths.

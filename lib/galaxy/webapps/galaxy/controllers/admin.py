@@ -10,7 +10,7 @@ from galaxy.actions.admin import AdminActions
 from galaxy.web.params import QuotaParamParser
 from galaxy.exceptions import *
 from galaxy.util.odict import *
-from galaxy.tool_shed.encoding_util import *
+from galaxy.tool_shed import encoding_util
 import galaxy.datatypes.registry
 import logging, imp, subprocess, urllib2
 
@@ -717,7 +717,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                     text = response.read()
                     response.close()
                     if text:
-                        tool_dependencies_dict = tool_shed_decode( text )
+                        tool_dependencies_dict = encoding_util.tool_shed_decode( text )
                         for dependency_key, requirements_dict in tool_dependencies_dict.items():
                             tool_dependency_name = requirements_dict[ 'name' ]
                             tool_dependency_version = requirements_dict[ 'version' ]

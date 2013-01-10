@@ -32,7 +32,7 @@ from galaxy.datatypes import sniff
 from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
-from galaxy.util.shed_util import *
+import galaxy.util.shed_util_common
 from galaxy.web import url_for
 
 from galaxy.visualization.genome.visual_analytics import TracksterConfig
@@ -397,7 +397,7 @@ class ToolBox( object ):
                     # If there is not yet a tool_shed_repository record, we're in the process of installing
                     # a new repository, so any included tools can be loaded into the tool panel.
                     can_load_into_panel_dict = True
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )            
+            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
             key = 'tool_%s' % str( tool.id )
             if can_load_into_panel_dict:
                 if guid is not None:
@@ -435,9 +435,12 @@ class ToolBox( object ):
                                 tta = self.app.model.ToolTagAssociation( tool_id=tool.id, tag_id=tag.id )
                                 self.sa_session.add( tta )
                                 self.sa_session.flush()
-                if tool.id not in self.tools_by_id:
-                    # Allow for the same tool to be loaded into multiple places in the tool panel.
-                    self.tools_by_id[ tool.id ] = tool
+                #if tool.id not in self.tools_by_id:
+                # Allow for the same tool to be loaded into multiple places in the tool panel.  We have to handle the case where the tool is contained
+                # in a repository installed from the tool shed, and the Galaxy administrator has retrieved updates to the installed repository.  In this
+                # case, the tool may have been updated, but the version was not changed, so the tool should always be reloaded here.  We used to only load
+                # the tool if it's it was not found in self.tools_by_id, but performing that check did not enable this scenario.
+                self.tools_by_id[ tool.id ] = tool
                 if load_panel_dict:
                     self.__add_tool_to_tool_panel( tool.id, panel_dict, section=isinstance( panel_dict, galaxy.tools.ToolSection ) )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
@@ -887,11 +890,11 @@ class Tool:
     def tool_shed_repository( self ):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
-                                                                                             self.tool_shed,
-                                                                                             self.repository_name,
-                                                                                             self.repository_owner,
-                                                                                             self.installed_changeset_revision )
+            return galaxy.util.shed_util_common.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
+                                                                                                                          self.tool_shed,
+                                                                                                                          self.repository_name,
+                                                                                                                          self.repository_owner,
+                                                                                                                          self.installed_changeset_revision )
         return None
     def __get_job_run_config( self, run_configs, key, job_params=None ):
         # Look through runners/handlers to find one with matching parameters.
@@ -2178,7 +2181,12 @@ class Tool:
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix )
                 else:
                     # Regular tool parameter, no recursion needed
-                    pass        
+                    try:
+                        #this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
+                        input.value_from_basic( values[ input.name ], trans.app, ignore_errors=False )
+                    except:
+                        messages[ input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, input.label )
+                        values[ input.name ] = input.get_initial_value( trans, context )
     def handle_unvalidated_param_values( self, input_values, app ):
         """
         Find any instances of `UnvalidatedValue` within input_values and

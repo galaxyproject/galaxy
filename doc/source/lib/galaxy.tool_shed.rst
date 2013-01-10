@@ -9,6 +9,14 @@ tool_shed Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`common_util` Module
+-------------------------
+
+.. automodule:: galaxy.tool_shed.common_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 :mod:`encoding_util` Module
 ---------------------------
 

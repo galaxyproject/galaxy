@@ -105,13 +105,14 @@ class DRMAAJobRunner( BaseJobRunner ):
         self.monitor_queue = Queue()
         self.ds = drmaa.Session()
         self.ds.initialize()
-        self.monitor_thread = threading.Thread( target=self.monitor )
+        self.monitor_thread = threading.Thread( name="DRMAAJobRunner.monitor_thread", target=self.monitor )
+        self.monitor_thread.setDaemon( True )
         self.monitor_thread.start()
         self.work_queue = Queue()
         self.work_threads = []
         nworkers = app.config.cluster_job_queue_workers
         for i in range( nworkers ):
-            worker = threading.Thread( target=self.run_next )
+            worker = threading.Thread( name=( "DRMAAJobRunner.work_threads-%d" % i ), target=self.run_next )
             worker.start()
             self.work_threads.append( worker )
         log.debug( "%d workers ready" % nworkers )

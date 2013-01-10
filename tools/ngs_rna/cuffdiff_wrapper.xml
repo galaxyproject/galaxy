@@ -59,7 +59,7 @@
                 ## Replicates.
                 --labels
                 #for $group in $group_analysis.groups
-                    ${group.group}
+                    "${group.group}"
                 #end for
                 --files
                 #for $group in $group_analysis.groups

@@ -1,12 +1,14 @@
 #Dan Blankenberg
 
-import optparse, os, urllib2, urllib, cookielib, hashlib, base64, cgi, binascii
+import optparse, os, urllib2, urllib, cookielib, hashlib, base64, cgi, binascii, logging
 
 from galaxy import eggs
 import pkg_resources
 
 pkg_resources.require( "simplejson" )
 import simplejson
+
+log = logging.getLogger( "tools.genomespace.genomespace_exporter" )#( __name__ )
 
 GENOMESPACE_API_VERSION_STRING = "v1.0"
 GENOMESPACE_SERVER_URL_PROPERTIES = "http://www.genomespace.org/sites/genomespacefiles/config/serverurl.properties"
@@ -118,7 +120,11 @@ def galaxy_code_get_genomespace_folders( genomespace_site='prod', trans=None, va
         cur_directory = urllib2.Request( url )#, headers = { 'Content-Type': 'application/json', 'Accept': 'application/text' } ) #apparently http://www.genomespace.org/team/specs/updated-dm-rest-api:"Every HTTP request to the Data Manager should include the Accept header with a preference for the media types application/json and application/text." is not correct 
         cur_directory.get_method = lambda: 'GET'
         #get url to upload to
-        cur_directory =  url_opener.open( cur_directory ).read()
+        try:
+            cur_directory =  url_opener.open( cur_directory ).read()
+        except urllib2.HTTPError, e:
+            log.debug( 'GenomeSpace export tool failed reading a directory "%s": %s' % ( url, e ) )
+            return #bad url, go to next
         cur_directory = simplejson.loads( cur_directory )
         directory = cur_directory.get( 'directory', {} )
         contents = cur_directory.get( 'contents', [] )

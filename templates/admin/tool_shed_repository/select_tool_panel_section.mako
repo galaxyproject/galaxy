@@ -15,6 +15,25 @@
     ${container_javascripts()}
 </%def>
 
+<%
+    # Handle the case where an uninstalled repository encountered errors during the process of being reinstalled.  In
+    # this case, the repository metadata is an empty dictionary, but one or both of includes_repository_dependencies
+    # and includes_tool_dependencies may be True.  If either of these are True but we have no metadata, we cannot install
+    # repository dependencies on this pass.
+    if includes_repository_dependencies:
+        repository_dependencies = containers_dict[ 'repository_dependencies' ]
+        missing_repository_dependencies = containers_dict[ 'missing_repository_dependencies' ]
+        can_display_repository_dependencies = repository_dependencies or missing_repository_dependencies
+    else:
+        can_display_repository_dependencies = False
+    if includes_tool_dependencies:
+        tool_dependencies = containers_dict[ 'tool_dependencies' ]
+        missing_tool_dependencies = containers_dict[ 'missing_tool_dependencies' ]
+        can_display_tool_dependencies = tool_dependencies or missing_tool_dependencies
+    else:
+        can_display_tool_dependencies = False
+%>
+
 %if message:
     ${render_msg( message, status )}
 %endif
@@ -37,7 +56,7 @@
     <div class="toolFormBody">
         <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
             <div style="clear: both"></div>
-            <% readme_files_dict = containers_dict[ 'readme_files' ] %>
+            <% readme_files_dict = containers_dict.get( 'readme_files', None ) %>
             %if readme_files_dict:
                 <div class="form-row">
                     <table class="colored" width="100%">
@@ -47,7 +66,7 @@
                 ${render_readme_section( containers_dict )}
                 <div style="clear: both"></div>
             %endif
-            %if includes_repository_dependencies or ( includes_tool_dependencies and trans.app.config.use_tool_dependencies ):
+            %if can_display_repository_dependencies or can_display_tool_dependencies:
                 <div class="form-row">
                     <table class="colored" width="100%">
                         <th bgcolor="#EBD9B2">Confirm dependency installation</th>

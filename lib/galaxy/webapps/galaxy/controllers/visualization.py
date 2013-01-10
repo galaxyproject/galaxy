@@ -5,6 +5,7 @@ from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids, iff
+from galaxy import util
 from galaxy.util.json import from_json_string
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
@@ -635,7 +636,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 visualization_title_err = "Visualization name is required"
             elif not visualization_slug:
                 visualization_slug_err = "Visualization id is required"
-            elif not VALID_SLUG_RE.match( visualization_slug ):
+            elif not self._is_valid_slug( visualization_slug ):
                 visualization_slug_err = "Visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
             elif visualization_slug != visualization.slug and trans.sa_session.query( model.Visualization ).filter_by( user=visualization.user, slug=visualization_slug, deleted=False ).first():
                 visualization_slug_err = "Visualization id must be unique"
@@ -725,12 +726,25 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         Display a circster visualization.
         """
 
+        # Get dataset to add.
+        if dataset_id:
+            dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+        
         # Get/create vis.
         if id:
             # Display existing viz.
             vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         else:
             # Create new viz.
+            if not dbkey:
+                # If dbkey not specified, use dataset's dbkey.
+                dbkey = dataset.dbkey
+                if not dbkey or dbkey == '?':
+                    # Circster requires a valid dbkey.
+                    return trans.show_error_message( "You must set the dataset's dbkey to view it. You can set "
+                                                     "a dataset's dbkey by clicking on the pencil icon and editing "
+                                                     "its attributes.", use_panels=True )
+                    
             vis = self.create_visualization( trans, type="genome", dbkey=dbkey, save=False )
 
         # Get the vis config and work with it from here on out. Working with the 
@@ -739,12 +753,10 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         viz_config = self.get_visualization_config( trans, vis )
 
         # Add dataset if specified.
-        if dataset_id:
-            dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
+        if dataset:
             viz_config[ 'tracks' ].append( self.get_new_track_config( trans, dataset ) )
 
         # Get genome info.
-        dbkey = viz_config[ 'dbkey' ]
         chroms_info = self.app.genomes.chroms( trans, dbkey=dbkey )
         genome = { 'dbkey': dbkey, 'chroms_info': chroms_info }
 

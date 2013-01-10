@@ -98,7 +98,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
         return trans.fill_template_mako( "/my_data.mako" )
 
     @web.expose
-    #def history( self, trans, as_xml=False, show_deleted=False, show_hidden=False, hda_id=None, **kwd ):
     def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
         """
         Display the current history, creating a new history if necessary.
@@ -131,6 +130,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                 history_panel_template = "root/history.mako"
 
             else:
+                # get all datasets server-side, client-side will get flags and render appropriately
                 datasets = self.get_history_datasets( trans, history,
                                                       show_deleted=True, show_hidden=True, show_purged=True )
 

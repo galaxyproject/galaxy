@@ -3,7 +3,8 @@ Classes encapsulating the management of repositories installed from Galaxy tool 
 """
 import os
 import galaxy.util.shed_util
-from galaxy.model.orm import *
+import galaxy.util.shed_util_common
+from galaxy.model.orm import and_
 
 from galaxy import eggs
 import pkg_resources
@@ -27,7 +28,7 @@ class InstalledRepositoryManager( object ):
             ElementInclude.include( root )
             tool_path = root.get( 'tool_path', None )
             if tool_path:
-                tool_shed = galaxy.util.shed_util.clean_tool_shed_url( tool_shed_repository.tool_shed )
+                tool_shed = galaxy.util.shed_util_common.clean_tool_shed_url( tool_shed_repository.tool_shed )
                 relative_path = os.path.join( tool_path,
                                               tool_shed,
                                               'repos',

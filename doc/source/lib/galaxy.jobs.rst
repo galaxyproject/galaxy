@@ -48,6 +48,7 @@ Subpackages
 
     galaxy.jobs.actions
     galaxy.jobs.deferred
+    galaxy.jobs.rules
     galaxy.jobs.runners
     galaxy.jobs.splitters
 

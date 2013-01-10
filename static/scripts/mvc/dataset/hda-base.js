@@ -28,6 +28,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @see Backbone.View#initialize
      */
     initialize  : function( attributes ){
+        if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
         this.log( this + '.initialize:', attributes );
 
         /** list of rendering functions for the default, primary icon-buttons. */
@@ -43,7 +44,8 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         this.expanded = attributes.expanded || false;
 
         // re-render the entire view on any model change
-        this.model.bind( 'change', this.render, this );
+        this.model.bind( 'change', this.render , this );
+
         //this.bind( 'all', function( event ){
         //    this.log( event );
         //}, this );
@@ -76,15 +78,12 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
 
         itemWrapper.append( this._render_warnings() );
         itemWrapper.append( this._render_titleBar() );
+
+        //NOTE: only sets behaviors on title and warnings - body will set up it's own
+        this._setUpBehaviors( itemWrapper );
+
         this.body = $( this._render_body() );
         itemWrapper.append( this.body );
-
-        //TODO: move to own function: setUpBehaviours
-        // we can potentially skip this step and call popupmenu directly on the download button
-        make_popup_menus( itemWrapper );
-
-        // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
-        itemWrapper.find( '.tooltip' ).tooltip({ placement : 'bottom' });
 
         // transition...
         this.$el.fadeOut( 'fast', function(){
@@ -151,6 +150,17 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
                 file_type   : meta_file.file_type
             };
         });
+    },
+
+    /** set up js behaviors, event handlers for elements within the given container
+     *  @param {jQuery} $container jq object that contains the elements to process (defaults to this.$el)
+     */
+    _setUpBehaviors : function( $container ){
+        $container = $container || this.$el;
+        // set up canned behavior on children (bootstrap, popupmenus, editable_text, etc.)
+        //TODO: we can potentially skip this step and call popupmenu directly on the download button
+        make_popup_menus( $container );
+        $container.find( '.tooltip' ).tooltip({ placement : 'bottom' });
     },
 
     // ................................................................................ RENDER titlebar
@@ -320,20 +330,35 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
     },
     
     // ......................................................................... state body renderers
-    /** Render the (expanded) body of an HDA, dispatching to other functions based on the HDA state
+    /** Render the enclosing div of the hda body and, if expanded, the html in the body
      *  @returns {jQuery} rendered DOM
      */
     //TODO: only render these on expansion (or already expanded)
     _render_body : function(){
-        //this.log( this + '_render_body' );
-
         var body = $( '<div/>' )
             .attr( 'id', 'info-' + this.model.get( 'id' ) )
             .addClass( 'historyItemBody' )
-            .attr(  'style', 'display: block' );
+            .attr( 'style', 'display: none' );
 
+        if( this.expanded ){
+            // only render the body html if it's being shown
+            this._render_body_html( body );
+            body.show();
+        }
+        return body;
+    },
+
+    /** Render the (expanded) body of an HDA, dispatching to other functions based on the HDA state
+     *  @param {jQuery} body the body element to append the html to
+     */
+    //TODO: only render these on expansion (or already expanded)
+    _render_body_html : function( body ){
+        //this.log( this + '_render_body' );
+        body.html( '' );
         //TODO: not a fan of this dispatch
         switch( this.model.get( 'state' ) ){
+            case HistoryDatasetAssociation.STATES.NEW :
+                break;
             case HistoryDatasetAssociation.STATES.NOT_VIEWABLE :
                 this._render_body_not_viewable( body );
                 break;
@@ -372,13 +397,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
                 body.append( $( '<div>Error: unknown dataset state "' + this.model.get( 'state' ) + '".</div>' ) );
         }
         body.append( '<div style="clear: both"></div>' );
-
-        if( this.expanded ){
-            body.show();
-        } else {
-            body.hide();
-        }
-        return body;
+        this._setUpBehaviors( body );
     },
 
     /** Render inaccessible, not-owned by curr user.
@@ -511,25 +530,28 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @fires body-collapsed when a body has been collapsed
      */
     toggleBodyVisibility : function( event, expanded ){
-        var hdaView = this,
-            $body = this.$el.find( '.historyItemBody' );
-        expanded = ( expanded === undefined )?( !$body.is( ':visible' ) ):( expanded );
+        var hdaView = this;
+        this.expanded = ( expanded === undefined )?( !this.body.is( ':visible' ) ):( expanded );
         //this.log( 'toggleBodyVisibility, expanded:', expanded, '$body:', $body );
 
-        if( expanded ){
-            $body.slideDown( 'fast', function(){
+        if( this.expanded ){
+            hdaView._render_body_html( hdaView.body );
+            this.body.slideDown( 'fast', function(){
                 hdaView.trigger( 'body-expanded', hdaView.model.get( 'id' ) );
             });
         } else {
-            $body.slideUp( 'fast', function(){
+            this.body.slideUp( 'fast', function(){
                 hdaView.trigger( 'body-collapsed', hdaView.model.get( 'id' ) );
             });
         }
     },
 
-
-    remove : function(){
-
+    remove : function( callback ){
+        var hdaView = this;
+        this.$el.fadeOut( 'fast', function(){
+            hdaView.$el.remove();
+            if( callback ){ callback(); }
+        });
     },
 
     // ......................................................................... MISC

@@ -5,55 +5,6 @@
 Backbone.js implementation of history panel
 
 TODO:
-    refactoring on for_editing:
-        uhoh: purge link in warning message in history_common.mako conditional on trans.app.config.allow_user_dataset_purge
-        bug: rerun still doesn't take encoded ids
-
-    anon user, mako template init:
-        BUG: shouldn't have tag/anno buttons (on hdas)
-            Check for user in hdaView somehow
-
-    logged in, mako template:
-        bug: rename not being changed locally - render() shows old name, refresh: new name
-            TODO: editable text to MV, might also just use REST.update on history
-        BUG: meter is not updating RELIABLY on change:nice_size
-        BUG: am able to start upload even if over quota - 'runs' forever
-        bug: quotaMeter bar rendering square in chrome
-
-    from loadFromApi:
-
-    fixed:
-        BUG: not loading deleted datasets
-            FIXED: history_contents, show: state_ids returns all ids now (incl. deleted)
-        BUG: upload, history size, doesn't change
-            FIXED: using change:nice_size to trigger re-render of history size
-        BUG: delete uploading hda - now in state 'discarded'! ...new state to handle
-            FIXED: handled state
-        BUG: historyItem, error'd ds show display, download?
-            FIXED: removed
-        bug: loading hdas (alt_hist)
-            FIXED: added anon user api request ( trans.user == None and trans.history.id == requested id )
-        bug: quota meter not updating on upload/tool run
-            FIXED: quotaMeter now listens for 'state:ready' from glx_history in alternate_history.mako
-        bug: use of new HDACollection with event listener in init doesn't die...keeps reporting
-            FIXED: change getVisible to return an array
-        BUG: history, broken intial hist state (running, updater, etc.)
-            ??: doesn't seem to happen anymore
-        BUG: collapse all should remove all expanded from storage
-            FIXED: hideAllItemBodies now resets storage.expandedItems
-        BUG: historyItem, shouldn't allow tag, annotate, peek on purged datasets
-            FIXED: ok state now shows only: info, rerun
-        BUG: history?, some ids aren't returning encoded...
-            FIXED:???
-        BUG: history, showing deleted ds
-            FIXED
-        UGH: historyItems have to be decorated with history_ids (api/histories/:history_id/contents/:id)
-            FIXED by adding history_id to history_contents.show
-        BUG: history, if hist has err'd ds, hist has perm state 'error', updater on following ds's doesn't run
-            FIXED by reordering history state from ds' states here and histories
-        BUG: history, broken annotation on reload (can't get thru api (sets fine, tho))
-            FIXED: get thru api for now
-
     replication:
         show_deleted/hidden:
             use storage
@@ -61,9 +12,6 @@ TODO:
                 need urls
                 change template
         move histview fadein/out in render to app?
-        don't draw body until it's first expand event
-        localize all
-        ?: render url templates on init or render?
         ?: history, annotation won't accept unicode
 
     RESTful:
@@ -140,6 +88,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
      *  @see Backbone.View#initialize
      */
     initialize : function( attributes ){
+        // set the logger if requested
+        if( attributes.logger ){ this.logger = this.model.logger = attributes.logger; }
         this.log( this + '.initialize:', attributes );
 
         // set up url templates
@@ -154,25 +104,35 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
 
         this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
 
-        // bind events from the model's hda collection
         // don't need to re-render entire model on all changes, just render disk size when it changes
         //this.model.bind( 'change', this.render, this );
         this.model.bind( 'change:nice_size', this.updateHistoryDiskSize, this );
+
+        // bind events from the model's hda collection
         this.model.hdas.bind( 'add',   this.add,    this );
         this.model.hdas.bind( 'reset', this.addAll, this );
 
+        // when a hda model is (un)deleted or (un)hidden, re-render entirely
+        //TODO??: purged
+        //TODO??: could be more selective here
+        this.model.hdas.bind( 'change:deleted', this.handleHdaDeletionChange, this );
+
         // if an a hidden hda is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets
-        this.model.hdas.bind( 'change:state',
-            function( hda, newState, changedList ){
-                //TODO: magic string here - somehow use HDA.states
-                if( ( hda.inReadyState() )
-                &&  ( !hda.get( 'visible' ) )
-                &&  ( !this.storage.get( 'show_hidden' ) ) ){
-                    this.removeHda( hda );
-                }
-            },
-        this );
+        this.model.hdas.bind( 'state:ready', function( hda, newState, oldState ){
+            if( ( !hda.get( 'visible' ) )
+            &&  ( !this.storage.get( 'show_hidden' ) ) ){
+                this.removeHdaView( hda.get( 'id' ) );
+            }
+        }, this );
+
+        // if an hda moves into the ready state and has the force_history_refresh flag (often via tool.xml)
+        //  then: refresh the panel
+        this.model.hdas.bind( 'state:ready', function( hda, newState, oldState ){
+            if( hda.get( 'force_history_refresh' ) ){
+                window.location.reload();
+            }
+        }, this );
 
         //this.bind( 'all', function(){
         //    this.log( arguments );
@@ -203,7 +163,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             show_deleted : false,
             show_hidden  : false
         });
-        this.log( 'this.storage:', this.storage.get() );
+        this.log( this + ' (prev) storage:', JSON.stringify( this.storage.get(), null, 2 ) );
 
         // expanded Hdas is a map of hda.ids -> a boolean rep'ing whether this hda's body is expanded
         // store any pre-expanded ids passed in
@@ -226,7 +186,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         this.show_deleted = this.storage.get( 'show_deleted' );
         this.show_hidden  = this.storage.get( 'show_hidden' );
         //this.log( 'this.show_deleted:', this.show_deleted, 'show_hidden', this.show_hidden );
-        this.log( '(init\'d) this.storage:', this.storage.get() );
+        this.log( this + ' (init\'d) storage:', this.storage.get() );
     },
 
     /** Add an hda to this history's collection
@@ -246,16 +206,27 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         this.render();
     },
 
-    /** Remove a view from the panel and the assoc. model from the collection
-     *  @param {HistoryDataAssociation} the hda to remove
+    /** If this hda is deleted and we're not showing deleted hdas, remove the view
+     *  @param {HistoryDataAssociation} the hda to check
      */
-    removeHda : function( hdaModel, callback ){
-        var hdaView = this.hdaViews[ hdaModel.get( 'id' ) ];
-        hdaView.$el.fadeOut( 'fast', function(){
-            hdaView.$el.remove();
-            if( callback ){ callback(); }
-        });
-        this.model.hdas.remove( hdaModel );
+    handleHdaDeletionChange : function( hda ){
+        if( hda.get( 'deleted' ) && !this.storage.get( 'show_deleted' ) ){
+            this.removeHdaView( hda.get( 'id' ) );
+        } // otherwise, the hdaView rendering should handle it
+    },
+
+    /** Remove a view from the panel and if the panel is now empty, re-render
+     *  @param {Int} the id of the hdaView to remove
+     */
+    removeHdaView : function( id, callback ){
+        var hdaView = this.hdaViews[ id ];
+        if( !hdaView ){ return; }
+
+        hdaView.remove( callback );
+        delete this.hdaViews[ id ];
+        if( _.isEmpty( this.hdaViews ) ){
+            this.render();
+        }
     },
 
     // ......................................................................... RENDERING
@@ -290,6 +261,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         // fade out existing, swap with the new, fade in, set up behaviours
         $( historyView ).queue( setUpQueueName, function( next ){
             historyView.$el.fadeOut( 'fast', function(){ next(); });
+            //historyView.$el.show( function(){ next(); });
         });
         $( historyView ).queue( setUpQueueName, function( next ){
             // swap over from temp div newRender
@@ -297,6 +269,7 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             historyView.$el.append( newRender.children() );
 
             historyView.$el.fadeIn( 'fast', function(){ next(); });
+            //historyView.$el.show( function(){ next(); });
         });
         $( historyView ).queue( setUpQueueName, function( next ){
             this.log( historyView + ' rendered:', historyView.$el );
@@ -351,7 +324,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             historyView.hdaViews[ hdaId ] = new historyView.HDAView({
                     model           : hda,
                     expanded        : expanded,
-                    urlTemplates    : historyView.hdaUrlTemplates
+                    urlTemplates    : historyView.hdaUrlTemplates,
+                    logger          : historyView.logger
                 });
             historyView._setUpHdaListeners( historyView.hdaViews[ hdaId ] );
 
@@ -432,19 +406,23 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     /** Handle the user toggling the deleted visibility by:
      *      (1) storing the new value in the persistant storage
      *      (2) re-rendering the history
+     * @returns {Boolean} new show_deleted setting
      */
     toggleShowDeleted : function(){
         this.storage.set( 'show_deleted', !this.storage.get( 'show_deleted' ) );
         this.render();
+        return this.storage.get( 'show_deleted' );
     },
 
     /** Handle the user toggling the deleted visibility by:
      *      (1) storing the new value in the persistant storage
      *      (2) re-rendering the history
+     * @returns {Boolean} new show_hidden setting
      */
     toggleShowHidden : function(){
         this.storage.set( 'show_hidden', !this.storage.get( 'show_hidden' ) );
         this.render();
+        return this.storage.get( 'show_hidden' );
     },
 
     /** Collapse all hda bodies and clear expandedHdas in the storage

@@ -50,7 +50,7 @@ class DataProviderRegistry( object ):
             elif isinstance( original_dataset.datatype, Vcf ):
                 data_provider_class = genome.RawVcfDataProvider
             elif isinstance( original_dataset.datatype, Tabular ):
-                data_provider_class = genome.ColumnDataProvider
+                data_provider_class = ColumnDataProvider
             elif isinstance( original_dataset.datatype, ( Nexus, Newick, Phyloxml ) ):
                 data_provider_class = genome.PhylovizDataProvider
 

@@ -5,8 +5,8 @@ pkg_resources.require( "sqlalchemy-migrate" )
 
 from migrate.versioning import repository, schema
 from sqlalchemy import *
-from common import *
 from galaxy.util.odict import odict
+from galaxy.tool_shed import common_util
 
 log = logging.getLogger( __name__ )
 
@@ -49,11 +49,11 @@ def verify_tools( app, url, galaxy_config_file, engine_options={} ):
             # New installations will not be missing tools, so we don't need to worry about them.
             missing_tool_configs_dict = odict()
         else:
-            tool_panel_configs = get_non_shed_tool_panel_configs( app )
+            tool_panel_configs = common_util.get_non_shed_tool_panel_configs( app )
             if tool_panel_configs:
                 # The missing_tool_configs_dict contents are something like:
                 # {'emboss_antigenic.xml': [('emboss', '5.0.0', 'package', '\nreadme blah blah blah\n')]}
-                tool_shed_accessible, missing_tool_configs_dict = check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_script_number )
+                tool_shed_accessible, missing_tool_configs_dict = common_util.check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_script_number )
             else:
                 # It doesn't matter if the tool shed is accessible since there are no migrated tools defined in the local Galaxy instance, but
                 # we have to set the value of tool_shed_accessible to True so that the value of migrate_tools.version can be correctly set in 

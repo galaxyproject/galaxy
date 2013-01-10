@@ -124,7 +124,9 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 
     url_dict = {
         # ................................................................ warning message links
-        'purge' : h.url_for( controller='dataset', action='purge',
+        #'purge' : h.url_for( controller='dataset', action='purge',
+        #    dataset_id=encoded_id_template ),
+        'purge' : h.url_for( controller='dataset', action='purge_async',
             dataset_id=encoded_id_template ),
         #TODO: hide (via api)
         'unhide' : h.url_for( controller='dataset', action='unhide',
@@ -143,9 +145,7 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
             dataset_id=encoded_id_template ),
 
         #TODO: via api
-        #TODO: show deleted handled by history
-        'delete' : h.url_for( controller='dataset', action='delete',
-            dataset_id=encoded_id_template, show_deleted_on_refresh=show_deleted ),
+        'delete' : h.url_for( controller='dataset', action='delete_async', dataset_id=encoded_id_template ),
 
         # ................................................................ download links (and associated meta files),
         'download' : h.url_for( controller='/dataset', action='display',
@@ -204,7 +204,6 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 <%def name="get_hdas( history_id, hdas )">
 <%
     #BUG: one inaccessible dataset will error entire list
-
     if not hdas:
         return '[]'
     # rather just use the history.id (wo the datasets), but...
@@ -223,10 +222,12 @@ ${parent.javascripts()}
 ${h.js(
     "libs/jquery/jstorage",
     "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging",
-    "libs/json2",
+    ##"libs/json2",
     ##"libs/bootstrap",
-    "libs/backbone/backbone-relational",
-    "mvc/base-mvc", "mvc/ui"
+    ## I think we can remove some of these
+    ##"libs/backbone/backbone-relational",
+    "mvc/base-mvc",
+    ##"mvc/ui"
 )}
 
 ${h.templates(
@@ -255,7 +256,6 @@ ${h.js(
     "mvc/dataset/hda-model",
     "mvc/dataset/hda-base",
     "mvc/dataset/hda-edit",
-    ##"mvc/dataset/hda-readonly",
 
     ##"mvc/tags", "mvc/annotations"
 
@@ -285,7 +285,7 @@ function galaxyPageSetUp(){
     top.Galaxy.currUser         = top.Galaxy.currUser;
     top.Galaxy.currHistoryPanel = top.Galaxy.currHistoryPanel;
 
-    top.Galaxy.paths            = galaxy_paths;
+    //top.Galaxy.paths            = galaxy_paths;
 
     top.Galaxy.localization     = GalaxyLocalization;
     window.Galaxy = top.Galaxy;
@@ -295,27 +295,31 @@ function galaxyPageSetUp(){
 GalaxyLocalization.setLocalizedString( ${ create_localization_json( get_page_localized_strings() ) } );
 
 // add needed controller urls to GalaxyPaths
+if( !galaxy_paths ){ galaxy_paths = top.galaxy_paths || new GalaxyPaths(); }
 galaxy_paths.set( 'hda', ${get_hda_url_templates()} );
 galaxy_paths.set( 'history', ${get_history_url_templates()} );
 
 $(function(){
     galaxyPageSetUp();
-    Galaxy.historyFrame = window;
+
+    //NOTE: for debugging on non-local instances (main/test)
+    //  1. load history panel in own tab
+    //  2. from console: new PersistantStorage( '__history_panel' ).set( 'debugging', true )
+    //  -> history panel and hdas will display console logs in console
+    var debugging = false;
+    if( jQuery.jStorage.get( '__history_panel' ) ){
+        debugging = new PersistantStorage( '__history_panel' ).get( 'debugging' );
+    }
 
     // ostensibly, this is the App
-    //if( window.console && console.debug ){
-    //    //if( console.clear ){ console.clear(); }
-    //    console.pretty = function( o ){ $( '<pre/>' ).text( JSON.stringify( o, null, ' ' ) ).appendTo( 'body' ); }
-    //    top.storage = jQuery.jStorage
-    //}
-
     // LOAD INITIAL DATA IN THIS PAGE - since we're already sending it...
     //  ...use mako to 'bootstrap' the models
-    var user    = ${ get_current_user() },
+    var page_show_deleted = ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
+        page_show_hidden  = ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) },
+
+        user    = ${ get_current_user() },
         history = ${ get_history( history.id ) },
         hdas    = ${ get_hdas( history.id, datasets ) };
-    var currUser = new User( user );
-    if( !Galaxy.currUser ){ Galaxy.currUser = currUser; }
 
     // add user data to history
     // i don't like this history+user relationship, but user authentication changes views/behaviour
@@ -325,10 +329,10 @@ $(function(){
     var historyPanel = new HistoryPanel({
         model           : new History( history, hdas ),
         urlTemplates    : galaxy_paths.attributes,
-        //logger          : console,
+        logger          : ( debugging )?( console ):( null ),
         // is page sending in show settings? if so override history's
-        show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
-        show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
+        show_deleted    : page_show_deleted,
+        show_hidden     : page_show_hidden
     });
     historyPanel.render();
 
@@ -336,13 +340,18 @@ $(function(){
     //historyPanel = new HistoryPanel({
     //    model: new History(),
     //    urlTemplates    : galaxy_paths.attributes,
-    //    logger          : console,
+    //    logger          : ( debugging )?( console ):( null ),
     //    // is page sending in show settings? if so override history's
-    //    show_deleted    : ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
-    //    show_hidden     : ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) }
+    //    show_deleted    : page_show_deleted,
+    //    show_hidden     : page_show_hidden
     //});
     //historyPanel.model.loadFromApi( history.id );
 
+    // set it up to be accessible across iframes
+    //TODO:?? mem leak
+    top.Galaxy.currHistoryPanel = historyPanel;
+    var currUser = new User( user );
+    if( !Galaxy.currUser ){ Galaxy.currUser = currUser; }
 
     // QUOTA METER is a cross-frame ui element (meter in masthead, over quota message in history)
     //  create it and join them here for now (via events)
@@ -352,6 +361,7 @@ $(function(){
     //window.currUser.logger = console;
     var quotaMeter = new UserQuotaMeter({
         model   : currUser,
+        //logger  : ( debugging )?( console ):( null ),
         el      : $( top.document ).find( '.quota-meter-container' )
     });
     //quotaMeter.logger = console; window.quotaMeter = quotaMeter
@@ -373,9 +383,88 @@ $(function(){
         quotaMeter.update()
     }, quotaMeter );
 
-    // set it up to be accessible across iframes
-    //TODO:?? mem leak
-    top.Galaxy.currHistoryPanel = historyPanel;
+
+    //ANOTHER cross-frame element is the history-options-button...
+    // in this case, we need to change the popupmenu options listed to include some functions for this history
+    // these include: current (1 & 2) 'show/hide' delete and hidden functions, and (3) the collapse all option
+    (function(){
+        // don't try this if the history panel is in it's own window
+        if( top.document === window.document ){
+            return;
+        }
+
+        // lots of wtf here...due to infernalframes
+        //TODO: this is way tooo acrobatic
+        var $historyButtonWindow = $( top.document ),
+            HISTORY_MENU_BUTTON_ID = 'history-options-button',
+            $historyMenuButton = $historyButtonWindow.find( '#' + HISTORY_MENU_BUTTON_ID ),
+            // jq data in another frame can only be accessed by the jQuery in that frame,
+            //  get the jQuery from the top frame (that contains the history-options-button)
+            START_INSERTING_AT_INDEX = 11,
+            COLLAPSE_OPTION_TEXT = _l("Collapse Expanded Datasets"),
+            DELETED_OPTION_TEXT  = _l("Include Deleted Datasets"),
+            HIDDEN_OPTION_TEXT   = _l("Include Hidden Datasets");
+            windowJQ = $( top )[0].jQuery,
+            popupMenu = ( windowJQ && $historyMenuButton[0] )?( windowJQ.data( $historyMenuButton[0], 'PopupMenu' ) )
+                                                             :( null );
+
+        //console.debug(
+        //    '$historyButtonWindow:', $historyButtonWindow,
+        //    '$historyMenuButton:', $historyMenuButton,
+        //    'windowJQ:', windowJQ,
+        //    'popupmenu:', popupMenu
+        //);
+        if( !popupMenu ){ return; }
+
+        // since the history frame reloads so often (compared to the main window),
+        //  we need to check whether these options are there already before we add them again
+        // In IE, however, NOT re-adding them creates a 'cant execute from freed script' error:
+        //  so...we need to re-add the function in either case (just not the option itself)
+        //NOTE: we use the global Galaxy.currHistoryPanel here
+        //  because these remain bound in the main window even if panel refreshes
+        //TODO: too much boilerplate
+        //TODO: ugh...(in general)
+        var collapseOption = popupMenu.findItemByHtml( COLLAPSE_OPTION_TEXT );
+        if( !collapseOption ){
+            collapseOption = {
+                html    : COLLAPSE_OPTION_TEXT
+            };
+            popupMenu.addItem( collapseOption, START_INSERTING_AT_INDEX )
+        }
+        collapseOption.func = function() {
+            Galaxy.currHistoryPanel.collapseAllHdaBodies();
+        };
+
+        var deletedOption = popupMenu.findItemByHtml( DELETED_OPTION_TEXT );
+        if( !deletedOption ){
+            deletedOption = {
+                html    : DELETED_OPTION_TEXT
+            };
+            popupMenu.addItem( deletedOption, START_INSERTING_AT_INDEX + 1 )
+        }
+        deletedOption.func = function( clickEvent, thisMenuOption ){
+            var show_deleted = Galaxy.currHistoryPanel.toggleShowDeleted();
+            thisMenuOption.checked = show_deleted;
+        };
+        // whether was there or added, update the checked option to reflect the panel's settings on the panel render
+        deletedOption.checked = Galaxy.currHistoryPanel.storage.get( 'show_deleted' );
+
+        var hiddenOption = popupMenu.findItemByHtml( HIDDEN_OPTION_TEXT );
+        if( !hiddenOption ){
+            hiddenOption = {
+                html    : HIDDEN_OPTION_TEXT
+            };
+            popupMenu.addItem( hiddenOption, START_INSERTING_AT_INDEX + 2 )
+        }
+        hiddenOption.func = function( clickEvent, thisMenuOption ){
+            var show_hidden = Galaxy.currHistoryPanel.toggleShowHidden();
+            thisMenuOption.checked = show_hidden;
+        };
+        // whether was there or added, update the checked option to reflect the panel's settings on the panel render
+        hiddenOption.checked = Galaxy.currHistoryPanel.storage.get( 'show_hidden' );
+    })();
+
+    //TODO: both the quota meter and the options-menu stuff need to be moved out when iframes are removed
 
     return;
 });
@@ -452,9 +541,6 @@ $(function(){
         .historyItemTitle {
             text-decoration: underline;
             cursor: pointer;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -khtml-user-select: none;
         }
         .historyItemTitle:hover {
             text-decoration: underline;

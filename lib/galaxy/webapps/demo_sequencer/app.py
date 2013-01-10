@@ -6,6 +6,7 @@ class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, **kwargs ):
         print >> sys.stderr, "python path is: " + ", ".join( sys.path )
+        self.name = "demo_sequencer"
         # Read config file and check for errors
         self.config = config.Configuration( **kwargs )
         self.config.check()

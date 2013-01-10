@@ -1,7 +1,7 @@
 import os, urllib2
 from galaxy import util
 from galaxy.util.odict import odict
-from galaxy.tool_shed.encoding_util import *
+from galaxy.tool_shed import encoding_util
 
 REPOSITORY_OWNER = 'devteam'
 
@@ -36,7 +36,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                     print "The URL\n%s\nraised the exception:\n%s\n" % ( url, str( e ) )
                 if tool_shed_accessible:
                     if text:
-                        tool_dependencies_dict = tool_shed_decode( text )
+                        tool_dependencies_dict = encoding_util.tool_shed_decode( text )
                         for dependency_key, requirements_dict in tool_dependencies_dict.items():
                             tool_dependency_name = requirements_dict[ 'name' ]
                             tool_dependency_version = requirements_dict[ 'version' ]

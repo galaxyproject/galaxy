@@ -172,7 +172,7 @@ def __main__():
     if options.groups:
         cmd += " --labels "
         for label in options.labels:
-            cmd += label + ","
+            cmd += '"%s",' % label
         cmd = cmd[:-1]
 
         cmd += " " + options.inputA + " "

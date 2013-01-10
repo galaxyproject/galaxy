@@ -714,7 +714,12 @@ class SelectToolParameter( ToolParameter ):
         else:
             if value not in legal_values:
                 raise ValueError( "An invalid option was selected, please verify" )
-            return value    
+            return value
+    def to_html_value( self, value, app ):
+        if isinstance( value, list ):
+            return value
+        else:
+            return str( value )
     def to_param_dict_string( self, value, other_values={} ):
         if value is None:
             return "None"
@@ -1600,7 +1605,7 @@ class DataToolParameter( ToolParameter ):
         return value.file_name
         
     def value_to_display_text( self, value, app ):
-        if not isinstance(value, list):
+        if value and not isinstance( value, list ):
             value = [ value ]
         if value:
             return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )

@@ -2,6 +2,7 @@ import pkg_resources
 pkg_resources.require( "twill==0.9" )
 
 import StringIO, os, filecmp, time, unittest, urllib, logging, difflib, tarfile, zipfile, tempfile, re, shutil, subprocess
+import pprint
 
 import twill
 import twill.commands as tc
@@ -249,8 +250,9 @@ class TwillTestCase( unittest.TestCase ):
         page = self.last_page()
         if page.find( 'error' ) > -1:
             raise AssertionError('Errors in the history for user %s' % self.user )
+
     def check_history_for_string( self, patt, show_deleted=False ):
-        """Looks for 'string' in history page"""
+        """Breaks patt on whitespace and searches for each element seperately in the history"""
         self.home()
         if show_deleted:
             self.visit_page( "history?show_deleted=True" )
@@ -264,11 +266,101 @@ class TwillTestCase( unittest.TestCase ):
                 errmsg = "no match to '%s'\npage content written to '%s'" % ( subpatt, fname )
                 raise AssertionError( errmsg )
         self.home()
+
+    def check_history_for_exact_string( self, string, show_deleted=False ):
+        """Looks for exact match to 'string' in history page"""
+        self.home()
+        if show_deleted:
+            self.visit_page( "history?show_deleted=True" )
+        else:
+            self.visit_page( "history" )
+        try:
+            tc.find( string )
+        except:
+            fname = self.write_temp_file( tc.browser.get_html() )
+            errmsg = "no match to '%s'\npage content written to '%s'" % ( string, fname )
+            raise AssertionError( errmsg )
+        self.home()
+
+    def check_history_json( self, pattern, check_fn, show_deleted=None, multiline=True ):
+        """
+        Tries to find a JSON string in the history page using the regex pattern,
+        parse it, and assert check_fn returns True when called on that parsed
+        data.
+        """
+        self.home()
+        if show_deleted:
+            self.visit_page( "history?show_deleted=True" )
+        elif show_deleted == False:
+            self.visit_page( "history?show_deleted=False" )
+        else:
+            self.visit_page( "history" )
+        try:
+            tc.find( pattern, flags=( 'm' if multiline else '' ) )
+            # twill stores the regex match in a special stack variable
+            match = twill.namespaces.get_twill_glocals()[1][ '__match__' ]
+            json_data = from_json_string( match )
+            assert check_fn( json_data ), 'failed check_fn: %s' %( check_fn.func_name )
+
+        except Exception, exc:
+            log.error( exc, exc_info=True )
+            log.debug( 'json_data: %s', ( '\n' + pprint.pformat( json_data ) if json_data else '(no match)' ) )
+            fname = self.write_temp_file( tc.browser.get_html() )
+            errmsg = ( "json '%s' could not be found or failed check_fn" % ( pattern ) +
+                       "\npage content written to '%s'" % ( fname ) )
+            raise AssertionError( errmsg )
+
+        self.home()
+
+    def is_history_empty( self ):
+        """
+        Uses history page JSON to determine whether this history is empty
+        (i.e. has no undeleted datasets).
+        """
+        def has_no_undeleted_hdas( hda_list ):
+            if not len( hda_list ):
+                return True
+            for hda in hda_list:
+                if not( hda[ 'deleted' ] or hda[ 'purged' ] ):
+                    return False
+            return True
+        try:
+            self.check_history_json( r'\bhdas\s*=\s*(.*);', has_no_undeleted_hdas )
+        except AssertionError, exc:
+            log.error( 'history is not empty' )
+            raise exc
+
+    def check_hda_json_for_key_value( self, hda_id, key, value, use_string_contains=False ):
+        """
+        Uses history page JSON to determine whether the current history:
+        (1) has an hda with hda_id,
+        (2) that hda has a JSON var named 'key',
+        (3) that var 'key' == value
+        If use_string_contains=True, this will search for value in var 'key'
+        instead of testing for an entire, exact match (string only).
+        """
+        #TODO: multi key, value
+        def hda_has_key_value( hda_list ):
+            for hda in hda_list:
+                # if we found the hda and there's a var in the json named key
+                if( ( hda[ 'id' ] == hda_id )
+                and ( key in hda ) ):
+                    var = hda[ key ]
+                    # test for partial string containment if str and requested
+                    if( ( type( var ) == str )
+                    and ( use_string_contains ) ):
+                        return ( value in var )
+                    # otherwise, test for equivalence
+                    return ( var == value )
+            return False
+        self.check_history_json( r'\bhdas\s*=\s*(.*);', hda_has_key_value )
+
     def clear_history( self ):
         """Empties a history of all datasets"""
         self.visit_page( "clear_history" )
         self.check_history_for_string( 'Your history is empty' )
         self.home()
+
     def delete_history( self, id ):
         """Deletes one or more histories"""
         history_list = self.get_histories_as_data_list()
@@ -279,6 +371,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = 'Deleted %d %s' % ( num_deleted, iff( num_deleted != 1, "histories", "history" ) )
         self.check_page_for_string( check_str )
         self.home()
+
     def delete_current_history( self, strings_displayed=[] ):
         """Deletes the current history"""
         self.home()
@@ -286,16 +379,19 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
+
     def get_histories_as_data_list( self ):
         """Returns the data elements of all histories"""
         tree = self.histories_as_xml_tree()
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
+
     def get_history_as_data_list( self, show_deleted=False ):
         """Returns the data elements of a history"""
         tree = self.history_as_xml_tree( show_deleted=show_deleted )
         data_list = [ elem for elem in tree.findall("data") ]
         return data_list
+
     def history_as_xml_tree( self, show_deleted=False ):
         """Returns a parsed xml object of a history"""
         self.home()
@@ -303,6 +399,7 @@ class TwillTestCase( unittest.TestCase ):
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
+
     def histories_as_xml_tree( self ):
         """Returns a parsed xml object of all histories"""
         self.home()
@@ -310,6 +407,7 @@ class TwillTestCase( unittest.TestCase ):
         xml = self.last_page()
         tree = ElementTree.fromstring(xml)
         return tree
+
     def history_options( self, user=False, active_datasets=False, activatable_datasets=False, histories_shared_by_others=False ):
         """Mimics user clicking on history options link"""
         self.home()
@@ -329,6 +427,7 @@ class TwillTestCase( unittest.TestCase ):
         self.check_page_for_string( 'Rename</a> current history' )
         self.check_page_for_string( 'Delete</a> current history' )
         self.home()
+
     def new_history( self, name=None ):
         """Creates a new, empty history"""
         self.home()
@@ -338,6 +437,7 @@ class TwillTestCase( unittest.TestCase ):
             self.visit_url( "%s/history_new" % self.url )
         self.check_history_for_string('Your history is empty')
         self.home()
+
     def rename_history( self, id, old_name, new_name ):
         """Rename an existing history"""
         self.home()
@@ -345,6 +445,7 @@ class TwillTestCase( unittest.TestCase ):
         check_str = 'History: %s renamed to: %s' % ( old_name, urllib.unquote( new_name ) )
         self.check_page_for_string( check_str )
         self.home()
+
     def set_history( self ):
         """Sets the history (stores the cookies for this run)"""
         if self.history_id:
@@ -353,6 +454,7 @@ class TwillTestCase( unittest.TestCase ):
         else:
             self.new_history()
         self.home()
+
     def share_current_history( self, email, strings_displayed=[], strings_displayed_after_submit=[],
                                action='', action_strings_displayed=[], action_strings_displayed_after_submit=[] ):
         """Share the current history with different users"""
@@ -372,6 +474,7 @@ class TwillTestCase( unittest.TestCase ):
             for check_str in action_strings_displayed_after_submit:
                 self.check_page_for_string( check_str )
         self.home()
+
     def share_histories_with_users( self, ids, emails, strings_displayed=[], strings_displayed_after_submit=[],
                                     action=None, action_strings_displayed=[] ):
         """Share one or more histories with one or more different users"""
@@ -389,6 +492,7 @@ class TwillTestCase( unittest.TestCase ):
             for check_str in action_strings_displayed:
                 self.check_page_for_string( check_str )
         self.home()
+
     def unshare_history( self, history_id, user_id, strings_displayed=[] ):
         """Unshare a history that has been shared with another user"""
         self.visit_url( "%s/history/list?id=%s&operation=share+or+publish" % ( self.url, history_id ) )
@@ -396,12 +500,14 @@ class TwillTestCase( unittest.TestCase ):
             self.check_page_for_string( check_str )
         self.visit_url( "%s/history/sharing?unshare_user=%s&id=%s" % ( self.url, user_id, history_id ) )
         self.home()
+
     def switch_history( self, id='', name='' ):
         """Switches to a history in the current list of histories"""
         self.visit_url( "%s/history/list?operation=switch&id=%s" % ( self.url, id ) )
         if name:
-            self.check_history_for_string( escape( name ) )
+            self.check_history_for_exact_string( name )
         self.home()
+
     def view_stored_active_histories( self, strings_displayed=[] ):
         self.home()
         self.visit_page( "history/list" )
@@ -698,11 +804,13 @@ class TwillTestCase( unittest.TestCase ):
                 # if the server's env has GALAXY_TEST_SAVE, save the output file to that dir
                 if self.keepOutdir:
                     ofn = os.path.join( self.keepOutdir, os.path.basename( local_name ) )
+                    log.debug( 'keepoutdir: %s, ofn: %s', self.keepOutdir, ofn )
                     try:
                         shutil.copy( temp_name, ofn )
                     except Exception, exc:
                         error_log_msg  = ( 'TwillTestCase could not save output file %s to %s: ' % ( temp_name, ofn ) )
                         error_log_msg += str( exc )
+                        log.error( error_log_msg, exc_info=True )
                     else:
                         log.debug('## GALAXY_TEST_SAVE=%s. saved %s' % ( self.keepOutdir, ofn ) )
                         
@@ -2366,3 +2474,6 @@ class TwillTestCase( unittest.TestCase ):
     def add_tag( self, item_id, item_class, context, new_tag ):
         self.visit_url( "%s/tag/add_tag_async?item_id=%s&item_class=%s&context=%s&new_tag=%s" % \
                         ( self.url, item_id, item_class, context, new_tag ) )
+    def get_tags( self, item_id, item_class ):
+        self.visit_url( "%s/tag/get_tagging_elt_async?item_id=%s&item_class=%s" % \
+                        ( self.url, item_id, item_class ) )

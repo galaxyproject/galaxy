@@ -80,9 +80,13 @@ function Connector( handle1, handle2 ) {
 $.extend( Connector.prototype, {
     connect: function ( t1, t2 ) {
         this.handle1 = t1;
-        this.handle1.connect( this );
+        if ( this.handle1 ) {
+            this.handle1.connect( this );
+        }
         this.handle2 = t2;
-        this.handle2.connect( this );
+        if ( this.handle2 ) {
+            this.handle2.connect( this );
+        }
     },
     destroy : function () {
         if ( this.handle1 ) {

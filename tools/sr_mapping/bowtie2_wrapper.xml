@@ -44,6 +44,14 @@
                 --local --preset-alignment=$params.preset.align_preset_select-local
             #end if
         #end if
+
+        ## Read group information.
+        #if $readGroup.specReadGroup == "yes"
+          --rgid="$readGroup.rgid"
+          --rglb="$readGroup.rglb"
+          --rgpl="$readGroup.rgpl"
+          --rgsm="$readGroup.rgsm"
+        #end if
     </command>
     <inputs>
         <conditional name="singlePaired">
@@ -80,7 +88,7 @@
           </when>  <!-- history -->
         </conditional>  <!-- refGenomeSource -->
         <conditional name="params">
-            <param name="settingsType" type="select" label="Bowtie settings to use" help="You can use the default settings or set custom values for any of Bowtie's parameters.">
+            <param name="settingsType" type="select" label="Parameter Settings" help="You can use the default settings or set custom values for any of Bowtie's parameters.">
               <option value="preSet">Use Defaults</option>
               <option value="full">Full parameter list</option>
             </param>
@@ -104,11 +112,23 @@
                             <option value="very-sensitive">Very sensitive</option>
                         </param>
                     </when>
-                    <!-- TODO: -->
                     <when value="No" />
                 </conditional>
             </when>  <!-- full -->
       </conditional>  <!-- params -->
+      <conditional name="readGroup">
+            <param name="specReadGroup" type="select" label="Specify the read group for this file?">
+                <option value="yes">Yes</option>
+                <option value="no" selected="True">No</option>
+            </param>
+            <when value="yes">
+                <param name="rgid" type="text" size="25" label="Read group identiﬁer (ID). Each @RG line must have a unique ID. The value of ID is used in the RG tags of alignment records. Must be unique among all read groups in header section." help="Required if RG specified. Read group IDs may be modiﬁed when merging SAM ﬁles in order to handle collisions." />
+                <param name="rglb" type="text" size="25" label="Library name (LB)" help="Required if RG specified" />
+                <param name="rgpl" type="text" size="25" label="Platform/technology used to produce the reads (PL)" help="Required if RG specified. Valid values : CAPILLARY, LS454, ILLUMINA, SOLID, HELICOS, IONTORRENT and PACBIO" />
+                <param name="rgsm" type="text" size="25" label="Sample (SM)" help="Required if RG specified. Use pool name where a pool is being sequenced" />
+            </when>
+            <when value="no" />
+        </conditional> <!-- readGroup -->
     </inputs>
 
     <outputs>

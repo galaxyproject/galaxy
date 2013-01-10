@@ -38,6 +38,8 @@ def app_factory( global_conf, **kwargs ):
             import traceback, sys
             traceback.print_exc()
             sys.exit( 1 )
+    # Call app's shutdown method when the interpeter exits, this cleanly stops
+    # the various Galaxy application daemon threads
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
@@ -128,7 +130,13 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.connect("import_workflow", "/api/workflows/upload", controller="workflows", action="import_new_workflow", conditions=dict(method=["POST"]))
     webapp.api_mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
 
+    # Connect logger from app
+    if app.trace_logger:
+        webapp.trace_logger = app.trace_logger
+
+    # Indicate that all configuration settings have been provided
     webapp.finalize_config()
+
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )

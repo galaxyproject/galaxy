@@ -91,6 +91,7 @@
 
         repository_dependencies_root_folder = containers_dict[ 'repository_dependencies' ]
         tool_dependencies_root_folder = containers_dict[ 'tool_dependencies' ]
+        missing_tool_dependencies_root_folder = containers_dict[ 'missing_tool_dependencies' ]
         env_settings_heaader_row_displayed = False
         package_header_row_displayed = False
     %>
@@ -103,49 +104,61 @@
         </div>
     </div>
     %if repository_dependencies_root_folder:
-        <div class="form-row">
-            <label>Handle repository dependencies?</label>
-            ${install_repository_dependencies_check_box.get_html()}
-            <div class="toolParamHelp" style="clear: both;">
-                Un-check to skip automatic installation of these additional repositories required by this repository.
+        %if install_repository_dependencies_check_box is not None:
+            <div class="form-row">
+                <label>Handle repository dependencies?</label>
+                ${install_repository_dependencies_check_box.get_html()}
+                <div class="toolParamHelp" style="clear: both;">
+                    Un-check to skip automatic installation of these additional repositories required by this repository.
+                </div>
             </div>
-        </div>
-        <div style="clear: both"></div>
+            <div style="clear: both"></div>
+        %endif
         <div class="form-row">
-            %if repository_dependencies_root_folder:
-                <p/>
-                <% row_counter = RowCounter() %>
-                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table">
-                    ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
-                </table>
-            %endif
+            <p/>
+            <% row_counter = RowCounter() %>
+            <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table">
+                ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+            </table>
             <div style="clear: both"></div>
         </div>
     %endif
-    %if tool_dependencies_root_folder:
-        <div class="form-row">
-            <label>Handle tool dependencies?</label>
-            <% disabled = trans.app.config.tool_dependency_dir is None %>
-            ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
-            <div class="toolParamHelp" style="clear: both;">
-                %if disabled:
-                    Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
-                %else:
-                    Un-check to skip automatic handling of these tool dependencies.
-                %endif
+    %if tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
+        %if install_tool_dependencies_check_box is not None:
+            <div class="form-row">
+                <label>Handle tool dependencies?</label>
+                <% disabled = trans.app.config.tool_dependency_dir is None %>
+                ${install_tool_dependencies_check_box.get_html( disabled=disabled )}
+                <div class="toolParamHelp" style="clear: both;">
+                    %if disabled:
+                        Set the tool_dependency_dir configuration value in your Galaxy config to automatically handle tool dependencies.
+                    %else:
+                        Un-check to skip automatic handling of these tool dependencies.
+                    %endif
+                </div>
             </div>
-        </div>
-        <div style="clear: both"></div>
-        <div class="form-row">
-            %if tool_dependencies_root_folder:
+            <div style="clear: both"></div>
+        %endif
+        %if tool_dependencies_root_folder:
+            <div class="form-row">
                 <p/>
                 <% row_counter = RowCounter() %>
                 <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="dependency_table">
                     ${render_folder( tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                 </table>
-            %endif
-            <div style="clear: both"></div>
-        </div>
+                <div style="clear: both"></div>
+            </div>
+        %endif
+        %if missing_tool_dependencies_root_folder:
+            <div class="form-row">
+                <p/>
+                <% row_counter = RowCounter() %>
+                <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="dependency_table">
+                    ${render_folder( missing_tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                </table>
+                <div style="clear: both"></div>
+            </div>
+        %endif
     %endif
 </%def>
 
@@ -159,7 +172,7 @@
             def __str__( self ):
                 return str( self.count )
 
-        readme_files_root_folder = containers_dict[ 'readme_files' ]
+        readme_files_root_folder = containers_dict.get( 'readme_files', None )
     %>
     %if readme_files_root_folder:
         <p/>

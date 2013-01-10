@@ -36,7 +36,7 @@
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>Administration</div>
     </div>
-    <div class="page-container" style="padding: 10px;">
+    <div class="unified-panel-body" style="padding: 10px; overflow: auto;">
         <div class="toolMenu">
             <div class="toolSectionList">
                 <div class="toolSectionTitle">Security</div>

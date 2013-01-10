@@ -57,8 +57,10 @@ def parse_tool_panel_config( config, shed_tools_dict ):
     last_galaxy_test_file_dir = None
     last_tested_repository_name = None
     last_tested_changeset_revision = None
+    tool_path = None
     tree = util.parse_xml( config )
     root = tree.getroot()
+    tool_path = root.get('tool_path')
     for elem in root:
         if elem.tag == 'tool':
             galaxy_test_file_dir, \
@@ -66,7 +68,8 @@ def parse_tool_panel_config( config, shed_tools_dict ):
             last_tested_changeset_revision = get_installed_repository_info( elem,
                                                                             last_galaxy_test_file_dir,
                                                                             last_tested_repository_name,
-                                                                            last_tested_changeset_revision )
+                                                                            last_tested_changeset_revision,
+                                                                            tool_path )
             if galaxy_test_file_dir:
                 if galaxy_test_file_dir != last_galaxy_test_file_dir:
                     if not os.path.isabs( galaxy_test_file_dir ):
@@ -82,7 +85,8 @@ def parse_tool_panel_config( config, shed_tools_dict ):
                     last_tested_changeset_revision = get_installed_repository_info( section_elem,
                                                                                     last_galaxy_test_file_dir,
                                                                                     last_tested_repository_name,
-                                                                                    last_tested_changeset_revision )
+                                                                                    last_tested_changeset_revision,
+                                                                                    tool_path )
                     if galaxy_test_file_dir:
                         if galaxy_test_file_dir != last_galaxy_test_file_dir:
                             if not os.path.isabs( galaxy_test_file_dir ):
@@ -92,7 +96,7 @@ def parse_tool_panel_config( config, shed_tools_dict ):
                         last_galaxy_test_file_dir = galaxy_test_file_dir
     return shed_tools_dict
 
-def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision ):
+def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision, tool_path ):
     """
     Return the GALAXY_TEST_FILE_DIR, the containing repository name and the change set revision for the tool elem.
     This only happens when testing tools installed from the tool shed.
@@ -107,7 +111,7 @@ def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_
     if repository_name != last_tested_repository_name or changeset_revision != last_tested_changeset_revision:
         # Locate the test-data directory.
         installed_tool_path = os.path.join( installed_tool_path_items[ 0 ], 'repos', repository_owner, repository_name, changeset_revision )
-        for root, dirs, files in os.walk( installed_tool_path ):
+        for root, dirs, files in os.walk( os.path.join(tool_path, installed_tool_path )):
             if 'test-data' in dirs:
                 return os.path.join( root, 'test-data' ), repository_name, changeset_revision
         return None, repository_name, changeset_revision
@@ -237,8 +241,9 @@ def main():
             try:
                 os.makedirs( dir )
             except OSError:
-                pass 
-    print "Database connection:", database_connection
+                pass
+    log.info( "Database connection:", database_connection )
+
     # ---- Build Application -------------------------------------------------- 
     app = None 
     if start_server:
@@ -408,6 +413,8 @@ def main():
         if os.path.exists( tempdir ) and 'GALAXY_TEST_NO_CLEANUP' not in os.environ:
             log.info( "Cleaning up temporary files in %s" % tempdir )
             shutil.rmtree( tempdir )
+        else:
+            log.info( "GALAXY_TEST_NO_CLEANUP is on. Temporary files in %s" % tempdir )
     except:
         pass
     if psu_production and 'GALAXY_TEST_NO_CLEANUP' not in os.environ:

@@ -82,7 +82,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         this.on( 'change:state', function( currModel, newState ){
             this.log( this + ' has changed state:', currModel, newState );
             if( this.inReadyState() ){
-                this.trigger( 'state:ready', this.get( 'id' ), newState, this.previous( 'state' ), currModel );
+                this.trigger( 'state:ready', currModel, newState, this.previous( 'state' ) );
             }
         });
 
@@ -130,8 +130,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         //TODO: to list inclusion test
         //TODO: class level readyStates list
         return (
-            ( state === HistoryDatasetAssociation.STATES.NEW )
-        ||  ( state === HistoryDatasetAssociation.STATES.OK )
+            ( state === HistoryDatasetAssociation.STATES.OK )
         ||  ( state === HistoryDatasetAssociation.STATES.EMPTY )
         ||  ( state === HistoryDatasetAssociation.STATES.FAILED_METADATA )
         ||  ( state === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
@@ -221,7 +220,15 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
      *  @returns array of encoded ids 
      */
     ids : function(){
-        return this.map( function( item ){ return item.id; });
+        return this.map( function( hda ){ return hda.id; });
+    },
+
+    /** Get the hda with the given hid
+     *  @param {Int} hid the hid to search for
+     *  @returns {HistoryDatasetAssociation} the hda with the given hid or undefined if not found
+     */
+    getByHid : function( hid ){
+        return _.first( this.filter( function( hda ){ return hda.get( 'hid' ) === hid; }) );
     },
 
     /** If the given hid is in the collection, return it's index. If not, return the insertion point it would need.

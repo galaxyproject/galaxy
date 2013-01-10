@@ -409,6 +409,19 @@ ToolShedRepository.table = Table( "tool_shed_repository", metadata,
     Column( "status", TrimmedString( 255 ) ),
     Column( "error_message", TEXT ) )
 
+RepositoryRepositoryDependencyAssociation.table = Table( 'repository_repository_dependency_association', metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True ),
+    Column( "repository_dependency_id", Integer, ForeignKey( "repository_dependency.id" ), index=True ) )
+
+RepositoryDependency.table = Table( "repository_dependency", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, default=now, onupdate=now ),
+    Column( "tool_shed_repository_id", Integer, ForeignKey( "tool_shed_repository.id" ), index=True, nullable=False ) )
+
 ToolDependency.table = Table( "tool_dependency", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1744,7 +1757,19 @@ assign_mapper( context, ToolShedRepository, ToolShedRepository.table,
                      tool_dependencies=relation( ToolDependency,
                                                  primaryjoin=( ToolShedRepository.table.c.id == ToolDependency.table.c.tool_shed_repository_id ),
                                                  order_by=ToolDependency.table.c.name,
-                                                 backref='tool_shed_repository' ) ) )
+                                                 backref='tool_shed_repository' ),
+                     required_repositories=relation( RepositoryRepositoryDependencyAssociation,
+                                                    primaryjoin=( ToolShedRepository.table.c.id == RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id ) ) ) )
+
+assign_mapper( context, RepositoryRepositoryDependencyAssociation, RepositoryRepositoryDependencyAssociation.table,
+    properties=dict( repository=relation( ToolShedRepository,
+                                          primaryjoin=( RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id == ToolShedRepository.table.c.id ) ), 
+                     repository_dependency=relation( RepositoryDependency,
+                                                     primaryjoin=( RepositoryRepositoryDependencyAssociation.table.c.repository_dependency_id == RepositoryDependency.table.c.id ) ) ) )
+
+assign_mapper( context, RepositoryDependency, RepositoryDependency.table,
+    properties=dict( repository=relation( ToolShedRepository,
+                                          primaryjoin=( RepositoryDependency.table.c.tool_shed_repository_id == ToolShedRepository.table.c.id ) ) ) )
 
 assign_mapper( context, ToolDependency, ToolDependency.table )
 
@@ -1925,7 +1950,7 @@ def load_egg_for_url( url ):
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None ):
+def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None, trace_logger=None ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     Dataset.file_path = file_path
@@ -1937,6 +1962,10 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     if database_query_profiling_proxy:
         import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
         proxy = logging_connection_proxy.LoggingProxy()
+    # If metlog is enabled, do micrologging
+    elif trace_logger:
+        import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
+        proxy = logging_connection_proxy.TraceLoggerProxy( trace_logger )
     else:
         proxy = None
     # Create the database engine

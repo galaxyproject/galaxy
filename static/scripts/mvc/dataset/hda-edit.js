@@ -32,6 +32,38 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         ];
     },
 
+    /** Set up js behaviors, event handlers for elements within the given container.
+     *      Overridden from hda-base.
+     *  @param {jQuery} $container jq object that contains the elements to process (defaults to this.$el)
+     */
+    _setUpBehaviors : function( $container ){
+        //TODO: ideally this would be a DELETE call to the api
+        //  using purge async for now
+        HDABaseView.prototype._setUpBehaviors.call( this, $container );
+
+        // use purge_async with an ajax call
+        var hdaView = this,
+            purge_url = this.urls.purge,
+            purge_link = $container.find( '#historyItemPurger-' + this.model.get( 'id' ) );
+        if( purge_link ){
+            //TODO: remove href from template
+            purge_link.attr( 'href', [ "javascript", "void(0)" ].join( ':' ) );
+            purge_link.click( function( event ){
+                //TODO??: confirm?
+                var ajaxPromise = jQuery.ajax( purge_url );
+                ajaxPromise.success( function( message, status, responseObj ){
+                    hdaView.model.set( 'purged', true );
+                });
+                ajaxPromise.error( function( error, status, message ){
+                    //TODO: Exception messages are hidden within error page
+                    //!NOTE: that includes the 'Removal of datasets by users is not allowed in this Galaxy instance.'
+                    alert( '(' + error.status + ') Unable to purge this dataset:\n' + message );
+                });
+            });
+        }
+        //TODO: same with undelete_async
+    },
+
     // ......................................................................... RENDER WARNINGS
     /** Render any hda warnings including: is deleted, is purged, is hidden.
      *      Overrides _render_warnings to include links to further actions (undelete, etc.)).
@@ -110,11 +142,35 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             return null;
         }
         
-        var deleteBtnData = {
+        var self = this,
+            delete_url = self.urls[ 'delete' ],
+            deleteBtnData = {
             title       : _l( 'Delete' ),
-            href        : this.urls[ 'delete' ],
+            href        : delete_url,
             id          : 'historyItemDeleter-' + this.model.get( 'id' ),
-            icon_class  : 'delete'
+            icon_class  : 'delete',
+            on_click    : function() {
+                // Delete the dataset on the server and update HDA + view depending on success/failure.
+                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly 
+                // on the model.
+                $.ajax({
+                    url: delete_url,
+                    type: 'POST',
+                    error: function() {
+                        // Something went wrong, so show HDA again.
+                        // TODO: an error notification would be good.
+                        self.$el.show();
+                    },
+                    success: function() {
+                        // FIXME: setting model attribute causes re-rendering, which is unnecessary.
+                        //self.$el.remove();
+                        self.model.set({ deleted: true });
+                    }
+                });
+
+                // Return false so that anchor action (page reload) does not happen.
+                //return false;
+            }
         };
         if( this.model.get( 'deleted' ) || this.model.get( 'purged' ) ){
             deleteBtnData = {

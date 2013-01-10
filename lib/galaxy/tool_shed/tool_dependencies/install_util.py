@@ -1,8 +1,8 @@
 import sys, os, subprocess, tempfile
-from common_util import *
-from fabric_util import *
-from galaxy.tool_shed.encoding_util import *
-from galaxy.model.orm import *
+import common_util
+import fabric_util
+from galaxy.tool_shed import encoding_util
+from galaxy.model.orm import and_
 
 from galaxy import eggs
 import pkg_resources
@@ -166,7 +166,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             env_var_dicts = []
             for env_elem in action_elem:
                 if env_elem.tag == 'environment_variable':
-                    env_var_dict = create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
+                    env_var_dict = common_util.create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
                     if env_var_dict:
                         env_var_dicts.append( env_var_dict )  
             if env_var_dicts:
@@ -185,7 +185,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
     else:
         try:
             # There is currently only one fabric method.
-            install_and_build_package( app, tool_dependency, actions_dict )
+            fabric_util.install_and_build_package( app, tool_dependency, actions_dict )
         except Exception, e:
             tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
             tool_dependency.error_message = str( e )
@@ -214,10 +214,10 @@ def run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_
                 for action_elem in param_elem:
                     actions.append( action_elem.text.replace( '$INSTALL_DIR', install_dir ) )
                 if actions:
-                    params_str += 'actions=%s,' % tool_shed_encode( encoding_sep.join( actions ) )
+                    params_str += 'actions=%s,' % encoding_util.tool_shed_encode( encoding_util.encoding_sep.join( actions ) )
             else:
                 if param_elem.text:
-                    param_value = tool_shed_encode( param_elem.text )
+                    param_value = encoding_util.tool_shed_encode( param_elem.text )
                     params_str += '%s=%s,' % ( param_name, param_value )
     if package_name:
         params_str += 'package_name=%s' % package_name
@@ -273,7 +273,7 @@ def set_environment( app, elem, tool_shed_repository ):
                                                            name=env_var_name,
                                                            version=None )
             tool_shed_repository_install_dir = get_tool_shed_repository_install_dir( app, tool_shed_repository )
-            env_var_dict = create_env_var_dict( env_var_elem, tool_shed_repository_install_dir=tool_shed_repository_install_dir )
+            env_var_dict = common_util.create_env_var_dict( env_var_elem, tool_shed_repository_install_dir=tool_shed_repository_install_dir )
             if env_var_dict:
                 if not os.path.exists( install_dir ):
                     os.makedirs( install_dir )
@@ -284,10 +284,10 @@ def set_environment( app, elem, tool_shed_repository ):
                                                                     type='set_environment',
                                                                     status=app.model.ToolDependency.installation_status.INSTALLING,
                                                                     set_status=True )
-                cmd = create_or_update_env_shell_file( install_dir, env_var_dict )
+                cmd = common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
                 if env_var_version == '1.0':
                     # Handle setting environment variables using a fabric method.
-                    handle_command( app, tool_dependency, install_dir, cmd )
+                    fabric_util.handle_command( app, tool_dependency, install_dir, cmd )
                     sa_session.refresh( tool_dependency )
                     if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
                         tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED

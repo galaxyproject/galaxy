@@ -1335,7 +1335,9 @@ class DatasetInstance( object ):
                 # Loop through sources until viable one is found.
                 for source in source_list:
                     msg = self.convert_dataset( trans, source )
-                    if msg == self.conversion_messages.PENDING:
+                    # No message or PENDING means that source is viable. No
+                    # message indicates conversion was done and is successful.
+                    if not msg or msg == self.conversion_messages.PENDING:
                         data_source = source
                         break
 
@@ -3014,6 +3016,7 @@ class ToolShedRepository( object ):
     installation_status = Bunch( NEW='New',
                                  CLONING='Cloning',
                                  SETTING_TOOL_VERSIONS='Setting tool versions',
+                                 INSTALLING_REPOSITORY_DEPENDENCIES='Installing repository dependencies',
                                  INSTALLING_TOOL_DEPENDENCIES='Installing tool dependencies',
                                  LOADING_PROPRIETARY_DATATYPES='Loading proprietary datatypes',
                                  INSTALLED='Installed',
@@ -3148,20 +3151,89 @@ class ToolShedRepository( object ):
     def can_reinstall_or_activate( self ):
         return self.deleted
     @property
+    def has_repository_dependencies( self ):
+        if self.metadata:
+            return 'repository_dependencies' in self.metadata
+        return False
+    @property
     def includes_tools( self ):
-        return self.metadata and 'tools' in self.metadata
+        if self.metadata:
+            return 'tools' in self.metadata
+        return False
     @property
     def includes_tool_dependencies( self ):
-        return self.metadata and 'tool_dependencies' in self.metadata
+        if self.metadata:
+            return 'tool_dependencies' in self.metadata
+        return False
     @property
     def includes_workflows( self ):
-        return self.metadata and 'workflows' in self.metadata
+        if self.metadata:
+            return 'workflows' in self.metadata
+        return False
     @property
     def in_error_state( self ):
         return self.status == self.installation_status.ERROR
     @property
     def has_readme_files( self ):
-        return self.metadata and 'readme_files' in self.metadata
+        if self.metadata:
+            return 'readme_files' in self.metadata
+        return False
+    @property
+    def repository_dependencies( self ):
+        required_repositories = []
+        for rrda in self.required_repositories:
+            repository_dependency = rrda.repository_dependency
+            required_repository = repository_dependency.repository
+            required_repositories.append( required_repository )
+        return required_repositories
+    @property
+    def installed_repository_dependencies( self ):
+        """Return the repository's repository dependencies that are currently installed."""
+        installed_required_repositories = []
+        for required_repository in self.repository_dependencies:
+            if required_repository.status == self.installation_status.INSTALLED:
+                installed_required_repositories.append( required_repository )
+        return installed_required_repositories
+    @property
+    def missing_repository_dependencies( self ):
+        """Return the repository's repository dependencies that are not currently installed, and may not ever have been installed."""
+        missing_required_repositories = []
+        for required_repository in self.repository_dependencies:
+            if required_repository.status not in [ self.installation_status.INSTALLED ]:
+                missing_required_repositories.append( required_repository )
+        return missing_required_repositories
+    @property
+    def repository_dependencies_being_installed( self ):
+        required_repositories_being_installed = []
+        for required_repository in self.repository_dependencies:
+            if tool_dependency.status == ToolDependency.installation_status.INSTALLING:
+                required_repositories_being_installed.append( required_repository )
+        return required_repositories_being_installed
+    @property
+    def repository_dependencies_missing_or_being_installed( self ):
+        required_repositories_missing_or_being_installed = []
+        for required_repository in self.repository_dependencies:
+            if required_repository.status in [ self.installation_status.ERROR,
+                                              self.installation_status.INSTALLING,
+                                              self.installation_status.NEVER_INSTALLED,
+                                              self.installation_status.UNINSTALLED ]:
+                required_repositories_missing_or_being_installed.append( required_repository )
+        return required_repositories_missing_or_being_installed
+    @property
+    def repository_dependencies_with_installation_errors( self ):
+        required_repositories_with_installation_errors = []
+        for required_repository in self.repository_dependencies:
+            if required_repository.status == self.installation_status.ERROR:
+                required_repositories_with_installation_errors.append( required_repository )
+        return required_repositories_with_installation_errors
+    @property
+    def uninstalled_repository_dependencies( self ):
+        """Return the repository's repository dependencies that have been uninstalled."""
+        uninstalled_required_repositories = []
+        for required_repository in self.repository_dependencies:
+            if required_repository.status == self.installation_status.UNINSTALLED:
+                uninstalled_required_repositories.append( required_repository )
+        return uninstalled_required_repositories
     @property
     def installed_tool_dependencies( self ):
         """Return the repository's tool dependencies that are currently installed."""
@@ -3210,6 +3282,15 @@ class ToolShedRepository( object ):
             if tool_dependency.status == ToolDependency.installation_status.UNINSTALLED:
                 uninstalled_tool_dependencies.append( tool_dependency )
         return uninstalled_tool_dependencies
+
+class RepositoryRepositoryDependencyAssociation( object ):
+    def __init__( self, tool_shed_repository_id=None, repository_dependency_id=None ):
+        self.tool_shed_repository_id = tool_shed_repository_id
+        self.repository_dependency_id = repository_dependency_id
+
+class RepositoryDependency( object ):
+    def __init__( self, tool_shed_repository_id=None ):
+        self.tool_shed_repository_id = tool_shed_repository_id
 
 class ToolDependency( object ):
     installation_status = Bunch( NEVER_INSTALLED='Never installed',

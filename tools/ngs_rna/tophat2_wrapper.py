@@ -20,8 +20,6 @@ def __main__():
                                                                                 where each end is 50bp, you should set -r to be 200. There is no default, \
                                                                                 and this parameter is required for paired end runs.')
     parser.add_option( '', '--mate-std-dev', dest='mate_std_dev', help='Standard deviation of distribution on inner distances between male pairs.' )
-    parser.add_option( '-n', '--transcriptome-mismatches', dest='transcriptome_mismatches' )
-    parser.add_option( '', '--genome-read-mismatches', dest='genome_read_mismatches' )
     parser.add_option( '', '--read-mismatches', dest='read_mismatches' )
     parser.add_option( '', '--bowtie-n', action="store_true", dest='bowtie_n' )
     parser.add_option( '', '--report-discordant-pair-alignments', action="store_true", dest='report_discordant_pairs' )
@@ -85,6 +83,12 @@ def __main__():
     parser.add_option( '', '--single-paired', dest='single_paired', help='' )
     parser.add_option( '', '--settings', dest='settings', help='' )
 
+    # Read group options.
+    parser.add_option( '', '--rgid', dest='rgid', help='Read group identifier' )
+    parser.add_option( '', '--rglb', dest='rglb', help='Library name' )
+    parser.add_option( '', '--rgpl', dest='rgpl', help='Platform/technology used to produce the reads' )
+    parser.add_option( '', '--rgsm', dest='rgsm', help='Sample' )
+
     (options, args) = parser.parse_args()
 
     # Color or base space
@@ -130,7 +134,7 @@ def __main__():
         index_path = options.index_path
 
     # Build tophat command.
-    cmd = 'tophat2 %s %s %s'
+    cmd = 'tophat2 --keep-fasta-order %s %s %s'
     reads = options.input1
     if options.input2:
         reads += ' ' + options.input2
@@ -139,6 +143,15 @@ def __main__():
         opts += ' -r %s' % options.mate_inner_dist
         if options.report_discordant_pairs:
             opts += ' --report-discordant-pair-alignments'
+    # Read group options.
+    if options.rgid:
+        if not options.rglb or not options.rgpl or not options.rgsm:
+            stop_err( 'If you want to specify read groups, you must include the ID, LB, PL, and SM tags.' )
+        opts += ' --rg-id %s' % options.rgid
+        opts += ' --rg-library %s' % options.rglb
+        opts += ' --rg-platform %s' % options.rgpl
+        opts += ' --rg-sample %s' % options.rgsm
+
     if options.settings == 'preSet':
         cmd = cmd % ( opts, index_path, reads )
     else:
@@ -171,10 +184,6 @@ def __main__():
                 # need to warn user of this fact
                 #sys.stdout.write( "Max insertion length and max deletion length options don't work in Tophat v1.2.0\n" )
                 
-            if options.transcriptome_mismatches:
-                opts += ' --transcriptome-mismatches %i' % int( options.transcriptome_mismatches )
-            if options.genome_read_mismatches:
-                opts += ' --genome-read-mismatches %i' % int( options.genome_read_mismatches )
             if options.read_mismatches:
                 opts += ' --read-mismatches %i' % int( options.read_mismatches )
             if options.bowtie_n:

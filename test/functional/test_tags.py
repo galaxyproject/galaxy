@@ -33,6 +33,7 @@ class TestTags( TwillTestCase ):
         assert admin_user is not None, 'Problem retrieving user with email "test@bx.psu.edu" from the database'
         global admin_user_private_role
         admin_user_private_role = get_private_role( admin_user )
+
     def test_005_add_tag_to_history( self ):
         """Testing adding a tag to a history"""
         # Logged in as admin_user
@@ -45,7 +46,9 @@ class TestTags( TwillTestCase ):
                       'History',
                       'history.mako',
                       'hello' )
-        self.check_history_for_string( 'tags : {"hello"' )
+        self.get_tags( self.security.encode_id( history1.id ), 'History' )
+        self.check_page_for_string( 'tags : {"hello": ""}' )
+
     def test_010_add_tag_to_history_item( self ):
         """Testing adding a tag to a history item"""
         # Logged in as admin_user
@@ -56,6 +59,7 @@ class TestTags( TwillTestCase ):
                       'edit_attributes.mako',
                       'goodbye' )
         self.check_hda_attribute_info( 'tags : {"goodbye"' )
+
     def test_999_reset_data_for_later_test_runs( self ):
         """Reseting data to enable later test runs to to be valid"""
         # logged in as admin_user
