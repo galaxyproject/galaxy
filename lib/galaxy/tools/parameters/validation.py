@@ -182,10 +182,13 @@ class MetadataValidator( Validator ):
     def from_element( cls, param, elem ):
         return cls( message=elem.get( 'message', None ), check=elem.get( 'check', "" ), skip=elem.get( 'skip', "" ) )
     def validate( self, value, history=None ):
-        if value and value.missing_meta( check = self.check, skip = self.skip ):
-            if self.message is None:
-                self.message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
-            raise ValueError( self.message )
+        if value:
+            if not isinstance( value, model.DatasetInstance ):
+                raise ValueError( 'A non-dataset value was provided.' )
+            if value.missing_meta( check = self.check, skip = self.skip ):
+                if self.message is None:
+                    self.message = "Metadata missing, click the pencil icon in the history item to edit / save the metadata attributes"
+                raise ValueError( self.message )
 
 class UnspecifiedBuildValidator( Validator ):
     """
