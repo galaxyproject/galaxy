@@ -2128,16 +2128,16 @@ class Tool:
         return params_to_strings( self.inputs, params, app )
     def params_from_strings( self, params, app, ignore_errors=False ):
         return params_from_strings( self.inputs, params, app, ignore_errors )
-    def check_and_update_param_values( self, values, trans ):
+    def check_and_update_param_values( self, values, trans, update_values=True ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
         from a database in case new parameters have been added. 
         """
         messages = {}
-        self.check_and_update_param_values_helper( self.inputs, values, trans, messages )
+        self.check_and_update_param_values_helper( self.inputs, values, trans, messages, update_values=update_values )
         return messages
-    def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="" ):
+    def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="", update_values=True ):
         """
         Recursive helper for `check_and_update_param_values_helper`
         """
@@ -2183,10 +2183,11 @@ class Tool:
                     # Regular tool parameter, no recursion needed
                     try:
                         #this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
-                        input.value_from_basic( values[ input.name ], trans.app, ignore_errors=False )
+                        input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
                     except:
                         messages[ input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, input.label )
-                        values[ input.name ] = input.get_initial_value( trans, context )
+                        if update_values:
+                            values[ input.name ] = input.get_initial_value( trans, context )
     def handle_unvalidated_param_values( self, input_values, app ):
         """
         Find any instances of `UnvalidatedValue` within input_values and
