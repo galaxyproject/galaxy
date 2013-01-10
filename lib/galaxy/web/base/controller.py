@@ -315,7 +315,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                               UsesLibraryMixinItems ):
     """ Mixin for controllers that use Visualization objects. """
     
-    viz_types = [ "trackster", "circster" ]
+    viz_types = [ "trackster" ]
 
     def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None, dbkey=None, annotation=None, config={}, save=True ):
         """ Create visualiation and first revision. """

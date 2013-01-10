@@ -187,7 +187,8 @@ class VisualizationListGrid( grids.Grid ):
         grids.GridAction( "Create new visualization", dict( action='create' ) )
     ]
     operations = [
-        grids.GridOperation( "View/Edit", allow_multiple=False, url_args=get_url_args ),
+        grids.GridOperation( "Open", allow_multiple=False, url_args=get_url_args ),
+        grids.GridOperation( "Open in Circster", allow_multiple=False, condition=( lambda item: item.type == 'trackster' ), url_args=dict( action='circster' ) ),
         grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit') ),
         grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False, url_args=dict( action='clone') ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
@@ -727,6 +728,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         """
 
         # Get dataset to add.
+        dataset = None
         if dataset_id:
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
         
@@ -734,6 +736,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         if id:
             # Display existing viz.
             vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+            dbkey = vis.dbkey
         else:
             # Create new viz.
             if not dbkey:
