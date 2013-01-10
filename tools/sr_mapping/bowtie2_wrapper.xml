@@ -4,6 +4,7 @@
     <version_command>bowtie2 --version</version_command>
     <requirements>
         <requirement type="package">bowtie2</requirement>
+        <requirement type="package">samtools</requirement>
     </requirements>
     <command interpreter="python">
         bowtie2_wrapper.py
