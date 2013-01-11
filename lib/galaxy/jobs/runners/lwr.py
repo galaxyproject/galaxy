@@ -73,8 +73,9 @@ class LwrJobRunner( ClusterJobRunner ):
             working_directory = job_wrapper.working_directory
             file_stager = FileStager(client, command_line, job_wrapper.extra_filenames, input_files, output_files, job_wrapper.tool.tool_dir, working_directory)
             rebuilt_command_line = file_stager.get_rewritten_command_line()
+            job_id = file_stager.job_id
             client.launch( rebuilt_command_line )
-            job_wrapper.set_runner( runner_url, job_wrapper.job_id )
+            job_wrapper.set_runner( runner_url, job_id )
             job_wrapper.change_state( model.Job.states.RUNNING )
 
         except Exception, exc:
@@ -84,7 +85,7 @@ class LwrJobRunner( ClusterJobRunner ):
 
         lwr_job_state = ClusterJobState()
         lwr_job_state.job_wrapper = job_wrapper
-        lwr_job_state.job_id = job_wrapper.job_id
+        lwr_job_state.job_id = job_id
         lwr_job_state.old_state = True
         lwr_job_state.running = True
         lwr_job_state.runner_url = runner_url
