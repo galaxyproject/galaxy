@@ -1251,18 +1251,20 @@ def merge_containers_dicts_for_new_install( containers_dicts ):
                 old_container_tool_dependencies_root = old_container_dict[ 'tool_dependencies' ]
                 if old_container_tool_dependencies_root:
                     if tool_dependencies_root_folder is None:
-                        tool_dependencies_root_folder = old_container_tool_dependencies_root
-                        # Change the folder id so it won't confict with others being merged.
-                        tool_dependencies_root_folder.id = folder_id
+                        tool_dependencies_root_folder = container_util.Folder( id=folder_id, key='root', label='root', parent=None )
                         folder_id += 1
-                        tool_dependencies_folder = tool_dependencies_root_folder.folders[ 0 ]
-                        tool_dependencies_folder.id = folder_id
+                        tool_dependencies_folder = container_util.Folder( id=folder_id,
+                                                                          key='merged',
+                                                                          label='Tool dependencies',
+                                                                          parent=tool_dependencies_root_folder )
                         folder_id += 1
                     else:
+                        td_list = [ td.listify for td in tool_dependencies_folder.tool_dependencies ]
                         # The old_container_tool_dependencies_root will be a root folder containing a single sub_folder.
                         old_container_tool_dependencies_folder = old_container_tool_dependencies_root.folders[ 0 ]
                         for td in old_container_tool_dependencies_folder.tool_dependencies:
-                            tool_dependencies_folder.tool_dependencies.append( td )
+                            if td.listify not in td_list:
+                                tool_dependencies_folder.tool_dependencies.append( td )
             if repository_dependencies_root_folder:
                 repository_dependencies_root_folder.folders.append( repository_dependencies_folder )
                 new_containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder

@@ -112,6 +112,9 @@ class ToolDependency( object ):
         self.installation_status = installation_status
         self.repository_id = repository_id
         self.tool_dependency_id = tool_dependency_id
+    @property
+    def listify( self ):
+        return [ self.name, self.version, self.type ]
 
 class Workflow( object ):
     """Workflow object."""
