@@ -791,9 +791,17 @@ def get_installed_and_missing_tool_dependencies_for_new_install( trans, all_tool
         tool_dependencies = {}
         missing_tool_dependencies = {}
         for td_key, val in all_tool_dependencies.items():
-            # Since we have a new install, missing tool dependencies have never been installed.
-            val[ 'status' ] = trans.model.ToolDependency.installation_status.NEVER_INSTALLED
-            missing_tool_dependencies[ td_key ] = val
+            # Set environment tool dependencies are a list, set each member to never installed.
+            if td_key == 'set_environment':
+                new_val = []
+                for requirement_dict in val:
+                    requirement_dict[ 'status' ] = trans.model.ToolDependency.installation_status.NEVER_INSTALLED
+                    new_val.append( requirement_dict )
+                missing_tool_dependencies[ td_key ] = new_val
+            else:
+                # Since we have a new install, missing tool dependencies have never been installed.
+                val[ 'status' ] = trans.model.ToolDependency.installation_status.NEVER_INSTALLED
+                missing_tool_dependencies[ td_key ] = val
     else:
         tool_dependencies = None
         missing_tool_dependencies = None
