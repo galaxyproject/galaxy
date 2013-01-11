@@ -282,6 +282,24 @@ class Client(object):
         return self.__raw_execute_and_parse("get_output_type", {"name": name,
                                                                 "job_id": self.job_id})
 
+    def download_work_dir_output(self, source, working_directory, output_path):
+        """
+        Download an output dataset specified with from_work_dir from the
+        remote server.
+
+        **Parameters**
+
+        source : str
+            Path in job's working_directory to find output in.
+        working_directory : str
+            Local working_directory for the job.
+        output_path : str
+            Full path to output dataset.
+        """
+        output = open(output_path, "wb")
+        name = os.path.basename(source)
+        self.__raw_download_output(name, self.job_id, "work_dir", output)
+
     def download_output(self, path, working_directory):
         """
         Download an output dataset from the remote server.
@@ -295,23 +313,26 @@ class Client(object):
         """
         name = os.path.basename(path)
         output_type = self._get_output_type(name)
-        response = self.__raw_execute("download_output", {"name": name,
-                                                          "job_id": self.job_id,
-                                                          "output_type": output_type})
         if output_type == "direct":
             output = open(path, "wb")
         elif output_type == "task":
             output = open(os.path.join(working_directory, name), "wb")
         else:
             raise Exception("No remote output found for dataset with path %s" % path)
+        self.__raw_download_output(name, self.job_id, output_type, output)
+
+    def __raw_download_output(self, name, job_id, output_type, output_file):
+        response = self.__raw_execute("download_output", {"name": name,
+                                                          "job_id": self.job_id,
+                                                          "output_type": output_type})
         try:
             while True:
                 buffer = response.read(1024)
                 if buffer == "":
                     break
-                output.write(buffer)
+                output_file.write(buffer)
         finally:
-            output.close()
+            output_file.close()
 
     def launch(self, command_line):
         """
