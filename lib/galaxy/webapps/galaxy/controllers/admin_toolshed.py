@@ -946,7 +946,12 @@ class AdminToolshed( AdminGalaxy ):
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
             message = "The repository information has been updated."
-        containers_dict = shed_util.populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository, reinstalling=False )
+        containers_dict = shed_util.populate_containers_dict_from_repository_metadata( trans=trans,
+                                                                                       tool_shed_url=tool_shed_url,
+                                                                                       tool_path=tool_path,
+                                                                                       repository=repository,
+                                                                                       reinstalling=False,
+                                                                                       required_repo_info_dicts=None )
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,
                                     description=description,
@@ -1259,46 +1264,49 @@ class AdminToolshed( AdminGalaxy ):
             shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
             shed_tool_conf = shed_tool_conf.replace( './', '', 1 )
             shed_tool_conf_select_field = None
+        tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf )
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
+        containers_dicts = []
         if len( repo_info_dicts ) == 1:
             # If we're installing a single repository, see if it contains a readme or dependencies that we can display.
             repo_info_dict = repo_info_dicts[ 0 ]
-            name, repository_owner, changeset_revision, readme_files_dict, includes_tool_dependencies, \
-                installed_repository_dependencies, missing_repository_dependencies, tool_dependencies, missing_tool_dependencies = \
-                shed_util.get_repository_readme_and_dependencies_for_display( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies )
-            # Since we are installing a new repository, most of the repository contents are set to None since we don't yet know what they are.
-            containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
-                                                                          toolshed_base_url=tool_shed_url,
-                                                                          repository_name=name,
-                                                                          repository_owner=repository_owner,
-                                                                          changeset_revision=changeset_revision,
-                                                                          repository=None,
-                                                                          datatypes=None,
-                                                                          invalid_tools=None,
-                                                                          missing_repository_dependencies=missing_repository_dependencies,
-                                                                          missing_tool_dependencies=missing_tool_dependencies,
-                                                                          readme_files_dict=readme_files_dict,
-                                                                          repository_dependencies=installed_repository_dependencies,
-                                                                          tool_dependencies=tool_dependencies,
-                                                                          valid_tools=None,
-                                                                          workflows=None,
-                                                                          new_install=True,
-                                                                          reinstalling=False )
+            name, repository_owner, changeset_revision, includes_tool_dependencies, installed_repository_dependencies, \
+                missing_repository_dependencies, installed_tool_dependencies, missing_tool_dependencies = \
+                shed_util.get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies )
+            readme_files_dict = shed_util.get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict )
             # We're handling 1 of 2 scenarios here: (1) we're installing a tool shed repository for the first time, so we've retrieved the list of installed
             # and missing repository dependencies from the database (2) we're handling the scenario where an error occurred during the installation process,
             # so we have a tool_shed_repository record in the database with associated repository dependency records.  Since we have the repository
             # dependencies in either case, we'll merge the list of missing repository dependencies into the list of installed repository dependencies since
             # each displayed repository dependency will display a status, whether installed or missing.
-            containers_dict = suc.merge_missing_repository_dependencies_to_installed_container( containers_dict )
+            containers_dict = shed_util.populate_containers_dict_for_new_install( trans=trans,
+                                                                                  tool_shed_url=tool_shed_url,
+                                                                                  tool_path=tool_path,
+                                                                                  readme_files_dict=readme_files_dict,
+                                                                                  installed_repository_dependencies=installed_repository_dependencies,
+                                                                                  missing_repository_dependencies=missing_repository_dependencies,
+                                                                                  installed_tool_dependencies=installed_tool_dependencies,
+                                                                                  missing_tool_dependencies=missing_tool_dependencies )
+            containers_dicts.append( containers_dict )
         else:
-            # FIXME: support the intallation of repository dependencies and tool dependencies for a list of tool shed repositories being installed.
-            containers_dict = dict( datatypes=None,
-                                    invalid_tools=None,
-                                    readme_files_dict=None,
-                                    repository_dependencies=None,
-                                    tool_dependencies=None,
-                                    valid_tools=None,
-                                    workflows=None )
+            # We're installing a list of repositories, each of which may have tool dependencies or repository dependencies.
+            all_installed_repository_dependencies = []
+            all_missing_repository_dependencies = []
+            all_installed_tool_dependencies = []
+            all_missing_tool_dependencies = []
+            for repo_info_dict in repo_info_dicts:
+                name, repository_owner, changeset_revision, includes_tool_dependencies, installed_repository_dependencies, \
+                    missing_repository_dependencies, installed_tool_dependencies, missing_tool_dependencies = \
+                    shed_util.get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies )
+                containers_dict = shed_util.populate_containers_dict_for_new_install( trans=trans,
+                                                                                      tool_shed_url=tool_shed_url,
+                                                                                      tool_path=tool_path,
+                                                                                      readme_files_dict=None,
+                                                                                      repository_dependencies=installed_repository_dependencies,
+                                                                                      missing_repository_dependencies=missing_repository_dependencies,
+                                                                                      tool_dependencies=installed_tool_dependencies,
+                                                                                      missing_tool_dependencies=missing_tool_dependencies )
+                containers_dicts.append( containers_dict )
         # Handle tool dependencies chack box.
         if trans.app.config.tool_dependency_dir is None:
             if includes_tool_dependencies:
@@ -1319,7 +1327,7 @@ class AdminToolshed( AdminGalaxy ):
                                     includes_repository_dependencies=includes_repository_dependencies,
                                     install_repository_dependencies_check_box=install_repository_dependencies_check_box,
                                     new_tool_panel_section=new_tool_panel_section,
-                                    containers_dict=containers_dict,
+                                    containers_dicts=containers_dicts,
                                     shed_tool_conf=shed_tool_conf,
                                     shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
@@ -1667,8 +1675,13 @@ class AdminToolshed( AdminGalaxy ):
             message ++ "from the installed repository's <b>Repository Actions</b> menu.  "
             status = 'error'
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
-        repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
-        containers_dict = shed_util.populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository, reinstalling=False )
+        repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )        
+        containers_dict = shed_util.populate_containers_dict_from_repository_metadata( trans=trans,
+                                                                                       tool_shed_url=tool_shed_url,
+                                                                                       tool_path=tool_path,
+                                                                                       repository=repository,
+                                                                                       reinstalling=False,
+                                                                                       required_repo_info_dicts=None )
         return trans.fill_template( '/admin/tool_shed_repository/manage_repository.mako',
                                     repository=repository,
                                     description=repository.description,

@@ -584,6 +584,68 @@ def get_converter_and_display_paths( registration_elem, relative_install_dir ):
         if converter_path and display_path:
             break
     return converter_path, display_path
+def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies ):
+    """
+    Return dictionaries containing the sets of installed and missing tool dependencies and repository dependencies associated with the repository defined
+    by the received repo_info_dict.
+    """
+    name = repo_info_dict.keys()[ 0 ]
+    repo_info_tuple = repo_info_dict[ name ]
+    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = \
+        suc.get_repo_info_tuple_contents( repo_info_tuple )
+    if repository_dependencies:
+        missing_td = {}
+        # Handle the scenario where a repository was installed, then uninstalled and an error occurred during the reinstallation process.
+        # In this case, a record for the repository will exist in the database with the status of 'New'.
+        repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed_url, name, repository_owner, changeset_revision )
+        if repository and repository.metadata:
+            installed_rd, missing_rd = \
+                get_installed_and_missing_repository_dependencies( trans, repository )
+        else:
+            installed_rd, missing_rd = \
+                get_installed_and_missing_repository_dependencies_for_new_install( trans, repository_dependencies )
+        # Discover all repository dependencies and retrieve information for installing them.
+        required_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
+        # Display tool dependencies defined for each of the repository dependencies.
+        if required_repo_info_dicts:
+            all_tool_dependencies = {}
+            for rid in required_repo_info_dicts:
+                for name, repo_info_tuple in rid.items():
+                    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, rid_installed_td = \
+                        suc.get_repo_info_tuple_contents( repo_info_tuple )
+                    if rid_installed_td:
+                        for td_key, td_dict in rid_installed_td.items():
+                            if td_key not in all_tool_dependencies:
+                                all_tool_dependencies[ td_key ] = td_dict
+            if all_tool_dependencies:
+                if installed_td is None:
+                    installed_td = {}
+                else:
+                    # Move all tool dependencies to the missing_tool_dependencies container.
+                    for td_key, td_dict in installed_td.items():
+                        if td_key not in missing_td:
+                            missing_td[ td_key ] = td_dict
+                    installed_td = {}
+                # Discover and categorize all tool dependencies defined for this repository's repository dependencies.
+                required_tool_dependencies, required_missing_tool_dependencies = \
+                    get_installed_and_missing_tool_dependencies_for_new_install( trans, all_tool_dependencies )
+                if required_tool_dependencies:
+                    if not includes_tool_dependencies:
+                        includes_tool_dependencies = True
+                    for td_key, td_dict in required_tool_dependencies.items():
+                        if td_key not in installed_td:
+                            installed_td[ td_key ] = td_dict
+                if required_missing_tool_dependencies:
+                    if not includes_tool_dependencies:
+                        includes_tool_dependencies = True
+                    for td_key, td_dict in required_missing_tool_dependencies.items():
+                        if td_key not in missing_td:
+                            missing_td[ td_key ] = td_dict
+    else:
+        installed_rd = None
+        missing_rd = None
+        missing_td = None
+    return name, repository_owner, changeset_revision, includes_tool_dependencies, installed_rd, missing_rd, installed_td, missing_td
 def get_headers( fname, sep, count=60, is_multi_byte=False ):
     """Returns a list with the first 'count' lines split by 'sep'."""
     headers = []
@@ -689,7 +751,11 @@ def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dep
                     if tool_dependency:
                         td_info_dict[ 'repository_id' ] = repository.id
                         td_info_dict[ 'tool_dependency_id' ] = tool_dependency.id
-                        td_info_dict[ 'status' ] = str( tool_dependency.status )
+                        if tool_dependency.status:
+                            tool_dependency_status = str( tool_dependency.status )
+                        else:
+                            tool_dependency_status = 'Never installed'
+                        td_info_dict[ 'status' ] = tool_dependency_status
                         val[ index ] = td_info_dict
                         if tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLED:
                             tool_dependencies[ td_key ] = val
@@ -703,7 +769,11 @@ def get_installed_and_missing_tool_dependencies( trans, repository, all_tool_dep
                 if tool_dependency:
                     val[ 'repository_id' ] = repository.id
                     val[ 'tool_dependency_id' ] = tool_dependency.id
-                    val[ 'status' ] = str( tool_dependency.status )
+                    if tool_dependency.status:
+                        tool_dependency_status = str( tool_dependency.status )
+                    else:
+                        tool_dependency_status = 'Never installed'
+                    val[ 'status' ] = tool_dependency_status
                     if tool_dependency.status == trans.model.ToolDependency.installation_status.INSTALLED:
                         tool_dependencies[ td_key ] = val
                     else:
@@ -728,18 +798,8 @@ def get_installed_and_missing_tool_dependencies_for_new_install( trans, all_tool
         tool_dependencies = None
         missing_tool_dependencies = None
     return tool_dependencies, missing_tool_dependencies
-def get_repository_owner( cleaned_repository_url ):
-    items = cleaned_repository_url.split( 'repos' )
-    repo_path = items[ 1 ]
-    if repo_path.startswith( '/' ):
-        repo_path = repo_path.replace( '/', '', 1 )
-    return repo_path.lstrip( '/' ).split( '/' )[ 0 ]
-def get_repository_owner_from_clone_url( repository_clone_url ):
-    tmp_url = suc.clean_repository_clone_url( repository_clone_url )
-    tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
-    return get_repository_owner( tmp_url )
-def get_repository_readme_and_dependencies_for_display( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies ):
-    # If we're installing a single repository, see if it contains a readme or dependencies that we can display.
+def get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict ):
+    """Return a dictionary of README files contained in the single repository being installed so they can be displayed on the tool panel section selection page."""
     name = repo_info_dict.keys()[ 0 ]
     repo_info_tuple = repo_info_dict[ name ]
     description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = \
@@ -752,59 +812,17 @@ def get_repository_readme_and_dependencies_for_display( trans, tool_shed_url, re
     raw_text = response.read()
     response.close()
     readme_files_dict = json.from_json_string( raw_text )
-    if repository_dependencies:
-        missing_td = {}
-        # Handle the scenario where a repository was installed, then uninstalled and an error occurred during the reinstallation process.
-        # In this case, a record for the repository will exist in the database with the status of 'New'.
-        repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed_url, name, repository_owner, changeset_revision )
-        if repository and repository.metadata:
-            installed_rd, missing_rd = \
-                get_installed_and_missing_repository_dependencies( trans, repository )
-        else:
-            installed_rd, missing_rd = \
-                get_installed_and_missing_repository_dependencies_for_new_install( trans, repository_dependencies )
-        # Discover all repository dependencies and retrieve information for installing them.
-        required_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
-        # Display tool dependencies defined for each of the repository dependencies.
-        if required_repo_info_dicts:
-            all_tool_dependencies = {}
-            for rid in required_repo_info_dicts:
-                for name, repo_info_tuple in rid.items():
-                    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, rid_installed_td = \
-                        suc.get_repo_info_tuple_contents( repo_info_tuple )
-                    if rid_installed_td:
-                        for td_key, td_dict in rid_installed_td.items():
-                            if td_key not in all_tool_dependencies:
-                                all_tool_dependencies[ td_key ] = td_dict
-            if all_tool_dependencies:
-                if installed_td is None:
-                    installed_td = {}
-                else:
-                    # Move all tool dependencies to the missing_tool_dependencies container.
-                    for td_key, td_dict in installed_td.items():
-                        if td_key not in missing_td:
-                            missing_td[ td_key ] = td_dict
-                    installed_td = {}
-                # Discover and categorize all tool dependencies defined for this repository's repository dependencies.
-                required_tool_dependencies, required_missing_tool_dependencies = \
-                    get_installed_and_missing_tool_dependencies_for_new_install( trans, all_tool_dependencies )
-                if required_tool_dependencies:
-                    if not includes_tool_dependencies:
-                        includes_tool_dependencies = True
-                    for td_key, td_dict in required_tool_dependencies.items():
-                        if td_key not in installed_td:
-                            installed_td[ td_key ] = td_dict
-                if required_missing_tool_dependencies:
-                    if not includes_tool_dependencies:
-                        includes_tool_dependencies = True
-                    for td_key, td_dict in required_missing_tool_dependencies.items():
-                        if td_key not in missing_td:
-                            missing_td[ td_key ] = td_dict
-    else:
-        installed_rd = None
-        missing_rd = None
-        missing_td = None
-    return name, repository_owner, changeset_revision, readme_files_dict, includes_tool_dependencies, installed_rd, missing_rd, installed_td, missing_td
+    return readme_files_dict
+def get_repository_owner( cleaned_repository_url ):
+    items = cleaned_repository_url.split( 'repos' )
+    repo_path = items[ 1 ]
+    if repo_path.startswith( '/' ):
+        repo_path = repo_path.replace( '/', '', 1 )
+    return repo_path.lstrip( '/' ).split( '/' )[ 0 ]
+def get_repository_owner_from_clone_url( repository_clone_url ):
+    tmp_url = suc.clean_repository_clone_url( repository_clone_url )
+    tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
+    return get_repository_owner( tmp_url )
 def get_required_repo_info_dicts( tool_shed_url, repo_info_dicts ):
     """
     Inspect the list of repo_info_dicts for repository dependencies and append a repo_info_dict for each of them to the list.  All
@@ -1220,46 +1238,17 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         installed_repository_dependencies, missing_repository_dependencies = get_installed_and_missing_repository_dependencies( trans, repository )
         # Handle the current repository's tool dependencies.
         repository_tool_dependencies = metadata.get( 'tool_dependencies', None )
-        repository_installed_tool_dependencies, repository_missing_tool_dependencies = \
-            get_installed_and_missing_tool_dependencies( trans, repository, repository_tool_dependencies )
+        repository_installed_tool_dependencies, repository_missing_tool_dependencies = get_installed_and_missing_tool_dependencies( trans,
+                                                                                                                                    repository,
+                                                                                                                                    repository_tool_dependencies )
         if reinstalling:
-            installed_tool_dependencies = None
-            missing_tool_dependencies = None
-            if repository_installed_tool_dependencies is None:
-                repository_installed_tool_dependencies = {}
-            if repository_missing_tool_dependencies is None:
-                repository_missing_tool_dependencies = {}
-            if required_repo_info_dicts:
-                # Handle the tool dependencies defined for each of the repository's repository dependencies.
-                for rid in required_repo_info_dicts:
-                    for name, repo_info_tuple in rid.items():
-                        description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
-                            suc.get_repo_info_tuple_contents( repo_info_tuple )
-                        if tool_dependencies:
-                            tool_shed = suc.get_tool_shed_from_clone_url( repository_clone_url )
-                            required_repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, name, repository_owner, changeset_revision )
-                            if not required_repository:
-                                # The required_repository may have been installed with a different changeset revision.
-                                required_repository, installed_changeset_revision = repository_was_previously_installed( trans,
-                                                                                                                         tool_shed_url,
-                                                                                                                         name,
-                                                                                                                         repo_info_tuple,
-                                                                                                                         clone_dir )
-                            if required_repository:
-                                required_repository_installed_tool_dependencies, required_repository_missing_tool_dependencies = \
-                                    get_installed_and_missing_tool_dependencies( trans, required_repository, tool_dependencies )
-                                if required_repository_installed_tool_dependencies:
-                                    for td_key, td_dict in required_repository_installed_tool_dependencies.items():
-                                        if td_key not in repository_installed_tool_dependencies:
-                                            repository_installed_tool_dependencies[ td_key ] = td_dict
-                                if required_repository_missing_tool_dependencies:
-                                    for td_key, td_dict in required_repository_missing_tool_dependencies.items():
-                                        if td_key not in repository_missing_tool_dependencies:
-                                            repository_missing_tool_dependencies[ td_key ] = td_dict
-            if repository_installed_tool_dependencies:
-                installed_tool_dependencies = repository_installed_tool_dependencies
-            if repository_missing_tool_dependencies:
-                missing_tool_dependencies = repository_missing_tool_dependencies
+            installed_tool_dependencies, missing_tool_dependencies = \
+                populate_tool_dependencies_dicts( trans=trans,
+                                                  tool_shed_url=tool_shed_url,
+                                                  tool_path=tool_path,
+                                                  repository_installed_tool_dependencies=repository_installed_tool_dependencies,
+                                                  repository_missing_tool_dependencies=repository_missing_tool_dependencies,
+                                                  required_repo_info_dicts=required_repo_info_dicts )
         else:
             installed_tool_dependencies = repository_installed_tool_dependencies
             missing_tool_dependencies = repository_missing_tool_dependencies
@@ -1268,10 +1257,6 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         # Handle workflows.
         workflows = metadata.get( 'workflows', None )
         containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
-                                                                      toolshed_base_url=tool_shed_url,
-                                                                      repository_name=repository.name,
-                                                                      repository_owner=repository.owner,
-                                                                      changeset_revision=repository.installed_changeset_revision,
                                                                       repository=repository,
                                                                       datatypes=datatypes,
                                                                       invalid_tools=invalid_tools,
@@ -1293,6 +1278,95 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                                 valid_tools=None,
                                 workflows=None )
     return containers_dict
+def populate_containers_dict_for_new_install( trans, tool_shed_url, tool_path, readme_files_dict, installed_repository_dependencies, missing_repository_dependencies,
+                                              installed_tool_dependencies, missing_tool_dependencies ):
+    """Return the populated containers for a repository being installed for the first time."""
+    installed_tool_dependencies, missing_tool_dependencies = populate_tool_dependencies_dicts( trans=trans,
+                                                                                               tool_shed_url=tool_shed_url,
+                                                                                               tool_path=tool_path,
+                                                                                               repository_installed_tool_dependencies=installed_tool_dependencies,
+                                                                                               repository_missing_tool_dependencies=missing_tool_dependencies,
+                                                                                               required_repo_info_dicts=None )
+    # Since we are installing a new repository, most of the repository contents are set to None since we don't yet know what they are.
+    containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
+                                                                  repository=None,
+                                                                  datatypes=None,
+                                                                  invalid_tools=None,
+                                                                  missing_repository_dependencies=missing_repository_dependencies,
+                                                                  missing_tool_dependencies=missing_tool_dependencies,
+                                                                  readme_files_dict=readme_files_dict,
+                                                                  repository_dependencies=installed_repository_dependencies,
+                                                                  tool_dependencies=installed_tool_dependencies,
+                                                                  valid_tools=None,
+                                                                  workflows=None,
+                                                                  new_install=True,
+                                                                  reinstalling=False )
+    # Merge the missing_repository_dependencies container contents to the installed_repository_dependencies container.
+    containers_dict = suc.merge_missing_repository_dependencies_to_installed_container( containers_dict )
+    # Merge the missing_tool_dependencies container contents to the installed_tool_dependencies container.
+    containers_dict = suc.merge_missing_tool_dependencies_to_installed_container( containers_dict )
+    return containers_dict
+def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repository_installed_tool_dependencies, repository_missing_tool_dependencies,
+                                      required_repo_info_dicts ):
+    """
+    Return the populated installed_tool_dependencies and missing_tool_dependencies dictionaries for all repositories defined by entries in the received
+    required_repo_info_dicts.
+    """
+    installed_tool_dependencies = None
+    missing_tool_dependencies = None
+    if repository_installed_tool_dependencies is None:
+        repository_installed_tool_dependencies = {}
+    else:
+        # Add the install_dir attribute to the tool_dependencies.
+        repository_installed_tool_dependencies = suc.add_installation_directories_to_tool_dependencies( trans=trans,
+                                                                                                        tool_dependencies=repository_installed_tool_dependencies )
+    if repository_missing_tool_dependencies is None:
+        repository_missing_tool_dependencies = {}
+    else:
+        # Add the install_dir attribute to the tool_dependencies.
+        repository_missing_tool_dependencies = suc.add_installation_directories_to_tool_dependencies( trans=trans,
+                                                                                                      tool_dependencies=repository_missing_tool_dependencies )
+    if required_repo_info_dicts:
+        # Handle the tool dependencies defined for each of the repository's repository dependencies.
+        for rid in required_repo_info_dicts:
+            for name, repo_info_tuple in rid.items():
+                description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+                    suc.get_repo_info_tuple_contents( repo_info_tuple )
+                if tool_dependencies:
+                    clone_dir = os.path.join( tool_path, generate_tool_path( repository_clone_url, changeset_revision ) )
+                    # Add the install_dir attribute to the tool_dependencies.
+                    tool_dependencies = suc.add_installation_directories_to_tool_dependencies( trans=trans,
+                                                                                               tool_dependencies=tool_dependencies )
+                    # The required_repository may have been installed with a different changeset revision.
+                    required_repository, installed_changeset_revision = repository_was_previously_installed( trans,
+                                                                                                             tool_shed_url,
+                                                                                                             name,
+                                                                                                             repo_info_tuple,
+                                                                                                             clone_dir )
+                    if required_repository:
+                        required_repository_installed_tool_dependencies, required_repository_missing_tool_dependencies = \
+                            get_installed_and_missing_tool_dependencies( trans, required_repository, tool_dependencies )
+                        if required_repository_installed_tool_dependencies:
+                            # Add the install_dir attribute to the tool_dependencies.
+                            required_repository_installed_tool_dependencies = \
+                                suc.add_installation_directories_to_tool_dependencies( trans=trans,
+                                                                                       tool_dependencies=required_repository_installed_tool_dependencies )
+                            for td_key, td_dict in required_repository_installed_tool_dependencies.items():
+                                if td_key not in repository_installed_tool_dependencies:
+                                    repository_installed_tool_dependencies[ td_key ] = td_dict
+                        if required_repository_missing_tool_dependencies:
+                            # Add the install_dir attribute to the tool_dependencies.
+                            required_repository_missing_tool_dependencies = \
+                                suc.add_installation_directories_to_tool_dependencies( trans=trans,
+                                                                                       tool_dependencies=required_repository_missing_tool_dependencies )
+                            for td_key, td_dict in required_repository_missing_tool_dependencies.items():
+                                if td_key not in repository_missing_tool_dependencies:
+                                    repository_missing_tool_dependencies[ td_key ] = td_dict
+    if repository_installed_tool_dependencies:
+        installed_tool_dependencies = repository_installed_tool_dependencies
+    if repository_missing_tool_dependencies:
+        missing_tool_dependencies = repository_missing_tool_dependencies
+    return installed_tool_dependencies, missing_tool_dependencies
 def pull_repository( repo, repository_clone_url, ctx_rev ):
     """Pull changes from a remote repository to a local one."""
     commands.pull( suc.get_configured_ui(), repo, source=repository_clone_url, rev=[ ctx_rev ] )

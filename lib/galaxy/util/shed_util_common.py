@@ -38,9 +38,17 @@ GALAXY_ADMIN_TOOL_SHED_CONTROLLER = 'GALAXY_ADMIN_TOOL_SHED_CONTROLLER'
 TOOL_SHED_ADMIN_CONTROLLER = 'TOOL_SHED_ADMIN_CONTROLLER'
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 
-def add_installation_directories_to_tool_dependencies( trans, repository_name, repository_owner, changeset_revision, tool_dependencies ):
+def add_installation_directories_to_tool_dependencies( trans, tool_dependencies ):
+    """
+    Determine the path to the installation directory for each of the received tool dependencies.  This path will be displayed within the tool dependencies
+    container on the select_tool_panel_section or reselect_tool_panel_section pages when installing or reinstalling repositories that contain tools with the
+    defined tool dependencies.  The list of tool dependencies may be associated with more than a single repository.
+    """
     for dependency_key, requirements_dict in tool_dependencies.items():
         if dependency_key not in [ 'set_environment' ]:
+            repository_name = requirements_dict[ 'repository_name' ]
+            repository_owner = requirements_dict[ 'repository_owner' ]
+            changeset_revision = requirements_dict[ 'changeset_revision' ]
             dependency_name = requirements_dict[ 'name' ]
             version = requirements_dict[ 'version' ]
             type = requirements_dict[ 'type' ]
@@ -76,9 +84,9 @@ def build_readme_files_dict( metadata, tool_path=None ):
                 except Exception, e:
                     log.debug( "Error reading README file '%s' defined in metadata: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
     return readme_files_dict
-def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository_name, repository_owner, changeset_revision, repository, datatypes,
-                                            invalid_tools, missing_repository_dependencies, missing_tool_dependencies, readme_files_dict,
-                                            repository_dependencies, tool_dependencies, valid_tools, workflows, new_install=False, reinstalling=False ):
+def build_repository_containers_for_galaxy( trans, repository, datatypes, invalid_tools, missing_repository_dependencies, missing_tool_dependencies,
+                                            readme_files_dict, repository_dependencies, tool_dependencies, valid_tools, workflows, new_install=False,
+                                            reinstalling=False ):
     """Return a dictionary of containers for the received repository's dependencies and readme files for display during installation to Galaxy."""
     containers_dict = dict( datatypes=None,
                             invalid_tools=None,
@@ -93,17 +101,12 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
     # id.  However we need to be careful because sometimes the repository object is None.
     if repository:
         repository_id = repository.id
+        changeset_revision = repository.changeset_revision
     else:
         repository_id = None
+        changeset_revision = None
     lock = threading.Lock()
     lock.acquire( True )
-    if tool_dependencies:
-        # Add the install_dir attribute to the tool_dependencies.
-        tool_dependencies = add_installation_directories_to_tool_dependencies( trans,
-                                                                               repository_name,
-                                                                               repository_owner,
-                                                                               changeset_revision,
-                                                                               tool_dependencies )
     try:
         folder_id = 0
         # Datatypes container.
@@ -126,10 +129,6 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
         # Installed repository dependencies container.
         if repository_dependencies:
             folder_id, repository_dependencies_root_folder = container_util.build_repository_dependencies_folder( trans=trans,
-                                                                                                                  toolshed_base_url=toolshed_base_url,
-                                                                                                                  repository_name=repository_name,
-                                                                                                                  repository_owner=repository_owner,
-                                                                                                                  changeset_revision=changeset_revision,
                                                                                                                   folder_id=folder_id,
                                                                                                                   repository_dependencies=repository_dependencies,
                                                                                                                   label='Installed repository dependencies',
@@ -139,10 +138,6 @@ def build_repository_containers_for_galaxy( trans, toolshed_base_url, repository
         if missing_repository_dependencies:
             folder_id, missing_repository_dependencies_root_folder = \
                 container_util.build_repository_dependencies_folder( trans=trans,
-                                                                     toolshed_base_url=toolshed_base_url,
-                                                                     repository_name=repository_name,
-                                                                     repository_owner=repository_owner,
-                                                                     changeset_revision=changeset_revision,
                                                                      folder_id=folder_id,
                                                                      repository_dependencies=missing_repository_dependencies,
                                                                      label='Missing repository dependencies',
@@ -236,12 +231,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     folder_id, readme_files_root_folder = container_util.build_readme_files_folder( trans, folder_id, readme_files_dict )
                     containers_dict[ 'readme_files' ] = readme_files_root_folder
             # Repository dependencies container.
-            toolshed_base_url = str( url_for( '/', qualified=True ) ).rstrip( '/' )
             folder_id, repository_dependencies_root_folder = container_util.build_repository_dependencies_folder( trans=trans,
-                                                                                                                  toolshed_base_url=toolshed_base_url,
-                                                                                                                  repository_name=repository.name,
-                                                                                                                  repository_owner=repository.user.username,
-                                                                                                                  changeset_revision=changeset_revision,
                                                                                                                   folder_id=folder_id,
                                                                                                                   repository_dependencies=repository_dependencies,
                                                                                                                   label='Repository dependencies',
@@ -816,6 +806,27 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                                                                                               all_repository_dependencies=None,
                                                                                               handled_key_rd_dicts=None,
                                                                                               circular_repository_dependencies=None )
+    if metadata:
+        tool_dependencies = metadata.get( 'tool_dependencies', None )
+        if tool_dependencies:
+            new_tool_dependencies = {}
+            for dependency_key, requirements_dict in tool_dependencies.items():
+                if dependency_key in [ 'set_environment' ]:
+                    new_set_environment_dict_list = []
+                    for set_environment_dict in requirements_dict:
+                        set_environment_dict[ 'repository_name' ] = repository_name
+                        set_environment_dict[ 'repository_owner' ] = repository_owner
+                        set_environment_dict[ 'changeset_revision' ] = changeset_revision
+                        new_set_environment_dict_list.append( set_environment_dict )
+                    new_tool_dependencies[ dependency_key ] = new_set_environment_dict_list
+                else:
+                    requirements_dict[ 'repository_name' ] = repository_name
+                    requirements_dict[ 'repository_owner' ] = repository_owner
+                    requirements_dict[ 'changeset_revision' ] = changeset_revision
+                    new_tool_dependencies[ dependency_key ] = requirements_dict
+            tool_dependencies = new_tool_dependencies
+    else:
+        tool_dependencies = None
     # Cast unicode to string.
     repo_info_dict[ str( repository.name ) ] = ( str( repository.description ),
                                                  str( repository_clone_url ),
@@ -823,7 +834,7 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                                                  str( ctx_rev ),
                                                  str( repository_owner ),
                                                  repository_dependencies,
-                                                 metadata.get( 'tool_dependencies', None ) )
+                                                 tool_dependencies )
     return repo_info_dict
 def ensure_required_repositories_exist_for_reinstall( trans, repository_dependencies ):
     """
@@ -1900,14 +1911,12 @@ def get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf ):
     for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
         config_filename = shed_tool_conf_dict[ 'config_filename' ]
         if config_filename == shed_tool_conf:
-            tool_path = shed_tool_conf_dict[ 'tool_path' ]
-            break
+            return shed_tool_conf_dict[ 'tool_path' ]
         else:
             file_name = strip_path( config_filename )
             if file_name == shed_tool_conf:
-                tool_path = shed_tool_conf_dict[ 'tool_path' ]
-                break
-    return tool_path
+                return shed_tool_conf_dict[ 'tool_path' ]
+    return None
 def get_tool_shed_repository_by_id( trans, repository_id ):
     return trans.sa_session.query( trans.model.ToolShedRepository ) \
                            .filter( trans.model.ToolShedRepository.table.c.id == trans.security.decode_id( repository_id ) ) \
@@ -2308,6 +2317,33 @@ def merge_missing_repository_dependencies_to_installed_container( containers_dic
             containers_dict[ 'repository_dependencies' ] = root_container
     containers_dict[ 'missing_repository_dependencies' ] = None
     return containers_dict
+def merge_missing_tool_dependencies_to_installed_container( containers_dict ):
+    """ Merge the list of missing tool dependencies into the list of installed tool dependencies."""
+    missing_td_container_root = containers_dict.get( 'missing_tool_dependencies', None )
+    if missing_td_container_root:
+        # The missing_td_container_root will be a root folder containing a single sub_folder.
+        missing_td_container = missing_td_container_root.folders[ 0 ]
+        installed_td_container_root = containers_dict.get( 'tool_dependencies', None )
+        # The installed_td_container_root will be a root folder containing a single sub_folder.
+        if installed_td_container_root:
+            installed_td_container = installed_td_container_root.folders[ 0 ]
+            installed_td_container.label = 'Tool dependencies'
+            for index, td in enumerate( missing_td_container.tool_dependencies ):
+                # Skip the header row.
+                if index == 0:
+                    continue
+                installed_td_container.tool_dependencies.append( td )
+            installed_td_container_root.folders = [ installed_td_container ]
+            containers_dict[ 'tool_dependencies' ] = installed_td_container_root
+        else:
+            # Change the folder label from 'Missing tool dependencies' to be 'Tool dependencies' for display.
+            root_container = containers_dict[ 'missing_tool_dependencies' ]
+            for sub_container in root_container.folders:
+                # There should only be 1 subfolder.
+                sub_container.label = 'Tool dependencies'
+            containers_dict[ 'tool_dependencies' ] = root_container
+    containers_dict[ 'missing_tool_dependencies' ] = None
+    return containers_dict
 def open_repository_files_folder( trans, folder_path ):
     try:
         files_list = get_repository_files( trans, folder_path )
@@ -2417,15 +2453,6 @@ def remove_tool_dependency_installation_directory( dependency_install_dir ):
         error_message = ''
     return removed, error_message
 def repository_dependencies_have_tool_dependencies( trans, repository_dependencies ):
-    """
-    repository_dependencies': 
-    {'http://localhost:9009__ESEP__emboss_6__ESEP__test__ESEP__92bedb60b0c9': 
-        [['http://localhost:9009', 'emboss_datatypes', 'test', '27df73fe48a6']], 
-     'root_key': 'http://localhost:9009__ESEP__emboss__ESEP__test__ESEP__06d729cb3f34', 
-     'description': 'required to enable emboss 6 tools', 
-     'http://localhost:9009__ESEP__emboss__ESEP__test__ESEP__06d729cb3f34': 
-         [['http://localhost:9009', 'emboss_6', 'test', '92bedb60b0c9']]}}
-    """
     rd_tups_processed = []
     for key, rd_tups in repository_dependencies.items():
         if key in [ 'root_key', 'description' ]:

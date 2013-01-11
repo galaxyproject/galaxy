@@ -480,7 +480,9 @@ class MatchedRepositoryGrid( grids.Grid ):
                      model_class=model.User,
                      attach_popup=False )
     ]
-    operations = []
+    operations = [
+        grids.GridOperation( "Install to Galaxy", allow_multiple=True  )
+    ]
     standard_filters = []
     default_filter = {}
     num_rows_per_page = 50
@@ -1101,7 +1103,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action=a,
                                                                       **kwd ) )
-                if operation == "install":
+                if operation == "install to galaxy":
                     # We've received a list of RepositoryMetadata ids, so we need to build a list of associated Repository ids.
                     encoded_repository_ids = []
                     changeset_revisions = []
@@ -1109,6 +1111,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                         repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
                         encoded_repository_ids.append( trans.security.encode_id( repository_metadata.repository.id ) )
                         changeset_revisions.append( repository_metadata.changeset_revision )
+                    new_kwd = {}
                     new_kwd[ 'repository_ids' ] = encoded_repository_ids
                     new_kwd[ 'changeset_revisions' ] = changeset_revisions
                     return trans.response.send_redirect( web.url_for( controller='repository',
@@ -1186,7 +1189,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action=a,
                                                                       **kwd ) )
-                if operation == "install":
+                if operation == "install to galaxy":
                     # We've received a list of RepositoryMetadata ids, so we need to build a list of associated Repository ids.
                     encoded_repository_ids = []
                     changeset_revisions = []
@@ -1372,8 +1375,8 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
     @web.json
     def get_repository_information( self, trans, repository_ids, changeset_revisions, **kwd ):
         """
-        Generate a list of dictionaries, each of which contains the information about a repository that will be necessary for installing
-        it into a local Galaxy instance.
+        Generate a list of dictionaries, each of which contains the information about a repository that will be necessary for installing it into
+        a local Galaxy instance.
         """
         includes_tools = False
         includes_repository_dependencies = False

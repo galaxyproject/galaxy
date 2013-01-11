@@ -211,8 +211,7 @@ def build_readme_files_folder( trans, folder_id, readme_files_dict, label='Readm
     else:
         readme_files_root_folder = None
     return folder_id, readme_files_root_folder
-def build_repository_dependencies_folder( trans, toolshed_base_url, repository_name, repository_owner, changeset_revision, folder_id, repository_dependencies,
-                                          label='Repository dependencies', installed=False ):
+def build_repository_dependencies_folder( trans, folder_id, repository_dependencies, label='Repository dependencies', installed=False ):
     """Return a folder hierarchy containing repository dependencies."""
     if repository_dependencies:
         repository_dependency_id = 0
@@ -293,10 +292,10 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
     return folder_id, tools_root_folder
 def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='Tool dependencies', missing=False, new_install=False, reinstalling=False ):
     """Return a folder hierarchy containing tool dependencies."""
-    # The status will be displayed only if the received value for missing is True.  When this is the case, we're in Galaxy (not the tool shed)
-    # and the tool dependencies are not installed or are in an error state, so they are considered missing.  The tool dependency status will be
-    # displayed only if a record exists for the tool dependency in the database, but the tool dependency is not installed.  The value for new_install
-    # will be True only if the associated repository in being installed for the first time.  This value is used in setting the container description.
+    # When we're in Galaxy (not the tool shed) and the tool dependencies are not installed or are in an error state, they are considered missing.  The tool
+    # dependency status will be displayed only if a record exists for the tool dependency in the Galaxy database, but the tool dependency is not installed.
+    # The value for new_install will be True only if the associated repository in being installed for the first time.  This value is used in setting the
+    # container description.
     if tool_dependencies:
         tool_dependency_id = 0
         folder_id += 1
@@ -304,15 +303,12 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
         folder_id += 1
         folder = Folder( id=folder_id, key='tool_dependencies', label=label, parent=tool_dependencies_root_folder )
         if trans.webapp.name == 'galaxy':
-            if reinstalling:
-                folder.description = "this repository's tools require handling of these dependencies"
-            elif missing and not reinstalling:
+            if new_install or reinstalling:
+                folder.description = "repository tools require handling of these dependencies"
+            elif missing and not new_install and not reinstalling:
                 folder.description = 'click the name to install the missing dependency'
             else:
-                if new_install:
-                    folder.description = "this repository's tools require handling of these dependencies"
-                else:
-                    folder.description = 'click the name to browse the dependency installation directory'
+                folder.description = 'click the name to browse the dependency installation directory'
         tool_dependencies_root_folder.folders.append( folder )
         # Insert a header row.
         tool_dependency_id += 1
@@ -321,11 +317,9 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
             tool_dependency = ToolDependency( id=tool_dependency_id,
                                               name='Name',
                                               version='Version',
-                                              type='Type' )
-            if missing:
-                tool_dependency.installation_status = 'Status'
-            else:
-                tool_dependency.install_dir = 'Install directory'
+                                              type='Type',
+                                              install_dir='Install directory',
+                                              installation_status='Installation status' )
         else:
             tool_dependency = ToolDependency( id=tool_dependency_id,
                                               name='Name',
@@ -341,7 +335,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                     repository_id = set_environment_dict.get( 'repository_id', None )
                     td_id = set_environment_dict.get( 'tool_dependency_id', None )
                     if trans.webapp.name == 'galaxy':
-                        installation_status = set_environment_dict.get( 'status', None )
+                        installation_status = set_environment_dict.get( 'status', 'Never installed' )
                     else:
                         installation_status = None
                     tool_dependency = ToolDependency( id=tool_dependency_id,
@@ -359,7 +353,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                 repository_id = requirements_dict.get( 'repository_id', None )
                 td_id = requirements_dict.get( 'tool_dependency_id', None )
                 if trans.webapp.name == 'galaxy':
-                    installation_status = requirements_dict.get( 'status', None )
+                    installation_status = requirements_dict.get( 'status', 'Never installed' )
                 else:
                     installation_status = None
                 tool_dependency = ToolDependency( id=tool_dependency_id,
