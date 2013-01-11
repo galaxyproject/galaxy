@@ -10,21 +10,20 @@ ${grid_javascripts()}
 
 <%def name="select_header()">
     <script type="text/javascript">
-        // Handle all label clicks.
-        var f = function() {
+        // Load all grid URLs into modal-body element so that
+        // grid + links stays embedded.
+        var load_urls_into_modal_body = function() {
             $(".addtracktab, #grid-table a").click(function() {
-                var parent_body = $(".divider").parent();
-                if (parent_body.length !== 0) {
-                    parent_body.load($(this).attr("href"));
-                    f();
+                var modal_body = $(".modal-body");
+                if (modal_body.length !== 0) {
+                    modal_body.load($(this).attr("href"));
                     return false;
                 }
             });
         };
         // Need to process label URLs when document loaded and when grid changes. 
         $(document).ready(function() {
-            f();
-            // $('#grid-table-body').bind('update', f);
+            load_urls_into_modal_body();
         });
     </script>
     <style>
