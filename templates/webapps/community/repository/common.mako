@@ -507,10 +507,12 @@
             ${version_str | h}
         </${cell_type}>
         <${cell_type}>${tool_dependency.type | h}</${cell_type}>
-        %if is_missing:
-            <${cell_type}>${tool_dependency.installation_status | h}</${cell_type}>
-        %elif tool_dependency.install_dir:
-            <${cell_type}>${tool_dependency.install_dir | h}</${cell_type}>
+        %if trans.webapp.name == 'galaxy':
+            %if is_missing:
+                <${cell_type}>${tool_dependency.installation_status | h}</${cell_type}>
+            %elif tool_dependency.install_dir:
+                <${cell_type}>${tool_dependency.install_dir | h}</${cell_type}>
+            %endif
         %endif
     </tr>
     <%
