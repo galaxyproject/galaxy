@@ -1266,7 +1266,6 @@ class AdminToolshed( AdminGalaxy ):
             shed_tool_conf_select_field = None
         tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf )
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
-        containers_dicts = []
         if len( repo_info_dicts ) == 1:
             # If we're installing a single repository, see if it contains a readme or dependencies that we can display.
             repo_info_dict = repo_info_dicts[ 0 ]
@@ -1287,13 +1286,9 @@ class AdminToolshed( AdminGalaxy ):
                                                                                   missing_repository_dependencies=missing_repository_dependencies,
                                                                                   installed_tool_dependencies=installed_tool_dependencies,
                                                                                   missing_tool_dependencies=missing_tool_dependencies )
-            containers_dicts.append( containers_dict )
         else:
             # We're installing a list of repositories, each of which may have tool dependencies or repository dependencies.
-            all_installed_repository_dependencies = []
-            all_missing_repository_dependencies = []
-            all_installed_tool_dependencies = []
-            all_missing_tool_dependencies = []
+            containers_dicts = []
             for repo_info_dict in repo_info_dicts:
                 name, repository_owner, changeset_revision, includes_tool_dependencies, installed_repository_dependencies, \
                     missing_repository_dependencies, installed_tool_dependencies, missing_tool_dependencies = \
@@ -1302,11 +1297,13 @@ class AdminToolshed( AdminGalaxy ):
                                                                                       tool_shed_url=tool_shed_url,
                                                                                       tool_path=tool_path,
                                                                                       readme_files_dict=None,
-                                                                                      repository_dependencies=installed_repository_dependencies,
+                                                                                      installed_repository_dependencies=installed_repository_dependencies,
                                                                                       missing_repository_dependencies=missing_repository_dependencies,
-                                                                                      tool_dependencies=installed_tool_dependencies,
+                                                                                      installed_tool_dependencies=installed_tool_dependencies,
                                                                                       missing_tool_dependencies=missing_tool_dependencies )
                 containers_dicts.append( containers_dict )
+            # Merge all containers into a single container.
+            containers_dict = shed_util.merge_containers_dicts_for_new_install( containers_dicts )
         # Handle tool dependencies chack box.
         if trans.app.config.tool_dependency_dir is None:
             if includes_tool_dependencies:
@@ -1327,7 +1324,7 @@ class AdminToolshed( AdminGalaxy ):
                                     includes_repository_dependencies=includes_repository_dependencies,
                                     install_repository_dependencies_check_box=install_repository_dependencies_check_box,
                                     new_tool_panel_section=new_tool_panel_section,
-                                    containers_dicts=containers_dicts,
+                                    containers_dict=containers_dict,
                                     shed_tool_conf=shed_tool_conf,
                                     shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
