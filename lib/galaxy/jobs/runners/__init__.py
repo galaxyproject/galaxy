@@ -152,6 +152,7 @@ class ClusterJobRunner( BaseJobRunner ):
         nworkers = self.app.config.cluster_job_queue_workers
         for i in range( nworkers ):
             worker = threading.Thread( name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next )
+            worker.setDaemon( True )
             worker.start()
             self.work_threads.append( worker )
 
