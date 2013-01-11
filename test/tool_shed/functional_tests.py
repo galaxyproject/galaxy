@@ -139,6 +139,7 @@ def main():
     galaxy_file_path = os.path.join( galaxy_db_path, 'files' )
     hgweb_config_file_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     new_repos_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
+    galaxy_tempfiles = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     galaxy_shed_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
     galaxy_tool_dependency_dir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
     os.environ[ 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' ] = galaxy_tool_dependency_dir
@@ -269,6 +270,7 @@ def main():
                                                database_connection = galaxy_database_connection,
                                                database_engine_option_pool_size = '10',
                                                file_path = galaxy_file_path,
+                                               new_file_path = galaxy_tempfiles,
                                                tool_path = tool_path,
                                                tool_data_path = tool_data_path,
                                                shed_tool_path = galaxy_shed_tool_path,

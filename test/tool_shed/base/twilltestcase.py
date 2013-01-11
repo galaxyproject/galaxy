@@ -103,10 +103,10 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository/view_changelog?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def check_repository_dependency( self, repository, depends_on_repository, depends_on_changeset_revision, changeset_revision=None ):
-        if changeset_revision is None:
-            changeset_revision = self.get_repository_tip( repository )
-        strings_displayed = [ depends_on_repository.name, depends_on_repository.user.username, depends_on_changeset_revision  ]
+    def check_repository_dependency( self, repository, depends_on_repository, depends_on_changeset_revision=None, changeset_revision=None ):
+        strings_displayed = [ depends_on_repository.name, depends_on_repository.user.username  ]
+        if depends_on_changeset_revision:
+            strings_displayed.append( depends_on_changeset_revision )
         self.display_manage_repository_page( repository, changeset_revision=changeset_revision, strings_displayed=strings_displayed )
     def check_repository_metadata( self, repository, tip_only=True ):
         if tip_only:
@@ -178,6 +178,15 @@ class ShedTwillTestCase( TwillTestCase ):
             return '%s=%s&%s=%s' % ( field_name, field_value, field_name, field_value ) 
         else:
             return '%s=%s' % ( field_name, field_value )
+    def create_repository_dependency( self, repository=None, depends_on=[], filepath=None ):
+        dependency_description = '%s depends on %s.' % ( repository.name, ', '.join( repo.name for repo in depends_on ) )
+        self.generate_repository_dependency_xml( depends_on, 
+                                                 self.get_filename( 'repository_dependencies.xml', filepath=filepath ), 
+                                                 dependency_description=dependency_description )
+        self.upload_file( repository, 
+                          'repository_dependencies.xml', 
+                          filepath=filepath, 
+                          commit_message='Uploaded dependency on %s.' % ', '.join( repo.name for repo in depends_on ) )
     def create_user_in_galaxy( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         self.visit_galaxy_url( "/user/create?cntrller=%s&use_panels=False" % cntrller )
         tc.fv( '1', 'email', email )
@@ -247,11 +256,25 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_manage_repository_page( self, repository, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         base_url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
-        if changeset_revision is not None:
+        if changeset_revision:
             url = '%s&changeset_revision=%s' % ( base_url, changeset_revision )
         else:
+            changeset_revision = self.get_repository_tip( repository )
             url = base_url
         self.visit_url( url )
+        metadata = self.get_repository_metadata_by_changeset_revision( repository, changeset_revision )
+        if metadata:
+            if 'tool_dependencies' in metadata.metadata:
+                strings_displayed.append( 'Tool dependencies' )
+                for dependency in metadata.metadata[ 'tool_dependencies' ]:
+                    if dependency == 'set_environment':
+                        for environment_dependency in metadata.metadata[ 'tool_dependencies' ][ dependency ]:
+                            strings_displayed.append( environment_dependency[ 'name' ] )
+                            strings_displayed.append( environment_dependency[ 'type' ] )
+                    else:
+                        strings_displayed.append( metadata.metadata[ 'tool_dependencies' ][ dependency ][ 'name' ] )
+                        strings_displayed.append( metadata.metadata[ 'tool_dependencies' ][ dependency ][ 'version' ] )
+                        strings_displayed.append( metadata.metadata[ 'tool_dependencies' ][ dependency ][ 'type' ] )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_repository_clone_page( self, owner_name, repository_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repos/%s/%s' % ( owner_name, repository_name )
@@ -384,6 +407,9 @@ class ShedTwillTestCase( TwillTestCase ):
             return self.hgweb_config_manager.get_entry( lhs )
         except:
             raise Exception( "Entry for repository %s missing in hgweb config file %s." % ( lhs, self.hgweb_config_manager.hgweb_config ) )
+    def get_repository_changelog( self, repository ):
+        repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
+        return [repo.changectx( changeset ) for changeset in repo.changelog ]
     def get_repository_datatypes_count( self, repository ):
         metadata = self.get_repository_metadata( repository )[0].metadata
         if 'datatypes' not in metadata:
@@ -424,7 +450,7 @@ class ShedTwillTestCase( TwillTestCase ):
         return [ metadata_revision for metadata_revision in repository.metadata_revisions ]
     def get_repository_metadata_by_changeset_revision( self, repository, changeset_revision ):
         found = None
-        for metadata_revision in self.get_repository_metadata( repository ):
+        for metadata_revision in repository.metadata_revisions:
             if metadata_revision.changeset_revision == changeset_revision:
                 found = metadata_revision
         return found
@@ -671,6 +697,30 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.formfile( "1", "file_data", self.get_filename( filename, filepath ) )
         tc.submit( "upload_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        # Uncomment this if it becomes necessary to wait for an asynchronous process to complete after submitting an upload.
+        #for i in range( 5 ):
+        #    try:
+        #        self.check_for_strings( strings_displayed, strings_not_displayed )
+        #        break
+        #    except Exception, e:
+        #        if i == 4:
+        #            raise e
+        #        else:
+        #            time.sleep( 1 )
+        #            continue
+    def verify_installed_uninstalled_repositories( self, installed_repositories=[], uninstalled_repositories=[] ):
+        strings_displayed = []
+        strings_not_displayed = []
+        for repository_name, repository_owner in uninstalled_repositories:
+            repository = test_db_util.get_repository_by_name_and_owner( repository_name, repository_owner )
+            strings_not_displayed.extend( [ repository_name, self.get_repository_tip( repository ) ] )
+        for repository_name, repository_owner in installed_repositories:
+            repository = test_db_util.get_repository_by_name_and_owner( repository_name, repository_owner )
+            galaxy_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, repository_owner )
+            if galaxy_repository:
+                assert galaxy_repository.status == 'Installed', 'Repository %s should be installed, but is %s' % ( repository_name, galaxy_repository.status )
+            strings_displayed.extend( [ repository_name, self.get_repository_tip( repository ) ] )
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
     def verify_installed_repository_metadata_unchanged( self, name, owner ):
         installed_repository = test_db_util.get_installed_repository_by_name_owner( name, owner )
         metadata = installed_repository.metadata

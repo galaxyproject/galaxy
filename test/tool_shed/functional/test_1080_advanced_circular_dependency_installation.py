@@ -210,10 +210,8 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                                                             common.test_user_1_name )
         self.uninstall_repository( installed_convert_repository, remove_from_disk=False )
         strings_not_displayed = [ installed_column_repository.name,
-                                  installed_column_repository.description,
                                   installed_column_repository.installed_changeset_revision,
                                   installed_convert_repository.name,
-                                  installed_convert_repository.description,
                                   installed_convert_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
     def test_0050_reactivate_column_repository( self ):
