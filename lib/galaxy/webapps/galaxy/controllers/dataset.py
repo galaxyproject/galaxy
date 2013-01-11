@@ -997,6 +997,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         params_objects = None
         job = None
         tool = None
+        upgrade_messages = {}
+        has_parameter_errors = False
         inherit_chain = hda.source_dataset_chain
         if inherit_chain:
             job_dataset_association, dataset_association_container_name = inherit_chain[-1]
@@ -1013,12 +1015,19 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     toolbox = self.get_toolbox()
                     tool = toolbox.get_tool( job.tool_id )
                     assert tool is not None, 'Requested tool has not been loaded.'
-                    params_objects = job.get_param_values( trans.app )
+                    #Load parameter objects, if a parameter type has changed, its possible for the value to no longer be valid
+                    try:
+                        params_objects = job.get_param_values( trans.app, ignore_errors=False )
+                    except:
+                        params_objects = job.get_param_values( trans.app, ignore_errors=True )
+                        upgrade_messages = tool.check_and_update_param_values( job.get_param_values( trans.app, ignore_errors=True ), trans, update_values=False ) #use different param_objects here, since we want to display original values as much as possible
+                        has_parameter_errors = True
                 except:
                     pass
         if job is None:
             return trans.show_error_message( "Job information is not available for this dataset." )
-        return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects )
+        #TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
+        return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects, upgrade_messages=upgrade_messages, has_parameter_errors=has_parameter_errors )
 
     @web.expose
     def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):

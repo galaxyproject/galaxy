@@ -1347,7 +1347,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             rval = []
             for val in value:
                 rval.append( get_option_display( val, self.options ) or val )
-        return "\n".join( rval ) + suffix
+        return "\n".join( map( str, rval ) ) + suffix
         
     def get_dependencies( self ):
         """
@@ -1611,9 +1611,11 @@ class DataToolParameter( ToolParameter ):
         if value and not isinstance( value, list ):
             value = [ value ]
         if value:
-            return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )
-        else:
-            return "No dataset"
+            try:
+                return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )
+            except:
+                pass
+        return "No dataset"
 
     def validate( self, value, history=None ):
         for validator in self.validators:
