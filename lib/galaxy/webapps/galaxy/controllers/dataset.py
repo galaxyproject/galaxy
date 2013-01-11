@@ -163,8 +163,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         assert hda and self._can_access_dataset( trans, hda )
         return hda.creating_job
     
-    def _can_access_dataset( self, trans, dataset_association, allow_admin=True ):
-        return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset_association.dataset )
+    def _can_access_dataset( self, trans, dataset_association, allow_admin=True, additional_roles=None ):
+        roles = trans.get_current_user_roles()
+        if additional_roles:
+            roles = roles + additional_roles
+        return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( roles, dataset_association.dataset )
     
     @web.expose
     def errors( self, trans, id ):
@@ -736,7 +739,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         link_name = urllib.unquote_plus( link_name )
         if None in [ app_name, link_name ]:
             return trans.show_error_message( "A display application name and link name must be provided." )
-        if self._can_access_dataset( trans, data ):
+        if self._can_access_dataset( trans, data, additional_roles=user_roles ):
             msg = []
             refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get( app_name )
