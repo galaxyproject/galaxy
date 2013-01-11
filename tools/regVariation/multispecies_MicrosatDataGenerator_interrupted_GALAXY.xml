@@ -1,4 +1,4 @@
-<tool id="multispecies_orthologous_microsats" name="Extract orthologous microsatellites" version="1.0.2">
+<tool id="multispecies_orthologous_microsats" name="Extract orthologous microsatellites" version="1.0.0">
   <description> for multiple (>2) species alignments</description>
   <command interpreter="perl">
     multispecies_MicrosatDataGenerator_interrupted_GALAXY.pl   	
@@ -40,7 +40,7 @@
       <param name="input2" value="regVariation/microsatellite/Galaxy17_masked_short.maf.gz"/>
       <param name="thresholds" value="9,10,12,12"/>
       <param name="species" value="hg18,panTro2,ponAbe2,rheMac2,calJac1"/>
-      <param name="treedefinition" value="((((hg18, panTro2), ponAbe2), rheMac2), calJac1)"/>
+      <param name="treedefinition" value="((((hg18,panTro2),ponAbe2),rheMac2),calJac1)"/>
       <param name="separation" value="10"/>
       <output name="out_file1" file="regVariation/microsatellite/Galaxy17_short_raw.txt"/>
     </test>

@@ -8,7 +8,7 @@ use IO::Handle;
 use Cwd;
 use File::Path qw(make_path remove_tree);
 use File::Temp qw/ tempfile tempdir /;
-my $tdir = tempdir( CLEANUP => 0 );
+my $tdir = tempdir( CLEANUP => 1 );
 chdir $tdir;
 my $dir = getcwd;  
 # print "current dit=$dir\n"; 
@@ -19,6 +19,8 @@ $gapcord %thresholdhash $tree_decipherer @sp_ident %revHash %sameHash %treesToIg
 $mono_flanksimplicityRepno $di_flanksimplicityRepno $prop_of_seq_allowedtoAT $prop_of_seq_allowedtoCG);
 use FileHandle;
 use IO::Handle;                     # 5.004 or higher
+
+
 
 #my @ar = ("/Users/ydk/work/rhesus_microsat/results/galay/chr22_5sp.maf.txt", "/Users/ydk/work/rhesus_microsat/results/galay/dataset_11.dat",
 #"/Users/ydk/work/rhesus_microsat/results/galay/chr22_5spec.maf.summ","hg18,panTro2,ponAbe2,rheMac2,calJac1","((((hg18, panTro2), ponAbe2), rheMac2), calJac1)","9,10,12,12",
@@ -47,6 +49,7 @@ my %replacementArr= ();
 my %replacementArrTag= ();
 my %backReplacementArr= ();
 my %backReplacementArrTag= ();
+$tree_definition=~s/\s+//g;
 
 my $tree_definition_split = $tree_definition;
 $tree_definition_split =~ s/[\(\)]//g;
@@ -211,7 +214,7 @@ my $sh = load_sameHash(1);
 my $rh = load_revHash(1);
 
 #print "inputs are : \n"; foreach(@ARGV){print $_,"\n";} 
-open (SELECT, ">$selected") or die "Cannot open selected file: $selected: $!";
+#open (SELECT, ">$selected") or die "Cannot open selected file: $selected: $!";
 open (SUMMARY, ">$summout") or die "Cannot open summout file: $summout: $!";
 #open (RUN, ">$runtime") or die "Cannot open orth file: $runtime: $!";
 #my $ctlfile = "baseml\.ctl"; #$ARGV[4];
@@ -678,10 +681,8 @@ for my $no (3 ... $#all_tags+1){
 			last;
 		}
 	}
-	
 	foreach my $seqfile (@filterseqfiles){
 		my $fullpath = $seqfile;
-  		#print "opening file: $fullpath\n"; <STDIN>;
 		open (MATCH, "<$fullpath") or die "Cannot open MATCH file $fullpath: $!";
 		my $matchlines = 0;
 
@@ -699,7 +700,7 @@ for my $no (3 ... $#all_tags+1){
 						$matchlines++;
 						print MEGAM $line;
 						$line = <MATCH>;
-						print MEGAM "\n" if $line !~/[0-9a-zA-Z]/;
+						print MEGAM "\n" if $line !~ /[0-9a-zA-Z]/;
 						last if $line !~/[0-9a-zA-Z]/;
 					}
 				}
@@ -902,7 +903,7 @@ for my $no (3 ... $#all_tags+1){
 				my $upstream_gaps = (substr($sequences{$tag}, 0, $extreme_start) =~ s/\-/-/g);		#1	NOW MEASURING THE NUMBER OF GAPS IN THE UPSTEAM 
 																										#2	AND DOWNSTREAM SEQUENCES OF THE MICROSATs IN THIS
 																										#3	CLUSTER.
-	
+#				print "seq length $tag = $sequences{$tag} = ",length($sequences{$tag})," extreme_end=$extreme_end\n" ;	
 				my $downstream_gaps = (substr($sequences{$tag}, $extreme_end) =~ s/\-/-/g);
 				if (($extreme_start - $upstream_gaps )< $EDGE_DISTANCE || (length($sequences{$tag}) - $extreme_end - $downstream_gaps) <  $EDGE_DISTANCE){
 					$edge_microsat=1;
@@ -994,7 +995,7 @@ for my $no (3 ... $#all_tags+1){
 # print "tree_analysis = $tree_analysis .. conformation=$conformation\n"; 
 			#<STDIN>;
 			
-			print SELECT "\"$conformation\"\t$tree_analysis\n";
+#			print SELECT "\"$conformation\"\t$tree_analysis\n";
 			
 			next if $tree_analysis =~ /DISCARD/;
 			if (exists $treesToReject{$tree_analysis}){
@@ -1270,7 +1271,6 @@ for my $no (3 ... $#all_tags+1){
 	
 	
 }	
-
 close SUMMARY;
 
 my @summarizarr = ("+C=+C +R.+C -HCOR,+C",
@@ -1303,6 +1303,12 @@ foreach my $line (@summarizarr){
 	}
 #	print "$fields[0] : $count\n";
 }
+my $rootdir = $dir;
+$rootdir =~ s/\/[A-Za-z0-9\-_]+$//;
+chdir $rootdir;
+remove_tree($dir);
+
+
 #--------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------
 #--------------------------------------------------------------------------------------------------------
@@ -2066,7 +2072,7 @@ sub treeStudy{
 #	print "template DEFINED.. received: @_\n" if defined %template; 
 #	print "only received = @_" if !defined %template; 
 	my $stopper = 0;
-	if (!defined %template){
+#	if (!defined %template){			TEMP MASKED OCT 18 2012
 		$stopper = 1;
 		%template=();
 # print "tree decipherer = $tree_decipherer\n" if $printer == 1; 
@@ -2076,7 +2082,7 @@ sub treeStudy{
 # print "addding : $template_ref->{$key} for $key\n" if $printer == 1;
 			$template{$key} = $template_ref->{$key};
 		}
-	}
+#	}									TEMP MASK OCT 18 2012 END
 #	<STDIN>;
 	for my $templet ( keys %template ) {
 	#	print "$templet => @{$template{$templet}}\n";
@@ -4175,6 +4181,8 @@ sub maftoAxt_multispecies {
 			
 		}
 	}
+	close IN;
+	close OUT;
 #	print "countermatch = $countermatch\n";
 #	<STDIN>;
 }
