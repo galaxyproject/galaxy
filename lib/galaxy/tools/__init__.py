@@ -1600,9 +1600,11 @@ class Tool:
                         try:
                             possible_cases.remove( case.value )
                         except:
-                            log.warning( "A when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." % ( group.name, group.test_param.name, case.value ) )
+                            log.warning( "Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." % 
+                                         ( self.id, group.name, group.test_param.name, case.value ) )
                     for unspecified_case in possible_cases:
-                        log.warning( "A when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." % ( group.name, group.test_param.name, unspecified_case ) )
+                        log.warning( "Tool %s: a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." % 
+                                     ( self.id, group.name, group.test_param.name, unspecified_case ) )
                         case = ConditionalWhen()
                         case.value = unspecified_case
                         case.inputs = odict()
