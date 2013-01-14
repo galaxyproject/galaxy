@@ -28,7 +28,6 @@
   <param name='title' value='rgGRRtest1' />
   <param name='n' value='100' />
   <param name='Z' value='6' />
-  <param name='force' value='true' />
   <output name='out_file1' file='rgtestouts/rgGRR/rgGRRtest1.html' ftype='html' compare="diff" lines_diff='350'>
     <extra_files type="file" name='Log_rgGRRtest1.txt' value="rgtestouts/rgGRR/Log_rgGRRtest1.txt" compare="diff" lines_diff="170"/>
     <extra_files type="file" name='rgGRRtest1.svg' value="rgtestouts/rgGRR/rgGRRtest1.svg" compare="diff" lines_diff="1000" />
