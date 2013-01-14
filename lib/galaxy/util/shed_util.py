@@ -235,11 +235,8 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
         for name, repo_info_tuple in repo_info_dict.items():
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
                 suc.get_repo_info_tuple_contents( repo_info_tuple )
-            clone_dir = os.path.join( tool_path, generate_tool_path( repository_clone_url, changeset_revision ) )
-            relative_install_dir = os.path.join( clone_dir, name )
             # Make sure the repository was not already installed.
-            installed_tool_shed_repository, installed_changeset_revision = \
-                repository_was_previously_installed( trans, tool_shed_url, name, repo_info_tuple, clone_dir )
+            installed_tool_shed_repository, installed_changeset_revision = repository_was_previously_installed( trans, tool_shed_url, name, repo_info_tuple )
             if installed_tool_shed_repository:
                 tool_section, new_tool_panel_section, tool_panel_section_key = handle_tool_panel_selection( trans=trans,
                                                                                                             metadata=installed_tool_shed_repository.metadata,
@@ -602,8 +599,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
             installed_rd, missing_rd = \
                 get_installed_and_missing_repository_dependencies( trans, repository )
         else:
-            installed_rd, missing_rd = \
-                get_installed_and_missing_repository_dependencies_for_new_install( trans, repository_dependencies )
+            installed_rd, missing_rd = get_installed_and_missing_repository_dependencies_for_new_install( trans, repo_info_tuple )
         # Discover all repository dependencies and retrieve information for installing them.
         required_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
         # Display tool dependencies defined for each of the repository dependencies.
@@ -697,7 +693,7 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
                 missing_repository_dependencies[ root_key ] = missing_rd_tups
                 missing_repository_dependencies[ 'description' ] = description 
     return installed_repository_dependencies, missing_repository_dependencies
-def get_installed_and_missing_repository_dependencies_for_new_install( trans, repository_dependencies ):
+def get_installed_and_missing_repository_dependencies_for_new_install( trans, repo_info_tuple ):
     """
     Parse the received repository_dependencies dictionary that is associated with a repository being installed into Galaxy for the first time
     and attempt to determine repository dependencies that are already installed and those that are not.
@@ -706,28 +702,32 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
     installed_repository_dependencies = {}
     missing_rd_tups = []
     installed_rd_tups = []
-    description = repository_dependencies[ 'description' ]
-    root_key = repository_dependencies[ 'root_key' ]
-    # The repository dependencies container will include only the immediate repository dependencies of this repository, so the container will be
-    # only a single level in depth.
-    for key, rd_tups in repository_dependencies.items():
-        if key in [ 'description', 'root_key' ]:
-            continue
-        for rd_tup in rd_tups:
-            tool_shed, name, owner, changeset_revision = rd_tup
-            # This is tricky because updates to installed repository revisions may have occurred making it difficult to discover installed repository
-            # revisions.  If installed repositories are not discovered in this method, they will be returned in the list of missing_repository_dependencies,
-            # but should be discovered later during the installation process since that process inspects all appropriate changeset revisions.
-            repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
-            if repository:
-                new_rd_tup = [ tool_shed, name, owner, changeset_revision, repository.id, repository.status ]
-                if repository.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
-                    installed_rd_tups.append( new_rd_tup )
+    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = \
+        suc.get_repo_info_tuple_contents( repo_info_tuple )
+    if repository_dependencies:
+        description = repository_dependencies[ 'description' ]
+        root_key = repository_dependencies[ 'root_key' ]
+        # The repository dependencies container will include only the immediate repository dependencies of this repository, so the container will be
+        # only a single level in depth.
+        for key, rd_tups in repository_dependencies.items():
+            if key in [ 'description', 'root_key' ]:
+                continue
+            for rd_tup in rd_tups:
+                tool_shed, name, owner, changeset_revision = rd_tup
+                # Updates to installed repository revisions may have occurred, so make sure to locate the appropriate repository revision if one exists.
+                repository, current_changeset_revision = repository_was_previously_installed( trans, tool_shed, name, repo_info_tuple )
+                if repository:
+                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, repository.id, repository.status ]
+                    if repository.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
+                        if new_rd_tup not in installed_rd_tups:
+                            installed_rd_tups.append( new_rd_tup )
+                    else:
+                        if new_rd_tup not in missing_rd_tups:
+                            missing_rd_tups.append( new_rd_tup )
                 else:
-                   missing_rd_tups.append( new_rd_tup )
-            else:
-                new_rd_tup = [ tool_shed, name, owner, changeset_revision, None, 'Never installed' ]
-                missing_rd_tups.append( new_rd_tup )
+                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, None, 'Never installed' ]
+                    if new_rd_tup not in missing_rd_tups:
+                        missing_rd_tups.append( new_rd_tup )
     if installed_rd_tups:
         installed_repository_dependencies[ 'root_key' ] = root_key
         installed_repository_dependencies[ root_key ] = installed_rd_tups
@@ -1415,16 +1415,11 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
                 description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
                     suc.get_repo_info_tuple_contents( repo_info_tuple )
                 if tool_dependencies:
-                    clone_dir = os.path.join( tool_path, generate_tool_path( repository_clone_url, changeset_revision ) )
                     # Add the install_dir attribute to the tool_dependencies.
                     tool_dependencies = suc.add_installation_directories_to_tool_dependencies( trans=trans,
                                                                                                tool_dependencies=tool_dependencies )
                     # The required_repository may have been installed with a different changeset revision.
-                    required_repository, installed_changeset_revision = repository_was_previously_installed( trans,
-                                                                                                             tool_shed_url,
-                                                                                                             name,
-                                                                                                             repo_info_tuple,
-                                                                                                             clone_dir )
+                    required_repository, installed_changeset_revision = repository_was_previously_installed( trans, tool_shed_url, name, repo_info_tuple )
                     if required_repository:
                         required_repository_installed_tool_dependencies, required_repository_missing_tool_dependencies = \
                             get_installed_and_missing_tool_dependencies( trans, required_repository, tool_dependencies )
@@ -1610,7 +1605,7 @@ def remove_tool_dependency( trans, tool_dependency ):
         trans.sa_session.add( tool_dependency )
         trans.sa_session.flush()
     return removed, error_message
-def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple, clone_dir ):
+def repository_was_previously_installed( trans, tool_shed_url, repository_name, repo_info_tuple ):
     """
     Handle the case where the repository was previously installed using an older changeset_revsion, but later the repository was updated
     in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one
