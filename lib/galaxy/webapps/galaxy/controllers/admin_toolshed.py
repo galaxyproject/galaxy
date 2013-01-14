@@ -372,27 +372,15 @@ class AdminToolshed( AdminGalaxy ):
             if operation == "activate or reinstall":
                 repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
                 if repository.uninstalled:
-                    # Since we're reinstalling the repository we need to find the latest changeset revision to which is can be updated so that we
+                    # Since we're reinstalling the repository we need to find the latest changeset revision to which it can be updated so that we
                     # can reset the metadata if necessary.  This will ensure that information about repository dependencies and tool dependencies
                     # will be current.
-                    current_changeset_revision, current_ctx_rev = shed_util.get_update_to_changeset_revision_and_ctx_rev( trans, repository )
-                    if current_ctx_rev != repository.ctx_rev:
-                        repo = hg.repository( suc.get_configured_ui(), path=os.path.abspath( repository.repo_path( trans.app ) ) )
-                        repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
-                        shed_util.pull_repository( repo, repository_clone_url, current_changeset_revision )
-                        suc.update_repository( repo, ctx_rev=current_ctx_rev )
-                        shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
-                        shed_config_dict = trans.app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf )
-                        metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
-                                                                                                         repository=repository,
-                                                                                                         repository_clone_url=repository_clone_url,
-                                                                                                         shed_config_dict=shed_config_dict,
-                                                                                                         relative_install_dir=relative_install_dir,
-                                                                                                         repository_files_dir=None,
-                                                                                                         resetting_all_metadata_on_repository=False,
-                                                                                                         updating_installed_repository=True,
-                                                                                                         persist=True )
-                    if repository.includes_tools or repository.has_repository_dependencies:
+                    current_changeset_revision, current_ctx_rev, includes_tools, has_repository_dependencies = \
+                        shed_util.get_update_to_changeset_revision_and_ctx_rev( trans, repository )
+                    if current_ctx_rev == repository.ctx_rev:
+                        includes_tools = repository.includes_tools
+                        has_repository_dependencies = repository.has_repository_dependencies
+                    if includes_tools or has_repository_dependencies:
                         # Only allow selecting a different section in the tool panel if the repository was uninstalled.
                         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                           action='reselect_tool_panel_section',
@@ -859,12 +847,12 @@ class AdminToolshed( AdminGalaxy ):
             if cloned_ok:
                 if reinstalling:
                     # Since we're reinstalling the repository we need to find the latest changeset revision to which is can be updated.
-                    current_changeset_revision, current_ctx_rev = shed_util.get_update_to_changeset_revision_and_ctx_rev( trans, tool_shed_repository )
+                    current_changeset_revision, current_ctx_rev, includes_tools, has_repository_dependencies = \
+                        shed_util.get_update_to_changeset_revision_and_ctx_rev( trans, tool_shed_repository )
                     if current_ctx_rev != ctx_rev:
                         repo = hg.repository( suc.get_configured_ui(), path=os.path.abspath( install_dir ) )
                         shed_util.pull_repository( repo, repository_clone_url, current_changeset_revision )
                         suc.update_repository( repo, ctx_rev=current_ctx_rev )
-                
                 self.handle_repository_contents( trans,
                                                  tool_shed_repository=tool_shed_repository,
                                                  tool_path=tool_path,

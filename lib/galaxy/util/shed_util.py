@@ -952,12 +952,16 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
             update_dict = encoding_util.tool_shed_decode( encoded_update_dict )
             changeset_revision = update_dict[ 'changeset_revision' ]
             ctx_rev = update_dict[ 'ctx_rev' ]
+            includes_tools = update_dict.get( 'includes_tools', False )
+            has_repository_dependencies = update_dict.get( 'has_repository_dependencies', False )
         response.close()
     except Exception, e:
         log.debug( "Error getting change set revision for update from the tool shed for repository '%s': %s" % ( repository.name, str( e ) ) )
+        includes_tools = False
+        has_repository_dependencies = False
         changeset_revision = None
         ctx_rev = None
-    return changeset_revision, ctx_rev
+    return changeset_revision, ctx_rev, includes_tools, has_repository_dependencies
 def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the
