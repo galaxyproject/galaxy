@@ -46,9 +46,9 @@ def add_installation_directories_to_tool_dependencies( trans, tool_dependencies 
     """
     for dependency_key, requirements_dict in tool_dependencies.items():
         if dependency_key not in [ 'set_environment' ]:
-            repository_name = requirements_dict[ 'repository_name' ]
-            repository_owner = requirements_dict[ 'repository_owner' ]
-            changeset_revision = requirements_dict[ 'changeset_revision' ]
+            repository_name = requirements_dict.get( 'repository_name', 'unknown' )
+            repository_owner = requirements_dict.get( 'repository_owner', 'unknown' )
+            changeset_revision = requirements_dict.get( 'changeset_revision', 'unknown' )
             dependency_name = requirements_dict[ 'name' ]
             version = requirements_dict[ 'version' ]
             type = requirements_dict[ 'type' ]
