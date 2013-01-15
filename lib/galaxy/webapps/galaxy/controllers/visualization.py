@@ -190,7 +190,7 @@ class VisualizationListGrid( grids.Grid ):
         grids.GridOperation( "Open", allow_multiple=False, url_args=get_url_args ),
         grids.GridOperation( "Open in Circster", allow_multiple=False, condition=( lambda item: item.type == 'trackster' ), url_args=dict( action='circster' ) ),
         grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit') ),
-        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False, url_args=dict( action='clone') ),
+        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False, url_args=dict( action='copy') ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True, confirm="Are you sure you want to delete this visualization?" ),
     ]
@@ -352,7 +352,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     
     @web.expose
     @web.require_login()
-    def clone(self, trans, id, *args, **kwargs):
+    def copy(self, trans, id, *args, **kwargs):
         visualization = self.get_visualization( trans, id, check_ownership=False )            
         user = trans.get_user()
         owner = ( visualization.user == user )
@@ -360,15 +360,15 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         if not owner:
             new_title += " shared by %s" % visualization.user.email
             
-        cloned_visualization = visualization.copy( user=trans.user, title=new_title )
+        copied_viz = visualization.copy( user=trans.user, title=new_title )
         
         # Persist
         session = trans.sa_session
-        session.add( cloned_visualization )
+        session.add( copied_viz )
         session.flush()
         
         # Display the management page
-        trans.set_message( 'Copy created with name "%s"' % cloned_visualization.title )
+        trans.set_message( 'Created new visualization with name "%s"' % copied_viz.title )
         return self.list( trans )
                     
     @web.expose
