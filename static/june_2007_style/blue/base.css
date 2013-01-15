@@ -1047,12 +1047,6 @@ div.permissionContainer{padding-left:20px;}
 .text-content th,.text-content td{border-bottom:1px solid #ddd;border-right:1px solid #ccc;}
 .text-content th,.text-content td{padding:.8em;}
 .icon-button{width:16px;height:16px;display:block;float:left;margin-left:2px;text-indent:20px;background-repeat:no-repeat;background-position:0px 0px;padding:0;}
-.tipsy{padding:5px;font-size:10px;filter:alpha(opacity=80);background-repeat:no-repeat;background-image:url(../images/tipsy.gif);}
-.tipsy-inner{padding:5px 8px 4px 8px;background-color:black;color:white;max-width:200px;text-align:center;}
-.tipsy-north{background-position:top center;}
-.tipsy-south{background-position:bottom center;}
-.tipsy-east{background-position:right center;}
-.tipsy-west{background-position:left center;}
 .editable-text{cursor:pointer;}
 .editable-text:hover{cursor:text;border:dotted #999999 1px;}
 .icon-button.multiinput{background:url(../images/documents-stack.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
