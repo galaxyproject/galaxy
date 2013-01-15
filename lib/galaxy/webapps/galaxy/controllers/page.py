@@ -6,7 +6,6 @@ from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesHist
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy import util
 from galaxy.util.sanitize_html import sanitize_html, _BaseHTMLProcessor
-from galaxy.util.odict import odict
 from galaxy.util.json import from_json_string
 
 def format_bool( b ):
@@ -716,7 +715,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
         id = trans.security.decode_id( id )
         page = trans.sa_session.query( model.Page ).get( id )
         if not page:
-            err+msg( "Page not found" )
+            error( "Page not found" )
         else:
             return self.security_check( trans, page, check_ownership, check_accessible )
             
