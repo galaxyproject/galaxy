@@ -59,6 +59,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/u/:username/h/:slug', controller='history', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/w/:slug', controller='workflow', action='display_by_username_and_slug' )
     webapp.add_route( '/u/:username/v/:slug', controller='visualization', action='display_by_username_and_slug' )
+    webapp.add_route( '/search', controller='search', action='index' )
     
     # Add the web API
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
@@ -122,6 +123,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.api_mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
+    webapp.api_mapper.resource( 'search', 'search', path_prefix='/api' )    
     webapp.api_mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
     #webapp.api_mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
 

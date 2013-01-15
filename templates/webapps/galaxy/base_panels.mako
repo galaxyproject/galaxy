@@ -80,7 +80,9 @@
                         [ _('Published Histories'), h.url_for( controller='/history', action='list_published' ) ],
                         [ _('Published Workflows'), h.url_for( controller='/workflow', action='list_published' ) ],
                         [ _('Published Visualizations'), h.url_for( controller='/visualization', action='list_published' ) ],
-                        [ _('Published Pages'), h.url_for( controller='/page', action='list_published' ) ]
+                        [ _('Published Pages'), h.url_for( controller='/page', action='list_published' ) ],
+                        None,
+                        [ _('Search'),  h.url_for( controller='/search', action='index' ) ]
                        ] 
         tab( "shared", _("Shared Data"), h.url_for( controller='/library', action='index'), menu_options=menu_options )
     %>
