@@ -22,8 +22,8 @@
             "${_("Create New")}": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history_new' )}";
             },
-            "${_("Clone")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='clone')}";
+            "${_("Copy History")}": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='copy')}";
             },
             "${_("Copy Datasets")}": function() {
                 galaxy_main.location = "${h.url_for( controller='dataset', action='copy_datasets' )}";

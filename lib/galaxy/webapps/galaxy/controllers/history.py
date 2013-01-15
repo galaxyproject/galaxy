@@ -150,7 +150,7 @@ class SharedHistoryListGrid( grids.Grid ):
     ]
     operations = [
         grids.GridOperation( "View", allow_multiple=False, target="_top" ),
-        grids.GridOperation( "Clone" ),
+        grids.GridOperation( "Copy" ),
         grids.GridOperation( "Unshare" )
     ]
     standard_filters = []
@@ -400,13 +400,13 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 # Display history.
                 history = self.get_history( trans, ids[0], False)
                 return self.display_by_username_and_slug( trans, history.user.username, history.slug )
-            elif operation == "clone":
+            elif operation == "copy":
                 if not ids:
-                    message = "Select a history to clone"
+                    message = "Select a history to copy"
                     return self.shared_list_grid( trans, status='error', message=message, **kwargs )
-                # When cloning shared histories, only copy active datasets
-                new_kwargs = { 'clone_choice' : 'active' }
-                return self.clone( trans, ids, **new_kwargs )
+                # When copying shared histories, only copy active datasets
+                new_kwargs = { 'copy_choice' : 'active' }
+                return self.copy( trans, ids, **new_kwargs )
             elif operation == 'unshare':
                 if not ids:
                     message = "Select a history to unshare"
@@ -957,7 +957,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     def share( self, trans, id=None, email="", **kwd ):
         # If a history contains both datasets that can be shared and others that cannot be shared with the desired user,
         # then the entire history is shared, and the protected datasets will be visible, but inaccessible ( greyed out )
-        # in the cloned history
+        # in the copyd history
         params = util.Params( kwd )
         user = trans.get_user()
         # TODO: we have too many error messages floating around in here - we need
@@ -1270,15 +1270,16 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.show_message( "<p>%s" % change_msg, refresh_frames=['history'] )
 
     @web.expose
-    @web.require_login( "clone shared Galaxy history" )
-    def clone( self, trans, id=None, **kwd ):
-        """Clone a list of histories"""
+    @web.require_login( "copy shared Galaxy history" )
+    def copy( self, trans, id=None, **kwd ):
+        """Copy one or more histories"""
         params = util.Params( kwd )
-        # If clone_choice was not specified, display form passing along id
+        # If copy_choice was not specified, display form passing along id
         # argument
-        clone_choice = params.get( 'clone_choice', None )
-        if not clone_choice:
-            return trans.fill_template( "/history/clone.mako", id_argument=id )
+        copy_choice = params.get( 'copy_choice', None )
+        if not copy_choice:
+            return trans.fill_template( "/history/copy.mako", id_argument=id )
+            
         # Extract histories for id argument, defaulting to current
         if id is None:
             histories = [ trans.history ]
@@ -1296,20 +1297,20 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 if trans.sa_session.query( trans.app.model.HistoryUserShareAssociation ) \
                                    .filter_by( user=user, history=history ) \
                                    .count() == 0:
-                    return trans.show_error_message( "The history you are attempting to clone is not owned by you or shared with you.  " )
+                    return trans.show_error_message( "The history you are attempting to copy is not owned by you or shared with you.  " )
                 owner = False
-            name = "Clone of '%s'" % history.name
+            name = "Copy of '%s'" % history.name
             if not owner:
                 name += " shared by '%s'" % history.user.email
-            if clone_choice == 'activatable':
+            if copy_choice == 'activatable':
                 new_history = history.copy( name=name, target_user=user, activatable=True )
-            elif clone_choice == 'active':
+            elif copy_choice == 'active':
                 name += " (active items only)"
                 new_history = history.copy( name=name, target_user=user )
         if len( histories ) == 1:
-            msg = 'Clone with name "<a href="%s" target="_top">%s</a>" is now included in your previously stored histories.' % ( url_for( controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) ) , new_history.name )
+            msg = 'New history "<a href="%s" target="_top">%s</a>" has been created.' % ( url_for( controller="history", action="switch_to_history", hist_id=trans.security.encode_id( new_history.id ) ) , new_history.name )
         else:
-            msg = '%d cloned histories are now included in your previously stored histories.' % len( histories )
+            msg = 'Copied and created %d new histories.' % len( histories )
         return trans.show_ok_message( msg )
 
     @web.expose
