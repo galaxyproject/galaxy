@@ -17,7 +17,7 @@ log = logging.getLogger( __name__ )
 running_standalone = False
 
 class TestRepositoryDependencies( ShedTwillTestCase ):
-    '''Testing freebayes with tool data table entries, .loc files, and tool dependencies.'''
+    '''Testing uninstalling and reinstalling repository dependencies, and setting tool panel sections.'''
     def test_0000_create_or_login_admin_user( self ):
         """Create necessary user accounts and login as an admin user."""
         self.galaxy_logout()

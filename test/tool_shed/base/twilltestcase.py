@@ -35,9 +35,17 @@ class ShedTwillTestCase( TwillTestCase ):
         self.galaxy_tool_dependency_dir = None # os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
         self.home()
+    def add_repository_review_component( self, **kwd ):
+        url = '/repository_review/create_component?operation=create'
+        self.visit_url( url )
+        self.submit_form( 1, 'create_component_button', **kwd )
     def browse_category( self, category, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/browse_valid_categories?sort=name&operation=valid_repositories_by_category&id=%s' % \
               self.security.encode_id( category.id )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def browse_component_review( self, review, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository_review/browse_review?id=%s' % self.security.encode_id( review.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def browse_repository( self, repository, strings_displayed=[], strings_not_displayed=[] ):
@@ -173,6 +181,23 @@ class ShedTwillTestCase( TwillTestCase ):
         self.submit_form( form_no=1, button="create_category_button", **kwd )
         return test_db_util.get_category_by_name( kwd[ 'name' ] )
     def create_checkbox_query_string( self, field_name, value ):
+        '''
+        From galaxy.web.form_builder.CheckboxField:
+        The hidden field is necessary because if the check box is not checked on the form, it will
+        not be included in the request params.  The hidden field ensure that this will happen.  When
+        parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
+        See the is_checked() method below.  The prefix is necessary in each case to ensure functional
+        correctness when the param is inside a conditional.
+        
+        This may look strange upon initial inspection, but see the comments in the get_html() method
+        above for clarification.  Basically, if value is not True, then it will always be a list with
+        2 input fields ( a checkbox and a hidden field ) if the checkbox is checked.  If it is not
+        checked, then value will be only the hidden field.
+        
+        The create_checkbox_query_string method emulates the described behavior with URL query parameters.
+        This is currently necessary because twill does not correctly parse certain forms, so the test 
+        method has to visit the intended form target "manually".
+        '''
         field_value = str( value ).lower()
         if value:
             return '%s=%s&%s=%s' % ( field_name, field_value, field_name, field_value ) 
@@ -187,6 +212,27 @@ class ShedTwillTestCase( TwillTestCase ):
                           'repository_dependencies.xml', 
                           filepath=filepath, 
                           commit_message='Uploaded dependency on %s.' % ', '.join( repo.name for repo in depends_on ) )
+    def create_repository_review( self, repository, review_contents_dict, changeset_revision=None, copy_from=None):
+        strings_displayed = []
+        if not copy_from:
+            strings_displayed.append( 'Begin your review' )
+        strings_not_displayed = []
+        kwd = dict()
+        if not changeset_revision:
+            changeset_revision = self.get_repository_tip( repository )
+        url = '/repository_review/create_review?changeset_revision=%s&id=%s' % ( changeset_revision, self.security.encode_id( repository.id ) )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        strings_displayed = []
+        if copy_from:
+            old_changeset_revision, review_id = copy_from
+            strings_displayed = [ 'You have elected to create a new review', 'Select previous revision', changeset_revision ]
+            self.check_for_strings( strings_displayed )
+            strings_displayed = []
+            url = '/repository_review/create_review?changeset_revision=%s&id=%s&previous_review_id=%s' % \
+                ( self.get_repository_tip( repository ), self.security.encode_id( repository.id ), self.security.encode_id( review_id ) )
+            self.visit_url( url )
+        self.fill_review_form( review_contents_dict, strings_displayed, strings_not_displayed )
     def create_user_in_galaxy( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         self.visit_galaxy_url( "/user/create?cntrller=%s&use_panels=False" % cntrller )
         tc.fv( '1', 'email', email )
@@ -293,6 +339,10 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository/get_file_contents?file_path=%s' % os.path.join( relative_path, filename )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def display_reviewed_repositories_owned_by_user( self, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository_review/reviewed_repositories_i_own'
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def edit_repository_categories( self, repository, categories_to_add=[], categories_to_remove=[], restore_original=True ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -317,6 +367,10 @@ class ShedTwillTestCase( TwillTestCase ):
                 strings_not_displayed.append( "selected>%s" % category )
             tc.submit( "manage_categories_button" )
             self.check_for_strings( strings_displayed, strings_not_displayed )
+    def display_repository_reviews_by_user( self, user, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository_review/repository_reviews_by_user?id=%s' % self.security.encode_id( user.id )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def edit_repository_information( self, repository, **kwd ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -343,6 +397,21 @@ class ShedTwillTestCase( TwillTestCase ):
             else:
                 string = string.replace( character, replacement )
         return string
+    def fill_review_form( self, review_contents_dict, strings_displayed=[], strings_not_displayed=[] ):
+        kwd = dict()
+        for label, contents in review_contents_dict.items():
+            strings_displayed.append( label )
+            if contents:
+                kwd[ '%s__ESEP__comment' % label ] = contents[ 'comment' ]
+                kwd[ '%s__ESEP__rating' % label ] = contents[ 'rating' ]
+                if 'private' in contents:
+                    kwd[ '%s__ESEP__private' % label ] = contents[ 'private' ]
+                kwd[ '%s__ESEP__approved' % label ] = contents[ 'approved' ]
+            else:
+                kwd[ '%s__ESEP__approved' % label ] = 'not_applicable'
+        self.submit_form( 1, 'Workflows__ESEP__review_button', **kwd )
+        strings_displayed.append( 'Reviews were saved' )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def galaxy_login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         previously_created, username_taken, invalid_username = \
             self.create_user_in_galaxy( email=email, password=password, username=username, redirect=redirect )
@@ -409,7 +478,7 @@ class ShedTwillTestCase( TwillTestCase ):
             raise Exception( "Entry for repository %s missing in hgweb config file %s." % ( lhs, self.hgweb_config_manager.hgweb_config ) )
     def get_repository_changelog( self, repository ):
         repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
-        return [repo.changectx( changeset ) for changeset in repo.changelog ]
+        return [ ( repo.changectx( changeset ), changeset ) for changeset in repo.changelog ]
     def get_repository_datatypes_count( self, repository ):
         metadata = self.get_repository_metadata( repository )[0].metadata
         if 'datatypes' not in metadata:
@@ -469,6 +538,22 @@ class ShedTwillTestCase( TwillTestCase ):
             if include_invalid and 'invalid_tools' in repository_metadata.metadata:
                 invalid_tools.append( dict( tools=repository_metadata.metadata[ 'invalid_tools' ], changeset_revision=repository_metadata.changeset_revision ) )
         return valid_tools, invalid_tools
+    def grant_role_to_user( self, user, role ):
+        strings_displayed = [ self.security.encode_id( role.id ), role.name ]
+        strings_not_displayed = []
+        self.visit_url( '/admin/roles' )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        url = '/admin/roles?operation=manage+users+and+groups&id=%s' % self.security.encode_id( role.id )
+        self.visit_url( url )
+        strings_displayed = [ common.test_user_1_email, common.test_user_2_email ]
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        # As elsewhere, twill limits the possibility of submitting the form, this time due to not executing the javascript
+        # attached to the role selection form. Visit the action url directly with the necessary parameters.
+        url = '/admin/manage_users_and_groups_for_role?id=%s&in_users=%d&operation=manage+users+and+groups&role_members_edit_button=Save' % \
+            ( self.security.encode_id( role.id ), user.id )
+        self.visit_url( url )
+        strings_displayed = [ "Role '%s' has been updated" % role.name ]
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def grant_write_access( self, repository, usernames=[], strings_displayed=[], strings_not_displayed=[] ):
         self.display_manage_repository_page( repository )
         tc.fv( "3", "allow_push", '-Select one' )
@@ -508,10 +593,38 @@ class ShedTwillTestCase( TwillTestCase ):
                 ( ','.join( util.listify( repository_ids ) ), encoded_kwd, reinstalling )
             self.visit_galaxy_url( url )
             return util.listify( repository_ids )
+    def install_repositories_from_search_results( self, repositories, strings_displayed=[], strings_not_displayed=[], **kwd ):
+        '''
+        Normally, it would be possible to check the appropriate boxes in the search results, and click the install button. This works
+        in a browser, but Twill manages to lose the 'toolshedgalaxyurl' cookie between one page and the next, so it's necessary to work
+        around this by explicitly visiting the prepare_for_install method on the Galaxy side.
+        '''
+        url = '/admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
+            ( self.url, ','.join( self.security.encode_id( repository.id ) for repository in repositories ), \
+              ','.join( self.get_repository_tip( repository ) for repository in repositories ) )
+        self.visit_galaxy_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        if 'install_tool_dependencies' in self.last_page():
+            form = tc.browser.get_form( 'select_tool_panel_section' )
+            checkbox = form.find_control( id="install_tool_dependencies" )
+            checkbox.disabled = False
+            if 'install_tool_dependencies' in kwd:
+                install_tool_dependencies = kwd[ 'install_tool_dependencies' ]
+                del kwd[ 'install_tool_dependencies' ]
+            else:
+                install_tool_dependencies = False
+            if install_tool_dependencies:
+                checkbox.selected = True
+            else:
+                checkbox.selected = False
+        self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
+        repository_ids = self.initiate_installation_process()
+        self.wait_for_repository_installation( repository_ids )
     def install_repository( self, name, owner, category_name, install_tool_dependencies=False, 
                             install_repository_dependencies=True, changeset_revision=None, 
                             strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[], 
-                            post_submit_strings_displayed=[], new_tool_panel_section=None, **kwd ):
+                            post_submit_strings_displayed=[], new_tool_panel_section=None, includes_tools=True,
+                            **kwd ):
         self.browse_tool_shed( url=self.url )
         self.browse_category( test_db_util.get_category_by_name( category_name ) )
         self.preview_repository_in_tool_shed( name, owner, strings_displayed=preview_strings_displayed )
@@ -539,8 +652,9 @@ class ShedTwillTestCase( TwillTestCase ):
             kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
         if new_tool_panel_section:
             kwd[ 'new_tool_panel_section' ] =  new_tool_panel_section
-        self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
-        self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
+        if includes_tools:
+            self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
+            self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
         self.wait_for_repository_installation( repository_ids )
     def load_invalid_tool_page( self, repository, tool_xml, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
@@ -561,6 +675,10 @@ class ShedTwillTestCase( TwillTestCase ):
             raise AssertionError( 'Metadata not found for changeset revision %s.' % changeset_revision )
         url = '/repository/generate_workflow_image?repository_metadata_id=%s&workflow_name=%s' % \
               ( self.security.encode_id( metadata.id ), tool_shed_encode( workflow_name ) )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def manage_review_components( self, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository_review/manage_components'
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def preview_repository_in_tool_shed( self, name, owner, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
@@ -587,31 +705,19 @@ class ShedTwillTestCase( TwillTestCase ):
                               install_repository_dependencies=True, 
                               install_tool_dependencies=False, 
                               no_changes=True, 
-                              new_tool_panel_section='' ):
+                              new_tool_panel_section='',
+                              strings_displayed=[],
+                              strings_not_displayed=[] ):
         url = '/admin_toolshed/reselect_tool_panel_section?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
-        # From galaxy.web.form_builder.CheckboxField:
-        # The hidden field is necessary because if the check box is not checked on the form, it will
-        # not be included in the request params.  The hidden field ensure that this will happen.  When
-        # parsing the request, the value 'true' in the hidden field actually means it is NOT checked.
-        # See the is_checked() method below.  The prefix is necessary in each case to ensure functional
-        # correctness when the param is inside a conditional.
-        #
-        # This may look strange upon initial inspection, but see the comments in the get_html() method
-        # above for clarification.  Basically, if value is not True, then it will always be a list with
-        # 2 input fields ( a checkbox and a hidden field ) if the checkbox is checked.  If it is not
-        # checked, then value will be only the hidden field.
-        #
-        # The create_checkbox_query_string method emulates the described behavior with URL query parameters.
-        # This is currently necessary because twill does not correctly parse the reselect tool panel section
-        # form, so the test method has to visit the intended form target "manually".
+        self.check_for_strings( strings_displayed, strings_not_displayed=[] )
         repo_dependencies = self.create_checkbox_query_string( field_name='install_repository_dependencies', value=install_repository_dependencies )
         tool_dependencies = self.create_checkbox_query_string( field_name='install_tool_dependencies', value=install_tool_dependencies )
         encoded_repository_id = self.security.encode_id( installed_repository.id )
         url = '/admin_toolshed/reinstall_repository?id=%s&%s&%s&no_changes=%s&new_tool_panel_section=%s' % \
             ( encoded_repository_id, repo_dependencies, tool_dependencies, str( no_changes ), new_tool_panel_section )
         self.visit_galaxy_url( url )
-        # Then manually initiate the install process, as with installing a repository. See comments in the 
+        # Manually initiate the install process, as with installing a repository. See comments in the 
         # initiate_installation_process method for details.
         repository_ids = self.initiate_installation_process( install_tool_dependencies, 
                                                              install_repository_dependencies, 
@@ -639,13 +745,28 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository/reset_all_metadata?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( [ 'All repository metadata has been reset.' ] )
+    def review_repository( self, repository, review_contents_dict, user=None, changeset_revision=None ):
+        strings_displayed = []
+        strings_not_displayed = []
+        kwd = dict()
+        if not changeset_revision:
+            changeset_revision = self.get_repository_tip( repository )
+        if user:
+            review = test_db_util.get_repository_review_by_user_id_changeset_revision( user.id, repository.id, changeset_revision )
+        url = '/repository_review/edit_review?id=%s' % self.security.encode_id( review.id )
+        self.visit_url( url )
+        self.fill_review_form( review_contents_dict, strings_displayed, strings_not_displayed )
     def revoke_write_access( self, repository, username ):
         url = '/repository/manage_repository?user_access_button=Remove&id=%s&remove_auth=%s' % \
             ( self.security.encode_id( repository.id ), username )
         self.visit_url( url )
-    def search_for_valid_tools( self, search_fields={}, exact_matches=False, strings_displayed=[], strings_not_displayed=[] ):
+    def search_for_valid_tools( self, search_fields={}, exact_matches=False, strings_displayed=[], strings_not_displayed=[], from_galaxy=False ):
+        if from_galaxy:
+            galaxy_url = '?galaxy_url=%s' % self.galaxy_url
+        else:
+            galaxy_url = ''
         for field_name, search_string in search_fields.items():
-            url = '/repository/find_tools'
+            url = '/repository/find_tools%s' % galaxy_url
             self.visit_url( url )
             tc.fv( "1", "exact_matches", exact_matches )
             tc.fv( "1", field_name, search_string )
@@ -746,6 +867,17 @@ class ShedTwillTestCase( TwillTestCase ):
                     found = True
                     break
                 assert found, 'No entry for %s in %s.' % ( data_table, self.shed_tool_data_table_conf )
+    def verify_repository_reviews( self, repository, reviewer=None, strings_displayed=[], strings_not_displayed=[] ):
+        changeset_revision = self.get_repository_tip( repository )
+        # Verify that the currently logged in user has a repository review for the specified repository, reviewer, and changeset revision.
+        strings_displayed=[ repository.name, reviewer.username, changeset_revision ]
+        self.display_reviewed_repositories_owned_by_user( strings_displayed=strings_displayed )
+        # Verify that the reviewer has reviewed the specified repository's changeset revision.
+        strings_displayed=[ repository.name, repository.description, changeset_revision ]
+        self.display_repository_reviews_by_user( reviewer, strings_displayed=strings_displayed )
+        # Load the review and check for the components passed in strings_displayed.
+        review = test_db_util.get_repository_review_by_user_id_changeset_revision( reviewer.id, repository.id, changeset_revision )
+        self.browse_component_review( review, strings_displayed=strings_displayed )
     def verify_tool_metadata_for_installed_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         repository_id = self.security.encode_id( installed_repository.id )
         for tool in installed_repository.metadata[ 'tools' ]:
