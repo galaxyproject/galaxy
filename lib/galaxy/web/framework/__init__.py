@@ -274,7 +274,6 @@ class WebApplication( base.WebApplication ):
         from galaxy.web.base.controller import ControllerUnavailable
         package = import_module( package_name )
         controller_dir = package.__path__[0]
-        print ">>>", controller_dir, package.__path__
         for fname in os.listdir( controller_dir ):
             if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
                 name = fname[:-3]
