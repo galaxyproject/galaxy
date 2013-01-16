@@ -13,7 +13,7 @@ from galaxy.datatypes import data
 from galaxy.datatypes import metadata
 from galaxy.datatypes.checkers import is_gzip
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import get_headers
+from galaxy.datatypes.sniff import get_headers, get_test_fname
 from galaxy.util.json import to_json_string
 
 log = logging.getLogger(__name__)
