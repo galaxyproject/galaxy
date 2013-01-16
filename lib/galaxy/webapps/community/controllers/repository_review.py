@@ -377,6 +377,7 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
         if repository_id:
             if changeset_revision:
                 # Make sure there is not already a review of the revision by the user.
+                repository = suc.get_repository_in_tool_shed( trans, repository_id )
                 if common.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
                                                                                   repository_id=repository_id,
                                                                                   changeset_revision=changeset_revision,
@@ -384,7 +385,6 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
                     message = "You have already created a review for revision <b>%s</b> of repository <b>%s</b>." % ( changeset_revision, repository.name )
                     status = "error"
                 else:
-                    repository = suc.get_repository_in_tool_shed( trans, repository_id )
                     # See if there are any reviews for previous changeset revisions that the user can copy.
                     if not create_without_copying and not previous_review_id and common.has_previous_repository_reviews( trans, repository, changeset_revision ):
                         return trans.response.send_redirect( web.url_for( controller='repository_review',
