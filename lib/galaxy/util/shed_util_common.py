@@ -66,7 +66,7 @@ def add_installation_directories_to_tool_dependencies( trans, tool_dependencies 
             tool_dependencies[ dependency_key ] = requirements_dict
     return tool_dependencies
 def build_readme_files_dict( metadata, tool_path=None ):
-    """Return a dictionary of valid readme file name <-> readme file content pairs for all readme files contained in the received repository_metadata."""
+    """Return a dictionary of valid readme file name <-> readme file content pairs for all readme files contained in the received metadata."""
     readme_files_dict = {}
     if metadata:
         if 'readme_files' in metadata:
@@ -128,10 +128,14 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
             containers_dict[ 'readme_files' ] = readme_files_root_folder
         # Installed repository dependencies container.
         if repository_dependencies:
+            if new_install:
+                label = 'Repository dependencies'
+            else:
+                label = 'Installed repository dependencies'
             folder_id, repository_dependencies_root_folder = container_util.build_repository_dependencies_folder( trans=trans,
                                                                                                                   folder_id=folder_id,
                                                                                                                   repository_dependencies=repository_dependencies,
-                                                                                                                  label='Installed repository dependencies',
+                                                                                                                  label=label,
                                                                                                                   installed=True )
             containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
         # Missing repository dependencies container.
@@ -777,17 +781,20 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     sa_session.flush()
     return tool_shed_repository
 def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_name=None, repository=None,
-                           repository_metadata=None, metadata=None, repository_dependencies=None ):
+                           repository_metadata=None, tool_dependencies=None, repository_dependencies=None ):
     """
     Return a dictionary that includes all of the information needed to install a repository into a local Galaxy instance.  The dictionary will also
     contain the recursive list of repository dependencies defined for the repository, as well as the defined tool dependencies.  
     
-    This method is called from Galaxy in two places:
-    1. During the tool shed repository installation process (via the tool shed's get_repository_information() method)- in this case both the received
-    repository and repository_metadata will be objects.
-    2. When a tool shed repository that was uninstalled from a Galaxy instance is being re-installed - in this case, both repository and
-    repository_metadata will be None, but metadata will be the tool_shed_repository metadata on the Galaxy side, and the repository_dependencies will
-    be an object previously retrieved from the tool shed.
+    This method is called from Galaxy unser three scenarios:
+    1. During the tool shed repository installation process via the tool shed's get_repository_information() method.  In this case both the received
+    repository and repository_metadata will be objects., but tool_dependencies and repository_dependencies will be None
+    2. When a tool shed repository that was uninstalled from a Galaxy instance is being reinstalled with no updates available.  In this case, both
+    repository and repository_metadata will be None, but tool_dependencies and repository_dependencies will be objects previously retrieved from the
+    tool shed if the repository includes definitions for them.
+    3. When a tool shed repository that was uninstalled from a Galaxy instance is being reinstalled with updates available.  In this case, this
+    method is reached via the tool shed's get_updated_repository_information() method, and both repository and repository_metadata will be objects
+    but tool_dependencies and repository_dependencies will be None.
     """
     repo_info_dict = {}
     repository = get_repository_by_name_and_owner( trans, repository_name, repository_owner )
@@ -806,27 +813,24 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                                                                                               all_repository_dependencies=None,
                                                                                               handled_key_rd_dicts=None,
                                                                                               circular_repository_dependencies=None )
-    if metadata:
-        tool_dependencies = metadata.get( 'tool_dependencies', None )
-        if tool_dependencies:
-            new_tool_dependencies = {}
-            for dependency_key, requirements_dict in tool_dependencies.items():
-                if dependency_key in [ 'set_environment' ]:
-                    new_set_environment_dict_list = []
-                    for set_environment_dict in requirements_dict:
-                        set_environment_dict[ 'repository_name' ] = repository_name
-                        set_environment_dict[ 'repository_owner' ] = repository_owner
-                        set_environment_dict[ 'changeset_revision' ] = changeset_revision
-                        new_set_environment_dict_list.append( set_environment_dict )
-                    new_tool_dependencies[ dependency_key ] = new_set_environment_dict_list
-                else:
-                    requirements_dict[ 'repository_name' ] = repository_name
-                    requirements_dict[ 'repository_owner' ] = repository_owner
-                    requirements_dict[ 'changeset_revision' ] = changeset_revision
-                    new_tool_dependencies[ dependency_key ] = requirements_dict
-            tool_dependencies = new_tool_dependencies
-    else:
-        tool_dependencies = None
+                tool_dependencies = metadata.get( 'tool_dependencies', None )
+    if tool_dependencies:
+        new_tool_dependencies = {}
+        for dependency_key, requirements_dict in tool_dependencies.items():
+            if dependency_key in [ 'set_environment' ]:
+                new_set_environment_dict_list = []
+                for set_environment_dict in requirements_dict:
+                    set_environment_dict[ 'repository_name' ] = repository_name
+                    set_environment_dict[ 'repository_owner' ] = repository_owner
+                    set_environment_dict[ 'changeset_revision' ] = changeset_revision
+                    new_set_environment_dict_list.append( set_environment_dict )
+                new_tool_dependencies[ dependency_key ] = new_set_environment_dict_list
+            else:
+                requirements_dict[ 'repository_name' ] = repository_name
+                requirements_dict[ 'repository_owner' ] = repository_owner
+                requirements_dict[ 'changeset_revision' ] = changeset_revision
+                new_tool_dependencies[ dependency_key ] = requirements_dict
+        tool_dependencies = new_tool_dependencies
     # Cast unicode to string.
     repo_info_dict[ str( repository.name ) ] = ( str( repository.description ),
                                                  str( repository_clone_url ),

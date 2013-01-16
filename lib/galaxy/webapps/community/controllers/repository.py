@@ -1406,7 +1406,7 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         a local Galaxy instance.
         """
         includes_tools = False
-        includes_repository_dependencies = False
+        has_repository_dependencies = False
         includes_tool_dependencies = False
         repo_info_dicts = []
         for tup in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
@@ -1417,8 +1417,8 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
             metadata = repository_metadata.metadata
             if not includes_tools and 'tools' in metadata:
                 includes_tools = True
-            if not includes_repository_dependencies and 'repository_dependencies' in metadata:
-                includes_repository_dependencies = True
+            if not has_repository_dependencies and 'repository_dependencies' in metadata:
+                has_repository_dependencies = True
             if not includes_tool_dependencies and 'tool_dependencies' in metadata:
                 includes_tool_dependencies = True
             repo_dir = repository.repo_path( trans.app )
@@ -1431,11 +1431,12 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                                                         repository_owner=repository.user.username,
                                                         repository_name=repository.name,
                                                         repository=repository,
-                                                        metadata=None,
-                                                        repository_metadata=repository_metadata )      
+                                                        repository_metadata=repository_metadata,
+                                                        tool_dependencies=None,
+                                                        repository_dependencies=None )
             repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
         return dict( includes_tools=includes_tools,
-                     includes_repository_dependencies=includes_repository_dependencies,
+                     has_repository_dependencies=has_repository_dependencies,
                      includes_tool_dependencies=includes_tool_dependencies,
                      repo_info_dicts=repo_info_dicts )
     @web.json
@@ -1465,10 +1466,6 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
     def get_tool_dependencies( self, trans, **kwd ):
         """Handle a request from a Galaxy instance."""
         params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        # If the request originated with the UpdateManager, it will not include a galaxy_url.
-        galaxy_url = kwd.get( 'galaxy_url', '' )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
@@ -1478,10 +1475,8 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
                 break
         metadata = downloadable_revision.metadata
         tool_dependencies = metadata.get( 'tool_dependencies', '' )
-        from_install_manager = kwd.get( 'from_install_manager', False )
-        if from_install_manager:
-            if tool_dependencies:
-                return encoding_util.tool_shed_encode( tool_dependencies )
+        if tool_dependencies:
+            return encoding_util.tool_shed_encode( tool_dependencies )
         return ''
     @web.expose
     def get_tool_versions( self, trans, **kwd ):
@@ -1506,6 +1501,53 @@ class RepositoryController( BaseUIController, common.ItemRatings ):
         if tool_version_dicts:
             return json.to_json_string( tool_version_dicts )
         return ''
+    @web.json
+    def get_updated_repository_information( self, trans, name, owner, changeset_revision, **kwd ):
+        """Generate a disctionary that contains the information about a repository that is necessary for installing it into a local Galaxy instance."""
+        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository_id = trans.security.encode_id( repository.id )
+        repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
+        repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
+        repo_dir = repository.repo_path( trans.app )
+        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
+        repo_info_dict = suc.create_repo_info_dict( trans=trans,
+                                                    repository_clone_url=repository_clone_url,
+                                                    changeset_revision=changeset_revision,
+                                                    ctx_rev=str( ctx.rev() ),
+                                                    repository_owner=repository.user.username,
+                                                    repository_name=repository.name,
+                                                    repository=repository,
+                                                    repository_metadata=repository_metadata,
+                                                    tool_dependencies=None,
+                                                    repository_dependencies=None )
+        metadata = repository_metadata.metadata
+        if metadata:
+            readme_files_dict = suc.build_readme_files_dict( metadata )
+            if 'tools' in metadata:
+                includes_tools = True
+            else:
+                includes_tools = False
+        else:
+            readme_files_dict = None
+            includes_tools = False
+        # See if the repo_info_dict was populated with repository_dependencies or tool_dependencies.
+        for name, repo_info_tuple in repo_info_dict.items():
+            description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+                suc.get_repo_info_tuple_contents( repo_info_tuple )
+            if repository_dependencies:
+                has_repository_dependencies = True
+            else:
+                has_repository_dependencies = False
+            if tool_dependencies:
+                includes_tool_dependencies = True
+            else:
+                includes_tool_dependencies = False
+        return dict( includes_tools=includes_tools,
+                     has_repository_dependencies=has_repository_dependencies,
+                     includes_tool_dependencies=includes_tool_dependencies,
+                     readme_files_dict=readme_files_dict,
+                     repo_info_dict=repo_info_dict )
     def get_versions_of_tool( self, trans, repository, repository_metadata, guid ):
         """Return the tool lineage in descendant order for the received guid contained in the received repsitory_metadata.tool_versions."""
         encoded_id = trans.security.encode_id( repository.id )

@@ -596,8 +596,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         # In this case, a record for the repository will exist in the database with the status of 'New'.
         repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed_url, name, repository_owner, changeset_revision )
         if repository and repository.metadata:
-            installed_rd, missing_rd = \
-                get_installed_and_missing_repository_dependencies( trans, repository )
+            installed_rd, missing_rd = get_installed_and_missing_repository_dependencies( trans, repository )
         else:
             installed_rd, missing_rd = get_installed_and_missing_repository_dependencies_for_new_install( trans, repo_info_tuple )
         # Discover all repository dependencies and retrieve information for installing them.
