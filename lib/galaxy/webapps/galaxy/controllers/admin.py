@@ -711,7 +711,8 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                     tool_dependencies_dict = {}
                     repository_name = elem.get( 'name' )
                     changeset_revision = elem.get( 'changeset_revision' )
-                    url = '%s/repository/get_tool_dependencies?name=%s&owner=devteam&changeset_revision=%s' % ( tool_shed_url, repository_name, changeset_revision )
+                    url = '%s/repository/get_tool_dependencies?name=%s&owner=devteam&changeset_revision=%s&from_install_manager=True' % \
+                        ( tool_shed_url, repository_name, changeset_revision )
                     response = urllib2.urlopen( url )
                     text = response.read()
                     response.close()
