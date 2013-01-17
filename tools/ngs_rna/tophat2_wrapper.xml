@@ -462,7 +462,6 @@
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
             <param name="no_novel_juncs" value="No" />
-            <param name="report_discordant_pairs" value="No" />
             <param name="use_search" value="Yes" />
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
