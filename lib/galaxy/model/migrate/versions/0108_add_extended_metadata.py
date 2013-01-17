@@ -61,8 +61,15 @@ def upgrade():
 
 def downgrade():
     metadata.reflect()
-    ExtendedMetadata_table.drop()
-    ExtendedMetadataIndex_table.drop()
+    try:
+        ExtendedMetadataIndex_table.drop()
+    except Exception, e:
+        log.debug( "Dropping 'extended_metadata_index' table failed: %s" % ( str( e ) ) )
+
+    try:   
+        ExtendedMetadata_table.drop()
+    except Exception, e:
+        log.debug( "Dropping 'extended_metadata' table failed: %s" % ( str( e ) ) )
     
     # Drop the Job table's exit_code column. 
     try:
