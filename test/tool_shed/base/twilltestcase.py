@@ -711,6 +711,8 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/admin_toolshed/reselect_tool_panel_section?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
+        # Build the url that will simulate a filled-out form being submitted. Due to a limitation in twill, the reselect_tool_panel_section
+        # form doesn't get parsed correctly. 
         repo_dependencies = self.create_checkbox_query_string( field_name='install_repository_dependencies', value=install_repository_dependencies )
         tool_dependencies = self.create_checkbox_query_string( field_name='install_tool_dependencies', value=install_tool_dependencies )
         encoded_repository_id = self.security.encode_id( installed_repository.id )
