@@ -59,7 +59,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                 repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
                 for review in repository.reviews:
                     changeset_revision = review.changeset_revision
-                    rev, label = common.get_rev_label_from_changeset_revision( repo, changeset_revision )
+                    rev, label = suc.get_rev_label_from_changeset_revision( repo, changeset_revision )
                     rval += '<a href="manage_repository_reviews_of_revision'
                     rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
                 return rval
@@ -67,13 +67,13 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
     class WithoutReviewsRevisionColumn( grids.GridColumn ):
         def get_value( self, trans, grid, repository ):
             # Restrict the options to revisions that have not yet been reviewed.
-            repository_metadata_revisions = common.get_repository_metadata_revisions_for_review( repository, reviewed=False )
+            repository_metadata_revisions = suc.get_repository_metadata_revisions_for_review( repository, reviewed=False )
             if repository_metadata_revisions:
                 rval = ''
                 for repository_metadata in repository_metadata_revisions:
-                    rev, label, changeset_revision = common.get_rev_label_changeset_revision_from_repository_metadata( trans,
-                                                                                                                       repository_metadata,
-                                                                                                                       repository=repository )
+                    rev, label, changeset_revision = suc.get_rev_label_changeset_revision_from_repository_metadata( trans,
+                                                                                                                    repository_metadata,
+                                                                                                                    repository=repository )
                     rval += '<a href="manage_repository_reviews_of_revision'
                     rval += '?id=%s&changeset_revision=%s">%s</a><br/>' % ( trans.security.encode_id( repository.id ), changeset_revision, label )
                 return rval
@@ -177,7 +177,7 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
                 rval += 'edit_review'
             else:
                 rval +='browse_review'
-            rval += '?id=%s">%s</a>' % ( encoded_review_id, common.get_revision_label( trans, review.repository, review.changeset_revision ) )
+            rval += '?id=%s">%s</a>' % ( encoded_review_id, suc.get_revision_label( trans, review.repository, review.changeset_revision ) )
             return rval
     class RatingColumn( grids.TextColumn ):
         def get_value( self, trans, grid, review ):
@@ -277,7 +277,7 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         encoded_review_id = kwd[ 'id' ]
-        review = common.get_review( trans, encoded_review_id )
+        review = suc.get_review( trans, encoded_review_id )
         if kwd.get( 'approve_repository_review_button', False ):
             approved_select_field_name = '%s%sapproved' % ( encoded_review_id, STRSEP )
             approved_select_field_value = str( kwd[ approved_select_field_name ] )
@@ -309,10 +309,10 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        review = common.get_review( trans, kwd[ 'id' ] )
+        review = suc.get_review( trans, kwd[ 'id' ] )
         repository = review.repository
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-        rev, changeset_revision_label = common.get_rev_label_from_changeset_revision( repo, review.changeset_revision )
+        rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, review.changeset_revision )
         return trans.fill_template( '/webapps/community/repository_review/browse_review.mako',
                                     repository=repository,
                                     changeset_revision_label=changeset_revision_label,
@@ -345,7 +345,7 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
             if not name or not description:
                 message = 'Enter a valid name and a description'
                 status = 'error'
-            elif common.get_component_by_name( trans, name ):
+            elif suc.get_component_by_name( trans, name ):
                 message = 'A component with that name already exists'
                 status = 'error'
             else:
@@ -378,15 +378,15 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
             if changeset_revision:
                 # Make sure there is not already a review of the revision by the user.
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                if common.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
-                                                                                  repository_id=repository_id,
-                                                                                  changeset_revision=changeset_revision,
-                                                                                  user_id=trans.security.encode_id( trans.user.id ) ):
+                if suc.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+                                                                               repository_id=repository_id,
+                                                                               changeset_revision=changeset_revision,
+                                                                               user_id=trans.security.encode_id( trans.user.id ) ):
                     message = "You have already created a review for revision <b>%s</b> of repository <b>%s</b>." % ( changeset_revision, repository.name )
                     status = "error"
                 else:
                     # See if there are any reviews for previous changeset revisions that the user can copy.
-                    if not create_without_copying and not previous_review_id and common.has_previous_repository_reviews( trans, repository, changeset_revision ):
+                    if not create_without_copying and not previous_review_id and suc.has_previous_repository_reviews( trans, repository, changeset_revision ):
                         return trans.response.send_redirect( web.url_for( controller='repository_review',
                                                                           action='select_previous_review',
                                                                           **kwd ) )
@@ -404,7 +404,7 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
                             trans.sa_session.add( review )
                             trans.sa_session.flush()
                             if previous_review_id:
-                                review_to_copy = common.get_review( trans, previous_review_id )
+                                review_to_copy = suc.get_review( trans, previous_review_id )
                                 self.copy_review( trans, review_to_copy, review )
                             review_id = trans.security.encode_id( review.id )
                             message = "Begin your review of revision <b>%s</b> of repository <b>%s</b>." \
@@ -440,7 +440,7 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
                                                        action='manage_categories',
                                                        message=message,
                                                        status='error' ) )
-        component = common.get_component( trans, id )
+        component = suc.get_component( trans, id )
         if params.get( 'edit_component_button', False ):
             new_description = util.restore_text( params.get( 'description', '' ) ).strip()
             if component.description != new_description:
@@ -465,9 +465,9 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         review_id = kwd.get( 'id', None )
-        review = common.get_review( trans, review_id )
+        review = suc.get_review( trans, review_id )
         components_dict = odict()
-        for component in common.get_components( trans ):
+        for component in suc.get_components( trans ):
             components_dict[ component.name ] = dict( component=component, component_review=None )
         repository = review.repository
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
@@ -517,8 +517,8 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
                             approved = str( v )
                         elif component_review_attr == 'rating':
                             rating = int( str( v ) )
-                component = common.get_component( trans, component_id )
-                component_review = common.get_component_review_by_repository_review_id_component_id( trans, review_id, component_id )
+                component = suc.get_component( trans, component_id )
+                component_review = suc.get_component_review_by_repository_review_id_component_id( trans, review_id, component_id )
                 if component_review:
                     # See if the existing component review should be updated.
                     if component_review.comment != comment or \
@@ -572,7 +572,7 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
                                                                       name='revision_approved',
                                                                       selected_value=selected_value,
                                                                       for_component=False )
-        rev, changeset_revision_label = common.get_rev_label_from_changeset_revision( repo, review.changeset_revision )
+        rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, review.changeset_revision )
         return trans.fill_template( '/webapps/community/repository_review/edit_review.mako',
                                     repository=repository,
                                     review=review,
@@ -659,14 +659,14 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
             metadata_revision_hashes = [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
             reviewed_revision_hashes = [ review.changeset_revision for review in repository.reviews ]
             reviews_dict = odict()
-            for changeset in common.get_reversed_changelog_changesets( repo ):
+            for changeset in suc.get_reversed_changelog_changesets( repo ):
                 ctx = repo.changectx( changeset )
                 changeset_revision = str( ctx )
                 if changeset_revision in metadata_revision_hashes or changeset_revision in reviewed_revision_hashes:
-                    rev, changeset_revision_label = common.get_rev_label_from_changeset_revision( repo, changeset_revision )
+                    rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, changeset_revision )
                     if changeset_revision in reviewed_revision_hashes:
                         # Find the review for this changeset_revision
-                        repository_reviews = common.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
+                        repository_reviews = suc.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
                         # Determine if the current user can add a review to this revision.
                         can_add_review = trans.user not in [ repository_review.user for repository_review in repository_reviews ]
                         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -704,8 +704,8 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         installable = changeset_revision in [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
-        rev, changeset_revision_label = common.get_rev_label_from_changeset_revision( repo, changeset_revision )
-        reviews = common.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
+        rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, changeset_revision )
+        reviews = suc.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
         return trans.fill_template( '/webapps/community/repository_review/reviews_of_changeset_revision.mako',
                                     repository=repository,
                                     changeset_revision=changeset_revision,
@@ -724,7 +724,7 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
         if 'operation' in kwd:
             operation = kwd['operation'].lower()
             # The value of the received id is the encoded review id.
-            review = common.get_review( trans, kwd[ 'id' ] )
+            review = suc.get_review( trans, kwd[ 'id' ] )
             repository = review.repository
             kwd[ 'id' ] = trans.security.encode_id( repository.id )
             if operation == "inspect repository revisions":
@@ -737,7 +737,7 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
                                                                   action='view_or_manage_repository',
                                                                   **kwd ) )
         # The user may not be the current user.  The value of the received id is the encoded user id.
-        user = common.get_user( trans, kwd[ 'id' ] )
+        user = suc.get_user( trans, kwd[ 'id' ] )
         self.repository_reviews_by_user_grid.title = "All repository revision reviews for user '%s'" % user.username
         return self.repository_reviews_by_user_grid( trans, **kwd )
     @web.expose
@@ -768,8 +768,8 @@ class RepositoryReviewController( BaseUIController, common.ItemRatings ):
         repository = suc.get_repository_in_tool_shed( trans, kwd[ 'id' ] )
         changeset_revision = kwd.get( 'changeset_revision', None )
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
-        previous_reviews_dict = common.get_previous_repository_reviews( trans, repository, changeset_revision )
-        rev, changeset_revision_label = common.get_rev_label_from_changeset_revision( repo, changeset_revision )
+        previous_reviews_dict = suc.get_previous_repository_reviews( trans, repository, changeset_revision )
+        rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, changeset_revision )
         return trans.fill_template( '/webapps/community/repository_review/select_previous_review.mako',
                                     repository=repository,
                                     changeset_revision=changeset_revision,
