@@ -71,10 +71,10 @@ def downgrade():
     except Exception, e:
         log.debug( "Dropping 'extended_metadata' table failed: %s" % ( str( e ) ) )
     
-    # Drop the Job table's exit_code column. 
+    # Drop the LDDA table's extended metadata ID column. 
     try:
-        job_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
-        extended_metadata_id = job_table.c.extended_metadata_id
+        ldda_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
+        extended_metadata_id = ldda_table.c.extended_metadata_id
         extended_metadata_id.drop()
     except Exception, e:
         log.debug( "Dropping 'extended_metadata_id' column from library_dataset_dataset_association table failed: %s" % ( str( e ) ) )
