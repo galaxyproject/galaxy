@@ -23,10 +23,6 @@ Interface, or API.
 Quickstart
 ==========
 
-Set the following option in universe_wsgi.ini and start the server::
-
-        enable_api = True
-
 Log in as your user, navigate to the API Keys page in the User menu, and
 generate a new API key.  Make a note of the API key, and then pull up a
 terminal.  Now we'll use the display.py script in your galaxy/scripts/api
