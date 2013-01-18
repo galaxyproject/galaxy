@@ -198,15 +198,14 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_displayButton : function(){
-        // don't show display if not in ready state or not accessible
-        // DO show if in error (ala previous history panel)
-        if( ( !this.model.inReadyState() )
-        //||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
-        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        // don't show display if not viewable or not accessible
+        // (do show if in error, running)
+        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.displayButton = null;
             return null;
         }
+        //NOTE: line 88 in history_common.mako should be handled by the url template generation
         
         var displayBtnData = {
             icon_class  : 'display',
