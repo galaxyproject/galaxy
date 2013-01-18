@@ -2779,6 +2779,7 @@ def open_repository_files_folder( trans, folder_path ):
 def populate_repository_dependency_objects_for_processing( trans, current_repository_key, repository_dependencies_dict, key_rd_dicts_to_be_processed,
                                                            handled_key_rd_dicts, circular_repository_dependencies, all_repository_dependencies ):
     current_repository_key_rd_dicts = []
+    filtered_current_repository_key_rd_dicts = []
     for rd in repository_dependencies_dict[ 'repository_dependencies' ]:
         new_key_rd_dict = {}
         new_key_rd_dict[ current_repository_key ] = rd
@@ -2790,6 +2791,7 @@ def populate_repository_dependency_objects_for_processing( trans, current_reposi
     for key_rd_dict in current_repository_key_rd_dicts:
         is_circular = False
         if not in_key_rd_dicts( key_rd_dict, handled_key_rd_dicts ) and not in_key_rd_dicts( key_rd_dict, key_rd_dicts_to_be_processed ):
+            filtered_current_repository_key_rd_dicts.append( key_rd_dict )
             repository_dependency = key_rd_dict[ current_repository_key ]
             if current_repository_key in all_repository_dependencies:
                 # Add all repository dependencies for the current repository into it's entry in all_repository_dependencies.
@@ -2813,7 +2815,7 @@ def populate_repository_dependency_objects_for_processing( trans, current_reposi
                 new_key_rd_dict = {}
                 new_key_rd_dict[ current_repository_key ] = repository_dependency
                 key_rd_dicts_to_be_processed.append( new_key_rd_dict )
-    return current_repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts, all_repository_dependencies
+    return filtered_current_repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts, all_repository_dependencies
 def remove_dir( dir ):
     if os.path.exists( dir ):
         try:
