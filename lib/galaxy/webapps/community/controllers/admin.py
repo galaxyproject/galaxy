@@ -1,9 +1,9 @@
-from galaxy.web.base.controller import *
+from galaxy.web.base.controller import BaseUIController
+from galaxy import web, util
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.webapps.community import model
 from galaxy.model.orm import and_
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.web.form_builder import SelectField
+from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util import inflector
 import galaxy.util.shed_util_common as suc
 from repository import RepositoryGrid, CategoryGrid

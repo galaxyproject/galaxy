@@ -1,9 +1,9 @@
 import os, logging
-from galaxy import util
-from galaxy.web.base.controller import *
+from galaxy import web, util
+from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import SelectField, CheckboxField
 from galaxy.webapps.community import model
-from galaxy.web.framework.helpers import time_ago, iff, grids
+from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_
 from sqlalchemy.sql.expression import func
 import common

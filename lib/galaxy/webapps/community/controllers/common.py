@@ -1,10 +1,6 @@
 import logging
 from galaxy.model.item_attrs import UsesItemRatings
 
-from galaxy import eggs
-eggs.require('mercurial')
-from mercurial import hg, ui, commands
-
 log = logging.getLogger( __name__ )
 
 class ItemRatings( UsesItemRatings ):

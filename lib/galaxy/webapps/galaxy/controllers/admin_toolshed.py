@@ -1,14 +1,23 @@
-import urllib2, tempfile
-from admin import *
+import logging, os, shutil, tempfile, urllib2
+from admin import AdminGalaxy
+from galaxy import model, web, util
+from galaxy.web.form_builder import SelectField, CheckboxField
+from galaxy.web.framework.helpers import iff, grids
 from galaxy.util import json
+from galaxy.model.orm import or_
 import galaxy.util.shed_util as shed_util
 import galaxy.util.shed_util_common as suc
 from galaxy.tool_shed import encoding_util
 from galaxy.webapps.community.util import container_util, workflow_util
 from galaxy import eggs, tools
+import pkg_resources
 
 eggs.require( 'mercurial' )
 from mercurial import hg, ui, commands
+
+pkg_resources.require( 'elementtree' )
+from elementtree import ElementTree
+from elementtree.ElementTree import Element
 
 log = logging.getLogger( __name__ )
 
@@ -447,7 +456,7 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def browse_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        galaxy_url = url_for( '/', qualified=True )
+        galaxy_url = web.url_for( '/', qualified=True )
         url = suc.url_join( tool_shed_url, 'repository/browse_valid_categories?galaxy_url=%s' % ( galaxy_url ) )
         return trans.response.send_redirect( url )
     @web.expose
@@ -469,7 +478,7 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
         url = suc.url_join( tool_shed_url,
                             'repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
-                            ( url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision ) )
+                            ( web.url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision ) )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
@@ -557,14 +566,14 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def find_tools_in_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        galaxy_url = url_for( '/', qualified=True )
+        galaxy_url = web.url_for( '/', qualified=True )
         url = suc.url_join( tool_shed_url, 'repository/find_tools?galaxy_url=%s' % galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
     @web.require_admin
     def find_workflows_in_tool_shed( self, trans, **kwd ):
         tool_shed_url = kwd[ 'tool_shed_url' ]
-        galaxy_url = url_for( '/', qualified=True )
+        galaxy_url = web.url_for( '/', qualified=True )
         url = suc.url_join( tool_shed_url, 'repository/find_workflows?galaxy_url=%s' % galaxy_url )
         return trans.response.send_redirect( url )
     @web.expose
@@ -993,7 +1002,7 @@ class AdminToolshed( AdminGalaxy ):
             # Send a request to the tool shed to install the repository.
             url = suc.url_join( tool_shed_url,
                                 'repository/install_repositories_by_revision?name=%s&owner=%s&changeset_revisions=%s&galaxy_url=%s' % \
-                                ( repository.name, repository.owner, repository.installed_changeset_revision, ( url_for( '/', qualified=True ) ) ) )
+                                ( repository.name, repository.owner, repository.installed_changeset_revision, ( web.url_for( '/', qualified=True ) ) ) )
             return trans.response.send_redirect( url )
         description = util.restore_text( params.get( 'description', repository.description ) )
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
