@@ -977,9 +977,10 @@ class AdminToolshed( AdminGalaxy ):
             return trans.show_error_message( 'Invalid repository specified.' )
         tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
         if repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING ]:
+            tool_shed_repository_ids = [ repository_id ]
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                               action='monitor_repository_installation',
-                                                              **kwd ) )
+                                                              tool_shed_repository_ids=tool_shed_repository_ids ) )
         if repository.can_install and operation == 'install':
             # Send a request to the tool shed to install the repository.
             url = suc.url_join( tool_shed_url,
