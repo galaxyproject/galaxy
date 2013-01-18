@@ -151,7 +151,7 @@
                     <div class="form-title-row"><strong>${input.title} ${i + 1}</strong></div>
                     ${do_inputs( input.inputs, repeat_state[i], rep_errors, prefix + input.name + "_" + str(index) + "|", other_values )}
                     %if input.min < num_repeats:
-                        <div class="form-row"><input type="submit" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
+                        <div class="form-row"><input type="submit" class="btn" name="${prefix}${input.name}_${index}_remove" value="Remove ${input.title} ${i+1}"></div>
                     %endif
                 </div>
                 %if rep_errors.has_key( '__index__' ):
@@ -159,7 +159,7 @@
                 %endif
               %endfor
               %if input.max > num_repeats:
-                  <div class="form-row"><input type="submit" name="${prefix}${input.name}_add" value="Add new ${input.title}"></div>
+                  <div class="form-row"><input type="submit" class="btn" name="${prefix}${input.name}_add" value="Add new ${input.title}"></div>
               %endif
           </div>
         %elif input.type == "conditional":
