@@ -798,24 +798,6 @@ class AdminToolshed( AdminGalaxy ):
                                                           status=status ) )
     @web.expose
     @web.require_admin
-    def initiate_repository_installation( self, trans, shed_repository_ids, encoded_kwd, reinstalling=False ):
-        tsr_ids = util.listify( shed_repository_ids )
-        tool_shed_repositories = []
-        for tsr_id in tsr_ids:
-            tsr = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
-            tool_shed_repositories.append( tsr )
-        clause_list = []
-        for tsr_id in tsr_ids:
-            clause_list.append( trans.model.ToolShedRepository.table.c.id == trans.security.decode_id( tsr_id ) )
-        query = trans.sa_session.query( trans.model.ToolShedRepository ).filter( or_( *clause_list ) )
-        return trans.fill_template( 'admin/tool_shed_repository/initiate_repository_installation.mako',
-                                    encoded_kwd=encoded_kwd,
-                                    query=query,
-                                    tool_shed_repositories=tool_shed_repositories,
-                                    initiate_repository_installation_ids=shed_repository_ids,
-                                    reinstalling=reinstalling )
-    @web.expose
-    @web.require_admin
     def initiate_tool_dependency_installation( self, trans, tool_dependencies ):
         """Install specified dependencies for repository tools."""
         # Get the tool_shed_repository from one of the tool_dependencies.
@@ -1303,7 +1285,7 @@ class AdminToolshed( AdminGalaxy ):
                 else:
                     tool_panel_section_key = None
                     tool_section = None
-                tsrids_list = [ trans.security.encode_id( tsr.id ) for tsr in created_or_updated_tool_shed_repositories ]
+                encoded_repository_ids = [ trans.security.encode_id( tsr.id ) for tsr in created_or_updated_tool_shed_repositories ]
                 # Create a one-to-one mapping of tool shed repository id and tool panel section key.  All tools contained in the repositories
                 # being installed will be loaded into the same section in the tool panel.
                 for tsr in created_or_updated_tool_shed_repositories:
@@ -1319,15 +1301,24 @@ class AdminToolshed( AdminGalaxy ):
                                 status=status,
                                 tool_path=tool_path,
                                 tool_panel_section_keys=tool_panel_section_keys,
-                                tool_shed_repository_ids=tsrids_list,
+                                tool_shed_repository_ids=encoded_repository_ids,
                                 tool_shed_url=tool_shed_url )
                 encoded_kwd = encoding_util.tool_shed_encode( new_kwd )
-                tsrids_str = ','.join( tsrids_list )
-                return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                                  action='initiate_repository_installation',
-                                                                  shed_repository_ids=tsrids_str,
-                                                                  encoded_kwd=encoded_kwd,
-                                                                  reinstalling=False ) )
+                tsr_ids = [ r.id  for r in created_or_updated_tool_shed_repositories  ]
+                tool_shed_repositories = []
+                for tsr_id in tsr_ids:
+                    tsr = trans.sa_session.query( trans.model.ToolShedRepository ).get( tsr_id )
+                    tool_shed_repositories.append( tsr )
+                clause_list = []
+                for tsr_id in tsr_ids:
+                    clause_list.append( trans.model.ToolShedRepository.table.c.id == tsr_id )
+                query = trans.sa_session.query( trans.model.ToolShedRepository ).filter( or_( *clause_list ) )
+                return trans.fill_template( 'admin/tool_shed_repository/initiate_repository_installation.mako',
+                                            encoded_kwd=encoded_kwd,
+                                            query=query,
+                                            tool_shed_repositories=tool_shed_repositories,
+                                            initiate_repository_installation_ids=encoded_repository_ids,
+                                            reinstalling=False )
             else:
                 kwd[ 'message' ] = message
                 kwd[ 'status' ] = status
@@ -1516,11 +1507,21 @@ class AdminToolshed( AdminGalaxy ):
                         tool_shed_repository_ids=encoded_repository_ids,
                         tool_shed_url=tool_shed_url )
         encoded_kwd = encoding_util.tool_shed_encode( new_kwd )
-        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                          action='initiate_repository_installation',
-                                                          shed_repository_ids=encoded_repository_ids,
-                                                          encoded_kwd=encoded_kwd,
-                                                          reinstalling=True ) )
+        tsr_ids = [ r.id  for r in created_or_updated_tool_shed_repositories  ]
+        tool_shed_repositories = []
+        for tsr_id in tsr_ids:
+            tsr = trans.sa_session.query( trans.model.ToolShedRepository ).get( tsr_id )
+            tool_shed_repositories.append( tsr )
+        clause_list = []
+        for tsr_id in tsr_ids:
+            clause_list.append( trans.model.ToolShedRepository.table.c.id == tsr_id )
+        query = trans.sa_session.query( trans.model.ToolShedRepository ).filter( or_( *clause_list ) )
+        return trans.fill_template( 'admin/tool_shed_repository/initiate_repository_installation.mako',
+                                    encoded_kwd=encoded_kwd,
+                                    query=query,
+                                    tool_shed_repositories=tool_shed_repositories,
+                                    initiate_repository_installation_ids=encoded_repository_ids,
+                                    reinstalling=True )
     @web.json
     def repository_installation_status_updates( self, trans, ids=None, status_list=None ):
         # Avoid caching

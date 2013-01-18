@@ -350,7 +350,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     # Keep the one-to-one mapping between items in 3 lists.
                     created_or_updated_tool_shed_repositories.append( tool_shed_repository )
                     tool_panel_section_keys.append( tool_panel_section_key )
-                    filtered_repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
+                    filtered_repo_info_dicts.append( repo_info_dict )
     # Build repository dependency relationships even if the user chose to not install repository dependencies.
     suc.build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )                     
     return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
