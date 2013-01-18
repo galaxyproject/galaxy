@@ -4,10 +4,9 @@ API operations on annotations.
 import logging, os, string, shutil, urllib, re, socket
 from cgi import escape, FieldStorage
 from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import *
-from galaxy.model.item_attrs import *
+from galaxy.web.base.controller import  BaseAPIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesStoredWorkflowMixin 
+from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.orm import *
 import galaxy.datatypes
 from galaxy.util.bunch import Bunch
 
