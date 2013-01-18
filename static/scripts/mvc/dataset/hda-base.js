@@ -445,7 +445,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         if( !this.model.get( 'purged' ) ){
             parent.append( $( '<div>' + this.model.get( 'misc_blurb' ) + '</div>' ) );
         }
-        parent.append( ( _l( 'An error occurred running this job' ) + ': '
+        parent.append( ( _l( 'An error occurred with this dataset' ) + ': '
                        + '<i>' + $.trim( this.model.get( 'misc_info' ) ) + '</i>' ) );
         parent.append( this._render_primaryActionButtons(
             this.defaultPrimaryActionButtonRenderers.concat([ this._render_downloadButton ])
