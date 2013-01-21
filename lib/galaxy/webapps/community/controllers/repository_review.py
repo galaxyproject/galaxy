@@ -6,7 +6,7 @@ from galaxy.webapps.community import model
 from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_
 from sqlalchemy.sql.expression import func
-import common
+from galaxy.webapps.community.util import common_util
 from galaxy.webapps.community.util.container_util import STRSEP
 from repository import RepositoryGrid
 import galaxy.util.shed_util_common as suc
@@ -260,7 +260,7 @@ class ReviewedRepositoriesIOwnGrid( RepositoriesWithReviewsGrid ):
                                .outerjoin( ( model.ComponentReview.table, model.ComponentReview.table.c.repository_review_id == model.RepositoryReview.table.c.id ) ) \
                                .outerjoin( ( model.Component.table, model.Component.table.c.id == model.ComponentReview.table.c.component_id ) )
     
-class RepositoryReviewController( BaseUIController, common.ItemRatings ):
+class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     
     component_grid = ComponentGrid()
     repositories_reviewed_by_me_grid = RepositoriesReviewedByMeGrid()

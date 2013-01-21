@@ -13,7 +13,7 @@ from galaxy.model.orm import and_, or_
 import galaxy.util.shed_util_common as suc
 from galaxy.tool_shed import encoding_util
 from galaxy.webapps.community.util import workflow_util
-import common
+from galaxy.webapps.community.util import common_util
 import galaxy.tools
 
 from galaxy import eggs
@@ -518,7 +518,7 @@ class InstallMatchedRepositoryGrid( MatchedRepositoryGrid ):
                                                      link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                                      attach_popup=False )
 
-class RepositoryController( BaseUIController, common.ItemRatings ):
+class RepositoryController( BaseUIController, common_util.ItemRatings ):
 
     install_matched_repository_grid = InstallMatchedRepositoryGrid()
     matched_repository_grid = MatchedRepositoryGrid()
