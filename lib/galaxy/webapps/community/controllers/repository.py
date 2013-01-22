@@ -1909,6 +1909,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                         metadata = repository_metadata.metadata
                         is_malicious = repository_metadata.malicious
             if repository_metadata:
+                metadata = repository_metadata.metadata
                 # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
                 repository_dependencies = suc.get_repository_dependencies_for_changeset_revision( trans=trans,
                                                                                                   repository=repository,
@@ -1917,6 +1918,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                                   key_rd_dicts_to_be_processed=None,
                                                                                                   all_repository_dependencies=None,
                                                                                                   handled_key_rd_dicts=None )
+                if metadata:
+                    if 'repository_dependencies' in metadata and not repository_dependencies:
+                        message += 'The repository dependency definitions for this repository are invalid and will be ignored.  Make sure valid <b>toolshed</b>, '
+                        message += '<b>name</b>, <b>owner</b> and <b>changeset_revision</b> values are defined in the contained <b>repository_dependencies.xml</b> '
+                        message += 'file to correct this problem.'
+                        status = 'error'
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push
@@ -2029,6 +2036,10 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                               key_rd_dicts_to_be_processed=None,
                                                                                               all_repository_dependencies=None,
                                                                                               handled_key_rd_dicts=None )
+            if metadata:
+                if 'repository_dependencies' in metadata and not repository_dependencies:
+                    message += 'The repository dependency definitions for this repository are invalid and will be ignored.'
+                    status = 'error'
         else:
             repository_metadata_id = None
             metadata = None
@@ -2550,6 +2561,10 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                               key_rd_dicts_to_be_processed=None,
                                                                                               all_repository_dependencies=None,
                                                                                               handled_key_rd_dicts=None )
+            if metadata:
+                if 'repository_dependencies' in metadata and not repository_dependencies:
+                    message += 'The repository dependency definitions for this repository are invalid and will be ignored.'
+                    status = 'error'
         else:
             repository_metadata_id = None
             metadata = None

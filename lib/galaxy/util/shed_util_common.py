@@ -1888,6 +1888,7 @@ def get_repository_dependencies_for_changeset_revision( trans, repository, repos
             handle_next_repository_dependency( trans, key_rd_dicts_to_be_processed, all_repository_dependencies, handled_key_rd_dicts, circular_repository_dependencies )
     elif key_rd_dicts_to_be_processed:
         handle_next_repository_dependency( trans, key_rd_dicts_to_be_processed, all_repository_dependencies, handled_key_rd_dicts, circular_repository_dependencies )
+    all_repository_dependencies = prune_invalid_repository_dependencies( all_repository_dependencies )
     return all_repository_dependencies
 def get_repository_dependency_as_key( repository_dependency ):
     return container_util.generate_repository_dependencies_key_for_repository( repository_dependency[ 0 ],
@@ -2181,12 +2182,12 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
     for key_rd_dict in key_rd_dicts:
         key = key_rd_dict.keys()[ 0 ]
         repository_dependency = key_rd_dict[ key ]
-        toolshed, name, owner, changeset_revision = repository_dependency
-        if tool_shed_is_this_tool_shed( toolshed ):
-            repository = get_repository_by_name_and_owner( trans, name, owner )
+        rd_toolshed, rd_name, rd_owner, rd_changeset_revision = repository_dependency
+        if tool_shed_is_this_tool_shed( rd_toolshed ):
+            repository = get_repository_by_name_and_owner( trans, rd_name, rd_owner )
             repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
                                                                                               trans.security.encode_id( repository.id ),
-                                                                                              changeset_revision )
+                                                                                              rd_changeset_revision )
             if repository_metadata:
                 # The repository changeset_revision is installable, so no updates are available.
                 new_key_rd_dict = {}
@@ -2196,15 +2197,20 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
                 # The repository changeset_revision is no longer installable, so see if there's been an update.
                 repo_dir = repository.repo_path( trans.app )
                 repo = hg.repository( get_configured_ui(), repo_dir )
-                changeset_revision = get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+                changeset_revision = get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
                 repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
                                                                                                   trans.security.encode_id( repository.id ),
                                                                                                   changeset_revision )
                 if repository_metadata:
                     new_key_rd_dict = {}
-                    new_key_rd_dict[ key ] = [ toolshed, name, owner, repository_metadata.changeset_revision ]
+                    new_key_rd_dict[ key ] = [ rd_toolshed, rd_name, rd_owner, repository_metadata.changeset_revision ]
                     # We have the updated changset revision.
                     updated_key_rd_dicts.append( new_key_rd_dict )
+                else:
+                    toolshed, repository_name, repository_owner, repository_changeset_revision = container_util.get_components_from_key( key )
+                    message = "The revision %s defined for repository %s owned by %s is invalid, so repository dependencies defined for repository %s will be ignored." % \
+                        ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ), str( repository_name ) )
+                    log.debug( message )
     return updated_key_rd_dicts
 def get_url_from_repository_tool_shed( app, repository ):
     """
@@ -2816,6 +2822,25 @@ def populate_repository_dependency_objects_for_processing( trans, current_reposi
                 new_key_rd_dict[ current_repository_key ] = repository_dependency
                 key_rd_dicts_to_be_processed.append( new_key_rd_dict )
     return filtered_current_repository_key_rd_dicts, key_rd_dicts_to_be_processed, handled_key_rd_dicts, all_repository_dependencies
+def prune_invalid_repository_dependencies( repository_dependencies ):
+    """
+    Eliminate all invalid entries in the received repository_dependencies dictionary.  An entry is invalid if if the value_list of the key/value pair is
+    empty.  This occurs when an invalid combination of tool shed, name , owner, changeset_revision is used and a repository_metadata reocrd is not found.
+    """
+    valid_repository_dependencies = {}
+    description = repository_dependencies.get( 'description', None )
+    root_key = repository_dependencies.get( 'root_key', None )
+    if root_key is None:
+        return valid_repository_dependencies
+    for key, value in repository_dependencies.items():
+        if key in [ 'description', 'root_key' ]:
+            continue
+        if value:
+            valid_repository_dependencies[ key ] = value
+    if valid_repository_dependencies:
+        valid_repository_dependencies[ 'description' ] = description
+        valid_repository_dependencies[ 'root_key' ] = root_key
+    return valid_repository_dependencies
 def remove_dir( dir ):
     if os.path.exists( dir ):
         try:
