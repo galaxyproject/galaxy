@@ -17,11 +17,11 @@ def die( message ):
 
 def open_or_die( filename, mode='r', message=None ):
     if message is None:
-        message = 'Error opening {0}'.format( filename )
+        message = 'Error opening %s' % filename
     try:
         fh = open( filename, mode )
     except IOError, err:
-        die( '{0}: {1}'.format( message, err.strerror ) )
+        die( '%s: %s' % ( message, err.strerror ) )
     return fh
 
 ################################################################################
@@ -48,16 +48,16 @@ class LocationFile( object ):
                     if not line.startswith( self.comment_chars ):
                         elems = line.split( self.delimiter )
                         if len( elems ) <= self.key_column:
-                            die( 'Location file {0} line {1}: less than {2} columns'.format( self.filename, line_number, self.key_column + 1 ) )
+                            die( 'Location file %s line %d: less than %d columns' % ( self.filename, line_number, self.key_column + 1 ) )
                         else:
                             key = elems.pop( self.key_column )
                             if key in self._map:
                                 if self._map[key] != elems:
-                                    die( 'Location file {0} line {1}: duplicate key "{2}"'.format( self.filename, line_number, key ) )
+                                    die( 'Location file %s line %d: duplicate key "%s"' % ( self.filename, line_number, key ) )
                             else:
                                 self._map[key] = elems
         except IOError, err:
-            die( 'Error opening location file {0}: {1}'.format( self.filename, err.strerror ) )
+            die( 'Error opening location file %s: %s' % ( self.filename, err.strerror ) )
 
     def get_values( self, key ):
         if key in self._map:
@@ -67,7 +67,7 @@ class LocationFile( object ):
             else:
                 return rval
         else:
-            die( 'key "{0}" not found in location file {1}'.format( key, self.filename ) )
+            die( 'key "%s" not found in location file %s' % ( key, self.filename ) )
 
 ################################################################################
 
@@ -77,10 +77,10 @@ def main():
     # open input, output, and bigwig files
     location_file = LocationFile( loc_filename )
     bigwig_filename = location_file.get_values( loc_key )
-    bwfh = open_or_die( bigwig_filename, message='Error opening BigWig file {0}'.format( bigwig_filename ) )
+    bwfh = open_or_die( bigwig_filename, message='Error opening BigWig file %s' % bigwig_filename )
     bw = BigWigFile( file=bwfh )
-    ifh = open_or_die( input_filename, message='Error opening input file {0}'.format( input_filename ) )
-    ofh = open_or_die( output_filename, mode='w', message='Error opening output file {0}'.format( output_filename ) )
+    ifh = open_or_die( input_filename, message='Error opening input file %s' % input_filename )
+    ofh = open_or_die( output_filename, mode='w', message='Error opening output file %s' % output_filename )
 
     # make column numbers 0-based
     chrom_col = int( chrom_col ) - 1
@@ -101,11 +101,11 @@ def main():
             score_list_len = len( score_list )
             if score_list_len == 1:
                 beg, end, score = score_list[0]
-                score_val = '{0:1.3f}'.format( score )
+                score_val = '%1.3f' % score
             elif score_list_len == 0:
                 score_val = 'NA'
             else:
-                die( '{0} line {1}: chrom={2}, start={3}, score_list_len = {4}'.format( input_filename, line_number, chrom, start, score_list_len ) )
+                die( '%s line %d: chrom=%s, start=%d, score_list_len = %d' % ( input_filename, line_number, chrom, start, score_list_len ) )
             print >> ofh, '\t'.join( [line, score_val] )
         else:
             print >> ofh, line
