@@ -171,7 +171,11 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         tools_metadata = metadata[ 'tools' ]
     else:
         tools_metadata = []
-    workflow, missing_tool_tups = get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id, changeset_revision )
+    workflow, missing_tool_tups = get_workflow_from_dict( trans=trans,
+                                                          workflow_dict=workflow_dict,
+                                                          tools_metadata=tools_metadata,
+                                                          repository_id=repository_id,
+                                                          changeset_revision=changeset_revision )
     data = []
     canvas = svgfig.canvas( style="stroke:black; fill:none; stroke-width:1px; stroke-linejoin:round; text-anchor:left" )
     text = svgfig.SVG( "g" )
@@ -236,7 +240,8 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         tool_unavailable = step_dict[ 'tool_errors' ]
         width = widths[ step_dict[ 'id' ] ]
         x, y = step_dict[ 'position' ][ 'left' ], step_dict[ 'position' ][ 'top' ]
-        if tool_unavailable:
+        # Only highlight missing tools if displaying in the tool shed.
+        if trans.webapp.name == 'community' and tool_unavailable:
             fill = "#EBBCB2"
         else:
             fill = "#EBD9B2"    
@@ -325,7 +330,11 @@ def get_workflow_data_outputs( step, module, steps ):
             return data_outputs
     return module.get_data_outputs()
 def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id, changeset_revision ):
-    """Return a workflow object from the dictionary object created when it was exported."""
+    """
+    Return an in-memory Workflow object from the dictionary object created when it was exported.  This method is called from
+    both Galaxy and the tool shed to retrieve a Workflow object that can be displayed as an SVG image.  This method is also
+    called from Galaxy to retrieve a Workflow object that can be used for saving to the Galaxy database.
+    """
     trans.workflow_building_mode = True
     workflow = trans.model.Workflow()
     workflow.name = workflow_dict[ 'name' ]
@@ -372,6 +381,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
         del step.temp_input_connections
     # Order the steps if possible.
     galaxy.webapps.galaxy.controllers.workflow.attach_ordered_steps( workflow, steps )
+    # Return the in-memory Workflow object for display or later persistence to the Galaxy database.
     return workflow, missing_tool_tups
 def get_workflow_module_name( module, missing_tool_tups ):
     module_name = module.get_name()
@@ -382,3 +392,20 @@ def get_workflow_module_name( module, missing_tool_tups ):
                 module_name = '%s' % missing_tool_name
                 break
     return module_name
+def save_workflow( trans, workflow ):
+    """Use the received in-memory Workflow object for saving to the Galaxy database."""
+    stored = trans.model.StoredWorkflow()
+    stored.name = workflow.name
+    workflow.stored_workflow = stored
+    stored.latest_workflow = workflow
+    stored.user = trans.user
+    trans.sa_session.add( stored )
+    trans.sa_session.flush()
+    # Add a new entry to the Workflows menu.
+    if trans.user.stored_workflow_menu_entries is None:
+        trans.user.stored_workflow_menu_entries = []
+    menuEntry = trans.model.StoredWorkflowMenuEntry()
+    menuEntry.stored_workflow = stored
+    trans.user.stored_workflow_menu_entries.append( menuEntry )
+    trans.sa_session.flush()
+    return stored

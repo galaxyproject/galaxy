@@ -60,8 +60,20 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 #   but we(I?) need an hda collection with full data somewhere
                 ids = ids.split( ',' )
                 for hda in history.datasets:
-                    if trans.security.encode_id( hda.id ) in ids:
-                        rval.append( get_hda_dict( trans, history, hda, for_editing=True ) )
+                    #TODO: curr. ordered by history, change to order from ids list
+                    encoded_hda_id = trans.security.encode_id( hda.id )
+                    if encoded_hda_id in ids:
+                        #TODO: share code with show
+                        try:
+                            rval.append( get_hda_dict( trans, history, hda, for_editing=True ) )
+
+                        except Exception, exc:
+                            # don't fail entire list if hda err's, record and move on
+                            # (making sure http recvr knows it's err'd)
+                            trans.response.status = 500
+                            log.error( "Error in history API at listing contents " +
+                                "with history %s, hda %s: %s", history_id, encoded_hda_id, str( exc ) )
+                            rval.append( self._exception_as_hda_dict( trans, encoded_hda_id, exc ) )
 
             else:
                 # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
@@ -69,12 +81,14 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     rval.append( self._summary_hda_dict( trans, history_id, hda ) )
 
         except Exception, e:
-            rval = "Error in history API at listing contents"
+            # for errors that are not specific to one hda (history lookup or summary list)
+            rval = "Error in history API at listing contents: " + str( e )
             log.error( rval + ": %s, %s" % ( type( e ), str( e ) ) )
             trans.response.status = 500
 
         return rval
 
+    #TODO: move to model or Mixin
     def _summary_hda_dict( self, trans, history_id, hda ):
         """
         Returns a dictionary based on the HDA in .. _summary form::
@@ -92,6 +106,26 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'name'  : hda.name,
             'type'  : api_type,
             'url'   : url_for( 'history_content', history_id=history_id, id=encoded_id, ),
+        }
+
+    #TODO: move to model or Mixin
+    def _exception_as_hda_dict( self, trans, hda_id, exception ):
+        """
+        Returns a dictionary for an HDA that raised an exception when it's
+        dictionary was being built.
+        {
+            'id'    : < the encoded dataset id >,
+            'type'  : < name of the dataset >,
+            'url'   : < api url to retrieve this datasets full data >,
+        }
+        """
+        return {
+            'id'        : hda_id,
+            'state'     : trans.app.model.Dataset.states.ERROR,
+            'visible'   : True,
+            'misc_info' : str( exception ),
+            'misc_blurb': 'Failed to retrieve dataset information.',
+            'error'     : str( exception )
         }
 
     @web.expose_api
@@ -199,6 +233,11 @@ def get_hda_dict( trans, history, hda, for_editing ):
     #hda_dict[ 'display_types' ] = get_display_types( trans, hda )
     hda_dict[ 'visualizations' ] = hda.get_visualizations()
     hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
+
+    if hda.creating_job and hda.creating_job.tool_id:
+        tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
+        if tool_used and tool_used.force_history_refresh:
+            hda_dict[ 'force_history_refresh' ] = True
 
     return hda_dict
 

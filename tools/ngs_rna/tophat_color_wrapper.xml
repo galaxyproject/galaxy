@@ -503,7 +503,7 @@
         <!-- Test color-space single-end reads with pre-built index and full parameters -->
         <test>
             <!-- Tophat commands:
-            tophat -p 1 -C -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +allow-indels +coverage-search +min-coverage-intron 50 +max-coverage-intron 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intro 5000 +microexon-search partialMm9chrX_random_cs test-data/tophat_in4.fastqcssanger
+            tophat -p 1 -C -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +allow-indels +coverage-search +min-coverage-intron 50 +max-coverage-intron 20000 +segment-mismatches 2 +segment-length 25 +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intron 5000 +microexon-search partialMm9chrX_random_cs test-data/tophat_in4.fastqcssanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
@@ -564,7 +564,7 @@
             <!-- TopHat commands:
             cp test-data/tophat_in5.fasta tophat_in5.fa
             bowtie-build -C -f tophat_in5.fa tophat_in5
-            tophat -C -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +library-type fr-unstranded +allow-indels +coverage-search +min-coverage-intron 50 +max-coverage-intron 15000 +mate-std-dev 20 +segment-mismatch 2 +segment-length 20 +min-segment-intron 50 +max-segment-intron 500000 tophat_in5 test-data/tophat_in6.fastqcssanger test-data/tophat_in7.fastqcssanger
+            tophat -C -o tmp_dir -r 20 -p 1 -a 8 -m 0 -i 70 -I 500000 -F 0.15 -g 40 +library-type fr-unstranded +allow-indels +closure-search +min-closure-exon 50 +min-closure-intron 50 +max-closure-intron 5000 +coverage-search +min-coverage-intron 50 +max-coverage-intron 15000 +mate-std-dev 20 +segment-mismatch 2 +segment-length 20 +min-segment-intron 50 +max-segment-intron 500000 tophat_in5 test-data/tophat_in6.fastqcssanger test-data/tophat_in7.fastqcssanger
             Replace the + with double-dash
             Rename the files in tmp_dir appropriately
             -->
@@ -591,7 +591,10 @@
             <param name="max_insertion_length" value="3"/>
             <param name="max_deletion_length" value="3"/>
             <param name="use_junctions" value="No" />
-            <param name="use_search" value="No" />
+            <param name="use_search" value="Yes" />
+            <param name="min_closure_exon" value="50" />
+            <param name="min_closure_intron" value="50" />
+            <param name="max_closure_intron" value="5000" />
             <param name="use_search" value="Yes" />
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />

@@ -27,8 +27,8 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name='filtering_0000', 
-                                                    description="Galaxy's filtering tool", 
-                                                    long_description="Long description of Galaxy's filtering tool", 
+                                                    description="Galaxy's filtering tool for test 0000", 
+                                                    long_description="Long description of Galaxy's filtering tool for test 0000", 
                                                     owner=common.test_user_1_name,
                                                     category_id=self.security.encode_id( category.id ) )
         if self.repository_is_new( repository ):
@@ -56,8 +56,8 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
         self.uninstall_repository( installed_repository, remove_from_disk=True )
         strings_not_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.installed_changeset_revision ]
+                                  installed_repository.description,
+                                  installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
     def test_0020_reinstall_filtering_repository( self ):
         '''Reinstall the filtering repository.'''
@@ -77,8 +77,8 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
         self.uninstall_repository( installed_repository, remove_from_disk=False )
         strings_not_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.installed_changeset_revision ]
+                                  installed_repository.description,
+                                  installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
     def test_0030_reactivate_filtering_repository( self ):
         '''Reactivate the filtering repository and verify that it now shows up in the list of installed repositories.'''

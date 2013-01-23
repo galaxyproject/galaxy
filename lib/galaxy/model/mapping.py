@@ -1950,7 +1950,7 @@ def load_egg_for_url( url ):
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None ):
+def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None, trace_logger=None ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     Dataset.file_path = file_path
@@ -1962,6 +1962,10 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     if database_query_profiling_proxy:
         import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
         proxy = logging_connection_proxy.LoggingProxy()
+    # If metlog is enabled, do micrologging
+    elif trace_logger:
+        import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
+        proxy = logging_connection_proxy.TraceLoggerProxy( trace_logger )
     else:
         proxy = None
     # Create the database engine

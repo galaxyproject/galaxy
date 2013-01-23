@@ -96,7 +96,7 @@ function program13(depth0,data) {
 function program15(depth0,data) {
   
   
-  return "<span class=\"ficon ok\"></span>";}
+  return "<span class=\"fa-icon-ok\"></span>";}
 
 function program17(depth0,data) {
   

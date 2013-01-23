@@ -111,6 +111,15 @@ def app_factory( global_conf, **kwargs ):
     _add_item_extended_metadata_controller( webapp, 
                                name_prefix="library_dataset_",
                                path_prefix='/api/libraries/:library_id/contents/:library_content_id' )
+    _add_item_annotation_controller( webapp, 
+                               name_prefix="history_content_",
+                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+    _add_item_annotation_controller( webapp, 
+                               name_prefix="history_",
+                               path_prefix='/api/histories/:history_id' )
+    _add_item_annotation_controller( webapp, 
+                               name_prefix="workflow_",
+                               path_prefix='/api/workflows/:workflow_id' )
 
     webapp.api_mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
@@ -135,7 +144,13 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.connect("import_workflow", "/api/workflows/upload", controller="workflows", action="import_new_workflow", conditions=dict(method=["POST"]))
     webapp.api_mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
 
+    # Connect logger from app
+    if app.trace_logger:
+        webapp.trace_logger = app.trace_logger
+
+    # Indicate that all configuration settings have been provided
     webapp.finalize_config()
+
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
@@ -197,6 +212,10 @@ def _add_item_extended_metadata_controller( webapp, name_prefix, path_prefix, **
     name = "%sextended_metadata" % name_prefix
     webapp.api_mapper.resource(name, "extended_metadata", path_prefix=path_prefix, controller=controller)
 
+def _add_item_annotation_controller( webapp, name_prefix, path_prefix, **kwd ):
+    controller = "%sannotations" % name_prefix
+    name = "%sannotation" % name_prefix
+    webapp.api_mapper.resource(name, "annotation", path_prefix=path_prefix, controller=controller)
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """

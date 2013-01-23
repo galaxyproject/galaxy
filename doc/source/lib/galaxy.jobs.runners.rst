@@ -72,4 +72,5 @@ Subpackages
 
     galaxy.jobs.runners.cli_job
     galaxy.jobs.runners.cli_shell
+    galaxy.jobs.runners.lwr_client
 

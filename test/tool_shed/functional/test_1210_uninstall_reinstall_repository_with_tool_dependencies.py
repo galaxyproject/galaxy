@@ -59,9 +59,11 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         '''Install the freebayes repository into the Galaxy instance.'''
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
+        strings_displayed = [ 'Handle', 'tool dependencies', 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18' ]
         self.install_repository( 'freebayes_0010', 
                                  common.test_user_1_name, 
                                  'Test 0010 Repository With Tool Dependencies', 
+                                 strings_displayed=strings_displayed,
                                  new_tool_panel_section='test_1210' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'freebayes_0010', common.test_user_1_name )
         strings_displayed = [ installed_repository.name,

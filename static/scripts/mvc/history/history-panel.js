@@ -104,10 +104,11 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
 
         this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
 
-        // bind events from the model's hda collection
         // don't need to re-render entire model on all changes, just render disk size when it changes
         //this.model.bind( 'change', this.render, this );
         this.model.bind( 'change:nice_size', this.updateHistoryDiskSize, this );
+
+        // bind events from the model's hda collection
         this.model.hdas.bind( 'add',   this.add,    this );
         this.model.hdas.bind( 'reset', this.addAll, this );
 
@@ -122,6 +123,14 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             if( ( !hda.get( 'visible' ) )
             &&  ( !this.storage.get( 'show_hidden' ) ) ){
                 this.removeHdaView( hda.get( 'id' ) );
+            }
+        }, this );
+
+        // if an hda moves into the ready state and has the force_history_refresh flag (often via tool.xml)
+        //  then: refresh the panel
+        this.model.hdas.bind( 'state:ready', function( hda, newState, oldState ){
+            if( hda.get( 'force_history_refresh' ) ){
+                window.location.reload();
             }
         }, this );
 

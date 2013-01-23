@@ -224,19 +224,20 @@ class Admin( object ):
         role = get_role( trans, id )
         if params.get( 'role_members_edit_button', False ):
             in_users = [ trans.sa_session.query( trans.app.model.User ).get( x ) for x in util.listify( params.in_users ) ]
-            for ura in role.users:
-                user = trans.sa_session.query( trans.app.model.User ).get( ura.user_id )
-                if user not in in_users:
-                    # Delete DefaultUserPermissions for previously associated users that have been removed from the role
-                    for dup in user.default_permissions:
-                        if role == dup.role:
-                            trans.sa_session.delete( dup )
-                    # Delete DefaultHistoryPermissions for previously associated users that have been removed from the role
-                    for history in user.histories:
-                        for dhp in history.default_permissions:
-                            if role == dhp.role:
-                                trans.sa_session.delete( dhp )
-                    trans.sa_session.flush()
+            if trans.webapp.name == 'galaxy':
+                for ura in role.users:
+                    user = trans.sa_session.query( trans.app.model.User ).get( ura.user_id )
+                    if user not in in_users:
+                        # Delete DefaultUserPermissions for previously associated users that have been removed from the role
+                        for dup in user.default_permissions:
+                            if role == dup.role:
+                                trans.sa_session.delete( dup )
+                        # Delete DefaultHistoryPermissions for previously associated users that have been removed from the role
+                        for history in user.histories:
+                            for dhp in history.default_permissions:
+                                if role == dhp.role:
+                                    trans.sa_session.delete( dhp )
+                        trans.sa_session.flush()
             in_groups = [ trans.sa_session.query( trans.app.model.Group ).get( x ) for x in util.listify( params.in_groups ) ]
             trans.app.security_agent.set_entity_role_associations( roles=[ role ], users=in_users, groups=in_groups )
             trans.sa_session.refresh( role )

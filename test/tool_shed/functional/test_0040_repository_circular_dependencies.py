@@ -2,15 +2,15 @@ from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 
 freebayes_repository_name = 'freebayes_0040'
-freebayes_repository_name_description = "Galaxy's freebayes tool"
-freebayes_repository_name_long_description = "Long description of Galaxy's freebayes tool"
+freebayes_repository_description = "Galaxy's freebayes tool"
+freebayes_repository_long_description = "Long description of Galaxy's freebayes tool"
 
 filtering_repository_name = 'filtering_0040'
 filtering_repository_description = "Galaxy's filtering tool"
 filtering_repository_long_description = "Long description of Galaxy's filtering tool"
 
 class TestRepositoryCircularDependencies( ShedTwillTestCase ):
-    '''Verify that the code correctly handles circular dependencies.'''
+    '''Verify that the code correctly displays repositories with circular repository dependencies.'''
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
@@ -31,8 +31,8 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = self.get_or_create_repository( name=freebayes_repository_name, 
-                                                    description=freebayes_repository_name_description, 
-                                                    long_description=freebayes_repository_name_long_description, 
+                                                    description=freebayes_repository_description, 
+                                                    long_description=freebayes_repository_long_description, 
                                                     owner=common.test_user_1_name,
                                                     categories=[ 'test_0040_repository_circular_dependencies' ], 
                                                     strings_displayed=[] )
@@ -103,3 +103,9 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
         for repository in [ freebayes_repository, filtering_repository ]:
             self.verify_unchanged_repository_metadata( repository )
+    def test_0040_verify_tool_dependencies( self ):
+        '''Verify that freebayes displays tool dependencies.'''
+        repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
+        self.display_manage_repository_page( repository, 
+                                             strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Valid tools' ],
+                                             strings_not_displayed=[ 'Invalid tools' ] )

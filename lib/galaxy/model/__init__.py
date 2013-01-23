@@ -1335,7 +1335,9 @@ class DatasetInstance( object ):
                 # Loop through sources until viable one is found.
                 for source in source_list:
                     msg = self.convert_dataset( trans, source )
-                    if msg == self.conversion_messages.PENDING:
+                    # No message or PENDING means that source is viable. No
+                    # message indicates conversion was done and is successful.
+                    if not msg or msg == self.conversion_messages.PENDING:
                         data_source = source
                         break
 
@@ -3150,22 +3152,32 @@ class ToolShedRepository( object ):
         return self.deleted
     @property
     def has_repository_dependencies( self ):
-        return self.metadata and 'repository_dependencies' in self.metadata
+        if self.metadata:
+            return 'repository_dependencies' in self.metadata
+        return False
     @property
     def includes_tools( self ):
-        return self.metadata and 'tools' in self.metadata
+        if self.metadata:
+            return 'tools' in self.metadata
+        return False
     @property
     def includes_tool_dependencies( self ):
-        return self.metadata and 'tool_dependencies' in self.metadata
+        if self.metadata:
+            return 'tool_dependencies' in self.metadata
+        return False
     @property
     def includes_workflows( self ):
-        return self.metadata and 'workflows' in self.metadata
+        if self.metadata:
+            return 'workflows' in self.metadata
+        return False
     @property
     def in_error_state( self ):
         return self.status == self.installation_status.ERROR
     @property
     def has_readme_files( self ):
-        return self.metadata and 'readme_files' in self.metadata
+        if self.metadata:
+            return 'readme_files' in self.metadata
+        return False
     @property
     def repository_dependencies( self ):
         required_repositories = []

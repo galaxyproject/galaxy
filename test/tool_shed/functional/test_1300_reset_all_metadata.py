@@ -9,6 +9,10 @@ emboss_repository_long_description = 'Galaxy wrappers for Emboss version 5.0.0 t
 workflow_filename = 'Workflow_for_0060_filter_workflow_repository.ga'
 workflow_name = 'Workflow for 0060_filter_workflow_repository'
 
+base_datatypes_count = 0
+repository_datatypes_count = 0
+running_standalone = False
+
 class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
     '''Verify that the "Reset selected metadata" feature works.'''
     def test_0000_initiate_users( self ):
@@ -25,6 +29,8 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
         admin_user_private_role = test_db_util.get_private_role( admin_user )
     def test_0005_create_repositories_and_categories( self ):
         '''Ensure that the necessary categories and repositories exist for these tests.'''
+        global repository_datatypes_count
+        global running_standalone
         category_0000 = self.create_category( name='Test 0000 Basic Repository Features 1', description='Test 0000 Basic Repository Features 1' )
         category_0001 = self.create_category( name='Test 0000 Basic Repository Features 2', description='Test 0000 Basic Repository Features 2' )
         category_0010 = self.create_category( name='Test 0010 Repository With Tool Dependencies', description='Tests for a repository with tool dependencies.' )
@@ -76,7 +82,9 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                                                               category_id=self.security.encode_id( category_0030.id ), 
                                                               strings_displayed=[] )
         if self.repository_is_new( datatypes_repository ):
+            running_standalone = True
             self.upload_file( datatypes_repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
+            repository_datatypes_count = int( self.get_repository_datatypes_count( datatypes_repository ) )
             emboss_5_repository = self.get_or_create_repository( name='emboss_5_0030', 
                                                                  description=emboss_repository_description, 
                                                                  long_description=emboss_repository_long_description, 
@@ -238,8 +246,12 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                               commit_message='Uploaded filtering tool.' )
     def test_0010_install_all_missing_repositories( self ):
         '''Call the install_repository method to ensure that all required repositories are installed.'''
+        global repository_datatypes_count
+        global base_datatypes_count
+        global running_standalone
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
+        base_datatypes_count = int( self.get_datatypes_count() )
         category_0000 = 'Test 0000 Basic Repository Features 1'
         category_0001 = 'Test 0000 Basic Repository Features 2'
         category_0010 = 'Test 0010 Repository With Tool Dependencies'
@@ -255,6 +267,14 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
         self.install_repository( 'filtering_0040', common.test_user_1_name, category_0040, strings_displayed=[] )
         self.install_repository( 'freebayes_0050', common.test_user_1_name, category_0050, strings_displayed=[] )
         self.install_repository( 'filtering_0060', common.test_user_1_name, category_0060, strings_displayed=[] )
+        current_datatypes = int( self.get_datatypes_count() )
+        # If we are running this test by itself, installing the emboss repository should also install the emboss_datatypes
+        # repository, and this should add datatypes to the datatypes registry. If that is the case, verify that datatypes
+        # have been added, otherwise verify that the count is unchanged.
+        if running_standalone:
+            assert current_datatypes == base_datatypes_count + repository_datatypes_count, 'Installing emboss did not add new datatypes.'
+        else:
+            assert current_datatypes == base_datatypes_count, 'Installing emboss added new datatypes.'
     def test_0015_reset_metadata_on_all_repositories( self ):
         '''Reset metadata on all repositories, then verify that it has not changed.'''
         repository_metadata = dict()

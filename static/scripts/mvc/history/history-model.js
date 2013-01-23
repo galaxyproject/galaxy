@@ -55,9 +55,17 @@ var History = BaseModel.extend( LoggableMixin ).extend(
         this.hdas = new HDACollection();
 
         // if we've got hdas passed in the constructor, load them and set up updates if needed
-        if( initialHdas && initialHdas.length ){
-            this.hdas.reset( initialHdas );
-            this.checkForUpdates();
+        if( initialHdas ){
+           if( _.isArray( initialHdas ) ){
+                this.hdas.reset( initialHdas );
+                this.checkForUpdates();
+
+            // handle errors in initialHdas
+            //TODO: errors from the api shouldn't be plain strings...
+            //TODO: remove when mappers and hda_dict are unified (or move to alt history)
+            } else if( _.isString( initialHdas ) && ( initialHdas.match( /error/i ) ) ){
+                alert( _l( 'Error loading bootstrapped history' ) + ':\n' + initialHdas );
+            }
         }
 
         // events
@@ -163,7 +171,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
 
             // send the changed ids (if any) to dataset collection to have them fetch their own model changes
             if( changedIds.length ){
-                history.updateHdas( changedIds );
+                history.fetchHdaUpdates( changedIds );
             }
 
             // set up to keep pulling if this history in run/queue state
@@ -193,16 +201,37 @@ var History = BaseModel.extend( LoggableMixin ).extend(
      *      If it's not in the collection, addHdas will be used to create it.
      *  @param {String[]} hdaIds an array of the encoded ids of the hdas to get from the server.
      */
-    updateHdas : function( hdaIds ){
+    fetchHdaUpdates : function( hdaIds ){
         //TODO:?? move to collection? still need proper url
         var history = this;
         jQuery.ajax({
             url     : this.url() + '/contents?' + jQuery.param({ ids : hdaIds.join(',') }),
 
+            /**
+             *  @inner
+             */
             error   : function( xhr, status, error ){
-                var msg = 'ERROR updating hdas from api history contents:';
-                history.log( msg, hdaIds, xhr, status, error );
-                alert( msg + hdaIds.join(',') );
+                if( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ){ return; }
+
+                var errorJson = JSON.parse( xhr.responseText );
+                if( _.isArray( errorJson ) ){
+
+                    // just for debugging/reporting purposes
+                    var grouped = _.groupBy( errorJson, function( hdaData ){
+                        if( _.has( hdaData, 'error' ) ){ return 'errored'; }
+                        return 'ok';
+                    });
+                    history.log( 'fetched, errored datasets:', grouped.errored );
+
+                    // the server already formats the error'd hdas in proper hda-model form
+                    //  so we're good to send these on
+                    history.updateHdas( errorJson );
+
+                } else {
+                    var msg = _l( 'ERROR updating hdas from api history contents' ) + ': ';
+                    history.log( msg, hdaIds, xhr, status, error, errorJSON );
+                    alert( msg + hdaIds.join(',') );
+                }
             },
 
             /** when the proper models for the requested ids are returned,
@@ -210,28 +239,39 @@ var History = BaseModel.extend( LoggableMixin ).extend(
              *  @inner
              */
             success : function( hdaDataList, status, xhr ){
-                history.log( history + '.updateHdas, success:', hdaDataList, status, xhr );
-                //TODO: compile new models to be added in one go
-                var hdasToAdd = [];
-
-                _.each( hdaDataList, function( hdaData, index ){
-                    var existingModel = history.hdas.get( hdaData.id );
-                    // if this model exists already, update it
-                    if( existingModel ){
-                        history.log( 'found existing model in list for id ' + hdaData.id + ', updating...:' );
-                        existingModel.set( hdaData );
-
-                    // if this model is new and isn't in the hda collection, cache it to be created
-                    } else {
-                        history.log( 'NO existing model for id ' + hdaData.id + ', creating...:' );
-                        modelsToAdd.push( hdaData );
-                    }
-                });
-                if( hdasToAdd.length ){
-                    history.addHdas( hdasToAdd );
-                }
+                history.log( history + '.fetchHdaUpdates, success:', status, xhr );
+                history.updateHdas( hdaDataList );
             }
         });
+    },
+
+    /** Update the models in the hdas collection from the data given.
+     *      If a model exists in the collection, set will be used with the new data.
+     *      If it's not in the collection, addHdas will be used to create it.
+     *  @param {Object[]} hdaDataList an array of the model data used to update.
+     */
+    updateHdas : function( hdaDataList ){
+        var history = this,
+            // models/views that need to be created
+            hdasToAdd = [];
+        history.log( history + '.updateHdas:', hdaDataList );
+
+        _.each( hdaDataList, function( hdaData, index ){
+            var existingModel = history.hdas.get( hdaData.id );
+            // if this model exists already, update it
+            if( existingModel ){
+                history.log( 'found existing model in list for id ' + hdaData.id + ', updating...:' );
+                existingModel.set( hdaData );
+
+            // if this model is new and isn't in the hda collection, cache it to be created
+            } else {
+                history.log( 'NO existing model for id ' + hdaData.id + ', creating...:' );
+                hdasToAdd.push( hdaData );
+            }
+        });
+        if( hdasToAdd.length ){
+            history.addHdas( hdasToAdd );
+        }
     },
 
     /** Add multiple hda models to the hdas collection from an array of hda data.
@@ -243,8 +283,10 @@ var History = BaseModel.extend( LoggableMixin ).extend(
         _.each( hdaDataList, function( hdaData, index ){
             var indexFromHid = history.hdas.hidToCollectionIndex( hdaData.hid );
             hdaData.history_id = history.get( 'id' );
-            history.hdas.add( new HistoryDatasetAssociation( hdaData ), { at: indexFromHid });
+            history.hdas.add( new HistoryDatasetAssociation( hdaData ), { at: indexFromHid, silent: true });
         });
+        // fire only once
+        history.hdas.trigger( 'add', hdaDataList );
     },
 
     toString : function(){

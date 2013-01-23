@@ -747,9 +747,9 @@ class SelectToolParameter( ToolParameter ):
             return { "__class__": "RuntimeValue" }
         return value
     def value_from_basic( self, value, app, ignore_errors=False ):
-        if isinstance( value, dict ) and value["__class__"] == "UnvalidatedValue":
+        if isinstance( value, dict ) and value.get( "__class__", None ) == "UnvalidatedValue":
             return UnvalidatedValue( value["value"] )
-        return super( SelectToolParameter, self ).value_from_basic( value, app )
+        return super( SelectToolParameter, self ).value_from_basic( value, app, ignore_errors=ignore_errors )
     def need_late_validation( self, trans, context ):
         """
         Determine whether we need to wait to validate this parameters value
@@ -943,7 +943,7 @@ class ColumnListParameter( SelectToolParameter ):
                 if not isinstance( value, list ):
                     value = value.split( '\n' )
                 for column in value:
-                    for column2 in column.split( ',' ):
+                    for column2 in str( column ).split( ',' ):
                         column2 = column2.strip()
                         if column2:
                             column_list.append( column2 )
@@ -1347,7 +1347,7 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
             rval = []
             for val in value:
                 rval.append( get_option_display( val, self.options ) or val )
-        return "\n".join( rval ) + suffix
+        return "\n".join( map( str, rval ) ) + suffix
         
     def get_dependencies( self ):
         """
@@ -1586,8 +1586,11 @@ class DataToolParameter( ToolParameter ):
         elif isinstance( value, list) and len(value) > 0 and isinstance( value[0], DummyDataset):
             return None
         elif isinstance( value, list ):
-            return ",".join( [ val if isinstance( val, basestring ) else str(val.id) for val in value] )
-        return value.id
+            return ",".join( [ str( self.to_string( val, app ) ) for val in value ] )
+        try:
+            return value.id
+        except:
+            return str( value )
 
     def to_python( self, value, app ):
         # Both of these values indicate that no dataset is selected.  However, 'None' 
@@ -1608,9 +1611,11 @@ class DataToolParameter( ToolParameter ):
         if value and not isinstance( value, list ):
             value = [ value ]
         if value:
-            return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )
-        else:
-            return "No dataset"
+            try:
+                return ", ".join( [ "%s: %s" % ( item.hid, item.name ) for item in value ] )
+            except:
+                pass
+        return "No dataset"
 
     def validate( self, value, history=None ):
         for validator in self.validators:

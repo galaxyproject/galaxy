@@ -137,6 +137,12 @@ class UsesAnnotations:
         # Set annotation.
         annotation_assoc.annotation = annotation
         return annotation_assoc
+
+    def delete_item_annotation( self, db_session, user, item):
+        annotation_assoc = self.get_item_annotation_obj( db_session, user, item )
+        if annotation_assoc:
+            db_session.delete(annotation_assoc)
+            db_session.flush()
         
     def copy_item_annotation( self, db_session, source_user, source_item, target_user, target_item ):
         """ Copy an annotation from a user/item source to a user/item target. """

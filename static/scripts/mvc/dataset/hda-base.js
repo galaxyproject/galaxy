@@ -198,15 +198,14 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_displayButton : function(){
-        // don't show display if not in ready state or not accessible
-        // DO show if in error (ala previous history panel)
-        if( ( !this.model.inReadyState() )
-        //||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
-        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        // don't show display if not viewable or not accessible
+        // (do show if in error, running)
+        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.displayButton = null;
             return null;
         }
+        //NOTE: line 88 in history_common.mako should be handled by the url template generation
         
         var displayBtnData = {
             icon_class  : 'display',
@@ -446,7 +445,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         if( !this.model.get( 'purged' ) ){
             parent.append( $( '<div>' + this.model.get( 'misc_blurb' ) + '</div>' ) );
         }
-        parent.append( ( _l( 'An error occurred running this job' ) + ': '
+        parent.append( ( _l( 'An error occurred with this dataset' ) + ': '
                        + '<i>' + $.trim( this.model.get( 'misc_info' ) ) + '</i>' ) );
         parent.append( this._render_primaryActionButtons(
             this.defaultPrimaryActionButtonRenderers.concat([ this._render_downloadButton ])

@@ -142,7 +142,7 @@
         </form>
     %else:
         ## User has a public username, so private sharing and publishing options.
-        <h3>Making ${item_class_name} Accessible via Link and Publishing It</h3>
+        <h3>Make ${item_class_name} Accessible via Link and Publish It</h3>
     
             <div>
                 %if item.importable:
@@ -214,7 +214,7 @@
         ##
         ## Sharing with Galaxy users.
         ##
-        <h3>Sharing ${item_class_name} with Specific Users</h3>
+        <h3>Share ${item_class_name} with Individual Users</h3>
 
             <div>
                 %if item.users_shared_with:

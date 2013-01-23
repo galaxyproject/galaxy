@@ -417,7 +417,7 @@ class TwillTestCase( unittest.TestCase ):
             if active_datasets:
                 self.check_page_for_string( 'Create</a> a new empty history' )
                 self.check_page_for_string( 'Construct workflow</a> from current history' )
-                self.check_page_for_string( 'Clone</a> current history' ) 
+                self.check_page_for_string( 'Copy</a> current history' ) 
             self.check_page_for_string( 'Share</a> current history' )
             self.check_page_for_string( 'Change default permissions</a> for current history' )
             if histories_shared_by_others:
@@ -534,13 +534,13 @@ class TwillTestCase( unittest.TestCase ):
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
         self.home()
-    def clone_history( self, history_id, clone_choice, strings_displayed=[], strings_displayed_after_submit=[] ):
+    def copy_history( self, history_id, copy_choice, strings_displayed=[], strings_displayed_after_submit=[] ):
         self.home()
-        self.visit_page( "history/clone?id=%s" % history_id )
+        self.visit_page( "history/copy?id=%s" % history_id )
         for check_str in strings_displayed:
             self.check_page_for_string( check_str )
-        tc.fv( '1', 'clone_choice', clone_choice )
-        tc.submit( 'clone_choice_button' )
+        tc.fv( '1', 'copy_choice', copy_choice )
+        tc.submit( 'copy_choice_button' )
         for check_str in strings_displayed_after_submit:
             self.check_page_for_string( check_str )
         self.home()

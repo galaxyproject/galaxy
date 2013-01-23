@@ -114,7 +114,8 @@ class Registry( object ):
                                     self.datatype_elems.remove( in_memory_elem )
                     else:
                         # Keep an in-memory list of datatype elems to enable persistence.
-                        self.datatype_elems.append( elem )
+                        if extension not in self.datatypes_by_extension:
+                            self.datatype_elems.append( elem )
                     if extension and extension in self.datatypes_by_extension and deactivate:
                         # We are deactivating an installed tool shed repository, so eliminate the datatype from the registry.
                         # TODO: Handle deactivating datatype converters, etc before removing from self.datatypes_by_extension.

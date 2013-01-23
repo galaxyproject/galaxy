@@ -1,6 +1,18 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
+<%def name="javascripts()">
+    ${parent.javascripts()}
+    <script type="text/javascript">
+        function toggle_all(source) {
+            // sets all checkboxes in source's parent form to match source element.
+            $.each($(source).closest("form").find(":checkbox"), function(i, v){
+                v.checked = source.checked;
+            });
+        }
+    </script>
+</%def>
+
 <%def name="title()">Jobs</%def>
 
 <h2>Jobs</h2>
@@ -28,7 +40,7 @@
 <form name="jobs" action="${h.url_for()}" method="POST">
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
-            <td>&nbsp;</td>
+            <td><input type="checkbox" onClick="toggle_all(this)"/></td>
             <td>Job ID</td>
             <td>User</td>
             <td>Last Update</td>

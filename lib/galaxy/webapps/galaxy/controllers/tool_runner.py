@@ -4,6 +4,7 @@ Upload class
 
 from galaxy.web.base.controller import *
 from galaxy.util.bunch import Bunch
+from galaxy.util.hash_util import is_hashable
 from galaxy.tools import DefaultToolState
 from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.tools.parameters import params_to_incoming
@@ -174,7 +175,7 @@ class ToolRunner( BaseUIController ):
             params_objects = job.get_param_values( trans.app, ignore_errors = True )
         except:
             raise Exception( "Failed to get parameters for dataset id %d " % data.id )
-        upgrade_messages = tool.check_and_update_param_values( params_objects, trans )
+        upgrade_messages = tool.check_and_update_param_values( params_objects, trans, update_values=False )
         # Need to remap dataset parameters. Job parameters point to original 
         # dataset used; parameter should be the analygous dataset in the 
         # current history.
@@ -199,12 +200,13 @@ class ToolRunner( BaseUIController ):
                 if isinstance(value,list):
                     values = []
                     for val in value:
-                        if val in history.datasets:
-                            values.append( val )
-                        elif val in hda_source_dict:
-                            values.append( hda_source_dict[ val ])
+                        if is_hashable( val ):
+                            if val in history.datasets:
+                                values.append( val )
+                            elif val in hda_source_dict:
+                                values.append( hda_source_dict[ val ])
                     return values
-                if value not in history.datasets and value in hda_source_dict:
+                if is_hashable( value ) and value not in history.datasets and value in hda_source_dict:
                     return hda_source_dict[ value ]
         visit_input_values( tool.inputs, params_objects, rerun_callback )
         # Create a fake tool_state for the tool, with the parameters values

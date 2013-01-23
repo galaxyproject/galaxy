@@ -14,7 +14,7 @@
       #end for
   </command>
   <inputs>
-    <param format="tabular" name="input" type="data" label="Sort Query" />
+    <param format="tabular" name="input" type="data" label="Sort Dataset" />
     <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true"/>
     <param name="style" type="select" label="with flavor">
       <option value="num">Numerical sort</option>

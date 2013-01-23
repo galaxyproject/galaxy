@@ -25,3 +25,11 @@ util Package
     :undoc-members:
     :show-inheritance:
 
+:mod:`workflow_util` Module
+---------------------------
+
+.. automodule:: galaxy.webapps.community.util.workflow_util
+    :members:
+    :undoc-members:
+    :show-inheritance:
+

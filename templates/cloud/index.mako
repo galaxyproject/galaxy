@@ -76,22 +76,24 @@
                 }
             });
              //When id_secret and id_key are complete, submit to get_account_info
-            $("#id_secret, #id_key_id").bind("change paste keyup input propertychange", function(){
+            $("#id_secret, #id_key_id").bind("paste input propertychange", function(){
                 secret_el = $("#id_secret");
                 key_el = $("#id_key_id");
                 if (secret_el.val().length === 40 && key_el.val().length === 20){
                     //Submit these to get_account_info, unhide fields, and update as appropriate
-                    $.getJSON(ACCOUNT_URL,
-                                {key_id: key_el.val(),secret:secret_el.val()},
-                                function(result){
+                    $.ajax({type: "POST",
+                            url: ACCOUNT_URL,
+                            dataType: 'json',
+                            data: {key_id: key_el.val(),secret:secret_el.val()},
+                            success: function(result){
                                     cloudlaunch_clusters = result.clusters;
                                     var kplist = $("#id_keypair");
                                     var clusterlist = $("#id_existing_instance");
                                     kplist.find('option').remove();
                                     clusterlist.find('option').remove();
                                     //Update fields with appropriate elements
+                                    clusterlist.append($('<option/>').val('New Cluster').text('New Cluster'));
                                     if (_.size(result.clusters) > 0){
-                                        clusterlist.append($('<option/>').val('New Cluster').text('New Cluster'));
                                         _.each(result.clusters, function(cluster, index){
                                             clusterlist.append($('<option/>').val(cluster.name).text(cluster.name));
                                         });
@@ -104,7 +106,8 @@
                                         kplist.append($('<option/>').val(keypair).text(keypair));
                                     });
                                     $('#hidden_options').show('fast');
-                                });
+                                }
+                            });
                 }
             });
             $('#loading_indicator').ajaxStart(function(){
@@ -130,7 +133,7 @@
                         //Dig up zone info for selected cluster, set hidden input.
                         //This is not necessary to present to the user though the interface may prove useful.
                         var ei_val = _.find(data, function(f_obj){return f_obj.name === 'existing_instance'});
-                        if( ei_val.value !== "New Cluster"){
+                        if( ei_val && (ei_val.value !== "New Cluster")){
                             var cluster = _.find(cloudlaunch_clusters, function(cluster){return cluster.name === ei_val.value});
                             var zdata = _.find(data, function(f_obj){return f_obj.name === 'zone'});
                             zdata.value = cluster.zone;

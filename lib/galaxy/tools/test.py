@@ -35,11 +35,13 @@ class ToolTestBuilder( object ):
                             value = new_value
                             break
                 if not found_parameter:
-                    raise ValueError( "Unable to determine parameter type of test input '%s'. Ensure that the parameter exists and that any container groups are defined first." % name )
+                    raise ValueError( "Unable to determine parameter type of test input '%s'. "
+                                      "Ensure that the parameter exists and that any container groups are defined first." 
+                                      % name )
             elif isinstance( self.tool.inputs[name], basic.DataToolParameter ):
                 value = self.__add_uploaded_dataset( name, value, extra, self.tool.inputs[name] )
         except Exception, e:
-            log.debug( "Error in add_param for %s: %s" % ( name, e ) )
+            log.debug( "Error for tool %s: could not add test parameter %s. %s" % ( self.tool.id, name, e ) )
         self.inputs.append( ( name, value, extra ) )
     def add_output( self, name, file, extra ):
         self.outputs.append( ( name, file, extra ) )

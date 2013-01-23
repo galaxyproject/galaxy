@@ -28,8 +28,12 @@ log = logging.getLogger( __name__ )
 # States for passing messages
 SUCCESS, INFO, WARNING, ERROR = "done", "info", "warning", "error"
 
-# RE that tests for valid slug.
-VALID_SLUG_RE = re.compile( "^[a-z0-9\-]+$" )
+def _is_valid_slug( slug ):
+    """ Returns true if slug is valid. """
+
+    VALID_SLUG_RE = re.compile( "^[a-z0-9\-]+$" )
+    return VALID_SLUG_RE.match( slug )
+
 
 class BaseController( object ):
     """
@@ -186,6 +190,7 @@ class Datatype( object ):
         self.type_extension = type_extension
         self.mimetype = mimetype
         self.display_in_upload = display_in_upload
+
 #        
 # -- Mixins for working with Galaxy objects. --
 #
@@ -209,6 +214,7 @@ class SharableItemSecurityMixin:
                 if ( item.user != trans.user ) and ( not item.importable ) and ( trans.user not in item.users_shared_with_dot_users ):
                     raise ItemAccessibilityException( "%s is not accessible to the current user" % item.__class__.__name__, type='error' )
         return item
+
 
 class UsesHistoryDatasetAssociationMixin:
     """ Mixin for controllers that use HistoryDatasetAssociation objects. """
@@ -309,7 +315,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                               UsesLibraryMixinItems ):
     """ Mixin for controllers that use Visualization objects. """
     
-    viz_types = [ "trackster", "circster" ]
+    viz_types = [ "trackster" ]
 
     def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None, dbkey=None, annotation=None, config={}, save=True ):
         """ Create visualiation and first revision. """
@@ -552,7 +558,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         title_err = slug_err = ""
         if not title:
             title_err = "visualization name is required"
-        elif slug and not VALID_SLUG_RE.match( slug ):
+        elif slug and not _is_valid_slug( slug ):
             slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
         elif slug and trans.sa_session.query( trans.model.Visualization ).filter_by( user=user, slug=slug, deleted=False ).first():
             slug_err = "visualization identifier must be unique"
@@ -1465,6 +1471,10 @@ class SharableMixin:
     """ Mixin for a controller that manages an item that can be shared. """
     
     # -- Implemented methods. --
+
+    def _is_valid_slug( self, slug ):
+        """ Returns true if slug is valid. """
+        return _is_valid_slug( slug )
     
     @web.expose
     @web.require_login( "share Galaxy items" )

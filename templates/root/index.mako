@@ -22,8 +22,8 @@
             "${_("Create New")}": function() {
                 galaxy_history.location = "${h.url_for( controller='root', action='history_new' )}";
             },
-            "${_("Clone")}": function() {
-                galaxy_main.location = "${h.url_for( controller='history', action='clone')}";
+            "${_("Copy History")}": function() {
+                galaxy_main.location = "${h.url_for( controller='history', action='copy')}";
             },
             "${_("Copy Datasets")}": function() {
                 galaxy_main.location = "${h.url_for( controller='dataset', action='copy_datasets' )}";
@@ -71,6 +71,15 @@
                 galaxy_main.location = "${h.url_for( controller='history', action='import_archive' )}";
             }
         });
+
+        // Fix iFrame scrolling on iOS
+        if( navigator.userAgent.match( /(iPhone|iPod|iPad)/i ) ) {
+            $("iframe").parent().css( {
+                "overflow": "scroll",
+                "-webkit-overflow-scrolling": "touch"
+            })
+        }
+
     });
     </script>
 </%def>
@@ -94,9 +103,6 @@
 <%def name="left_panel()">
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>
-            ## <div style="float: right">
-            ##     <a class='panel-header-button' id="tools-options-button" href="#"><span class="ficon large cog"></span></a>
-            ## </div>
             ${n_('Tools')}
         </div>
     </div>
@@ -121,7 +127,9 @@
         center_url = h.url_for( '/static/welcome.html' )
     %>
     
-    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"></iframe>
+    <div style="position: absolute; width: 100%; height: 100%">
+        <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"></iframe>
+    </div>
 
 </%def>
 
@@ -131,11 +139,11 @@
             <div style="float: right">
                 <a id="history-refresh-button" class='panel-header-button'
                    href="${h.url_for( controller='root', action='history' )}" target="galaxy_history">
-                    <span class="ficon large refresh"></span>
+                    <span class="fa-icon-refresh"></span>
                 </a>
                 <a id="history-options-button" class='panel-header-button'
                    href="${h.url_for( controller='root', action='history_options' )}" target="galaxy_main">
-                    <span class="ficon large cog"></span>
+                    <span class="fa-icon-cog"></span>
                 </a>
             </div>
             <div class="panel-header-text">${_('History')}</div>

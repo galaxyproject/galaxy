@@ -108,17 +108,18 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
         datatypes_tip = self.get_repository_tip( datatypes_repository )
         # Iterate through all metadata revisions and check for repository dependencies.
         for metadata, changeset_revision in repository_metadata:
-            repository_dependency_metadata = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ][ 0 ]
+            strings_displayed = [ str( metadata_elem ) for metadata_elem in metadata[ 'repository_dependencies' ][ 'repository_dependencies' ][ 0 ] ]
             # Remove the tool shed URL, because that's not displayed on the page (yet?)
-            repository_dependency_metadata.pop( repository_dependency_metadata.index( self.url ) )
+            strings_displayed.pop( strings_displayed.index( self.url ) )
             # Add the dependency description and datatypes repository details to the strings to check.
-            repository_dependency_metadata.extend( [ metadata[ 'repository_dependencies' ][ 'description' ], 
-                                                     datatypes_repository_name, 
-                                                     datatypes_repository.user.username, 
-                                                     datatypes_tip ] )
+            strings_displayed.extend( [ metadata[ 'repository_dependencies' ][ 'description' ], 
+                                      datatypes_repository_name, 
+                                      datatypes_repository.user.username, 
+                                      datatypes_tip ] )
+            strings_displayed.extend( [ 'Tool dependencies', 'emboss', '5.0.0', 'package' ] )
             self.display_manage_repository_page( repository, 
                                                  changeset_revision=changeset_revision, 
-                                                 strings_displayed=[ str( metadata ) for metadata in repository_dependency_metadata ] )
+                                                 strings_displayed=strings_displayed )
     def test_0040_verify_repository_metadata( self ):
         '''Verify that resetting the metadata does not change it.'''
         emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )

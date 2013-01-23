@@ -14,6 +14,10 @@
     ${container_javascripts()}
 </%def>
 
+<%
+    in_error_state = repository.in_error_state
+%>
+
 <br/><br/>
 <ul class="manage-table-actions">
     <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
@@ -21,7 +25,7 @@
         %if repository.can_reinstall_or_activate:
             <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='browse_repositories', operation='activate or reinstall', id=trans.security.encode_id( repository.id ) )}">Activate or reinstall repository</a>
         %endif
-        %if repository.in_error_state:
+        %if in_error_state:
             <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='reset_to_install', id=trans.security.encode_id( repository.id ), reset_repository=True )}">Reset to install</a>
         %elif repository.can_install:
             <a class="action-button" href="${h.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( repository.id ), operation='install' )}">Install</a>
