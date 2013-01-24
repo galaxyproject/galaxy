@@ -667,6 +667,10 @@ class ShedTwillTestCase( TwillTestCase ):
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+    def load_galaxy_tool_migrations_page( self, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/admin/review_tool_migration_stages'
+        self.visit_galaxy_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
     def load_workflow_image_in_tool_shed( self, repository, workflow_name, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         if not changeset_revision:
             changeset_revision = self.get_repository_tip( repository )
