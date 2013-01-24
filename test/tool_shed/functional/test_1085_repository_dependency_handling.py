@@ -15,7 +15,7 @@ category_description = 'Test circular dependency features'
 log = logging.getLogger( __name__ )
 
 class TestRepositoryDependencies( ShedTwillTestCase ):
-    '''Testing freebayes with tool data table entries, .loc files, and tool dependencies.'''
+    '''Testing the behavior of repository dependencies with tool panel sections.'''
     def test_0000_create_or_login_admin_user( self ):
         """Create necessary user accounts and login as an admin user."""
         self.galaxy_logout()

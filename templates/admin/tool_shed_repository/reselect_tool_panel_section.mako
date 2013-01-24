@@ -33,7 +33,7 @@
                 ${render_readme_section( containers_dict )}
                 <div style="clear: both"></div>
             %endif
-            %if includes_repository_dependencies or includes_tool_dependencies:
+            %if has_repository_dependencies or includes_tool_dependencies:
                 <div class="form-row">
                     <table class="colored" width="100%">
                         <th bgcolor="#EBD9B2">Confirm dependency installation</th>

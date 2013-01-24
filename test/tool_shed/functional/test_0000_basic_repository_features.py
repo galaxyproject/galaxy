@@ -6,7 +6,7 @@ repository_description = "Galaxy's filtering tool for test 0000"
 repository_long_description = "Long description of Galaxy's filtering tool for test 0000"
 
 class TestBasicRepositoryFeatures( ShedTwillTestCase ):
- 
+    '''Test core repository features.'''
     def test_0000_initiate_users( self ):
         """Create necessary user accounts and login as an admin user."""
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )

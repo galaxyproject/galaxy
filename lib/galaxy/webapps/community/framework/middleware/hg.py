@@ -2,7 +2,7 @@
 Middleware for handling hg authentication for users pushing change sets to local repositories.
 """
 import os, logging
-from sqlalchemy import *
+import sqlalchemy
 from paste.auth.basic import AuthBasicAuthenticator
 from paste.httpheaders import REMOTE_USER, AUTH_TYPE
 
@@ -43,7 +43,7 @@ class Hg( object ):
                 username = path_info_components[1]
                 name = path_info_components[2]
                 # Instantiate a database connection
-                engine = create_engine( self.db_url )
+                engine = sqlalchemy.create_engine( self.db_url )
                 connection = engine.connect()
                 result_set = connection.execute( "select id from galaxy_user where username = '%s'" % username.lower() )
                 for row in result_set:
@@ -101,7 +101,7 @@ class Hg( object ):
         return self.__authenticate( username, password )
     def __authenticate( self, username, password ):
         # Instantiate a database connection
-        engine = create_engine( self.db_url )
+        engine = sqlalchemy.create_engine( self.db_url )
         connection = engine.connect()
         result_set = connection.execute( "select email, password from galaxy_user where username = '%s'" % username.lower() )
         for row in result_set:

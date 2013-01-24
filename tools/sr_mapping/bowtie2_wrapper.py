@@ -31,10 +31,29 @@ def __main__():
     parser.add_option( '', '--rgpl', dest='rgpl', help='Platform/technology used to produce the reads' )
     parser.add_option( '', '--rgsm', dest='rgsm', help='Sample' )
 
+    parser.add_option( '', '--output_unaligned_reads', dest='output_unaligned_reads', help='File name for unaligned reads (single-end)' )
+    parser.add_option( '', '--output_unaligned_reads_l', dest='output_unaligned_reads_l', help='File name for unaligned reads (left, paired-end)' )
+    parser.add_option( '', '--output_unaligned_reads_r', dest='output_unaligned_reads_r', help='File name for unaligned reads (right, paired-end)' )
+
     (options, args) = parser.parse_args()
     
+    tmp_unaligned_file_name = None
     # Creat bowtie index if necessary.
     tmp_index_dir = tempfile.mkdtemp()
+    
+    if options.single_paired == 'paired':
+        if options.output_unaligned_reads_l and options.output_unaligned_reads_r:
+            tmp_unaligned_file = tempfile.NamedTemporaryFile( dir=tmp_index_dir, suffix='.fastq' )
+            tmp_unaligned_file_name = tmp_unaligned_file.name
+            tmp_unaligned_file.close()
+            output_unaligned_reads = '--un-conc %s' % tmp_unaligned_file_name
+        else:
+            output_unaligned_reads = ''
+    elif options.output_unaligned_reads:
+        output_unaligned_reads = '--un %s' % options.output_unaligned_reads
+    else:
+        output_unaligned_reads = ''
+    
     if options.own_file:
         index_path = os.path.join( tmp_index_dir, '.'.join( os.path.split( options.own_file )[1].split( '.' )[:-1] ) )
         try:
@@ -71,7 +90,7 @@ def __main__():
         index_path = options.index_path
 
     # Build bowtie command; use view and sort to create sorted bam.
-    cmd = 'bowtie2 %s -x %s %s | samtools view -Su - | samtools sort -o - - > %s'
+    cmd = 'bowtie2 %s -x %s %s %s | samtools view -Su - | samtools sort -o - - > %s'
     
     # Set up reads.
     if options.single_paired == 'paired':
@@ -104,7 +123,7 @@ def __main__():
         opts += ' --rg %s:%s' % ( 'SM', options.rgsm )
         
     # Final command:
-    cmd = cmd % ( opts, index_path, reads, options.output )
+    cmd = cmd % ( opts, index_path, reads, output_unaligned_reads, options.output )
     print cmd
 
     # Run
@@ -135,6 +154,16 @@ def __main__():
         # TODO: look for errors in program output.
     except Exception, e:
         stop_err( 'Error in bowtie2:\n' + str( e ) ) 
+
+    # get unaligned reads output files in place if appropriate
+    if options.single_paired == 'paired' and tmp_unaligned_file_name and options.output_unaligned_reads_l and options.output_unaligned_reads_r:
+        try:
+            left = tmp_unaligned_file_name.replace( '.fastq', '.1.fastq' )
+            right = tmp_unaligned_file_name.replace( '.fastq', '.2.fastq' )
+            shutil.move( left, options.output_unaligned_reads_l )
+            shutil.move( right, options.output_unaligned_reads_r )
+        except Exception, e:
+            sys.stdout.write( 'Error producing the unaligned output files.\n' )
 
     # Clean up temp dirs
     if os.path.exists( tmp_index_dir ):

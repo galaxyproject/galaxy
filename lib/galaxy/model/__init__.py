@@ -346,7 +346,7 @@ class Task( object ):
         Return an id tag suitable for identifying the task.
         This combines the task's job id and the task's own id.
         """
-        return "%s:%s" % ( self.job.get_id(), self.get_id() )
+        return "%s_%s" % ( self.job.get_id(), self.get_id() )
     def get_command_line( self ):
         return self.command_line
     def get_parameters( self ):

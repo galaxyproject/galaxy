@@ -323,7 +323,7 @@
               <conditional name="refGenomeSource.genomeSource">
                 <when value="indexed">
                   <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
+                    <option type="from_data_table" name="tophat2_indexes" column="1" offset="0">
                       <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
                       <filter type="param_value" ref="refGenomeSource.index" column="0"/>
                     </option>
@@ -342,7 +342,7 @@
               <conditional name="refGenomeSource.genomeSource">
                 <when value="indexed">
                   <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
+                    <option type="from_data_table" name="tophat2_indexes" column="1" offset="0">
                       <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
                       <filter type="param_value" ref="refGenomeSource.index" column="0"/>
                     </option>
@@ -361,7 +361,7 @@
               <conditional name="refGenomeSource.genomeSource">
                 <when value="indexed">
                   <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
+                    <option type="from_data_table" name="tophat2_indexes" column="1" offset="0">
                       <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
                       <filter type="param_value" ref="refGenomeSource.index" column="0"/>
                     </option>
@@ -380,7 +380,7 @@
               <conditional name="refGenomeSource.genomeSource">
                 <when value="indexed">
                   <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
+                    <option type="from_data_table" name="tophat2_indexes" column="1" offset="0">
                       <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
                       <filter type="param_value" ref="refGenomeSource.index" column="0"/>
                     </option>
@@ -462,7 +462,6 @@
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
             <param name="no_novel_juncs" value="No" />
-            <param name="report_discordant_pairs" value="No" />
             <param name="use_search" value="Yes" />
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />

@@ -485,10 +485,14 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
         sub_folder.repository_dependencies.append( repository_dependency )
     for repository_dependency in rd_value:
         if trans.webapp.name == 'galaxy':
-            # We have two extra items in the tuple, repository.id and repository.status.
-            tool_shed_repository_id = repository_dependency[ 4 ]
-            installation_status = repository_dependency[ 5 ]
-            repository_dependency = repository_dependency[ 0:4 ]
+            if len( repository_dependency ) == 6:
+                # We have two extra items in the tuple, repository.id and repository.status.
+                tool_shed_repository_id = repository_dependency[ 4 ]
+                installation_status = repository_dependency[ 5 ]
+                repository_dependency = repository_dependency[ 0:4 ]
+            else:
+                tool_shed_repository_id = None
+                installation_status = 'unknown'
         else:
             tool_shed_repository_id = None
             installation_status = None

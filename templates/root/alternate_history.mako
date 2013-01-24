@@ -191,13 +191,19 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 ##TODO: api/web controllers should use common code, and this section should call that code
 <%def name="get_history( id )">
 <%
-    return trans.webapp.api_controllers[ 'histories' ].show( trans, trans.security.encode_id( id ) )
+    history_json = trans.webapp.api_controllers[ 'histories' ].show( trans, trans.security.encode_id( id ) )
+    #assert isinstance( history, dict ), (
+    #    'Bootstrapped history was expecting a dictionary: %s' %( str( history ) ) )
+    return history_json
 %>
 </%def>
 
 <%def name="get_current_user()">
 <%
-    return trans.webapp.api_controllers[ 'users' ].show( trans, 'current' )
+    user_json = trans.webapp.api_controllers[ 'users' ].show( trans, 'current' )
+    #assert isinstance( hdaDataList, list ), (
+    #    'Bootstrapped current user was expecting a dictionary: %s' %( str( user ) ) )
+    return user_json
 %>
 </%def>
 
@@ -207,10 +213,10 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
     if not hdas:
         return '[]'
     # rather just use the history.id (wo the datasets), but...
-    return trans.webapp.api_controllers[ 'history_contents' ].index(
-        #trans, trans.security.encode_id( history_id ),
+    hda_json = trans.webapp.api_controllers[ 'history_contents' ].index(
         trans, trans.security.encode_id( history_id ),
         ids=( ','.join([ trans.security.encode_id( hda.id ) for hda in hdas ]) ) )
+    return hda_json
 %>
 </%def>
 

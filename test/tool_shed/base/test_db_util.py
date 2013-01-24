@@ -61,6 +61,17 @@ def get_repository_by_id( repository_id ):
     return sa_session.query( model.Repository ) \
                      .filter( model.Repository.table.c.id == repository_id ) \
                      .first()
+def get_repository_review_by_user_id_changeset_revision( user_id, repository_id, changeset_revision ):
+    review = sa_session.query( model.RepositoryReview ) \
+                       .filter( and_( model.RepositoryReview.table.c.user_id == user_id,
+                                      model.RepositoryReview.table.c.repository_id == repository_id,
+                                      model.RepositoryReview.table.c.changeset_revision == changeset_revision ) ) \
+                       .first()
+    return review
+def get_role_by_name( role_name ):
+    return sa_session.query( model.Role ) \
+                     .filter( model.Role.table.c.name == role_name ) \
+                     .first()
 def get_user( email ):
     return sa_session.query( model.User ) \
                      .filter( model.User.table.c.email==email ) \

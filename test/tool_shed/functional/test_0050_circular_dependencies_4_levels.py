@@ -169,6 +169,12 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
         freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         bismark_repository = test_db_util.get_repository_by_name_and_owner( bismark_repository_name, common.test_user_1_name )
         dependency_xml_path = self.generate_temp_path( 'test_0050', additional_paths=[ 'freebayes' ] )
+        # convert_chars depends on column_maker
+        # column_maker depends on convert_chars
+        # emboss depends on emboss_datatypes
+        # emboss_datatypes depends on bismark
+        # freebayes depends on freebayes, emboss, emboss_datatypes, and column_maker
+        # filtering depends on emboss
         self.create_repository_dependency( convert_repository, depends_on=[ column_repository ], filepath=dependency_xml_path )
         self.create_repository_dependency( column_repository, depends_on=[ convert_repository ], filepath=dependency_xml_path )
         self.create_repository_dependency( emboss_datatypes_repository, depends_on=[ bismark_repository ], filepath=dependency_xml_path )

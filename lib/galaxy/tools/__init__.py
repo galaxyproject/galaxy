@@ -813,7 +813,7 @@ class ToolParallelismInfo(object):
             self.attributes['split_size'] = 20
             self.attributes['split_mode'] = 'number_of_parts'
 
-class Tool:
+class Tool( object ):
     """
     Represents a computational tool that can be executed through Galaxy. 
     """

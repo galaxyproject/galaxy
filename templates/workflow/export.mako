@@ -25,7 +25,6 @@
     <h3>Export to myExperiment</h3>
     
     <div class="toolForm"> 
-        <div class="toolFormTitle">Export</div> 
         <form action="${h.url_for( action='export_to_myexp', id=trans.security.encode_id( item.id ) )}" 
                 method="POST">
             <div class="form-row"> 
@@ -46,6 +45,13 @@
 <%def name="render_more(item)">
     ## Add form to export to myExperiment.
     ${self.render_export_to_myexp(item)}
+
+    ## Add link to render as SVG image.
+    <h3>Create Image</h3>
+    
+    <a href="${h.url_for( action='gen_image', id=trans.security.encode_id( item.id ) )}">
+        Create image of ${get_class_display_name( item.__class__ ).lower()} in SVG format
+    </a>
 </%def>
 
 <%def name="center_panel()">

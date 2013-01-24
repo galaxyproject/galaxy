@@ -350,7 +350,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
                     # Keep the one-to-one mapping between items in 3 lists.
                     created_or_updated_tool_shed_repositories.append( tool_shed_repository )
                     tool_panel_section_keys.append( tool_panel_section_key )
-                    filtered_repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
+                    filtered_repo_info_dicts.append( repo_info_dict )
     # Build repository dependency relationships even if the user chose to not install repository dependencies.
     suc.build_repository_dependency_relationships( trans, all_repo_info_dicts, all_created_or_updated_tool_shed_repositories )                     
     return created_or_updated_tool_shed_repositories, tool_panel_section_keys, all_repo_info_dicts, filtered_repo_info_dicts, message
@@ -596,8 +596,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         # In this case, a record for the repository will exist in the database with the status of 'New'.
         repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed_url, name, repository_owner, changeset_revision )
         if repository and repository.metadata:
-            installed_rd, missing_rd = \
-                get_installed_and_missing_repository_dependencies( trans, repository )
+            installed_rd, missing_rd = get_installed_and_missing_repository_dependencies( trans, repository )
         else:
             installed_rd, missing_rd = get_installed_and_missing_repository_dependencies_for_new_install( trans, repo_info_tuple )
         # Discover all repository dependencies and retrieve information for installing them.

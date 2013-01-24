@@ -50,6 +50,41 @@ default_galaxy_test_file_dir = "test-data"
 migrated_tool_panel_config = 'migrated_tools_conf.xml'
 installed_tool_panel_configs = [ 'shed_tool_conf.xml' ]
 
+# should this serve static resources (scripts, images, styles, etc.)
+STATIC_ENABLED = True
+
+def get_static_settings():
+    """Returns dictionary of the settings necessary for a galaxy App
+    to be wrapped in the static middleware.
+
+    This mainly consists of the filesystem locations of url-mapped
+    static resources.
+    """
+    cwd = os.getcwd()
+    static_dir = os.path.join( cwd, 'static' )
+    #TODO: these should be copied from universe_wsgi.ini
+    return dict(
+        #TODO: static_enabled needed here?
+        static_enabled      = True,
+        static_cache_time   = 360,
+        static_dir          = static_dir,
+        static_images_dir   = os.path.join( static_dir, 'images', '' ),
+        static_favicon_dir  = os.path.join( static_dir, 'favicon.ico' ),
+        static_scripts_dir  = os.path.join( static_dir, 'scripts', '' ),
+        static_style_dir    = os.path.join( static_dir, 'june_2007_style', 'blue' ),
+        static_robots_txt   = os.path.join( static_dir, 'robots.txt' ),
+    )
+
+def get_webapp_global_conf():
+    """Get the global_conf dictionary sent as the first argument to app_factory.
+    """
+    # (was originally sent 'dict()') - nothing here for now except static settings
+    global_conf = dict()
+    if STATIC_ENABLED:
+        global_conf.update( get_static_settings() )
+    return global_conf
+
+
 def parse_tool_panel_config( config, shed_tools_dict ):
     """
     Parse a shed-related tool panel config to generate the shed_tools_dict. This only happens when testing tools installed from the tool shed.
@@ -289,7 +324,8 @@ def main():
     server = None
     
     if start_server:
-        webapp = buildapp.app_factory( dict(), use_translogger=False, static_enabled=False, app=app )
+        webapp = buildapp.app_factory( get_webapp_global_conf(), app=app,
+            use_translogger=False, static_enabled=STATIC_ENABLED )
         if galaxy_test_port is not None:
             server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
         else:

@@ -17,10 +17,10 @@
 
 <%
     # Handle the case where an uninstalled repository encountered errors during the process of being reinstalled.  In
-    # this case, the repository metadata is an empty dictionary, but one or both of includes_repository_dependencies
+    # this case, the repository metadata is an empty dictionary, but one or both of has_repository_dependencies
     # and includes_tool_dependencies may be True.  If either of these are True but we have no metadata, we cannot install
     # repository dependencies on this pass.
-    if includes_repository_dependencies:
+    if has_repository_dependencies:
         repository_dependencies = containers_dict[ 'repository_dependencies' ]
         missing_repository_dependencies = containers_dict[ 'missing_repository_dependencies' ]
         if repository_dependencies or missing_repository_dependencies:

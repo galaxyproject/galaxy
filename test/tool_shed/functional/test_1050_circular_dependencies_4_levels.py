@@ -163,6 +163,12 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
             freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
             bismark_repository = test_db_util.get_repository_by_name_and_owner( bismark_repository_name, common.test_user_1_name )
             dependency_xml_path = self.generate_temp_path( 'test_1050', additional_paths=[ 'dependencies' ] )
+            # convert_chars depends on column_maker
+            # column_maker depends on convert_chars
+            # emboss depends on emboss_datatypes
+            # emboss_datatypes depends on bismark
+            # freebayes depends on freebayes, emboss, emboss_datatypes, and column_maker
+            # filtering depends on emboss
             self.create_repository_dependency( convert_repository, depends_on=[ column_repository ], filepath=dependency_xml_path )
             self.create_repository_dependency( column_repository, depends_on=[ convert_repository ], filepath=dependency_xml_path )
             self.create_repository_dependency( emboss_datatypes_repository, depends_on=[ bismark_repository ], filepath=dependency_xml_path )
@@ -224,6 +230,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                  install_tool_dependencies=False, 
                                  install_repository_dependencies=True, 
                                  new_tool_panel_section='column_maker' )
+        # This should result in column_maker and convert_chars being installed, and the rest never installed.
         installed_repositories = [ ( column_repository_name, common.test_user_1_name ), 
                                    ( convert_repository_name, common.test_user_1_name ) ]
         uninstalled_repositories = [ ( emboss_datatypes_repository_name, common.test_user_1_name ), 
@@ -244,6 +251,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                  new_tool_panel_section='emboss_5_0050' )
         if running_standalone:
             assert original_datatypes < self.get_datatypes_count(), 'Installing a repository that depends on emboss_datatypes did not add datatypes.'
+        # Now we have emboss_datatypes, emboss, bismark, column_maker, and convert_chars installed, filtering and freebayes never installed.
         installed_repositories = [ ( emboss_datatypes_repository_name, common.test_user_1_name ), 
                                    ( column_repository_name, common.test_user_1_name ), 
                                    ( emboss_repository_name, common.test_user_1_name ), 
@@ -258,6 +266,7 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         repository = test_db_util.get_installed_repository_by_name_owner( emboss_datatypes_repository_name, common.test_user_1_name )
         self.uninstall_repository( repository, remove_from_disk=False )
         assert original_datatypes > self.get_datatypes_count(), 'Deactivating emboss_datatypes did not remove datatypes.'
+        # Now we have emboss, bismark, column_maker, and convert_chars installed, filtering and freebayes never installed, and emboss_datatypes deactivated.
         installed_repositories = [ ( column_repository_name, common.test_user_1_name ), 
                                    ( emboss_repository_name, common.test_user_1_name ), 
                                    ( convert_repository_name, common.test_user_1_name ), 
@@ -276,6 +285,8 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
         test_db_util.ga_refresh( repository )
         self.check_galaxy_repository_tool_panel_section( repository, 'emboss_5_0050' )
+        # Now we have bismark, column_maker, and convert_chars installed, filtering and freebayes never installed, emboss_datatypes deactivated,
+        # and emboss uninstalled.
         installed_repositories = [ ( column_repository_name, common.test_user_1_name ), 
                                    ( convert_repository_name, common.test_user_1_name ), 
                                    ( bismark_repository_name, common.test_user_1_name ) ]
@@ -303,6 +314,8 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                               datatypes_repository.name, 
                               datatypes_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
+        # Installing freebayes should automatically reinstall emboss and reactivate emboss_datatypes.
+        # Now column_maker, convert_chars, emboss, emboss_datatypes, freebayes, and bismark should be installed.
         installed_repositories = [ ( column_repository_name, common.test_user_1_name ), 
                                    ( emboss_datatypes_repository_name, common.test_user_1_name ), 
                                    ( emboss_repository_name, common.test_user_1_name ), 

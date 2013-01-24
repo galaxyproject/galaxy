@@ -98,6 +98,31 @@ input[type="checkbox"],input[type="radio"] {
     margin-right: 0.5ex;
 }
 
+// Modal -- wider by default, scroll like Trello
+
+.modal { 
+  position: absolute;
+  top: 50px;
+  width: 660px;
+  margin-left: -330px;
+}
+
+
+.modal:after {
+  content: "";
+  height: 0px;
+  position: relative;
+  top: 50px;
+  display: block;
+  border: solid transparent 1px;
+};
+
+
+.modal-body {
+  height: auto;
+  max-height: none;
+}
+
 // Tabs -- border color is hardcoded in navs.less, change to @btnBorder here
 
 .nav-tabs {

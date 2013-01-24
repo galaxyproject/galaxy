@@ -7,7 +7,7 @@ repository_long_description = "Long description of Galaxy's bismark wrapper"
 category_name = 'Test 0070 Invalid Tool Revisions'
 
 class TestFreebayesRepository( ShedTwillTestCase ):
-    '''Testing freebayes with tool data table entries, .loc files, and tool dependencies.'''
+    '''Test repository with multiple revisions with invalid tools.'''
     def test_0000_create_or_login_admin_user( self ):
         """Create necessary user accounts and login as an admin user."""
         self.galaxy_logout()

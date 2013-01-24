@@ -16,7 +16,7 @@
         %if len( history.active_datasets ) > 0:
             <li><a href="${h.url_for( controller='root', action='history_new' )}">Create</a> a new empty history</li>
             <li><a href="${h.url_for( controller='workflow', action='build_from_current_history' )}">Construct workflow</a> from current history</li>
-            <li><a href="${h.url_for( controller='history', action='clone', id=trans.security.encode_id( history.id ) )}">Clone</a> current history</li>
+            <li><a href="${h.url_for( controller='history', action='copy', id=trans.security.encode_id( history.id ) )}">Copy</a> current history</li>
         %endif
         <li><a href="${h.url_for( controller='history', action='share' )}" target="galaxy_main">Share</a> current history</div>
         <li><a href="${h.url_for( controller='root', action='history_set_default_permissions' )}">Change default permissions</a> for current history</li>

@@ -10,7 +10,7 @@ filtering_repository_description = "Galaxy's filtering tool"
 filtering_repository_long_description = "Long description of Galaxy's filtering tool"
 
 class TestRepositoryCircularDependencies( ShedTwillTestCase ):
-    '''Verify that the code correctly handles circular dependencies.'''
+    '''Verify that the code correctly displays repositories with circular repository dependencies.'''
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
