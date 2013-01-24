@@ -1,4 +1,4 @@
-<tool id="wig_to_bigWig" name="Wig-to-bigWig" version="1.1.0">
+<tool id="wig_to_bigWig" name="Wig/BedGraph-to-bigWig" version="1.1.0">
   <description>converter</description>
   <command>grep -v "^track" $input1 | wigToBigWig stdin $chromInfo $out_file1 
     #if $settings.settingsType == "full":
@@ -11,7 +11,7 @@
     <requirement type="package">ucsc_tools</requirement>
   </requirements>
   <inputs>
-    <param format="wig" name="input1" type="data" label="Convert">
+    <param format="wig,bedgraph" name="input1" type="data" label="Convert">
       <validator type="unspecified_build" />
     </param>
     <conditional name="settings">
@@ -46,11 +46,16 @@
       <param name="settingsType" value="preset" />
       <output name="out_file1" file="2.bigwig"/>
     </test>
+    <test>
+      <param name="input1" value="1.bedgraph" dbkey="hg19" ftype="bedgraph"/>
+      <param name="settingsType" value="preset" />
+      <output name="out_file1" file="3.bigwig"/>
+    </test>
   </tests>
   <help>
 **Syntax**
 
-This tool converts wiggle data into bigWig type.
+This tool converts bedgraph or wiggle data into bigWig type.
 
 - **Wiggle format**: The .wig format is line-oriented. Wiggle data is preceded by a UCSC track definition line.  Following the track definition line is the track data, which can be entered in three different formats described below.
 
@@ -70,6 +75,10 @@ This tool converts wiggle data into bigWig type.
       fixedStep  chrom=chrN  start=position  step=stepInterval  [span=windowSize]
       dataValue1
       dataValue2
+
+- The **BedGraph format** is described in detail at the `UCSC Bioinformatics website`_
+
+.. _UCSC Bioinformatics website: http://genome.ucsc.edu/goldenPath/help/bedgraph.html
 
 </help>
 </tool>
