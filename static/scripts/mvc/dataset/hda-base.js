@@ -483,7 +483,9 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
     _render_body_failed_metadata : function( parent ){
         //TODO: the css for this box is broken (unlike the others)
         // add a message box about the failure at the top of the body...
-        parent.append( $( HDABaseView.templates.failedMetadata( this.model.toJSON() ) ) );
+        parent.append( $( HDABaseView.templates.failedMetadata(
+            _.extend( this.model.toJSON(), { urls: this.urls } )
+        )));
         //...then render the remaining body as STATES.OK (only diff between these states is the box above)
         this._render_body_ok( parent );
     },
