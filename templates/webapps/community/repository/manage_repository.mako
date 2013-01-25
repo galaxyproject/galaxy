@@ -18,7 +18,7 @@
     can_push = not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
     can_rate = not is_new and not is_deprecated and trans.user and repository.user != trans.user
-    can_reset_all_metadata = not is_deprecated and is_admin and len( repo ) > 0
+    can_reset_all_metadata = not is_deprecated and len( repo ) > 0
     can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
     can_set_metadata = not is_new and not is_deprecated
     can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision == repository.tip( trans.app )
