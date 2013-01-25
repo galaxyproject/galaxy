@@ -50,6 +50,7 @@ class SearchController( BaseAPIController ):
 
     FIELD_NAME = "name"
     FIELD_ID = "id"
+    FIELD_DOMAIN = "domain"
     FIELD_EXTENDED_METADATA = "extended_metadata"
     FIELD_ANNOTATION = "annotation"
     FIELD_TAGS = "tags"
@@ -86,8 +87,9 @@ class SearchController( BaseAPIController ):
             o = {}
             o[ self.FIELD_ID ] =  trans.security.encode_id(row['id'])
             o[ self.FIELD_NAME ] = row['name']
+            o[ self.FIELD_DOMAIN ] = row['domain']
 
-            if self.FIELD_EXTENDED_METADATA in result_fields and 'extended_metadata' in row:
+            if self.FIELD_EXTENDED_METADATA in result_fields and 'extended_metadata.data' in row:
                 o[ self.FIELD_EXTENDED_METADATA ] = row['extended_metadata.data']
 
             if self.FIELD_ANNOTATION in result_fields:

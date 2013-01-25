@@ -51,6 +51,7 @@ class QueryBaseClass(object):
             print self.query
             for row in self.query.distinct().all():
                 out = {}
+                out['domain'] = self.DOMAIN
                 for col in self.OUTPUT_COLUMNS:
                     out[col] = getattr(row, col)
                 yield out
@@ -76,9 +77,11 @@ class SearchBaseClass(object):
 #Library Searching
 ##################
 
-class LibraryQuery(QueryBaseClass):
+class LibraryDatasetQuery(QueryBaseClass):
+    DOMAIN = "library_dataset"
     OUTPUT_COLUMNS = [ 'extended_metadata', 'name', 'id' ]
     def filter(self, arg):
+        print "Library", arg
         if arg.name == 'extended_metadata':
             self.do_query = True
             self.query = self.query.join( ExtendedMetadata )
@@ -92,9 +95,16 @@ class LibraryQuery(QueryBaseClass):
                         alias.value == str(ex_meta[f]) 
                     )
                 )
+        if arg.name == "name":
+            self.do_query = True
+            if arg.mode == "==":
+                self.query = self.query.filter( LibraryDatasetDatasetAssociation.name == arg.other )
+            if arg.mode == "like":
+                self.query = self.query.filter( LibraryDatasetDatasetAssociation.name.like(arg.other) )
 
 
-class LibrarySearch(SearchBaseClass):
+
+class LibraryDatasetSearch(SearchBaseClass):
     FIELDS = [
         SearchField("name"),
         SearchField("id"),
@@ -104,7 +114,7 @@ class LibrarySearch(SearchBaseClass):
     @staticmethod
     def search(trans):
         query = trans.sa_session.query( LibraryDatasetDatasetAssociation )
-        return LibraryQuery(query)
+        return LibraryDatasetQuery(query)
 
 ##################
 #History Dataset Searching
@@ -112,6 +122,7 @@ class LibrarySearch(SearchBaseClass):
 
 
 class HistoryDatasetQuery(QueryBaseClass):
+    DOMAIN = "history_dataset"
     OUTPUT_COLUMNS = ['name', 'id']
 
     def filter(self, arg):
@@ -139,6 +150,7 @@ class HistoryDatasetSearch(SearchBaseClass):
 
 
 class HistoryQuery(QueryBaseClass):
+    DOMAIN = "history"
     OUTPUT_COLUMNS = ['name', 'id']
 
     def filter(self, arg):
@@ -197,6 +209,7 @@ class HistorySearch(SearchBaseClass):
 
 
 class WorkflowQuery(QueryBaseClass):
+    DOMAIN = "workflow"
     OUTPUT_COLUMNS = ['name', 'id']
 
     def filter(self, arg):
@@ -233,7 +246,7 @@ class WorkflowSearch(SearchBaseClass):
 
 
 search_mapping = {
-    'library' : LibrarySearch,
+    'library_dataset' : LibraryDatasetSearch,
     'history_dataset' : HistoryDatasetSearch,
     'history' : HistorySearch,
     'workflow' : WorkflowSearch
