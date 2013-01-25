@@ -661,6 +661,7 @@ class AdminToolshed( AdminGalaxy ):
         shed_config_dict = trans.app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf )
         metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
                                                                                          repository=tool_shed_repository,
+                                                                                         changeset_revision=tool_shed_repository.changeset_revision,
                                                                                          repository_clone_url=repository_clone_url,
                                                                                          shed_config_dict=shed_config_dict,
                                                                                          relative_install_dir=relative_install_dir,
@@ -1692,6 +1693,7 @@ class AdminToolshed( AdminGalaxy ):
             original_metadata_dict = repository.metadata
             metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
                                                                                              repository=repository,
+                                                                                             changeset_revision=repository.changeset_revision,
                                                                                              repository_clone_url=repository_clone_url,
                                                                                              shed_config_dict = repository.get_shed_config_dict( trans.app ),
                                                                                              relative_install_dir=relative_install_dir,
@@ -1887,6 +1889,7 @@ class AdminToolshed( AdminGalaxy ):
                     # Update the repository metadata.
                     metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
                                                                                                      repository=repository,
+                                                                                                     changeset_revision=latest_changeset_revision,
                                                                                                      repository_clone_url=repository_clone_url,
                                                                                                      shed_config_dict = repository.get_shed_config_dict( trans.app ),
                                                                                                      relative_install_dir=relative_install_dir,

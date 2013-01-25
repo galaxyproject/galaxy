@@ -103,26 +103,52 @@ def add_installation_directories_to_tool_dependencies( trans, tool_dependencies 
     defined tool dependencies.  The list of tool dependencies may be associated with more than a single repository.
     """
     for dependency_key, requirements_dict in tool_dependencies.items():
-        if dependency_key not in [ 'set_environment' ]:
-            repository_name = requirements_dict.get( 'repository_name', 'unknown' )
-            repository_owner = requirements_dict.get( 'repository_owner', 'unknown' )
-            changeset_revision = requirements_dict.get( 'changeset_revision', 'unknown' )
-            dependency_name = requirements_dict[ 'name' ]
-            version = requirements_dict[ 'version' ]
-            type = requirements_dict[ 'type' ]
-            if trans.app.config.tool_dependency_dir:
-                root_dir = trans.app.config.tool_dependency_dir
-            else:
-                root_dir = '<set your tool_dependency_dir in your Galaxy configuration file>'
-            install_dir = os.path.join( root_dir,
-                                        dependency_name,
-                                        version,
-                                        repository_owner,
-                                        repository_name,
-                                        changeset_revision )
-            requirements_dict[ 'install_dir' ] = install_dir
-            tool_dependencies[ dependency_key ] = requirements_dict
+        if dependency_key in [ 'set_environment' ]:
+            continue
+        repository_name = requirements_dict.get( 'repository_name', 'unknown' )
+        repository_owner = requirements_dict.get( 'repository_owner', 'unknown' )
+        changeset_revision = requirements_dict.get( 'changeset_revision', 'unknown' )
+        dependency_name = requirements_dict[ 'name' ]
+        version = requirements_dict[ 'version' ]
+        type = requirements_dict[ 'type' ]
+        if trans.app.config.tool_dependency_dir:
+            root_dir = trans.app.config.tool_dependency_dir
+        else:
+            root_dir = '<set your tool_dependency_dir in your Galaxy configuration file>'
+        install_dir = os.path.join( root_dir,
+                                    dependency_name,
+                                    version,
+                                    repository_owner,
+                                    repository_name,
+                                    changeset_revision )
+        requirements_dict[ 'install_dir' ] = install_dir
+        tool_dependencies[ dependency_key ] = requirements_dict
     return tool_dependencies
+def add_tool_shed_orphan_settings_to_tool_dependencies( tool_dependencies, tools ):
+    """Inspect all received tool dependencies and label those that are orphans within the repository in the tool shed."""
+    new_tool_dependencies = {}
+    if tool_dependencies:
+        for td_key, requirements_dict in tool_dependencies.items():
+            if td_key in [ 'set_environment' ]:
+                new_set_environment_dict_list = []
+                for set_environment_dict in requirements_dict:
+                    type = 'set_environment'
+                    name = set_environment_dict.get( 'name', None )
+                    version = None
+                    is_orphan_in_tool_shed = tool_dependency_is_orphan_in_tool_shed( type, name, version, tools )
+                    set_environment_dict[ 'is_orphan_in_tool_shed' ] = is_orphan_in_tool_shed
+                    new_set_environment_dict_list.append( set_environment_dict )
+                    new_tool_dependencies[ td_key ] = new_set_environment_dict_list
+                new_tool_dependencies[ td_key ] = new_set_environment_dict_list
+            else:
+                type = requirements_dict.get( 'type', 'package' )
+                name = requirements_dict.get( 'name', None )
+                version = requirements_dict.get( 'version', None )
+                if type and name:
+                    is_orphan_in_tool_shed = tool_dependency_is_orphan_in_tool_shed( type, name, version, tools )
+                    requirements_dict[ 'is_orphan_in_tool_shed' ] = is_orphan_in_tool_shed
+                    new_tool_dependencies[ td_key ] = requirements_dict
+    return new_tool_dependencies
 def add_tool_versions( trans, id, repository_metadata, changeset_revisions ):
     # Build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in repository_metadata.
     metadata = repository_metadata.metadata
@@ -316,6 +342,9 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             if metadata:
                 if 'tool_dependencies' in metadata:
                     tool_dependencies = metadata[ 'tool_dependencies' ]
+                    if trans.webapp.name == 'community':
+                        tools = metadata.get( 'tools', None )
+                        tool_dependencies = add_tool_shed_orphan_settings_to_tool_dependencies( tool_dependencies, tools )
                     folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( trans,
                                                                                                               folder_id,
                                                                                                               tool_dependencies,
@@ -441,55 +470,6 @@ def can_add_to_key_rd_dicts( key_rd_dict, key_rd_dicts ):
                 if repository_dependency[ 0:3 ] == partial_rd:
                     return False
     return True
-def can_generate_tool_dependency_metadata( root, metadata_dict ):
-    """
-    Make sure the combination of name, version and type (the type will be the value of elem.tag) of each root element tag in the tool_dependencies.xml
-    file is defined in the <requirement> tag for at least one tool in the repository.
-    """
-    can_generate_dependency_metadata = False
-    for elem in root:
-        tool_dependency_type = elem.tag
-        tool_dependency_version = elem.get( 'version', None )
-        if tool_dependency_type == 'package':
-            can_generate_dependency_metadata = False
-            tool_dependency_name = elem.get( 'name', None )
-            if tool_dependency_name and tool_dependency_version:
-                for tool_dict in metadata_dict.get( 'tools', [] ):
-                    requirements = tool_dict.get( 'requirements', [] )
-                    for requirement_dict in requirements:
-                        req_name = requirement_dict.get( 'name', None )
-                        req_version = requirement_dict.get( 'version', None )
-                        req_type = requirement_dict.get( 'type', None )
-                        if req_name==tool_dependency_name and req_version==tool_dependency_version and req_type==tool_dependency_type:
-                            can_generate_dependency_metadata = True
-                            break
-                    if requirements and not can_generate_dependency_metadata:
-                        # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
-                        # tag for any tool in the repository.
-                        break
-                if not can_generate_dependency_metadata:
-                    break
-        elif tool_dependency_type == 'set_environment':
-            # Here elem is something like: <set_environment version="1.0">
-            for env_var_elem in elem:
-                can_generate_dependency_metadata = False
-                # <environment_variable name="R_SCRIPT_PATH" action="set_to">$REPOSITORY_INSTALL_DIR</environment_variable>
-                env_var_name = env_var_elem.get( 'name', None )
-                if env_var_name:
-                    for tool_dict in metadata_dict.get( 'tools', [] ):
-                        requirements = tool_dict.get( 'requirements', [] )
-                        for requirement_dict in requirements:
-                            # {"name": "R_SCRIPT_PATH", "type": "set_environment", "version": null}
-                            req_name = requirement_dict.get( 'name', None )
-                            req_type = requirement_dict.get( 'type', None )
-                            if req_name==env_var_name and req_type==tool_dependency_type:
-                                can_generate_dependency_metadata = True
-                                break
-                        if requirements and not can_generate_dependency_metadata:
-                            # We've discovered at least 1 combination of name, version and type that is not defined in the <requirement>
-                            # tag for any tool in the repository.
-                            break
-    return can_generate_dependency_metadata
 def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset_revision ):
     """
     Determine if repository's tool config file on disk can be used.  This method is restricted to tool config files since, with the
@@ -573,7 +553,7 @@ def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files
                             sample_found = True
                             break
                     if not sample_found:
-                        correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file )
+                        correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file_name )
                         correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
                         invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
     return invalid_files_and_errors_tups
@@ -1007,8 +987,8 @@ def generate_environment_dependency_metadata( elem, tool_dependencies_dict ):
     for env_elem in elem:
         env_name = env_elem.get( 'name', None )
         if env_name:
-            requirements_dict [ 'name' ] = env_name
-            requirements_dict [ 'type' ] = 'set_environment'
+            requirements_dict[ 'name' ] = env_name
+            requirements_dict[ 'type' ] = 'set_environment'
         if requirements_dict:
             if 'set_environment' in tool_dependencies_dict:
                 tool_dependencies_dict[ 'set_environment' ].append( requirements_dict )
@@ -1051,8 +1031,9 @@ def generate_message_for_invalid_tools( trans, invalid_file_tups, repository, me
                 correction_msg = exception_msg.replace( '<br/>', new_line ).replace( '<b>', bold_start ).replace( '</b>', bold_end )
         message += "%s%s%s - %s%s" % ( bold_start, tool_file, bold_end, correction_msg, new_line )
     return message
-def generate_metadata_for_changeset_revision( app, repository, repository_clone_url, shed_config_dict=None, relative_install_dir=None, repository_files_dir=None,
-                                              resetting_all_metadata_on_repository=False, updating_installed_repository=False, persist=False ):
+def generate_metadata_for_changeset_revision( app, repository, changeset_revision, repository_clone_url, shed_config_dict=None, relative_install_dir=None,
+                                              repository_files_dir=None, resetting_all_metadata_on_repository=False, updating_installed_repository=False,
+                                              persist=False ):
     """
     Generate metadata for a repository using it's files on disk.  To generate metadata for changeset revisions older than the repository tip,
     the repository will have been cloned to a temporary location and updated to a specified changeset revision to access that changeset revision's
@@ -1202,37 +1183,48 @@ def generate_metadata_for_changeset_revision( app, repository, repository_clone_
                             metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
     if readme_files:
         metadata_dict[ 'readme_files' ] = readme_files
-    if 'tools' in metadata_dict:
-        # This step must be done after metadata for tools has been defined.
-        tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', files_dir )
-        if tool_dependencies_config:
-            metadata_dict = generate_tool_dependency_metadata( app,
-                                                               repository,
-                                                               tool_dependencies_config,
-                                                               metadata_dict,
-                                                               original_repository_metadata=original_repository_metadata )
+    # This step must be done after metadata for tools has been defined.
+    tool_dependencies_config = get_config_from_disk( 'tool_dependencies.xml', files_dir )
+    if tool_dependencies_config:
+        metadata_dict, error_message = generate_tool_dependency_metadata( app,
+                                                                          repository,
+                                                                          changeset_revision,
+                                                                          repository_clone_url,
+                                                                          tool_dependencies_config,
+                                                                          metadata_dict,
+                                                                          original_repository_metadata=original_repository_metadata )
+        if error_message:
+            invalid_file_tups.append( ( 'tool_dependencies.xml', error_message ) )
     if invalid_tool_configs:
         metadata_dict [ 'invalid_tools' ] = invalid_tool_configs
     # Reset the value of the app's tool_data_path  and tool_data_table_config_path to their respective original values.
     app.config.tool_data_path = original_tool_data_path
     app.config.tool_data_table_config_path = original_tool_data_table_config_path
     return metadata_dict, invalid_file_tups
-def generate_package_dependency_metadata( elem, tool_dependencies_dict ):
+def generate_package_dependency_metadata( app, elem, tool_dependencies_dict ):
     """The value of package_name must match the value of the "package" type in the tool config's <requirements> tag set."""
+    repository_dependency_tup = []
     requirements_dict = {}
+    error_message = ''
     package_name = elem.get( 'name', None )
     package_version = elem.get( 'version', None )
     if package_name and package_version:
-        dependency_key = '%s/%s' % ( package_name, package_version )
-        requirements_dict [ 'name' ] = package_name
-        requirements_dict [ 'version' ] = package_version
-        requirements_dict [ 'type' ] = 'package'
+        requirements_dict[ 'name' ] = package_name
+        requirements_dict[ 'version' ] = package_version
+        requirements_dict[ 'type' ] = 'package'
         for sub_elem in elem:
             if sub_elem.tag == 'readme':
                 requirements_dict[ 'readme' ] = sub_elem.text
+            elif sub_elem.tag == 'repository':
+                # We have a complex repository dependency.
+                current_rd_tups, error_message = handle_repository_elem_for_tool_shed( app=app,
+                                                                                       repository_elem=sub_elem,
+                                                                                       repository_dependencies_tups=None )
+                repository_dependency_tup = current_rd_tups[ 0 ]
     if requirements_dict:
+        dependency_key = '%s/%s' % ( package_name, package_version )
         tool_dependencies_dict[ dependency_key ] = requirements_dict
-    return tool_dependencies_dict
+    return tool_dependencies_dict, repository_dependency_tup, error_message
 def generate_repository_dependency_metadata_for_installed_repository( app, repository_dependencies_config, metadata_dict ):
     """
     Generate a repository dependencies dictionary based on valid information defined in the received repository_dependencies_config.  This method
@@ -1281,63 +1273,27 @@ def generate_repository_dependency_metadata_for_tool_shed( app, repository_depen
         log.debug( error_message )
         is_valid = False
     if is_valid:
-        sa_session = app.model.context.current
         for repository_elem in root.findall( 'repository' ):
-            toolshed = repository_elem.attrib[ 'toolshed' ]
-            name = repository_elem.attrib[ 'name' ]
-            owner = repository_elem.attrib[ 'owner']
-            changeset_revision = repository_elem.attrib[ 'changeset_revision' ]
-            user = None
-            repository = None
-            if tool_shed_is_this_tool_shed( toolshed ):
-                try:
-                    user = sa_session.query( app.model.User ) \
-                                     .filter( app.model.User.table.c.username == owner ) \
-                                     .one()
-                except Exception, e:
-                    error_message = "Invalid owner %s defined for repository %s.  Repository dependencies will be ignored." % ( owner, name )
-                    log.debug( error_message )
-                    return metadata_dict, error_message
-                if user:
-                    try:
-                        repository = sa_session.query( app.model.Repository ) \
-                                               .filter( and_( app.model.Repository.table.c.name == name,
-                                                              app.model.Repository.table.c.user_id == user.id ) ) \
-                                               .first()
-                    except:
-                        error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
-                        log.debug( error_message )
-                        return metadata_dict, error_message
-                    if repository:
-                        repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
-                        if repository_dependencies_tup not in repository_dependencies_tups:
-                            repository_dependencies_tups.append( repository_dependencies_tup )
-                    else:
-                        error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
-                        log.debug( error_message )
-                        return metadata_dict, error_message
-                else:
-                    error_message = "Invalid owner %s defined for owner of repository %s.  Repository dependencies will be ignored." % ( owner, name )
-                    log.debug( error_message )
-                    return metadata_dict, error_message
-            else:
-                # Repository dependencies are currentlhy supported within a single tool shed.
-                error_message = "Invalid tool shed %s defined for repository %s.  " % ( toolshed, name )
-                error_message += "Repository dependencies are currently supported within a single tool shed, so your definition will be ignored."
+            current_rd_tups, error_message = handle_repository_elem_for_tool_shed( app, repository_elem, repository_dependencies_tups )
+            if error_message:
                 log.debug( error_message )
                 return metadata_dict, error_message
+            for crdt in current_rd_tups:
+                repository_dependencies_tups.append( crdt )
         if repository_dependencies_tups:
             repository_dependencies_dict = dict( description=root.get( 'description' ),
                                                  repository_dependencies=repository_dependencies_tups )
             metadata_dict[ 'repository_dependencies' ] = repository_dependencies_dict
     return metadata_dict, error_message
-def generate_tool_dependency_metadata( app, repository, tool_dependencies_config, metadata_dict, original_repository_metadata=None ):
+def generate_tool_dependency_metadata( app, repository, changeset_revision, repository_clone_url, tool_dependencies_config, metadata_dict,
+                                       original_repository_metadata=None ):
     """
     If the combination of name, version and type of each element is defined in the <requirement> tag for at least one tool in the repository,
     then update the received metadata_dict with information from the parsed tool_dependencies_config.
     """
+    error_message = ''
     if original_repository_metadata:
-        # Keep a copy of the original tool dependencies dictionary in the metadata.
+        # Keep a copy of the original tool dependencies dictionary and the list of tool dictionaries in the metadata.
         original_tool_dependencies_dict = original_repository_metadata.get( 'tool_dependencies', None )
     else:
         original_tool_dependencies_dict = None
@@ -1349,24 +1305,49 @@ def generate_tool_dependency_metadata( app, repository, tool_dependencies_config
     root = tree.getroot()
     ElementInclude.include( root )
     tool_dependencies_dict = {}
-    if can_generate_tool_dependency_metadata( root, metadata_dict ):
-        for elem in root:
-            if elem.tag == 'package':
-                tool_dependencies_dict = generate_package_dependency_metadata( elem, tool_dependencies_dict )
-            elif elem.tag == 'set_environment':
-                tool_dependencies_dict = generate_environment_dependency_metadata( elem, tool_dependencies_dict )
-            # Handle tool dependency installation via other means here (future).
-        if tool_dependencies_dict:
-            metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
-    else:
-        log.debug( "Name, version and type from the <requirement> tag does not match the information in the tool_dependencies.xml file. Tool dependencies will be ignored." )
+    repository_dependency_tups = []
+    for elem in root:
+        if elem.tag == 'package':
+            tool_dependencies_dict, repository_dependency_tup, message = generate_package_dependency_metadata( app, elem, tool_dependencies_dict )
+            if repository_dependency_tup and repository_dependency_tup not in repository_dependency_tups:
+                repository_dependency_tups.append( repository_dependency_tup )
+            if message:
+                log.debug( message )
+                error_message = '%s  %s' % ( error_message, message )
+        elif elem.tag == 'set_environment':
+            tool_dependencies_dict = generate_environment_dependency_metadata( elem, tool_dependencies_dict )
     if tool_dependencies_dict:
         if original_tool_dependencies_dict:
             # We're generating metadata on an update pulled to a tool shed repository installed into a Galaxy instance, so handle changes to
             # tool dependencies appropriately.
             handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_tool_dependencies_dict, tool_dependencies_dict )
         metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
-    return metadata_dict
+    if repository_dependency_tups:
+        tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
+        if app.name == 'community':
+            repository_owner = repository.user.username
+        else:
+            repository_owner = repository.owner
+        rd_key = container_util.generate_repository_dependencies_key_for_repository( toolshed_base_url=tool_shed,
+                                                                                     repository_name=repository.name,
+                                                                                     repository_owner=repository_owner,
+                                                                                     changeset_revision=changeset_revision )
+        repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', None )
+        if repository_dependencies_dict:
+            if rd_key in repository_dependencies_dict:
+                repository_dependencies = repository_dependencies_dict[ rd_key ]
+                for repository_dependency_tup in repository_dependency_tups:
+                    if repository_dependency_tup not in repository_dependencies:
+                        repository_dependencies.append( repository_dependency_tup )
+                repository_dependencies_dict[ rd_key ] = repository_dependencies
+            else:
+                repository_dependencies_dict[ rd_key ] = repository_dependency_tups
+        else:
+            repository_dependencies_dict = dict( root_key=rd_key,
+                                                 description=root.get( 'description' ),
+                                                 repository_dependencies=repository_dependency_tups )
+        metadata_dict[ 'repository_dependencies' ] = repository_dependencies_dict
+    return metadata_dict, error_message
 def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section ):
     if tool_section is not None:
         tool_elem = SubElement( tool_section, 'tool' )
@@ -2481,6 +2462,79 @@ def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
         message = str( e )
         error = True
     return error, message
+def has_orphan_tool_dependencies_in_tool_shed( metadata ):
+    """Inspect tool dependencies included in the received metadata and determine if any of them are orphans within the repository in the tool shed."""
+    if metadata:
+        tools = metadata.get( 'tools', None )
+        tool_dependencies = metadata.get( 'tool_dependencies', None )
+        if tool_dependencies:
+            for td_key, requirements_dict in tool_dependencies.items():
+                if td_key in [ 'set_environment' ]:
+                    for set_environment_dict in requirements_dict:
+                        type = 'set_environment'
+                        name = set_environment_dict.get( 'name', None )
+                        version = None
+                        if name:
+                            is_orphan_in_tool_shed = tool_dependency_is_orphan_in_tool_shed( type, name, version, tools )
+                            if is_orphan_in_tool_shed:
+                                return True
+                else:
+                    type = requirements_dict.get( 'type', None )
+                    name = requirements_dict.get( 'name', None )
+                    version = requirements_dict.get( 'version', None )
+                    if type and name:
+                        is_orphan_in_tool_shed = tool_dependency_is_orphan_in_tool_shed( type, name, version, tools )
+                        if is_orphan_in_tool_shed:
+                            return True
+    return False
+def handle_repository_elem_for_tool_shed( app, repository_elem, repository_dependencies_tups ):
+    if repository_dependencies_tups is None:
+        new_rd_tups = []
+    else:
+        new_rd_tups = [ rdt for rdt in repository_dependencies_tups ]
+    error_message = ''
+    sa_session = app.model.context.current
+    toolshed = repository_elem.attrib[ 'toolshed' ]
+    name = repository_elem.attrib[ 'name' ]
+    owner = repository_elem.attrib[ 'owner' ]
+    changeset_revision = repository_elem.attrib[ 'changeset_revision' ]
+    user = None
+    repository = None
+    if tool_shed_is_this_tool_shed( toolshed ):
+        try:
+            user = sa_session.query( app.model.User ) \
+                             .filter( app.model.User.table.c.username == owner ) \
+                             .one()
+        except Exception, e:
+            error_message = "Invalid owner %s defined for repository %s.  Repository dependencies will be ignored." % ( owner, name )
+            log.debug( error_message )
+            return new_rd_tups, error_message
+        if user:
+            try:
+                repository = sa_session.query( app.model.Repository ) \
+                                       .filter( and_( app.model.Repository.table.c.name == name,
+                                                      app.model.Repository.table.c.user_id == user.id ) ) \
+                                       .first()
+            except:
+                error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
+                log.debug( error_message )
+                return new_rd_tups, error_message
+            if repository:
+                repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
+                if repository_dependencies_tup not in new_rd_tups:
+                    new_rd_tups.append( repository_dependencies_tup )
+            else:
+                error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
+                log.debug( error_message )
+        else:
+            error_message = "Invalid owner %s defined for owner of repository %s.  Repository dependencies will be ignored." % ( owner, name )
+            log.debug( error_message )
+    else:
+        # Repository dependencies are currentlhy supported within a single tool shed.
+        error_message = "Invalid tool shed %s defined for repository %s.  " % ( toolshed, name )
+        error_message += "Repository dependencies are currently supported within a single tool shed, so your definition will be ignored."
+        log.debug( error_message )
+    return new_rd_tups, error_message
 def has_previous_repository_reviews( trans, repository, changeset_revision ):
     """Determine if a repository has a changeset revision review prior to the received changeset revision."""
     repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
@@ -2932,6 +2986,7 @@ def reset_all_metadata_on_installed_repository( trans, id ):
         original_metadata_dict = repository.metadata
         metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
                                                                                      repository=repository,
+                                                                                     changeset_revision=repository.changeset_revision,
                                                                                      repository_clone_url=repository_clone_url,
                                                                                      shed_config_dict = repository.get_shed_config_dict( trans.app ),
                                                                                      relative_install_dir=relative_install_dir,
@@ -3012,6 +3067,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
             log.debug( "Generating metadata for changset revision: %s", str( ctx.rev() ) )
             current_metadata_dict, invalid_tups = generate_metadata_for_changeset_revision( app=trans.app,
                                                                                             repository=repository,
+                                                                                            changeset_revision=current_changeset_revision,
                                                                                             repository_clone_url=repository_clone_url,
                                                                                             relative_install_dir=repo_dir,
                                                                                             repository_files_dir=work_dir,
@@ -3148,6 +3204,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     repo = hg.repository( get_configured_ui(), repo_dir )
     metadata_dict, invalid_file_tups = generate_metadata_for_changeset_revision( app=trans.app,
                                                                                  repository=repository,
+                                                                                 changeset_revision=repository.tip( trans.app ),
                                                                                  repository_clone_url=repository_clone_url,
                                                                                  relative_install_dir=repo_dir,
                                                                                  repository_files_dir=None,
@@ -3197,7 +3254,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     reset_tool_data_tables( trans.app )
     return message, status
 def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=None, **kwd ):
-    # Set metadata on the repository tip.
+    """Set metadata on the repository tip in the tool shed - this method is not called from Galaxy."""
     error_message, status = set_repository_metadata( trans, repository, content_alert_str=content_alert_str, **kwd )
     if error_message:
         # If there is an error, display it.
@@ -3214,6 +3271,32 @@ def strip_path( fpath ):
     except:
         file_name = fpath
     return file_name
+def tool_dependency_is_orphan_in_tool_shed( type, name, version, tools ):
+    """
+    Determine if the combination of the received type, name and version is defined in the <requirement> tag for at least one tool in the received list of tools.
+    If not, the tool dependency defined by the combination is considered an orphan in it's repository in the tool shed.
+    """
+    if tools:
+        if type == 'package':
+            if name and version:
+                for tool_dict in tools:
+                    requirements = tool_dict.get( 'requirements', [] )
+                    for requirement_dict in requirements:
+                        req_name = requirement_dict.get( 'name', None )
+                        req_version = requirement_dict.get( 'version', None )
+                        req_type = requirement_dict.get( 'type', None )
+                        if req_name == name and req_version == version and req_type == type:
+                            return False
+        elif type == 'set_environment':
+            if name:
+                for tool_dict in tools:
+                    requirements = tool_dict.get( 'requirements', [] )
+                    for requirement_dict in requirements:
+                        req_name = requirement_dict.get( 'name', None )
+                        req_type = requirement_dict.get( 'type', None )
+                        if req_name == name and req_type == type:
+                            return False
+    return True
 def to_safe_string( text, to_html=True ):
     """Translates the characters in text to an html string"""
     if text:

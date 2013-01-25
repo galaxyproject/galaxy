@@ -1323,9 +1323,8 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         installed_repository_dependencies, missing_repository_dependencies = get_installed_and_missing_repository_dependencies( trans, repository )
         # Handle the current repository's tool dependencies.
         repository_tool_dependencies = metadata.get( 'tool_dependencies', None )
-        repository_installed_tool_dependencies, repository_missing_tool_dependencies = get_installed_and_missing_tool_dependencies( trans,
-                                                                                                                                    repository,
-                                                                                                                                    repository_tool_dependencies )
+        repository_installed_tool_dependencies, repository_missing_tool_dependencies = \
+            get_installed_and_missing_tool_dependencies( trans, repository, repository_tool_dependencies )
         if reinstalling:
             installed_tool_dependencies, missing_tool_dependencies = \
                 populate_tool_dependencies_dicts( trans=trans,

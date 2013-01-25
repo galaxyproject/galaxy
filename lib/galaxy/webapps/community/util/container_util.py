@@ -102,7 +102,7 @@ class Tool( object ):
 class ToolDependency( object ):
     """Tool dependency object"""
     def __init__( self, id=None, name=None, version=None, type=None, install_dir=None, readme=None, installation_status=None, repository_id=None,
-                  tool_dependency_id=None ):
+                  tool_dependency_id=None, is_orphan=None ):
         self.id = id
         self.name = name
         self.version = version
@@ -112,6 +112,7 @@ class ToolDependency( object ):
         self.installation_status = installation_status
         self.repository_id = repository_id
         self.tool_dependency_id = tool_dependency_id
+        self.is_orphan = is_orphan
     @property
     def listify( self ):
         return [ self.name, self.version, self.type ]
@@ -322,17 +323,35 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                               version='Version',
                                               type='Type',
                                               install_dir='Install directory',
-                                              installation_status='Installation status' )
+                                              readme=None,
+                                              installation_status='Installation status',
+                                              repository_id=None,
+                                              tool_dependency_id=None,
+                                              is_orphan=None )
         else:
             tool_dependency = ToolDependency( id=tool_dependency_id,
                                               name='Name',
                                               version='Version',
-                                              type='Type' )
+                                              type='Type',
+                                              install_dir=None,
+                                              readme=None,
+                                              installation_status=None,
+                                              repository_id=None,
+                                              tool_dependency_id=None,
+                                              is_orphan=None )
         folder.tool_dependencies.append( tool_dependency )
+        is_orphan_description = "these dependencies may not be required by tools in this repository"
         for dependency_key, requirements_dict in tool_dependencies.items():
             tool_dependency_id += 1
-            if dependency_key == 'set_environment':
+            if dependency_key in [ 'set_environment' ]:
                 for set_environment_dict in requirements_dict:
+                    if trans.webapp.name == 'community':
+                        is_orphan = set_environment_dict.get( 'is_orphan_in_tool_shed', False )
+                    else:
+                        # TODO: handle this is Galaxy
+                        is_orphan = False
+                    if is_orphan:
+                        folder.description = is_orphan_description
                     name = set_environment_dict.get( 'name', None )
                     type = set_environment_dict[ 'type' ]
                     repository_id = set_environment_dict.get( 'repository_id', None )
@@ -343,12 +362,23 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                         installation_status = None
                     tool_dependency = ToolDependency( id=tool_dependency_id,
                                                       name=name,
+                                                      version=None,
                                                       type=type,
+                                                      install_dir=None,
+                                                      readme=None,
                                                       installation_status=installation_status,
                                                       repository_id=repository_id,
-                                                      tool_dependency_id=td_id )
+                                                      tool_dependency_id=td_id,
+                                                      is_orphan=is_orphan )
                     folder.tool_dependencies.append( tool_dependency )
             else:
+                if trans.webapp.name == 'community':
+                    is_orphan = requirements_dict.get( 'is_orphan_in_tool_shed', False )
+                else:
+                    # TODO: handle this is Galaxy
+                    is_orphan = False
+                if is_orphan:
+                    folder.description = is_orphan_description
                 name = requirements_dict[ 'name' ]
                 version = requirements_dict[ 'version' ]
                 type = requirements_dict[ 'type' ]
@@ -364,9 +394,11 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                                   version=version,
                                                   type=type,
                                                   install_dir=install_dir,
+                                                  readme=None,
                                                   installation_status=installation_status,
                                                   repository_id=repository_id,
-                                                  tool_dependency_id=td_id )
+                                                  tool_dependency_id=td_id,
+                                                  is_orphan=is_orphan )
                 folder.tool_dependencies.append( tool_dependency )
     else:
         tool_dependencies_root_folder = None
