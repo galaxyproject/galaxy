@@ -215,8 +215,7 @@ class Genomes( object ):
         dbkeys.extend( [ ( genome.description, genome.key ) for key, genome in self.genomes.items() if filter_fn( genome ) ] )
         
         return dbkeys
-        #return [ (v, k) for k, v in trans.db_builds if ( ( k in self.genomes and self.genomes[ k ].len_file ) or k in user_keys ) ]
-
+        
                     
     def chroms( self, trans, dbkey=None, num=None, chrom=None, low=None ):
         """
@@ -256,15 +255,25 @@ class Genomes( object ):
                     genome = Genome( dbkey, dbkey_name, len_file=len_file, twobit_file=twobit_file )
                     
         
-        # Look in system builds.
+        # Look in history and system builds.
         if not genome:
+            # Look in history for chromosome len file.
             len_ds = trans.db_dataset_for( dbkey )
-            if not len_ds:
-                genome = self.genomes[ dbkey ]
-            else:
+            if len_ds:
                 genome = Genome( dbkey, dbkey_name, len_file=len_ds.file_name )
+            # Look in system builds.
+            elif dbkey in self.genomes:
+                genome = self.genomes[ dbkey ]
+
+        # Set up return value or log exception if genome not found for key.
+        rval = None
+        if genome:
+            rval = genome.to_dict( num=num, chrom=chrom, low=low )
+        else:
+            log.exception( 'genome not found for key %s' % dbkey )
             
-        return genome.to_dict( num=num, chrom=chrom, low=low )
+        return rval
+
         
     def has_reference_data( self, trans, dbkey, dbkey_owner=None ):
         """ 
