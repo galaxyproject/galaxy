@@ -569,7 +569,7 @@
                     $('#grid-table-body').html(parsed_response_text[0]);
                     // FIXME: this does not work at all; what's needed is a function
                     // that updates page links when number of pages changes.
-                    //$('#grid-table-footer').html(parsed_response_text[1]);
+                    $('#grid-table-footer').html(parsed_response_text[1]);
                     
                     // Trigger custom event to indicate grid body has changed.
                     $('#grid-table-body').trigger('update');
