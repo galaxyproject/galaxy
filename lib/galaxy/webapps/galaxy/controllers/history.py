@@ -847,7 +847,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if not history_to_view:
             return trans.show_error_message( "The specified history does not exist." )
         # Admin users can view any history
-        if not trans.user_is_admin() and not history_to_view.importable:
+        if( ( history_to_view.user != trans.user )
+        and ( not trans.user_is_admin()  )
+        and ( not history_to_view.importable ) ):
             error( "Either you are not allowed to view this history or the owner of this history has not made it accessible." )
         # View history.
         show_deleted = util.string_as_bool( show_deleted )
