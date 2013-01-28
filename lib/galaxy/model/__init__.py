@@ -895,6 +895,7 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
+        self.uuid = None
 
     def get_file_name( self ):
         if not self.external_filename:

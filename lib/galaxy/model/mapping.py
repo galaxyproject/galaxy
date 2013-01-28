@@ -135,7 +135,8 @@ Dataset.table = Table( "dataset", metadata,
     Column( "external_filename" , TEXT ),
     Column( "_extra_files_path", TEXT ),
     Column( 'file_size', Numeric( 15, 0 ) ),
-    Column( 'total_size', Numeric( 15, 0 ) ) )
+    Column( 'total_size', Numeric( 15, 0 ) ),
+    Column( 'uuid', UUIDType() ) )
 
 HistoryDatasetAssociationDisplayAtAuthorization.table = Table( "history_dataset_association_display_at_authorization", metadata,
     Column( "id", Integer, primary_key=True ),
