@@ -426,7 +426,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_paused: function( parent ){
-        parent.append( $( '<div>' + _l( 'Job is paused.  Use the history menu to unpause' ) + '.</div>' ) );
+        parent.append( $( '<div>' + _l( 'Job is paused.  Use the history menu to resume' ) + '.</div>' ) );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
     },
         
