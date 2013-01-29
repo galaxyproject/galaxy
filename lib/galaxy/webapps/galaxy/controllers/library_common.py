@@ -1070,11 +1070,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         job, output = upload_common.create_job( trans, tool_params, tool, json_file_path, data_list, folder=library_bunch.folder )
         # HACK: Prevent outputs_to_working_directory from overwriting inputs when "linking"
         job.add_parameter( 'link_data_only', to_json_string( kwd.get( 'link_data_only', 'copy_files' ) ) )
+        job.add_parameter( 'uuid', to_json_string( kwd.get( 'uuid', None ) ) )
         trans.sa_session.add( job )
         trans.sa_session.flush()
         return output
     def make_library_uploaded_dataset( self, trans, cntrller, params, name, path, type, library_bunch, in_folder=None ):
         link_data_only = params.get( 'link_data_only', 'copy_files' )
+        uuid_str =  params.get( 'uuid', None )
         library_bunch.replace_dataset = None # not valid for these types of upload
         uploaded_dataset = util.bunch.Bunch()
         new_name = name
@@ -1096,6 +1098,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             uploaded_dataset.in_folder = in_folder
         uploaded_dataset.data = upload_common.new_upload( trans, cntrller, uploaded_dataset, library_bunch )
         uploaded_dataset.link_data_only = link_data_only
+        uploaded_dataset.uuid = uuid_str
         if link_data_only == 'link_to_files':
             uploaded_dataset.data.file_name = os.path.abspath( path )
             # Since we are not copying the file into Galaxy's managed
