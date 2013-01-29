@@ -39,7 +39,7 @@ def upgrade():
 def downgrade():
     metadata.reflect()
     
-    # Drop the Job table's exit_code column. 
+    # Drop the dataset table's uuid column. 
     try:
         dataset_table = Table( "dataset", metadata, autoload=True )
         dataset_uuid = dataset_table.c.uuid
