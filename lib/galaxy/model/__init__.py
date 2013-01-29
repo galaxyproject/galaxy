@@ -1529,8 +1529,9 @@ class HistoryDatasetAssociation( DatasetInstance ):
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
                 val = val.file_name
-            elif isinstance( val, list ):
-                val = ', '.join( [str(v) for v in val] )
+            # If no value for metadata, look in datatype for metadata.
+            elif val == None and hasattr( hda.datatype, name ):
+                val = getattr( hda.datatype, name )
             rval['metadata_' + name] = val
         return rval
 
