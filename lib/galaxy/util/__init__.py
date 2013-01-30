@@ -333,6 +333,21 @@ def xml_text(root, name=None):
     # No luck, return empty string
     return ''
     
+# asbool implementation pulled from PasteDeploy
+truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
+falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
+def asbool(obj):
+    if isinstance(obj, basestring):
+        obj = obj.strip().lower()
+        if obj in truthy:
+            return True
+        elif obj in falsy:
+            return False
+        else:
+            raise ValueError("String is not true/false: %r" % obj)
+    return bool(obj)
+
+
 def string_as_bool( string ):
     if str( string ).lower() in ( 'true', 'yes', 'on' ):
         return True

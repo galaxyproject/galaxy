@@ -23,8 +23,8 @@ import simplejson
 
 import helpers
 
-pkg_resources.require( "PasteDeploy" )
-from paste.deploy.converters import asbool
+from galaxy.util import asbool
+
 import paste.httpexceptions
 
 pkg_resources.require( "Mako" )
