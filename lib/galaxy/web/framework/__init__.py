@@ -278,7 +278,6 @@ class WebApplication( base.WebApplication ):
             if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
                 name = fname[:-3]
                 module_name = package_name + "." + name
-                print package_name, name, module_name
                 try:
                     module = import_module( module_name )
                 except ControllerUnavailable, exc:
