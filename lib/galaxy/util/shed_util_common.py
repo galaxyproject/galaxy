@@ -1223,7 +1223,8 @@ def generate_package_dependency_metadata( app, elem, tool_dependencies_dict ):
                 current_rd_tups, error_message = handle_repository_elem( app=app,
                                                                          repository_elem=sub_elem,
                                                                          repository_dependencies_tups=None )
-                repository_dependency_tup = current_rd_tups[ 0 ]
+                if current_rd_tups:
+                    repository_dependency_tup = current_rd_tups[ 0 ]
     if requirements_dict:
         dependency_key = '%s/%s' % ( package_name, package_version )
         tool_dependencies_dict[ dependency_key ] = requirements_dict
