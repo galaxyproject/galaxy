@@ -3153,6 +3153,11 @@ class ToolShedRepository( object ):
     def can_reinstall_or_activate( self ):
         return self.deleted
     @property
+    def has_readme_files( self ):
+        if self.metadata:
+            return 'readme_files' in self.metadata
+        return False
+    @property
     def has_repository_dependencies( self ):
         if self.metadata:
             return 'repository_dependencies' in self.metadata
@@ -3175,11 +3180,6 @@ class ToolShedRepository( object ):
     @property
     def in_error_state( self ):
         return self.status == self.installation_status.ERROR
-    @property
-    def has_readme_files( self ):
-        if self.metadata:
-            return 'readme_files' in self.metadata
-        return False
     @property
     def repository_dependencies( self ):
         required_repositories = []

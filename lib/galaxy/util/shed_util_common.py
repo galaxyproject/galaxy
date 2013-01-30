@@ -1202,7 +1202,10 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     app.config.tool_data_table_config_path = original_tool_data_table_config_path
     return metadata_dict, invalid_file_tups
 def generate_package_dependency_metadata( app, elem, tool_dependencies_dict ):
-    """The value of package_name must match the value of the "package" type in the tool config's <requirements> tag set."""
+    """
+    Generate the metadata for a tool dependencies package defined for a repository.  The value of package_name must match the value of the "package"
+    type in the tool config's <requirements> tag set.  This method is called from both Galaxy and the tool shed.
+    """
     repository_dependency_tup = []
     requirements_dict = {}
     error_message = ''
@@ -1217,9 +1220,9 @@ def generate_package_dependency_metadata( app, elem, tool_dependencies_dict ):
                 requirements_dict[ 'readme' ] = sub_elem.text
             elif sub_elem.tag == 'repository':
                 # We have a complex repository dependency.
-                current_rd_tups, error_message = handle_repository_elem_for_tool_shed( app=app,
-                                                                                       repository_elem=sub_elem,
-                                                                                       repository_dependencies_tups=None )
+                current_rd_tups, error_message = handle_repository_elem( app=app,
+                                                                         repository_elem=sub_elem,
+                                                                         repository_dependencies_tups=None )
                 repository_dependency_tup = current_rd_tups[ 0 ]
     if requirements_dict:
         dependency_key = '%s/%s' % ( package_name, package_version )
@@ -1274,7 +1277,7 @@ def generate_repository_dependency_metadata_for_tool_shed( app, repository_depen
         is_valid = False
     if is_valid:
         for repository_elem in root.findall( 'repository' ):
-            current_rd_tups, error_message = handle_repository_elem_for_tool_shed( app, repository_elem, repository_dependencies_tups )
+            current_rd_tups, error_message = handle_repository_elem( app, repository_elem, repository_dependencies_tups )
             if error_message:
                 log.debug( error_message )
                 return metadata_dict, error_message
@@ -1477,7 +1480,7 @@ def generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_
         metadata_dict[ 'workflows' ] = [ ( relative_path, exported_workflow_dict ) ]
     return metadata_dict
 def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
-    """Return the absolute path to a specified disk file containe in a repository."""
+    """Return the absolute path to a specified disk file contained in a repository."""
     stripped_file_name = strip_path( file_name )
     file_path = None
     for root, dirs, files in os.walk( repo_files_dir ):
@@ -1677,8 +1680,8 @@ def get_named_tmpfile_from_ctx( ctx, filename, dir ):
     return None
 def get_next_downloadable_changeset_revision( repository, repo, after_changeset_revision ):
     """
-    Return the installable changeset_revision in the repository changelog after to the changeset to which after_changeset_revision
-    refers.  If there isn't one, return None.
+    Return the installable changeset_revision in the repository changelog after the changeset to which after_changeset_revision refers.  If there
+    isn't one, return None.
     """
     changeset_revisions = get_ordered_downloadable_changeset_revisions( repository, repo )
     if len( changeset_revisions ) == 1:
@@ -2157,7 +2160,7 @@ def get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( ap
                      .first()
 def get_tool_shed_from_clone_url( repository_clone_url ):
     tmp_url = clean_repository_clone_url( repository_clone_url )
-    return tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
+    return tmp_url.split( '/repos/' )[ 0 ].rstrip( '/' )
 def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_dicts ):
     updated_key_rd_dicts = []
     for key_rd_dict in key_rd_dicts:
@@ -2411,6 +2414,67 @@ def handle_next_repository_dependency( trans, key_rd_dicts_to_be_processed, all_
                                                                all_repository_dependencies=all_repository_dependencies,
                                                                handled_key_rd_dicts=handled_key_rd_dicts,
                                                                circular_repository_dependencies=circular_repository_dependencies )
+def handle_repository_elem( app, repository_elem, repository_dependencies_tups ):
+    """
+    Process the received repository_elem which is a <repository> tag either from a repository_dependencies.xml file or a tool_dependencies.xml file.
+    If the former, we're generating repository dependencies metadata for a repository in the tool shed.  If the latter, we're generating package
+    dependency metadata with in Galaxy or the tool shed.
+    """
+    if repository_dependencies_tups is None:
+        new_rd_tups = []
+    else:
+        new_rd_tups = [ rdt for rdt in repository_dependencies_tups ]
+    error_message = ''
+    sa_session = app.model.context.current
+    toolshed = repository_elem.attrib[ 'toolshed' ]
+    name = repository_elem.attrib[ 'name' ]
+    owner = repository_elem.attrib[ 'owner' ]
+    changeset_revision = repository_elem.attrib[ 'changeset_revision' ]
+    user = None
+    repository = None
+    if app.name == 'galaxy':
+        # We're in Galaxy.
+        try:
+            repository = sa_session.query( app.model.ToolShedRepository ) \
+                                   .filter( and_( app.model.ToolShedRepository.table.c.name == name,
+                                                  app.model.ToolShedRepository.table.c.owner == owner ) ) \
+                                   .first()
+        except:
+            error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
+            log.debug( error_message )
+            return new_rd_tups, error_message
+        repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
+        if repository_dependencies_tup not in new_rd_tups:
+            new_rd_tups.append( repository_dependencies_tup )
+    else:        
+        # We're in the tool shed.
+        if tool_shed_is_this_tool_shed( toolshed ):
+            try:
+                user = sa_session.query( app.model.User ) \
+                                 .filter( app.model.User.table.c.username == owner ) \
+                                 .one()
+            except Exception, e:
+                error_message = "Invalid owner %s defined for repository %s.  Repository dependencies will be ignored." % ( owner, name )
+                log.debug( error_message )
+                return new_rd_tups, error_message
+            try:
+                repository = sa_session.query( app.model.Repository ) \
+                                       .filter( and_( app.model.Repository.table.c.name == name,
+                                                      app.model.Repository.table.c.user_id == user.id ) ) \
+                                       .first()
+            except:
+                error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
+                log.debug( error_message )
+                return new_rd_tups, error_message
+            repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
+            if repository_dependencies_tup not in new_rd_tups:
+                new_rd_tups.append( repository_dependencies_tup )
+        else:
+            # Repository dependencies are currentlhy supported within a single tool shed.
+            error_message = "Invalid tool shed %s defined for repository %s.  " % ( toolshed, name )
+            error_message += "Repository dependencies are currently supported within a single tool shed, so your definition will be ignored."
+            log.debug( error_message )
+    return new_rd_tups, error_message
 def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir ):
     # Copy all sample files from disk to a temporary directory since the sample files may be in multiple directories.
     message = ''
@@ -2487,54 +2551,6 @@ def has_orphan_tool_dependencies_in_tool_shed( metadata ):
                         if is_orphan_in_tool_shed:
                             return True
     return False
-def handle_repository_elem_for_tool_shed( app, repository_elem, repository_dependencies_tups ):
-    if repository_dependencies_tups is None:
-        new_rd_tups = []
-    else:
-        new_rd_tups = [ rdt for rdt in repository_dependencies_tups ]
-    error_message = ''
-    sa_session = app.model.context.current
-    toolshed = repository_elem.attrib[ 'toolshed' ]
-    name = repository_elem.attrib[ 'name' ]
-    owner = repository_elem.attrib[ 'owner' ]
-    changeset_revision = repository_elem.attrib[ 'changeset_revision' ]
-    user = None
-    repository = None
-    if tool_shed_is_this_tool_shed( toolshed ):
-        try:
-            user = sa_session.query( app.model.User ) \
-                             .filter( app.model.User.table.c.username == owner ) \
-                             .one()
-        except Exception, e:
-            error_message = "Invalid owner %s defined for repository %s.  Repository dependencies will be ignored." % ( owner, name )
-            log.debug( error_message )
-            return new_rd_tups, error_message
-        if user:
-            try:
-                repository = sa_session.query( app.model.Repository ) \
-                                       .filter( and_( app.model.Repository.table.c.name == name,
-                                                      app.model.Repository.table.c.user_id == user.id ) ) \
-                                       .first()
-            except:
-                error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
-                log.debug( error_message )
-                return new_rd_tups, error_message
-            if repository:
-                repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
-                if repository_dependencies_tup not in new_rd_tups:
-                    new_rd_tups.append( repository_dependencies_tup )
-            else:
-                error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
-                log.debug( error_message )
-        else:
-            error_message = "Invalid owner %s defined for owner of repository %s.  Repository dependencies will be ignored." % ( owner, name )
-            log.debug( error_message )
-    else:
-        # Repository dependencies are currentlhy supported within a single tool shed.
-        error_message = "Invalid tool shed %s defined for repository %s.  " % ( toolshed, name )
-        error_message += "Repository dependencies are currently supported within a single tool shed, so your definition will be ignored."
-        log.debug( error_message )
-    return new_rd_tups, error_message
 def has_previous_repository_reviews( trans, repository, changeset_revision ):
     """Determine if a repository has a changeset revision review prior to the received changeset revision."""
     repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
@@ -2588,7 +2604,22 @@ def is_circular_repository_dependency( repository_key, repository_dependency, al
             return True
     return False
 def is_downloadable( metadata_dict ):
-    return 'datatypes' in metadata_dict or 'repository_dependencies' in metadata_dict or 'tools' in metadata_dict or 'workflows' in metadata_dict
+    if 'datatypes' in metadata_dict:
+        # We have proprietary datatypes.
+        return True
+    if 'repository_dependencies' in metadata_dict:
+        # We have repository_dependencies.
+        return True
+    if 'tools' in metadata_dict:
+        # We have tools.
+        return True
+    if 'tool_dependencies' in metadata_dict:
+        # We have tool dependencies, and perhaps only tool dependencies!
+        return True
+    if 'workflows' in metadata_dict:
+        # We have exported workflows.
+        return True
+    return False
 def initialize_all_repository_dependencies( current_repository_key, repository_dependencies_dict, all_repository_dependencies ):
     # Initialize the all_repository_dependencies dictionary.  It's safe to assume that current_repository_key in this case will have a value.
     all_repository_dependencies[ 'root_key' ] = current_repository_key
@@ -3322,7 +3353,7 @@ def to_safe_string( text, to_html=True ):
         return ''.join( translated )
     return text
 def tool_shed_from_repository_clone_url( repository_clone_url ):
-    return clean_repository_clone_url( repository_clone_url ).split( 'repos' )[ 0 ].rstrip( '/' )
+    return clean_repository_clone_url( repository_clone_url ).split( '/repos/' )[ 0 ].rstrip( '/' )
 def tool_shed_is_this_tool_shed( toolshed_base_url ):
     return toolshed_base_url.rstrip( '/' ) == str( url_for( '/', qualified=True ) ).rstrip( '/' )
 def translate_string( raw_text, to_html=True ):

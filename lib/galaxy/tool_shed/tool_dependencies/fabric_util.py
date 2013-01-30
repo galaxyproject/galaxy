@@ -50,6 +50,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
     install_dir = actions_dict[ 'install_dir' ]
     package_name = actions_dict[ 'package_name' ]
     actions = actions_dict.get( 'actions', None )
+    filtered_actions = []
     if actions:
         with make_tmp_dir() as work_dir:
             with lcd( work_dir ):
@@ -57,6 +58,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                 # are currently only two supported processes; download_by_url and clone via a "shell_command" action type.
                 action_type, action_dict = actions[ 0 ]
                 if action_type == 'download_by_url':
+                    # Eliminate the download_by_url action so remaining actions can be processed correctly.
+                    filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
                     if 'target_filename' in action_dict:
                         downloaded_filename = action_dict[ 'target_filename' ]
@@ -75,15 +78,24 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         dir = work_dir
                 elif action_type == 'shell_command':
                     # <action type="shell_command">git clone --recursive git://github.com/ekg/freebayes.git</action>
+                    # Eliminate the shell_command clone action so remaining actions can be processed correctly.
+                    filtered_actions = actions[ 1: ]
                     return_code = handle_command( app, tool_dependency, install_dir, action_dict[ 'command' ] )
                     if return_code:
                         return
                     dir = package_name
+                else:
+                    # We're handling a complex repository dependency where we only have a set_environment tag set.
+                    # <action type="set_environment">
+                    #    <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
+                    # </action>
+                    filtered_actions = [ a for a in actions ]
+                    dir = install_dir
                 if not os.path.exists( dir ):
                     os.makedirs( dir )
                 # The package has been down-loaded, so we can now perform all of the actions defined for building it.
                 with lcd( dir ):
-                    for action_tup in actions[ 1: ]:
+                    for action_tup in filtered_actions:
                         action_type, action_dict = action_tup
                         current_dir = os.path.abspath( os.path.join( work_dir, dir ) )
                         if action_type == 'make_directory':
@@ -93,6 +105,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                                               source_dir=os.path.join( action_dict[ 'source_directory' ] ),
                                                               destination_dir=os.path.join( action_dict[ 'destination_directory' ] ) )
                         elif action_type == 'move_file':
+                            # TODO: Remove this hack that resets current_dir so that the pre-compiled bwa binary can be found.
+                            # current_dir = '/Users/gvk/workspaces_2008/bwa/bwa-0.5.9'
                             common_util.move_file( current_dir=current_dir,
                                                    source=os.path.join( action_dict[ 'source' ] ),
                                                    destination_dir=os.path.join( action_dict[ 'destination' ] ) )

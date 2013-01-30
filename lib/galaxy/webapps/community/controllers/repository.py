@@ -1466,7 +1466,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         return repo_info_dict
     @web.expose
     def get_tool_dependencies( self, trans, **kwd ):
-        """Handle a request from a Galaxy instance."""
+        """Handle a request from a Galaxy instance to get the tool_dependencies entry from the metadata for a specified changeset revision."""
         params = util.Params( kwd )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
@@ -1479,6 +1479,26 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         tool_dependencies = metadata.get( 'tool_dependencies', '' )
         if tool_dependencies:
             return encoding_util.tool_shed_encode( tool_dependencies )
+        return ''
+    @web.expose
+    def get_tool_dependencies_config_contents( self, trans, **kwd ):
+        """Handle a request from a Galaxy instance to get the tool_dependencies.xml file contents for a specified changeset revision."""
+        params = util.Params( kwd )
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        # TODO: We're currently returning the tool_dependencies.xml file that is available on disk.  We need to enhance this process
+        # to retrieve older versions of the tool-dependencies.xml file from the repository manafest.
+        repo_dir = repository.repo_path( trans.app )
+        # Get the tool_dependencies.xml file from disk.
+        tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_dir )
+        # Return the encoded contents of the tool_dependencies.xml file.
+        if tool_dependencies_config:
+            tool_dependencies_config_file = open( tool_dependencies_config, 'rb' )
+            contents = tool_dependencies_config_file.read()
+            tool_dependencies_config_file.close()
+            return contents
         return ''
     @web.expose
     def get_tool_versions( self, trans, **kwd ):
@@ -1505,7 +1525,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         return ''
     @web.json
     def get_updated_repository_information( self, trans, name, owner, changeset_revision, **kwd ):
-        """Generate a disctionary that contains the information about a repository that is necessary for installing it into a local Galaxy instance."""
+        """Generate a dictionary that contains the information about a repository that is necessary for installing it into a local Galaxy instance."""
         repository = suc.get_repository_by_name_and_owner( trans, name, owner )
         repository_id = trans.security.encode_id( repository.id )
         repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
@@ -2079,7 +2099,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository = suc.get_repository_by_name_and_owner( trans, name, owner )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
-        # Get the lower bound changeset revision 
+        # Get the lower bound changeset revision.
         lower_bound_changeset_revision = suc.get_previous_downloadable_changset_revision( repository, repo, changeset_revision )
         # Build the list of changeset revision hashes.
         changeset_hashes = []
@@ -2403,6 +2423,35 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def __stringify( self, list ):
         if list:
             return ','.join( list )
+        return ''
+    @web.expose
+    def updated_changeset_revisions( self, trans, **kwd ):
+        """
+        Handle a request from a local Galaxy instance to retrieve the lsit of changeset revisions to which an installed repository can be updated.  This
+        method will return a string of comma-separated changeset revision hashes for all available updates to the received changeset revision.  Among
+        other things , this method handles the scenario where an installed tool shed repository's tool_dependency definition file defines a changeset
+        revision for a complex repository dependency that is outdated.  In other words, a defined changeset revision is older than the current changeset
+        revision for the required repository, making it impossible to discover the repository without knowledge of revisions to which it could have been
+        updated.
+        """
+        params = util.Params( kwd )
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repo_dir = repository.repo_path( trans.app )
+        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        # Get the upper bound changeset revision.
+        upper_bound_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+        # Build the list of changeset revision hashes defining each available update up to, but excluding, upper_bound_changeset_revision.
+        changeset_hashes = []
+        for changeset in suc.reversed_lower_upper_bounded_changelog( repo, changeset_revision, upper_bound_changeset_revision ):
+            # Make sure to exclude upper_bound_changeset_revision.
+            if changeset != upper_bound_changeset_revision:
+                changeset_hashes.append( str( repo.changectx( changeset ) ) )
+        if changeset_hashes:
+            changeset_hashes_str = ','.join( changeset_hashes )
+            return changeset_hashes_str
         return ''
     def __validate_repository_name( self, name, user ):
         # Repository names must be unique for each user, must be at least four characters

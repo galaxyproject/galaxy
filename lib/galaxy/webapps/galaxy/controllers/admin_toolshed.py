@@ -890,7 +890,7 @@ class AdminToolshed( AdminGalaxy ):
             shed_util.update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.CLONING )
             repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
-            relative_clone_dir = shed_util.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision )
+            relative_clone_dir = shed_util.generate_tool_shed_repository_install_dir( repository_clone_url, tool_shed_repository.installed_changeset_revision )
             clone_dir = os.path.join( tool_path, relative_clone_dir )
             relative_install_dir = os.path.join( relative_clone_dir, tool_shed_repository.name )
             install_dir = os.path.join( tool_path, relative_install_dir )
@@ -1416,7 +1416,8 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
         repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, tool_shed_repository )
-        clone_dir = os.path.join( tool_path, shed_util.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision ) )
+        clone_dir = os.path.join( tool_path, shed_util.generate_tool_shed_repository_install_dir( repository_clone_url,
+                                                                                                  tool_shed_repository.installed_changeset_revision ) )
         relative_install_dir = os.path.join( clone_dir, tool_shed_repository.name )
         tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, tool_shed_repository )
         tool_section = None
