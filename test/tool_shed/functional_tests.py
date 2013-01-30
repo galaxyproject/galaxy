@@ -124,6 +124,7 @@ def main():
     galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'tool_data_table_conf.xml' ) )
     galaxy_tool_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_tool_conf.xml' ) )
     galaxy_shed_tool_conf_file = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_tool_conf.xml' ) )
+    galaxy_migrated_tool_conf_file = os.environ.get( 'GALAXY_TEST_MIGRATED_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_migrated_tool_conf.xml' ) )
     galaxy_tool_sheds_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_SHEDS_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_sheds_conf.xml' ) )
     if 'GALAXY_TEST_TOOL_DATA_PATH' in os.environ:
         tool_data_path = os.environ.get( 'GALAXY_TEST_TOOL_DATA_PATH' )
@@ -141,6 +142,7 @@ def main():
     new_repos_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     galaxy_tempfiles = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     galaxy_shed_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
+    galaxy_migrated_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
     galaxy_tool_dependency_dir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
     os.environ[ 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' ] = galaxy_tool_dependency_dir
     if 'TOOL_SHED_TEST_DBURI' in os.environ:
@@ -258,6 +260,9 @@ def main():
         shed_tool_conf_template_parser = string.Template( shed_tool_conf_xml_template )
         shed_tool_conf_xml = shed_tool_conf_template_parser.safe_substitute( shed_tool_path=galaxy_shed_tool_path )
         file( galaxy_shed_tool_conf_file, 'w' ).write( shed_tool_conf_xml )
+        # Generate the migrated_tool_conf.xml file.
+        migrated_tool_conf_xml = shed_tool_conf_template_parser.safe_substitute( shed_tool_path=galaxy_migrated_tool_path )
+        file( galaxy_migrated_tool_conf_file, 'w' ).write( migrated_tool_conf_xml )
         os.environ[ 'GALAXY_TEST_SHED_TOOL_CONF' ] = galaxy_shed_tool_conf_file
     
         # ---- Build Galaxy Application -------------------------------------------------- 
@@ -275,6 +280,7 @@ def main():
                                                tool_data_path = tool_data_path,
                                                shed_tool_path = galaxy_shed_tool_path,
                                                update_integrated_tool_panel = False,
+                                               migrated_tools_config = galaxy_migrated_tool_conf_file,
                                                tool_config_file = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
                                                tool_sheds_config_file = galaxy_tool_sheds_conf_file,
                                                datatype_converters_config_file = "datatype_converters_conf.xml.sample",
