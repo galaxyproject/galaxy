@@ -85,8 +85,8 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                               'type': step.type,
                               'tool_id': step.tool_id,
                               'input_steps': {}}
-        for conn in step.input_connections:
-            steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id, 
+            for conn in step.input_connections:
+                steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id,
                                                               'step_output': conn.output_name}
         item['steps'] = steps
         return item
