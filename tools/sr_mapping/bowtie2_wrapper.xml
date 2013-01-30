@@ -145,6 +145,22 @@
     </inputs>
 
     <outputs>
+        <data format="fastqsanger" name="output_unaligned_reads_l" label="${tool.name} on ${on_string}: unaligned reads (L)" >
+            <filter>unalignedFile is True</filter>
+            <actions>
+                <action type="format">
+                    <option type="from_param" name="singlePaired.input1" param_attribute="ext" />
+                </action>
+            </actions>
+        </data>
+        <data format="fastqsanger" name="output_unaligned_reads_r" label="${tool.name} on ${on_string}: unaligned reads (R)">
+            <filter>singlePaired['sPaired'] == "paired" and unalignedFile is True</filter>
+            <actions>
+                <action type="format">
+                    <option type="from_param" name="singlePaired.input1" param_attribute="ext" />
+                </action>
+            </actions>
+        </data>
         <data format="bam" name="output" label="${tool.name} on ${on_string}: aligned reads">
           <actions>
             <conditional name="refGenomeSource.genomeSource">
@@ -163,22 +179,6 @@
               </when>
             </conditional>
           </actions>
-        </data>
-        <data format="fastqsanger" name="output_unaligned_reads_l" label="${tool.name} on ${on_string}: unaligned reads (L)" >
-            <filter>unalignedFile is True</filter>
-            <actions>
-                <action type="format">
-                    <option type="from_param" name="singlePaired.input1" param_attribute="ext" />
-                </action>
-            </actions>
-        </data>
-        <data format="fastqsanger" name="output_unaligned_reads_r" label="${tool.name} on ${on_string}: unaligned reads (R)">
-            <filter>singlePaired['sPaired'] == "paired" and unalignedFile is True</filter>
-            <actions>
-                <action type="format">
-                    <option type="from_param" name="singlePaired.input1" param_attribute="ext" />
-                </action>
-            </actions>
         </data>
     </outputs>
 
