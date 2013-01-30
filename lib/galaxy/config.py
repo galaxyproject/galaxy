@@ -57,7 +57,7 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
-        self.migrated_tools_config = resolve_path( "migrated_tools_conf.xml", self.root )
+        self.migrated_tools_config = resolve_path( kwargs.get( 'migrated_tools_config', 'migrated_tools_conf.xml' ), self.root )
         if 'tool_config_file' in kwargs:
             tcf = kwargs[ 'tool_config_file' ]
         elif 'tool_config_files' in kwargs:
