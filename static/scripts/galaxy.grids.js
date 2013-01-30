@@ -119,10 +119,16 @@ var Grid = Backbone.Model.extend({
             async: this.attributes.async,
             sort: this.attributes.sort_key,
             page: this.attributes.cur_page,
-            show_item_checkboxes: this.attributes.show_item_checkboxes,
-            operation: this.attributes.operation,
-            id: this.attributes.item_ids
+            show_item_checkboxes: this.attributes.show_item_checkboxes
         };
+
+        // Add operation, item_ids only if they have values.
+        if (this.attributes.operation) {
+            url_data.operation = this.attributes.operation;
+        }
+        if (this.attributes.item_ids) {
+            url_data.id = this.attributes.item_ids;
+        }
 
         // Add filter arguments to data, placing "f-" in front of all arguments.
         // FIXME: when underscore updated, use pairs function().
@@ -476,6 +482,7 @@ function update_grid(maintain_page_links) {
     // If grid is not using async, then go to URL.
     if (!grid.get('async')) {
         go_to_URL();
+        return;
     }
     
     // If there's an operation, do POST; otherwise, do GET.
