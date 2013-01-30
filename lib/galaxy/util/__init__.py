@@ -727,6 +727,16 @@ def send_mail( frm, to, subject, body, config ):
     s.sendmail( frm, to, msg.as_string() )
     s.quit()
 
+def force_symlink( source, link_name ):
+    try:
+        os.symlink( source, link_name )
+    except OSError, e:
+        if e.errno == errno.EEXIST:
+            os.remove( link_name )
+            os.symlink( source, link_name )
+        else:
+            raise e
+
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 
 # The dbnames list is used in edit attributes and the upload tool
