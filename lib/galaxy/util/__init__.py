@@ -2,7 +2,7 @@
 Utility functions used systemwide.
 
 """
-import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno
+import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno, shutil
 from email.MIMEText import MIMEText
 
 # Older py compatibility
@@ -736,6 +736,18 @@ def force_symlink( source, link_name ):
             os.symlink( source, link_name )
         else:
             raise e
+
+def move_merge( source, target ):
+    #when using shutil and moving a directory, if the target exists,
+    #then the directory is placed inside of it
+    #if the target doesn't exist, then the target is made into the directory
+    #this makes it so that the target is always the target, and if it exists,
+    #the source contents are moved into the target
+    if os.path.isdir( source ) and os.path.exists( target ) and os.path.isdir( target ):
+        for name in os.listdir( source ):
+            move_merge( os.path.join( source, name ), os.path.join( target, name ) )
+    else:
+        return shutil.move( source, target ) 
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 
