@@ -2088,10 +2088,7 @@ def get_rev_label_from_changeset_revision( repo, changeset_revision ):
         label = "-1:%s" % changeset_revision
     return rev, label
 def get_shed_tool_conf_dict( app, shed_tool_conf ):
-    """
-    Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
-    in the shed_tool_conf_dict associated with the file.
-    """
+    """Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry in the shed_tool_conf_dict associated with the file."""
     for index, shed_tool_conf_dict in enumerate( app.toolbox.shed_tool_confs ):
         if shed_tool_conf == shed_tool_conf_dict[ 'config_filename' ]:
             return index, shed_tool_conf_dict

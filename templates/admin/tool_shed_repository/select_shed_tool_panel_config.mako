@@ -60,7 +60,7 @@
 </div>
 <div class="toolForm">
     <div class="toolFormBody">
-        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
+        <form name="select_shed_tool_panel_config" id="select_shed_tool_panel_config" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
             <div style="clear: both"></div>
             <% readme_files_dict = containers_dict.get( 'readme_files', None ) %>
             %if readme_files_dict:
@@ -83,7 +83,7 @@
             %endif
             <div class="form-row">
                 <table class="colored" width="100%">
-                    <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
+                    <th bgcolor="#EBD9B2">Choose the configuration file whose tool_path setting will be used for installing repositories</th>
                 </table>
             </div>
             %if shed_tool_conf_select_field:
@@ -107,24 +107,7 @@
                 <input type="hidden" name="shed_tool_conf" value="${shed_tool_conf}"/>
             %endif
             <div class="form-row">
-                <label>Add new tool panel section:</label>
-                <input name="new_tool_panel_section" type="textfield" value="${new_tool_panel_section}" size="40"/>
-                <div class="toolParamHelp" style="clear: both;">
-                    Add a new tool panel section to contain the installed tools (optional).
-                </div>
-            </div>
-            <div class="form-row">
-                <label>Select existing tool panel section:</label>
-                ${tool_panel_section_select_field.get_html()}
-                <div class="toolParamHelp" style="clear: both;">
-                    Choose an existing section in your tool panel to contain the installed tools (optional).  
-                </div>
-            </div>
-            <div class="form-row">
-                <input type="submit" name="select_tool_panel_section_button" value="Install"/>
-                <div class="toolParamHelp" style="clear: both;">
-                    Clicking <b>Install</b> without selecting a tool panel section will load the installed tools into the tool panel outside of any sections.
-                </div>
+                <input type="submit" name="select_shed_tool_panel_config_button" value="Install"/>
             </div>
         </form>
     </div>
