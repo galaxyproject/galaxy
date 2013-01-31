@@ -930,8 +930,11 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     status=status )
     def __validate( self, trans, params, email, password, confirm, username ):
         # If coming from the community webapp, we'll require a public user name
-        if trans.webapp.name == 'community' and not username:
-            return "A public user name is required"
+        if trans.webapp.name == 'community':
+            if not username:
+                return "A public user name is required in the tool shed."
+            if username in [ 'repos' ]:
+                return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % username
         message = validate_email( trans, email )
         if not message:
             message = validate_password( trans, password, confirm )

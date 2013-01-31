@@ -951,7 +951,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             if not description:
                 message = 'Enter a description.'
                 error = True
-            if not error:
+            if error:
+                status = 'error'
+            else:
                 # Add the repository record to the db
                 repository = trans.app.model.Repository( name=name,
                                                          description=description,
@@ -2458,15 +2460,17 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         # in length and must contain only lower-case letters, numbers, and the '_' character.
         if name in [ 'None', None, '' ]:
             return 'Enter the required repository name.'
+        if name in [ 'repos' ]:
+            return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a repository name." % name
         for repository in user.active_repositories:
             if repository.name == name:
-                return "You already have a repository named '%s', so choose a different name." % name
+                return "You already have a repository named <b>%s</b>, so choose a different name." % name
         if len( name ) < 4:
             return "Repository names must be at least 4 characters in length."
         if len( name ) > 80:
             return "Repository names cannot be more than 80 characters in length."
         if not( VALID_REPOSITORYNAME_RE.match( name ) ):
-            return "Repository names must contain only lower-case letters, numbers and underscore '_'."
+            return "Repository names must contain only lower-case letters, numbers and underscore <b>_</b>."
         return ''
     @web.expose
     def view_changelog( self, trans, id, **kwd ):
