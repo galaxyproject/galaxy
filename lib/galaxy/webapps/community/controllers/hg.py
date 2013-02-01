@@ -32,7 +32,7 @@ class HgController( BaseUIController ):
             path_info = kwd.get( 'path_info', None )
             if path_info:
                 owner, name = path_info.split( '/' )
-                repository = get_repository_by_name_and_owner( trans, name, owner )
+                repository = get_repository_by_name_and_owner( trans.app, name, owner )
                 if repository:
                     if hg_version >= '2.2.3':
                         # Set metadata using the repository files on disk.

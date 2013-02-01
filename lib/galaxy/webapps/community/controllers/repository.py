@@ -542,7 +542,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 # The value of 'id' has been set to the search string, which is a repository name.  We'll try to get the desired encoded repository
                 # id to pass on.
                 try:
-                    repository = suc.get_repository_by_name( trans, kwd[ 'id' ] )
+                    repository_name = kwd[ 'id' ]
+                    repository = suc.get_repository_by_name( trans.app, repository_name )
                     kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 except:
                     pass
@@ -724,7 +725,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 # We'll try to get the desired encoded repository id to pass on.
                 try:
                     name = kwd[ 'id' ]
-                    repository = suc.get_repository_by_name( trans, name )
+                    repository = suc.get_repository_by_name( trans.app, name )
                     kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 except:
                     pass
@@ -825,7 +826,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         # Default to the current changeset revision.
@@ -1282,7 +1283,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
                                                                                  trans.security.encode_id( repository.id ),
                                                                                  changeset_revision )
@@ -1342,7 +1343,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_name = kwd[ 'name' ]
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
-        repository = suc.get_repository_by_name_and_owner( trans, repository_name, repository_owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
@@ -1376,7 +1377,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_name = kwd[ 'name' ]
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
-        repository = suc.get_repository_by_name_and_owner( trans, repository_name, repository_owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )        
         return suc.build_readme_files_dict( repository_metadata.metadata )
     @web.json
@@ -1386,7 +1387,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
@@ -1458,7 +1459,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         changeset_revisions = []
         for required_repository_tup in decoded_required_repository_tups:
             tool_shed, name, owner, changeset_revision = required_repository_tup
-            repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
             changeset_revisions.append( changeset_revision )
         if encoded_repository_ids and changeset_revisions:
@@ -1473,7 +1474,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         for downloadable_revision in repository.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
                 break
@@ -1489,7 +1490,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         # TODO: We're currently returning the tool_dependencies.xml file that is available on disk.  We need to enhance this process
         # to retrieve older versions of the tool-dependencies.xml file from the repository manafest.
         repo_dir = repository.repo_path( trans.app )
@@ -1511,7 +1512,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = kwd[ 'name' ]
         owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         tool_version_dicts = []
@@ -1528,7 +1529,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     @web.json
     def get_updated_repository_information( self, trans, name, owner, changeset_revision, **kwd ):
         """Generate a dictionary that contains the information about a repository that is necessary for installing it into a local Galaxy instance."""
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
         repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -1692,7 +1693,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         owner = kwd.get( 'owner', None )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if not repository_ids:
-            repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             repository_ids = trans.security.encode_id( repository.id )
         if not galaxy_url:
             # If galaxy_url is not in the request, it had to have been stored in a cookie by the tool shed.
@@ -2098,7 +2099,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         # Get the lower bound changeset revision.
@@ -2440,7 +2441,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         # Get the upper bound changeset revision.

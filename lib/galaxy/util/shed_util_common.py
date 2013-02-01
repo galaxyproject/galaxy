@@ -495,6 +495,13 @@ def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     if repository_metadata:
         return repository_metadata.malicious
     return False
+def changeset_is_valid( app, repository, changeset_revision ):
+    repo = hg.repository( get_configured_ui(), repository.repo_path( app ) )
+    for changeset in repo.changelog:
+        changeset_hash = str( repo.changectx( changeset ) )
+        if changeset_revision == changeset_hash:
+            return True
+    return False
 def changeset_revision_reviewed_by_user( trans, user, repository, changeset_revision ):
     """Determine if the current changeset revision has been reviewed by the current user."""
     for review in repository.reviews:
@@ -871,7 +878,7 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
     but tool_dependencies and repository_dependencies will be None.
     """
     repo_info_dict = {}
-    repository = get_repository_by_name_and_owner( trans, repository_name, repository_owner )
+    repository = get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
     if trans.webapp.name == 'community':
         # We're in the tool shed.
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
@@ -1208,7 +1215,6 @@ def generate_package_dependency_metadata( app, elem, tool_dependencies_dict ):
     """
     repository_dependency_tup = []
     requirements_dict = {}
-    error_message = ''
     package_name = elem.get( 'name', None )
     package_version = elem.get( 'version', None )
     if package_name and package_version:
@@ -1220,15 +1226,15 @@ def generate_package_dependency_metadata( app, elem, tool_dependencies_dict ):
                 requirements_dict[ 'readme' ] = sub_elem.text
             elif sub_elem.tag == 'repository':
                 # We have a complex repository dependency.
-                current_rd_tups, error_message = handle_repository_elem( app=app,
-                                                                         repository_elem=sub_elem,
-                                                                         repository_dependencies_tups=None )
+                current_rd_tups = handle_repository_elem( app=app,
+                                                          repository_elem=sub_elem,
+                                                          repository_dependencies_tups=None )
                 if current_rd_tups:
                     repository_dependency_tup = current_rd_tups[ 0 ]
     if requirements_dict:
         dependency_key = '%s/%s' % ( package_name, package_version )
         tool_dependencies_dict[ dependency_key ] = requirements_dict
-    return tool_dependencies_dict, repository_dependency_tup, error_message
+    return tool_dependencies_dict, repository_dependency_tup
 def generate_repository_dependency_metadata_for_installed_repository( app, repository_dependencies_config, metadata_dict ):
     """
     Generate a repository dependencies dictionary based on valid information defined in the received repository_dependencies_config.  This method
@@ -1278,10 +1284,7 @@ def generate_repository_dependency_metadata_for_tool_shed( app, repository_depen
         is_valid = False
     if is_valid:
         for repository_elem in root.findall( 'repository' ):
-            current_rd_tups, error_message = handle_repository_elem( app, repository_elem, repository_dependencies_tups )
-            if error_message:
-                log.debug( error_message )
-                return metadata_dict, error_message
+            current_rd_tups = handle_repository_elem( app, repository_elem, repository_dependencies_tups )
             for crdt in current_rd_tups:
                 repository_dependencies_tups.append( crdt )
         if repository_dependencies_tups:
@@ -1312,12 +1315,9 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
     repository_dependency_tups = []
     for elem in root:
         if elem.tag == 'package':
-            tool_dependencies_dict, repository_dependency_tup, message = generate_package_dependency_metadata( app, elem, tool_dependencies_dict )
+            tool_dependencies_dict, repository_dependency_tup = generate_package_dependency_metadata( app, elem, tool_dependencies_dict )
             if repository_dependency_tup and repository_dependency_tup not in repository_dependency_tups:
                 repository_dependency_tups.append( repository_dependency_tup )
-            if message:
-                log.debug( message )
-                error_message = '%s  %s' % ( error_message, message )
         elif elem.tag == 'set_environment':
             tool_dependencies_dict = generate_environment_dependency_metadata( elem, tool_dependencies_dict )
     if tool_dependencies_dict:
@@ -1327,30 +1327,66 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
             handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_tool_dependencies_dict, tool_dependencies_dict )
         metadata_dict[ 'tool_dependencies' ] = tool_dependencies_dict
     if repository_dependency_tups:
-        tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
-        if app.name == 'community':
-            repository_owner = repository.user.username
-        else:
-            repository_owner = repository.owner
-        rd_key = container_util.generate_repository_dependencies_key_for_repository( toolshed_base_url=tool_shed,
-                                                                                     repository_name=repository.name,
-                                                                                     repository_owner=repository_owner,
-                                                                                     changeset_revision=changeset_revision )
         repository_dependencies_dict = metadata_dict.get( 'repository_dependencies', None )
-        if repository_dependencies_dict:
-            if rd_key in repository_dependencies_dict:
-                repository_dependencies = repository_dependencies_dict[ rd_key ]
-                for repository_dependency_tup in repository_dependency_tups:
-                    if repository_dependency_tup not in repository_dependencies:
-                        repository_dependencies.append( repository_dependency_tup )
-                repository_dependencies_dict[ rd_key ] = repository_dependencies
+        for repository_dependency_tup in repository_dependency_tups:
+            rd_tool_shed, rd_name, rd_owner, rd_changeset_revision = repository_dependency_tup
+            if app.name == 'community':
+                if tool_shed_is_this_tool_shed( rd_tool_shed ):
+                    # Make sure the repository name id valid.
+                    valid_named_repository = get_repository_by_name( app, rd_name )
+                    if valid_named_repository:
+                        # See if the owner is valid.
+                        valid_owned_repository = get_repository_by_name_and_owner( app, rd_name, rd_owner )
+                        if valid_owned_repository:
+                            # See if the defined changeset revision is valid.
+                            if not changeset_is_valid( app, valid_owned_repository, rd_changeset_revision ):
+                                err_msg = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
+                                    ( rd_tool_shed, rd_name, rd_owner, rd_changeset_revision )
+                                err_msg += "because the changeset revision is invalid.  " 
+                                log.debug( err_msg )
+                                error_message += err_msg
+                                continue
+                        else:
+                            err_msg = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
+                                ( rd_tool_shed, rd_name, rd_owner, rd_changeset_revision )
+                            err_msg += "because the owner is invalid.  " 
+                            log.debug( err_msg )
+                            error_message += err_msg
+                            continue
+                    else:
+                        err_msg = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
+                            ( rd_tool_shed, rd_name, rd_owner, rd_changeset_revision )
+                        err_msg += "because the name is invalid.  " 
+                        log.debug( err_msg )
+                        error_message += err_msg
+                        continue
+                else:
+                    err_msg = "Repository dependencies are currently supported only within the same tool shed.  Ignoring repository dependency definition "
+                    err_msg += "for tool shed %s, name %s, owner %s, changeset revision %s.  " % ( rd_tool_shed, rd_name, rd_owner, rd_changeset_revision )
+                    log.debug( err_msg )
+                    error_message += err_msg
+                    continue
             else:
-                repository_dependencies_dict[ rd_key ] = repository_dependency_tups
-        else:
-            repository_dependencies_dict = dict( root_key=rd_key,
-                                                 description=root.get( 'description' ),
-                                                 repository_dependencies=repository_dependency_tups )
-        metadata_dict[ 'repository_dependencies' ] = repository_dependencies_dict
+                repository_owner = repository.owner
+            rd_key = container_util.generate_repository_dependencies_key_for_repository( toolshed_base_url=rd_tool_shed,
+                                                                                         repository_name=rd_name,
+                                                                                         repository_owner=rd_owner,
+                                                                                         changeset_revision=rd_changeset_revision )
+            if repository_dependencies_dict:
+                if rd_key in repository_dependencies_dict:
+                    repository_dependencies = repository_dependencies_dict[ rd_key ]
+                    for repository_dependency_tup in repository_dependency_tups:
+                        if repository_dependency_tup not in repository_dependencies:
+                            repository_dependencies.append( repository_dependency_tup )
+                    repository_dependencies_dict[ rd_key ] = repository_dependencies
+                else:
+                    repository_dependencies_dict[ rd_key ] = repository_dependency_tups
+            else:
+                repository_dependencies_dict = dict( root_key=rd_key,
+                                                     description=root.get( 'description' ),
+                                                     repository_dependencies=repository_dependency_tups )
+        if repository_dependencies_dict:
+            metadata_dict[ 'repository_dependencies' ] = repository_dependencies_dict
     return metadata_dict, error_message
 def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section ):
     if tool_section is not None:
@@ -1800,22 +1836,27 @@ def get_repo_info_tuple_contents( repo_info_tuple ):
     elif len( repo_info_tuple ) == 7:
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
     return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
-def get_repository_by_name( trans, name ):
+def get_repository_by_name( app, name ):
     """Get a repository from the database via name."""
-    return trans.sa_session.query( trans.model.Repository ).filter_by( name=name ).one()
-def get_repository_by_name_and_owner( trans, name, owner ):
+    sa_session = app.model.context.current
+    if app.name == 'galaxy':
+        return sa_session.query( app.model.ToolShedRepository ).filter_by( name=name ).first()
+    else:
+        return sa_session.query( app.model.Repository ).filter_by( name=name ).first()
+def get_repository_by_name_and_owner( app, name, owner ):
     """Get a repository from the database via name and owner"""
-    if trans.webapp.name == 'galaxy':
-        return trans.sa_session.query( trans.model.ToolShedRepository ) \
-                                 .filter( and_( trans.model.ToolShedRepository.table.c.name == name,
-                                                trans.model.ToolShedRepository.table.c.owner == owner ) ) \
-                                 .first()
+    sa_session = app.model.context.current
+    if app.name == 'galaxy':
+        return sa_session.query( app.model.ToolShedRepository ) \
+                         .filter( and_( app.model.ToolShedRepository.table.c.name == name,
+                                        app.model.ToolShedRepository.table.c.owner == owner ) ) \
+                         .first()
     # We're in the tool shed.
-    user = get_user_by_username( trans, owner )
-    return trans.sa_session.query( trans.model.Repository ) \
-                             .filter( and_( trans.model.Repository.table.c.name == name,
-                                            trans.model.Repository.table.c.user_id == user.id ) ) \
-                             .first()
+    user = get_user_by_username( app, owner )
+    return sa_session.query( app.model.Repository ) \
+                     .filter( and_( app.model.Repository.table.c.name == name,
+                                    app.model.Repository.table.c.user_id == user.id ) ) \
+                     .first()
 def get_repository_dependencies_for_changeset_revision( trans, repository, repository_metadata, toolshed_base_url,
                                                         key_rd_dicts_to_be_processed=None, all_repository_dependencies=None,
                                                         handled_key_rd_dicts=None, circular_repository_dependencies=None ):
@@ -1929,7 +1970,7 @@ def get_repository_files( trans, folder_path ):
         contents.sort()
     return contents
 def get_repository_in_tool_shed( trans, id ):
-    """Get a repository on the tool shed side from the database via id"""
+    """Get a repository on the tool shed side from the database via id."""
     return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
 def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision ):
     """Get metadata for a specified repository change set from the database."""
@@ -2166,33 +2207,39 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
         repository_dependency = key_rd_dict[ key ]
         rd_toolshed, rd_name, rd_owner, rd_changeset_revision = repository_dependency
         if tool_shed_is_this_tool_shed( rd_toolshed ):
-            repository = get_repository_by_name_and_owner( trans, rd_name, rd_owner )
-            repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
-                                                                                              trans.security.encode_id( repository.id ),
-                                                                                              rd_changeset_revision )
-            if repository_metadata:
-                # The repository changeset_revision is installable, so no updates are available.
-                new_key_rd_dict = {}
-                new_key_rd_dict[ key ] = repository_dependency
-                updated_key_rd_dicts.append( key_rd_dict )
-            else:
-                # The repository changeset_revision is no longer installable, so see if there's been an update.
-                repo_dir = repository.repo_path( trans.app )
-                repo = hg.repository( get_configured_ui(), repo_dir )
-                changeset_revision = get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
+            repository = get_repository_by_name_and_owner( trans.app, rd_name, rd_owner )
+            if repository:
                 repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
                                                                                                   trans.security.encode_id( repository.id ),
-                                                                                                  changeset_revision )
+                                                                                                  rd_changeset_revision )
                 if repository_metadata:
+                    # The repository changeset_revision is installable, so no updates are available.
                     new_key_rd_dict = {}
-                    new_key_rd_dict[ key ] = [ rd_toolshed, rd_name, rd_owner, repository_metadata.changeset_revision ]
-                    # We have the updated changset revision.
-                    updated_key_rd_dicts.append( new_key_rd_dict )
+                    new_key_rd_dict[ key ] = repository_dependency
+                    updated_key_rd_dicts.append( key_rd_dict )
                 else:
-                    toolshed, repository_name, repository_owner, repository_changeset_revision = container_util.get_components_from_key( key )
-                    message = "The revision %s defined for repository %s owned by %s is invalid, so repository dependencies defined for repository %s will be ignored." % \
-                        ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ), str( repository_name ) )
-                    log.debug( message )
+                    # The repository changeset_revision is no longer installable, so see if there's been an update.
+                    repo_dir = repository.repo_path( trans.app )
+                    repo = hg.repository( get_configured_ui(), repo_dir )
+                    changeset_revision = get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
+                    repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
+                                                                                                      trans.security.encode_id( repository.id ),
+                                                                                                      changeset_revision )
+                    if repository_metadata:
+                        new_key_rd_dict = {}
+                        new_key_rd_dict[ key ] = [ rd_toolshed, rd_name, rd_owner, repository_metadata.changeset_revision ]
+                        # We have the updated changset revision.
+                        updated_key_rd_dicts.append( new_key_rd_dict )
+                    else:
+                        toolshed, repository_name, repository_owner, repository_changeset_revision = container_util.get_components_from_key( key )
+                        message = "The revision %s defined for repository %s owned by %s is invalid, so repository dependencies defined for repository %s will be ignored." % \
+                            ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ), str( repository_name ) )
+                        log.debug( message )
+            else:
+                toolshed, repository_name, repository_owner, repository_changeset_revision = container_util.get_components_from_key( key )
+                message = "The revision %s defined for repository %s owned by %s is invalid, so repository dependencies defined for repository %s will be ignored." % \
+                    ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ), str( repository_name ) )
+                log.debug( message )
     return updated_key_rd_dicts
 def get_url_from_repository_tool_shed( app, repository ):
     """
@@ -2219,11 +2266,12 @@ def get_url_from_tool_shed( app, tool_shed ):
 def get_user( trans, id ):
     """Get a user from the database by id."""
     return trans.sa_session.query( trans.model.User ).get( trans.security.decode_id( id ) )
-def get_user_by_username( trans, username ):
+def get_user_by_username( app, username ):
     """Get a user from the database by username."""
-    return trans.sa_session.query( trans.model.User ) \
-                           .filter( trans.model.User.table.c.username == username ) \
-                           .one()
+    sa_session = app.model.context.current
+    return sa_session.query( app.model.User ) \
+                     .filter( app.model.User.table.c.username == username ) \
+                     .one()
 def handle_circular_repository_dependency( repository_key, repository_dependency, circular_repository_dependencies, handled_key_rd_dicts, all_repository_dependencies ):
     all_repository_dependencies_root_key = all_repository_dependencies[ 'root_key' ]
     repository_dependency_as_key = get_repository_dependency_as_key( repository_dependency )
@@ -2370,7 +2418,7 @@ def handle_key_rd_dicts_for_repository( trans, current_repository_key, repositor
     repository_dependency = key_rd_dict[ current_repository_key ]
     toolshed, name, owner, changeset_revision = repository_dependency
     if tool_shed_is_this_tool_shed( toolshed ):
-        required_repository = get_repository_by_name_and_owner( trans, name, owner )
+        required_repository = get_repository_by_name_and_owner( trans.app, name, owner )
         required_repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
                                                                                                    trans.security.encode_id( required_repository.id ),
                                                                                                    changeset_revision )
@@ -2422,7 +2470,6 @@ def handle_repository_elem( app, repository_elem, repository_dependencies_tups )
         new_rd_tups = []
     else:
         new_rd_tups = [ rdt for rdt in repository_dependencies_tups ]
-    error_message = ''
     sa_session = app.model.context.current
     toolshed = repository_elem.attrib[ 'toolshed' ]
     name = repository_elem.attrib[ 'name' ]
@@ -2438,9 +2485,8 @@ def handle_repository_elem( app, repository_elem, repository_dependencies_tups )
                                                   app.model.ToolShedRepository.table.c.owner == owner ) ) \
                                    .first()
         except:
-            error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
-            log.debug( error_message )
-            return new_rd_tups, error_message
+            log.debug( "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner ) )
+            return new_rd_tups
         repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
         if repository_dependencies_tup not in new_rd_tups:
             new_rd_tups.append( repository_dependencies_tup )
@@ -2452,18 +2498,16 @@ def handle_repository_elem( app, repository_elem, repository_dependencies_tups )
                                  .filter( app.model.User.table.c.username == owner ) \
                                  .one()
             except Exception, e:
-                error_message = "Invalid owner %s defined for repository %s.  Repository dependencies will be ignored." % ( owner, name )
-                log.debug( error_message )
-                return new_rd_tups, error_message
+                log.debug( "Invalid owner %s defined for repository %s.  Repository dependencies will be ignored." % ( owner, name ) )
+                return new_rd_tups
             try:
                 repository = sa_session.query( app.model.Repository ) \
                                        .filter( and_( app.model.Repository.table.c.name == name,
                                                       app.model.Repository.table.c.user_id == user.id ) ) \
                                        .first()
             except:
-                error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
-                log.debug( error_message )
-                return new_rd_tups, error_message
+                log.debug( "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner ) )
+                return new_rd_tups
             repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
             if repository_dependencies_tup not in new_rd_tups:
                 new_rd_tups.append( repository_dependencies_tup )
@@ -2472,7 +2516,7 @@ def handle_repository_elem( app, repository_elem, repository_dependencies_tups )
             error_message = "Invalid tool shed %s defined for repository %s.  " % ( toolshed, name )
             error_message += "Repository dependencies are currently supported within a single tool shed, so your definition will be ignored."
             log.debug( error_message )
-    return new_rd_tups, error_message
+    return new_rd_tups
 def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir ):
     # Copy all sample files from disk to a temporary directory since the sample files may be in multiple directories.
     message = ''
@@ -2981,7 +3025,7 @@ def repository_dependencies_have_tool_dependencies( trans, repository_dependenci
         rd_tup = container_util.get_components_from_key( key )
         if rd_tup not in rd_tups_processed:
             toolshed, name, owner, changeset_revision = rd_tup
-            repository = get_repository_by_name_and_owner( trans, name, owner )
+            repository = get_repository_by_name_and_owner( trans.app, name, owner )
             repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
                                                                                               trans.security.encode_id( repository.id ),
                                                                                               changeset_revision )
@@ -2994,7 +3038,7 @@ def repository_dependencies_have_tool_dependencies( trans, repository_dependenci
         for rd_tup in rd_tups:
             if rd_tup not in rd_tups_processed:
                 toolshed, name, owner, changeset_revision = rd_tup
-                repository = get_repository_by_name_and_owner( trans, name, owner )
+                repository = get_repository_by_name_and_owner( trans.app, name, owner )
                 repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
                                                                                                   trans.security.encode_id( repository.id ),
                                                                                                   changeset_revision )
