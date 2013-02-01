@@ -42,6 +42,8 @@ from galaxy.visualization.genome.visual_analytics import TracksterConfig
 
 log = logging.getLogger( __name__ )
 
+WORKFLOW_PARAMETER_REGULAR_EXPRESSION =  re.compile( '''\$\{.+?\}''' )
+
 # These determine stdio-based error levels from matching on regular expressions
 # and exit codes. They are meant to be used comparatively, such as showing
 # that warning < fatal. This is really meant to just be an enum. 
@@ -2123,16 +2125,16 @@ class Tool( object ):
         return params_to_strings( self.inputs, params, app )
     def params_from_strings( self, params, app, ignore_errors=False ):
         return params_from_strings( self.inputs, params, app, ignore_errors )
-    def check_and_update_param_values( self, values, trans, update_values=True ):
+    def check_and_update_param_values( self, values, trans, update_values=True, allow_workflow_parameters=False ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
         from a database in case new parameters have been added. 
         """
         messages = {}
-        self.check_and_update_param_values_helper( self.inputs, values, trans, messages, update_values=update_values )
+        self.check_and_update_param_values_helper( self.inputs, values, trans, messages, update_values=update_values, allow_workflow_parameters=allow_workflow_parameters )
         return messages
-    def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="", update_values=True ):
+    def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="", update_values=True, allow_workflow_parameters=False ):
         """
         Recursive helper for `check_and_update_param_values_helper`
         """
@@ -2177,8 +2179,13 @@ class Tool( object ):
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
+                        check_param = True
+                        if allow_workflow_parameters and isinstance( values[ input.name ], basestring ):
+                            if WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search( values[ input.name ] ):
+                                check_param = False
                         #this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
-                        input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
+                        if check_param:
+                            input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
                     except:
                         messages[ input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, input.label )
                         if update_values:
