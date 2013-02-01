@@ -2507,7 +2507,6 @@ def handle_repository_elem( app, repository_elem, repository_dependencies_tups )
                 log.debug( error_message )
                 return new_rd_tups, error_message
             try:
-                log.debug( dict(name=name) )
                 repository = sa_session.query( app.model.Repository ) \
                                        .filter( and_( app.model.Repository.table.c.name == name,
                                                       app.model.Repository.table.c.user_id == user.id ) ) \
