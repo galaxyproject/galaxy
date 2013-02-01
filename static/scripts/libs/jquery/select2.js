@@ -2346,8 +2346,6 @@
         return (value === undefined) ? this : value;
     };
 
-    console.log( "TEST", $.fn.select2 );
-
     // plugin defaults, accessible to users
     $.fn.select2.defaults = {
         width: "copy",
