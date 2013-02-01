@@ -18,6 +18,14 @@ test_user_3_private_role = None
 test_user_3_email = 'test-3@bx.psu.edu'
 test_user_3_name = 'user3'
 
+complex_repository_dependency_template = '''<?xml version="1.0"?>
+<tool_dependency>
+    <package name="${package}" version="${version}">
+${dependency_lines}
+    </package>
+</tool_dependency>
+'''
+
 new_repository_dependencies_xml = '''<?xml version="1.0"?>
 <repositories${description}>
 ${dependency_lines}

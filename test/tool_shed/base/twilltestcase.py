@@ -203,6 +203,16 @@ class ShedTwillTestCase( TwillTestCase ):
             return '%s=%s&%s=%s' % ( field_name, field_value, field_name, field_value ) 
         else:
             return '%s=%s' % ( field_name, field_value )
+    def create_repository_complex_dependency( self, repository, xml_filename, depends_on={} ):
+        self.generate_repository_dependency_xml( depends_on[ 'repositories' ], 
+                                                         xml_filename, 
+                                                         complex=True, 
+                                                         package=depends_on[ 'package' ], 
+                                                         version=depends_on[ 'version' ] )
+        self.upload_file( repository, 
+                          'tool_dependencies.xml', 
+                          filepath=os.path.split( xml_filename )[0], 
+                          commit_message='Uploaded dependency on %s.' % ', '.join( repo.name for repo in depends_on[ 'repositories' ] ) )
     def create_repository_dependency( self, repository=None, depends_on=[], filepath=None ):
         dependency_description = '%s depends on %s.' % ( repository.name, ', '.join( repo.name for repo in depends_on ) )
         self.generate_repository_dependency_xml( depends_on, 
@@ -426,7 +436,25 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_galaxy_url( "/user/logout" )
         self.check_page_for_string( "You have been logged out" )
         self.home()
-    def generate_repository_dependency_xml( self, repositories, xml_filename, dependency_description='' ):
+    def generate_invalid_dependency_xml( self, xml_filename, url, name, owner, changeset_revision, complex=True, package=None, version=None, description=None ):
+        file_path = os.path.split( xml_filename )[0]
+        dependency_entries = []
+        template = string.Template( common.new_repository_dependencies_line )
+        dependency_entries.append( template.safe_substitute( toolshed_url=url,
+                                                             owner=owner,
+                                                             repository_name=name,
+                                                             changeset_revision=changeset_revision ) )
+        if not os.path.exists( file_path ):
+            os.makedirs( file_path )
+        if complex:
+            dependency_template = string.Template( common.complex_repository_dependency_template )
+            repository_dependency_xml = dependency_template.safe_substitute( package=package, version=version, dependency_lines='\n'.join( dependency_entries ) )
+        else:
+            template_parser = string.Template( common.new_repository_dependencies_xml )
+            repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
+        # Save the generated xml to the specified location.
+        file( xml_filename, 'w' ).write( repository_dependency_xml )
+    def generate_repository_dependency_xml( self, repositories, xml_filename, dependency_description='', complex=False, package=None, version=None ):
         file_path = os.path.split( xml_filename )[0]
         if not os.path.exists( file_path ):
             os.makedirs( file_path )
@@ -442,8 +470,12 @@ class ShedTwillTestCase( TwillTestCase ):
             description = ' description="%s"' % dependency_description
         else:
             description = dependency_description
-        template_parser = string.Template( common.new_repository_dependencies_xml )
-        repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
+        if complex:
+            dependency_template = string.Template( common.complex_repository_dependency_template )
+            repository_dependency_xml = dependency_template.safe_substitute( package=package, version=version, dependency_lines='\n'.join( dependency_entries ) )
+        else:
+            template_parser = string.Template( common.new_repository_dependencies_xml )
+            repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
         file( xml_filename, 'w' ).write( repository_dependency_xml )
     def generate_temp_path( self, test_script_path, additional_paths=[] ):
@@ -654,6 +686,11 @@ class ShedTwillTestCase( TwillTestCase ):
             kwd[ 'new_tool_panel_section' ] =  new_tool_panel_section
         if includes_tools:
             self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
+            self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
+        else:
+            self.check_for_strings(strings_displayed=[ 'Choose the configuration file whose tool_path setting will be used for installing repositories' ] )
+            args = dict( shed_tool_conf=self.shed_tool_conf )
+            self.submit_form( 1, 'select_shed_tool_panel_config_button', **args )
             self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
         self.wait_for_repository_installation( repository_ids )
