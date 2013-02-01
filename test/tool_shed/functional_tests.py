@@ -391,14 +391,14 @@ def main():
             galaxyapp.shutdown()
             galaxyapp = None
             log.info( "Embedded galaxy application stopped" )
-#    if 'TOOL_SHED_TEST_NO_CLEANUP' not in os.environ:
-#        try:
-#            for dir in [ tool_shed_test_tmp_dir ]:
-#                if os.path.exists( dir ):
-#                    log.info( "Cleaning up temporary files in %s" % dir )
-#                    shutil.rmtree( dir )
-#        except:
-#            pass
+    if 'TOOL_SHED_TEST_NO_CLEANUP' not in os.environ:
+        try:
+            for dir in [ tool_shed_test_tmp_dir ]:
+                if os.path.exists( dir ):
+                    log.info( "Cleaning up temporary files in %s" % dir )
+                    shutil.rmtree( dir )
+        except:
+            pass
     if success:
         return 0
     else:
