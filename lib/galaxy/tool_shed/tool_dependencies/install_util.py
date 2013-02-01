@@ -227,8 +227,8 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                                                      tool_dependency_type='package',
                                                                      tool_dependency_name=package_name,
                                                                      tool_dependency_version=package_version )
-                                assert os.path.exists( required_repository_package_install_dir ), \
-                                    'Missing required tool dependency directory %s' % str( required_repository_package_install_dir )
+                                if not os.path.exists( required_repository_package_install_dir ):
+                                    print 'Missing required tool dependency directory %s' % str( required_repository_package_install_dir )
                                 repo_files_dir = required_repository.repo_files_directory( app )
                                 tool_dependencies_config = get_absolute_path_to_file_in_repository( repo_files_dir, 'tool_dependencies.xml' )
                                 if tool_dependencies_config:
