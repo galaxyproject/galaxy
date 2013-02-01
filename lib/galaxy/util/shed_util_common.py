@@ -1352,27 +1352,23 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                                 err_msg += "because the changeset revision is invalid.  " 
                                 log.debug( err_msg )
                                 error_message += err_msg
-                                continue
                         else:
                             err_msg = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
                                 ( rd_tool_shed, rd_name, rd_owner, rd_changeset_revision )
                             err_msg += "because the owner is invalid.  " 
                             log.debug( err_msg )
                             error_message += err_msg
-                            continue
                     else:
                         err_msg = "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, changeset revision %s "% \
                             ( rd_tool_shed, rd_name, rd_owner, rd_changeset_revision )
                         err_msg += "because the name is invalid.  " 
                         log.debug( err_msg )
                         error_message += err_msg
-                        continue
                 else:
                     err_msg = "Repository dependencies are currently supported only within the same tool shed.  Ignoring repository dependency definition "
                     err_msg += "for tool shed %s, name %s, owner %s, changeset revision %s.  " % ( rd_tool_shed, rd_name, rd_owner, rd_changeset_revision )
                     log.debug( err_msg )
                     error_message += err_msg
-                    continue
             else:
                 repository_owner = repository.owner
             rd_key = container_util.generate_repository_dependencies_key_for_repository( toolshed_base_url=rd_tool_shed,
