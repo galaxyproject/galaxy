@@ -2489,7 +2489,7 @@ def handle_repository_elem( app, repository_elem, repository_dependencies_tups )
                                                   app.model.ToolShedRepository.table.c.owner == owner ) ) \
                                    .first()
         except:
-            error_message = "Invalid name %s or owner %s defined for repository.  Repository dependencies will be ignored." % ( name, owner )
+            error_message = "Invalid name <b>%s</b> or owner <b>%s</b> defined for repository.  Repository dependencies will be ignored." % ( name, owner )
             log.debug( error_message )
             return new_rd_tups, error_message
         repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
@@ -2503,16 +2503,29 @@ def handle_repository_elem( app, repository_elem, repository_dependencies_tups )
                                  .filter( app.model.User.table.c.username == owner ) \
                                  .one()
             except Exception, e:
-                error_message = "Invalid owner %s defined for repository %s.  Repository dependencies will be ignored." % ( str( owner ), str( name ) )
+                error_message = "Invalid owner <b>%s</b> defined for repository <b>%s</b>.  Repository dependencies will be ignored." % ( str( owner ), str( name ) )
                 log.debug( error_message )
                 return new_rd_tups, error_message
             try:
+                log.debug( dict(name=name) )
                 repository = sa_session.query( app.model.Repository ) \
                                        .filter( and_( app.model.Repository.table.c.name == name,
                                                       app.model.Repository.table.c.user_id == user.id ) ) \
-                                       .first()
+                                       .one()
             except:
-                error_message = "Invalid repository name %s defined.  Repository dependencies will be ignored." % str( name )
+                error_message = "Invalid repository name <b>%s</b> defined.  Repository dependencies will be ignored." % str( name )
+                log.debug( error_message )
+                return new_rd_tups, error_message
+            # Find the specified changeset revision in the repository's changelog to see if it's valid.
+            found = False
+            repo = hg.repository( get_configured_ui(), repository.repo_path( app ) )
+            for changeset in repo.changelog:
+                changeset_hash = str( repo.changectx( changeset ) )
+                if changeset_hash == changeset_revision:
+                    found = True
+                    break
+            if not found:
+                error_message = "Invalid changeset revision <b>%s</b> defined.  Repository dependencies will be ignored." % str( changeset_revision )
                 log.debug( error_message )
                 return new_rd_tups, error_message
             repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
@@ -2520,7 +2533,7 @@ def handle_repository_elem( app, repository_elem, repository_dependencies_tups )
                 new_rd_tups.append( repository_dependencies_tup )
         else:
             # Repository dependencies are currentlhy supported within a single tool shed.
-            error_message = "Invalid tool shed %s defined for repository %s.  " % ( toolshed, name )
+            error_message = "Invalid tool shed <b>%s</b> defined for repository <b>%s</b>.  " % ( toolshed, name )
             error_message += "Repository dependencies are currently supported within a single tool shed."
             log.debug( error_message )
     return new_rd_tups, error_message
