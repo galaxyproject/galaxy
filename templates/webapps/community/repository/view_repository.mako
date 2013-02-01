@@ -139,6 +139,10 @@
 <div class="toolForm">
     <div class="toolFormTitle">Repository '${repository.name}'</div>
     <div class="toolFormBody">
+        <div class="form-row">
+            <label>Sharable link to this repository:</label>
+            ${render_sharable_str( repository )}
+        </div>
         %if can_download:
             <div class="form-row">
                 <label>Clone this repository:</label>

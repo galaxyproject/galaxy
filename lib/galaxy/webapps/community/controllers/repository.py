@@ -893,6 +893,47 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         url += '&latest_ctx_rev=%s' % str( update_to_ctx.rev() )
         return trans.response.send_redirect( url )
     @web.expose
+    def citable_owner( self, trans, owner ):
+        """Support for citeable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
+        try:
+            user = suc.get_user_by_username( trans, owner )
+        except:
+            user = None
+        if user:
+            user_id = trans.security.encode_id( user.id )
+            return trans.fill_template( "/webapps/community/citable_repository.mako",
+                                        user_id=user_id )
+        else:
+            message = "No repositories exist with owner <b>%s</b>." % str( owner )
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_categories',
+                                                              id=None,
+                                                              name=None,
+                                                              owner=None,
+                                                              message=message,
+                                                              status='error' ) )
+    @web.expose
+    def citable_repository( self, trans, owner, name ):
+        """Support for citeable URL for each repository, e.g. http://example.org/view/owner/name."""
+        try:
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        except:
+            repository = None
+        if repository:
+            repository_id = trans.security.encode_id( repository.id )
+            return trans.fill_template( "/webapps/community/citable_repository.mako",
+                                        repository_id=repository_id )
+        else:
+            #TODO - If the owner is OK, show their repositories?
+            message = "No repositories named <b>%s</b> with owner <b>%s</b> exist." % ( str( name ), str( owner ) )
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_categories',
+                                                              id=None,
+                                                              name=None,
+                                                              owner=None,
+                                                              message=message,
+                                                              status='error' ) )
+    @web.expose
     def contact_owner( self, trans, id, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -2550,6 +2591,17 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     is_malicious=is_malicious,
                                     message=message,
                                     status=status )
+    @web.expose
+    def view_citable_repositories_by_owner( self, trans, user_id, **kwd ):
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='browse_repositories',
+                                                          operation="repositories_by_user",
+                                                          user_id=user_id ) )
+    @web.expose
+    def view_citable_repository( self, trans, repository_id, **kwd ):
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='view_repository',
+                                                          id=repository_id ) )
     @web.expose
     def view_or_manage_repository( self, trans, **kwd ):
         repository = suc.get_repository_in_tool_shed( trans, kwd[ 'id' ] )

@@ -158,3 +158,19 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         '''Verify that resetting the metadata does not change it.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.verify_unchanged_repository_metadata( repository )
+    def test_0090_verify_reserved_repository_name_handling( self ):
+        '''Check that reserved repository names are handled correctly.'''
+        category = test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
+        self.get_or_create_repository( name='repos', 
+                                       description=repository_description, 
+                                       long_description=repository_long_description, 
+                                       owner=common.test_user_1_name,
+                                       category_id=self.security.encode_id( category.id ), 
+                                       strings_displayed=[ 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a repository name.' ] )
+    def test_0100_verify_reserved_username_handling( self ):
+        '''Check that reserved usernames are handled correctly.'''
+        self.logout()
+        self.login( email='baduser@bx.psu.edu', username='repos' )
+        test_user_1 = test_db_util.get_user( 'baduser@bx.psu.edu' )
+        assert test_user_1 is None, 'Creating user with public name "repos" succeeded.'
+        self.check_for_strings( strings_displayed=[ 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a public user name.' ] )

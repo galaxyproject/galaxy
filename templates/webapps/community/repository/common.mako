@@ -163,6 +163,14 @@
     </script>
 </%def>
 
+<%def name="render_sharable_str( repository )">
+    <%
+        from galaxy.util.shed_util_common import generate_citable_link_for_repository_in_tool_shed
+        citable_str = generate_citable_link_for_repository_in_tool_shed( trans, repository )
+    %>
+    ${citable_str}
+</%def>
+
 <%def name="render_clone_str( repository )">
     <%
         from galaxy.util.shed_util_common import generate_clone_url_for_repository_in_tool_shed
