@@ -146,6 +146,10 @@
     <div class="toolFormTitle">Repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         <form name="edit_repository" id="edit_repository" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
+            <div class="form-row">
+                <label>Sharable link to this repository:</label>
+                ${render_sharable_str( repository )}
+            </div>
             %if can_download:
                 <div class="form-row">
                     <label>Clone this repository:</label>

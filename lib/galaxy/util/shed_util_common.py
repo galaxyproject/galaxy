@@ -935,6 +935,11 @@ def ensure_required_repositories_exist_for_reinstall( trans, repository_dependen
         for repository_components_list in val:
             tool_shed, name, owner, changeset_revision = repository_components_list
             repository = get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset_revision )
+def generate_citable_link_for_repository_in_tool_shed( trans, repository ):
+    """Generate the URL for citing a repository that is in the tool shed."""
+    base_url = url_for( '/', qualified=True ).rstrip( '/' )
+    protocol, base = base_url.split( '://' )
+    return '%s://%s/view/%s/%s' % ( protocol, base, repository.user.username, repository.name )
 def generate_clone_url_for_installed_repository( app, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
     tool_shed_url = get_url_from_repository_tool_shed( app, repository )
@@ -1839,6 +1844,13 @@ def get_repo_info_tuple_contents( repo_info_tuple ):
     elif len( repo_info_tuple ) == 7:
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
     return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
+def get_repository_by_id( app, id ):
+    """Get a repository from the database via id."""
+    sa_session = app.model.context.current
+    if app.name == 'galaxy':
+        return sa_session.query( app.model.ToolShedRepository ).get( id )
+    else:
+        return sa_session.query( app.model.Repository ).get( id )
 def get_repository_by_name( app, name ):
     """Get a repository from the database via name."""
     sa_session = app.model.context.current
