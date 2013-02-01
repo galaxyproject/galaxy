@@ -25,26 +25,10 @@ class NameColumn( grids.TextColumn ):
 
 class HistoryListGrid( grids.Grid ):
     # Custom column types
-    class DatasetsByStateColumn( grids.GridColumn ):
+    class DatasetsByStateColumn( grids.GridColumn, UsesHistoryMixin ):
         def get_value( self, trans, grid, history ):
-            # Build query to get (state, count) pairs.
-            cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ] 
-            from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
-            where_clause = and_( trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id,
-                                 trans.app.model.HistoryDatasetAssociation.table.c.deleted == False,
-                                 trans.app.model.HistoryDatasetAssociation.table.c.visible == True,
-                                  )
-            group_by = trans.app.model.Dataset.table.c.state
-            query = select( columns=cols_to_select,
-                            from_obj=from_obj,
-                            whereclause=where_clause,
-                            group_by=group_by )
-                            
-            # Process results.
-            state_count_dict = {}
-            for row in trans.sa_session.execute( query ):
-                state, count = row
-                state_count_dict[ state ] = count
+            state_count_dict = self.get_hda_state_counts( trans, history )
+
             rval = []
             for state in ( 'ok', 'running', 'queued', 'error' ):
                 count = state_count_dict.get( state, 0 )
@@ -53,12 +37,16 @@ class HistoryListGrid( grids.Grid ):
                 else:
                     rval.append( '' )
             return rval
+
+
     class HistoryListNameColumn( NameColumn ):
         def get_link( self, trans, grid, history ):
             link = None
             if not history.deleted:
                 link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels )
             return link
+
+
     class DeletedColumn( grids.DeletedColumn ):
         def get_value( self, trans, grid, history ):
             if history == trans.history:
@@ -74,6 +62,7 @@ class HistoryListGrid( grids.Grid ):
             else:
                 query = query.order_by( self.model_class.table.c.purged.desc(), self.model_class.table.c.update_time.desc() )
             return query
+
 
     # Grid definition
     title = "Saved Histories"

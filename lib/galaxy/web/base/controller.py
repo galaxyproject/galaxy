@@ -691,6 +691,8 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """Get a History from the database by id, verifying ownership."""
         history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
         return self.security_check( trans, history, check_ownership, check_accessible )
+
+
     def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
         """ Returns history's datasets. """
         query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
@@ -704,6 +706,42 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         if not show_purged:
             query = query.filter( trans.model.Dataset.purged == False )
         return query.all()
+
+    def get_hda_state_counts( self, trans, history, include_deleted=False, include_hidden=False ):
+        """
+        Returns a dictionary with state counts for history's HDAs. Key is a 
+        dataset state, value is the number of states in that count.
+        """
+
+        # Build query to get (state, count) pairs.
+        cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ] 
+        from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
+        
+        conditions = [ trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id ]
+        if not include_deleted:
+            # Only count datasets that have not been deleted.
+            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.deleted == False )
+        if not include_hidden:
+            # Only count datasets that are visible.
+            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.visible == True )
+        
+        group_by = trans.app.model.Dataset.table.c.state
+        query = select( columns=cols_to_select,
+                        from_obj=from_obj,
+                        whereclause=and_( *conditions ),
+                        group_by=group_by )
+
+        # Initialize count dict with all states.
+        state_count_dict = {}
+        for k, state in trans.app.model.Dataset.states.items():
+            state_count_dict[ state ] = 0
+                        
+        # Process query results, adding to count dict.
+        for row in trans.sa_session.execute( query ):
+            state, count = row
+            state_count_dict[ state ] = count
+
+        return state_count_dict
 
 class UsesFormDefinitionsMixin:
     """Mixin for controllers that use Galaxy form objects."""
