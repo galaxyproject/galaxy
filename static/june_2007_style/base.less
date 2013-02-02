@@ -4,6 +4,8 @@
 
 @import "fontawesome/font-awesome.less";
 
+@import "select2.less";
+
 // Mixins
 
 .unselectable {
@@ -311,9 +313,10 @@ div.unified-panel-body {
 }
 
 #overlay {
-    position: fixed;
+    position: absolute;
     top: 0; left: 0; width: 100%; height: 100%;
     z-index: 20000;
+    overflow-y: auto;
 }
 
 #overlay.is_modal #overlay-background, .overlay-background {
@@ -1084,6 +1087,7 @@ div.debug {
     vertical-align: bottom;
     display: inline-block;
     padding: 0;
+    white-space: nowrap;
     // border: 1px solid #aaa;
 }
 .gray-background {
@@ -1478,37 +1482,6 @@ div.permissionContainer {
     background-repeat:no-repeat;
     background-position: 0px 0px;
     padding: 0;
-}
-
-.tipsy {
-    padding: 5px;
-    font-size: 10px;
-    filter: alpha(opacity=80);
-    background-repeat: no-repeat;
-    background-image: url(../images/tipsy.gif);
-}
-.tipsy-inner {
-    padding: 5px 8px 4px 8px;
-    background-color: black;
-    color: white;
-    max-width: 200px;
-    text-align: center;
-}
-
-.tipsy-north {
-    background-position: top center;
-}
-
-.tipsy-south {
-    background-position: bottom center;
-}
-
-.tipsy-east {
-    background-position: right center;
-}
-
-.tipsy-west {
-    background-position: left center;
 }
 
 .editable-text {

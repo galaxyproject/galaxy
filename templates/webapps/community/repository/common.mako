@@ -163,6 +163,14 @@
     </script>
 </%def>
 
+<%def name="render_sharable_str( repository )">
+    <%
+        from galaxy.util.shed_util_common import generate_citable_link_for_repository_in_tool_shed
+        citable_str = generate_citable_link_for_repository_in_tool_shed( trans, repository )
+    %>
+    ${citable_str}
+</%def>
+
 <%def name="render_clone_str( repository )">
     <%
         from galaxy.util.shed_util_common import generate_clone_url_for_repository_in_tool_shed
@@ -207,13 +215,13 @@
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
                     else:
-                        folder_label = "%s<i> - this repository's tools require handling of these missing dependencies</i>" % folder_label
+                        folder_label = "%s<i> - repository tools require handling of these missing dependencies</i>" % folder_label
                     col_span_str = 'colspan="5"'
-                elif folder.label in [ 'Repository dependencies', 'Missing repository dependencies' ]:
+                elif folder.label in [ 'Installed repository dependencies', 'Repository dependencies', 'Missing repository dependencies' ]:
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
-                    else:
-                        folder_label = "%s<i> - this repository requires installation of these additional repositories</i>" % folder_label
+                    elif folder.label not in [ 'Installed repository dependencies' ]:
+                        folder_label = "%s<i> - installation of these additional repositories is required</i>" % folder_label
                     if trans.webapp.name == 'galaxy':
                         col_span_str = 'colspan="4"'
                 elif folder.label == 'Valid tools':
@@ -228,7 +236,7 @@
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
                     else:
-                        folder_label = "%s<i> - this repository's tools require handling of these dependencies</i>" % folder_label
+                        folder_label = "%s<i> - repository tools require handling of these dependencies</i>" % folder_label
                     col_span_str = 'colspan="4"'
                 elif folder.workflows:
                     if folder.description:
@@ -245,7 +253,7 @@
                         </a>
                     </div>
                 </span>
-            <td>
+            </td>
         </tr>
         <%
             my_row = row_counter.count
@@ -467,6 +475,7 @@
 <%def name="render_tool_dependency( tool_dependency, pad, parent, row_counter, row_is_header )">
     <%
         encoded_id = trans.security.encode_id( tool_dependency.id )
+        is_missing = tool_dependency.installation_status not in [ 'Installed' ]
         if row_is_header:
             cell_type = 'th'
         else:
@@ -506,11 +515,12 @@
             ${version_str | h}
         </${cell_type}>
         <${cell_type}>${tool_dependency.type | h}</${cell_type}>
-        %if tool_dependency.install_dir:
-            <${cell_type}>${tool_dependency.install_dir | h}</${cell_type}>
-        %endif
-        %if tool_dependency.installation_status not in [ 'Installed', None ]:
-            <${cell_type}>${tool_dependency.installation_status | h}</${cell_type}>
+        %if trans.webapp.name == 'galaxy':
+            %if is_missing:
+                <${cell_type}>${tool_dependency.installation_status | h}</${cell_type}>
+            %elif tool_dependency.install_dir:
+                <${cell_type}>${tool_dependency.install_dir | h}</${cell_type}>
+            %endif
         %endif
     </tr>
     <%

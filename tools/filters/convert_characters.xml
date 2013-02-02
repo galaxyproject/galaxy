@@ -13,7 +13,7 @@
       <option value="P">Pipes</option>
       <option value="Co">Colons</option>
     </param>
-    <param format="txt" name="input" type="data" label="in Query"/>
+    <param format="txt" name="input" type="data" label="in Dataset"/>
   </inputs>
   <outputs>
     <data format="tabular" name="out_file1" />

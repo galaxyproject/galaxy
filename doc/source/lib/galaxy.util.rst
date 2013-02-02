@@ -159,4 +159,5 @@ Subpackages
 .. toctree::
 
     galaxy.util.backports
+    galaxy.util.log
 

@@ -144,15 +144,15 @@
             </when>
         </conditional>
         <conditional name="refGenomeSource">
-          <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
-            <option value="indexed">Use a built-in index</option>
-            <option value="history">Use one from the history</option>
+          <param name="genomeSource" type="select" label="Use a built in reference genome or own from your history" help="Built-in genomes were created using default options">
+            <option value="indexed" selected="True">Use a built-in genome</option>
+            <option value="history">Use a genome from history</option>
           </param>
           <when value="indexed">
             <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
               <options from_data_table="tophat2_indexes">
                 <filter type="sort_by" column="2"/>
-                <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+                <validator type="no_options" message="No genomes are available for the selected input dataset"/>
               </options>
             </param>
           </when>
@@ -323,7 +323,7 @@
               <conditional name="refGenomeSource.genomeSource">
                 <when value="indexed">
                   <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
+                    <option type="from_data_table" name="tophat2_indexes" column="1" offset="0">
                       <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
                       <filter type="param_value" ref="refGenomeSource.index" column="0"/>
                     </option>
@@ -342,7 +342,7 @@
               <conditional name="refGenomeSource.genomeSource">
                 <when value="indexed">
                   <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
+                    <option type="from_data_table" name="tophat2_indexes" column="1" offset="0">
                       <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
                       <filter type="param_value" ref="refGenomeSource.index" column="0"/>
                     </option>
@@ -361,7 +361,7 @@
               <conditional name="refGenomeSource.genomeSource">
                 <when value="indexed">
                   <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
+                    <option type="from_data_table" name="tophat2_indexes" column="1" offset="0">
                       <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
                       <filter type="param_value" ref="refGenomeSource.index" column="0"/>
                     </option>
@@ -380,7 +380,7 @@
               <conditional name="refGenomeSource.genomeSource">
                 <when value="indexed">
                   <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
+                    <option type="from_data_table" name="tophat2_indexes" column="1" offset="0">
                       <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
                       <filter type="param_value" ref="refGenomeSource.index" column="0"/>
                     </option>
@@ -462,7 +462,6 @@
             <param name="use_annotations" value="No" />
             <param name="use_juncs" value="No" />
             <param name="no_novel_juncs" value="No" />
-            <param name="report_discordant_pairs" value="No" />
             <param name="use_search" value="Yes" />
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />

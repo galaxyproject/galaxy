@@ -134,7 +134,7 @@ def __main__():
         index_path = options.index_path
 
     # Build tophat command.
-    cmd = 'tophat2 %s %s %s'
+    cmd = 'tophat2 --keep-fasta-order %s %s %s'
     reads = options.input1
     if options.input2:
         reads += ' ' + options.input2

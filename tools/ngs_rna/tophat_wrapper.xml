@@ -152,15 +152,15 @@
     <inputs>
         <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
         <conditional name="refGenomeSource">
-          <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
-            <option value="indexed">Use a built-in index</option>
-            <option value="history">Use one from the history</option>
+          <param name="genomeSource" type="select" label="Use a built in reference genome or own from your history" help="Built-ins genomes were created using default options">
+            <option value="indexed" selected="True">Use a built-in genome</option>
+            <option value="history">Use a genome from history</option>
           </param>
           <when value="indexed">
             <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
               <options from_data_table="tophat_indexes">
                 <filter type="sort_by" column="2"/>
-                <validator type="no_options" message="No indexes are available for the selected input dataset"/>
+                <validator type="no_options" message="No genomes are available for the selected input dataset"/>
               </options>
             </param>
           </when>

@@ -1,7 +1,7 @@
 import os, logging
-from galaxy.web.base.controller import *
-from galaxy.util.shed_util_common import get_repository_by_name_and_owner
-from galaxy.webapps.community.controllers.common import set_repository_metadata
+from galaxy import web
+from galaxy.web.base.controller import BaseUIController
+from galaxy.util.shed_util_common import get_repository_by_name_and_owner, set_repository_metadata
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -32,7 +32,7 @@ class HgController( BaseUIController ):
             path_info = kwd.get( 'path_info', None )
             if path_info:
                 owner, name = path_info.split( '/' )
-                repository = get_repository_by_name_and_owner( trans, name, owner )
+                repository = get_repository_by_name_and_owner( trans.app, name, owner )
                 if repository:
                     if hg_version >= '2.2.3':
                         # Set metadata using the repository files on disk.

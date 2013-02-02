@@ -346,7 +346,7 @@ class Task( object ):
         Return an id tag suitable for identifying the task.
         This combines the task's job id and the task's own id.
         """
-        return "%s:%s" % ( self.job.get_id(), self.get_id() )
+        return "%s_%s" % ( self.job.get_id(), self.get_id() )
     def get_command_line( self ):
         return self.command_line
     def get_parameters( self ):
@@ -895,6 +895,7 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
+        self.uuid = None
 
     def get_file_name( self ):
         if not self.external_filename:
@@ -1335,7 +1336,9 @@ class DatasetInstance( object ):
                 # Loop through sources until viable one is found.
                 for source in source_list:
                     msg = self.convert_dataset( trans, source )
-                    if msg == self.conversion_messages.PENDING:
+                    # No message or PENDING means that source is viable. No
+                    # message indicates conversion was done and is successful.
+                    if not msg or msg == self.conversion_messages.PENDING:
                         data_source = source
                         break
 
@@ -1526,8 +1529,9 @@ class HistoryDatasetAssociation( DatasetInstance ):
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
                 val = val.file_name
-            elif isinstance( val, list ):
-                val = ', '.join( [str(v) for v in val] )
+            # If no value for metadata, look in datatype for metadata.
+            elif val == None and hasattr( hda.datatype, name ):
+                val = getattr( hda.datatype, name )
             rval['metadata_' + name] = val
         return rval
 
@@ -3149,6 +3153,11 @@ class ToolShedRepository( object ):
     def can_reinstall_or_activate( self ):
         return self.deleted
     @property
+    def has_readme_files( self ):
+        if self.metadata:
+            return 'readme_files' in self.metadata
+        return False
+    @property
     def has_repository_dependencies( self ):
         if self.metadata:
             return 'repository_dependencies' in self.metadata
@@ -3171,11 +3180,6 @@ class ToolShedRepository( object ):
     @property
     def in_error_state( self ):
         return self.status == self.installation_status.ERROR
-    @property
-    def has_readme_files( self ):
-        if self.metadata:
-            return 'readme_files' in self.metadata
-        return False
     @property
     def repository_dependencies( self ):
         required_repositories = []

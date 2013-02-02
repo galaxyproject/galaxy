@@ -1,9 +1,10 @@
 <tool id="bowtie2" name="Bowtie2" version="0.1">
     <!-- Wrapper compatible with Bowtie version 2.0.0 -->
-    <description>is a short-read mapper</description>
+    <description>is a short-read aligner</description>
     <version_command>bowtie2 --version</version_command>
     <requirements>
         <requirement type="package">bowtie2</requirement>
+        <requirement type="package">samtools</requirement>
     </requirements>
     <command interpreter="python">
         bowtie2_wrapper.py
@@ -14,6 +15,17 @@
         ## Outputs.
         --output=$output
 
+        #if str( $singlePaired.sPaired ) == "single"
+            #if $output_unaligned_reads_l
+                --output_unaligned_reads=$output_unaligned_reads_l
+            #end if
+        #else
+            #if $output_unaligned_reads_l and $output_unaligned_reads_r
+                --output_unaligned_reads_l=$output_unaligned_reads_l
+                --output_unaligned_reads_r=$output_unaligned_reads_r
+            #end if
+        #end if
+        
         ## Handle reference file.
         #if $refGenomeSource.genomeSource == "history":
             --own-file=$refGenomeSource.ownFile
@@ -70,6 +82,7 @@
                 <param name="maxInsert" type="integer" value="250" label="Maximum insert size for valid paired-end alignments" />
             </when>
         </conditional>
+        <param name="unalignedFile" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Write all reads that could not be aligned to a file (uses --un for single-end and  --un-conc for paired-ends)" />
         <conditional name="refGenomeSource">
           <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
             <option value="indexed">Use a built-in index</option>
@@ -132,7 +145,23 @@
     </inputs>
 
     <outputs>
-        <data format="bam" name="output" label="${tool.name} on ${on_string}: mapped reads">
+        <data format="fastqsanger" name="output_unaligned_reads_l" label="${tool.name} on ${on_string}: unaligned reads (L)" >
+            <filter>unalignedFile is True</filter>
+            <actions>
+                <action type="format">
+                    <option type="from_param" name="singlePaired.input1" param_attribute="ext" />
+                </action>
+            </actions>
+        </data>
+        <data format="fastqsanger" name="output_unaligned_reads_r" label="${tool.name} on ${on_string}: unaligned reads (R)">
+            <filter>singlePaired['sPaired'] == "paired" and unalignedFile is True</filter>
+            <actions>
+                <action type="format">
+                    <option type="from_param" name="singlePaired.input1" param_attribute="ext" />
+                </action>
+            </actions>
+        </data>
+        <data format="bam" name="output" label="${tool.name} on ${on_string}: aligned reads">
           <actions>
             <conditional name="refGenomeSource.genomeSource">
               <when value="indexed">

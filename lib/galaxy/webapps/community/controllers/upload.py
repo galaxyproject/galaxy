@@ -1,7 +1,7 @@
 import sys, os, shutil, logging, tarfile, tempfile, urllib
-from galaxy.web.base.controller import *
+from galaxy.web.base.controller import BaseUIController
+from galaxy import web, util
 from galaxy.datatypes import checkers
-import common
 import galaxy.util.shed_util_common as suc
 
 from galaxy import eggs
@@ -23,7 +23,7 @@ class UploadController( BaseUIController ):
         status = params.get( 'status', 'done' )
         commit_message = util.restore_text( params.get( 'commit_message', 'Uploaded'  ) )
         category_ids = util.listify( params.get( 'category_id', '' ) )
-        categories = common.get_categories( trans )
+        categories = suc.get_categories( trans )
         repository_id = params.get( 'repository_id', '' )
         repository = suc.get_repository_in_tool_shed( trans, repository_id )
         repo_dir = repository.repo_path( trans.app )
@@ -37,7 +37,7 @@ class UploadController( BaseUIController ):
         url = params.get( 'url', '' )
         # Part of the upload process is sending email notification to those that have registered to
         # receive them.  One scenario occurs when the first change set is produced for the repository.
-        # See the common.handle_email_alerts() method for the definition of the scenarios.
+        # See the suc.handle_email_alerts() method for the definition of the scenarios.
         new_repo_alert = repository.is_new( trans.app )
         uploaded_directory = None
         if params.get( 'upload_button', False ):
@@ -104,22 +104,11 @@ class UploadController( BaseUIController ):
                     # Uploaded directory
                     istar = False
                 if istar:
-                    ok, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = self.upload_tar( trans,
-                                                                                                                                            repository,
-                                                                                                                                            tar,
-                                                                                                                                            uploaded_file,
-                                                                                                                                            upload_point,
-                                                                                                                                            remove_repo_files_not_in_tar,
-                                                                                                                                            commit_message,
-                                                                                                                                            new_repo_alert )
+                    ok, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
+                        self.upload_tar( trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert )
                 elif uploaded_directory:
-                    ok,message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = self.upload_directory( trans,
-                                                                                                                                            repository,
-                                                                                                                                            uploaded_directory,
-                                                                                                                                            upload_point,
-                                                                                                                                            remove_repo_files_not_in_tar,
-                                                                                                                                            commit_message,
-                                                                                                                                            new_repo_alert )
+                    ok,message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
+                        self.upload_directory( trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert )
                 else:
                     if ( isgzip or isbz2 ) and uncompress_file:
                         uploaded_file_filename = self.uncompress( repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 )
@@ -131,7 +120,7 @@ class UploadController( BaseUIController ):
                     shutil.move( uploaded_file_name, full_path )
                     # See if any admin users have chosen to receive email alerts when a repository is
                     # updated.  If so, check every uploaded file to ensure content is appropriate.
-                    check_contents = common.check_file_contents( trans )
+                    check_contents = suc.check_file_contents( trans )
                     if check_contents and os.path.isfile( full_path ):
                         content_alert_str = self.__check_file_content( full_path )
                     else:
@@ -148,7 +137,7 @@ class UploadController( BaseUIController ):
                             message = '%s<br/>%s' % ( message, error_message )
                     # See if the content of the change set was valid.
                     admin_only = len( repository.downloadable_revisions ) != 1
-                    common.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
+                    suc.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
                 if ok:
                     # Update the repository files for browsing.
                     suc.update_repository( repo )
@@ -177,17 +166,19 @@ class UploadController( BaseUIController ):
                             else:
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
                         kwd[ 'message' ] = message
-                        common.set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
-                    # Provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to e.g. a requirement tag mismatch
+                        suc.set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
+                    # Provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to a requirement tag mismatch
+                    # or some other problem.
                     if suc.get_config_from_disk( 'tool_dependencies.xml', repo_dir ):
                         if repository.metadata_revisions:
+                            # A repository's metadata revisions are order descending by update_time, so the zeroth revision will be the tip just after an upload.
                             metadata_dict = repository.metadata_revisions[0].metadata
                         else:
                             metadata_dict = {}
-                        if 'tool_dependencies' not in metadata_dict:
-                            message += 'Name, version and type from a tool requirement tag does not match the information in the "tool_dependencies.xml file".  '
+                        if suc.has_orphan_tool_dependencies_in_tool_shed( metadata_dict ):
+                            message += 'Name, version and type from a tool requirement tag does not match the information in the "tool_dependencies.xml file", '
+                            message += 'so one or more of the defined tool dependencies are considered orphans within this repository.'
                             status = 'warning'
-                            log.debug( 'Error in tool dependencies for repository %s: %s.' % ( repository.id, repository.name ) )
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                     suc.reset_tool_data_tables( trans.app )
                     trans.response.send_redirect( web.url_for( controller='repository',
@@ -327,7 +318,7 @@ class UploadController( BaseUIController ):
                             pass
         # See if any admin users have chosen to receive email alerts when a repository is
         # updated.  If so, check every uploaded file to ensure content is appropriate.
-        check_contents = common.check_file_contents( trans )
+        check_contents = suc.check_file_contents( trans )
         for filename_in_archive in filenames_in_archive:
             # Check file content to ensure it is appropriate.
             if check_contents and os.path.isfile( filename_in_archive ):
@@ -341,7 +332,7 @@ class UploadController( BaseUIController ):
                     return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
         commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
         admin_only = len( repository.downloadable_revisions ) != 1
-        common.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
+        suc.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
         return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
     def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
         if isgzip:

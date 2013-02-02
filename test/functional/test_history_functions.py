@@ -215,7 +215,7 @@ class TestHistory( TwillTestCase ):
         # Logged in as admin_user
         self.delete_current_history( strings_displayed=[ "History (%s) has been shared with others, unshare it before deleting it." % history3.name ] )
     def test_030_clone_shared_history( self ):
-        """Testing cloning a shared history"""
+        """Testing copying a shared history"""
         # logged in as admin user
         self.logout()
         self.login( email=regular_user1.email )
@@ -223,9 +223,9 @@ class TestHistory( TwillTestCase ):
         self.history_options( user=True, histories_shared_by_others=True )
         # Shared history3 should be in regular_user1's list of shared histories
         self.view_shared_histories( strings_displayed=[ history3.name, admin_user.email ] )
-        self.clone_history( self.security.encode_id( history3.id ),
+        self.copy_history( self.security.encode_id( history3.id ),
                             'activatable',
-                            strings_displayed_after_submit=[ 'is now included in your previously stored histories.' ] )
+                            strings_displayed_after_submit=[ 'has been created.' ] )
         global history3_clone1
         history3_clone1 = sa_session.query( galaxy.model.History ) \
                                     .filter( and_( galaxy.model.History.table.c.deleted==False,
@@ -234,11 +234,11 @@ class TestHistory( TwillTestCase ):
                                     .first()
         assert history3_clone1 is not None, "Problem retrieving history3_clone1 from database"
         # Check list of histories to make sure shared history3 was cloned
-        strings_displayed=[ "Clone of '%s' shared by '%s'" % ( history3.name, admin_user.email ) ]
+        strings_displayed=[ "Copy of '%s' shared by '%s'" % ( history3.name, admin_user.email ) ]
         self.view_stored_active_histories( strings_displayed=strings_displayed )
 
     def test_035_clone_current_history( self ):
-        """Testing cloning the current history"""
+        """Testing copying the current history"""
         # logged in as regular_user1
         self.logout()
         self.login( email=admin_user.email )
@@ -264,9 +264,9 @@ class TestHistory( TwillTestCase ):
         self.delete_history_item( str( hda_3_bed.id ) )
 
         # Test cloning activatable datasets
-        self.clone_history( self.security.encode_id( history3.id ),
+        self.copy_history( self.security.encode_id( history3.id ),
                             'activatable',
-                            strings_displayed_after_submit=['is now included in your previously stored histories.' ] )
+                            strings_displayed_after_submit=['has been created.' ] )
         global history3_clone2
         history3_clone2 = sa_session.query( galaxy.model.History ) \
                                     .filter( and_( galaxy.model.History.table.c.deleted==False,
@@ -276,7 +276,7 @@ class TestHistory( TwillTestCase ):
         assert history3_clone2 is not None, "Problem retrieving history3_clone2 from database"
 
         # Check list of histories to make sure shared history3 was cloned
-        self.view_stored_active_histories( strings_displayed=[ "Clone of '%s'" % history3.name ] )
+        self.view_stored_active_histories( strings_displayed=[ "Copy of '%s'" % history3.name ] )
         # Switch to the cloned history to make sure activatable datasets were cloned
         self.switch_history( id=self.security.encode_id( history3_clone2.id ), name=history3_clone2.name )
         hda_2_bed = (
@@ -301,10 +301,10 @@ class TestHistory( TwillTestCase ):
         self.check_history_for_exact_string( self.security.encode_id( hda_3_bed.id ), show_deleted=True )
 
         # Test cloning only active datasets
-        self.clone_history(
+        self.copy_history(
             self.security.encode_id( history3.id ),
             'active',
-            strings_displayed_after_submit=[ 'is now included in your previously stored histories.' ] )
+            strings_displayed_after_submit=[ 'has been created.' ] )
         global history3_clone3
         history3_clone3 = (
             sa_session.query( galaxy.model.History )
@@ -316,7 +316,7 @@ class TestHistory( TwillTestCase ):
         assert history3_clone3 is not None, "Problem retrieving history3_clone3 from database"
 
         # Check list of histories to make sure shared history3 was cloned
-        self.view_stored_active_histories( strings_displayed = ["Clone of '%s'" % history3.name ] )
+        self.view_stored_active_histories( strings_displayed = ["Copy of '%s'" % history3.name ] )
 
         # Switch to the cloned history to make sure ONLY activatable datasets were cloned
         self.switch_history( id=self.security.encode_id( history3_clone3.id ) )
@@ -428,9 +428,9 @@ class TestHistory( TwillTestCase ):
         # Shared history5 should be in regular_user1's list of shared histories
         self.view_shared_histories( strings_displayed=[ history5.name, admin_user.email ] )
         # Clone restricted history5
-        self.clone_history( self.security.encode_id( history5.id ),
+        self.copy_history( self.security.encode_id( history5.id ),
                             'activatable',
-                            strings_displayed_after_submit=[ 'is now included in your previously stored histories.' ] )
+                            strings_displayed_after_submit=[ 'has been created.' ] )
         global history5_clone1
         history5_clone1 = sa_session.query( galaxy.model.History ) \
                                     .filter( and_( galaxy.model.History.table.c.deleted==False,
@@ -439,7 +439,7 @@ class TestHistory( TwillTestCase ):
                                     .first()
         assert history5_clone1 is not None, "Problem retrieving history5_clone1 from database"
         # Check list of histories to make sure shared history5 was cloned
-        self.view_stored_active_histories( strings_displayed=[ "Clone of '%s'" % history5.name ] )
+        self.view_stored_active_histories( strings_displayed=[ "Copy of '%s'" % history5.name ] )
         # Make sure the dataset is accessible
         self.switch_history( id=self.security.encode_id( history5_clone1.id ), name=history5_clone1.name )
         self.check_history_for_string( 'chr1' )
@@ -486,9 +486,9 @@ class TestHistory( TwillTestCase ):
         # Shared history5 should be in regular_user2's list of shared histories
         self.view_shared_histories( strings_displayed=[ history5.name, admin_user.email ] )
         # Clone restricted history5
-        self.clone_history( self.security.encode_id( history5.id ),
+        self.copy_history( self.security.encode_id( history5.id ),
                             'activatable',
-                            strings_displayed_after_submit=[ 'is now included in your previously stored histories.' ] )
+                            strings_displayed_after_submit=[ 'has been created.' ] )
         global history5_clone2
         history5_clone2 = sa_session.query( galaxy.model.History ) \
                                     .filter( and_( galaxy.model.History.table.c.deleted==False,
@@ -497,7 +497,7 @@ class TestHistory( TwillTestCase ):
                                     .first()
         assert history5_clone2 is not None, "Problem retrieving history5_clone2 from database"
         # Check list of histories to make sure shared history3 was cloned
-        self.view_stored_active_histories( strings_displayed=[ "Clone of '%s'" % history5.name ] )
+        self.view_stored_active_histories( strings_displayed=[ "Copy of '%s'" % history5.name ] )
         # Make sure the dataset is accessible
         self.switch_history( id=self.security.encode_id( history5_clone2.id ), name=history5_clone2.name )
        # Make sure both datasets are in the history
@@ -557,15 +557,15 @@ class TestHistory( TwillTestCase ):
         self.share_current_history( email,
                                     strings_displayed_after_submit=strings_displayed_after_submit,
                                     action='share_anyway' )
-        # Check security on clone of history5 for regular_user2
+        # Check security on copy of history5 for regular_user2
         self.logout()
         self.login( email=regular_user2.email )
         # Shared history5 should be in regular_user2's list of shared histories
         self.view_shared_histories( strings_displayed=[ history5.name, admin_user.email ] )
         # Clone restricted history5
-        self.clone_history( self.security.encode_id( history5.id ),
+        self.copy_history( self.security.encode_id( history5.id ),
                             'activatable',
-                            strings_displayed_after_submit=[ 'is now included in your previously stored histories.' ] )
+                            strings_displayed_after_submit=[ 'has been created.' ] )
         global history5_clone3
         history5_clone3 = (
             sa_session.query( galaxy.model.History )
@@ -576,7 +576,7 @@ class TestHistory( TwillTestCase ):
         assert history5_clone3 is not None, "Problem retrieving history5_clone3 from database"
 
         # Check list of histories to make sure shared history3 was cloned
-        self.view_stored_active_histories( strings_displayed=[ "Clone of '%s'" % history5.name ] )
+        self.view_stored_active_histories( strings_displayed=[ "Copy of '%s'" % history5.name ] )
         # Make sure the dataset is accessible
         self.switch_history( id=self.security.encode_id( history5_clone3.id ), name=history5_clone3.name )
         # Make sure both datasets are in the history
@@ -602,16 +602,16 @@ class TestHistory( TwillTestCase ):
         self.display_history_item( str( hda_2_bed.id ), strings_displayed=[ 'chr1' ] )
         # Delete the clone so the next test will be valid
         self.delete_history( id=self.security.encode_id( history5_clone3.id ) )
-        # Check security on clone of history5 for regular_user3
+        # Check security on copy of history5 for regular_user3
         self.logout()
         self.login( email=regular_user3.email )
         # Shared history5 should be in regular_user2's list of shared histories
         self.view_shared_histories( strings_displayed=[ history5.name, admin_user.email ] )
 
         # Clone restricted history5
-        self.clone_history( self.security.encode_id( history5.id ),
+        self.copy_history( self.security.encode_id( history5.id ),
                             'activatable',
-                            strings_displayed_after_submit=[ 'is now included in your previously stored histories.' ] )
+                            strings_displayed_after_submit=[ 'has been created.' ] )
         global history5_clone4
         history5_clone4 = (
             sa_session.query( galaxy.model.History )
@@ -622,7 +622,7 @@ class TestHistory( TwillTestCase ):
         assert history5_clone4 is not None, "Problem retrieving history5_clone4 from database"
 
         # Check list of histories to make sure shared history3 was cloned
-        self.view_stored_active_histories( strings_displayed=[ "Clone of '%s'" % history5.name ] )
+        self.view_stored_active_histories( strings_displayed=[ "Copy of '%s'" % history5.name ] )
         # Make sure the dataset is accessible
         self.switch_history( id=self.security.encode_id( history5_clone4.id ), name=history5_clone4.name )
         # Make sure both datasets are in the history

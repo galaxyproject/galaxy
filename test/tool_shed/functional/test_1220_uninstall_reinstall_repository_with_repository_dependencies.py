@@ -70,9 +70,11 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         base_datatypes_count = int( self.get_datatypes_count() )
+        strings_displayed = [ 'Handle', 'Never installed', 'tool dependencies', 'emboss', '5.0.0', 'package' ]
         self.install_repository( emboss_repository_name, 
                                  common.test_user_1_name, 
-                                 'Test 0020 Basic Repository Dependencies', 
+                                 'Test 0020 Basic Repository Dependencies',
+                                 strings_displayed=strings_displayed,
                                  new_tool_panel_section='test_1210' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         strings_displayed = [ installed_repository.name,

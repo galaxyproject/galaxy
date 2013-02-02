@@ -6,10 +6,11 @@ import logging, atexit
 import os, os.path
 import sys, warnings
 
+from galaxy.util import asbool
+
 from paste.request import parse_formvars
 from paste.util import import_string
 from paste import httpexceptions
-from paste.deploy.converters import asbool
 import pkg_resources
 
 log = logging.getLogger( __name__ )
@@ -107,6 +108,17 @@ def app_factory( global_conf, **kwargs ):
     _add_item_tags_controller( webapp, 
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
+
+    _add_item_annotation_controller( webapp, 
+                               name_prefix="history_content_",
+                               path_prefix='/api/histories/:history_id/contents/:history_content_id' )
+    _add_item_annotation_controller( webapp, 
+                               name_prefix="history_",
+                               path_prefix='/api/histories/:history_id' )
+    _add_item_annotation_controller( webapp, 
+                               name_prefix="workflow_",
+                               path_prefix='/api/workflows/:workflow_id' )
+
     webapp.api_mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
     webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
@@ -130,7 +142,13 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.connect("import_workflow", "/api/workflows/upload", controller="workflows", action="import_new_workflow", conditions=dict(method=["POST"]))
     webapp.api_mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
 
+    # Connect logger from app
+    if app.trace_logger:
+        webapp.trace_logger = app.trace_logger
+
+    # Indicate that all configuration settings have been provided
     webapp.finalize_config()
+
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
         webapp = wrap_in_middleware( webapp, global_conf, **kwargs )
@@ -186,6 +204,12 @@ def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
         controller=controller, action="show",
         conditions=dict(method=["GET"]))
 
+
+
+def _add_item_annotation_controller( webapp, name_prefix, path_prefix, **kwd ):
+    controller = "%sannotations" % name_prefix
+    name = "%sannotation" % name_prefix
+    webapp.api_mapper.resource(name, "annotation", path_prefix=path_prefix, controller=controller)
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """
@@ -260,11 +284,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
-    # Config middleware just stores the paste config along with the request,
-    # not sure we need this but useful
-    from paste.deploy.config import ConfigMiddleware
-    app = ConfigMiddleware( app, conf )
-    log.debug( "Enabling 'config' middleware" )
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )

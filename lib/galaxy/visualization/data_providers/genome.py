@@ -1062,8 +1062,8 @@ class BBIDataProvider( GenomeDataProvider ):
             summary = _summarize_bbi( bbi, chrom, start, end, 1 )
             f.close()
             
-            min = 0
-            max = 0
+            min_val = 0
+            max_val = 0
             mean = 0
             sd = 0
             if summary is not None:
@@ -1077,10 +1077,10 @@ class BBIDataProvider( GenomeDataProvider ):
                     if valid_count > 1:
                         var /= valid_count - 1
                     sd = numpy.sqrt( var )
-                    min = summary.min_val[0]
-                    max = summary.max_val[0]
+                    min_val = summary.min_val[0]
+                    max_val = summary.max_val[0]
 
-            return dict( data=dict( min=min, max=max, mean=mean, sd=sd ) )
+            return dict( data=dict( min=min_val, max=max_val, mean=mean, sd=sd ) )
 
         def summarize_region( bbi, chrom, start, end, num_points ):
             '''

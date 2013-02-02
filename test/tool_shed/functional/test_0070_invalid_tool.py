@@ -45,5 +45,6 @@ class TestBismarkRepository( ShedTwillTestCase ):
                           remove_repo_files_not_in_tar='No',
                           commit_message='Uploaded an updated tool xml.' )
         valid_revision = self.get_repository_tip( repository )
+        test_db_util.refresh( repository )
         self.check_repository_tools_for_changeset_revision( repository, valid_revision )
         self.check_repository_invalid_tools_for_changeset_revision( repository, invalid_revision )

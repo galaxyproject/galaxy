@@ -57,7 +57,7 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
-        self.migrated_tools_config = resolve_path( "migrated_tools_conf.xml", self.root )
+        self.migrated_tools_config = resolve_path( kwargs.get( 'migrated_tools_config', 'migrated_tools_conf.xml' ), self.root )
         if 'tool_config_file' in kwargs:
             tcf = kwargs[ 'tool_config_file' ]
         elif 'tool_config_files' in kwargs:
@@ -261,6 +261,10 @@ class Configuration( object ):
         self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool( kwargs.get( 'new_lib_browse', False ) )
+        # Logging with fluentd
+        self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
+        self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
+        self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
 
     def __read_tool_job_config( self, global_conf_parser, section, key ):
         try:

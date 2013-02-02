@@ -2,7 +2,7 @@
 Utility functions used systemwide.
 
 """
-import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib
+import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno, shutil
 from email.MIMEText import MIMEText
 
 # Older py compatibility
@@ -333,6 +333,21 @@ def xml_text(root, name=None):
     # No luck, return empty string
     return ''
     
+# asbool implementation pulled from PasteDeploy
+truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
+falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
+def asbool(obj):
+    if isinstance(obj, basestring):
+        obj = obj.strip().lower()
+        if obj in truthy:
+            return True
+        elif obj in falsy:
+            return False
+        else:
+            raise ValueError("String is not true/false: %r" % obj)
+    return bool(obj)
+
+
 def string_as_bool( string ):
     if str( string ).lower() in ( 'true', 'yes', 'on' ):
         return True
@@ -726,6 +741,28 @@ def send_mail( frm, to, subject, body, config ):
             raise
     s.sendmail( frm, to, msg.as_string() )
     s.quit()
+
+def force_symlink( source, link_name ):
+    try:
+        os.symlink( source, link_name )
+    except OSError, e:
+        if e.errno == errno.EEXIST:
+            os.remove( link_name )
+            os.symlink( source, link_name )
+        else:
+            raise e
+
+def move_merge( source, target ):
+    #when using shutil and moving a directory, if the target exists,
+    #then the directory is placed inside of it
+    #if the target doesn't exist, then the target is made into the directory
+    #this makes it so that the target is always the target, and if it exists,
+    #the source contents are moved into the target
+    if os.path.isdir( source ) and os.path.exists( target ) and os.path.isdir( target ):
+        for name in os.listdir( source ):
+            move_merge( os.path.join( source, name ), os.path.join( target, name ) )
+    else:
+        return shutil.move( source, target ) 
 
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 

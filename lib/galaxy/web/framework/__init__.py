@@ -23,8 +23,8 @@ import simplejson
 
 import helpers
 
-pkg_resources.require( "PasteDeploy" )
-from paste.deploy.converters import asbool
+from galaxy.util import asbool
+
 import paste.httpexceptions
 
 pkg_resources.require( "Mako" )
@@ -142,6 +142,14 @@ def expose_api( func ):
                     named_args, _, _, _ = inspect.getargspec(func)
                     for arg in named_args:
                         payload.pop(arg, None)
+                    for k, v in payload.iteritems():
+                        if isinstance(v, (str, unicode)):
+                            try:
+                                payload[k] = simplejson.loads(v)
+                            except:
+                                # may not actually be json, just continue
+                                pass
+                    payload = util.recursively_stringify_dictionary_keys( payload )
                 else:
                     # Assume application/json content type and parse request body manually, since wsgi won't do it. However, the order of this check
                     # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
@@ -266,12 +274,10 @@ class WebApplication( base.WebApplication ):
         from galaxy.web.base.controller import ControllerUnavailable
         package = import_module( package_name )
         controller_dir = package.__path__[0]
-        print ">>>", controller_dir, package.__path__
         for fname in os.listdir( controller_dir ):
             if not( fname.startswith( "_" ) ) and fname.endswith( ".py" ):
                 name = fname[:-3]
                 module_name = package_name + "." + name
-                print package_name, name, module_name
                 try:
                     module = import_module( module_name )
                 except ControllerUnavailable, exc:

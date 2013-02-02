@@ -51,7 +51,7 @@ class StoredWorkflowListGrid( grids.Grid ):
     operations = [
         grids.GridOperation( "Edit", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Run", condition=( lambda item: not item.deleted ), async_compatible=False ),
-        grids.GridOperation( "Clone", condition=( lambda item: not item.deleted ), async_compatible=False  ),
+        grids.GridOperation( "Copy", condition=( lambda item: not item.deleted ), async_compatible=False  ),
         grids.GridOperation( "Rename", condition=( lambda item: not item.deleted ), async_compatible=False  ),
         grids.GridOperation( "Sharing", condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", condition=( lambda item: item.deleted ), async_compatible=True ),
@@ -499,8 +499,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     @web.require_login( "use Galaxy workflows" )
-    def clone( self, trans, id ):
-        # Get workflow to clone.
+    def copy( self, trans, id ):
+        # Get workflow to copy.
         stored = self.get_stored_workflow( trans, id, check_ownership=False )
         user = trans.get_user()
         if stored.user == user:
@@ -511,11 +511,11 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 error( "Workflow is not owned by or shared with current user" )
             owner = False
 
-        # Clone.
+        # Copy.
         new_stored = model.StoredWorkflow()
-        new_stored.name = "Clone of '%s'" % stored.name
+        new_stored.name = "Copy of '%s'" % stored.name
         new_stored.latest_workflow = stored.latest_workflow
-        # Clone annotation.
+        # Copy annotation.
         annotation_obj = self.get_item_annotation_obj( trans.sa_session, stored.user, stored )
         if annotation_obj:
             self.add_item_annotation( trans.sa_session, trans.get_user(), new_stored, annotation_obj.annotation )
@@ -528,7 +528,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         session.add( new_stored )
         session.flush()
         # Display the management page
-        trans.set_message( 'Clone created with name "%s"' % new_stored.name )
+        trans.set_message( 'Created new workflow with name "%s"' % new_stored.name )
         return self.list( trans )
 
     @web.expose

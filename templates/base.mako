@@ -1,5 +1,5 @@
 <% _=n_ %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
     <head>
         <title>${self.title()}</title>
@@ -23,12 +23,10 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-    ## <!--[if lt IE 7]>
-    ## <script type='text/javascript' src="/static/scripts/libs/IE/IE7.js"> </script>
-    ## <![endif]-->
     
     ${h.js(
         "libs/jquery/jquery",
+        "libs/jquery/select2",
         "libs/json2",
         "libs/bootstrap",
         "libs/underscore",

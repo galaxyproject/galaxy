@@ -198,15 +198,14 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_displayButton : function(){
-        // don't show display if not in ready state or not accessible
-        // DO show if in error (ala previous history panel)
-        if( ( !this.model.inReadyState() )
-        //||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
-        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        // don't show display if not viewable or not accessible
+        // (do show if in error, running)
+        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.displayButton = null;
             return null;
         }
+        //NOTE: line 88 in history_common.mako should be handled by the url template generation
         
         var displayBtnData = {
             icon_class  : 'display',
@@ -427,7 +426,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_paused: function( parent ){
-        parent.append( $( '<div>' + _l( 'Job is paused.  Use the history menu to unpause' ) + '.</div>' ) );
+        parent.append( $( '<div>' + _l( 'Job is paused.  Use the history menu to resume' ) + '.</div>' ) );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
     },
         
@@ -446,7 +445,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         if( !this.model.get( 'purged' ) ){
             parent.append( $( '<div>' + this.model.get( 'misc_blurb' ) + '</div>' ) );
         }
-        parent.append( ( _l( 'An error occurred running this job' ) + ': '
+        parent.append( ( _l( 'An error occurred with this dataset' ) + ': '
                        + '<i>' + $.trim( this.model.get( 'misc_info' ) ) + '</i>' ) );
         parent.append( this._render_primaryActionButtons(
             this.defaultPrimaryActionButtonRenderers.concat([ this._render_downloadButton ])
@@ -484,7 +483,9 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
     _render_body_failed_metadata : function( parent ){
         //TODO: the css for this box is broken (unlike the others)
         // add a message box about the failure at the top of the body...
-        parent.append( $( HDABaseView.templates.failedMetadata( this.model.toJSON() ) ) );
+        parent.append( $( HDABaseView.templates.failedMetadata(
+            _.extend( this.model.toJSON(), { urls: this.urls } )
+        )));
         //...then render the remaining body as STATES.OK (only diff between these states is the box above)
         this._render_body_ok( parent );
     },

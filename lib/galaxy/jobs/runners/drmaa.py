@@ -10,8 +10,6 @@ from Queue import Queue, Empty
 from galaxy import model
 from galaxy.jobs.runners import BaseJobRunner
 
-from paste.deploy.converters import asbool
-
 import pkg_resources
 
 
@@ -400,16 +398,18 @@ class DRMAAJobRunner( BaseJobRunner ):
     def stop_job( self, job ):
         """Attempts to delete a job from the DRM queue"""
         try:
+            ext_id = job.get_job_runner_external_id()
+            assert ext_id not in ( None, 'None' ), 'External job id is None'
             if self.external_killJob_script is None:
-                self.ds.control( job.get_job_runner_external_id(), drmaa.JobControlAction.TERMINATE )
+                self.ds.control( ext_id, drmaa.JobControlAction.TERMINATE )
             else:
                 # FIXME: hardcoded path
-                subprocess.Popen( [ '/usr/bin/sudo', '-E', self.external_killJob_script, str( job.get_job_runner_external_id() ), str( self.userid ) ], shell=False )
-            log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.get_id(), job.get_job_runner_external_id() ) )
+                subprocess.Popen( [ '/usr/bin/sudo', '-E', self.external_killJob_script, str( ext_id ), str( self.userid ) ], shell=False )
+            log.debug( "(%s/%s) Removed from DRM queue at user's request" % ( job.get_id(), ext_id ) )
         except drmaa.InvalidJobException:
-            log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.get_id(), job.get_job_runner_external_id() ) )
+            log.debug( "(%s/%s) User killed running job, but it was already dead" % ( job.get_id(), ext_id ) )
         except Exception, e:
-            log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.get_id(), job.get_job_runner_external_id(), e ) )
+            log.debug( "(%s/%s) User killed running job, but error encountered removing from DRM queue: %s" % ( job.get_id(), ext_id, e ) )
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""

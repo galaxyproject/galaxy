@@ -60,6 +60,7 @@ default_galaxy_test_host = 'localhost'
 tool_sheds_conf_xml_template = '''<?xml version="1.0"?>
 <tool_sheds>
     <tool_shed name="Embedded tool shed for functional tests" url="http://${shed_url}:${shed_port}/"/>
+    <tool_shed name="Galaxy main tool shed" url="http://toolshed.g2.bx.psu.edu/"/>
 </tool_sheds>
 '''
 
@@ -123,7 +124,8 @@ def main():
     galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_DATA_TABLE_CONF', os.path.join( tool_shed_test_tmp_dir, 'tool_data_table_conf.xml' ) )
     galaxy_tool_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_tool_conf.xml' ) )
     galaxy_shed_tool_conf_file = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_shed_tool_conf.xml' ) )
-    galaxy_tool_sheds_conf_file = os.environ.get( 'GALAXY_TEST_SHED_TOOLS_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_sheds_conf.xml' ) )
+    galaxy_migrated_tool_conf_file = os.environ.get( 'GALAXY_TEST_MIGRATED_TOOL_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_migrated_tool_conf.xml' ) )
+    galaxy_tool_sheds_conf_file = os.environ.get( 'GALAXY_TEST_TOOL_SHEDS_CONF', os.path.join( tool_shed_test_tmp_dir, 'test_sheds_conf.xml' ) )
     if 'GALAXY_TEST_TOOL_DATA_PATH' in os.environ:
         tool_data_path = os.environ.get( 'GALAXY_TEST_TOOL_DATA_PATH' )
     else:
@@ -138,7 +140,9 @@ def main():
     galaxy_file_path = os.path.join( galaxy_db_path, 'files' )
     hgweb_config_file_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     new_repos_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
+    galaxy_tempfiles = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir )
     galaxy_shed_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
+    galaxy_migrated_tool_path = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
     galaxy_tool_dependency_dir = tempfile.mkdtemp( dir=tool_shed_test_tmp_dir ) 
     os.environ[ 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' ] = galaxy_tool_dependency_dir
     if 'TOOL_SHED_TEST_DBURI' in os.environ:
@@ -180,27 +184,27 @@ def main():
         kwargs[ 'object_store' ] = 'distributed'
         kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
 
-    toolshedapp = ToolshedUniverseApplication( job_queue_workers = 5,
-                               id_secret = 'changethisinproductiontoo',
-                               template_path = 'templates',
-                               database_connection = toolshed_database_connection,
-                               database_engine_option_pool_size = '10',
-                               file_path = shed_file_path,
-                               new_file_path = new_repos_path,
-                               tool_path=tool_path,
-                               datatype_converters_config_file = 'datatype_converters_conf.xml.sample',
-                               tool_parse_help = False,
-                               tool_data_table_config_path = galaxy_tool_data_table_conf_file,
-                               shed_tool_data_table_config = shed_tool_data_table_conf_file,
-                               log_destination = "stdout",
-                               use_heartbeat = False,
-                               allow_user_creation = True,
-                               allow_user_deletion = True,
-                               admin_users = 'test@bx.psu.edu',
-                               global_conf = global_conf,
-                               running_functional_tests = True,
-                               hgweb_config_dir = hgweb_config_dir,
-                               **kwargs )
+    toolshedapp = ToolshedUniverseApplication( admin_users = 'test@bx.psu.edu',
+                                               allow_user_creation = True,
+                                               allow_user_deletion = True,
+                                               database_connection = toolshed_database_connection,
+                                               database_engine_option_pool_size = '10',
+                                               datatype_converters_config_file = 'datatype_converters_conf.xml.sample',
+                                               file_path = shed_file_path,
+                                               global_conf = global_conf,
+                                               hgweb_config_dir = hgweb_config_dir,
+                                               job_queue_workers = 5,
+                                               id_secret = 'changethisinproductiontoo',
+                                               log_destination = "stdout",
+                                               new_file_path = new_repos_path,
+                                               running_functional_tests = True,
+                                               shed_tool_data_table_config = shed_tool_data_table_conf_file,
+                                               template_path = 'templates',
+                                               tool_path=tool_path,
+                                               tool_parse_help = False,
+                                               tool_data_table_config_path = galaxy_tool_data_table_conf_file,
+                                               use_heartbeat = False,
+                                               **kwargs )
 
     log.info( "Embedded Toolshed application started" )
 
@@ -256,36 +260,41 @@ def main():
         shed_tool_conf_template_parser = string.Template( shed_tool_conf_xml_template )
         shed_tool_conf_xml = shed_tool_conf_template_parser.safe_substitute( shed_tool_path=galaxy_shed_tool_path )
         file( galaxy_shed_tool_conf_file, 'w' ).write( shed_tool_conf_xml )
+        # Generate the migrated_tool_conf.xml file.
+        migrated_tool_conf_xml = shed_tool_conf_template_parser.safe_substitute( shed_tool_path=galaxy_migrated_tool_path )
+        file( galaxy_migrated_tool_conf_file, 'w' ).write( migrated_tool_conf_xml )
         os.environ[ 'GALAXY_TEST_SHED_TOOL_CONF' ] = galaxy_shed_tool_conf_file
     
         # ---- Build Galaxy Application -------------------------------------------------- 
         galaxy_global_conf = { '__file__' : 'universe_wsgi.ini.sample' }
         if not galaxy_database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
-        galaxyapp = GalaxyUniverseApplication( job_queue_workers = 5,
-                                               id_secret = 'changethisinproductiontoo',
-                                               template_path = "templates",
-                                               database_connection = galaxy_database_connection,
-                                               database_engine_option_pool_size = '10',
-                                               file_path = galaxy_file_path,
-                                               tool_path = tool_path,
-                                               tool_data_path = tool_data_path,
-                                               shed_tool_path = galaxy_shed_tool_path,
-                                               update_integrated_tool_panel = False,
-                                               tool_config_file = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
-                                               tool_sheds_config_file = galaxy_tool_sheds_conf_file,
-                                               datatype_converters_config_file = "datatype_converters_conf.xml.sample",
-                                               tool_parse_help = False,
-                                               tool_data_table_config_path = galaxy_tool_data_table_conf_file,
-                                               shed_tool_data_table_config = shed_tool_data_table_conf_file,
-                                               log_destination = "stdout",
-                                               use_heartbeat = False,
-                                               allow_user_creation = True,
+        galaxyapp = GalaxyUniverseApplication( allow_user_creation = True,
                                                allow_user_deletion = True,
                                                admin_users = 'test@bx.psu.edu',
                                                allow_library_path_paste = True,
+                                               database_connection = galaxy_database_connection,
+                                               database_engine_option_pool_size = '10',
+                                               datatype_converters_config_file = "datatype_converters_conf.xml.sample",
+                                               file_path = galaxy_file_path,
                                                global_conf = global_conf,
+                                               id_secret = 'changethisinproductiontoo',
+                                               job_queue_workers = 5,
+                                               log_destination = "stdout",
+                                               migrated_tools_config = galaxy_migrated_tool_conf_file,
+                                               new_file_path = galaxy_tempfiles,
                                                running_functional_tests=True,
+                                               shed_tool_data_table_config = shed_tool_data_table_conf_file,
+                                               shed_tool_path = galaxy_shed_tool_path,
+                                               template_path = "templates",
+                                               tool_data_path = tool_data_path,
+                                               tool_path = tool_path,
+                                               tool_config_file = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
+                                               tool_sheds_config_file = galaxy_tool_sheds_conf_file,
+                                               tool_parse_help = False,
+                                               tool_data_table_config_path = galaxy_tool_data_table_conf_file,
+                                               update_integrated_tool_panel = False,
+                                               use_heartbeat = False,
                                                **kwargs )
         
         log.info( "Embedded Galaxy application started" )
