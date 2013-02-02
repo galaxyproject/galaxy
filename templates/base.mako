@@ -54,7 +54,7 @@
     ${h.js(
         "mvc/ui"
     )}
-    
+
     <script type="text/javascript">
         // console protection
         window.console = window.console || {
