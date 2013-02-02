@@ -9,7 +9,6 @@ import os.path
 import sys
 import tarfile
 import threading
-import uuid
 
 from Cookie import SimpleCookie
 
@@ -70,9 +69,6 @@ class WebApplication( object ):
         self.mapper.explicit = False
         self.api_mapper = routes.Mapper()
         self.transaction_factory = DefaultWebTransaction
-        # Each request will have a unique id. Since we are assuming
-        # a threaded model for the moment we can store that here
-        self.request_id = threading.local()
         # Set if trace logging is enabled
         self.trace_logger = None
     def add_ui_controller( self, controller_name, controller ):
@@ -124,7 +120,7 @@ class WebApplication( object ):
         and calls it.
         """
         # Immediately create request_id which we will use for logging
-        self.request_id = request_id = uuid.uuid1().hex
+        request_id = environ.get( 'request_id', 'unknown' )
         if self.trace_logger:
             self.trace_logger.context_set( "request_id", request_id )
         self.trace( message="Starting request" )
@@ -136,6 +132,8 @@ class WebApplication( object ):
                 self.trace_logger.context_remove( "request_id" )
 
     def handle_request( self, environ, start_response ):
+        # Grab the request_id (should have been set by middleware)
+        request_id = environ.get( 'request_id', 'unknown' )
         # Map url using routes
         path_info = environ.get( 'PATH_INFO', '' )
         map = self.mapper.match( path_info, environ )
@@ -157,6 +155,7 @@ class WebApplication( object ):
         rc.environ = environ
         # Setup the transaction
         trans = self.transaction_factory( environ )
+        trans.request_id = request_id
         rc.redirect = trans.response.send_redirect
         # Get the controller class
         controller_name = map.pop( 'controller', None )

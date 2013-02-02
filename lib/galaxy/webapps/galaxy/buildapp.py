@@ -240,6 +240,14 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste import recursive
         app = recursive.RecursiveMiddleware( app, conf )
         log.debug( "Enabling 'recursive' middleware" )
+    # If sentry logging is enabled, log here before propogating up to
+    # the error middleware
+    sentry_url = conf.get( 'sentry_url', None )
+    if sentry_url:
+        pkg_resources.require( "raven")
+        from raven import Client
+        from raven.middleware import Sentry
+        app = Sentry( app, Client( sentry_url ) )
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance
@@ -254,12 +262,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
             from paste.debug import profile
             app = profile.ProfileMiddleware( app, conf )
             log.debug( "Enabling 'profile' middleware" )
-        # Middleware that intercepts print statements and shows them on the
-        # returned page
-        if asbool( conf.get( 'use_printdebug', True ) ):
-            from paste.debug import prints
-            app = prints.PrintDebugMiddleware( app, conf )
-            log.debug( "Enabling 'print debug' middleware" )
     if debug and asbool( conf.get( 'use_interactive', False ) ):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
@@ -288,6 +290,10 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
     log.debug( "Enabling 'x-forwarded-host' middleware" )
+    # Request ID middleware
+    from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
+    app = RequestIDMiddleware( app )
+    log.debug( "Enabling 'Request ID' middleware" )
     return app
     
 def wrap_in_static( app, global_conf, **local_conf ):

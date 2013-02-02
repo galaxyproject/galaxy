@@ -2,7 +2,7 @@
 Universe configuration builder.
 """
 
-import sys, os, tempfile
+import sys, os, tempfile, re
 import logging, logging.config
 import ConfigParser
 from datetime import timedelta
@@ -261,10 +261,23 @@ class Configuration( object ):
         self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool( kwargs.get( 'new_lib_browse', False ) )
+        # Error logging with sentry
+        self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
+
+    @property
+    def sentry_dsn_public( self ):
+        """
+        Sentry URL with private key removed for use in client side scripts, 
+        sentry server will need to be configured to accept events
+        """
+        if self.sentry_dsn:
+            return re.sub( r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn )
+        else:
+            return None
 
     def __read_tool_job_config( self, global_conf_parser, section, key ):
         try:
@@ -387,8 +400,7 @@ def get_database_engine_options( kwargs ):
 
 def configure_logging( config ):
     """
-    Allow some basic logging configuration to be read from the cherrpy
-    config.
+    Allow some basic logging configuration to be read from ini file.
     """
     # PasteScript will have already configured the logger if the appropriate
     # sections were found in the config file, so we do nothing if the
@@ -420,3 +432,10 @@ def configure_logging( config ):
     # Hook everything up
     handler.setFormatter( formatter )
     root.addHandler( handler )
+    # If sentry is configured, also log to it
+    if config.sentry_dsn:
+        pkg_resources.require( "raven" )
+        from raven.handlers.logging import SentryHandler
+        sentry_handler = SentryHandler( config.sentry_dsn )
+        sentry_handler.setLevel( logging.WARN )
+        root.addHandler( sentry_handler )

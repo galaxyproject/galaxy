@@ -74,7 +74,7 @@
                 });
                 */
                 
-                $( '.tooltip' ).tooltip();
+                $( '.tooltip' ).tooltip().foasdasdasdoo();
                 
                 // TODO: is this necessary?
                 $( "a[minsizehint]" ).click( function() {

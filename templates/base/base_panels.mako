@@ -45,9 +45,18 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-    <!--[if lt IE 7]>
-    ${h.js( 'libs/IE/IE7', 'libs/IE/ie7-recalc' )}
-    <![endif]-->
+
+    ## Send errors to Sntry server if configured
+    %if app.config.sentry_dsn:
+        ${h.js( "libs/tracekit", "libs/raven" )}
+        <script>
+            Raven.config('${app.config.sentry_dsn_public}').install();
+            %if trans.user:
+                Raven.setUser( { email: "${trans.user.email}" } );
+            %endif
+        </script>
+    %endif
+
     ${h.js(
         'libs/jquery/jquery',
         'libs/json2',
