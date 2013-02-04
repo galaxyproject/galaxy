@@ -1,6 +1,7 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
-
+import logging
+log = logging.getLogger(__name__)
 bwa_base_repository_name = 'bwa_base_repository_0100'
 bwa_base_repository_description = "BWA Base"
 bwa_base_repository_long_description = "BWA tool that depends on bwa 0.5.9, with a complex repository dependency pointing at bwa_tool_repository_0100"
@@ -41,8 +42,15 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             running_standalone = True
+            old_tool_dependency = self.get_filename( os.path.join( 'bwa', 'complex', 'tool_dependencies.xml' ) )
+            new_tool_dependency_path = self.generate_temp_path( 'test_1100', additional_paths=[ 'tool_dependency' ] )
+            xml_filename = os.path.abspath( os.path.join( new_tool_dependency_path, 'tool_dependencies.xml' ) )
+            log.debug( xml_filename )
+            file( xml_filename, 'w' ).write( file( old_tool_dependency, 'r' )
+                                     .read().replace( '__PATH__', self.get_filename( 'bwa/complex' ) ) )
             self.upload_file( repository, 
-                              'bwa/complex/tool_dependencies.xml', 
+                              xml_filename,
+                              filepath=new_tool_dependency_path, 
                               strings_displayed=[], 
                               commit_message='Uploaded tool_dependencies.xml.' )
             self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'may not be', 'in this repository' ] )
@@ -171,8 +179,15 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
             tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
             previous_changeset = self.get_repository_tip( tool_repository )
+            old_tool_dependency = self.get_filename( os.path.join( 'bwa', 'complex', 'readme', 'tool_dependencies.xml' ) )
+            new_tool_dependency_path = self.generate_temp_path( 'test_1100', additional_paths=[ 'tool_dependency' ] )
+            xml_filename = os.path.abspath( os.path.join( new_tool_dependency_path, 'tool_dependencies.xml' ) )
+            log.debug( xml_filename )
+            file( xml_filename, 'w' ).write( file( old_tool_dependency, 'r' )
+                                     .read().replace( '__PATH__', self.get_filename( 'bwa/complex' ) ) )
             self.upload_file( tool_repository, 
-                              'bwa/complex/readme/tool_dependencies.xml', 
+                              xml_filename,
+                              filepath=new_tool_dependency_path, 
                               strings_displayed=[], 
                               commit_message='Uploaded new tool_dependencies.xml.' )
             # Verify that the dependency display has been updated as a result of the new tool_dependencies.xml file.
