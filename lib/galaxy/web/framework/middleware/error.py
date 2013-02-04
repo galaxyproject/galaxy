@@ -200,7 +200,9 @@ class ResponseStartChecker(object):
 
     def __call__(self, *args):
         self.response_started = True
-        self.start_response(*args)
+        # Return whatever the wrapped start_response would have 
+        # returned
+        return self.start_response(*args)
 
 class CatchingIter(object):
 
