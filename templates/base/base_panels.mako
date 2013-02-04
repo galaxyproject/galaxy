@@ -1,8 +1,8 @@
 <!DOCTYPE HTML>
 
 <%
-    self.has_left_panel=True
-    self.has_right_panel=True
+    self.has_left_panel = hasattr( self, 'left_panel' )
+    self.has_right_panel = hasattr( self, 'right_panel' )
     self.message_box_visible=False
     self.overlay_visible=False
     self.message_box_class=""
@@ -17,15 +17,8 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css('base','panel_layout','jquery.rating')}
+    ${h.css('base','jquery.rating')}
     <style type="text/css">
-    body, html {
-        overflow: hidden;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-    }
     #center {
         %if not self.has_left_panel:
             left: 0 !important;
@@ -270,7 +263,7 @@
         ${self.javascripts()}
     </head>
     
-    <body scroll="no" class="${self.body_class}">
+    <body scroll="no" class="full-content ${self.body_class}">
         %if self.require_javascript:
             <noscript>
                 <div class="overlay overlay-background">

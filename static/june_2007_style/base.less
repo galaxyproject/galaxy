@@ -31,7 +31,18 @@ body  {
     background-repeat: repeat-x;
     background-position: top;
     margin: 10px;
+
+    // For panel layout pages
+    &.full-content {
+        overflow: hidden;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+    }
+
 }
+
 
 img {
     border: 0;
@@ -410,7 +421,7 @@ div.unified-panel-body {
     width:100%;
     min-width:900px;
     height:32px;
-    // background: @masthead_bg; 
+    background: @masthead_bg; 
     // color:#fff;
     border-bottom: solid @layout_masthead_border 1px;
     z-index: 15000;
