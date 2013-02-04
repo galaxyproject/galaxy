@@ -401,36 +401,34 @@ def configure_logging( config ):
     """
     Allow some basic logging configuration to be read from ini file.
     """
-    # PasteScript will have already configured the logger if the appropriate
-    # sections were found in the config file, so we do nothing if the
-    # config has a loggers section, otherwise we do some simple setup
-    # using the 'log_*' values from the config.
-    if config.global_conf_parser.has_section( "loggers" ):
-        return
-    format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
-    level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
-    destination = config.get( "log_destination", "stdout" )
-    log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
     # Get root logger
     root = logging.getLogger()
-    # Set level
-    root.setLevel( level )
-    # Turn down paste httpserver logging
-    if level <= logging.DEBUG:
-        logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
-    # Remove old handlers
-    for h in root.handlers[:]:
-        root.removeHandler(h)
-    # Create handler
-    if destination == "stdout":
-        handler = logging.StreamHandler( sys.stdout )
-    else:
-        handler = logging.FileHandler( destination )
-    # Create formatter
-    formatter = logging.Formatter( format )
-    # Hook everything up
-    handler.setFormatter( formatter )
-    root.addHandler( handler )
+    # PasteScript will have already configured the logger if the 
+    # 'loggers' section was found in the config file, otherwise we do 
+    # some simple setup using the 'log_*' values from the config.
+    if not config.global_conf_parser.has_section( "loggers" ):
+        format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
+        level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
+        destination = config.get( "log_destination", "stdout" )
+        log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
+        # Set level
+        root.setLevel( level )
+        # Turn down paste httpserver logging
+        if level <= logging.DEBUG:
+            logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
+        # Remove old handlers
+        for h in root.handlers[:]:
+            root.removeHandler(h)
+        # Create handler
+        if destination == "stdout":
+            handler = logging.StreamHandler( sys.stdout )
+        else:
+            handler = logging.FileHandler( destination )
+        # Create formatter
+        formatter = logging.Formatter( format )
+        # Hook everything up
+        handler.setFormatter( formatter )
+        root.addHandler( handler )
     # If sentry is configured, also log to it
     if config.sentry_dsn:
         pkg_resources.require( "raven" )
