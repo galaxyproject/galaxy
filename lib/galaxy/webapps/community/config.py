@@ -92,6 +92,8 @@ class Configuration( object ):
         self.job_handlers = []
         self.tool_handlers = []
         self.tool_runners = []
+        # Error logging with sentry
+        self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
         # Where the tool shed hgweb.config file is stored - the default is the Galaxy installation directory.
         self.hgweb_config_dir = resolve_path( kwargs.get( 'hgweb_config_dir', '' ), self.root )
         # Proxy features
