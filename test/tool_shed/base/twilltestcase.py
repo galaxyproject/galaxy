@@ -483,7 +483,10 @@ class ShedTwillTestCase( TwillTestCase ):
         # Save the generated xml to the specified location.
         file( xml_filename, 'w' ).write( repository_dependency_xml )
     def generate_temp_path( self, test_script_path, additional_paths=[] ):
-        return os.path.join( self.tool_shed_test_tmp_dir, test_script_path, os.sep.join( additional_paths ) )
+        temp_path = os.path.join( self.tool_shed_test_tmp_dir, test_script_path, os.sep.join( additional_paths ) )
+        if not os.path.exists( temp_path ):
+            os.makedirs( temp_path )
+        return temp_path
     def get_datatypes_count( self ):
         url = '/admin/view_datatypes_registry'
         self.visit_galaxy_url( url )
