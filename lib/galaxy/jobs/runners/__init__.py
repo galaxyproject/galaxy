@@ -34,11 +34,12 @@ class BaseJobRunner( object ):
         if job_wrapper.dependency_shell_commands:
             commands = "; ".join( job_wrapper.dependency_shell_commands + [ commands ] ) 
 
-        # -- Append commands to copy job outputs based on from_work_dir attribute. --
+        # Append commands to copy job outputs based on from_work_dir attribute.
         if include_work_dir_outputs:
             work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
             if work_dir_outputs:
-                commands += "; " + "; ".join( [ "cp %s %s" % ( source_file, destination ) for ( source_file, destination ) in work_dir_outputs ] )
+                commands += "; " + "; ".join( [ "if [ -f %s ] ; then cp %s %s ; fi" % 
+                    ( source_file, source_file, destination ) for ( source_file, destination ) in work_dir_outputs ] )
 
         # Append metadata setting commands, we don't want to overwrite metadata
         # that was copied over in init_meta(), as per established behavior
