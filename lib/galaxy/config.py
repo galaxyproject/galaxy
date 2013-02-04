@@ -143,7 +143,6 @@ class Configuration( object ):
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225" ).lower().split(",")
-        self.genetrack_display_sites = kwargs.get( 'genetrack_display_sites', "main,test" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
         self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://g2.trac.bx.psu.edu/' )

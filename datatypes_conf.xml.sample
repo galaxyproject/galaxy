@@ -26,7 +26,6 @@
       <converter file="bed_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
       <converter file="bed_to_fli_converter.xml" target_datatype="fli"/>
       <!-- <display file="ucsc/interval_as_bed.xml" /> -->
-      <display file="genetrack.xml" />
       <display file="igb/bed.xml" />
     </datatype>
     <datatype extension="bedgraph" type="galaxy.datatypes.interval:BedGraph" display_in_upload="true">
@@ -34,7 +33,6 @@
     </datatype>
     <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" />
     <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6">
-      <converter file="bed_to_genetrack_converter.xml" target_datatype="genetrack"/>
     </datatype>
     <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" />
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">

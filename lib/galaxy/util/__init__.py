@@ -432,11 +432,6 @@ def get_gbrowse_sites_by_build(build):
         if build in site['builds']:
             sites.append((site['name'],site['url']))
     return sites
-def get_genetrack_sites():
-    sites = []
-    for site in genetrack_sites:
-        sites.append( ( site['name'], site['url'] ) )
-    return sites
 
 def read_dbnames(filename):
     """ Read build names from file """
@@ -773,7 +768,6 @@ ensembl_names = read_ensembl( os.path.join( galaxy_root_path, "tool-data", "shar
 ncbi_names = read_ncbi( os.path.join( galaxy_root_path, "tool-data", "shared", "ncbi", "builds.txt" ) )
 ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) )
 gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
-genetrack_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "genetrack", "genetrack_sites.txt" ), check_builds=False )
 dlnames = dict(ucsc=ucsc_names, ensembl=ensembl_names, ncbi=ncbi_names)
 
 def galaxy_directory():
