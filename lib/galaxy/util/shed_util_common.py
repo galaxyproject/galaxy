@@ -1292,8 +1292,8 @@ def generate_repository_dependency_metadata_for_tool_shed( app, repository_depen
         for repository_elem in root.findall( 'repository' ):
             current_rd_tups, error_message = handle_repository_elem( app, repository_elem, repository_dependencies_tups )
             if error_message:
+                # Log the problem, but generate metadata for the invalid repository dependencies.
                 log.debug( error_message )
-                return metadata_dict, error_message
             for crdt in current_rd_tups:
                 repository_dependencies_tups.append( crdt )
         if repository_dependencies_tups:
@@ -1868,10 +1868,12 @@ def get_repository_by_name_and_owner( app, name, owner ):
                          .first()
     # We're in the tool shed.
     user = get_user_by_username( app, owner )
-    return sa_session.query( app.model.Repository ) \
-                     .filter( and_( app.model.Repository.table.c.name == name,
-                                    app.model.Repository.table.c.user_id == user.id ) ) \
-                     .first()
+    if user:
+        return sa_session.query( app.model.Repository ) \
+                         .filter( and_( app.model.Repository.table.c.name == name,
+                                        app.model.Repository.table.c.user_id == user.id ) ) \
+                         .first()
+    return None
 def get_repository_dependencies_for_changeset_revision( trans, repository, repository_metadata, toolshed_base_url,
                                                         key_rd_dicts_to_be_processed=None, all_repository_dependencies=None,
                                                         handled_key_rd_dicts=None, circular_repository_dependencies=None ):
@@ -2284,9 +2286,13 @@ def get_user( trans, id ):
 def get_user_by_username( app, username ):
     """Get a user from the database by username."""
     sa_session = app.model.context.current
-    return sa_session.query( app.model.User ) \
-                     .filter( app.model.User.table.c.username == username ) \
-                     .one()
+    try:
+        user = sa_session.query( app.model.User ) \
+                         .filter( app.model.User.table.c.username == username ) \
+                         .one()
+        return user
+    except Exception, e:
+        return None
 def handle_circular_repository_dependency( repository_key, repository_dependency, circular_repository_dependencies, handled_key_rd_dicts, all_repository_dependencies ):
     all_repository_dependencies_root_key = all_repository_dependencies[ 'root_key' ]
     repository_dependency_as_key = get_repository_dependency_as_key( repository_dependency )
@@ -2510,6 +2516,11 @@ def handle_repository_elem( app, repository_elem, repository_dependencies_tups )
     else:        
         # We're in the tool shed.
         if tool_shed_is_this_tool_shed( toolshed ):
+            # Append the repository dependency definition regardless of whether it's valid or not, as Galaxy needs this to
+            # properly display an error when the repository dependency is invalid at the time of installation.
+            repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
+            if repository_dependencies_tup not in new_rd_tups:
+                new_rd_tups.append( repository_dependencies_tup )
             try:
                 user = sa_session.query( app.model.User ) \
                                  .filter( app.model.User.table.c.username == owner ) \
@@ -2539,9 +2550,6 @@ def handle_repository_elem( app, repository_elem, repository_dependencies_tups )
                 error_message = "Invalid changeset revision <b>%s</b> defined.  Repository dependencies will be ignored." % str( changeset_revision )
                 log.debug( error_message )
                 return new_rd_tups, error_message
-            repository_dependencies_tup = ( toolshed, name, owner, changeset_revision )
-            if repository_dependencies_tup not in new_rd_tups:
-                new_rd_tups.append( repository_dependencies_tup )
         else:
             # Repository dependencies are currentlhy supported within a single tool shed.
             error_message = "Invalid tool shed <b>%s</b> defined for repository <b>%s</b>.  " % ( toolshed, name )
@@ -3179,7 +3187,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                                                                                             updating_installed_repository=False,
                                                                                             persist=False )
             # We'll only display error messages for the repository tip (it may be better to display error messages for each installable changeset revision).
-            if current_metadata_dict == repository.tip( trans.app ):
+            if current_changeset_revision == repository.tip( trans.app ):
                 invalid_file_tups.extend( invalid_tups )            
             if current_metadata_dict:
                 if not metadata_changeset_revision and not metadata_dict:

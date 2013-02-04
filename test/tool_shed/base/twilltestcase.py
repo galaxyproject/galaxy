@@ -32,7 +32,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.tool_data_path = os.environ.get( 'GALAXY_TEST_TOOL_DATA_PATH' )
         self.shed_tool_conf = os.environ.get( 'GALAXY_TEST_SHED_TOOL_CONF' )
         # TODO: Figure out a way to alter these attributes during tests.
-        self.galaxy_tool_dependency_dir = None # os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
+        self.galaxy_tool_dependency_dir = os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
         self.home()
     def add_repository_review_component( self, **kwd ):
@@ -450,6 +450,10 @@ class ShedTwillTestCase( TwillTestCase ):
             dependency_template = string.Template( common.complex_repository_dependency_template )
             repository_dependency_xml = dependency_template.safe_substitute( package=package, version=version, dependency_lines='\n'.join( dependency_entries ) )
         else:
+            if not description:
+                description = ' description=""'
+            else:
+                description = ' description="%s"' % description
             template_parser = string.Template( common.new_repository_dependencies_xml )
             repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
@@ -625,7 +629,8 @@ class ShedTwillTestCase( TwillTestCase ):
                 ( ','.join( util.listify( repository_ids ) ), encoded_kwd, reinstalling )
             self.visit_galaxy_url( url )
             return util.listify( repository_ids )
-    def install_repositories_from_search_results( self, repositories, strings_displayed=[], strings_not_displayed=[], **kwd ):
+    def install_repositories_from_search_results( self, repositories, install_tool_dependencies=False, 
+                                                  strings_displayed=[], strings_not_displayed=[], **kwd ):
         '''
         Normally, it would be possible to check the appropriate boxes in the search results, and click the install button. This works
         in a browser, but Twill manages to lose the 'toolshedgalaxyurl' cookie between one page and the next, so it's necessary to work
@@ -640,15 +645,12 @@ class ShedTwillTestCase( TwillTestCase ):
             form = tc.browser.get_form( 'select_tool_panel_section' )
             checkbox = form.find_control( id="install_tool_dependencies" )
             checkbox.disabled = False
-            if 'install_tool_dependencies' in kwd:
-                install_tool_dependencies = kwd[ 'install_tool_dependencies' ]
-                del kwd[ 'install_tool_dependencies' ]
-            else:
-                install_tool_dependencies = False
             if install_tool_dependencies:
                 checkbox.selected = True
+                kwd[ 'install_tool_dependencies' ] = 'True'
             else:
                 checkbox.selected = False
+                kwd[ 'install_tool_dependencies' ] = 'False'
         self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
         repository_ids = self.initiate_installation_process()
         self.wait_for_repository_installation( repository_ids )
@@ -676,8 +678,10 @@ class ShedTwillTestCase( TwillTestCase ):
             checkbox.disabled = False
             if install_tool_dependencies:
                 checkbox.selected = True
+                kwd[ 'install_tool_dependencies' ] = 'True'
             else:
                 checkbox.selected = False
+                kwd[ 'install_tool_dependencies' ] = 'False'
         if 'install_repository_dependencies' in self.last_page():
             kwd[ 'install_repository_dependencies' ] = str( install_repository_dependencies ).lower()
         if 'shed_tool_conf' not in kwd:
@@ -688,7 +692,7 @@ class ShedTwillTestCase( TwillTestCase ):
             self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
             self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         else:
-            self.check_for_strings(strings_displayed=[ 'Choose the configuration file whose tool_path setting will be used for installing repositories' ] )
+            self.check_for_strings( strings_displayed=[ 'Choose the configuration file whose tool_path setting will be used for installing repositories' ] )
             args = dict( shed_tool_conf=self.shed_tool_conf )
             self.submit_form( 1, 'select_shed_tool_panel_config_button', **args )
             self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
