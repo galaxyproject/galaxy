@@ -6,7 +6,7 @@ import pkg_resources
 pkg_resources.require( "simplejson" )
 pkg_resources.require( "Mako" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback, re, pipes
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback, re
 import simplejson
 import binascii
 from mako.template import Template
@@ -25,7 +25,6 @@ from parameters.input_translation import ToolInputTranslator
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
-from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import DependencyManager
 from galaxy.model import directory_hash_id
 from galaxy.model.orm import *
@@ -80,7 +79,6 @@ class ToolBox( object ):
         # In-memory dictionary that defines the layout of the tool panel.
         self.tool_panel = odict()
         self.index = 0
-        self.data_manager_tools = odict()
         # File that contains the XML section and tool tags from all tool panel config files integrated into a
         # single file that defines the tool panel layout.  This file can be changed by the Galaxy administrator
         # (in a way similar to the single tool_conf.xml file in the past) to alter the layout of the tool panel.
@@ -510,7 +508,7 @@ class ToolBox( object ):
             self.integrated_tool_panel[ key ] = integrated_section
         else:
             self.integrated_tool_panel.insert( index, key, integrated_section )
-    def load_tool( self, config_file, guid=None, **kwds ):
+    def load_tool( self, config_file, guid=None ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
         tree = util.parse_xml( config_file )
@@ -526,7 +524,7 @@ class ToolBox( object ):
             ToolClass = tool_types.get( root.get( 'tool_type' ) )
         else:
             ToolClass = Tool
-        return ToolClass( config_file, root, self.app, guid=guid, **kwds )
+        return ToolClass( config_file, root, self.app, guid=guid )
     def reload_tool_by_id( self, tool_id ):
         """
         Attempt to reload the tool identified by 'tool_id', if successful
@@ -813,7 +811,6 @@ class Tool( object ):
     """
     
     tool_type = 'default'
-    default_tool_action = DefaultToolAction
     
     def __init__( self, config_file, root, app, guid=None ):
         """Load a tool from the config named by `config_file`"""
@@ -1054,7 +1051,7 @@ class Tool( object ):
         # Action
         action_elem = root.find( "action" )
         if action_elem is None:
-            self.tool_action = self.default_tool_action()
+            self.tool_action = DefaultToolAction()
         else:
             module = action_elem.get( 'module' )
             cls = action_elem.get( 'class' )
@@ -2573,24 +2570,18 @@ class Tool( object ):
             temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
             try:
                 a_files = os.listdir( temp_file_path )
-                print 'a_files',a_files
                 if len( a_files ) > 0:
                     for f in a_files:
-                        print 'f', f
                         self.app.object_store.update_from_file(hda.dataset,
                             extra_dir="dataset_%d_files" % hda.dataset.id, 
                             alt_name = f,
                             file_name = os.path.join(temp_file_path, f),
-                            create = True,
-                            preserve_symlinks = True )
+                            create = True)
                     # Clean up after being handled by object store. 
                     # FIXME: If the object (e.g., S3) becomes async, this will 
                     # cause issues so add it to the object store functionality?
-                    print 'before rmtree'
                     shutil.rmtree(temp_file_path)
-                    print 'after rm tree'
-            except Exception, e:
-                log.debug( "Error in collect_associated_files: %s" % ( e ) )
+            except:
                 continue
     def collect_child_datasets( self, output, job_working_directory ):
         """
@@ -2815,64 +2806,7 @@ class Tool( object ):
         
         return tool_dict
 
-    def get_default_history_by_trans( self, trans, create=False ):
-        return trans.get_history( create=create )
-
-
-class OutputParameterJSONTool( Tool ):
-    """
-    Alternate implementation of Tool that provides parameters and other values 
-    JSONified within the contents of an output dataset
-    """
-    tool_type = 'output_parameter_json'
-    def _prepare_json_list( self, param_list ):
-        rval = []
-        for value in param_list:
-            if isinstance( value, dict ):
-                rval.append( self._prepare_json_param_dict( value ) )
-            elif isinstance( value, list ):
-                rval.append( self._prepare_json_list( value ) )
-            else:
-                rval.append( str( value ) )
-        return rval
-    def _prepare_json_param_dict( self, param_dict ):
-        rval = {}
-        for key, value in param_dict.iteritems():
-            if isinstance( value, dict ):
-                rval[ key ] = self._prepare_json_param_dict( value )
-            elif isinstance( value, list ):
-                rval[ key ] = self._prepare_json_list( value )
-            else:
-                rval[ key ] = str( value )
-        return rval
-    def exec_before_job( self, app, inp_data, out_data, param_dict=None ):
-        if param_dict is None:
-            param_dict = {}        
-        json_params = {}
-        json_params[ 'param_dict' ] = self._prepare_json_param_dict( param_dict ) #it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
-        json_params[ 'output_data' ] = []
-        json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
-        json_filename = None
-        for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
-            #use wrapped dataset to access certain values 
-            wrapped_data = param_dict.get( out_name )
-            #allow multiple files to be created
-            file_name = str( wrapped_data )
-            extra_files_path = str( wrapped_data.files_path )
-            data_dict = dict( out_data_name = out_name,
-                              ext = data.ext,
-                              dataset_id = data.dataset.id,
-                              hda_id = data.id,
-                              file_name = file_name,
-                              extra_files_path = extra_files_path )
-            json_params[ 'output_data' ].append( data_dict )
-            if json_filename is None:
-                json_filename = file_name
-        out = open( json_filename, 'w' )
-        out.write( simplejson.dumps( json_params ) )
-        out.close()
-
-class DataSourceTool( OutputParameterJSONTool ):
+class DataSourceTool( Tool ):
     """
     Alternate implementation of Tool for data_source tools -- those that 
     allow the user to query and extract data from another web site.
@@ -2882,10 +2816,29 @@ class DataSourceTool( OutputParameterJSONTool ):
     def _build_GALAXY_URL_parameter( self ):
         return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id ) )
     def parse_inputs( self, root ):
-        super( DataSourceTool, self ).parse_inputs( root )
+        Tool.parse_inputs( self, root )
         if 'GALAXY_URL' not in self.inputs:
             self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
-            self.inputs_by_page[0][ 'GALAXY_URL' ] = self.inputs[ 'GALAXY_URL' ]
+    def _prepare_datasource_json_list( self, param_list ):
+        rval = []
+        for value in param_list:
+            if isinstance( value, dict ):
+                rval.append( self._prepare_datasource_json_param_dict( value ) )
+            elif isinstance( value, list ):
+                rval.append( self._prepare_datasource_json_list( value ) )
+            else:
+                rval.append( str( value ) )
+        return rval
+    def _prepare_datasource_json_param_dict( self, param_dict ):
+        rval = {}
+        for key, value in param_dict.iteritems():
+            if isinstance( value, dict ):
+                rval[ key ] = self._prepare_datasource_json_param_dict( value )
+            elif isinstance( value, list ):
+                rval[ key ] = self._prepare_datasource_json_list( value )
+            else:
+                rval[ key ] = str( value )
+        return rval
     def exec_before_job( self, app, inp_data, out_data, param_dict=None ):
         if param_dict is None:
             param_dict = {}
@@ -2895,7 +2848,7 @@ class DataSourceTool( OutputParameterJSONTool ):
         name = param_dict.get( 'name' )
         
         json_params = {}
-        json_params[ 'param_dict' ] = self._prepare_json_param_dict( param_dict ) #it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
+        json_params[ 'param_dict' ] = self._prepare_datasource_json_param_dict( param_dict ) #it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
         json_params[ 'output_data' ] = []
         json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
         json_filename = None
@@ -2986,186 +2939,9 @@ class ImportHistoryTool( Tool ):
 class GenomeIndexTool( Tool ):
     tool_type = 'index_genome'
 
-class DataManagerTool( OutputParameterJSONTool ):
-    tool_type = 'manage_data'
-    default_tool_action = DataManagerToolAction
-    
-    def __init__( self, config_file, root, app, guid=None, data_manager_id=None, **kwds ):
-        self.data_manager_id = data_manager_id
-        super( DataManagerTool, self ).__init__( config_file, root, app, guid=guid, **kwds )
-        if self.data_manager_id is None:
-            self.data_manager_id = self.id
-    
-    #def parse_inputs( self, root ):
-    #    super( DataManagerTool, self ).parse_inputs( root )
-    #    '''
-    #    if '__GALAXY_MOVE_OUTPUT_FILES__' not in self.inputs:
-    #        self.inputs[ '__GALAXY_MOVE_OUTPUT_FILES__' ] = ToolParameter.build( self, ElementTree.XML( '<param name="__GALAXY_MOVE_OUTPUT_FILES__" label="Move created data to cache destination" type="boolean" truevalue="MOVE" falsevalue="DO_NOT_MOVE" checked="%s" />' % self.app.config.data_manager_move_files ) )
-    #        print 'self.inputs_by_page',self.inputs_by_page
-    #        self.inputs_by_page[0][ '__GALAXY_MOVE_OUTPUT_FILES__' ] = self.inputs[ '__GALAXY_MOVE_OUTPUT_FILES__' ]
-    #    print 'self.inputs', self.inputs
-    #    '''
-    #    #self.inputs[ '__DATA_MANAGER_ID__' ] = ToolParameter.build( self, ElementTree.XML( '<param name="__DATA_MANAGER_ID__" type="hidden" value="%s" />' % ( self.data_manager_id ) ) )
-    #    #self.inputs_by_page[0][ '__DATA_MANAGER_ID__' ] = self.inputs[ '__DATA_MANAGER_ID__' ]
-    
-    def exec_after_process( self, app, inp_data, out_data, param_dict, job = None, **kwds ):
-        #run original exec_after_process
-        super( DataManagerTool, self ).exec_after_process( app, inp_data, out_data, param_dict, job = job, **kwds )
-        #process results of tool
-        print 'exect after', self.id
-        print 'inp_data', inp_data
-        print 'out_data', out_data
-        print 'param_dict', param_dict
-        print 'job', job, job.state
-        if job and job.state == job.states.ERROR:
-            return
-        #print 'data_manager.output_ref',data_manager.output_ref
-        #data_manager = self.app.data_managers.get( self.id, None ) #fix me to not only use tool ID!
-        data_manager_id = job.data_manager_association.data_manager_id
-        data_manager = self.app.data_managers.get( data_manager_id, None )
-        #TODO: need to be able to handle using a data manager tool for more than one manager
-        #manager id is currently same as tool id
-        assert data_manager is not None, "Invalid data manager (%s) requested. It may have been removed before the job completed." % ( data_manager_id )
-        data_manager_dicts = {}
-        data_manager_dict = {}
-        #TODO: fix this merging below
-        for output_name, output_dataset in out_data.iteritems():
-            try:
-                output_dict = simplejson.loads( open( output_dataset.file_name ).read() )
-            except Exception, e:
-                log.warning( 'Error reading DataManagerTool json for "%s": %s'  % ( output_name, e ) )
-                continue
-            data_manager_dicts[ output_name ] = output_dict
-            print 'data_manager_dicts', data_manager_dicts
-            for key, value in output_dict.iteritems():
-                if key not in data_manager_dict:
-                    data_manager_dict[ key ] = {}
-                print 'key', key
-                print ' data_manager_dict[ key ]',  data_manager_dict[ key ]
-                print 'value', value
-                data_manager_dict[ key ].update( value )
-            data_manager_dict.update( output_dict )
-                
-        print 'data_manager_dicts',data_manager_dicts
-        print 'data_manager_dict', data_manager_dict
-        data_tables_dict = data_manager_dict.get( 'data_tables', {} )
-        #for data_table_name, data_table_values in data_tables_dict.iteritems():
-        for data_table_name, data_table_columns in data_manager.data_tables.iteritems():
-            print 'data_table_name', data_table_name
-            data_table_values = data_tables_dict.pop( data_table_name, None ) #data_tables_dict.get( data_table_name, [] )
-            if not data_table_values:
-                log.warning( 'No values for data table "%s" were returned by the data manager "%s".' % ( data_table_name, data_manager.id ) )
-                continue #next data table
-            data_table = app.tool_data_tables.get( data_table_name, None )
-            if data_table is None:
-                log.error( 'The data manager "%s" returned an unknown data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % ( data_manager.id, data_table_name, data_table_values, data_table_name, 'tool_data_table_conf.xml' ) )
-                continue #next table name
-            output_ref_values = {}
-            if data_table_name in data_manager.output_ref_by_data_table:
-                for data_table_column, output_ref in data_manager.output_ref_by_data_table[ data_table_name ].iteritems():
-                    output_ref_dataset = out_data.get( output_ref, None )
-                    assert output_ref_dataset is not None, "Referenced output was not found."
-                    output_ref_values[ data_table_column ] = output_ref_dataset
-            print 'output_ref_values', output_ref_values
-            
-            final_data_table_values = []
-            if not isinstance( data_table_values, list ):
-                data_table_values = [ data_table_values ]
-            columns = data_table.get_column_name_list()
-            
-            try:
-                data_table_fh = open( data_table.filename, 'r+b' )
-            except IOError, e:
-                log.warning( 'Error opening data table file (%s) with r+b, assuming file does not exist and will open as wb: %s' % ( data_table.filename, e ) )
-                data_table_fh = open( data_table.filename, 'wb' )
-            if os.stat( data_table.filename )[6] != 0:
-                # ensure last existing line ends with new line
-                data_table_fh.seek( -1, 2 ) #last char in file
-                last_char = data_table_fh.read()
-                if last_char not in [ '\n', '\r' ]:
-                    data_table_fh.write( '\n' )
-            for data_table_row in data_table_values:
-                data_table_value = dict( **data_table_row ) #keep original values here
-                for name, value in data_table_row.iteritems(): #FIXME: need to loop through here based upon order listed in data_manager config
-                    if name in output_ref_values:
-                        #TODO: Allow moving!
-                        #if param_dict[ '__GALAXY_MOVE_OUTPUT_FILES__' ]:
-                        #    #FIXME: allow moving
-                        #    log.error( "\n\nShould be moving output files directory, but not implemented yet.\n" )
-                        #    base_path = output_ref_values[ name ].extra_files_path    
-                        #else:
-                        #    base_path = output_ref_values[ name ].extra_files_path
-                        moved = data_manager.process_move( data_table_name, name, output_ref_values[ name ].extra_files_path, **data_table_value )
-                        print 'moved', moved #should we always move?
-                        data_table_value[ name ] = data_manager.process_value_translation( data_table_name, name, **data_table_value )
-                final_data_table_values.append( data_table_value )
-                fields = []
-                for column_name in columns:
-                    if column_name is None or column_name not in data_table_value:
-                        fields.append( data_table.get_empty_field_by_name( column_name ) )
-                    else:
-                        fields.append( data_table_value[ column_name ] )
-                print 'fields', fields
-                #should we add a comment to file about automatically generated value here?
-                data_table_fh.write( "%s\n" % ( data_table.separator.join( self._replace_field_separators( fields, separator=data_table.separator ) ) ) ) #write out fields to disk
-                data_table.data.append( fields ) #add fields to loaded data table
-            print 'final_data_table_values', final_data_table_values
-            print 'data_table.data', data_table.data
-            data_table_fh.close()
-        for data_table_name, data_table_values in data_tables_dict.iteritems():
-            #tool returned extra data table entries, but data table was not declared in data manager
-            #do not add these values, but do provide messages
-            log.warning( 'The data manager "%s" returned an undeclared data table "%s" with new entries "%s". These entries will not be created. Please confirm that an entry for "%s" exists in your "%s" file.' % ( data_manager.id, data_table_name, data_table_values, data_table_name, self.app.data_managers.filename ) )
-        
-    def _replace_field_separators( self, fields, separator="\t", replace=None, comment_char=None ):
-        #make sure none of the fields contain separator
-        #make sure separator replace is different from comment_char,
-        #due to possible leading replace
-        if replace is None:
-            if separator == " ":
-                if comment_char == "\t":
-                    replace = "_"
-                else:
-                    replace = "\t"
-            else:
-                if comment_char == " ":
-                    replace = "_"
-                else:
-                    replace = " "
-        return map( lambda x: x.replace( separator, replace ), fields )
-
-    def get_default_history_by_trans( self, trans, create=False ):
-        def _create_data_manager_history( user ):
-            history = trans.app.model.History( name='Data Manager History (automatically created)', user=user )
-            data_manager_association = trans.app.model.DataManagerHistoryAssociation( user=user, history=history )
-            trans.sa_session.add_all( ( history, data_manager_association ) )
-            trans.sa_session.flush()
-            return history
-        user = trans.user
-        assert user, 'You must be logged in to use this tool.'
-        history = user.data_manager_histories
-        if not history:
-            #create
-            if create:
-                history = _create_data_manager_history( user )
-            else:
-                history = None
-        else:
-            for history in reversed( history ):
-                history = history.history
-                if not history.deleted:
-                    break
-            if history.deleted:
-                if create:
-                    history = _create_data_manager_history( user )
-                else:
-                    history = None
-        return history
-
-
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool, DataManagerTool ]:
+for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
 # ---- Utility classes to be factored out -----------------------------------
@@ -3207,12 +2983,6 @@ class ToolParameterValueWrapper( object ):
     """
     def __nonzero__( self ):
         return bool( self.value )
-    def get_display_text( self, quote=True ):
-        print 'self.input',self.input
-        print 'self.input.tool.app', self.input.tool.app
-        print 'self.value', self.value
-        print 'self.input.value_to_display_text( self.value, self.input.tool.app )', self.input.value_to_display_text( self.value, self.input.tool.app )
-        return pipes.quote( self.input.value_to_display_text( self.value, self.input.tool.app ) )
 
 class RawObjectWrapper( ToolParameterValueWrapper ):
     """

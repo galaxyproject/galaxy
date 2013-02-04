@@ -44,7 +44,7 @@ class LocalJobRunner( BaseJobRunner ):
         log.debug( "%d workers ready", nworkers )
 
     def run_next( self ):
-        """Run the next job, waiting until one is available if necessary"""
+        """Run the next job, waiting until one is available if neccesary"""
         while 1:
             job_wrapper = self.queue.get()
             if job_wrapper is self.STOP_SIGNAL:

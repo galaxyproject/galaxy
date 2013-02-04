@@ -567,22 +567,6 @@ def relpath( path, start = None ):
         return curdir
     return join( *rel_list )
 
-def relativize_symlinks( path, start=None, followlinks=False):
-    for root, dirs, files in os.walk( path, followlinks=followlinks ):
-        rel_start = None
-        for file_name in files:
-            symlink_file_name = os.path.join( root, file_name )
-            if os.path.islink( symlink_file_name ):
-                symlink_target = os.readlink( symlink_file_name )
-                if rel_start is None:
-                    if start is None:
-                        rel_start = root
-                    else:
-                        rel_start = start
-                rel_path = relpath( symlink_target, rel_start )
-                os.remove( symlink_file_name )
-                os.symlink( rel_path, symlink_file_name )
-
 def stringify_dictionary_keys( in_dict ):
     #returns a new dictionary
     #changes unicode keys into strings, only works on top level (does not recurse)

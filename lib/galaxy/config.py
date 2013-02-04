@@ -75,10 +75,6 @@ class Configuration( object ):
         except:
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get( "update_integrated_tool_panel", True )
-        self.enable_data_manager_user_view = string_as_bool( kwargs.get( "enable_data_manager_user_view", "False" ) )
-        self.data_manager_config_file = resolve_path( kwargs.get(' data_manager_config_file', 'data_manager_conf.xml' ), self.root )
-        self.data_manager_move_files = string_as_bool( kwargs.get( "data_manager_move_files", "False" ) )
-        self.galaxy_data_manager_data_path = kwargs.get( 'galaxy_data_manager_data_dir',  self.tool_data_path )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.set_metadata_externally = string_as_bool( kwargs.get( "set_metadata_externally", "False" ) )
