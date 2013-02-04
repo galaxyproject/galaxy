@@ -168,7 +168,7 @@ class DefaultToolAction( object ):
         
         # Set history.
         if not history:
-            history = trans.history
+            history = tool.get_default_history_by_trans( trans, create=True ) #trans..history
         
         out_data = odict()
         # Collect any input datasets from the incoming parameters
