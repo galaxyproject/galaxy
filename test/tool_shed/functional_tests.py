@@ -288,6 +288,7 @@ def main():
                                                shed_tool_path = galaxy_shed_tool_path,
                                                template_path = "templates",
                                                tool_data_path = tool_data_path,
+                                               tool_dependency_dir = galaxy_tool_dependency_dir,
                                                tool_path = tool_path,
                                                tool_config_file = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
                                                tool_sheds_config_file = galaxy_tool_sheds_conf_file,
@@ -391,18 +392,18 @@ def main():
             galaxyapp.shutdown()
             galaxyapp = None
             log.info( "Embedded galaxy application stopped" )
-    if 'TOOL_SHED_TEST_NO_CLEANUP' not in os.environ:
-        try:
-            for dir in [ tool_shed_test_tmp_dir ]:
-                if os.path.exists( dir ):
-                    log.info( "Cleaning up temporary files in %s" % dir )
-                    shutil.rmtree( dir )
-        except:
-            pass
-    if success:
-        return 0
-    else:
-        return 1
+#    if 'TOOL_SHED_TEST_NO_CLEANUP' not in os.environ:
+#        try:
+#            for dir in [ tool_shed_test_tmp_dir ]:
+#                if os.path.exists( dir ):
+#                    log.info( "Cleaning up temporary files in %s" % dir )
+#                    shutil.rmtree( dir )
+#        except:
+#            pass
+#    if success:
+#        return 0
+#    else:
+#        return 1
 
 if __name__ == "__main__":
     sys.exit( main() )

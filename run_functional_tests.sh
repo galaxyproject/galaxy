@@ -11,8 +11,8 @@ elif [ $1 = 'help' ]; then
 	echo "'run_functional_tests.sh -id bbb'                  for testing one tool with id 'bbb' ('bbb' is the tool id)"
 	echo "'run_functional_tests.sh -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')"
 	echo "'run_functional_tests.sh -list'                    for listing all the tool ids"
-    echo "'run_functional_tests.sh -toolshed'                for running all the test scripts in the ./test/tool_shed/functional directory"
-    echo "'run_functional_tests.sh -toolshed testscriptname' for running one test script named testscriptname in the .test/tool_shed/functional directory"
+	echo "'run_functional_tests.sh -toolshed'                for running all the test scripts in the ./test/tool_shed/functional directory"
+	echo "'run_functional_tests.sh -toolshed testscriptname' for running one test script named testscriptname in the .test/tool_shed/functional directory"
 elif [ $1 = '-id' ]; then
 	python ./scripts/functional_tests.py -v functional.test_toolbox:TestForTool_$2 --with-nosehtml --html-report-file run_functional_tests.html
 elif [ $1 = '-sid' ]; then
