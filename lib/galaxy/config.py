@@ -2,7 +2,7 @@
 Universe configuration builder.
 """
 
-import sys, os, tempfile
+import sys, os, tempfile, re
 import logging, logging.config
 import ConfigParser
 from datetime import timedelta
@@ -57,7 +57,7 @@ class Configuration( object ):
         self.test_conf = resolve_path( kwargs.get( "test_conf", "" ), self.root )
         # The value of migrated_tools_config is the file reserved for containing only those tools that have been eliminated from the distribution
         # and moved to the tool shed.
-        self.migrated_tools_config = resolve_path( "migrated_tools_conf.xml", self.root )
+        self.migrated_tools_config = resolve_path( kwargs.get( 'migrated_tools_config', 'migrated_tools_conf.xml' ), self.root )
         if 'tool_config_file' in kwargs:
             tcf = kwargs[ 'tool_config_file' ]
         elif 'tool_config_files' in kwargs:
@@ -143,7 +143,6 @@ class Configuration( object ):
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225" ).lower().split(",")
-        self.genetrack_display_sites = kwargs.get( 'genetrack_display_sites', "main,test" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
         self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://g2.trac.bx.psu.edu/' )
@@ -261,10 +260,23 @@ class Configuration( object ):
         self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool( kwargs.get( 'new_lib_browse', False ) )
+        # Error logging with sentry
+        self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
+
+    @property
+    def sentry_dsn_public( self ):
+        """
+        Sentry URL with private key removed for use in client side scripts, 
+        sentry server will need to be configured to accept events
+        """
+        if self.sentry_dsn:
+            return re.sub( r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn )
+        else:
+            return None
 
     def __read_tool_job_config( self, global_conf_parser, section, key ):
         try:
@@ -387,36 +399,40 @@ def get_database_engine_options( kwargs ):
 
 def configure_logging( config ):
     """
-    Allow some basic logging configuration to be read from the cherrpy
-    config.
+    Allow some basic logging configuration to be read from ini file.
     """
-    # PasteScript will have already configured the logger if the appropriate
-    # sections were found in the config file, so we do nothing if the
-    # config has a loggers section, otherwise we do some simple setup
-    # using the 'log_*' values from the config.
-    if config.global_conf_parser.has_section( "loggers" ):
-        return
-    format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
-    level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
-    destination = config.get( "log_destination", "stdout" )
-    log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
     # Get root logger
     root = logging.getLogger()
-    # Set level
-    root.setLevel( level )
-    # Turn down paste httpserver logging
-    if level <= logging.DEBUG:
-        logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
-    # Remove old handlers
-    for h in root.handlers[:]:
-        root.removeHandler(h)
-    # Create handler
-    if destination == "stdout":
-        handler = logging.StreamHandler( sys.stdout )
-    else:
-        handler = logging.FileHandler( destination )
-    # Create formatter
-    formatter = logging.Formatter( format )
-    # Hook everything up
-    handler.setFormatter( formatter )
-    root.addHandler( handler )
+    # PasteScript will have already configured the logger if the 
+    # 'loggers' section was found in the config file, otherwise we do 
+    # some simple setup using the 'log_*' values from the config.
+    if not config.global_conf_parser.has_section( "loggers" ):
+        format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
+        level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
+        destination = config.get( "log_destination", "stdout" )
+        log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
+        # Set level
+        root.setLevel( level )
+        # Turn down paste httpserver logging
+        if level <= logging.DEBUG:
+            logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
+        # Remove old handlers
+        for h in root.handlers[:]:
+            root.removeHandler(h)
+        # Create handler
+        if destination == "stdout":
+            handler = logging.StreamHandler( sys.stdout )
+        else:
+            handler = logging.FileHandler( destination )
+        # Create formatter
+        formatter = logging.Formatter( format )
+        # Hook everything up
+        handler.setFormatter( formatter )
+        root.addHandler( handler )
+    # If sentry is configured, also log to it
+    if config.sentry_dsn:
+        pkg_resources.require( "raven" )
+        from raven.handlers.logging import SentryHandler
+        sentry_handler = SentryHandler( config.sentry_dsn )
+        sentry_handler.setLevel( logging.WARN )
+        root.addHandler( sentry_handler )

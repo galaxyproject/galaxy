@@ -601,7 +601,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                 from the visualization title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
                                 the '-' character.""" )
-                .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), error=None)
+                .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys( trans, chrom_info=True ), error=None)
                 .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
                 template="visualization/create.mako" )
@@ -683,7 +683,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         Provide info necessary for creating a new trackster browser.
         """
         return trans.fill_template( "tracks/new_browser.mako", 
-                                    dbkeys=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), 
+                                    dbkeys=trans.app.genomes.get_dbkeys( trans, chrom_info=True ), 
                                     default_dbkey=kwargs.get("default_dbkey", None) )
         
     @web.expose

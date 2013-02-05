@@ -175,11 +175,10 @@ class UploadController( BaseUIController ):
                             metadata_dict = repository.metadata_revisions[0].metadata
                         else:
                             metadata_dict = {}
-                        if 'tool_dependencies' not in metadata_dict:
+                        if suc.has_orphan_tool_dependencies_in_tool_shed( metadata_dict ):
                             message += 'Name, version and type from a tool requirement tag does not match the information in the "tool_dependencies.xml file", '
-                            message += 'so the tool dependency definitions will be ignored.'
+                            message += 'so one or more of the defined tool dependencies are considered orphans within this repository.'
                             status = 'warning'
-                            log.debug( 'Error in tool dependencies for repository with id %s and name %s: %s' % ( str( repository.id ), str( repository.name ), message ) )
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                     suc.reset_tool_data_tables( trans.app )
                     trans.response.send_redirect( web.url_for( controller='repository',

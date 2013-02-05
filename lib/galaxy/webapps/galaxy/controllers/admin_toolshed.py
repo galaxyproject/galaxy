@@ -661,6 +661,7 @@ class AdminToolshed( AdminGalaxy ):
         shed_config_dict = trans.app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf )
         metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
                                                                                          repository=tool_shed_repository,
+                                                                                         changeset_revision=tool_shed_repository.changeset_revision,
                                                                                          repository_clone_url=repository_clone_url,
                                                                                          shed_config_dict=shed_config_dict,
                                                                                          relative_install_dir=relative_install_dir,
@@ -889,7 +890,7 @@ class AdminToolshed( AdminGalaxy ):
             shed_util.update_tool_shed_repository_status( trans.app, tool_shed_repository, trans.model.ToolShedRepository.installation_status.CLONING )
             repo_info_tuple = repo_info_dict[ tool_shed_repository.name ]
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
-            relative_clone_dir = shed_util.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision )
+            relative_clone_dir = shed_util.generate_tool_shed_repository_install_dir( repository_clone_url, tool_shed_repository.installed_changeset_revision )
             clone_dir = os.path.join( tool_path, relative_clone_dir )
             relative_install_dir = os.path.join( relative_clone_dir, tool_shed_repository.name )
             install_dir = os.path.join( tool_path, relative_install_dir )
@@ -1198,6 +1199,7 @@ class AdminToolshed( AdminGalaxy ):
             return trans.show_error_message( message )
         message = kwd.get( 'message', ''  )
         status = kwd.get( 'status', 'done' )
+        shed_tool_conf = kwd.get( 'shed_tool_conf', None )
         tool_shed_url = kwd[ 'tool_shed_url' ]
         # Handle repository dependencies.
         has_repository_dependencies = util.string_as_bool( kwd.get( 'has_repository_dependencies', False ) )
@@ -1228,16 +1230,9 @@ class AdminToolshed( AdminGalaxy ):
             includes_tool_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_tool_dependencies', False ) )
             encoded_repo_info_dicts = util.listify( repo_information_dict.get( 'repo_info_dicts', [] ) )
         repo_info_dicts = [ encoding_util.tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
-        if ( not includes_tools and not has_repository_dependencies ) or \
+        if ( ( not includes_tools and not has_repository_dependencies ) and kwd.get( 'select_shed_tool_panel_config_button', False ) ) or \
             ( ( includes_tools or has_repository_dependencies ) and kwd.get( 'select_tool_panel_section_button', False ) ):
             install_repository_dependencies = CheckboxField.is_checked( install_repository_dependencies )
-            if includes_tools:
-                shed_tool_conf = kwd[ 'shed_tool_conf' ]
-            else:
-                # If installing a repository that includes no tools, get the relative tool_path from the file to which the migrated_tools_config
-                # setting points.
-                # FIXME: default to a temporary file or raise an exception or display an appropriate error message.
-                shed_tool_conf = trans.app.config.migrated_tools_config
             if includes_tool_dependencies:
                 install_tool_dependencies = CheckboxField.is_checked( install_tool_dependencies )
             else:
@@ -1326,14 +1321,7 @@ class AdminToolshed( AdminGalaxy ):
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                   action='manage_repositories',
                                                                   **kwd ) )
-        if len( trans.app.toolbox.shed_tool_confs ) > 1:
-            shed_tool_conf_select_field = build_shed_tool_conf_select_field( trans )
-            shed_tool_conf = None
-        else:
-            shed_tool_conf_dict = trans.app.toolbox.shed_tool_confs[0]
-            shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
-            shed_tool_conf = shed_tool_conf.replace( './', '', 1 )
-            shed_tool_conf_select_field = None
+        shed_tool_conf_select_field = build_shed_tool_conf_select_field( trans )
         tool_path = suc.get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf )
         tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
         if len( repo_info_dicts ) == 1:
@@ -1386,21 +1374,40 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
-        return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
-                                    encoded_repo_info_dicts=encoded_repo_info_dicts,
-                                    includes_tools=includes_tools,
-                                    includes_tool_dependencies=includes_tool_dependencies,
-                                    install_tool_dependencies_check_box=install_tool_dependencies_check_box,
-                                    has_repository_dependencies=has_repository_dependencies,
-                                    install_repository_dependencies_check_box=install_repository_dependencies_check_box,
-                                    new_tool_panel_section=new_tool_panel_section,
-                                    containers_dict=containers_dict,
-                                    shed_tool_conf=shed_tool_conf,
-                                    shed_tool_conf_select_field=shed_tool_conf_select_field,
-                                    tool_panel_section_select_field=tool_panel_section_select_field,
-                                    tool_shed_url=kwd[ 'tool_shed_url' ],
-                                    message=message,
-                                    status=status )
+        if includes_tools or has_repository_dependencies:
+            return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
+                                        encoded_repo_info_dicts=encoded_repo_info_dicts,
+                                        includes_tools=includes_tools,
+                                        includes_tool_dependencies=includes_tool_dependencies,
+                                        install_tool_dependencies_check_box=install_tool_dependencies_check_box,
+                                        has_repository_dependencies=has_repository_dependencies,
+                                        install_repository_dependencies_check_box=install_repository_dependencies_check_box,
+                                        new_tool_panel_section=new_tool_panel_section,
+                                        containers_dict=containers_dict,
+                                        shed_tool_conf=shed_tool_conf,
+                                        shed_tool_conf_select_field=shed_tool_conf_select_field,
+                                        tool_panel_section_select_field=tool_panel_section_select_field,
+                                        tool_shed_url=kwd[ 'tool_shed_url' ],
+                                        message=message,
+                                        status=status )
+        else:
+            # If installing repositories that includes no tools and has not repository dependencies, display a page allowing the Galaxy administrator to
+            # select a shed-related tool panel configuration file whose tool_path setting will be the location the repositories will be installed.
+            return trans.fill_template( '/admin/tool_shed_repository/select_shed_tool_panel_config.mako',
+                                        encoded_repo_info_dicts=encoded_repo_info_dicts,
+                                        includes_tools=includes_tools,
+                                        includes_tool_dependencies=includes_tool_dependencies,
+                                        install_tool_dependencies_check_box=install_tool_dependencies_check_box,
+                                        has_repository_dependencies=has_repository_dependencies,
+                                        install_repository_dependencies_check_box=install_repository_dependencies_check_box,
+                                        new_tool_panel_section=new_tool_panel_section,
+                                        containers_dict=containers_dict,
+                                        shed_tool_conf=shed_tool_conf,
+                                        shed_tool_conf_select_field=shed_tool_conf_select_field,
+                                        tool_panel_section_select_field=tool_panel_section_select_field,
+                                        tool_shed_url=kwd[ 'tool_shed_url' ],
+                                        message=message,
+                                        status=status ) 
     @web.expose
     @web.require_admin
     def reinstall_repository( self, trans, **kwd ):
@@ -1415,7 +1422,8 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies = CheckboxField.is_checked( kwd.get( 'install_tool_dependencies', '' ) )
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, tool_shed_repository )
         repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, tool_shed_repository )
-        clone_dir = os.path.join( tool_path, shed_util.generate_tool_path( repository_clone_url, tool_shed_repository.installed_changeset_revision ) )
+        clone_dir = os.path.join( tool_path, shed_util.generate_tool_shed_repository_install_dir( repository_clone_url,
+                                                                                                  tool_shed_repository.installed_changeset_revision ) )
         relative_install_dir = os.path.join( clone_dir, tool_shed_repository.name )
         tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, tool_shed_repository )
         tool_section = None
@@ -1692,6 +1700,7 @@ class AdminToolshed( AdminGalaxy ):
             original_metadata_dict = repository.metadata
             metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
                                                                                              repository=repository,
+                                                                                             changeset_revision=repository.changeset_revision,
                                                                                              repository_clone_url=repository_clone_url,
                                                                                              shed_config_dict = repository.get_shed_config_dict( trans.app ),
                                                                                              relative_install_dir=relative_install_dir,
@@ -1887,6 +1896,7 @@ class AdminToolshed( AdminGalaxy ):
                     # Update the repository metadata.
                     metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
                                                                                                      repository=repository,
+                                                                                                     changeset_revision=latest_changeset_revision,
                                                                                                      repository_clone_url=repository_clone_url,
                                                                                                      shed_config_dict = repository.get_shed_config_dict( trans.app ),
                                                                                                      relative_install_dir=relative_install_dir,

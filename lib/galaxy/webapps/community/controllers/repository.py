@@ -542,7 +542,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 # The value of 'id' has been set to the search string, which is a repository name.  We'll try to get the desired encoded repository
                 # id to pass on.
                 try:
-                    repository = suc.get_repository_by_name( trans, kwd[ 'id' ] )
+                    repository_name = kwd[ 'id' ]
+                    repository = suc.get_repository_by_name( trans.app, repository_name )
                     kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 except:
                     pass
@@ -724,7 +725,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 # We'll try to get the desired encoded repository id to pass on.
                 try:
                     name = kwd[ 'id' ]
-                    repository = suc.get_repository_by_name( trans, name )
+                    repository = suc.get_repository_by_name( trans.app, name )
                     kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 except:
                     pass
@@ -825,7 +826,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         # Default to the current changeset revision.
@@ -892,6 +893,47 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         url += '&latest_ctx_rev=%s' % str( update_to_ctx.rev() )
         return trans.response.send_redirect( url )
     @web.expose
+    def citable_owner( self, trans, owner ):
+        """Support for citeable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
+        try:
+            user = suc.get_user_by_username( trans, owner )
+        except:
+            user = None
+        if user:
+            user_id = trans.security.encode_id( user.id )
+            return trans.fill_template( "/webapps/community/citable_repository.mako",
+                                        user_id=user_id )
+        else:
+            message = "No repositories exist with owner <b>%s</b>." % str( owner )
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_categories',
+                                                              id=None,
+                                                              name=None,
+                                                              owner=None,
+                                                              message=message,
+                                                              status='error' ) )
+    @web.expose
+    def citable_repository( self, trans, owner, name ):
+        """Support for citeable URL for each repository, e.g. http://example.org/view/owner/name."""
+        try:
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        except:
+            repository = None
+        if repository:
+            repository_id = trans.security.encode_id( repository.id )
+            return trans.fill_template( "/webapps/community/citable_repository.mako",
+                                        repository_id=repository_id )
+        else:
+            #TODO - If the owner is OK, show their repositories?
+            message = "No repositories named <b>%s</b> with owner <b>%s</b> exist." % ( str( name ), str( owner ) )
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_categories',
+                                                              id=None,
+                                                              name=None,
+                                                              owner=None,
+                                                              message=message,
+                                                              status='error' ) )
+    @web.expose
     def contact_owner( self, trans, id, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -951,7 +993,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             if not description:
                 message = 'Enter a description.'
                 error = True
-            if not error:
+            if error:
+                status = 'error'
+            else:
                 # Add the repository record to the db
                 repository = trans.app.model.Repository( name=name,
                                                          description=description,
@@ -1280,7 +1324,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
                                                                                  trans.security.encode_id( repository.id ),
                                                                                  changeset_revision )
@@ -1340,7 +1384,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_name = kwd[ 'name' ]
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
-        repository = suc.get_repository_by_name_and_owner( trans, repository_name, repository_owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
@@ -1374,7 +1418,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_name = kwd[ 'name' ]
         repository_owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
-        repository = suc.get_repository_by_name_and_owner( trans, repository_name, repository_owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )        
         return suc.build_readme_files_dict( repository_metadata.metadata )
     @web.json
@@ -1384,7 +1428,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
@@ -1456,7 +1500,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         changeset_revisions = []
         for required_repository_tup in decoded_required_repository_tups:
             tool_shed, name, owner, changeset_revision = required_repository_tup
-            repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
             changeset_revisions.append( changeset_revision )
         if encoded_repository_ids and changeset_revisions:
@@ -1466,12 +1510,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         return repo_info_dict
     @web.expose
     def get_tool_dependencies( self, trans, **kwd ):
-        """Handle a request from a Galaxy instance."""
+        """Handle a request from a Galaxy instance to get the tool_dependencies entry from the metadata for a specified changeset revision."""
         params = util.Params( kwd )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         for downloadable_revision in repository.downloadable_revisions:
             if downloadable_revision.changeset_revision == changeset_revision:
                 break
@@ -1479,6 +1523,26 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         tool_dependencies = metadata.get( 'tool_dependencies', '' )
         if tool_dependencies:
             return encoding_util.tool_shed_encode( tool_dependencies )
+        return ''
+    @web.expose
+    def get_tool_dependencies_config_contents( self, trans, **kwd ):
+        """Handle a request from a Galaxy instance to get the tool_dependencies.xml file contents for a specified changeset revision."""
+        params = util.Params( kwd )
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        # TODO: We're currently returning the tool_dependencies.xml file that is available on disk.  We need to enhance this process
+        # to retrieve older versions of the tool-dependencies.xml file from the repository manafest.
+        repo_dir = repository.repo_path( trans.app )
+        # Get the tool_dependencies.xml file from disk.
+        tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', repo_dir )
+        # Return the encoded contents of the tool_dependencies.xml file.
+        if tool_dependencies_config:
+            tool_dependencies_config_file = open( tool_dependencies_config, 'rb' )
+            contents = tool_dependencies_config_file.read()
+            tool_dependencies_config_file.close()
+            return contents
         return ''
     @web.expose
     def get_tool_versions( self, trans, **kwd ):
@@ -1489,7 +1553,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = kwd[ 'name' ]
         owner = kwd[ 'owner' ]
         changeset_revision = kwd[ 'changeset_revision' ]
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         tool_version_dicts = []
@@ -1505,8 +1569,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         return ''
     @web.json
     def get_updated_repository_information( self, trans, name, owner, changeset_revision, **kwd ):
-        """Generate a disctionary that contains the information about a repository that is necessary for installing it into a local Galaxy instance."""
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        """Generate a dictionary that contains the information about a repository that is necessary for installing it into a local Galaxy instance."""
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repository_id = trans.security.encode_id( repository.id )
         repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -1670,7 +1734,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         owner = kwd.get( 'owner', None )
         galaxy_url = kwd.get( 'galaxy_url', None )
         if not repository_ids:
-            repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             repository_ids = trans.security.encode_id( repository.id )
         if not galaxy_url:
             # If galaxy_url is not in the request, it had to have been stored in a cookie by the tool shed.
@@ -2076,10 +2140,10 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        repository = suc.get_repository_by_name_and_owner( trans, name, owner )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
-        # Get the lower bound changeset revision 
+        # Get the lower bound changeset revision.
         lower_bound_changeset_revision = suc.get_previous_downloadable_changset_revision( repository, repo, changeset_revision )
         # Build the list of changeset revision hashes.
         changeset_hashes = []
@@ -2404,20 +2468,51 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         if list:
             return ','.join( list )
         return ''
+    @web.expose
+    def updated_changeset_revisions( self, trans, **kwd ):
+        """
+        Handle a request from a local Galaxy instance to retrieve the lsit of changeset revisions to which an installed repository can be updated.  This
+        method will return a string of comma-separated changeset revision hashes for all available updates to the received changeset revision.  Among
+        other things , this method handles the scenario where an installed tool shed repository's tool_dependency definition file defines a changeset
+        revision for a complex repository dependency that is outdated.  In other words, a defined changeset revision is older than the current changeset
+        revision for the required repository, making it impossible to discover the repository without knowledge of revisions to which it could have been
+        updated.
+        """
+        params = util.Params( kwd )
+        name = params.get( 'name', None )
+        owner = params.get( 'owner', None )
+        changeset_revision = params.get( 'changeset_revision', None )
+        repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        repo_dir = repository.repo_path( trans.app )
+        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        # Get the upper bound changeset revision.
+        upper_bound_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+        # Build the list of changeset revision hashes defining each available update up to, but excluding, upper_bound_changeset_revision.
+        changeset_hashes = []
+        for changeset in suc.reversed_lower_upper_bounded_changelog( repo, changeset_revision, upper_bound_changeset_revision ):
+            # Make sure to exclude upper_bound_changeset_revision.
+            if changeset != upper_bound_changeset_revision:
+                changeset_hashes.append( str( repo.changectx( changeset ) ) )
+        if changeset_hashes:
+            changeset_hashes_str = ','.join( changeset_hashes )
+            return changeset_hashes_str
+        return ''
     def __validate_repository_name( self, name, user ):
         # Repository names must be unique for each user, must be at least four characters
         # in length and must contain only lower-case letters, numbers, and the '_' character.
         if name in [ 'None', None, '' ]:
             return 'Enter the required repository name.'
+        if name in [ 'repos' ]:
+            return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a repository name." % name
         for repository in user.active_repositories:
             if repository.name == name:
-                return "You already have a repository named '%s', so choose a different name." % name
+                return "You already have a repository named <b>%s</b>, so choose a different name." % name
         if len( name ) < 4:
             return "Repository names must be at least 4 characters in length."
         if len( name ) > 80:
             return "Repository names cannot be more than 80 characters in length."
         if not( VALID_REPOSITORYNAME_RE.match( name ) ):
-            return "Repository names must contain only lower-case letters, numbers and underscore '_'."
+            return "Repository names must contain only lower-case letters, numbers and underscore <b>_</b>."
         return ''
     @web.expose
     def view_changelog( self, trans, id, **kwd ):
@@ -2496,6 +2591,17 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     is_malicious=is_malicious,
                                     message=message,
                                     status=status )
+    @web.expose
+    def view_citable_repositories_by_owner( self, trans, user_id, **kwd ):
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='browse_repositories',
+                                                          operation="repositories_by_user",
+                                                          user_id=user_id ) )
+    @web.expose
+    def view_citable_repository( self, trans, repository_id, **kwd ):
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='view_repository',
+                                                          id=repository_id ) )
     @web.expose
     def view_or_manage_repository( self, trans, **kwd ):
         repository = suc.get_repository_in_tool_shed( trans, kwd[ 'id' ] )

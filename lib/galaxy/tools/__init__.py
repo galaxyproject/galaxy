@@ -15,6 +15,7 @@ from galaxy.util.odict import odict
 from galaxy.util.bunch import Bunch
 from galaxy.util.template import fill_template
 from galaxy import util, jobs, model
+from galaxy.jobs import ParallelismInfo
 from elementtree import ElementTree
 from parameters import *
 from parameters.grouping import *
@@ -35,9 +36,13 @@ from galaxy.util import listify
 import galaxy.util.shed_util_common
 from galaxy.web import url_for
 
+from paste import httpexceptions
+
 from galaxy.visualization.genome.visual_analytics import TracksterConfig
 
 log = logging.getLogger( __name__ )
+
+WORKFLOW_PARAMETER_REGULAR_EXPRESSION =  re.compile( '''\$\{.+?\}''' )
 
 # These determine stdio-based error levels from matching on regular expressions
 # and exit codes. They are meant to be used comparatively, such as showing
@@ -800,19 +805,6 @@ class ToolRequirement( object ):
         self.type = type
         self.version = version
 
-class ToolParallelismInfo(object):
-    """
-    Stores the information (if any) for running multiple instances of the tool in parallel
-    on the same set of inputs.
-    """
-    def __init__(self, tag):
-        self.method = tag.get('method')
-        self.attributes = dict([item for item in tag.attrib.items() if item[0] != 'method' ])
-        if len(self.attributes) == 0:
-            # legacy basic mode - provide compatible defaults
-            self.attributes['split_size'] = 20
-            self.attributes['split_mode'] = 'number_of_parts'
-
 class Tool( object ):
     """
     Represents a computational tool that can be executed through Galaxy. 
@@ -992,7 +984,7 @@ class Tool( object ):
         # Parallelism for tasks, read from tool config.
         parallelism = root.find("parallelism")
         if parallelism is not None and parallelism.get("method"):
-            self.parallelism = ToolParallelismInfo(parallelism)
+            self.parallelism = ParallelismInfo(parallelism)
         else:
             self.parallelism = None
         # Set job handler(s). Each handler is a dict with 'url' and, optionally, 'params'.
@@ -1094,7 +1086,7 @@ class Tool( object ):
         else:
             self.trackster_conf = None
     def parse_inputs( self, root ):
-        r"""
+        """
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
         This implementation supports multiple pages and grouping constructs.
         """
@@ -1360,14 +1352,17 @@ class Tool( object ):
                 # and anything to do with "err". If neither stdout nor
                 # stderr were specified, then raise a warning and scan both.
                 for src in src_list:
+                    if re.search( "both", src, re.IGNORECASE ):
+                        regex.stdout_match = True
+                        regex.stderr_match = True
                     if re.search( "out", src, re.IGNORECASE ):
                         regex.stdout_match = True
                     if re.search( "err", src, re.IGNORECASE ):
                         regex.stderr_match = True
                     if (not regex.stdout_match and not regex.stderr_match):
-                        log.warning( "Unable to determine if tool stream "
-                                   + "source scanning is output, error, "
-                                   + "or both. Defaulting to use both." )
+                        log.warning( "Tool id %s: unable to determine if tool "
+                                     "stream source scanning is output, error, "
+                                     "or both. Defaulting to use both." % self.id )
                         regex.stdout_match = True
                         regex.stderr_match = True
                 self.stdio_regexes.append( regex )
@@ -1801,6 +1796,9 @@ class Tool( object ):
             elif state.page == self.last_page:
                 try:
                     _, out_data = self.execute( trans, incoming=params, history=history )
+                except httpexceptions.HTTPFound, e:
+                    #if it's a paste redirect exception, pass it up the stack
+                    raise e
                 except Exception, e:
                     log.exception('Exception caught while attempting tool execution:')
                     return 'message.mako', dict( status='error', message='Error executing tool: %s' % str(e), refresh_frames=[] )
@@ -2130,16 +2128,16 @@ class Tool( object ):
         return params_to_strings( self.inputs, params, app )
     def params_from_strings( self, params, app, ignore_errors=False ):
         return params_from_strings( self.inputs, params, app, ignore_errors )
-    def check_and_update_param_values( self, values, trans, update_values=True ):
+    def check_and_update_param_values( self, values, trans, update_values=True, allow_workflow_parameters=False ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
         from a database in case new parameters have been added. 
         """
         messages = {}
-        self.check_and_update_param_values_helper( self.inputs, values, trans, messages, update_values=update_values )
+        self.check_and_update_param_values_helper( self.inputs, values, trans, messages, update_values=update_values, allow_workflow_parameters=allow_workflow_parameters )
         return messages
-    def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="", update_values=True ):
+    def check_and_update_param_values_helper( self, inputs, values, trans, messages, context=None, prefix="", update_values=True, allow_workflow_parameters=False ):
         """
         Recursive helper for `check_and_update_param_values_helper`
         """
@@ -2184,8 +2182,13 @@ class Tool( object ):
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
+                        check_param = True
+                        if allow_workflow_parameters and isinstance( values[ input.name ], basestring ):
+                            if WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search( values[ input.name ] ):
+                                check_param = False
                         #this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
-                        input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
+                        if check_param:
+                            input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
                     except:
                         messages[ input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, input.label )
                         if update_values:

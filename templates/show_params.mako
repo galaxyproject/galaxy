@@ -111,6 +111,7 @@
         <tr><td>Filesize:</td><td>${nice_size(hda.dataset.file_size)}</td></tr>
         <tr><td>Dbkey:</td><td>${hda.dbkey | h}</td></tr>
         <tr><td>Format:</td><td>${hda.ext | h}</td></tr>
+        <tr><td>Galaxy Tool Version:</td><td>${job.tool_version | h}</td></tr>
         <tr><td>Tool Version:</td><td>${hda.tool_version | h}</td></tr>
         <tr><td>Tool Standard Output:</td><td><a href="${h.url_for( controller='dataset', action='stdout')}">stdout</a></td></tr>
         <tr><td>Tool Standard Error:</td><td><a href="${h.url_for( controller='dataset', action='stderr')}">stderr</a></td></tr>

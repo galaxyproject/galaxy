@@ -7,8 +7,6 @@ from galaxy.datatypes.data import nice_size
 from galaxy.util.bunch import Bunch
 from galaxy.jobs.runners import BaseJobRunner
 
-from paste.deploy.converters import asbool
-
 import pkg_resources
 
 egg_message = """

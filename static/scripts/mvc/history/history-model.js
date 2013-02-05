@@ -56,7 +56,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
 
         // if we've got hdas passed in the constructor, load them and set up updates if needed
         if( initialHdas ){
-           if( _.isArray( initialHdas ) ){
+            if( _.isArray( initialHdas ) ){
                 this.hdas.reset( initialHdas );
                 this.checkForUpdates();
 
@@ -192,6 +192,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             //TODO: remove when iframes are removed
             if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
                 alert( _l( 'Error getting history updates from the server.' ) + '\n' + error );
+                history.log( 'stateUpdater error:', error, 'responseText:', xhr.responseText );
             }
         });
     },

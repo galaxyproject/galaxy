@@ -895,6 +895,7 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
+        self.uuid = None
 
     def get_file_name( self ):
         if not self.external_filename:
@@ -1528,8 +1529,9 @@ class HistoryDatasetAssociation( DatasetInstance ):
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
                 val = val.file_name
-            elif isinstance( val, list ):
-                val = ', '.join( [str(v) for v in val] )
+            # If no value for metadata, look in datatype for metadata.
+            elif val == None and hasattr( hda.datatype, name ):
+                val = getattr( hda.datatype, name )
             rval['metadata_' + name] = val
         return rval
 
@@ -3151,6 +3153,11 @@ class ToolShedRepository( object ):
     def can_reinstall_or_activate( self ):
         return self.deleted
     @property
+    def has_readme_files( self ):
+        if self.metadata:
+            return 'readme_files' in self.metadata
+        return False
+    @property
     def has_repository_dependencies( self ):
         if self.metadata:
             return 'repository_dependencies' in self.metadata
@@ -3173,11 +3180,6 @@ class ToolShedRepository( object ):
     @property
     def in_error_state( self ):
         return self.status == self.installation_status.ERROR
-    @property
-    def has_readme_files( self ):
-        if self.metadata:
-            return 'readme_files' in self.metadata
-        return False
     @property
     def repository_dependencies( self ):
         required_repositories = []

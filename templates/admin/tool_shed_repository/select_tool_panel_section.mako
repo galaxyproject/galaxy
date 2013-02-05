@@ -87,12 +87,19 @@
                 </table>
             </div>
             %if shed_tool_conf_select_field:
+                <%
+                    if len( shed_tool_conf_select_field.options ) == 1:
+                        select_help = "Your Galaxy instance is configured with 1 shed-related tool configuration file, so repositories will be "
+                        select_help += "installed using it's <b>tool_path</b> setting."
+                    else:
+                        select_help = "Your Galaxy instance is configured with %d shed-related tool configuration files, " % len( shed_tool_conf_select_field.options )
+                        select_help += "so select the file whose <b>tool_path</b> setting you want used for installing repositories."
+                %>
                 <div class="form-row">
                     <label>Shed tool configuration file:</label>
                     ${shed_tool_conf_select_field.get_html()}
                     <div class="toolParamHelp" style="clear: both;">
-                        Your Galaxy instance is configured with ${len( shed_tool_conf_select_field.options )} shed tool configuration files, 
-                        so choose one in which to configure the installed tools.
+                        ${select_help}
                     </div>
                 </div>
                 <div style="clear: both"></div>

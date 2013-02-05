@@ -6,10 +6,11 @@ import logging, atexit
 import os, os.path
 import sys, warnings
 
+from galaxy.util import asbool
+
 from paste.request import parse_formvars
 from paste.util import import_string
 from paste import httpexceptions
-from paste.deploy.converters import asbool
 import pkg_resources
 
 log = logging.getLogger( __name__ )
@@ -241,6 +242,12 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste import recursive
         app = recursive.RecursiveMiddleware( app, conf )
         log.debug( "Enabling 'recursive' middleware" )
+    # If sentry logging is enabled, log here before propogating up to
+    # the error middleware
+    sentry_dsn = conf.get( 'sentry_dsn', None )
+    if sentry_dsn:
+        from galaxy.web.framework.middleware.sentry import Sentry
+        app = Sentry( app, sentry_dsn )
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance
@@ -255,12 +262,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
             from paste.debug import profile
             app = profile.ProfileMiddleware( app, conf )
             log.debug( "Enabling 'profile' middleware" )
-        # Middleware that intercepts print statements and shows them on the
-        # returned page
-        if asbool( conf.get( 'use_printdebug', True ) ):
-            from paste.debug import prints
-            app = prints.PrintDebugMiddleware( app, conf )
-            log.debug( "Enabling 'print debug' middleware" )
     if debug and asbool( conf.get( 'use_interactive', False ) ):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
@@ -274,26 +275,25 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         # Not in interactive debug mode, just use the regular error middleware
         if sys.version_info[:2] >= ( 2, 6 ):
             warnings.filterwarnings( 'ignore', '.*', DeprecationWarning, '.*serial_number_generator', 11, True )
-            from paste.exceptions import errormiddleware
+            import galaxy.web.framework.middleware.error
             warnings.filters.pop()
         else:
-            from paste.exceptions import errormiddleware
-        app = errormiddleware.ErrorMiddleware( app, conf )
+            import galaxy.web.framework.middleware.error
+        app = galaxy.web.framework.middleware.error.ErrorMiddleware( app, conf )
         log.debug( "Enabling 'error' middleware" )
     # Transaction logging (apache access.log style)
     if asbool( conf.get( 'use_translogger', True ) ):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
-    # Config middleware just stores the paste config along with the request,
-    # not sure we need this but useful
-    from paste.deploy.config import ConfigMiddleware
-    app = ConfigMiddleware( app, conf )
-    log.debug( "Enabling 'config' middleware" )
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
     log.debug( "Enabling 'x-forwarded-host' middleware" )
+    # Request ID middleware
+    from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
+    app = RequestIDMiddleware( app )
+    log.debug( "Enabling 'Request ID' middleware" )
     return app
     
 def wrap_in_static( app, global_conf, **local_conf ):

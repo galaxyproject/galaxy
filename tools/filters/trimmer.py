@@ -88,6 +88,9 @@ options (listed below) default to 'None' if omitted
                 if col == 0:
                     if int( options.end ) > 0:
                         line = line[ int( options.start )-1 : int( options.end ) ]
+                    elif int( options.end ) < 0:
+                        endposition = len(line)+int( options.end )
+                        line = line[ int( options.start )-1  :  endposition  ]
                     else:
                         line = line[ int( options.start )-1 : ]
                 else:
@@ -97,6 +100,9 @@ options (listed below) default to 'None' if omitted
                         
                     if int( options.end ) > 0:
                         fields[col - 1] = fields[col - 1][ int( options.start )-1 : int( options.end ) ]
+                    elif int( options.end ) < 0:
+                        endposition = len(fields[col - 1])+int( options.end )
+                        fields[col - 1] = fields[col - 1][ int( options.start )-1 :  endposition  ]
                     else:
                         fields[col - 1] = fields[col - 1][ int( options.start )-1 : ]
                     line = '\t'.join(fields)

@@ -1,9 +1,11 @@
 from sqlalchemy.types import *
+
 import pkg_resources
 pkg_resources.require("simplejson")
 import simplejson
 import pickle
 import copy
+import uuid
 import binascii
 from galaxy.util.bunch import Bunch
 from galaxy.util.aliaspickler import AliasPickleModule
@@ -83,6 +85,39 @@ class MetadataType( JSONType ):
             except:
                 ret = None
         return ret
+
+
+
+class UUIDType(TypeDecorator):
+    """
+    Platform-independent UUID type.
+    
+    Based on http://docs.sqlalchemy.org/en/rel_0_8/core/types.html#backend-agnostic-guid-type
+    Changed to remove sqlalchemy 0.8 specific code
+
+    CHAR(32), storing as stringified hex values.
+    """
+    impl = CHAR
+
+    def load_dialect_impl(self, dialect):
+        return dialect.type_descriptor(CHAR(32))
+
+    def process_bind_param(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            if not isinstance(value, uuid.UUID):
+                return "%.32x" % uuid.UUID(value)
+            else:
+                # hexstring
+                return "%.32x" % value
+
+    def process_result_value(self, value, dialect):
+        if value is None:
+            return value
+        else:
+            return uuid.UUID(value)
+
 
 class TrimmedString( TypeDecorator ):
     impl = String

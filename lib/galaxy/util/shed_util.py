@@ -414,7 +414,7 @@ def generate_tool_panel_elem_list( repository_name, repository_clone_url, change
     cleaned_repository_clone_url = suc.clean_repository_clone_url( repository_clone_url )
     if not owner:
         owner = get_repository_owner( cleaned_repository_clone_url )
-    tool_shed = cleaned_repository_clone_url.split( 'repos' )[ 0 ].rstrip( '/' )
+    tool_shed = cleaned_repository_clone_url.split( '/repos/' )[ 0 ].rstrip( '/' )
     for guid, tool_section_dicts in tool_panel_dict.items():
         for tool_section_dict in tool_section_dicts:
             tool_section = None
@@ -484,20 +484,6 @@ def generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=N
     tool_section_dicts = generate_tool_section_dicts( tool_config=file_name, tool_sections=tool_sections )
     tool_panel_dict[ guid ] = tool_section_dicts
     return tool_panel_dict
-def generate_tool_path( repository_clone_url, changeset_revision ):
-    """
-    Generate a tool path that guarantees repositories with the same name will always be installed
-    in different directories.  The tool path will be of the form:
-    <tool shed url>/repos/<repository owner>/<repository name>/<installed changeset revision>
-    http://test@bx.psu.edu:9009/repos/test/filter
-    """
-    tmp_url = suc.clean_repository_clone_url( repository_clone_url )
-    # Now tmp_url is something like: bx.psu.edu:9009/repos/some_username/column
-    items = tmp_url.split( 'repos' )
-    tool_shed_url = items[ 0 ]
-    repo_path = items[ 1 ]
-    tool_shed_url = suc.clean_tool_shed_url( tool_shed_url )
-    return suc.url_join( tool_shed_url, 'repos', repo_path, changeset_revision )
 def generate_tool_section_dicts( tool_config=None, tool_sections=None ):
     tool_section_dicts = []
     if tool_config is None:
@@ -529,6 +515,18 @@ def generate_tool_section_element_from_dict( tool_section_dict ):
     else:
         tool_section = None
     return tool_section
+def generate_tool_shed_repository_install_dir( repository_clone_url, changeset_revision ):
+    """
+    Generate a repository installation directory that guarantees repositories with the same name will always be installed in different directories.
+    The tool path will be of the form: <tool shed url>/repos/<repository owner>/<repository name>/<installed changeset revision>
+    """
+    tmp_url = suc.clean_repository_clone_url( repository_clone_url )
+    # Now tmp_url is something like: bx.psu.edu:9009/repos/some_username/column
+    items = tmp_url.split( '/repos/' )
+    tool_shed_url = items[ 0 ]
+    repo_path = items[ 1 ]
+    tool_shed_url = suc.clean_tool_shed_url( tool_shed_url )
+    return suc.url_join( tool_shed_url, 'repos', repo_path, changeset_revision )
 def get_config( config_file, repo, ctx, dir ):
     """Return the latest version of config_filename from the repository manifest."""
     config_file = suc.strip_path( config_file )
@@ -821,14 +819,14 @@ def get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict ):
     readme_files_dict = json.from_json_string( raw_text )
     return readme_files_dict
 def get_repository_owner( cleaned_repository_url ):
-    items = cleaned_repository_url.split( 'repos' )
+    items = cleaned_repository_url.split( '/repos/' )
     repo_path = items[ 1 ]
     if repo_path.startswith( '/' ):
         repo_path = repo_path.replace( '/', '', 1 )
     return repo_path.lstrip( '/' ).split( '/' )[ 0 ]
 def get_repository_owner_from_clone_url( repository_clone_url ):
     tmp_url = suc.clean_repository_clone_url( repository_clone_url )
-    tool_shed = tmp_url.split( 'repos' )[ 0 ].rstrip( '/' )
+    tool_shed = tmp_url.split( '/repos/' )[ 0 ].rstrip( '/' )
     return get_repository_owner( tmp_url )
 def get_required_repo_info_dicts( tool_shed_url, repo_info_dicts ):
     """
@@ -1323,9 +1321,8 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         installed_repository_dependencies, missing_repository_dependencies = get_installed_and_missing_repository_dependencies( trans, repository )
         # Handle the current repository's tool dependencies.
         repository_tool_dependencies = metadata.get( 'tool_dependencies', None )
-        repository_installed_tool_dependencies, repository_missing_tool_dependencies = get_installed_and_missing_tool_dependencies( trans,
-                                                                                                                                    repository,
-                                                                                                                                    repository_tool_dependencies )
+        repository_installed_tool_dependencies, repository_missing_tool_dependencies = \
+            get_installed_and_missing_tool_dependencies( trans, repository, repository_tool_dependencies )
         if reinstalling:
             installed_tool_dependencies, missing_tool_dependencies = \
                 populate_tool_dependencies_dicts( trans=trans,

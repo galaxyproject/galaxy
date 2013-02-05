@@ -9,7 +9,7 @@ from inspect import isclass
 from paste.request import parse_formvars
 from paste.util import import_string
 from paste import httpexceptions
-from paste.deploy.converters import asbool
+from galaxy.util import asbool
 
 import pkg_resources
 
@@ -63,6 +63,8 @@ def app_factory( global_conf, **kwargs ):
     # Create the universe WSGI application
     webapp = CommunityWebApplication( app, session_cookie='galaxycommunitysession', name="community" )
     add_ui_controllers( webapp, app )
+    webapp.add_route( '/view/{owner}/', controller='repository', action='citable_owner' )
+    webapp.add_route( '/view/{owner}/{name}/', controller='repository', action='citable_repository' )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='repository', action='index' )
     webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
@@ -145,11 +147,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
-    # Config middleware just stores the paste config along with the request,
-    # not sure we need this but useful
-    from paste.deploy.config import ConfigMiddleware
-    app = ConfigMiddleware( app, conf )
-    log.debug( "Enabling 'config' middleware" )
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )

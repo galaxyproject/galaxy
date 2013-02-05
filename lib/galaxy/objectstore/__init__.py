@@ -342,11 +342,17 @@ class DiskObjectStore(ObjectStore):
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
         """ `create` parameter is not used in this implementation """
+        preserve_symlinks = kwargs.pop( 'preserve_symlinks', False )
+        #FIXME: symlinks and the object store model may not play well together 
+        #these should be handled better, e.g. registering the symlink'd file as an object
         if create:
             self.create(obj, **kwargs)
         if file_name and self.exists(obj, **kwargs):
             try:
-                shutil.copy(file_name, self.get_filename(obj, **kwargs))
+                if preserve_symlinks and os.path.islink( file_name ):
+                    util.force_symlink( os.readlink( file_name ), self.get_filename( obj, **kwargs ) )
+                else:
+                    shutil.copy( file_name, self.get_filename( obj, **kwargs ) )
             except IOError, ex:
                 log.critical('Error copying %s to %s: %s' % (file_name,
                     self._get_filename(obj, **kwargs), ex))
