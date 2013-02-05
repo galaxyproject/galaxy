@@ -1086,7 +1086,7 @@ class Tool( object ):
         else:
             self.trackster_conf = None
     def parse_inputs( self, root ):
-        r"""
+        """
         Parse the "<inputs>" element and create appropriate `ToolParameter`s.
         This implementation supports multiple pages and grouping constructs.
         """
@@ -1352,14 +1352,17 @@ class Tool( object ):
                 # and anything to do with "err". If neither stdout nor
                 # stderr were specified, then raise a warning and scan both.
                 for src in src_list:
+                    if re.search( "both", src, re.IGNORECASE ):
+                        regex.stdout_match = True
+                        regex.stderr_match = True
                     if re.search( "out", src, re.IGNORECASE ):
                         regex.stdout_match = True
                     if re.search( "err", src, re.IGNORECASE ):
                         regex.stderr_match = True
                     if (not regex.stdout_match and not regex.stderr_match):
-                        log.warning( "Unable to determine if tool stream "
-                                   + "source scanning is output, error, "
-                                   + "or both. Defaulting to use both." )
+                        log.warning( "Tool id %s: unable to determine if tool "
+                                     "stream source scanning is output, error, "
+                                     "or both. Defaulting to use both." % self.id )
                         regex.stdout_match = True
                         regex.stderr_match = True
                 self.stdio_regexes.append( regex )
