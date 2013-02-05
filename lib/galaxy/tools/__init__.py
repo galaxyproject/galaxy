@@ -49,10 +49,16 @@ WORKFLOW_PARAMETER_REGULAR_EXPRESSION =  re.compile( '''\$\{.+?\}''' )
 # that warning < fatal. This is really meant to just be an enum. 
 class StdioErrorLevel( object ):
     NO_ERROR = 0
-    WARNING = 1
-    FATAL = 2
-    MAX = 2
-    descs = {NO_ERROR : 'No error', WARNING : 'Warning', FATAL : 'Fatal error'}
+    LOG  = 1
+    WARNING = 2
+    FATAL = 3
+    MAX = 3
+    descs = {
+        NO_ERROR : 'No error', 
+        LOG: 'Log', 
+        WARNING : 'Warning', 
+        FATAL : 'Fatal error'
+    }
     @staticmethod
     def desc( error_level ):
         err_msg = "Unknown error"
@@ -1377,19 +1383,15 @@ class Tool( object ):
     # TODO: This method doesn't have to be part of the Tool class.
     def parse_error_level( self, err_level ):
         """
-        Return fatal or warning depending on what's in the error level.
-        This will assume that the error level fatal is returned if it's 
-        unparsable. 
+        Parses error level and returns error level enumeration. If
+        unparsable, returns 'fatal'
         """
-        # What should the default be? I'm claiming it should be fatal:
-        # if you went to the trouble to write the rule, then it's 
-        # probably a problem. I think there are easily three substantial
-        # camps: make it fatal, make it a warning, or, if it's missing,
-        # just throw an exception and ignore the exit_code element.
         return_level = StdioErrorLevel.FATAL 
         try:
-            if ( None != err_level ):
-                if ( re.search( "warning", err_level, re.IGNORECASE ) ):
+            if err_level:
+                if ( re.search( "log", err_level, re.IGNORECASE ) ):
+                    return_level = StdioErrorLevel.LOG
+                elif ( re.search( "warning", err_level, re.IGNORECASE ) ):
                     return_level = StdioErrorLevel.WARNING 
                 elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
                     return_level = StdioErrorLevel.FATAL
