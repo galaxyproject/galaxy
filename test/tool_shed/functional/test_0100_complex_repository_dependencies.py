@@ -39,7 +39,7 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         self.upload_file( repository, 
                           'bwa/complex/tool_dependencies.xml', 
-                          strings_displayed=[], 
+                          strings_displayed=[ 'Name, version and type from a tool requirement tag does not match' ], 
                           commit_message='Uploaded tool_dependencies.xml.' )
         self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'may not be', 'in this repository' ] )
     def test_0010_create_bwa_base_repository( self ):
@@ -148,17 +148,23 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
                           commit_message='Uploaded valid complex dependency on bwa_tool_0100.' )
         self.check_repository_dependency( base_repository, tool_repository )
         self.display_manage_repository_page( base_repository, strings_displayed=[ 'bwa', '0.5.9', 'package' ] )
-    def test_0040_update_base_repository( self ):
-        '''Upload a new tool_dependencies.xml to the tool repository, and verify that the base repository displays the new changeset.'''
+    def test_0040_generate_tool_dependency( self ):
+        '''Generate and upload a new tool_dependencies.xml file that specifies an arbitrary file on the filesystem, and verify that bwa_base depends on the new changeset revision.'''
         base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
         tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
         previous_changeset = self.get_repository_tip( tool_repository )
+        old_tool_dependency = self.get_filename( os.path.join( 'bwa', 'complex', 'readme', 'tool_dependencies.xml' ) )
+        new_tool_dependency_path = self.generate_temp_path( 'test_1100', additional_paths=[ 'tool_dependency' ] )
+        xml_filename = os.path.abspath( os.path.join( new_tool_dependency_path, 'tool_dependencies.xml' ) )
+        # Generate a tool_dependencies.xml file that points to an arbitrary file in the local filesystem.
+        file( xml_filename, 'w' ).write( file( old_tool_dependency, 'r' )
+                                 .read().replace( '__PATH__', self.get_filename( 'bwa/complex' ) ) )
         self.upload_file( tool_repository, 
-                          'bwa/complex/readme/tool_dependencies.xml', 
+                          xml_filename,
+                          filepath=new_tool_dependency_path, 
                           strings_displayed=[], 
                           commit_message='Uploaded new tool_dependencies.xml.' )
         # Verify that the dependency display has been updated as a result of the new tool_dependencies.xml file.
         self.display_manage_repository_page( base_repository, 
                                              strings_displayed=[ self.get_repository_tip( tool_repository ), 'bwa', '0.5.9', 'package' ],
                                              strings_not_displayed=[ previous_changeset ] )
-

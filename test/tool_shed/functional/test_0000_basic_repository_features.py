@@ -127,6 +127,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0065_verify_filtering_repository( self ):
         '''Verify the new tool versions and repository metadata.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        category = test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
         tip = self.get_repository_tip( repository )
         self.check_for_valid_tools( repository )
         strings_displayed = self.get_repository_metadata_revisions( repository ).append( 'Select a revision' )

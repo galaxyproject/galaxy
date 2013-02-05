@@ -1,7 +1,6 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
-import logging
-log = logging.getLogger(__name__)
+
 bwa_base_repository_name = 'bwa_base_repository_0100'
 bwa_base_repository_description = "BWA Base"
 bwa_base_repository_long_description = "BWA tool that depends on bwa 0.5.9, with a complex repository dependency pointing at bwa_tool_repository_0100"
@@ -45,7 +44,6 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             old_tool_dependency = self.get_filename( os.path.join( 'bwa', 'complex', 'tool_dependencies.xml' ) )
             new_tool_dependency_path = self.generate_temp_path( 'test_1100', additional_paths=[ 'tool_dependency' ] )
             xml_filename = os.path.abspath( os.path.join( new_tool_dependency_path, 'tool_dependencies.xml' ) )
-            log.debug( xml_filename )
             file( xml_filename, 'w' ).write( file( old_tool_dependency, 'r' )
                                      .read().replace( '__PATH__', self.get_filename( 'bwa/complex' ) ) )
             self.upload_file( repository, 
@@ -182,7 +180,6 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             old_tool_dependency = self.get_filename( os.path.join( 'bwa', 'complex', 'readme', 'tool_dependencies.xml' ) )
             new_tool_dependency_path = self.generate_temp_path( 'test_1100', additional_paths=[ 'tool_dependency' ] )
             xml_filename = os.path.abspath( os.path.join( new_tool_dependency_path, 'tool_dependencies.xml' ) )
-            log.debug( xml_filename )
             file( xml_filename, 'w' ).write( file( old_tool_dependency, 'r' )
                                      .read().replace( '__PATH__', self.get_filename( 'bwa/complex' ) ) )
             self.upload_file( tool_repository, 
