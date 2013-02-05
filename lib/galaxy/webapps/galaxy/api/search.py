@@ -82,34 +82,10 @@ class SearchController( BaseAPIController ):
         return self._create_response(trans, out, result_fields)
 
     def _create_response(self, trans, rows, result_fields):
+        current_user_roles = trans.get_current_user_roles()
         out = []
         for row in rows:
-            o = {}
-            o[ self.FIELD_ID ] =  trans.security.encode_id(row['id'])
-            o[ self.FIELD_NAME ] = row['name']
-            o[ self.FIELD_DOMAIN ] = row['domain']
-
-            if self.FIELD_EXTENDED_METADATA in result_fields and 'extended_metadata.data' in row:
-                o[ self.FIELD_EXTENDED_METADATA ] = row['extended_metadata.data']
-
-            if self.FIELD_ANNOTATION in result_fields:
-                try:
-                    o[self.FIELD_ANNOTATION] = []
-                    for a in row['annotations']:
-                        o[self.FIELD_ANNOTATION].append(a.annotation)
-                except AttributeError:
-                    del o[self.FIELD_ANNOTATION]
-
-            if self.FIELD_TAGS in result_fields:
-                try:
-                    o[self.FIELD_TAGS] = []
-                    for t in row['tags']:
-                        s = t.user_tname
-                        if t.user_value is not None:
-                            s += ":" + t.user_value
-                        o[self.FIELD_TAGS].append(s)
-                except AttributeError:
-                    del o[self.FIELD_TAGS]
-
-            out.append(o)
+            if trans.app.security_agent.can_access_dataset( current_user_roles, row.dataset ):
+                r = self.encode_all_ids( trans, row.get_api_value( view='element' ) )
+                out.append(r)
         return out        

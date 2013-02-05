@@ -1869,6 +1869,35 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         if restrict:
             return None, inherited
         return self.library_dataset.folder.get_info_association( inherited=True )
+    def get_api_value( self, view='collection' ):
+        # Since this class is a proxy to rather complex attributes we want to
+        # display in other objects, we can't use the simpler method used by
+        # other model classes.
+        ldda = self
+        try:
+            file_size = int( ldda.get_size() )
+        except OSError:
+            file_size = 0
+        rval = dict( id = ldda.id,
+                     model_class = self.__class__.__name__,
+                     name = ldda.name,
+                     deleted = ldda.deleted,
+                     visible = ldda.visible,
+                     state = ldda.state,
+                     file_size = file_size,
+                     data_type = ldda.ext,
+                     genome_build = ldda.dbkey,
+                     misc_info = ldda.info,
+                     misc_blurb = ldda.blurb )
+        for name, spec in ldda.metadata.spec.items():
+            val = ldda.metadata.get( name )
+            if isinstance( val, MetadataFile ):
+                val = val.file_name
+            # If no value for metadata, look in datatype for metadata.
+            elif val == None and hasattr( ldda.datatype, name ):
+                val = getattr( ldda.datatype, name )
+            rval['metadata_' + name] = val
+        return rval
     def get_template_widgets( self, trans, get_contents=True ):
         # See if we have any associated templatesThe get_contents
         # param is passed by callers that are inheriting a template - these

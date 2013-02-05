@@ -48,13 +48,8 @@ class QueryBaseClass(object):
 
     def get_results(self, force_query=False):
         if self.query is not None and (force_query or self.do_query):
-            print self.query
             for row in self.query.distinct().all():
-                out = {}
-                out['domain'] = self.DOMAIN
-                for col in self.OUTPUT_COLUMNS:
-                    out[col] = getattr(row, col)
-                yield out
+                yield row
 
 
 class SearchBaseClass(object):
