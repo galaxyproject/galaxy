@@ -230,7 +230,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
 
                 } else {
                     var msg = _l( 'ERROR updating hdas from api history contents' ) + ': ';
-                    history.log( msg, hdaIds, xhr, status, error, errorJSON );
+                    history.log( msg, hdaIds, xhr, status, error, errorJson );
                     alert( msg + hdaIds.join(',') );
                 }
             },
