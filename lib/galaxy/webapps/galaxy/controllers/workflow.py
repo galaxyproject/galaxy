@@ -113,6 +113,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
     @web.expose
     def index( self, trans ):
+        print trans.request.host_url
         return self.list( trans )
 
     @web.expose
@@ -410,7 +411,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             #message = "Workflow renamed to '%s'." % new_name
             #return self.list_grid( trans, message=message, status='done' )
         else:
-            return form( url_for( action='rename', id=trans.security.encode_id(stored.id) ),
+            return form( url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id) ),
                          "Rename workflow", submit_text="Rename", use_panels=True ) \
                 .add_text( "new_name", "Workflow Name", value=to_unicode( stored.name ) )
 
@@ -485,7 +486,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
 
         if self.create_item_slug( trans.sa_session, stored ):
             trans.sa_session.flush()
-        return_dict = { "name" : stored.name, "link" : url_for( action="display_by_username_and_slug", username=stored.user.username, slug=stored.slug ) }
+        return_dict = { "name" : stored.name, "link" : url_for(controller='workflow', action="display_by_username_and_slug", username=stored.user.username, slug=stored.slug ) }
         return return_dict
 
     @web.expose
@@ -559,7 +560,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             trans.set_message( "Workflow '%s' created" % stored_workflow.name )
             return self.list( trans )
         else:
-            return form( url_for(), "Create New Workflow", submit_text="Create", use_panels=True ) \
+            return form( url_for(controller="workflow", action="create"), "Create New Workflow", submit_text="Create", use_panels=True ) \
                     .add_text( "workflow_name", "Workflow Name", value="Unnamed workflow" ) \
                     .add_text( "workflow_annotation", "Workflow Annotation", value="", help="A description of the workflow; annotation is shown alongside shared or published workflows." )
 
@@ -910,7 +911,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 pass
 
         # Provide user feedback.
-        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for( action='list' )
+        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for( controller='workflow', action='list' )
         if response.status != 200:
             return trans.show_error_message( "There was a problem importing the workflow. Error: %s %s" % (response_data, workflow_list_str) )
         if workflow.has_errors:
@@ -968,7 +969,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         parser = SingleTagContentsParser( 'id' )
         parser.feed( response_data )
         myexp_workflow_id = parser.tag_content
-        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for( action='list' )
+        workflow_list_str = " <br>Return to <a href='%s'>workflow list." % url_for( controller='workflow', action='list' )
         if myexp_workflow_id:
             return trans.show_message( \
                 """Workflow '%s' successfully exported to myExperiment. <br/>
@@ -1299,7 +1300,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Index page with message
             return trans.show_message( "Workflow '%s' created from current history." % workflow_name )
             ## return trans.show_ok_message( "<p>Workflow '%s' created.</p><p><a target='_top' href='%s'>Click to load in workflow editor</a></p>"
-            ##     % ( workflow_name, web.url_for( action='editor', id=trans.security.encode_id(stored.id) ) ) )
+            ##     % ( workflow_name, web.url_for(controller='workflow', action='editor', id=trans.security.encode_id(stored.id) ) ) )
 
     @web.expose
     def run( self, trans, id, history_id=None, multiple_input_mode="product", hide_fixed_params=False, **kwargs ):

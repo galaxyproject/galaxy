@@ -418,7 +418,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
         return trans.show_warn_message( """
             Warning! If you import this history, you will lose your current
             history. Click <a href="%s">here</a> to confirm.
-            """ % web.url_for( id=id, confirm=True ) )
+            """ % web.url_for( controller='root', action='history_import', id=id, confirm=True ) )
     @web.expose
     def history_new( self, trans, name=None ):
         trans.new_history( name=name )

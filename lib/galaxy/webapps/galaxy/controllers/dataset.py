@@ -599,7 +599,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns dataset's name and link. """
         dataset = self.get_dataset( trans, id, False, True )
-        return_dict = { "name" : dataset.name, "link" : url_for( action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ) ) }
+        return_dict = { "name" : dataset.name, "link" : url_for( controller='dataset', action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ) ) }
         return return_dict
 
     @web.expose

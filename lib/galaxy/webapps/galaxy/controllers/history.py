@@ -624,7 +624,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # If no source to create archive from, show form to upload archive or specify URL.
         if not archive_source:
             return trans.show_form(
-                web.FormBuilder( web.url_for(), "Import a History from an Archive", submit_text="Submit" ) \
+                web.FormBuilder( web.url_for(controller='history', action='import_archive'), "Import a History from an Archive", submit_text="Submit" ) \
                     .add_input( "text", "Archived History URL", "archive_url", value="", error=None )
                     # TODO: add support for importing via a file.
                     #.add_input( "file", "Archived History File", "archive_file", value=None, error=None )
@@ -684,7 +684,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 return open( trans.app.object_store.get_filename( jeha.dataset ) )
             elif jeha.job.state in [ model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.WAITING ]:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
-                        % ( { 'n' : history.name, 's' : url_for( action="export_archive", id=id, qualified=True ) } ) )
+                        % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
 
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool( '__EXPORT_HISTORY__' )
@@ -697,7 +697,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
                                     the archive or import it to another Galaxy server: \
                                     <a href='%(u)s'>%(u)s</a>" \
-                                    % ( { 'n' : history.name, 'u' : url_for( action="export_archive", id=id, qualified=True ) } ) )
+                                    % ( { 'n' : history.name, 'u' : url_for(controller='history', action="export_archive", id=id, qualified=True ) } ) )
 
     @web.expose
     @web.json
@@ -709,7 +709,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             trans.sa_session.flush()
         return_dict = {
             "name" : history.name,
-            "link" : url_for( action="display_by_username_and_slug", username=history.user.username, slug=history.slug ) }
+            "link" : url_for(controller='history', action="display_by_username_and_slug", username=history.user.username, slug=history.slug ) }
         return return_dict
 
     @web.expose
@@ -823,7 +823,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.show_warn_message( """
             Warning! If you import this history, you will lose your current
             history. <br>You can <a href="%s">continue and import this history</a> or %s.
-            """ % ( web.url_for( id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
+            """ % ( web.url_for(controller='history', action='imp',  id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
 
     @web.expose
     def view( self, trans, id=None, show_deleted=False, use_panels=True ):
