@@ -987,18 +987,18 @@ class Admin( object ):
             sorts.append( 'None' )
         elif new_sort is not None:
             sorts[-1] = new_sort
-        breadcrumb = "<a href='%s' class='breadcrumb'>heap</a>" % web.url_for()
+        breadcrumb = "<a href='%s' class='breadcrumb'>heap</a>" % web.url_for(controller='admin', action='memdump')
         # new lists so we can assemble breadcrumb links
         new_ids = []
         new_sorts = []
         for id, sort in zip( ids, sorts ):
             new_ids.append( id )
             if id != 'None':
-                breadcrumb += "<a href='%s' class='breadcrumb'>[%s]</a>" % ( web.url_for( ids=','.join( new_ids ), sorts=','.join( new_sorts ) ), id )
+                breadcrumb += "<a href='%s' class='breadcrumb'>[%s]</a>" % ( web.url_for(controller='admin', action='memdump', ids=','.join( new_ids ), sorts=','.join( new_sorts ) ), id )
                 heap = heap[int(id)]
             new_sorts.append( sort )
             if sort != 'None':
-                breadcrumb += "<a href='%s' class='breadcrumb'>.by('%s')</a>" % ( web.url_for( ids=','.join( new_ids ), sorts=','.join( new_sorts ) ), sort )
+                breadcrumb += "<a href='%s' class='breadcrumb'>.by('%s')</a>" % ( web.url_for(controller='admin', action='memdump', ids=','.join( new_ids ), sorts=','.join( new_sorts ) ), sort )
                 heap = heap.by( sort )
         ids = ','.join( new_ids )
         sorts = ','.join( new_sorts )
