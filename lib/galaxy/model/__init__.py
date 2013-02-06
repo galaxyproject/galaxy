@@ -16,6 +16,7 @@ from galaxy.security import get_permitted_actions
 from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField,
                                     WorkflowField, WorkflowMappingField, HistoryField)
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
@@ -1525,6 +1526,8 @@ class HistoryDatasetAssociation( DatasetInstance ):
                      genome_build = hda.dbkey,
                      misc_info = hda.info,
                      misc_blurb = hda.blurb )
+
+        rval[ 'peek' ] = to_unicode( hda.display_peek() )
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):

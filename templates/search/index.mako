@@ -31,19 +31,17 @@ ${search_init()}
 
 <script type="text/javascript">
 var search_format_output = function(doc) {
-	var div_class = "historyItem-ok";
-	if (doc['deleted']) {
-		div_class = "";
-	}
-	var a = $("<div class='historyItem'>")
-	var b = $("<div class='" + div_class + "'>");
-	c = a.append(b);
-	c.append($("<div>").append(doc['model_class']));
-	d = c.append( $("<div class='historyItemTitle'><a href='/file/" + doc['id'] + "'>" + doc['name'] + "</a></div>") );
+	var div_class = "historyItem";
+	var a = $("<div class='" + div_class + "'>")
+	a.append($("<div>").append(doc['model_class']));
+	b = a.append( $("<div class='historyItemTitle'><a href='/file/" + doc['id'] + "'>" + doc['name'] + "</a></div>") );
 	if ('misc_blurb' in doc) {
-		d.append( $("<div>").append(doc["misc_blurb"]) );
+		b.append( $("<div>").append(doc["misc_blurb"]) );
 	}
-	return d;
+	if ('peek' in doc) {
+		b.append( $("<pre class='peek'>").append( doc["peek"]) );
+	}
+	return a;
 }
 
 </script>
