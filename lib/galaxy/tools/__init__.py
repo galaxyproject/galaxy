@@ -4,6 +4,7 @@ Classes encapsulating galaxy tools and tool configuration.
 import pkg_resources
 
 pkg_resources.require( "simplejson" )
+pkg_resources.require( "MarkupSafe" ) #MarkupSafe must load before mako
 pkg_resources.require( "Mako" )
 
 import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback, re
