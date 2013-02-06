@@ -729,7 +729,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 history = self.new_history()
             else:
                 # Perhaps a bot is running a tool without having logged in to get a history
-                log.debug( "Error: this request returned None from get_history(): %s" % self.request.browser_url )
+                log.debug( "This request returned None from get_history(): %s" % self.request.browser_url )
                 return None
         return history
     def set_history( self, history ):
