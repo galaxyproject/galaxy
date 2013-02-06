@@ -60,7 +60,7 @@
         <div class="toolForm">
             <div class="toolFormTitle">Error Report</div>
             <div class="toolFormBody">
-                <form name="report_error" action="${h.url_for( action='report_error')}" method="post" >
+                <form name="report_error" action="${h.url_for(controller='dataset', action='report_error')}" method="post" >
                     <input type="hidden" name="id" value="${hda.id}" />
                     <div class="form-row">
                         <label>Your email</label>

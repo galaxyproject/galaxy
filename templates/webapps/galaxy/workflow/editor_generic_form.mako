@@ -1,4 +1,4 @@
-<form name="${form.name}" action="${h.url_for( action='editor_form_post' )}" method="post">
+<form name="${form.name}" action="${h.url_for( controller='workflow', action='editor_form_post' )}" method="post">
     <div class="toolForm">
         <div class="toolFormTitle">${form.title}</div>
         <div class="toolFormBody">

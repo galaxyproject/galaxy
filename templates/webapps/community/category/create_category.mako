@@ -17,7 +17,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Create Category</div>
     <div class="toolFormBody">
-        <form name="create_category_form" id="create_category_form" action="${h.url_for( action='create_category' )}" method="post" >
+        <form name="create_category_form" id="create_category_form" action="${h.url_for(controller='admin', action='create_category' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <input  name="name" type="textfield" value="${name | h}" size=40"/>

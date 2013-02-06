@@ -238,7 +238,7 @@ $(function(){
 
     var settingsForm = new ScatterplotControlForm({
         dataset         : hda,
-        apiDatasetsURL  : "${h.url_for( controller='/api/datasets' )}",
+        apiDatasetsURL  : "${h.url_for( controller='/api/datasets', action='index' )}",
         el              : $( '#scatterplot' ),
         chartConfig     : chartConfig
     }).render();

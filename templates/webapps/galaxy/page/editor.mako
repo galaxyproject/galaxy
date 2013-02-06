@@ -114,7 +114,7 @@
         
         // Build ajax URL that lists items for selection.
         var item_list_action = "list_" + item_plural.toLowerCase() + "_for_selection";
-        var url_template = "${h.url_for( action='LIST_ACTION' )}";
+        var url_template = "${h.url_for(controller='page', action='LIST_ACTION' )}";
         var ajax_url = url_template.replace( "LIST_ACTION", item_list_action );
         
         // Set up and return dict.
@@ -522,7 +522,7 @@
         if ( dialogType == Galaxy.DIALOG_ANNOTATE_HISTORY ) {
             $.ajax(
             {
-                url: "${h.url_for( action='list_histories_for_selection' )}",
+                url: "${h.url_for(controller='page', action='list_histories_for_selection' )}",
                 data: {},
                 error: function() { alert( "Grid refresh failed" ) },
                 success: function(table_html) 
@@ -541,7 +541,7 @@
                                     // Get annotation table for history.
                                     $.ajax(
                                     {
-                                        url: "${h.url_for( action='get_history_annotation_table' )}",
+                                        url: "${h.url_for(controller='page', action='get_history_annotation_table' )}",
                                         data: { id : item_id },
                                         error: function() { alert( "Grid refresh failed" ) },
                                         success: function(result) 
@@ -638,7 +638,7 @@
                 
                 // Do save.
                 $.ajax( {   
-                    url: "${h.url_for( action='save' )}",
+                    url: "${h.url_for(controller='page', action='save' )}",
                     type: "POST",
                     data: {
                         id: "${trans.security.encode_id(page.id)}",

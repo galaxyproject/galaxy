@@ -43,7 +43,7 @@
         <p>${n_('You are currently not logged in.')}</p>
     %endif
     <ul>
-        <li><a href="${h.url_for( action='login' )}">${_('Login')}</li>
-        <li><a href="${h.url_for( action='create', cntrller='user' )}">${_('Register')}</a></li>
+        <li><a href="${h.url_for( controller='user', action='login' )}">${_('Login')}</li>
+        <li><a href="${h.url_for( controller='user', action='create', cntrller='user' )}">${_('Register')}</a></li>
     </ul>
 %endif

@@ -20,7 +20,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">${_('Edit Workflow Attributes')}</div>
         <div class="toolFormBody">
-            <form name="edit_attributes" action="${h.url_for( action='edit_attributes' )}" method="post">
+            <form name="edit_attributes" action="${h.url_for(controller='workflow', action='edit_attributes' )}" method="post">
                 <input type="hidden" name="id" value="${trans.security.encode_id( stored.id )}"/>
                 <div class="form-row">
                     <label>

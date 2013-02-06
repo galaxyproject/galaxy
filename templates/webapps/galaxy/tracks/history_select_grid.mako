@@ -76,8 +76,8 @@ ${grid_javascripts()}
         if cur_filter_dict:
             dbkey = cur_filter_dict.get( 'dbkey', '?' ) 
     %>
-    <a class="addtracktab${histories_active}" href="${h.url_for( action='list_histories')}?f-dbkey=${dbkey}">Histories</a>
-    <a class="addtracktab${data_libraries_active}" href="${h.url_for( action='list_libraries' )}">Data Libraries</a>
+    <a class="addtracktab${histories_active}" href="${h.url_for(controller='visualization', action='list_histories')}?f-dbkey=${dbkey}">Histories</a>
+    <a class="addtracktab${data_libraries_active}" href="${h.url_for(controller='visualization', action='list_libraries' )}">Data Libraries</a>
     <div class="divider"></div>
 </%def>
 

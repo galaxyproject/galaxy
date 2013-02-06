@@ -31,7 +31,7 @@
 
             <ul class="manage-table-actions">
                 <li>
-                    <a class="action-button" href="${h.url_for( action='create' )}">
+                    <a class="action-button" href="${h.url_for( controller='workflow', action='create' )}">
                         <img src="${h.url_for('/static/images/silk/add.png')}" />
                         <span>Create new workflow</span>
                     </a>
@@ -94,7 +94,7 @@
                         <% workflow = association.stored_workflow %>
                         <tr>
                             <td>
-                                <a class="menubutton" id="shared-${i}-popup" href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">${h.to_unicode( workflow.name )}</a>
+                                <a class="menubutton" id="shared-${i}-popup" href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${h.to_unicode( workflow.name )}</a>
                             </td>
                             <td>${workflow.user.email}</td>
                             <td>${len(workflow.latest_workflow.steps)}</td>
@@ -115,7 +115,7 @@
 
             <h2>Other options</h2>
 
-            <a class="action-button" href="${h.url_for( action='configure_menu' )}">
+            <a class="action-button" href="${h.url_for( controller='workflow', action='configure_menu' )}">
                 <span>Configure your workflow menu</span>
             </a>
         </div>

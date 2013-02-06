@@ -1,4 +1,4 @@
-<form id="settings" class="panel" action="${h.url_for( action='settings' )}" method="post">
+<form id="settings" class="panel" action="${h.url_for(controller='mobile', action='settings' )}" method="post">
     
     <div class="toolbar">
         <h1>Settings</h1>

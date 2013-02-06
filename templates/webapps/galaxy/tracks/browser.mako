@@ -96,7 +96,7 @@ ${render_trackster_js_files()}
                 hide_modal();
             };
             $.ajax({
-                url: "${h.url_for( action='new_browser', default_dbkey=default_dbkey )}",
+                url: "${h.url_for( controller='visualization', action='new_browser', default_dbkey=default_dbkey )}",
                 data: {},
                 error: function() { alert( "Couldn't create new browser" ) },
                 success: function(form_html) {

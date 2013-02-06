@@ -30,7 +30,7 @@
                         %endif
                     </div>    
            
-                    <a href="${h.url_for( action="dataset_detail", id=data.id )}">
+                    <a href="${h.url_for(controller='mobile', action="dataset_detail", id=data.id )}">
               
                         <div>${data.hid}: ${data.display_name()}</div>
         

@@ -42,13 +42,13 @@
                         <% visualization = association.visualization %>
                         <tr>
                             <td>
-                                <a class="menubutton" id="shared-${i}-popup" href="${h.url_for( action='display_by_username_and_slug', username=visualization.user.username, slug=visualization.slug)}">${visualization.title}</a>
+                                <a class="menubutton" id="shared-${i}-popup" href="${h.url_for( controller='visualization', action='display_by_username_and_slug', username=visualization.user.username, slug=visualization.slug)}">${visualization.title}</a>
                             </td>
                             <td>${visualization.user.username}</td>
                             <td>
                                 <div popupmenu="shared-${i}-popup">
-                                    <a class="action-button" href="${h.url_for( action='display_by_username_and_slug', username=visualization.user.username, slug=visualization.slug)}" target="_top">View</a>
-                                    <a class="action-button" href="${h.url_for( action='copy', id=trans.security.encode_id(visualization.id) )}">Copy</a>
+                                    <a class="action-button" href="${h.url_for( controller='visualization', action='display_by_username_and_slug', username=visualization.user.username, slug=visualization.slug)}" target="_top">View</a>
+                                    <a class="action-button" href="${h.url_for( controller='visualization', action='copy', id=trans.security.encode_id(visualization.id) )}">Copy</a>
                                 </div>
                             </td>
                         </tr>

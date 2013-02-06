@@ -70,7 +70,7 @@
                         show_modal("Saving...", "progress");
 
                         $.ajax({
-                            url: "${h.url_for( action='save' )}",
+                            url: "${h.url_for( controller='visualization', action='save' )}",
                             type: "POST",
                             data: {
                                 'id': view.vis_id,

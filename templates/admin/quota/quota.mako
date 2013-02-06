@@ -50,7 +50,7 @@ $().ready(function() {
 <div class="toolForm">
     <div class="toolFormTitle">Quota '${name}'</div>
     <div class="toolFormBody">
-        <form name="associate_quota_user_group" id="associate_quota_user_group" action="${h.url_for( action='manage_users_and_groups_for_quota', id=id )}" method="post" >
+        <form name="associate_quota_user_group" id="associate_quota_user_group" action="${h.url_for(controller='admin', action='manage_users_and_groups_for_quota', id=id )}" method="post" >
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
                     <label>Users associated with '${name}'</label>
