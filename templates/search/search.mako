@@ -8,7 +8,7 @@
 
 </%def>
 
-<%def name="search_dialog()">
+<%def name="search_dialog(output_format)">
 
 <script type="text/javascript">
 
@@ -39,17 +39,11 @@ function doSearch(query) {
 			contentType : 'application/json',
 			dataType : 'json',
 			success : function(data) { 
-				$("#output").empty();
 				var p = $("#output");
 				p.empty();
 				for(var i in data) {
-					p.append( $("<div style='margin: 20px;'>").append(
-						$("<a href='/file/" + data[i]['id'] + "'>" + data[i]['name'] + "</a>")
-					)).append( 
-						$("<div class='quote'>").append( 
-							data[i]['name']
-						)
-					);
+					var e = ${output_format}(data[i]);
+					p.append(e);
 				}
 			}
 		});
@@ -93,54 +87,30 @@ var postClick = function(data) {
 	document.getElementById('galaxy_form').submit();
 }
 
-var formatLink = function(doc) {
-	return $("<a href='/file/" + doc['_id'] + "'>" + doc['@id'] + "</a>");
-}
-
-var formatDesc = function(doc) {
-	var out = "<div>" + doc['md5'] +"</div>";
-	if (doc['description'] != null) {
-		return out + doc['description'].substring(0, 350)
-	} else {
-		return out + "<div>No Description</div>";
-	}
-}
-
-
 </script>
 
-
-<div style="margin: 20px; position: absolute; width: 100%; height: 100%">
-
-<div id="search_box">
-<input type="text" id="search_text" size="90"/>
-
-<div align="left">
-<h3>Domain</h3>
-<input type="checkbox" checked="true" id="history_search">History</input><br/>
-<input type="checkbox" checked="true" id="history_dataset_search">History Dataset</input><br/>
-<input type="checkbox" checked="true" id="library_dataset_search">Library Dataset</input><br/>
-</div>
-
-
-<div>
-<h3>Fields</h3>
-<select id="field_type">
-<option value="name">Name</a>
-<option value="datatype">Data Type</a>
-<option value="tag">Tags</a>
-<option value="annotations">Annotations</a>
-<option value="extended_metadata">Extended Metadata</a>
-</select>
+<div id="search_box" style="margin: 20px;">
+	<input type="text" id="search_text" size="90"/>
+	<div align="left">
+		<h3>Domain</h3>
+		<input type="checkbox" checked="true" id="history_search">History</input><br/>
+		<input type="checkbox" checked="true" id="history_dataset_search">History Dataset</input><br/>
+		<input type="checkbox" checked="true" id="library_dataset_search">Library Dataset</input><br/>
+	</div>
+	<h3>Fields</h3>
+	<select id="field_type">
+		<option value="name">Name</a>
+		<option value="datatype">Data Type</a>
+		<option value="tag">Tags</a>
+		<option value="annotations">Annotations</a>
+		<option value="extended_metadata">Extended Metadata</a<name />
+	</select>
 </div>
 <div style="margin: 20px;">
-<input type="button" id="search_button" value="Search"/>
+	<input type="button" id="search_button" value="Search"/>
 </div>
 
 <div id="output"></div>
 
-</div>
-
-</div>
 
 </%def>
