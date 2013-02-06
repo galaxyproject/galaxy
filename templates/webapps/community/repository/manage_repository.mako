@@ -97,7 +97,7 @@
                     <a class="action-button" href="${h.url_for( controller='repository', action='reset_all_metadata', id=trans.security.encode_id( repository.id ) )}">Reset all repository metadata</a>
                 %endif
                 %if can_deprecate:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=True )}">Mark repository as deprecated</a>
+                    <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=True )}" confirm="Are you sure that you want to deprecate this repository?">Mark repository as deprecated</a>
                 %endif
                 %if can_undeprecate:
                     <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=False )}">Mark repository as not deprecated</a>
