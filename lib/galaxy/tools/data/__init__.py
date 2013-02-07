@@ -240,7 +240,26 @@ class TabularToolDataTable( ToolDataTable ):
                 fields = line.split( self.separator )
                 if self.largest_index < len( fields ):
                     rval.append( fields )
-        return rval        
+        return rval
+
+    def get_entry( self, query_attr, query_val, return_attr ):
+        """
+        Returns table entry associated with a col/val pair.
+        """
+        query_col = self.columns.get( query_attr, None )
+        if not query_col:
+            return None
+        return_col = self.columns.get( return_attr, None )
+        if not return_col:
+            return None
+
+        # Look for table entry.
+        for fields in self.data:
+            if fields[ query_col ] == query_val:
+                rval = fields[ return_col ]
+                break
+
+        return rval
 
 # Registry of tool data types by type_key
 tool_data_table_types = dict( [ ( cls.type_key, cls ) for cls in [ TabularToolDataTable ] ] )

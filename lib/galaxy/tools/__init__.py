@@ -2267,10 +2267,14 @@ class Tool( object ):
         `to_param_dict_string` method of the associated input.
         """
         param_dict = dict()
+
         # All parameters go into the param_dict
         param_dict.update( incoming )
-        # Wrap parameters as neccesary
+
         def wrap_values( inputs, input_values ):
+            """
+            Wraps parameters as neccesary.
+            """
             for input in inputs.itervalues():
                 if isinstance( input, Repeat ):  
                     for d in input_values[ input.name ]:
@@ -2333,11 +2337,13 @@ class Tool( object ):
                 else:
                     input_values[ input.name ] = InputValueWrapper( 
                         input, input_values[ input.name ], param_dict )
+
         # HACK: only wrap if check_values is not false, this deals with external
         #       tools where the inputs don't even get passed through. These
         #       tools (e.g. UCSC) should really be handled in a special way.
         if self.check_values:
             wrap_values( self.inputs, param_dict )
+
         ## FIXME: when self.check_values==True, input datasets are being wrapped 
         ##        twice (above and below, creating 2 separate 
         ##        DatasetFilenameWrapper objects - first is overwritten by 
@@ -2390,6 +2396,20 @@ class Tool( object ):
                 # failed to pass; for tool writing convienence, provide a 
                 # NoneDataset
                 param_dict[ out_name ] = NoneDataset( datatypes_registry = self.app.datatypes_registry, ext = output.format )
+
+        # -- Add useful attributes/functions for use in creating command line.
+
+        # Function for querying a data table.
+        def get_data_table_entry(table_name, query_attr, query_val, return_attr):
+            """
+            Queries and returns an entry in a data table.
+            """
+
+            if table_name in self.app.tool_data_tables:
+                return self.app.tool_data_tables[ table_name ].get_entry( query_attr, query_val, return_attr )
+                
+        param_dict['__get_data_table_entry__'] = get_data_table_entry
+
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper( self.app )
         # More convienent access to app.config.new_file_path; we don't need to 
