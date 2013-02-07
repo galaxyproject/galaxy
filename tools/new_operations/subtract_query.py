@@ -29,9 +29,12 @@ def get_lines(fname, begin_col='', end_col=''):
                 try:
                     line = line.split('\t')
                     line = '\t'.join([line[j] for j in range(begin_col-1, end_col)])
+                    # removing empty fields, we do not compare empty fields at the end of a line.
+                    line = line.rstrip()
                     lines.add( line )
                 except: pass
             else:
+                line = line.rstrip()
                 lines.add( line )
     if i: return (i+1, lines)
     else: return (i, lines)
