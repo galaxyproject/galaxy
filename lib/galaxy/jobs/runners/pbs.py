@@ -5,7 +5,8 @@ from Queue import Queue, Empty
 from galaxy import model
 from galaxy.datatypes.data import nice_size
 from galaxy.util.bunch import Bunch
-from galaxy.jobs.runners import BaseJobRunner
+from galaxy.jobs import JobDestination
+from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
 import pkg_resources
 
@@ -15,7 +16,7 @@ The 'pbs' runner depends on 'pbs_python' which is not installed or not
 configured properly.  Galaxy's "scramble" system should make this installation
 simple, please follow the instructions found at:
 
-    http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Cluster
+    http://wiki.galaxyproject.org/Admin/Config/Performance/Cluster
 
 Additional errors may follow:
 %s
@@ -71,6 +72,29 @@ cd %s
 echo $? > %s
 """
 
+PBS_ARGMAP = {
+    'destination'           : '-d',
+    'Execution_Time'        : '-a',
+    'Account_Name'          : '-A',
+    'Checkpoint'            : '-c',
+    'Error_Path'            : '-e',
+    'Group_List'            : '-g',
+    'Hold_Types'            : '-h',
+    'Join_Paths'            : '-j',
+    'Keep_Files'            : '-k',
+    'Resource_List'         : '-l',
+    'Mail_Points'           : '-m',
+    'Mail_Users'            : '-M',
+    'Job_Name'              : '-N',
+    'Output_Path'           : '-o',
+    'Priority'              : '-p',
+    'Rerunable'             : '-r',
+    'Shell_Path_List'       : '-S',
+    'job_array_request'     : '-t',
+    'User_List'             : '-u',
+    'Variable_List'         : '-v',
+}
+
 # From pbs' job.h
 JOB_EXIT_STATUS = {
     0:  "job exec successful",
@@ -84,117 +108,105 @@ JOB_EXIT_STATUS = {
     -8: "exec() of user command failed",
 }
 
-class PBSJobState( object ):
-    def __init__( self ):
-        """
-        Encapsulates state related to a job that is being run via PBS and 
-        that we need to monitor.
-        """
-        self.job_wrapper = None
-        self.job_id = None
-        self.old_state = None
-        self.running = False
-        self.job_file = None
-        self.ofile = None
-        self.efile = None
-        self.ecfile = None
-        self.runner_url = None
-        self.check_count = 0
-        self.stop_job = False
-
-class PBSJobRunner( BaseJobRunner ):
+class PBSJobRunner( AsynchronousJobRunner ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
-    STOP_SIGNAL = object()
-    def __init__( self, app ):
-        """Initialize this job runner and start the monitor thread"""
+    runner_name = "PBSRunner"
+
+    def __init__( self, app, nworkers ):
+        """Start the job runner """
         # Check if PBS was importable, fail if not
         if pbs is None:
-            raise Exception( "PBSJobRunner requires pbs-python which was not found" )
+            raise Exception( "PBSJobRunner requires pbs_python which was not found" )
         if app.config.pbs_application_server and app.config.outputs_to_working_directory:
             raise Exception( "pbs_application_server (file staging) and outputs_to_working_directory options are mutually exclusive" )
-        self.app = app
-        self.sa_session = app.model.context
-        # 'watched' and 'queue' are both used to keep track of jobs to watch.
-        # 'queue' is used to add new watched jobs, and can be called from
-        # any thread (usually by the 'queue_job' method). 'watched' must only
-        # be modified by the monitor thread, which will move items from 'queue'
-        # to 'watched' and then manage the watched jobs.
-        self.watched = []
-        self.monitor_queue = Queue()
-        # set the default server during startup
-        self.default_pbs_server = None
-        self.determine_pbs_server( 'pbs:///' )
-        self.monitor_thread = threading.Thread( target=self.monitor )
-        self.monitor_thread.start()
-        self.work_queue = Queue()
-        self.work_threads = []
-        nworkers = app.config.cluster_job_queue_workers
-        for i in range( nworkers ):
-            worker = threading.Thread( target=self.run_next )
-            worker.start()
-            self.work_threads.append( worker )
-        log.debug( "%d workers ready" % nworkers )
 
-    def determine_pbs_server( self, url, rewrite = False ):
-        """Determine what PBS server we are connecting to"""
+        # Set the default server during startup
+        self.__default_pbs_server = None
+        self.default_pbs_server     # this is a method with a property decorator, so this causes the default server to be set
+
+        # Proceed with general initialization
+        super( PBSJobRunner, self ).__init__( app, nworkers )
+        self._init_monitor_thread()
+        self._init_worker_threads()
+
+    @property
+    def default_pbs_server(self):
+        if self.__default_pbs_server is None:
+            self.__default_pbs_server = pbs.pbs_default()
+            log.debug( "Set default PBS server to %s" % self.default_pbs_server )
+        return self.__default_pbs_server
+
+    def url_to_destination(self, url):
+        """Convert a legacy URL to a job destination"""
+
+        # Determine the the PBS server
         url_split = url.split("/")
         server = url_split[2]
-        if server == "":
-            if not self.default_pbs_server:
-                self.default_pbs_server = pbs.pbs_default()
-                log.debug( "Set default PBS server to %s" % self.default_pbs_server )
+        if server == '':
             server = self.default_pbs_server
-            url_split[2] = server
         if server is None:
-            raise Exception( "Could not find torque server" )
-        if rewrite:
-            return ( server, "/".join( url_split ) )
-        else:
-            return server
+            raise Exception( "Could not find TORQUE server" )
 
-    def determine_pbs_queue( self, url ):
-        """Determine what PBS queue we are submitting to"""
-        try:
-            return url.split('/')[3] or None
-        except:
-            return None
+        # Determine the queue, set the PBS destination (not the same thing as a Galaxy job destination)
+        pbs_destination = '@%s' % server
+        pbs_queue = url_split[3] or None
+        if pbs_queue is not None:
+            pbs_destination = '%s%s' % (pbs_queue, pbs_destination)
 
-    def determine_pbs_options( self, url ):
+        params = dict(destination=pbs_destination)
+
+        # Determine the args (long-format args were never supported in URLs so they are not supported here)
         try:
             opts = url.split('/')[4].strip().lstrip('-').split(' -')
             assert opts != ['']
         except:
-            return []
-        rval = []
+            opts = []
         for opt in opts:
-            name, value = opt.split( None, 1 )
-            if name == 'l':
+            param, value = opt.split( None, 1 )
+            params[param] = value
+
+        # Create a dynamic JobDestination
+        return JobDestination(runner='pbs', params=params)
+
+    def parse_destination_params(self, params):
+        """A wrapper method around __args_to_attrs() that allow administrators to define PBS params as either command-line options (as in ``qsub(1B)``) or more human-readable "long" args (as in ``pbs_submit(3B)``).
+
+        :returns: list of dicts -- The dicts map directly to pbs attropl structs (see ``pbs_submit(3B)``)
+        """
+        args = {}
+        for arg, value in params.items():
+            try:
+                if not arg.startswith('-'):
+                    arg = PBS_ARGMAP[arg]
+                arg = arg.lstrip('-')
+                args[arg] = value
+            except:
+                log.warning('Unrecognized long argument in destination params: %s' % k)
+        return self.__args_to_attrs(args)
+
+    # Internal stuff
+    def __args_to_attrs(self, args):
+        """Convert a list of PBS command-line args (as in ``qsub(1B)``) to PBS' internal attribute representations.
+
+        :returns: list of dicts -- The dicts map directly to pbs attropl structs (see ``pbs_submit(3B)``)
+        """
+        rval = []
+        for arg, value in args.items():
+            if arg == 'l':
                 resource_attrs = value.split(',')
                 for j, ( res, val ) in enumerate( [ a.split('=', 1) for a in resource_attrs ] ):
                     rval.append( dict( name = pbs.ATTR_l, value = val, resource = res ) )
             else:
-                rval.append( dict( name = getattr( pbs, 'ATTR_' + name ), value = value ) )
+                try:
+                    rval.append( dict( name = getattr( pbs, 'ATTR_' + arg ), value = value ) )
+                except AttributeError, e:
+                    raise Exception("Invalid parameter '%s': %s" % (arg, e))
         return rval
 
-    def run_next( self ):
-        """
-        Run the next item in the queue (a job waiting to run or finish )
-        """
-        while 1:
-            ( op, obj ) = self.work_queue.get()
-            if op is self.STOP_SIGNAL:
-                return
-            try:
-                if op == 'queue':
-                    self.queue_job( obj )
-                elif op == 'finish':
-                    self.finish_job( obj )
-                elif op == 'fail':
-                    self.fail_job( obj )
-            except:
-                log.exception( "(%s) Uncaught exception %sing job" % ( getattr( obj, 'job_id', None ), op ) )
+    def __get_pbs_server(self, job_destination_params):
+        return job_destination_params['destination'].split('@')[-1]
 
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
@@ -207,7 +219,7 @@ class PBSJobRunner( BaseJobRunner ):
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
 
-        runner_url = job_wrapper.get_job_runner_url()
+        job_destination = job_wrapper.job_destination
         
         # This is silly, why would we queue a job with no command line?
         if not command_line:
@@ -221,9 +233,28 @@ class PBSJobRunner( BaseJobRunner ):
                 job_wrapper.cleanup()
             return
 
-        ( pbs_server_name, runner_url ) = self.determine_pbs_server( runner_url, rewrite = True )
-        pbs_queue_name = self.determine_pbs_queue( runner_url )
-        pbs_options = self.determine_pbs_options( runner_url )
+        # Determine the job's PBS destination (server/queue) and options from the job destination definition
+        pbs_queue_name = None
+        pbs_server_name = self.default_pbs_server
+        pbs_options = []
+        if 'destination' in job_destination.params:
+            if '@' in job_destination.params['destination']:
+                # Destination includes a server
+                pbs_queue_name, pbs_server_name = job_destination.params['destination'].split('@')
+                if pbs_queue_name == '':
+                    # e.g. `qsub -q @server`
+                    pbs_queue_name = None
+            else:
+                # Destination is just a queue
+                pbs_queue_name = job_destination.params['destination']
+            job_destination.params.pop('destination')
+
+        # Parse PBS params
+        pbs_options = self.parse_destination_params(job_destination.params)
+
+        # Explicitly set the determined PBS destination in the persisted job destination for recovery
+        job_destination.params['destination'] = '%s@%s' % (pbs_queue_name or '', pbs_server_name)
+
         c = pbs.pbs_connect( pbs_server_name )
         if c <= 0:
             errno, text = pbs.error()
@@ -325,48 +356,24 @@ class PBSJobRunner( BaseJobRunner ):
         else:
             log.debug("(%s) queued in %s queue as %s" % (galaxy_job_id, pbs_queue_name, job_id) )
 
-        # store runner information for tracking if Galaxy restarts
-        job_wrapper.set_runner( runner_url, job_id )
+        # persist destination
+        job_wrapper.set_job_destination( job_destination, job_id )
 
         # Store PBS related state information for job
-        pbs_job_state = PBSJobState()
-        pbs_job_state.job_wrapper = job_wrapper
-        pbs_job_state.job_id = job_id
-        pbs_job_state.ofile = ofile
-        pbs_job_state.efile = efile
-        pbs_job_state.ecfile = ecfile
-        pbs_job_state.job_file = job_file
-        pbs_job_state.old_state = 'N'
-        pbs_job_state.running = False
-        pbs_job_state.runner_url = runner_url
+        job_state = AsynchronousJobState()
+        job_state.job_wrapper = job_wrapper
+        job_state.job_id = job_id
+        job_state.job_file = job_file
+        job_state.output_file = ofile
+        job_state.error_file = efile
+        job_state.exit_code_file = ecfile
+        job_state.old_state = 'N'
+        job_state.running = False
+        job_state.job_destination = job_destination
         
         # Add to our 'queue' of jobs to monitor
-        self.monitor_queue.put( pbs_job_state )
+        self.monitor_queue.put( job_state )
 
-    def monitor( self ):
-        """
-        Watches jobs currently in the PBS queue and deals with state changes
-        (queued to running) and job completion
-        """
-        while 1:
-            # Take any new watched jobs and put them on the monitor list
-            try:
-                while 1: 
-                    pbs_job_state = self.monitor_queue.get_nowait()
-                    if pbs_job_state is self.STOP_SIGNAL:
-                        # TODO: This is where any cleanup would occur
-                        return
-                    self.watched.append( pbs_job_state )
-            except Empty:
-                pass
-            # Iterate over the list of watched jobs and check state
-            try:
-                self.check_watched_items()
-            except:
-                log.exception( "Uncaught exception checking jobs" )
-            # Sleep a bit before the next state check
-            time.sleep( 1 )
-            
     def check_watched_items( self ):
         """
         Called by the monitor thread to look at each watched job and deal
@@ -380,7 +387,7 @@ class PBSJobRunner( BaseJobRunner ):
             #galaxy_job_id = pbs_job_state.job_wrapper.job_id
             galaxy_job_id = pbs_job_state.job_wrapper.get_id_tag()
             old_state = pbs_job_state.old_state
-            pbs_server_name = self.determine_pbs_server( pbs_job_state.runner_url )
+            pbs_server_name = self.__get_pbs_server(pbs_job_state.job_destination.params)
             if pbs_server_name in failures:
                 log.debug( "(%s/%s) Skipping state check because PBS server connection failed" % ( galaxy_job_id, job_id ) )
                 new_watched.append( pbs_job_state )
@@ -398,7 +405,7 @@ class PBSJobRunner( BaseJobRunner ):
                     if errno == 15001:
                         # 15001 == job not in queue
                         log.debug("(%s/%s) PBS job has left queue" % (galaxy_job_id, job_id) )
-                        self.work_queue.put( ( 'finish', pbs_job_state ) )
+                        self.work_queue.put( ( self.finish_job, pbs_job_state ) )
                     else:
                         # Unhandled error, continue to monitor
                         log.info("(%s/%s) PBS state check resulted in error (%d): %s" % (galaxy_job_id, job_id, errno, text) )
@@ -411,35 +418,18 @@ class PBSJobRunner( BaseJobRunner ):
                 pbs_job_state.job_wrapper.change_state( model.Job.states.RUNNING )
             if status.job_state == "R" and ( pbs_job_state.check_count % 20 ) == 0:
                 # Every 20th time the job status is checked, do limit checks (if configured)
-                if self.app.config.output_size_limit > 0:
-                    # Check the size of the job outputs
-                    fail = False
-                    for outfile, size in pbs_job_state.job_wrapper.check_output_sizes():
-                        if size > self.app.config.output_size_limit:
-                            pbs_job_state.fail_message = 'Job output grew too large (greater than %s), please try different job parameters' \
-                                % nice_size( self.app.config.output_size_limit )
-                            log.warning( '(%s/%s) Dequeueing job due to output %s growing larger than %s limit' \
-                                % ( galaxy_job_id, job_id, os.path.basename( outfile ), nice_size( self.app.config.output_size_limit ) ) )
-                            pbs_job_state.stop_job = True
-                            self.work_queue.put( ( 'fail', pbs_job_state ) )
-                            fail = True
-                            break
-                    if fail:
-                        continue
-                if self.app.config.job_walltime_delta is not None:
-                    # Check the job's execution time
-                    if status.get( 'resources_used', False ):
-                        # resources_used may not be in the status for new jobs
-                        h, m, s = [ int( i ) for i in status.resources_used.walltime.split( ':' ) ]
-                        time_executing = timedelta( 0, s, 0, 0, m, h )
-                        if time_executing > self.app.config.job_walltime_delta:
-                            pbs_job_state.fail_message = 'Job ran longer than maximum allowed execution time (%s), please try different job parameters' \
-                                % self.app.config.job_walltime
-                            log.warning( '(%s/%s) Dequeueing job since walltime has been reached' \
-                                % ( galaxy_job_id, job_id ) )
-                            pbs_job_state.stop_job = True
-                            self.work_queue.put( ( 'fail', pbs_job_state ) )
-                            continue
+                # Get the job's runtime
+                runtime = None
+                if status.get( 'resources_used', False ):
+                    # resources_used may not be in the status for new jobs
+                    h, m, s = [ int( i ) for i in status.resources_used.walltime.split( ':' ) ]
+                    runtime = timedelta( 0, s, 0, 0, m, h )
+                msg = pbs_job_state.job_wrapper.check_limits(runtime)
+                if msg is not None:
+                    pbs_job_state.fail_message = msg
+                    pbs_job_state.stop_job = True
+                    self.work_queue.put( ( self.fail_job, pbs_job_state ) )
+                    continue
             elif status.job_state == "C":
                 # "keep_completed" is enabled in PBS, so try to check exit status
                 try:
@@ -448,12 +438,12 @@ class PBSJobRunner( BaseJobRunner ):
                 except AssertionError:
                     pbs_job_state.fail_message = 'Job cannot be completed due to a cluster error, please retry it later'
                     log.error( '(%s/%s) PBS job failed: %s' % ( galaxy_job_id, job_id, JOB_EXIT_STATUS.get( int( status.exit_status ), 'Unknown error: %s' % status.exit_status ) ) )
-                    self.work_queue.put( ( 'fail', pbs_job_state ) )
+                    self.work_queue.put( ( self.fail_job, pbs_job_state ) )
                     continue
                 except AttributeError:
                     # No exit_status, can't verify proper completion so we just have to assume success.
                     log.debug("(%s/%s) PBS job has completed" % ( galaxy_job_id, job_id ) )
-                self.work_queue.put( ( 'finish', pbs_job_state ) )
+                self.work_queue.put( ( self.finish_job, pbs_job_state ) )
                 continue
             pbs_job_state.old_state = status.job_state
             new_watched.append( pbs_job_state )
@@ -470,7 +460,7 @@ class PBSJobRunner( BaseJobRunner ):
         failures = []
         statuses = {}
         for pbs_job_state in self.watched:
-            pbs_server_name = self.determine_pbs_server( pbs_job_state.runner_url )
+            pbs_server_name = self.__get_pbs_server(pbs_job_state.job_destination.params)
             if pbs_server_name not in servers:
                 servers.append( pbs_server_name )
             pbs_job_state.check_count += 1
@@ -523,9 +513,9 @@ class PBSJobRunner( BaseJobRunner ):
         Get the output/error for a finished job, pass to `job_wrapper.finish`
         and cleanup all the PBS temporary files.
         """
-        ofile = pbs_job_state.ofile
-        efile = pbs_job_state.efile
-        ecfile = pbs_job_state.ecfile
+        ofile = pbs_job_state.output_file
+        efile = pbs_job_state.error_file
+        ecfile = pbs_job_state.exit_code_file
         job_file = pbs_job_state.job_file
         # collect the output
         try:
@@ -571,7 +561,7 @@ class PBSJobRunner( BaseJobRunner ):
             self.stop_job( self.sa_session.query( self.app.model.Job ).get( pbs_job_state.job_wrapper.job_id ) )
         pbs_job_state.job_wrapper.fail( pbs_job_state.fail_message )
         if self.app.config.cleanup_job == "always":
-            self.cleanup( ( pbs_job_state.ofile, pbs_job_state.efile, pbs_job_state.job_file ) )
+            self.cleanup( ( pbs_job_state.output_file, pbs_job_state.error_file, pbs_job_state.exit_code_file, pbs_job_state.job_file ) )
 
     def cleanup( self, files ):
         for file in files:
@@ -579,20 +569,6 @@ class PBSJobRunner( BaseJobRunner ):
                 os.unlink( file )
             except Exception, e:
                 log.warning( "Unable to cleanup: %s" % str( e ) )
-
-    def put( self, job_wrapper ):
-        """Add a job to the queue (by job identifier)"""
-        # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state( model.Job.states.QUEUED )
-        self.work_queue.put( ( 'queue', job_wrapper ) )
-    
-    def shutdown( self ):
-        """Attempts to gracefully shut down the monitor thread"""
-        log.info( "sending stop signal to worker threads" )
-        self.monitor_queue.put( self.STOP_SIGNAL )
-        for i in range( len( self.work_threads ) ):
-            self.work_queue.put( ( self.STOP_SIGNAL, None ) )
-        log.info( "pbs job runner stopped" )
 
     def get_stage_in_out( self, fnames, symlink=False ):
         """Convenience function to create a stagein/stageout list"""
@@ -619,7 +595,7 @@ class PBSJobRunner( BaseJobRunner ):
         c = None
 
         try:
-            pbs_server_name = self.determine_pbs_server( job.get_job_runner_name() )
+            pbs_server_name = self.__get_pbs_server( job.destination_params )
             c = pbs.pbs_connect( pbs_server_name )
             if c <= 0:
                 log.debug("%s Connection to PBS server for job delete failed"
@@ -639,16 +615,14 @@ class PBSJobRunner( BaseJobRunner ):
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         job_id = job.get_job_runner_external_id()
-        if job_id is None:
-            self.put( job_wrapper )
-            return
-        pbs_job_state = PBSJobState()
-        pbs_job_state.ofile = "%s/%s.o" % (self.app.config.cluster_files_directory, job.id)
-        pbs_job_state.efile = "%s/%s.e" % (self.app.config.cluster_files_directory, job.id)
-        pbs_job_state.ecfile = "%s/%s.ec" % (self.app.config.cluster_files_directory, job.id)
+        pbs_job_state = AsynchronousJobState()
+        pbs_job_state.output_file = "%s/%s.o" % (self.app.config.cluster_files_directory, job.id)
+        pbs_job_state.error_file = "%s/%s.e" % (self.app.config.cluster_files_directory, job.id)
+        pbs_job_state.exit_code_file = "%s/%s.ec" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.job_file = "%s/%s.sh" % (self.app.config.cluster_files_directory, job.id)
         pbs_job_state.job_id = str( job_id )
         pbs_job_state.runner_url = job_wrapper.get_job_runner_url()
+        pbs_job_state.job_destination = job_wrapper.job_destination
         job_wrapper.command_line = job.command_line
         pbs_job_state.job_wrapper = job_wrapper
         if job.state == model.Job.states.RUNNING:

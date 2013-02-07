@@ -91,6 +91,7 @@ class Configuration( object ):
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
+        self.job_config_file = resolve_path( kwargs.get( 'job_config_file', 'job_conf.xml' ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
@@ -111,8 +112,8 @@ class Configuration( object ):
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
-        self.track_jobs_in_database = kwargs.get( 'track_jobs_in_database', None )
-        self.start_job_runners = kwargs.get( 'start_job_runners', None )
+        self.track_jobs_in_database = kwargs.get( 'track_jobs_in_database', 'None' )
+        self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
         # External Service types used in sample tracking
         self.external_service_type_config_file = resolve_path( kwargs.get( 'external_service_type_config_file', 'external_service_types_conf.xml' ), self.root )
@@ -123,8 +124,8 @@ class Configuration( object ):
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
         # Per-user Job concurrency limitations
+        self.cache_user_job_count = string_as_bool( kwargs.get( 'cache_user_job_count', False ) )
         self.user_job_limit = int( kwargs.get( 'user_job_limit', 0 ) )
-        # user_job_limit for backwards-compatibility
         self.registered_user_job_limit = int( kwargs.get( 'registered_user_job_limit', self.user_job_limit ) )
         self.anonymous_user_job_limit = int( kwargs.get( 'anonymous_user_job_limit', self.user_job_limit ) )
         self.default_cluster_job_runner = kwargs.get( 'default_cluster_job_runner', 'local:///' )
@@ -214,28 +215,20 @@ class Configuration( object ):
             # Crummy, but PasteScript does not give you a way to determine this
             if arg.lower().startswith('--server-name='):
                 self.server_name = arg.split('=', 1)[-1]
+        # Store all configured server names
+        self.server_names = []
+        for section in global_conf_parser.sections():
+            if section.startswith('server:'):
+                self.server_names.append(section.replace('server:', '', 1))
         # Store advanced job management config
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
         self.default_job_handlers = [ x.strip() for x in kwargs.get('default_job_handlers', ','.join( self.job_handlers ) ).split(',') ]
-        # parse the [galaxy:job_limits] section
-        self.job_limits = {}
-        try:
-            job_limits = global_conf_parser.items( 'galaxy:job_limits' )
-            for k, v in job_limits:
-                # Since the URL contains a colon and possibly an equals sign, consider ' = ' the delimiter
-                more_k, v = v.split(' = ', 1)
-                k = '%s:%s' % (k, more_k.strip())
-                v = v.strip().rsplit(None, 1)
-                v[1] = int(v[1])
-                self.job_limits[k] = v
-        except ConfigParser.NoSectionError:
-            pass
-        # Use database for IPC unless this is a standalone server (or multiple servers doing self dispatching in memory)
-        if self.track_jobs_in_database is None or self.track_jobs_in_database == "None":
-            self.track_jobs_in_database = True
-            if ( len( self.job_handlers ) == 1 ) and ( self.job_handlers[0] == self.server_name ) and ( self.job_manager == self.server_name ):
-                self.track_jobs_in_database = False
+        # Use database for job running IPC unless this is a standalone server or explicitly set in the config
+        if self.track_jobs_in_database == 'None':
+            self.track_jobs_in_database = False
+            if len(self.server_names) > 1:
+                self.track_jobs_in_database = True
         else:
             self.track_jobs_in_database = string_as_bool( self.track_jobs_in_database )
         # Store per-tool runner configs
