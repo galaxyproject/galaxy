@@ -3,7 +3,8 @@
 
 """
 Subtract an entire query from another query
-usage: %prog in_file_1 in_file_2 begin_col end_col output 
+usage: %prog in_file_1 in_file_2 begin_col end_col output
+    --ignore-empty-end-cols: ignore empty end columns when subtracting
 """
 import sys, re
 from galaxy import eggs
@@ -18,7 +19,7 @@ except:
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
-def get_lines(fname, begin_col='', end_col=''):
+def get_lines(fname, begin_col='', end_col='', ignore_empty_end_cols=False):
     lines = set([])
     i = 0
     for i, line in enumerate(file(fname)):
@@ -29,12 +30,15 @@ def get_lines(fname, begin_col='', end_col=''):
                 try:
                     line = line.split('\t')
                     line = '\t'.join([line[j] for j in range(begin_col-1, end_col)])
-                    # removing empty fields, we do not compare empty fields at the end of a line.
-                    line = line.rstrip()
+                    if ignore_empty_end_cols:
+                        # removing empty fields, we do not compare empty fields at the end of a line.
+                        line = line.rstrip()
                     lines.add( line )
                 except: pass
             else:
-                line = line.rstrip()
+                if ignore_empty_end_cols:
+                    # removing empty fields, we do not compare empty fields at the end of a line.
+                    line = line.rstrip()
                 lines.add( line )
     if i: return (i+1, lines)
     else: return (i, lines)
@@ -83,9 +87,9 @@ def main():
     lines1 is the set of unique lines in inp1_file
     diff1 is the number of duplicate lines removed from inp1_file
     """
-    len1, lines1 = get_lines(inp1_file, begin_col, end_col)
+    len1, lines1 = get_lines(inp1_file, begin_col, end_col, options.ignore_empty_end_cols)
     diff1 = len1 - len(lines1)
-    len2, lines2 = get_lines(inp2_file, begin_col, end_col)
+    len2, lines2 = get_lines(inp2_file, begin_col, end_col, options.ignore_empty_end_cols)
     
     lines1.difference_update(lines2)
     """lines1 is now the set of unique lines in inp1_file - the set of unique lines in inp2_file"""

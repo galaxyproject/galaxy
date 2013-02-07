@@ -1,11 +1,18 @@
-<tool id="subtract_query1" name="Subtract Whole Dataset">
+<tool id="subtract_query1" name="Subtract Whole Dataset" version="0.1">
   <description>from another dataset</description>
-  <command interpreter="python">subtract_query.py $input1 $input2 $begin_col $end_col $output</command>
+  <command interpreter="python">
+    subtract_query.py $input1 $input2 $begin_col $end_col $output
+    #if str($ignore_empty_end_cols) == 'true':
+      --ignore-empty-end-cols
+    #end if
+
+  </command>
   <inputs>
     <param format="txt" name="input2" type="data" label="Subtract" help="Second dataset" />
     <param format="txt" name="input1" type="data" label="from" help="First dataset" />
     <param name="begin_col" type="data_column" data_ref="input1" force_select="False" label="Restrict subtraction between 'begin column'" />
     <param name="end_col" type="data_column" data_ref="input1" force_select="False" label="and 'end column'" help="Specifying columns for restricting subtraction is available only for tabular formatted datasets" />
+    <param name="ignore_empty_end_cols" type="boolean" label="Ignore empty columns and whitespace at end of line when subtracting"/>
   </inputs>
   <outputs>
     <data format="input" name="output" metadata_source="input1" />
@@ -44,6 +51,15 @@
       <param name="begin_col" value="None" />
       <param name="end_col" value="None" />
       <output name="output" file="subtract-query-4.dat" />
+    </test>
+    <!-- Subtract  2 tabular files with no column restrictions, ignoring empty end columns. -->
+    <test>
+      <param name="input1" value="eq-showbeginning_e.dat" />
+      <param name="input2" value="eq-showtail.dat" />
+      <param name="begin_col" value="None" />
+      <param name="end_col" value="None" />
+      <param name="ignore_empty_end_cols" value="true" />
+      <output name="output" file="subtract-query-2.dat" />
     </test>
   </tests>
   <help>
