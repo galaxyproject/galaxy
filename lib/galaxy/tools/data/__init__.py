@@ -28,6 +28,11 @@ class ToolDataTableManager( object ):
         return self.data_tables.__getitem__( key )
     def __contains__( self, key ):
         return self.data_tables.__contains__( key )
+    def get( self, name, default=None ):
+        try:
+            return self[ name ]
+        except KeyError:
+            return default
     def load_from_config_file( self, config_filename, tool_data_path, from_shed_config=False ):
         """
         This method is called under 3 conditions:
