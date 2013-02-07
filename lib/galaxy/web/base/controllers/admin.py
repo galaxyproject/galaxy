@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
@@ -6,6 +7,8 @@ from galaxy.model.orm import *
 
 from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
+
+log = logging.getLogger( __name__ )
 
 class Admin( object ):
     # Override these
@@ -76,7 +79,7 @@ class Admin( object ):
     @web.require_admin
     def roles( self, trans, **kwargs ):
         if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
+            operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == "roles":
                 return self.role( trans, **kwargs )
             if operation == "create":
@@ -411,7 +414,7 @@ class Admin( object ):
     @web.require_admin
     def groups( self, trans, **kwargs ):
         if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
+            operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == "groups":
                 return self.group( trans, **kwargs )
             if operation == "create":
