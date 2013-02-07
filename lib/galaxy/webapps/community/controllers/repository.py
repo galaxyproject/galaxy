@@ -76,7 +76,7 @@ class ValidCategoryGrid( CategoryGrid ):
                 viewable_repositories = 0
                 for rca in category.repositories:
                     repository = rca.repository
-                    if not repository.deprecated and repository.downloadable_revisions:
+                    if not repository.deleted and not repository.deprecated and repository.downloadable_revisions:
                         viewable_repositories += 1
                 return viewable_repositories
             return 0
