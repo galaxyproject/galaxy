@@ -191,14 +191,17 @@ var TracksterUI = base.Base.extend({
         $.when( view.load_chroms_deferred ).then(function(chrom_info) {
             // Viewport config.
             if (viewport_config) {
-                var 
-                    chrom = viewport_config.chrom,
+                var chrom = viewport_config.chrom,
                     start = viewport_config.start,
                     end = viewport_config.end,
                     overview_drawable_name = viewport_config.overview;
             
                 if (chrom && (start !== undefined) && end) {
                     view.change_chrom(chrom, start, end);
+                }
+                else {
+                    // No valid viewport, so use first chromosome.
+                    view.change_chrom(chrom_info[0].chrom);
                 }
             }
             else {

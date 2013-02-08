@@ -1,12 +1,11 @@
-from galaxy.web.base.controller import *
+from galaxy.web.base.controller import BaseUIController
+from galaxy import web, util
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.webapps.community import model
 from galaxy.model.orm import and_
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.web.form_builder import SelectField
+from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util import inflector
 import galaxy.util.shed_util_common as suc
-import common
 from repository import RepositoryGrid, CategoryGrid
 
 from galaxy import eggs
@@ -474,7 +473,7 @@ class AdminController( BaseUIController, Admin ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 if 'user_id' in kwd:
-                    user = common.get_user( trans, kwd[ 'user_id' ] )
+                    user = suc.get_user( trans, kwd[ 'user_id' ] )
                     kwd[ 'f-email' ] = user.email
                     del kwd[ 'user_id' ]
                 else:
@@ -489,7 +488,7 @@ class AdminController( BaseUIController, Admin ):
                     if k.startswith( 'f-' ):
                         del kwd[ k ]
                 category_id = kwd.get( 'id', None )
-                category = common.get_category( trans, category_id )
+                category = suc.get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
             elif operation == "receive email alerts":
                 if kwd[ 'id' ]:
@@ -554,7 +553,7 @@ class AdminController( BaseUIController, Admin ):
             if not name or not description:
                 message = 'Enter a valid name and a description'
                 status = 'error'
-            elif common.get_category_by_name( trans, name ):
+            elif suc.get_category_by_name( trans, name ):
                 message = 'A category with that name already exists'
                 status = 'error'
             else:
@@ -641,7 +640,7 @@ class AdminController( BaseUIController, Admin ):
                                                        action='manage_categories',
                                                        message=message,
                                                        status='error' ) )
-        category = common.get_category( trans, id )
+        category = suc.get_category( trans, id )
         if params.get( 'edit_category_button', False ):
             new_name = util.restore_text( params.get( 'name', '' ) ).strip()
             new_description = util.restore_text( params.get( 'description', '' ) ).strip()
@@ -649,7 +648,7 @@ class AdminController( BaseUIController, Admin ):
                 if not new_name:
                     message = 'Enter a valid name'
                     status = 'error'
-                elif category.name != new_name and common.get_category_by_name( trans, name ):
+                elif category.name != new_name and suc.get_category_by_name( trans, name ):
                     message = 'A category with that name already exists'
                     status = 'error'
                 else:
@@ -772,7 +771,7 @@ class AdminController( BaseUIController, Admin ):
             ids = util.listify( id )
             message = "Deleted %d categories: " % len( ids )
             for category_id in ids:
-                category = common.get_category( trans, category_id )
+                category = suc.get_category( trans, category_id )
                 category.deleted = True
                 trans.sa_session.add( category )
                 trans.sa_session.flush()
@@ -800,7 +799,7 @@ class AdminController( BaseUIController, Admin ):
             purged_categories = ""
             message = "Purged %d categories: " % len( ids )
             for category_id in ids:
-                category = common.get_category( trans, category_id )
+                category = suc.get_category( trans, category_id )
                 if category.deleted:
                     # Delete RepositoryCategoryAssociations
                     for rca in category.repositories:
@@ -827,7 +826,7 @@ class AdminController( BaseUIController, Admin ):
             count = 0
             undeleted_categories = ""
             for category_id in ids:
-                category = common.get_category( trans, category_id )
+                category = suc.get_category( trans, category_id )
                 if category.deleted:
                     category.deleted = False
                     trans.sa_session.add( category )

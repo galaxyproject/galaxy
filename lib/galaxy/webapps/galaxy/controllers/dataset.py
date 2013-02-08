@@ -163,8 +163,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         assert hda and self._can_access_dataset( trans, hda )
         return hda.creating_job
     
-    def _can_access_dataset( self, trans, dataset_association, allow_admin=True ):
-        return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), dataset_association.dataset )
+    def _can_access_dataset( self, trans, dataset_association, allow_admin=True, additional_roles=None ):
+        roles = trans.get_current_user_roles()
+        if additional_roles:
+            roles = roles + additional_roles
+        return ( allow_admin and trans.user_is_admin() ) or trans.app.security_agent.can_access_dataset( roles, dataset_association.dataset )
     
     @web.expose
     def errors( self, trans, id ):
@@ -736,7 +739,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         link_name = urllib.unquote_plus( link_name )
         if None in [ app_name, link_name ]:
             return trans.show_error_message( "A display application name and link name must be provided." )
-        if self._can_access_dataset( trans, data ):
+        if self._can_access_dataset( trans, data, additional_roles=user_roles ):
             msg = []
             refresh = False
             display_app = trans.app.datatypes_registry.display_applications.get( app_name )
@@ -997,6 +1000,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         params_objects = None
         job = None
         tool = None
+        upgrade_messages = {}
+        has_parameter_errors = False
         inherit_chain = hda.source_dataset_chain
         if inherit_chain:
             job_dataset_association, dataset_association_container_name = inherit_chain[-1]
@@ -1013,12 +1018,19 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     toolbox = self.get_toolbox()
                     tool = toolbox.get_tool( job.tool_id )
                     assert tool is not None, 'Requested tool has not been loaded.'
-                    params_objects = job.get_param_values( trans.app )
+                    #Load parameter objects, if a parameter type has changed, its possible for the value to no longer be valid
+                    try:
+                        params_objects = job.get_param_values( trans.app, ignore_errors=False )
+                    except:
+                        params_objects = job.get_param_values( trans.app, ignore_errors=True )
+                        upgrade_messages = tool.check_and_update_param_values( job.get_param_values( trans.app, ignore_errors=True ), trans, update_values=False ) #use different param_objects here, since we want to display original values as much as possible
+                        has_parameter_errors = True
                 except:
                     pass
         if job is None:
             return trans.show_error_message( "Job information is not available for this dataset." )
-        return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects )
+        #TODO: we should provide the basic values along with the objects, in order to better handle reporting of old values during upgrade
+        return trans.fill_template( "show_params.mako", inherit_chain=inherit_chain, history=trans.get_history(), hda=hda, job=job, tool=tool, params_objects=params_objects, upgrade_messages=upgrade_messages, has_parameter_errors=has_parameter_errors )
 
     @web.expose
     def copy_datasets( self, trans, source_history=None, source_dataset_ids="", target_history_id=None, target_history_ids="", new_history_name="", do_copy=False, **kwd ):

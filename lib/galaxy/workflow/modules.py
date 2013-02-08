@@ -352,7 +352,7 @@ class ToolModule( WorkflowModule ):
         self.errors = errors or None
 
     def check_and_update_state( self ):
-        return self.tool.check_and_update_param_values( self.state.inputs, self.trans )
+        return self.tool.check_and_update_param_values( self.state.inputs, self.trans, allow_workflow_parameters=True )
 
     def add_dummy_datasets( self, connections=None):
         if connections:

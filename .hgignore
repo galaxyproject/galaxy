@@ -16,12 +16,18 @@ database/beaker_sessions
 database/community_files
 database/compiled_templates
 database/files
+database/job_working_directory
 database/pbs
 database/tmp
 database/*.sqlite
 
 # Python bytecode
 *.pyc
+
+# Tool Shed Runtime Files
+community_webapp.log
+community_webapp.pid
+hgweb.config*
 
 # Config files
 universe_wsgi.ini

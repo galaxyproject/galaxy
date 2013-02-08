@@ -29,6 +29,7 @@ class UniverseApplication( object ):
         self.config = config.Configuration( **kwargs )
         self.config.check()
         config.configure_logging( self.config )
+        self.configure_fluent_log()
         # Determine the database url
         if self.config.database_connection:
             db_url = self.config.database_connection
@@ -54,7 +55,8 @@ class UniverseApplication( object ):
                                    db_url,
                                    self.config.database_engine_options,
                                    database_query_profiling_proxy = self.config.database_query_profiling_proxy,
-                                   object_store = self.object_store )
+                                   object_store = self.object_store,
+                                   trace_logger=self.trace_logger )
         # Manage installed tool shed repositories.
         self.installed_repository_manager = galaxy.tool_shed.InstalledRepositoryManager( self )
         # Create an empty datatypes registry.
@@ -149,6 +151,7 @@ class UniverseApplication( object ):
         self.job_stop_queue = self.job_manager.job_stop_queue
         # Initialize the external service types
         self.external_service_types = external_service_types.ExternalServiceTypesCollection( self.config.external_service_type_config_file, self.config.external_service_type_path, self )
+
     def shutdown( self ):
         self.job_manager.shutdown()
         self.object_store.shutdown()
@@ -161,3 +164,10 @@ class UniverseApplication( object ):
                 os.unlink( self.datatypes_registry.integrated_datatypes_configs )
         except:
             pass
+
+    def configure_fluent_log( self ):
+        if self.config.fluent_log:
+            from galaxy.util.log.fluent_log import FluentTraceLogger
+            self.trace_logger = FluentTraceLogger( 'galaxy', self.config.fluent_host, self.config.fluent_port ) 
+        else:
+            self.trace_logger = None

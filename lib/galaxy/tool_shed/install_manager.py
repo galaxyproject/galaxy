@@ -181,6 +181,7 @@ class InstallManager( object ):
                 % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
         metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=self.app,
                                                                                          repository=tool_shed_repository,
+                                                                                         changeset_revision=tool_shed_repository.changeset_revision,
                                                                                          repository_clone_url=repository_clone_url,
                                                                                          shed_config_dict = self.shed_config_dict,
                                                                                          relative_install_dir=relative_install_dir,

@@ -22,7 +22,7 @@ paste.app_factory = galaxy.webapps.community.buildapp:app_factory
 log_level = DEBUG
 
 # Database connection
-#database_file = database/community.sqlite
+database_file = database/community.sqlite
 # You may use a SQLAlchemy connection string to specify an external database instead
 #database_connection = postgres:///community_test?host=/var/run/postgresql
 

@@ -20,7 +20,7 @@ class GenomesController( BaseAPIController ):
         GET /api/genomes: returns a list of installed genomes
         """        
         
-        return self.app.genomes.get_dbkeys_with_chrom_info( trans )
+        return self.app.genomes.get_dbkeys( trans )
 
     @web.json
     def show( self, trans, id, num=None, chrom=None, low=None, high=None, **kwd ):

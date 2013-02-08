@@ -135,7 +135,8 @@ Dataset.table = Table( "dataset", metadata,
     Column( "external_filename" , TEXT ),
     Column( "_extra_files_path", TEXT ),
     Column( 'file_size', Numeric( 15, 0 ) ),
-    Column( 'total_size', Numeric( 15, 0 ) ) )
+    Column( 'total_size', Numeric( 15, 0 ) ),
+    Column( 'uuid', UUIDType() ) )
 
 HistoryDatasetAssociationDisplayAtAuthorization.table = Table( "history_dataset_association_display_at_authorization", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -1950,7 +1951,7 @@ def load_egg_for_url( url ):
         # Let this go, it could possibly work with db's we don't support
         log.error( "database_connection contains an unknown SQLAlchemy database dialect: %s" % dialect )
 
-def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None ):
+def init( file_path, url, engine_options={}, create_tables=False, database_query_profiling_proxy=False, object_store=None, trace_logger=None ):
     """Connect mappings to the database"""
     # Connect dataset to the file path
     Dataset.file_path = file_path
@@ -1962,6 +1963,10 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     if database_query_profiling_proxy:
         import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
         proxy = logging_connection_proxy.LoggingProxy()
+    # If metlog is enabled, do micrologging
+    elif trace_logger:
+        import galaxy.model.orm.logging_connection_proxy as logging_connection_proxy
+        proxy = logging_connection_proxy.TraceLoggerProxy( trace_logger )
     else:
         proxy = None
     # Create the database engine

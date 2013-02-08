@@ -16,6 +16,8 @@ and symbols are sorted in lexigraphical order.
 
 import sys, optparse
 from galaxy import eggs
+import pkg_resources; pkg_resources.require( "bx-python" )
+from bx.tabular.io import Comment
 from galaxy.datatypes.util.gff_util import GFFReaderWrapper, read_unordered_gtf, convert_gff_coords_to_bed
 
 def main():
@@ -38,6 +40,9 @@ def main():
             in_reader = read_unordered_gtf( open( in_fname, 'r' ) )
 
         for feature in in_reader:
+            if isinstance( feature, Comment ):
+                continue
+
             for name in feature.attributes:
                 val = feature.attributes[ name ]
                 try:

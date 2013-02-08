@@ -3,8 +3,9 @@ from __future__ import absolute_import
 from sqlalchemy import desc, or_, and_
 from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
-from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin, VALID_SLUG_RE
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
 from galaxy.web.framework.helpers import time_ago, grids, iff
+from galaxy import util
 from galaxy.util.json import from_json_string
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
@@ -186,9 +187,10 @@ class VisualizationListGrid( grids.Grid ):
         grids.GridAction( "Create new visualization", dict( action='create' ) )
     ]
     operations = [
-        grids.GridOperation( "View/Edit", allow_multiple=False, url_args=get_url_args ),
+        grids.GridOperation( "Open", allow_multiple=False, url_args=get_url_args ),
+        grids.GridOperation( "Open in Circster", allow_multiple=False, condition=( lambda item: item.type == 'trackster' ), url_args=dict( action='circster' ) ),
         grids.GridOperation( "Edit Attributes", allow_multiple=False, url_args=dict( action='edit') ),
-        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False, url_args=dict( action='clone') ),
+        grids.GridOperation( "Copy", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False, url_args=dict( action='copy') ),
         grids.GridOperation( "Share or Publish", allow_multiple=False, condition=( lambda item: not item.deleted ), async_compatible=False ),
         grids.GridOperation( "Delete", condition=( lambda item: not item.deleted ), async_compatible=True, confirm="Are you sure you want to delete this visualization?" ),
     ]
@@ -350,7 +352,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
     
     @web.expose
     @web.require_login()
-    def clone(self, trans, id, *args, **kwargs):
+    def copy(self, trans, id, *args, **kwargs):
         visualization = self.get_visualization( trans, id, check_ownership=False )            
         user = trans.get_user()
         owner = ( visualization.user == user )
@@ -358,15 +360,15 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         if not owner:
             new_title += " shared by %s" % visualization.user.email
             
-        cloned_visualization = visualization.copy( user=trans.user, title=new_title )
+        copied_viz = visualization.copy( user=trans.user, title=new_title )
         
         # Persist
         session = trans.sa_session
-        session.add( cloned_visualization )
+        session.add( copied_viz )
         session.flush()
         
         # Display the management page
-        trans.set_message( 'Copy created with name "%s"' % cloned_visualization.title )
+        trans.set_message( 'Created new visualization with name "%s"' % copied_viz.title )
         return self.list( trans )
                     
     @web.expose
@@ -599,7 +601,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                 from the visualization title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
                                 the '-' character.""" )
-                .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), error=None)
+                .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys( trans, chrom_info=True ), error=None)
                 .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
                 template="visualization/create.mako" )
@@ -635,7 +637,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 visualization_title_err = "Visualization name is required"
             elif not visualization_slug:
                 visualization_slug_err = "Visualization id is required"
-            elif not VALID_SLUG_RE.match( visualization_slug ):
+            elif not self._is_valid_slug( visualization_slug ):
                 visualization_slug_err = "Visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
             elif visualization_slug != visualization.slug and trans.sa_session.query( model.Visualization ).filter_by( user=visualization.user, slug=visualization_slug, deleted=False ).first():
                 visualization_slug_err = "Visualization id must be unique"
@@ -681,7 +683,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         Provide info necessary for creating a new trackster browser.
         """
         return trans.fill_template( "tracks/new_browser.mako", 
-                                    dbkeys=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), 
+                                    dbkeys=trans.app.genomes.get_dbkeys( trans, chrom_info=True ), 
                                     default_dbkey=kwargs.get("default_dbkey", None) )
         
     @web.expose
@@ -726,6 +728,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         """
 
         # Get dataset to add.
+        dataset = None
         if dataset_id:
             dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
         
@@ -733,6 +736,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         if id:
             # Display existing viz.
             vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
+            dbkey = vis.dbkey
         else:
             # Create new viz.
             if not dbkey:

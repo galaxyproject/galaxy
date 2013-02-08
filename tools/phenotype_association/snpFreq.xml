@@ -44,6 +44,7 @@
 
   <tests>
     <test>
+      <param name="inType" value="tab" />
       <param name="input" ftype="tabular" value="snpFreqInput.txt" dbkey="hg18" />
       <param name="group1_1" value="4" />
       <param name="group1_2" value="5" />

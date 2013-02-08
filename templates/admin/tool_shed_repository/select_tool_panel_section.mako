@@ -17,19 +17,25 @@
 
 <%
     # Handle the case where an uninstalled repository encountered errors during the process of being reinstalled.  In
-    # this case, the repository metadata is an empty dictionary, but one or both of includes_repository_dependencies
+    # this case, the repository metadata is an empty dictionary, but one or both of has_repository_dependencies
     # and includes_tool_dependencies may be True.  If either of these are True but we have no metadata, we cannot install
     # repository dependencies on this pass.
-    if includes_repository_dependencies:
+    if has_repository_dependencies:
         repository_dependencies = containers_dict[ 'repository_dependencies' ]
         missing_repository_dependencies = containers_dict[ 'missing_repository_dependencies' ]
-        can_display_repository_dependencies = repository_dependencies or missing_repository_dependencies
+        if repository_dependencies or missing_repository_dependencies:
+            can_display_repository_dependencies = True
+        else:
+            can_display_repository_dependencies = False
     else:
         can_display_repository_dependencies = False
     if includes_tool_dependencies:
         tool_dependencies = containers_dict[ 'tool_dependencies' ]
         missing_tool_dependencies = containers_dict[ 'missing_tool_dependencies' ]
-        can_display_tool_dependencies = tool_dependencies or missing_tool_dependencies
+        if tool_dependencies or missing_tool_dependencies:
+            can_display_tool_dependencies = True
+        else:
+            can_display_tool_dependencies = False
     else:
         can_display_tool_dependencies = False
 %>
@@ -81,12 +87,19 @@
                 </table>
             </div>
             %if shed_tool_conf_select_field:
+                <%
+                    if len( shed_tool_conf_select_field.options ) == 1:
+                        select_help = "Your Galaxy instance is configured with 1 shed-related tool configuration file, so repositories will be "
+                        select_help += "installed using it's <b>tool_path</b> setting."
+                    else:
+                        select_help = "Your Galaxy instance is configured with %d shed-related tool configuration files, " % len( shed_tool_conf_select_field.options )
+                        select_help += "so select the file whose <b>tool_path</b> setting you want used for installing repositories."
+                %>
                 <div class="form-row">
                     <label>Shed tool configuration file:</label>
                     ${shed_tool_conf_select_field.get_html()}
                     <div class="toolParamHelp" style="clear: both;">
-                        Your Galaxy instance is configured with ${len( shed_tool_conf_select_field.options )} shed tool configuration files, 
-                        so choose one in which to configure the installed tools.
+                        ${select_help}
                     </div>
                 </div>
                 <div style="clear: both"></div>

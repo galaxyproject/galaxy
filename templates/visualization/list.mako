@@ -48,7 +48,7 @@
                             <td>
                                 <div popupmenu="shared-${i}-popup">
                                     <a class="action-button" href="${h.url_for( action='display_by_username_and_slug', username=visualization.user.username, slug=visualization.slug)}" target="_top">View</a>
-                                    <a class="action-button" href="${h.url_for( action='clone', id=trans.security.encode_id(visualization.id) )}">Copy</a>
+                                    <a class="action-button" href="${h.url_for( action='copy', id=trans.security.encode_id(visualization.id) )}">Copy</a>
                                 </div>
                             </td>
                         </tr>

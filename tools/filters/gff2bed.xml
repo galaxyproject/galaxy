@@ -2,7 +2,7 @@
   <description>converter</description>
   <command interpreter="python">gff_to_bed_converter.py $input $out_file1</command>
   <inputs>
-    <param format="gff" name="input" type="data" label="Convert this query"/>
+    <param format="gff" name="input" type="data" label="Convert this dataset"/>
   </inputs>
   <outputs>
     <data format="bed" name="out_file1" />
