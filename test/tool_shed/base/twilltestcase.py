@@ -58,13 +58,6 @@ class ShedTwillTestCase( TwillTestCase ):
     def check_count_of_metadata_revisions_associated_with_repository( self, repository, metadata_count ):
         self.check_repository_changelog( repository )
         self.check_string_count_in_page( 'Repository metadata is associated with this change set.', metadata_count )
-    def check_for_strings( self, strings_displayed=[], strings_not_displayed=[] ):
-        if strings_displayed:
-            for string in strings_displayed:
-                self.check_page_for_string( string )
-        if strings_not_displayed:
-            for string in strings_not_displayed:
-                self.check_string_not_in_page( string )
     def check_for_valid_tools( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         strings_displayed.append( 'Valid tools' )
         self.display_manage_repository_page( repository, strings_displayed, strings_not_displayed )

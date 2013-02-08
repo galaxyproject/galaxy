@@ -1074,6 +1074,14 @@ class TwillTestCase( unittest.TestCase ):
     
     # Functions associated with browsers, cookies, HTML forms and page visits
 
+    def check_for_strings( self, strings_displayed=[], strings_not_displayed=[] ):
+        if strings_displayed:
+            for string in strings_displayed:
+                self.check_page_for_string( string )
+        if strings_not_displayed:
+            for string in strings_not_displayed:
+                self.check_string_not_in_page( string )
+
     def check_page_for_string( self, patt ):
         """Looks for 'patt' in the current browser page"""        
         page = self.last_page()

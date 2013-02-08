@@ -225,7 +225,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
         return exit_code 
     @web.expose
-    def report_error( self, trans, id, email='', message="" ):
+    def report_error( self, trans, id, email='', message="", **kwd ):
         smtp_server = trans.app.config.smtp_server
         if smtp_server is None:
             return trans.show_error_message( "Mail is not configured for this galaxy instance" )

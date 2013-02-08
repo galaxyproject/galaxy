@@ -71,7 +71,7 @@
                         <textarea name="message" rows="10" cols="40"></textarea>
                     </div>
                     <div class="form-row">
-                        <input type="submit" value="Report"/>
+                        <input type="submit" name="submit_error_report" value="Report"/>
                     </div>
                 </form>
             </div>
