@@ -25,7 +25,6 @@
     can_undeprecate = trans.user and ( is_admin or repository.user == trans.user ) and is_deprecated
     can_upload = can_push
     can_view_change_log = not is_new
-    reviewing_repository = cntrller and cntrller == 'repository_review'
 
     if can_push:
         browse_label = 'Browse or delete repository tip files'
@@ -59,56 +58,53 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    %if reviewing_repository:
-        %if reviewed_by_user:
-            <a class="action-button" href="${h.url_for( controller='repository_review', action='edit_review', id=review_id )}">Manage my review of this revision</a>
-        %else:
-            <a class="action-button" href="${h.url_for( controller='repository_review', action='create_review', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Add a review to this revision</a>
+    %if is_new:
+        %if can_upload:
+            <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
         %endif
     %else:
-        %if is_new and can_upload:
-            <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
-        %else:
-            <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
-            <div popupmenu="repository-${repository.id}-popup">
-                %if can_review_repository:
-                    %if reviewed_by_user:
-                        <a class="action-button" href="${h.url_for( controller='repository_review', action='edit_review', id=review_id )}">Manage my review of this revision</a>
-                    %else:
-                        <a class="action-button" href="${h.url_for( controller='repository_review', action='create_review', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Add a review to this revision</a>
-                    %endif
+        <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
+        <div popupmenu="repository-${repository.id}-popup">
+            %if can_review_repository:
+                %if reviewed_by_user:
+                    <a class="action-button" href="${h.url_for( controller='repository_review', action='edit_review', id=review_id )}">Manage my review of this revision</a>
+                %else:
+                    <a class="action-button" href="${h.url_for( controller='repository_review', action='create_review', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Add a review to this revision</a>
                 %endif
-                %if can_upload:
-                    <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
-                %endif
-                %if can_view_change_log:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
-                %endif
-                %if can_rate:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
-                %endif
-                %if can_browse_contents:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label | h}</a>
-                %endif
-                %if can_contact_owner:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ) )}">Contact repository owner</a>
-                %endif
-                %if can_reset_all_metadata:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='reset_all_metadata', id=trans.security.encode_id( repository.id ) )}">Reset all repository metadata</a>
-                %endif
-                %if can_deprecate:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=True )}" confirm="Are you sure that you want to deprecate this repository?">Mark repository as deprecated</a>
-                %endif
-                %if can_undeprecate:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=False )}">Mark repository as not deprecated</a>
-                %endif
-                %if can_download:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
-                    <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='zip' )}">Download as a zip file</a>
-                %endif
-            </div>
-        %endif
+            %endif
+            %if can_browse_repository_reviews:
+                <a class="action-button" href="${h.url_for( controller='repository_review', action='manage_repository_reviews', id=trans.app.security.encode_id( repository.id ) )}">Browse reviews of this repository</a>
+            %endif
+            %if can_upload:
+                <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
+            %endif
+            %if can_view_change_log:
+                <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
+            %endif
+            %if can_rate:
+                <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
+            %endif
+            %if can_browse_contents:
+                <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.app.security.encode_id( repository.id ) )}">${browse_label | h}</a>
+            %endif
+            %if can_contact_owner:
+                <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ) )}">Contact repository owner</a>
+            %endif
+            %if can_reset_all_metadata:
+                <a class="action-button" href="${h.url_for( controller='repository', action='reset_all_metadata', id=trans.security.encode_id( repository.id ) )}">Reset all repository metadata</a>
+            %endif
+            %if can_deprecate:
+                <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=True )}" confirm="Are you sure that you want to deprecate this repository?">Mark repository as deprecated</a>
+            %endif
+            %if can_undeprecate:
+                <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=False )}">Mark repository as not deprecated</a>
+            %endif
+            %if can_download:
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='bz2' )}">Download as a .tar.bz2 file</a>
+                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='zip' )}">Download as a zip file</a>
+            %endif
+        </div>
     %endif
 </ul>
 
@@ -130,7 +126,7 @@
                 <div class="form-row">
                     ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
                     <div class="toolParamHelp" style="clear: both;">
-                        %if reviewing_repository or can_review_repository:
+                        %if can_review_repository:
                             Select a revision to inspect for adding or managing a review or for download or installation.
                         %else:
                             Select a revision to inspect for download or installation.

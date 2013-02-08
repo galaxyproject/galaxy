@@ -62,7 +62,7 @@
                 <table class="grid">
                     %for component_review in review.component_reviews:
                         <%
-                            can_browse = trans.app.security_agent.user_can_browse_component_review( component_review, trans.user )
+                            can_browse = trans.app.security_agent.user_can_browse_component_review( trans.app, repository, component_review, trans.user )
                             component = component_review.component
                             if can_browse:
                                 # Initialize Private check box.

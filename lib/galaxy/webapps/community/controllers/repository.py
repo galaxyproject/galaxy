@@ -320,7 +320,7 @@ class EmailAlertsRepositoryGrid( RepositoryGrid ):
         ]
 
 class MyWritableRepositoriesGrid( RepositoryGrid ):
-    # This grid filters out repositories that have been marked as deprecated.
+    # This grid filters out repositories that have been marked as either deprecated or deleted.
     columns = [
         RepositoryGrid.NameColumn( "Name",
                                    key="name",
@@ -1835,7 +1835,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        cntrller = params.get( 'cntrller', 'repository' )
         repository = suc.get_repository_in_tool_shed( trans, id )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
@@ -2008,9 +2007,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
+        can_browse_repository_reviews = suc.can_browse_repository_reviews( trans, repository )
         containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
-                                    cntrller=cntrller,
                                     repo_name=repo_name,
                                     description=description,
                                     long_description=long_description,
@@ -2034,11 +2033,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     alerts_check_box=alerts_check_box,
                                     malicious_check_box=malicious_check_box,
                                     is_malicious=is_malicious,
+                                    can_browse_repository_reviews=can_browse_repository_reviews,
                                     message=message,
                                     status=status )
     @web.expose
     @web.require_login( "review repository revision" )
-    def manage_repository_reviews_of_revision( self, trans, mine=False, **kwd ):
+    def manage_repository_reviews_of_revision( self, trans, **kwd ):
         return trans.response.send_redirect( web.url_for( controller='repository_review',
                                                           action='manage_repository_reviews_of_revision',
                                                           **kwd ) )
@@ -2619,7 +2619,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        cntrller = params.get( 'cntrller', 'repository' )
         repository = suc.get_repository_in_tool_shed( trans, id )
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
@@ -2693,8 +2692,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         else:
             review_id = None
         containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
+        can_browse_repository_reviews = suc.can_browse_repository_reviews( trans, repository )
+        log.debug("VVV In view_repository, can_browse_repository_reviews: %s" % str( can_browse_repository_reviews ))
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
-                                    cntrller=cntrller,
                                     repo=repo,
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
@@ -2710,6 +2710,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
                                     is_malicious=is_malicious,
+                                    can_browse_repository_reviews=can_browse_repository_reviews,
                                     message=message,
                                     status=status )
     @web.expose

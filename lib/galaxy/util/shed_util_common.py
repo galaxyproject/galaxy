@@ -470,6 +470,15 @@ def can_add_to_key_rd_dicts( key_rd_dict, key_rd_dicts ):
                 if repository_dependency[ 0:3 ] == partial_rd:
                     return False
     return True
+def can_browse_repository_reviews( trans, repository ):
+    """Determine if there are any reviews of the received repository for which the current user has permission to browse any component reviews."""
+    user = trans.user
+    if user:
+        for review in repository.reviews:
+            for component_review in review.component_reviews:
+                if trans.app.security_agent.user_can_browse_component_review( trans.app, repository, component_review, user ):
+                    return True
+    return False
 def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset_revision ):
     """
     Determine if repository's tool config file on disk can be used.  This method is restricted to tool config files since, with the
