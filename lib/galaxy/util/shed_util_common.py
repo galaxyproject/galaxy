@@ -3428,7 +3428,13 @@ def to_safe_string( text, to_html=True ):
             elif c in [ '\r' ]:
                 continue
             elif c in [ ' ', '    ' ]:
-                translated.append( c )
+                if to_html:
+                    if c == ' ':
+                        translated.append( '&nbsp;' )
+                    else:
+                        translated.append( '&nbsp;&nbsp;&nbsp;&nbsp;' )
+                else:
+                    translated.append( c )
             else:
                 translated.append( '' )
         if to_html:
