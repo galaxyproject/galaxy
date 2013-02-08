@@ -1316,8 +1316,9 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
     try:
         tree = ElementTree.parse( tool_dependencies_config )
     except Exception, e:
-        log.debug( "Exception attempting to parse tool_dependencies.xml: %s" %str( e ) )
-        return metadata_dict
+        error_message = "Exception attempting to parse tool_dependencies.xml: %s" %str( e )
+        log.debug( error_message )
+        return metadata_dict, error_message
     root = tree.getroot()
     ElementInclude.include( root )
     tool_dependencies_dict = {}
