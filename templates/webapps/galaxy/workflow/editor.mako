@@ -93,12 +93,12 @@
                         $(".toolSectionWrapper").find(".toolTitle").hide();
                         if ( data.length != 0 ) {
                             // Map tool ids to element ids and join them.
-                            var s = $.map( data, function( n, i ) { return "#link-" + n; } ).join( ", " );
+                            var s = $.map( data, function( n, i ) { return "link-" + n; } );
                             // First pass to show matching tools and their parents.
-                            $(s).each( function() {
+                            $(s).each( function(index,id) {
                                 // Add class to denote match.
-                                $(this).parent().addClass("search_match");
-                                $(this).parent().show().parent().parent().show().parent().show();
+                                $("[id='"+id+"']").parent().addClass("search_match");
+                                $("[id='"+id+"']").parent().show().parent().parent().show().parent().show();
                             });
                             // Hide labels that have no visible children.
                             $(".toolPanelLabel").each( function() {
