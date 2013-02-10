@@ -1085,7 +1085,7 @@ class Tool( object ):
         if requirements_elem:
             self.parse_requirements( requirements_elem )
         # Determine if this tool can be used in workflows
-        self.is_workflow_compatible = self.check_workflow_compatible()
+        self.is_workflow_compatible = self.check_workflow_compatible(root)
         # Trackster configuration.
         trackster_conf = root.find( "trackster_conf" )
         if trackster_conf is not None:
@@ -1653,7 +1653,7 @@ class Tool( object ):
             version = requirement_elem.get( "version", None )
             requirement = ToolRequirement( name=name, type=type, version=version )
             self.requirements.append( requirement )
-    def check_workflow_compatible( self ):
+    def check_workflow_compatible( self, root ):
         """
         Determine if a tool can be used in workflows. External tools and the
         upload tool are currently not supported by workflows.
@@ -1666,9 +1666,7 @@ class Tool( object ):
         # right now
         if self.tool_type.startswith( 'data_source' ):
             return False
-        # HACK: upload is (as always) a special case becuase file parameters
-        #       can't be persisted.
-        if self.id == "upload1":
+        if util.string_as_bool( root.get( "upload", "False" ) ):
             return False
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
