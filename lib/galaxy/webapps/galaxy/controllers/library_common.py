@@ -1106,6 +1106,16 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             trans.sa_session.flush()
         return uploaded_dataset
     def get_server_dir_uploaded_datasets( self, trans, cntrller, params, full_dir, import_dir_desc, library_bunch, response_code, message ):
+        dir_response = self._get_server_dir_files(params, full_dir, import_dir_desc)
+        files = dir_response[0]
+        if not files:
+            return dir_response
+        uploaded_datasets = []
+        for file in files:
+            name = os.path.basename( file )
+            uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, file, 'server_dir', library_bunch ) )
+        return uploaded_datasets, 200, None
+    def _get_server_dir_files( self, params, full_dir, import_dir_desc ):
         files = []
         try:
             for entry in os.listdir( full_dir ):
@@ -1140,11 +1150,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
             message = "The directory '%s' contains no valid files" % full_dir
             response_code = 400
             return None, response_code, message
-        uploaded_datasets = []
-        for file in files:
-            name = os.path.basename( file )
-            uploaded_datasets.append( self.make_library_uploaded_dataset( trans, cntrller, params, name, file, 'server_dir', library_bunch ) )
-        return uploaded_datasets, 200, None
+        return files, None, None
     def get_path_paste_uploaded_datasets( self, trans, cntrller, params, library_bunch, response_code, message ):
         preserve_dirs = util.string_as_bool( params.get( 'preserve_dirs', False ) )
         uploaded_datasets = []
