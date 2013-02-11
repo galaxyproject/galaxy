@@ -180,6 +180,11 @@ class JobConfiguration( object ):
                 self.tools[id].append(JobToolConfiguration(**dict(tool.items())))
                 self.tools[id][-1]['params'] = self.__get_params(tool)
 
+        types = dict(registered_user_concurrent_jobs = int,
+                     anonymous_user_concurrent_jobs = int,
+                     walltime = str,
+                     output_size = int)
+
         self.limits = Bunch(registered_user_concurrent_jobs = None,
                             anonymous_user_concurrent_jobs = None,
                             walltime = None,
@@ -196,7 +201,7 @@ class JobConfiguration( object ):
                     id = limit.get('tag', None) or limit.get('id')
                     self.limits.concurrent_jobs[id] = int(limit.text)
                 elif limit.text:
-                    self.limits.__dict__[type] = limit.text
+                    self.limits.__dict__[type] = types.get(type, str)(limit.text)
 
         if self.limits.walltime is not None:
             h, m, s = [ int( v ) for v in self.limits.walltime.split( ':' ) ]

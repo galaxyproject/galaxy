@@ -105,7 +105,7 @@ class JobHandlerQueue( object ):
                 # This is the first start after upgrading from URLs to destinations, convert the URL to a destination and persist
                 # TODO: test me extensively
                 job_wrapper = JobWrapper( job, self )
-                job_wrapper.set_job_destination(self.dispatcher.url_to_destination(self.job_runner_name))
+                job_wrapper.set_job_destination(self.dispatcher.url_to_destination(job.job_runner_name), job.job_runner_external_id)
                 self.dispatcher.recover( job, job_wrapper )
                 log.info('(%s) Converted job from a URL to a destination and recovered' % (job.id))
             elif job.job_runner_name is None:
@@ -561,7 +561,7 @@ class DefaultJobDispatcher( object ):
         try:
             return self.job_runners[runner_name].url_to_destination(url)
         except Exception, e:
-            log.error("Unable to convert legacy job runner URL to job destination, destination will be the '%s' runner with no params: %s" % (runner_name, e))
+            log.exception("Unable to convert legacy job runner URL to job destination, destination will be the '%s' runner with no params: %s" % (runner_name, e))
             return JobDestination(runner=runner_name)
 
     def put( self, job_wrapper ):

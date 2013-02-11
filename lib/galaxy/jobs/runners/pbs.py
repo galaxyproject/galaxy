@@ -167,6 +167,8 @@ class PBSJobRunner( AsynchronousJobRunner ):
             param, value = opt.split( None, 1 )
             params[param] = value
 
+        log.debug("Converted URL '%s' to destination runner=pbs, params=%s" % (url, params))
+
         # Create a dynamic JobDestination
         return JobDestination(runner='pbs', params=params)
 
