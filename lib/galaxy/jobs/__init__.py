@@ -393,6 +393,8 @@ class JobConfiguration( object ):
 
         :returns: str -- A valid job handler ID.
         """
+        if id_or_tag is None:
+            id_or_tag = self.default_handler_id
         return self.__get_single_item(self.handlers[id_or_tag])
 
     def get_destination(self, id_or_tag):
@@ -406,6 +408,8 @@ class JobConfiguration( object ):
         Destinations are deepcopied as they are expected to be passed in to job
         runners, which will modify them for persisting params set at runtime.
         """
+        if id_or_tag is None:
+            id_or_tag = self.default_destination_id
         return copy.deepcopy(self.__get_single_item(self.destinations[id_or_tag]))
 
     def get_destinations(self, id_or_tag):
