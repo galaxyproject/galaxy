@@ -16,22 +16,18 @@
         });
 
         require(['mvc/data'], function(data) {
-
-            // Set up dataset.
-            var dataset = new data.TabularDataset( _.extend( ${h.to_json_string( dataset.get_api_value() )}, 
-                {
-                    chunk_url: "${h.url_for( controller='/dataset', action='display', 
+            data.createTabularDatasetChunkedView(
+                // Dataset config. TODO: encode id.
+                _.extend( ${h.to_json_string( dataset.get_api_value() )}, 
+                        {
+                            chunk_url: "${h.url_for( controller='/dataset', action='display', 
                                              dataset_id=trans.security.encode_id( dataset.id ))}",
-                    first_data_chunk: ${chunk}
-                } 
-            ) );
-            
-            // Set up, render, and add view.
-            var dataset_view = new data.TabularDatasetChunkedView({
-                model: dataset
-            });
-            dataset_view.render();
-            $('body').append(dataset_view.$el);
+                            first_data_chunk: ${chunk}
+                        } 
+                ),
+                // Append view to body.
+                $('body')
+            );
         });
     </script>
 </%def>

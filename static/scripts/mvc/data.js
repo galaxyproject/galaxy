@@ -202,11 +202,40 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     }
 });
 
+// -- Utility functions. --
+
+/**
+ * Create a model, attach it to a view, render view, and attach it to a parent element.
+ */
+var createModelAndView = function(model, view, model_config, parent_elt) {
+    // Create model, view.
+    var a_view = new view({
+        model: new model(model_config)
+    });
+
+    // Render view and add to parent element.
+    a_view.render();
+    if (parent_elt) {
+        parent_elt.append(a_view.$el);
+    }
+    
+    return a_view;
+};
+
+/**
+ * Create a tabular dataset chunked view (and requisite tabular dataset model)
+ * and appends to parent_elt.
+ */
+var createTabularDatasetChunkedView = function(dataset_config, parent_elt) {
+    return createModelAndView(TabularDataset, TabularDatasetChunkedView, dataset_config, parent_elt);
+};
+
 return {
 	Dataset: Dataset,
     TabularDataset: TabularDataset,
 	DatasetCollection: DatasetCollection,
-    TabularDatasetChunkedView: TabularDatasetChunkedView
+    TabularDatasetChunkedView: TabularDatasetChunkedView,
+    createTabularDatasetChunkedView: createTabularDatasetChunkedView
 };
 
 });
