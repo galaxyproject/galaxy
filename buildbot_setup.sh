@@ -70,6 +70,7 @@ universe_wsgi.ini.sample
 tool_data_table_conf.xml.sample
 shed_tool_data_table_conf.xml.sample
 migrated_tools_conf.xml.sample
+job_conf.xml.sample_basic
 tool-data/shared/ensembl/builds.txt.sample
 tool-data/shared/igv/igv_build_sites.txt.sample
 tool-data/shared/ncbi/builds.txt.sample
