@@ -61,17 +61,8 @@ var TabularDataset = Dataset.extend({
     initialize: function(options) {
         Dataset.prototype.initialize.call(this);
 
-        // If first data chunk is available, next
-        // chunk is 1.
-        chunk_index = (this.attributes.first_data_chunk ? 1 : 0);
-    },
-
-    /** 
-     * Set first data chunk; useful when initializing on the server side.
-     */
-    set_first_chunk: function(chunk) {
-        this.attributes.first_data_chunk = chunk;
-        this.attributes.chunk_index = 1;
+        // If first data chunk is available, next chunk is 1.
+        this.attributes.chunk_index = (this.attributes.first_data_chunk ? 1 : 0);
     },
 
     /**
