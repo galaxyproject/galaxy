@@ -304,7 +304,7 @@ class Configuration( object ):
 
             return rval
         except ConfigParser.NoSectionError:
-            return []
+            return {}
     def get( self, key, default ):
         return self.config_dict.get( key, default )
     def get_bool( self, key, default ):
