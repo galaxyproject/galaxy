@@ -44,90 +44,101 @@
     <div class="page-container" style="padding: 10px;">
         <div class="toolMenu">
             <div class="toolSectionList">
-                %if repository_metadata:
+                %if user_id or repository_id:
+                    ## The route in was a citable url.
                     <div class="toolSectionPad"></div>
                     <div class="toolSectionTitle">
-                        Search
-                    </div>
-                    <div class="toolSectionBody">
-                        <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
-                        </div>
-                        <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>
-                        </div>
-                    </div>
-                %endif
-                <div class="toolSectionPad"></div>
-                <div class="toolSectionTitle">
-                    All Repositories
-                </div>
-                <div class="toolTitle">
-                    <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories' )}">Browse by category</a>
-                </div>
-                %if trans.user:
-                    <div class="toolSectionPad"></div>
-                    <div class="toolSectionTitle">
-                        My Repositories and Tools
+                        All Repositories
                     </div>
                     <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='repositories_i_own' )}">Repositories I own</a>
+                        <a href="${h.url_for( controller='repository', action='index' )}">Browse by category</a>
                     </div>
-                    %if has_reviewed_repositories:
-                        <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='reviewed_repositories_i_own' )}">Reviewed repositories I own</a>
-                        </div>
-                    %endif
-                    %if has_deprecated_repositories:
-                        <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='deprecated_repositories_i_own' )}">Deprecated repositories I own</a>
-                        </div>
-                    %endif
-                    <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='my_writable_repositories' )}">My writable repositories</a>
-                    </div>
-                    <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='repository' )}">My invalid tools</a>
-                    </div>
-                    <div class="toolSectionPad"></div>
-                    <div class="toolSectionTitle">
-                        Available Actions
-                    </div>
-                    <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository' )}">Create new repository</a>
-                    </div>
-                    %if can_review_repositories:
+                %else:
+                    %if repository_metadata:
                         <div class="toolSectionPad"></div>
                         <div class="toolSectionTitle">
-                            Reviewing Repositories
+                            Search
                         </div>
                         <div class="toolSectionBody">
-                            <div class="toolSectionBg">
-                                %if trans.user.repository_reviews:
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_reviewed_by_me' )}">Repositories reviewed by me</a>
-                                    </div>
-                                %endif
-                                <div class="toolTitle">
-                                    <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_with_reviews' )}">All reviewed repositories</a>
-                                </div>
-                                <div class="toolTitle">
-                                    <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_without_reviews' )}">Repositories with no reviews</a>
-                                </div>
-                                <div class="toolTitle">
-                                    <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_components' )}">Manage review components</a>
-                                </div>
+                            <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
+                            </div>
+                            <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>
                             </div>
                         </div>
                     %endif
-                %else:
                     <div class="toolSectionPad"></div>
                     <div class="toolSectionTitle">
-                        Available Actions
+                        All Repositories
                     </div>
                     <div class="toolTitle">
-                        <a target="galaxy_main" href="${h.url_for( controller='/user', action='login' )}">Login to create a repository</a>
+                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_categories' )}">Browse by category</a>
                     </div>
+                    %if trans.user:
+                        <div class="toolSectionPad"></div>
+                        <div class="toolSectionTitle">
+                            My Repositories and Tools
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='repositories_i_own' )}">Repositories I own</a>
+                        </div>
+                        %if has_reviewed_repositories:
+                            <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='reviewed_repositories_i_own' )}">Reviewed repositories I own</a>
+                            </div>
+                        %endif
+                        %if has_deprecated_repositories:
+                            <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='deprecated_repositories_i_own' )}">Deprecated repositories I own</a>
+                            </div>
+                        %endif
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='my_writable_repositories' )}">My writable repositories</a>
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='repository' )}">My invalid tools</a>
+                        </div>
+                        <div class="toolSectionPad"></div>
+                        <div class="toolSectionTitle">
+                            Available Actions
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_repository' )}">Create new repository</a>
+                        </div>
+                        %if can_review_repositories:
+                            <div class="toolSectionPad"></div>
+                            <div class="toolSectionTitle">
+                                Reviewing Repositories
+                            </div>
+                            <div class="toolSectionBody">
+                                <div class="toolSectionBg">
+                                    %if trans.user.repository_reviews:
+                                        <div class="toolTitle">
+                                            <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_reviewed_by_me' )}">Repositories reviewed by me</a>
+                                        </div>
+                                    %endif
+                                    <div class="toolTitle">
+                                        <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_with_reviews' )}">All reviewed repositories</a>
+                                    </div>
+                                    <div class="toolTitle">
+                                        <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_without_reviews' )}">Repositories with no reviews</a>
+                                    </div>
+                                    <div class="toolTitle">
+                                        <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_components' )}">Manage review components</a>
+                                    </div>
+                                </div>
+                            </div>
+                        %endif
+                    %else:
+                        <div class="toolSectionPad"></div>
+                        <div class="toolSectionTitle">
+                            Available Actions
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='/user', action='login' )}">Login to create a repository</a>
+                        </div>
+                    %endif
                 %endif
             </div>
         </div>    
@@ -138,8 +149,17 @@
     <%
         if trans.app.config.require_login and not trans.user:
             center_url = h.url_for( controller='user', action='login', message=message, status=status )
+        elif repository_id and changeset_revision:
+            # Route in was a citable url: /view/{owner}/{name}/{changeset_revision}.
+            center_url = h.url_for( controller='repository', action='view_repository', id=repository_id, changeset_revision=changeset_revision, message=message, status=status )
+        elif repository_id:
+            # Route in was a citable url: /view/{owner}/{name}.
+            center_url = h.url_for( controller='repository', action='view_repository', id=repository_id, message=message, status=status )
+        elif user_id:
+            # Route in was a citable url: /view/{owner}.
+            center_url = h.url_for( controller='repository', action='browse_repositories', operation="repositories_by_user", user_id=user_id, message=message, status=status )
         else:
             center_url = h.url_for( controller='repository', action='browse_categories', message=message, status=status )
     %>
-    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
+    <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"></iframe>
 </%def>

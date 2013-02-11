@@ -225,6 +225,39 @@ class RepositoryGrid( grids.Grid ):
                                .outerjoin( model.RepositoryCategoryAssociation.table ) \
                                .outerjoin( model.Category.table )
 
+class RepositoriesByUserGrid( RepositoryGrid ):
+    title = "Repositories by user"
+    columns = [
+        RepositoryGrid.NameColumn( "Name",
+                                   key="name",
+                                   link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                   attach_popup=False ),
+        RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
+        RepositoryGrid.TipRevisionColumn( "Tip Revision" ),
+        RepositoryGrid.DescriptionColumn( "Synopsis",
+                                          key="description",
+                                          attach_popup=False ),
+        RepositoryGrid.CategoryColumn( "Category",
+                                       model_class=model.Category,
+                                       key="Category.name",
+                                       attach_popup=False )
+    ]
+    operations = []
+    standard_filters = []
+    default_filter = dict( deleted="False" )
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+    def build_initial_query( self, trans, **kwd ):
+        decoded_user_id = trans.security.decode_id( kwd[ 'user_id' ] )
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False,
+                                              model.Repository.table.c.user_id == decoded_user_id ) ) \
+                               .join( model.User.table ) \
+                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                               .outerjoin( model.Category.table )
+
 class RepositoriesIOwnGrid( RepositoryGrid ):
     title = "Repositories I own"
     columns = [
@@ -376,7 +409,7 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
                                .filter( model.Repository.table.c.id < 0 )
 
 class ValidRepositoryGrid( RepositoryGrid ):
-    # This grid filters out repositories that have been marked as deprecated.
+    # This grid filters out repositories that have been marked as either deleted or deprecated.
     class CategoryColumn( grids.TextColumn ):
         def get_value( self, trans, grid, repository ):
             rval = '<ul>'
@@ -531,6 +564,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     my_writable_repositories_grid = MyWritableRepositoriesGrid()
     repositories_i_own_grid = RepositoriesIOwnGrid()
     deprecated_repositories_i_own_grid = DeprecatedRepositoriesIOwnGrid()
+    repositories_by_user_grid = RepositoriesByUserGrid()
 
     @web.expose
     def browse_categories( self, trans, **kwd ):
@@ -588,12 +622,13 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                               .order_by( trans.model.Repository.table.c.name ):
                 for downloadable_revision in repository.metadata_revisions:
                     metadata = downloadable_revision.metadata
-                    invalid_tools = metadata.get( 'invalid_tools', [] )
-                    for invalid_tool_config in invalid_tools:
-                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id,
-                                                                      repository.name,
-                                                                      repository.user.username,
-                                                                      downloadable_revision.changeset_revision )
+                    if metadata:
+                        invalid_tools = metadata.get( 'invalid_tools', [] )
+                        for invalid_tool_config in invalid_tools:
+                            invalid_tools_dict[ invalid_tool_config ] = ( repository.id,
+                                                                          repository.name,
+                                                                          repository.user.username,
+                                                                          downloadable_revision.changeset_revision )
         return trans.fill_template( '/webapps/community/repository/browse_invalid_tools.mako',
                                     cntrller=cntrller,
                                     invalid_tools_dict=invalid_tools_dict,
@@ -614,19 +649,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                   action='edit_repository',
                                                                   **kwd ) )
             elif operation == "repositories_by_user":
-                # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
-                    if k.startswith( 'f-' ):
-                        del kwd[ k ]
-                if 'user_id' in kwd:
-                    user = suc.get_user( trans, kwd[ 'user_id' ] )
-                    kwd[ 'f-email' ] = user.email
-                    del kwd[ 'user_id' ]
-                else:
-                    # The received id is the repository id, so we need to get the id of the user that uploaded the repository.
-                    repository_id = kwd.get( 'id', None )
-                    repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                    kwd[ 'f-email' ] = repository.user.email
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
             elif operation == "repositories_i_own":
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
@@ -672,24 +697,44 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     kwd[ 'message' ] = 'You must be logged in to set email alerts.'
                     kwd[ 'status' ] = 'error'
                     del kwd[ 'operation' ]
-        # The changeset_revision_select_field in the RepositoryGrid performs a refresh_on_change
-        # which sends in request parameters like changeset_revison_1, changeset_revision_2, etc.  One
-        # of the many select fields on the grid performed the refresh_on_change, so we loop through 
-        # all of the received values to see which value is not the repository tip.  If we find it, we
-        # know the refresh_on_change occurred, and we have the necessary repository id and change set
-        # revision to pass on.
-        for k, v in kwd.items():
-            changset_revision_str = 'changeset_revision_'
-            if k.startswith( changset_revision_str ):
-                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
-                repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                if repository.tip( trans.app ) != v:
-                    return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                      action='browse_repositories',
-                                                                      operation='view_or_manage_repository',
-                                                                      id=trans.security.encode_id( repository.id ),
-                                                                      changeset_revision=v ) )
+        selected_changeset_revision, repository = self.get_repository_from_refresh_on_change( trans, **kwd )
+        if repository:
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_repositories',
+                                                              operation='view_or_manage_repository',
+                                                              id=trans.security.encode_id( repository.id ),
+                                                              changeset_revision=selected_changeset_revision ) )
         return self.repository_grid( trans, **kwd )
+    @web.expose
+    def browse_repositories_by_user( self, trans, **kwd ):
+        """Display the list of repositories owned by a specified user."""
+        # Eliminate the current filters if any exist.
+        for k, v in kwd.items():
+            if k.startswith( 'f-' ):
+                del kwd[ k ]
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+        if 'user_id' not in kwd:
+            # The received id is the repository id, so we need to get the id of the user that uploaded the repository.
+            repository_id = kwd.get( 'id', None )
+            if repository_id:
+                repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                kwd[ 'user_id' ] = trans.security.encode_id( repository.user.id )
+            else:
+                # The user selected a repository revision which results in a refresh_on_change.
+                selected_changeset_revision, repository = self.get_repository_from_refresh_on_change( trans, **kwd )
+                if repository:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='view_or_manage_repository',
+                                                                      id=trans.security.encode_id( repository.id ),
+                                                                      changeset_revision=selected_changeset_revision ) )
+        user = suc.get_user( trans, kwd[ 'user_id' ] )
+        self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
+        return self.repositories_by_user_grid( trans, **kwd )
     @web.expose
     def browse_repository( self, trans, id, **kwd ):
         params = util.Params( kwd )
@@ -745,6 +790,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     def browse_valid_repositories( self, trans, **kwd ):
         galaxy_url = kwd.get( 'galaxy_url', None )
+        repository_id = kwd.get( 'id', None )
         if 'f-free-text-search' in kwd:
             if 'f-Category.name' in kwd:
                 # The user browsed to a category and then entered a search string, so get the category associated with it's value.
@@ -757,7 +803,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if operation == "preview_tools_in_changeset":
-                repository_id = kwd.get( 'id', None )
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
                 repository_metadata = suc.get_latest_repository_metadata( trans, repository.id )
                 latest_installable_changeset_revision = repository_metadata.changeset_revision
@@ -773,21 +818,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 category_id = kwd.get( 'id', None )
                 category = suc.get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
-        # The changeset_revision_select_field in the ValidRepositoryGrid performs a refresh_on_change which sends in request parameters like
-        # changeset_revison_1, changeset_revision_2, etc.  One of the many select fields on the grid performed the refresh_on_change, so we loop
-        # through all of the received values to see which value is not the repository tip.  If we find it, we know the refresh_on_change occurred
-        # and we have the necessary repository id and change set revision to pass on.
-        repository_id = None
-        for k, v in kwd.items():
-            changset_revision_str = 'changeset_revision_'
-            if k.startswith( changset_revision_str ):
-                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
-                repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                if repository.tip( trans.app ) != v:
-                    return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                      action='preview_tools_in_changeset',
-                                                                      repository_id=trans.security.encode_id( repository.id ),
-                                                                      changeset_revision=v ) )
+        selected_changeset_revision, repository = self.get_repository_from_refresh_on_change( trans, **kwd )
+        if repository:
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='preview_tools_in_changeset',
+                                                              repository_id=trans.security.encode_id( repository.id ),
+                                                              changeset_revision=selected_changeset_revision ) )
         url_args = dict( action='browse_valid_repositories',
                          operation='preview_tools_in_changeset',
                          repository_id=repository_id )
@@ -895,45 +931,84 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         return trans.response.send_redirect( url )
     @web.expose
     def citable_owner( self, trans, owner ):
-        """Support for citeable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
+        """Support for citable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
         try:
             user = suc.get_user_by_username( trans, owner )
         except:
             user = None
         if user:
             user_id = trans.security.encode_id( user.id )
-            return trans.fill_template( "/webapps/community/citable_repository.mako",
-                                        user_id=user_id )
-        else:
-            message = "No repositories exist with owner <b>%s</b>." % str( owner )
             return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='browse_categories',
-                                                              id=None,
-                                                              name=None,
-                                                              owner=None,
-                                                              message=message,
-                                                              status='error' ) )
+                                                              action='index',
+                                                              user_id=user_id ) )
+        else:
+            return trans.show_error_message( "The tool shed <b>%s</b> contains no repositories owned by <b>%s</b>." % \
+                                             ( web.url_for( '/', qualified=True ).rstrip( '/' ), str( owner ) ) )
     @web.expose
     def citable_repository( self, trans, owner, name ):
-        """Support for citeable URL for each repository, e.g. http://example.org/view/owner/name."""
+        """Support for citable URL for a specified repository, e.g. http://example.org/view/owner/name."""
         try:
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
         except:
             repository = None
         if repository:
             repository_id = trans.security.encode_id( repository.id )
-            return trans.fill_template( "/webapps/community/citable_repository.mako",
-                                        repository_id=repository_id )
-        else:
-            #TODO - If the owner is OK, show their repositories?
-            message = "No repositories named <b>%s</b> with owner <b>%s</b> exist." % ( str( name ), str( owner ) )
             return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='browse_categories',
-                                                              id=None,
-                                                              name=None,
-                                                              owner=None,
-                                                              message=message,
-                                                              status='error' ) )
+                                                              action='index',
+                                                              repository_id=repository_id ) )
+        else:
+            # If the owner is valid, then show all of their repositories.
+            try:
+                user = suc.get_user_by_username( trans, owner )
+            except:
+                user = None
+            if user:
+                user_id = trans.security.encode_id( user.id )
+                message = "This list of repositories owned by <b>%s</b>, does not include one named <b>%s</b>." % ( str( owner ), str( name ) )
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='index',
+                                                                  user_id=user_id,
+                                                                  message=message,
+                                                                  status='error' ) )
+            else:
+                return trans.show_error_message( "The tool shed <b>%s</b> contains no repositories named <b>%s</b> with owner <b>%s</b>." % \
+                                                 ( web.url_for( '/', qualified=True ).rstrip( '/' ), str( name ), str( owner ) ) )
+    @web.expose
+    def citable_repository_revision( self, trans, owner, name, changeset_revision ):
+        """Support for citable URL for a specified repository revision, e.g. http://example.org/view/owner/name/changeset_revision."""
+        try:
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        except:
+            repository = None
+        if repository:
+            repository_id = trans.security.encode_id( repository.id )
+            repository_metadata = suc.get_repository_metadata_by_repository_id_changset_revision( trans, repository_id, changeset_revision )
+            if not repository_metadata:
+                # Get updates to the received changeset_revision if any exist.
+                repo_dir = repository.repo_path( trans.app )
+                repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                upper_bound_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+                if upper_bound_changeset_revision:
+                    changeset_revision = upper_bound_changeset_revision
+                    repository_metadata = suc.get_repository_metadata_by_repository_id_changset_revision( trans, repository_id, changeset_revision )
+            if repository_metadata:
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='index',
+                                                                  repository_id=repository_id,
+                                                                  changeset_revision=changeset_revision ) )
+            else:
+                message = "The change log for the repository named <b>%s</b> owned by <b>%s</b> does not include revision <b>%s</b>." % \
+                    ( str( name ), str( owner ), str( changeset_revision ) )
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='index',
+                                                                  repository_id=repository_id,
+                                                                  message=message,
+                                                                  status='error' ) )
+        else:
+            # See if the owner is valid.
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='citable_owner',
+                                                              owner=owner ) )                                      
     @web.expose
     def contact_owner( self, trans, id, **kwd ):
         params = util.Params( kwd )
@@ -1446,6 +1521,21 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 if repository_dependencies:
                     return encoding_util.tool_shed_encode( repository_dependencies )
         return ''
+    def get_repository_from_refresh_on_change( self, trans, **kwd ):
+        # The changeset_revision_select_field in several grids performs a refresh_on_change which sends in request parameters like
+        # changeset_revison_1, changeset_revision_2, etc.  One of the many select fields on the grid performed the refresh_on_change,
+        # so we loop through all of the received values to see which value is not the repository tip.  If we find it, we know the
+        # refresh_on_change occurred and we have the necessary repository id and change set revision to pass on.
+        repository_id = None
+        for k, v in kwd.items():
+            changset_revision_str = 'changeset_revision_'
+            if k.startswith( changset_revision_str ):
+                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
+                repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                if repository.tip( trans.app ) != v:
+                    return v, repository
+        # This should never be reached - raise an exception?
+        return v, None
     @web.json
     def get_repository_information( self, trans, repository_ids, changeset_revisions, **kwd ):
         """
@@ -1717,10 +1807,18 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 if repository.deprecated:
                     has_deprecated_repositories = True
                     break
+        # Route in may have been from a citable URL, in whcih case we'll have a user_id and possibly a name
+        # The received user_id will be the id of the repository owner.
+        user_id = params.get( 'user_id', None )
+        repository_id = params.get( 'repository_id', None )
+        changeset_revision = params.get( 'changeset_revision', None )
         return trans.fill_template( '/webapps/community/index.mako',
                                     repository_metadata=repository_metadata,
                                     has_reviewed_repositories=has_reviewed_repositories,
                                     has_deprecated_repositories=has_deprecated_repositories,
+                                    user_id=user_id,
+                                    repository_id=repository_id,
+                                    changeset_revision=changeset_revision,
                                     message=message,
                                     status=status )
     @web.expose
@@ -2472,7 +2570,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     def updated_changeset_revisions( self, trans, **kwd ):
         """
-        Handle a request from a local Galaxy instance to retrieve the lsit of changeset revisions to which an installed repository can be updated.  This
+        Handle a request from a local Galaxy instance to retrieve the list of changeset revisions to which an installed repository can be updated.  This
         method will return a string of comma-separated changeset revision hashes for all available updates to the received changeset revision.  Among
         other things , this method handles the scenario where an installed tool shed repository's tool_dependency definition file defines a changeset
         revision for a complex repository dependency that is outdated.  In other words, a defined changeset revision is older than the current changeset
@@ -2593,17 +2691,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     message=message,
                                     status=status )
     @web.expose
-    def view_citable_repositories_by_owner( self, trans, user_id, **kwd ):
-        return trans.response.send_redirect( web.url_for( controller='repository',
-                                                          action='browse_repositories',
-                                                          operation="repositories_by_user",
-                                                          user_id=user_id ) )
-    @web.expose
-    def view_citable_repository( self, trans, repository_id, **kwd ):
-        return trans.response.send_redirect( web.url_for( controller='repository',
-                                                          action='view_repository',
-                                                          id=repository_id ) )
-    @web.expose
     def view_or_manage_repository( self, trans, **kwd ):
         repository = suc.get_repository_in_tool_shed( trans, kwd[ 'id' ] )
         if trans.user_is_admin() or repository.user == trans.user:
@@ -2693,7 +2780,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             review_id = None
         containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         can_browse_repository_reviews = suc.can_browse_repository_reviews( trans, repository )
-        log.debug("VVV In view_repository, can_browse_repository_reviews: %s" % str( can_browse_repository_reviews ))
         return trans.fill_template( '/webapps/community/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
