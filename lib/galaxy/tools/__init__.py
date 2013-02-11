@@ -1022,7 +1022,9 @@ class Tool( object ):
         if self.old_id != self.id:
             # Handle toolshed guids
             self_ids = [ self.id.lower(), self.id.lower().rsplit('/',1)[0], self.old_id.lower() ]
-        self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids)
+        # In the toolshed context, there is no job config.
+        if 'job_config' in dir(self.app):
+            self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids)
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = util.xml_text(root, "hidden")
         if self.hidden: self.hidden = util.string_as_bool(self.hidden)
