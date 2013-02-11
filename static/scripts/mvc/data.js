@@ -102,7 +102,10 @@ var DatasetCollection = Backbone.Collection.extend({
 });
 
 /**
- * Provides table-based, dynamic view of a tabular dataset.
+ * Provides table-based, dynamic view of a tabular dataset. 
+ * NOTE: view's el must be in DOM already and provided when 
+ * createing the view so that scrolling event can be attached
+ * to the correct container.
  */
 var TabularDatasetChunkedView = Backbone.View.extend({
 
@@ -129,13 +132,31 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             this._renderChunk(first_chunk);
         }
 
-        // Show new chunks during scrolling.
-        var self = this;
-        $(window).scroll(function() {
-            if ($(window).scrollTop() === $(document).height() - $(window).height()) {
+        // -- Show new chunks during scrolling. --
+        
+        var self = this,
+            // Element that does the scrolling.
+            scroll_elt = _.find(this.$el.parents(), function(p) {
+                return $(p).css('overflow') === 'auto';
+            }),
+            // Flag to ensure that only one chunk is loaded at a time.
+            loading_chunk = false;
+
+        // If no scrolling element found, use window.
+        if (!scroll_elt) { scroll_elt = window; }
+
+        // Wrap scrolling element for easy access.
+        scroll_elt = $(scroll_elt);
+
+        // Set up chunk loading when scrolling using the scrolling element.
+        scroll_elt.scroll(function() {
+            // If not already loading a chunk and have scrolled to the bottom of this element, get next chunk.
+            if ( !loading_chunk && (self.$el.height() - scroll_elt.scrollTop() - scroll_elt.height() <= 0) ) {
+                loading_chunk = true;
                 $.when(self.model.get_next_chunk()).then(function(result) {
                     if (result) {
                         self._renderChunk(result);
+                        loading_chunk = false;
                     }
                 });
             }
@@ -218,7 +239,7 @@ var createModelAndView = function(model, view, model_config, parent_elt) {
     if (parent_elt) {
         parent_elt.append(a_view.$el);
     }
-    
+
     return a_view;
 };
 
@@ -227,7 +248,14 @@ var createModelAndView = function(model, view, model_config, parent_elt) {
  * and appends to parent_elt.
  */
 var createTabularDatasetChunkedView = function(dataset_config, parent_elt) {
-    return createModelAndView(TabularDataset, TabularDatasetChunkedView, dataset_config, parent_elt);
+    // Create view element and add to parent.
+    var view_div = $('<div/>').appendTo(parent_elt);
+
+    // Create view with model, render, and return.
+    return new TabularDatasetChunkedView({
+        el: view_div,
+        model: new TabularDataset(dataset_config)
+    }).render();
 };
 
 return {

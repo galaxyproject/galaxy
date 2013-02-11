@@ -642,6 +642,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             truncated, dataset_data = self.get_data( dataset, preview )
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
 
+            # If dataset is chunkable, get first chunk.
+            first_chunk = None
+            if dataset.datatype.CHUNKABLE:
+                first_chunk = dataset.datatype.get_chunk(trans, dataset, 0)
+
             # If data is binary or an image, stream without template; otherwise, use display template.
             # TODO: figure out a way to display images in display template.
             if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image)  or isinstance(dataset.datatype, datatypes.images.Html):
@@ -658,8 +663,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         user_item_rating = 0
                 ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, dataset )
 
-                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, truncated=truncated,
-                                                user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, 
+                                                 truncated=truncated, user_item_rating = user_item_rating, 
+                                                 ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                                                 first_chunk=first_chunk )
         else:
             raise web.httpexceptions.HTTPNotFound()
 
