@@ -402,6 +402,7 @@ class DefaultToolAction( object ):
         job.object_store_id = object_store_id
         if job_params:
             job.params = to_json_string( job_params )
+        job.set_handler(tool.get_job_handler(job_params))
         trans.sa_session.add( job )
         trans.sa_session.flush()
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
@@ -425,7 +426,7 @@ class DefaultToolAction( object ):
             trans.sa_session.flush()
             trans.response.send_redirect( url_for( controller='tool_runner', action='redirect', redirect_url=redirect_url ) )
         else:
-            # Queue the job for execution
-            trans.app.job_queue.put( job.id, tool )
+            # Put the job in the queue if tracking in memory
+            trans.app.job_queue.put( job.id, job.tool_id )
             trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
             return job, out_data

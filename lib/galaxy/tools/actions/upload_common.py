@@ -358,11 +358,12 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
             # open( dataset.file_name, "w" ).close()
     job.object_store_id = object_store_id
     job.state = job.states.NEW
+    job.set_handler(tool.get_job_handler(None))
     trans.sa_session.add( job )
     trans.sa_session.flush()
 
     # Queue the job for execution
-    trans.app.job_queue.put( job.id, tool )
+    trans.app.job_queue.put( job.id, job.tool_id )
     trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
     output = odict()
     for i, v in enumerate( data_list ):

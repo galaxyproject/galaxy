@@ -86,6 +86,8 @@ class UniverseApplication( object ):
         self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
                                                      tool_data_path=self.tool_data_tables.tool_data_path,
                                                      from_shed_config=True )
+        # Initialize the job management configuration
+        self.job_config = jobs.JobConfiguration(self)
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
         if self.config.migrated_tools_config not in tool_configs:

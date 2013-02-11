@@ -131,6 +131,8 @@ class Job( object ):
         self.info = None
         self.job_runner_name = None
         self.job_runner_external_id = None
+        self.destination_id = None
+        self.destination_params = None
         self.post_job_actions = []
         self.imported = False
         self.handler = None

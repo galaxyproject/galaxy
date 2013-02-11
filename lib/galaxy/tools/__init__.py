@@ -895,35 +895,55 @@ class Tool( object ):
                                                                                                                           self.repository_owner,
                                                                                                                           self.installed_changeset_revision )
         return None
-    def __get_job_run_config( self, run_configs, key, job_params=None ):
-        # Look through runners/handlers to find one with matching parameters.
-        available_configs = []
-        if len( run_configs ) == 1:
-            # Most tools have a single config.
-            return run_configs[0][ key ] # return to avoid random when this will be the case most of the time
+
+    def __get_job_tool_configuration(self, job_params=None):
+        """Generalized method for getting this tool's job configuration.
+
+        :type job_params: dict or None
+        :returns: `galaxy.jobs.JobToolConfiguration` -- JobToolConfiguration that matches this `Tool` and the given `job_params`
+        """
+        rval = None
+        if len(self.job_tool_configurations) == 1:
+            # If there's only one config, use it rather than wasting time on comparisons
+            rval = self.job_tool_configurations[0]
         elif job_params is None:
-            # Use job config with no params
-            for config in run_configs:
-                if "params" not in config:
-                    available_configs.append( config )
+            for job_tool_config in self.job_tool_configurations:
+                if not job_tool_config.params:
+                    rval = job_tool_config
+                    break
         else:
-            # Find config with matching parameters.
-            for config in run_configs:
-                if "params" in config:
-                    match = True
-                    config_params = config[ "params" ]
+            for job_tool_config in self.job_tool_configurations:
+                if job_tool_config.params:
+                    # There are job params and this config has params defined
                     for param, value in job_params.items():
-                        if param not in config_params or \
-                           config_params[ param ] != job_params[ param ]:
-                           match = False
-                           break
-                    if match:
-                        available_configs.append( config )
-        return random.choice( available_configs )[ key ]
-    def get_job_runner_url( self, job_params=None ):
-        return self.__get_job_run_config( self.job_runners, key='url', job_params=job_params )
-    def get_job_handler( self, job_params=None ):
-        return self.__get_job_run_config( self.job_handlers, key='name', job_params=job_params )
+                        if param not in job_tool_config.params or job_tool_config.params[param] != job_params[param]:
+                            break
+                    else:
+                        # All params match, use this config
+                        rval = job_tool_config
+                        break
+                else:
+                    rval = job_tool_config
+        assert rval is not None, 'Could not get a job tool configuration for Tool %s with job_params %s, this is a bug' % (self.id, job_params)
+        return rval
+
+    def get_job_handler(self, job_params=None):
+        """Get a suitable job handler for this `Tool` given the provided `job_params`.  If multiple handlers are valid for combination of `Tool` and `job_params` (e.g. the defined handler is a handler tag), one will be selected at random.
+
+        :param job_params: Any params specific to this job (e.g. the job source)
+        :type job_params: dict or None
+
+        :returns: str -- The id of a job handler for a job run of this `Tool`
+        """
+        # convert tag to ID if necessary
+        return self.app.job_config.get_handler(self.__get_job_tool_configuration(job_params=job_params).handler)
+
+    def get_job_destination(self, job_params=None):
+        """
+        :returns: galaxy.jobs.JobDestination -- The destination definition and runner parameters.
+        """
+        return self.app.job_config.get_destination(self.__get_job_tool_configuration(job_params=job_params).destination)
+
     def parse( self, root, guid=None ):
         """
         Read tool configuration from the element `root` and fill in `self`.
@@ -994,25 +1014,15 @@ class Tool( object ):
             self.parallelism = ParallelismInfo(parallelism)
         else:
             self.parallelism = None
-        # Set job handler(s). Each handler is a dict with 'url' and, optionally, 'params'.
+        # Get JobToolConfiguration(s) valid for this particular Tool.  At least
+        # a 'default' will be provided that uses the 'default' handler and
+        # 'default' destination.  I thought about moving this to the
+        # job_config, but it makes more sense to store here. -nate
         self_ids = [ self.id.lower() ]
         if self.old_id != self.id:
             # Handle toolshed guids
             self_ids = [ self.id.lower(), self.id.lower().rsplit('/',1)[0], self.old_id.lower() ]
-        self.job_handlers = [ { "name" : name } for name in self.app.config.default_job_handlers ]
-        # Set custom handler(s) if they're defined.
-        for self_id in self_ids:
-            if self_id in self.app.config.tool_handlers:
-                self.job_handlers = self.app.config.tool_handlers[ self_id ]
-                break
-        # Set job runner(s). Each runner is a dict with 'url' and, optionally, 'params'.
-        # Set job runner to the cluster default
-        self.job_runners = [ { "url" : self.app.config.default_cluster_job_runner } ]
-        # Set custom runner(s) if they're defined.
-        for self_id in self_ids:
-            if self_id in self.app.config.tool_runners:
-                self.job_runners = self.app.config.tool_runners[ self_id ]
-                break
+        self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids)
         # Is this a 'hidden' tool (hidden in tool menu)
         self.hidden = util.xml_text(root, "hidden")
         if self.hidden: self.hidden = util.string_as_bool(self.hidden)
@@ -2687,7 +2697,8 @@ class Tool( object ):
                 if line.get( 'type' ) == 'new_primary_dataset':
                     new_primary_datasets[ os.path.split( line.get( 'filename' ) )[-1] ] = line
         except Exception, e:
-            log.debug( "Error opening galaxy.json file: %s" % e )
+            # This should not be considered an error or warning condition, this file is optional
+            pass
         # Loop through output file names, looking for generated primary 
         # datasets in form of:
         #     'primary_associatedWithDatasetID_designation_visibility_extension(_DBKEY)'

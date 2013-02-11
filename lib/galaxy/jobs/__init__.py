@@ -6,13 +6,17 @@ import os
 import sys
 import pwd
 import time
+import copy
+import random
 import logging
+import datetime
 import threading
 import traceback
 import subprocess
 
 import galaxy
 from galaxy import util, model
+from galaxy.util.bunch import Bunch
 from galaxy.datatypes.tabular import *
 from galaxy.datatypes.interval import *
 # tabular/interval imports appear to be unused.  Clean up?
@@ -22,6 +26,7 @@ from galaxy.util.expressions import ExpressionContext
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.exceptions import ObjectInvalid
 from galaxy.jobs.mapper import JobRunnerMapper
+from galaxy.jobs.runners import BaseJobRunner
 
 log = logging.getLogger( __name__ )
 
@@ -46,6 +51,491 @@ class Sleeper( object ):
         self.condition.acquire()
         self.condition.notify()
         self.condition.release()
+
+class JobDestination( Bunch ):
+    """
+    Provides details about where a job runs
+    """
+    def __init__(self, **kwds):
+        self['id'] = None
+        self['url'] = None
+        self['tags'] = None
+        self['runner'] = None
+        self['legacy'] = False
+        self['converted'] = False
+        # dict is appropriate (rather than a bunch) since keys may not be valid as attributes
+        self['params'] = dict()
+        super(JobDestination, self).__init__(**kwds)
+
+        # Store tags as a list
+        if self.tags is not None:
+            self['tags'] = [ x.strip() for x in self.tags.split(',') ]
+
+class JobToolConfiguration( Bunch ):
+    """
+    Provides details on what handler and destination a tool should use
+
+    A JobToolConfiguration will have the required attribute 'id' and optional
+    attributes 'handler', 'destination', and 'params'
+    """
+    def __init__(self, **kwds):
+        self['handler'] = None
+        self['destination'] = None
+        self['params'] = dict()
+        super(JobToolConfiguration, self).__init__(**kwds)
+
+class JobConfiguration( object ):
+    """A parser and interface to advanced job management features.
+    
+    These features are configured in the job configuration, by default, ``job_conf.xml``
+    """
+    DEFAULT_NWORKERS = 4
+    def __init__(self, app):
+        """Parse the job configuration XML.
+        """
+        self.app = app
+        self.runner_plugins = []
+        self.handlers = {}
+        self.default_handler_id = None
+        self.destinations = {}
+        self.destination_tags = {}
+        self.default_destination_id = None
+        self.tools = {}
+        self.limits = Bunch()
+
+        # Initialize the config
+        try:
+            tree = util.parse_xml(self.app.config.job_config_file)
+            self.__parse_job_conf_xml(tree)
+        except IOError:
+            log.warning( 'Job configuration "%s" does not exist, using legacy job configuration from Galaxy config file "%s" instead' % ( self.app.config.job_config_file, self.app.config.config_file ) )
+            self.__parse_job_conf_legacy()
+
+    def __parse_job_conf_xml(self, tree):
+        """Loads the new-style job configuration from options in the job config file (by default, job_conf.xml).
+
+        :param tree: Object representing the root ``<job_conf>`` object in the job config file.
+        :type tree: ``xml.etree.ElementTree.Element``
+        """
+        root = tree.getroot()
+        log.debug('Loading job configuration from %s' % self.app.config.job_config_file)
+
+        # Parse job plugins
+        plugins = root.find('plugins')
+        if plugins is not None:
+            for plugin in self.__findall_with_required(plugins, 'plugin', ('id', 'type', 'load')):
+                if plugin.get('type') == 'runner':
+                    workers = plugin.get('workers', plugins.get('workers', JobConfiguration.DEFAULT_NWORKERS))
+                    self.runner_plugins.append(dict(id=plugin.get('id'), load=plugin.get('load'), workers=int(workers)))
+                else:
+                    log.error('Unknown plugin type: %s' % plugin.get('type'))
+        # Load tasks if configured
+        if self.app.config.use_tasked_jobs:
+            self.runner_plugins.append(dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers))
+
+        # Parse handlers
+        handlers = root.find('handlers')
+        if handlers is not None:
+            for handler in self.__findall_with_required(handlers, 'handler'):
+                id = handler.get('id')
+                if id in self.handlers:
+                    log.error("Handler '%s' overlaps handler with the same name, ignoring" % id)
+                else:
+                    log.debug("Read definition for handler '%s'" % id)
+                    self.handlers[id] = (id,)
+                    if handler.get('tags', None) is not None:
+                        for tag in [ x.strip() for x in handler.get('tags').split(',') ]:
+                            if tag in self.handlers:
+                                self.handlers[tag].append(id)
+                            else:
+                                self.handlers[tag] = [id]
+
+        # Determine the default handler(s)
+        self.default_handler_id = self.__get_default(handlers, self.handlers.keys())
+
+        # Parse destinations
+        destinations = root.find('destinations')
+        for destination in self.__findall_with_required(destinations, 'destination', ('id', 'runner')):
+            id = destination.get('id')
+            job_destination = JobDestination(**dict(destination.items()))
+            job_destination['params'] = self.__get_params(destination)
+            self.destinations[id] = (job_destination,)
+            if job_destination.tags is not None:
+                for tag in job_destination.tags:
+                    if tag not in self.destinations:
+                        self.destinations[tag] = []
+                    self.destinations[tag].append(job_destination)
+
+        # Determine the default destination
+        self.default_destination_id = self.__get_default(destinations, self.destinations.keys())
+
+        # Parse tool mappings
+        tools = root.find('tools')
+        if tools is not None:
+            for tool in self.__findall_with_required(tools, 'tool'):
+                # There can be multiple definitions with identical ids, but different params
+                id = tool.get('id')
+                if id not in self.tools:
+                    self.tools[id] = list()
+                self.tools[id].append(JobToolConfiguration(**dict(tool.items())))
+                self.tools[id][-1]['params'] = self.__get_params(tool)
+
+        types = dict(registered_user_concurrent_jobs = int,
+                     anonymous_user_concurrent_jobs = int,
+                     walltime = str,
+                     output_size = int)
+
+        self.limits = Bunch(registered_user_concurrent_jobs = None,
+                            anonymous_user_concurrent_jobs = None,
+                            walltime = None,
+                            walltime_delta = None,
+                            output_size = None,
+                            concurrent_jobs = {})
+
+        # Parse job limits
+        limits = root.find('limits')
+        if limits is not None:
+            for limit in self.__findall_with_required(limits, 'limit', ('type',)):
+                type = limit.get('type')
+                if type == 'concurrent_jobs':
+                    id = limit.get('tag', None) or limit.get('id')
+                    self.limits.concurrent_jobs[id] = int(limit.text)
+                elif limit.text:
+                    self.limits.__dict__[type] = types.get(type, str)(limit.text)
+
+        if self.limits.walltime is not None:
+            h, m, s = [ int( v ) for v in self.limits.walltime.split( ':' ) ]
+            self.limits.walltime_delta = datetime.timedelta( 0, s, 0, 0, m, h )
+
+        log.debug('Done loading job configuration')
+
+    def __parse_job_conf_legacy(self):
+        """Loads the old-style job configuration from options in the galaxy config file (by default, universe_wsgi.ini).
+        """
+        log.debug('Loading job configuration from %s' % self.app.config.config_file)
+
+        # Always load local and lwr
+        self.runner_plugins = [dict(id='local', load='local', workers=self.app.config.local_job_queue_workers), dict(id='lwr', load='lwr', workers=self.app.config.cluster_job_queue_workers)]
+        # Load tasks if configured
+        if self.app.config.use_tasked_jobs:
+            self.runner_plugins.append(dict(id='tasks', load='tasks', workers=self.app.config.local_task_queue_workers))
+        for runner in self.app.config.start_job_runners:
+            self.runner_plugins.append(dict(id=runner, load=runner, workers=self.app.config.cluster_job_queue_workers))
+
+        # Set the handlers
+        for id in self.app.config.job_handlers:
+            self.handlers[id] = (id,)
+
+        self.handlers['default_job_handlers'] = self.app.config.default_job_handlers
+        self.default_handler_id = 'default_job_handlers'
+
+        # Set tool handler configs
+        for id, tool_handlers in self.app.config.tool_handlers.items():
+            self.tools[id] = list()
+            for handler_config in tool_handlers:
+                # rename the 'name' key to 'handler'
+                handler_config['handler'] = handler_config.pop('name')
+                self.tools[id].append(JobToolConfiguration(**handler_config))
+
+        # Set tool runner configs
+        for id, tool_runners in self.app.config.tool_runners.items():
+            # Might have been created in the handler parsing above
+            if id not in self.tools:
+                self.tools[id] = list()
+            for runner_config in tool_runners:
+                url = runner_config['url']
+                if url not in self.destinations:
+                    # Create a new "legacy" JobDestination - it will have its URL converted to a destination params once the appropriate plugin has loaded
+                    self.destinations[url] = (JobDestination(id=url, runner=url.split(':', 1)[0], url=url, legacy=True, converted=False),)
+                for tool_conf in self.tools[id]:
+                    if tool_conf.params == runner_config.get('params', {}):
+                        tool_conf['destination'] = url
+                        break
+                else:
+                    # There was not an existing config (from the handlers section) with the same params
+                    # rename the 'url' key to 'destination'
+                    runner_config['destination'] = runner_config.pop('url')
+                    self.tools[id].append(JobToolConfiguration(**runner_config))
+
+        self.destinations[self.app.config.default_cluster_job_runner] = (JobDestination(id=self.app.config.default_cluster_job_runner, runner=self.app.config.default_cluster_job_runner.split(':', 1)[0], url=self.app.config.default_cluster_job_runner, legacy=True, converted=False),)
+        self.default_destination_id = self.app.config.default_cluster_job_runner
+
+        # Set the job limits
+        self.limits = Bunch(registered_user_concurrent_jobs = self.app.config.registered_user_job_limit,
+                            anonymous_user_concurrent_jobs = self.app.config.anonymous_user_job_limit,
+                            walltime = self.app.config.job_walltime,
+                            walltime_delta = self.app.config.job_walltime_delta,
+                            output_size = self.app.config.output_size_limit,
+                            concurrent_jobs = {})
+
+        log.debug('Done loading job configuration')
+
+    def __get_default(self, parent, names):
+        """Returns the default attribute set in a parent tag like <handlers> or <destinations>, or return the ID of the child, if there is no explicit default and only one child.
+
+        :param parent: Object representing a tag that may or may not have a 'default' attribute.
+        :type parent: ``xml.etree.ElementTree.Element``
+        :param names: The list of destination or handler IDs or tags that were loaded.
+        :type names: list of str
+
+        :returns: str -- id or tag representing the default.
+        """
+        rval = parent.get('default')
+        if rval is not None:
+            # If the parent element has a 'default' attribute, use the id or tag in that attribute
+            if rval not in names:
+                raise Exception("<%s> default attribute '%s' does not match a defined id or tag in a child element" % (parent.tag, rval))
+            log.debug("<%s> default set to child with id or tag '%s'" % (parent.tag, rval))
+        elif len(names) == 1:
+            log.info("Setting <%s> default to child with id '%s'" % (parent.tag, names[0]))
+            rval = names[0]
+        else:
+            raise Exception("No <%s> default specified, please specify a valid id or tag with the 'default' attribute" % parent.tag)
+        return rval
+
+    def __findall_with_required(self, parent, match, attribs=None):
+        """Like ``xml.etree.ElementTree.Element.findall()``, except only returns children that have the specified attribs.
+
+        :param parent: Parent element in which to find.
+        :type parent: ``xml.etree.ElementTree.Element``
+        :param match: Name of child elements to find.
+        :type match: str
+        :param attribs: List of required attributes in children elements.
+        :type attribs: list of str
+
+        :returns: list of ``xml.etree.ElementTree.Element``
+        """
+        rval = []
+        if attribs is None:
+            attribs = ('id',)
+        for elem in parent.findall(match):
+            for attrib in attribs:
+                if attrib not in elem.attrib:
+                    log.warning("required '%s' attribute is missing from <%s> element" % (attrib, match))
+                    break
+            else:
+                rval.append(elem)
+        return rval
+
+    def __get_params(self, parent):
+        """Parses any child <param> tags in to a dictionary suitable for persistence.
+
+        :param parent: Parent element in which to find child <param> tags.
+        :type parent: ``xml.etree.ElementTree.Element``
+
+        :returns: dict
+        """
+        rval = {}
+        for param in parent.findall('param'):
+            rval[param.get('id')] = param.text
+        return rval
+
+    @property
+    def default_job_tool_configuration(self):
+        """The default JobToolConfiguration, used if a tool does not have an explicit defintion in the configuration.  It consists of a reference to the default handler and default destination.
+
+        :returns: JobToolConfiguration -- a representation of a <tool> element that uses the default handler and destination
+        """
+        return JobToolConfiguration(id='default', handler=self.default_handler_id, destination=self.default_destination_id)
+
+    # Called upon instantiation of a Tool object
+    def get_job_tool_configurations(self, ids):
+        """Get all configured JobToolConfigurations for a tool ID, or, if given a list of IDs, the JobToolConfigurations for the first id in ``ids`` matching a tool definition.
+
+        .. note::
+
+            You should not mix tool shed tool IDs, versionless tool shed IDs, and tool config tool IDs that refer to the same tool.
+
+        :param ids: Tool ID or IDs to fetch the JobToolConfiguration of.
+        :type ids: list or str.
+        :returns: list -- JobToolConfiguration Bunches representing <tool> elements matching the specified ID(s).
+
+        Example tool ID strings include:
+
+        * Full tool shed id: ``toolshed.example.org/repos/nate/filter_tool_repo/filter_tool/1.0.0``
+        * Tool shed id less version: ``toolshed.example.org/repos/nate/filter_tool_repo/filter_tool``
+        * Tool config tool id: ``filter_tool``
+        """
+        rval = []
+        # listify if ids is a single (string) id
+        ids = util.listify(ids)
+        for id in ids:
+            if id in self.tools:
+                # If a tool has definitions that include job params but not a
+                # definition for jobs without params, include the default
+                # config
+                for job_tool_configuration in self.tools[id]:
+                    if not job_tool_configuration.params:
+                        break
+                else:
+                    rval.append(self.default_job_tool_configuration)
+                rval.extend(self.tools[id])
+                break
+        else:
+            rval.append(self.default_job_tool_configuration)
+        return rval
+
+    def __get_single_item(self, collection):
+        """Given a collection of handlers or destinations, return one item from the collection at random.
+        """
+        # Done like this to avoid random under the assumption it's faster to avoid it
+        if len(collection) == 1:
+            return collection[0]
+        else:
+            return random.choice(collection)
+
+    # This is called by Tool.get_job_handler()
+    def get_handler(self, id_or_tag):
+        """Given a handler ID or tag, return the provided ID or an ID matching the provided tag
+
+        :param id_or_tag: A handler ID or tag.
+        :type id_or_tag: str
+
+        :returns: str -- A valid job handler ID.
+        """
+        return self.__get_single_item(self.handlers[id_or_tag])
+
+    def get_destination(self, id_or_tag):
+        """Given a destination ID or tag, return the JobDestination matching the provided ID or tag
+
+        :param id_or_tag: A destination ID or tag.
+        :type id_or_tag: str
+
+        :returns: JobDestination -- A valid destination
+
+        Destinations are deepcopied as they are expected to be passed in to job
+        runners, which will modify them for persisting params set at runtime.
+        """
+        return copy.deepcopy(self.__get_single_item(self.destinations[id_or_tag]))
+
+    def get_destinations(self, id_or_tag):
+        """Given a destination ID or tag, return all JobDestinations matching the provided ID or tag
+
+        :param id_or_tag: A destination ID or tag.
+        :type id_or_tag: str
+
+        :returns: list or tuple of JobDestinations
+
+        Destinations are not deepcopied, so they should not be passed to
+        anything which might modify them.
+        """
+        return self.destinations.get(id_or_tag, None)
+
+    def get_job_runner_plugins(self):
+        """Load all configured job runner plugins
+
+        :returns: list of job runner plugins
+        """
+        rval = {}
+        for runner in self.runner_plugins:
+            class_names = []
+            module = None
+            id = runner['id']
+            load = runner['load']
+            if ':' in load:
+                # Name to load was specified as '<module>:<class>'
+                module_name, class_name = load.rsplit(':', 1)
+                class_names = [ class_name ]
+                module = __import__( module_name )
+            else:
+                # Name to load was specified as '<module>'
+                if '.' not in load:
+                    # For legacy reasons, try from galaxy.jobs.runners first if there's no '.' in the name
+                    module_name = 'galaxy.jobs.runners.' + load
+                    try:
+                        module = __import__( module_name )
+                    except ImportError:
+                        # No such module, we'll retry without prepending galaxy.jobs.runners.
+                        # All other exceptions (e.g. something wrong with the module code) will raise
+                        pass
+                if module is None:
+                    # If the name included a '.' or loading from the static runners path failed, try the original name
+                    module = __import__( load )
+                    module_name = load
+            if module is None:
+                # Module couldn't be loaded, error should have already been displayed
+                continue
+            for comp in module_name.split( "." )[1:]:
+                module = getattr( module, comp )
+            if not class_names:
+                # If there's not a ':', we check <module>.__all__ for class names
+                try:
+                    assert module.__all__
+                    class_names = module.__all__
+                except AssertionError:
+                    log.error( 'Runner "%s" does not contain a list of exported classes in __all__' % load )
+                    continue
+            for class_name in class_names:
+                runner_class = getattr( module, class_name )
+                try:
+                    assert issubclass(runner_class, BaseJobRunner)
+                except TypeError:
+                    log.warning("A non-class name was found in __all__, ignoring: %s" % id)
+                    continue
+                except AssertionError:
+                    log.warning("Job runner classes must be subclassed from BaseJobRunner, %s has bases: %s" % (id, runner_class.__bases__))
+                    continue
+                try:
+                    rval[id] = runner_class( self.app, runner['workers'] )
+                except TypeError:
+                    log.warning( "Job runner '%s:%s' has not been converted to a new-style runner" % ( module_name, class_name ) )
+                    rval[id] = runner_class( self.app )
+                log.debug( "Loaded job runner '%s:%s' as '%s'" % ( module_name, class_name, id ) )
+        return rval
+
+    def is_id(self, collection):
+        """Given a collection of handlers or destinations, indicate whether the collection represents a tag or a real ID
+
+        :param collection: A representation of a destination or handler
+        :type collection: tuple or list
+
+        :returns: bool
+        """
+        return type(collection) == tuple
+
+    def is_tag(self, collection):
+        """Given a collection of handlers or destinations, indicate whether the collection represents a tag or a real ID
+
+        :param collection: A representation of a destination or handler
+        :type collection: tuple or list
+
+        :returns: bool
+        """
+        return type(collection) == list
+
+    def is_handler(self, server_name):
+        """Given a server name, indicate whether the server is a job handler
+
+        :param server_name: The name to check
+        :type server_name: str
+
+        :return: bool
+        """
+        for collection in self.handlers.values():
+            if server_name in collection:
+                return True
+        return False
+
+    def convert_legacy_destinations(self, job_runners):
+        """Converts legacy (from a URL) destinations to contain the appropriate runner params defined in the URL.
+
+        :param job_runners: All loaded job runner plugins.
+        :type job_runners: list of job runner plugins
+        """
+        for id, destination in [ ( id, destinations[0] ) for id, destinations in self.destinations.items() if self.is_id(destinations) ]:
+            # Only need to deal with real destinations, not members of tags
+            if destination.legacy and not destination.converted:
+                if destination.runner in job_runners:
+                    destination.params = job_runners[destination.runner].url_to_destination(destination.url).params
+                    destination.converted = True
+                    if destination.params:
+                        log.debug("Legacy destination with id '%s', url '%s' converted, got params:" % (id, destination.url))
+                        for k, v in destination.params.items():
+                            log.debug("    %s: %s" % (k, v))
+                    else:
+                        log.debug("Legacy destination with id '%s', url '%s' converted, got params:" % (id, destination.url))
+                else:
+                    log.warning("Legacy destination with id '%s' could not be converted: Unknown runner plugin: %s" % (id, destination.runner))
 
 class JobWrapper( object ):
     """
@@ -81,7 +571,7 @@ class JobWrapper( object ):
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
-        self.job_runner_mapper = JobRunnerMapper( self, job.job_runner_name )
+        self.job_runner_mapper = JobRunnerMapper( self, queue.dispatcher.url_to_destination )
         self.params = None
         if job.params:
             self.params = from_json_string( job.params )
@@ -94,13 +584,28 @@ class JobWrapper( object ):
         return self.app.config.use_tasked_jobs and self.tool.parallelism
 
     def get_job_runner_url( self ):
-        return self.job_runner_mapper.get_job_runner_url( self.params )
+        log.warning('(%s) Job runner URLs are deprecated, use destinations instead.' % self.job_id)
+        return self.job_destination.url
 
     def get_parallelism(self):
         return self.tool.parallelism
 
     # legacy naming
     get_job_runner = get_job_runner_url
+
+    @property
+    def job_destination(self):
+        """Return the JobDestination that this job will use to run.  This will
+        either be a configured destination, a randomly selected destination if
+        the configured destination was a tag, or a dynamically generated
+        destination from the dynamic runner.
+
+        Calling this method for the first time causes the dynamic runner to do
+        its calculation, if any.
+        
+        :returns: ``JobDestination``
+        """
+        return self.job_runner_mapper.get_job_destination(self.params)
 
     def get_job( self ):
         return self.sa_session.query( model.Job ).get( self.job_id )
@@ -321,11 +826,24 @@ class JobWrapper( object ):
         return job.state
 
     def set_runner( self, runner_url, external_id ):
+        log.warning('set_runner() is deprecated, use set_job_destination()')
+        self.set_job_destination(self.job_destination, external_id)
+
+    def set_job_destination(self, job_destination, external_id):
+        """
+        Persist job destination params in the database for recovery.
+
+        self.job_destination is not used because a runner may choose to rewrite
+        parts of the destination (e.g. the params).
+        """
         job = self.get_job()
-        self.sa_session.refresh( job )
-        job.job_runner_name = runner_url
+        self.sa_session.refresh(job)
+        log.debug('(%s) Persisting job destination (destination id: %s)' % (job.id, job_destination.id))
+        job.destination_id = job_destination.id
+        job.destination_params = job_destination.params
+        job.job_runner_name = job_destination.runner
         job.job_runner_external_id = external_id
-        self.sa_session.add( job )
+        self.sa_session.add(job)
         self.sa_session.flush()
 
     def finish( self, stdout, stderr, tool_exit_code=None ):
@@ -699,6 +1217,28 @@ class JobWrapper( object ):
         except:
             log.exception( "Unable to cleanup job %d" % self.job_id )
 
+    def get_output_sizes( self ):
+        sizes = []
+        output_paths = self.get_output_fnames()
+        for outfile in [ str( o ) for o in output_paths ]:
+            if os.path.exists( outfile ):
+                sizes.append( ( outfile, os.stat( outfile ).st_size ) )
+            else:
+                sizes.append( ( outfile, 0 ) )
+        return sizes
+
+    def check_limits(self, runtime=None):
+        if self.app.job_config.limits.output_size > 0:
+            for outfile, size in self.get_output_sizes():
+                if size > self.app.config.output_size_limit:
+                    log.warning( '(%s) Job output %s is over the output size limit' % ( self.get_id_tag(), os.path.basename( outfile ) ) )
+                    return 'Job output file grew too large (greater than %s), please try different inputs or parameters' % util.nice_size( self.app.job_config.limits.output_size )
+        if self.app.job_config.limits.walltime_delta is not None and runtime is not None:
+            if runtime > self.app.job_config.limits.walltime_delta:
+                log.warning( '(%s) Job has reached walltime, it will be terminated' % ( self.get_id_tag() ) )
+                return 'Job ran longer than the maximum allowed execution time (%s), please try different inputs or parameters' % self.app.job_config.limits.walltime
+        return None
+
     def get_command_line( self ):
         return self.command_line
 
@@ -824,16 +1364,6 @@ class JobWrapper( object ):
             if meta['type'] == 'dataset' and meta['dataset_id'] == dataset.id:
                 return ExpressionContext( meta, job_context )
         return job_context
-
-    def check_output_sizes( self ):
-        sizes = []
-        output_paths = self.get_output_fnames()
-        for outfile in [ str( o ) for o in output_paths ]:
-            if os.path.exists( outfile ):
-                sizes.append( ( outfile, os.stat( outfile ).st_size ) )
-            else:
-                sizes.append( ( outfile, 0 ) )
-        return sizes
 
     def setup_external_metadata( self, exec_dir=None, tmp_dir=None, dataset_files_path=None, config_root=None, config_file=None, datatypes_config=None, set_extension=True, **kwds ):
         # extension could still be 'auto' if this is the upload tool.
@@ -1147,16 +1677,6 @@ class TaskWrapper(JobWrapper):
     def get_dataset_finish_context( self, job_context, dataset ):
         # Handled at the parent job level.  Do nothing here.
         pass
-
-    def check_output_sizes( self ):
-        sizes = []
-        output_paths = self.get_output_fnames()
-        for outfile in [ str( o ) for o in output_paths ]:
-            if os.path.exists( outfile ):
-                sizes.append( ( outfile, os.stat( outfile ).st_size ) )
-            else:
-                sizes.append( ( outfile, 0 ) )
-        return sizes
 
     def setup_external_metadata( self, exec_dir=None, tmp_dir=None, dataset_files_path=None, config_root=None, config_file=None, datatypes_config=None, set_extension=True, **kwds ):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.

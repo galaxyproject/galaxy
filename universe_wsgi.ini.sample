@@ -569,6 +569,10 @@ use_interactive = True
 # be used for each "Set at Runtime" input, independent of others in the Workflow
 #enable_unique_workflow_defaults = False
 
+# This option allows users to see the full path of datasets via the "View
+# Details" option in the history.  Administrators can always see this.
+#expose_dataset_path = False
+
 # -- Job Execution
 
 # To increase performance of job execution and the web interface, you can
@@ -578,33 +582,17 @@ use_interactive = True
 #   http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Web%20Application%20Scaling
 #
 # By default, Galaxy manages and executes jobs from within a single process and
-# notifies itself of new jobs via in-memory queues.  If you change job_manager
-# and job_handlers from their default values, notification will instead be done
-# using the `state` and `handler` columns of the job table in the database.
-
-# Identify the server_name (the string following server: at the top of this
-# file) which should be designated as the job manager (only one):
-#job_manager = main
-
-# Identify the server_name(s) which should be designated as job handlers
-# (responsible for starting, tracking, finishing, and cleaning up jobs) as a
-# comma-separated list.
-#job_handlers = main
-
-# By default, a handler from job_handlers will be selected at random if the
-# tool to run does specify a handler below in [galaxy:tool_handlers].  If you
-# want certain handlers to only handle jobs for tools/params explicitly
-# assigned below, use default_job_handlers to specify which handlers should be
-# used for jobs without explicit handlers.
-#default_job_handlers = main
+# notifies itself of new jobs via in-memory queues.  Jobs are run locally on
+# the system on which Galaxy is started.  Advanced job running capabilities can
+# be configured through the job configuration file.
+#job_config_file = job_conf.xml
 
 # In multiprocess configurations, notification between processes about new jobs
 # is done via the database.  In single process configurations, this is done in
 # memory, which is a bit quicker.  Galaxy tries to automatically determine
-# which method it should used based on your manager/handler configuration
-# above, but can't reliably determine if you have multiple processes for web
-# servers but only a single process as a manager/handler.  In that scenario,
-# you can override the tracking method by setting the following to True:
+# which method it should used based on your handler configuration in the job
+# config file, but you can explicitly override this behavior by setting the
+# following option to True or False.
 #track_jobs_in_database = None
 
 # This enables splitting of jobs into tasks, if specified by the particular tool config.
@@ -650,39 +638,6 @@ use_interactive = True
 # always, onsuccess, never
 #cleanup_job = always
 
-# Number of concurrent jobs to run (local job runner)
-#local_job_queue_workers = 5
-
-# Jobs can be killed after a certain amount of execution time.  Format is in
-# hh:mm:ss.  Currently only implemented for PBS.
-#job_walltime = None
-
-# Jobs can be killed if any of their outputs grow over a certain size (in
-# bytes).  0 for no limit.
-#output_size_limit = 0
-
-# Clustering Galaxy is not a straightforward process and requires some
-# pre-configuration.  See the the wiki before attempting to set any of these
-# options:
-# http://wiki.g2.bx.psu.edu/Admin/Config/Performance/Cluster
-
-# Comma-separated list of job runners to start.  local is always started.  If
-# left commented, no jobs will be run on the cluster, even if a cluster URL is
-# explicitly defined in the [galaxy:tool_runners] section below.  The runners
-# currently available are 'pbs' and 'drmaa'.
-#start_job_runners = None
-
-# For sites where all users in Galaxy match users on the system on which Galaxy
-# runs, the DRMAA job runner can be configured to submit jobs to the DRM as the
-# actual user instead of as the user running the Galaxy server process.  For
-# details on these options, see the documentation at:
-#
-# http://galaxyproject.org/wiki/Admin/Config/Performance/Cluster
-#
-#drmaa_external_runjob_script = scripts/drmaa_external_runner.py
-#drmaa_external_killjob_script = scripts/drmaa_external_killer.py
-#external_chown_script = scripts/external_chown_script.py
-
 # File to source to set up the environment when running jobs.  By default, the
 # environment in which the Galaxy server starts is used when running jobs
 # locally, and the environment set up per the DRM's submission method and
@@ -694,87 +649,15 @@ use_interactive = True
 # individually.  This only affects cluster jobs, not local jobs.
 #environment_setup_file = None
 
-# The URL for the default runner to use when a tool doesn't explicitly define a
-# runner below.
-#default_cluster_job_runner = local:///
-
-# The cluster runners have their own thread pools used to prepare and finish
-# jobs (so that these sometimes lengthy operations do not block normal queue
-# operation).  The value here is the number of worker threads available to each
-# started runner.
-#cluster_job_queue_workers = 3
-
-# These options are only used when using file staging with PBS.
-#pbs_application_server = 
-#pbs_stage_path = 
-#pbs_dataset_server = 
-
-# This option allows users to see the full path of datasets via the "View
-# Details" option in the history.  Administrators can always see this.
-#expose_dataset_path = False
-
-# -- Job Limiting
-
-# A hard limit on the total number of jobs a user can have running across all
-# configured job destinations can be configured here.
-#registered_user_job_limit = None
-#anonymous_user_job_limit = None
-
-# Additionally, jobs can be limited based on runner URLs (or matching of runner
-# URLs).  Matching is via SQL's 'LIKE' operator, so the wildcard characters are
-# '_' and '%' (regex is not supported).  Since the job runner code often
-# rewrites the URL once the job has been submitted to the cluster, you will
-# need to define how to match the runner URL stored in the database.  When in
-# doubt, you can run a job and then examine the stored value of
-# 'job_runner_name' in the 'job' table of the database to see what you'll need
-# to match.
-#
-# For example, if default_cluster_job_runner is set to pbs:/// and the default
-# Torque cluster happens to be pbs.example.org, the job_runner_name is likely
-# to be stored as 'pbs://pbs.example.org/'.  To limit the number of jobs a user
-# can run on this cluster to 4, use the following:
-#
-#   pbs:/// = pbs://pbs.example.org/ 4
-#
-# An example that uses matching (if, for example, your runner URL contains
-# native options):
-#
-#   drmaa:/// = drmaa://sge.example.org/% 4
-
-[galaxy:job_limits]
-
-# ---- Per-Tool Job Management ----------------------------------------------
-
-# Per-tool job handler and runner overrides. Parameters can be included to define multiple
-# runners per tool. E.g. to run Cufflinks jobs initiated from Trackster
-# differently than standard Cufflinks jobs:
-#
-#   cufflinks = local:///
-#   cufflinks[source@trackster] = local:///
-
-[galaxy:tool_handlers]
-
-# By default, Galaxy will select a handler at random from the list of
-# job_handlers set above.  You can override as in the following examples:
-#
-#upload1 = upload_handler
-#cufflinks[source@trackster] = realtime_handler
-
-[galaxy:tool_runners]
-
-# If not listed here, a tool will run with the runner defined with 
-# default_cluster_job_runner.  These overrides for local:/// are done because
-# these tools can fetch data from remote sites, which may not be suitable to
-# run on a cluster (if it does not have access to the Internet, for example).
-
-biomart = local:///
-encode_db1 = local:///
-hbvar = local:///
-microbial_import1 = local:///
-ucsc_table_direct1 = local:///
-ucsc_table_direct_archaea1 = local:///
-ucsc_table_direct_test1 = local:///
-upload1 = local:///
+# If using job concurrency limits (configured in job_config_file), several
+# extra database queries must be performed to determine the number of jobs a
+# user has dispatched to a given destination.  By default, these queries will
+# happen for every job that is waiting to run, but if cache_user_job_count is
+# set to True, it will only happen once per iteration of the handler queue.
+# Although better for performance due to reduced queries, the tradeoff is a
+# greater possibility that jobs will be dispatched past the configured limits
+# if running many handlers.
+#cache_user_job_count = False
 
 # ---- Galaxy Message Queue -------------------------------------------------
 
