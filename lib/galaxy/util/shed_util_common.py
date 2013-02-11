@@ -43,6 +43,7 @@ TOOL_SHED_ADMIN_CONTROLLER = 'TOOL_SHED_ADMIN_CONTROLLER'
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 
 new_repo_email_alert_template = """
+Sharable link:         ${sharable_link}
 Repository name:       ${repository_name}
 Revision:              ${revision}
 Change description:
@@ -63,8 +64,9 @@ new repositories were created in the Galaxy tool shed named "${host}".
 """
 
 email_alert_template = """
+Sharable link:         ${sharable_link}
 Repository name:       ${repository_name}
-Revision: ${revision}
+Revision:              ${revision}
 Change description:
 ${description}
 
@@ -2364,6 +2366,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
     #    that was included in the change set.
     repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( get_configured_ui(), repo_dir )
+    sharable_link = generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=None )
     smtp_server = trans.app.config.smtp_server
     if smtp_server and ( new_repo_alert or repository.email_alerts ):
         # Send email alert to users that want them.
@@ -2389,6 +2392,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
         else:
             template = email_alert_template
         admin_body = string.Template( template ).safe_substitute( host=trans.request.host,
+                                                                  sharable_link=sharable_link,
                                                                   repository_name=repository.name,
                                                                   revision='%s:%s' %( str( ctx.rev() ), ctx ),
                                                                   display_date=display_date,
@@ -2396,6 +2400,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                                                                   username=username,
                                                                   content_alert_str=content_alert_str )
         body = string.Template( template ).safe_substitute( host=trans.request.host,
+                                                            sharable_link=sharable_link,
                                                             repository_name=repository.name,
                                                             revision='%s:%s' %( str( ctx.rev() ), ctx ),
                                                             display_date=display_date,
