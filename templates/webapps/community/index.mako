@@ -45,7 +45,7 @@
         <div class="toolMenu">
             <div class="toolSectionList">
                 %if user_id or repository_id:
-                    ## The route in was a citable url.
+                    ## The route in was a sharable url, and may have included a changeset_revision, although we don't check for it.
                     <div class="toolSectionPad"></div>
                     <div class="toolSectionTitle">
                         All Repositories
@@ -150,13 +150,13 @@
         if trans.app.config.require_login and not trans.user:
             center_url = h.url_for( controller='user', action='login', message=message, status=status )
         elif repository_id and changeset_revision:
-            # Route in was a citable url: /view/{owner}/{name}/{changeset_revision}.
+            # Route in was a sharable url: /view/{owner}/{name}/{changeset_revision}.
             center_url = h.url_for( controller='repository', action='view_repository', id=repository_id, changeset_revision=changeset_revision, message=message, status=status )
         elif repository_id:
-            # Route in was a citable url: /view/{owner}/{name}.
+            # Route in was a sharable url: /view/{owner}/{name}.
             center_url = h.url_for( controller='repository', action='view_repository', id=repository_id, message=message, status=status )
         elif user_id:
-            # Route in was a citable url: /view/{owner}.
+            # Route in was a sharable url: /view/{owner}.
             center_url = h.url_for( controller='repository', action='browse_repositories', operation="repositories_by_user", user_id=user_id, message=message, status=status )
         else:
             center_url = h.url_for( controller='repository', action='browse_categories', message=message, status=status )

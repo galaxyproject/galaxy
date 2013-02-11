@@ -23,11 +23,21 @@
     can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
     can_upload = can_push
     can_view_change_log = trans.webapp.name == 'community' and not is_new
+    changeset_revision_is_repository_tip = changeset_revision == repository.tip( trans.app )
 
     if can_push:
         browse_label = 'Browse or delete repository tip files'
     else:
         browse_label = 'Browse repository tip files'
+
+    if changeset_revision_is_repository_tip:
+        tip_str = 'repository tip'
+        sharable_link_label = 'Sharable link to this repository:'
+        sharable_link_changeset_revision = None
+    else:
+        tip_str = ''
+        sharable_link_label = 'Sharable link to this repository revision:'
+        sharable_link_changeset_revision = changeset_revision
 %>
 
 <%!
@@ -119,12 +129,6 @@
         <div class="toolFormBody">
             <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ) )}" method="post" >
                 <div class="form-row">
-                    <%
-                        if changeset_revision == repository.tip( trans.app ):
-                            tip_str = 'repository tip'
-                        else:
-                            tip_str = ''
-                    %>
                     ${changeset_revision_select_field.get_html()} <i>${tip_str}</i>
                     <div class="toolParamHelp" style="clear: both;">
                         Select a revision to inspect and download versions of tools from this repository.
@@ -139,8 +143,8 @@
     <div class="toolFormTitle">Repository '${repository.name}'</div>
     <div class="toolFormBody">
         <div class="form-row">
-            <label>Sharable link to this repository:</label>
-            ${render_sharable_str( repository )}
+            <label>${sharable_link_label}</label>
+            ${render_sharable_str( repository, changeset_revision=sharable_link_changeset_revision )}
         </div>
         %if can_download:
             <div class="form-row">

@@ -509,9 +509,9 @@ class AdminController( BaseUIController, Admin ):
         # know the refresh_on_change occurred, and we have the necessary repository id and change set
         # revision to pass on.
         for k, v in kwd.items():
-            changset_revision_str = 'changeset_revision_'
-            if k.startswith( changset_revision_str ):
-                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
+            changeset_revision_str = 'changeset_revision_'
+            if k.startswith( changeset_revision_str ):
+                repository_id = trans.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
                 if repository.tip( trans.app ) != v:
                     return trans.response.send_redirect( web.url_for( controller='repository',

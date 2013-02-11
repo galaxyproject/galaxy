@@ -944,11 +944,6 @@ def ensure_required_repositories_exist_for_reinstall( trans, repository_dependen
         for repository_components_list in val:
             tool_shed, name, owner, changeset_revision = repository_components_list
             repository = get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset_revision )
-def generate_citable_link_for_repository_in_tool_shed( trans, repository ):
-    """Generate the URL for citing a repository that is in the tool shed."""
-    base_url = url_for( '/', qualified=True ).rstrip( '/' )
-    protocol, base = base_url.split( '://' )
-    return '%s://%s/view/%s/%s' % ( protocol, base, repository.user.username, repository.name )
 def generate_clone_url_for_installed_repository( app, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
     tool_shed_url = get_url_from_repository_tool_shed( app, repository )
@@ -1310,6 +1305,14 @@ def generate_repository_dependency_metadata_for_tool_shed( app, repository_depen
                                                  repository_dependencies=repository_dependencies_tups )
             metadata_dict[ 'repository_dependencies' ] = repository_dependencies_dict
     return metadata_dict, error_message
+def generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=None ):
+    """Generate the URL for sharing a repository that is in the tool shed."""
+    base_url = url_for( '/', qualified=True ).rstrip( '/' )
+    protocol, base = base_url.split( '://' )
+    sharable_url = '%s://%s/view/%s/%s' % ( protocol, base, repository.user.username, repository.name )
+    if changeset_revision:
+        sharable_url += '/%s' % changeset_revision
+    return sharable_url
 def generate_tool_dependency_metadata( app, repository, changeset_revision, repository_clone_url, tool_dependencies_config, metadata_dict,
                                        original_repository_metadata=None ):
     """
@@ -1803,7 +1806,7 @@ def get_parent_id( trans, id, old_id, version, guid, changeset_revisions ):
     if parent_id is None:
         # The tool did not change through all of the changeset revisions.
         return old_id
-def get_previous_downloadable_changset_revision( repository, repo, before_changeset_revision ):
+def get_previous_downloadable_changeset_revision( repository, repo, before_changeset_revision ):
     """
     Return the installable changeset_revision in the repository changelog prior to the changeset to which before_changeset_revision
     refers.  If there isn't one, return the hash value of an empty repository changelog, INITIAL_CHANGELOG_HASH.
@@ -2021,7 +2024,7 @@ def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision
 def get_repository_metadata_by_id( trans, id ):
     """Get repository metadata from the database"""
     return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
-def get_repository_metadata_by_repository_id_changset_revision( trans, id, changeset_revision ):
+def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision ):
     """Get a specified metadata record for a specified repository."""
     return trans.sa_session.query( trans.model.RepositoryMetadata ) \
                            .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
@@ -2236,9 +2239,9 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
         if tool_shed_is_this_tool_shed( rd_toolshed ):
             repository = get_repository_by_name_and_owner( trans.app, rd_name, rd_owner )
             if repository:
-                repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
-                                                                                                  trans.security.encode_id( repository.id ),
-                                                                                                  rd_changeset_revision )
+                repository_metadata = get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                                   trans.security.encode_id( repository.id ),
+                                                                                                   rd_changeset_revision )
                 if repository_metadata:
                     # The repository changeset_revision is installable, so no updates are available.
                     new_key_rd_dict = {}
@@ -2249,9 +2252,9 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
                     repo_dir = repository.repo_path( trans.app )
                     repo = hg.repository( get_configured_ui(), repo_dir )
                     changeset_revision = get_next_downloadable_changeset_revision( repository, repo, rd_changeset_revision )
-                    repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
-                                                                                                      trans.security.encode_id( repository.id ),
-                                                                                                      changeset_revision )
+                    repository_metadata = get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                                       trans.security.encode_id( repository.id ),
+                                                                                                       changeset_revision )
                     if repository_metadata:
                         new_key_rd_dict = {}
                         new_key_rd_dict[ key ] = [ rd_toolshed, rd_name, rd_owner, repository_metadata.changeset_revision ]
@@ -2450,9 +2453,9 @@ def handle_key_rd_dicts_for_repository( trans, current_repository_key, repositor
     toolshed, name, owner, changeset_revision = repository_dependency
     if tool_shed_is_this_tool_shed( toolshed ):
         required_repository = get_repository_by_name_and_owner( trans.app, name, owner )
-        required_repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
-                                                                                                   trans.security.encode_id( required_repository.id ),
-                                                                                                   changeset_revision )
+        required_repository_metadata = get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                                    trans.security.encode_id( required_repository.id ),
+                                                                                                    changeset_revision )
         if required_repository_metadata:
             # The required_repository_metadata changeset_revision is installable.
             required_metadata = required_repository_metadata.metadata
@@ -3075,9 +3078,9 @@ def repository_dependencies_have_tool_dependencies( trans, repository_dependenci
         if rd_tup not in rd_tups_processed:
             toolshed, name, owner, changeset_revision = rd_tup
             repository = get_repository_by_name_and_owner( trans.app, name, owner )
-            repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
-                                                                                              trans.security.encode_id( repository.id ),
-                                                                                              changeset_revision )
+            repository_metadata = get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                               trans.security.encode_id( repository.id ),
+                                                                                               changeset_revision )
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -3088,9 +3091,9 @@ def repository_dependencies_have_tool_dependencies( trans, repository_dependenci
             if rd_tup not in rd_tups_processed:
                 toolshed, name, owner, changeset_revision = rd_tup
                 repository = get_repository_by_name_and_owner( trans.app, name, owner )
-                repository_metadata = get_repository_metadata_by_repository_id_changset_revision( trans,
-                                                                                                  trans.security.encode_id( repository.id ),
-                                                                                                  changeset_revision )
+                repository_metadata = get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                                   trans.security.encode_id( repository.id ),
+                                                                                                   changeset_revision )
                 if repository_metadata:
                     metadata = repository_metadata.metadata
                     if metadata:
@@ -3147,7 +3150,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
             metadata = repository_metadata.metadata
             tool_dicts = metadata[ 'tools' ]
             if index == 0:
-                # The first changset_revision is a special case because it will have no ancestor changeset_revisions in which to match tools.
+                # The first changeset_revision is a special case because it will have no ancestor changeset_revisions in which to match tools.
                 # The parent tool id for tools in the first changeset_revision will be the "old_id" in the tool config.
                 for tool_dict in tool_dicts:
                     tool_versions_dict[ tool_dict[ 'guid' ] ] = tool_dict[ 'id' ]
@@ -3298,7 +3301,7 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
     """
     # To set excluded_lower_bounds_changeset_revision, calling methods should do the following, where the value of changeset_revision
     # is a downloadable changeset_revision.
-    # excluded_lower_bounds_changeset_revision = get_previous_downloadable_changset_revision( repository, repo, changeset_revision )
+    # excluded_lower_bounds_changeset_revision = get_previous_downloadable_changeset_revision( repository, repo, changeset_revision )
     if excluded_lower_bounds_changeset_revision == INITIAL_CHANGELOG_HASH:
         appending_started = True
     else:

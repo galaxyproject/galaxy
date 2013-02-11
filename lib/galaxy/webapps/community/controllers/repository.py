@@ -697,7 +697,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     kwd[ 'message' ] = 'You must be logged in to set email alerts.'
                     kwd[ 'status' ] = 'error'
                     del kwd[ 'operation' ]
-        selected_changeset_revision, repository = self.get_repository_from_refresh_on_change( trans, **kwd )
+        selected_changeset_revision, repository = self.__get_repository_from_refresh_on_change( trans, **kwd )
         if repository:
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='browse_repositories',
@@ -726,7 +726,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 kwd[ 'user_id' ] = trans.security.encode_id( repository.user.id )
             else:
                 # The user selected a repository revision which results in a refresh_on_change.
-                selected_changeset_revision, repository = self.get_repository_from_refresh_on_change( trans, **kwd )
+                selected_changeset_revision, repository = self.__get_repository_from_refresh_on_change( trans, **kwd )
                 if repository:
                     return trans.response.send_redirect( web.url_for( controller='repository',
                                                                       action='view_or_manage_repository',
@@ -818,7 +818,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 category_id = kwd.get( 'id', None )
                 category = suc.get_category( trans, category_id )
                 kwd[ 'f-Category.name' ] = category.name
-        selected_changeset_revision, repository = self.get_repository_from_refresh_on_change( trans, **kwd )
+        selected_changeset_revision, repository = self.__get_repository_from_refresh_on_change( trans, **kwd )
         if repository:
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='preview_tools_in_changeset',
@@ -929,86 +929,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 url += str( latest_changeset_revision )
         url += '&latest_ctx_rev=%s' % str( update_to_ctx.rev() )
         return trans.response.send_redirect( url )
-    @web.expose
-    def citable_owner( self, trans, owner ):
-        """Support for citable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
-        try:
-            user = suc.get_user_by_username( trans, owner )
-        except:
-            user = None
-        if user:
-            user_id = trans.security.encode_id( user.id )
-            return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='index',
-                                                              user_id=user_id ) )
-        else:
-            return trans.show_error_message( "The tool shed <b>%s</b> contains no repositories owned by <b>%s</b>." % \
-                                             ( web.url_for( '/', qualified=True ).rstrip( '/' ), str( owner ) ) )
-    @web.expose
-    def citable_repository( self, trans, owner, name ):
-        """Support for citable URL for a specified repository, e.g. http://example.org/view/owner/name."""
-        try:
-            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        except:
-            repository = None
-        if repository:
-            repository_id = trans.security.encode_id( repository.id )
-            return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='index',
-                                                              repository_id=repository_id ) )
-        else:
-            # If the owner is valid, then show all of their repositories.
-            try:
-                user = suc.get_user_by_username( trans, owner )
-            except:
-                user = None
-            if user:
-                user_id = trans.security.encode_id( user.id )
-                message = "This list of repositories owned by <b>%s</b>, does not include one named <b>%s</b>." % ( str( owner ), str( name ) )
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='index',
-                                                                  user_id=user_id,
-                                                                  message=message,
-                                                                  status='error' ) )
-            else:
-                return trans.show_error_message( "The tool shed <b>%s</b> contains no repositories named <b>%s</b> with owner <b>%s</b>." % \
-                                                 ( web.url_for( '/', qualified=True ).rstrip( '/' ), str( name ), str( owner ) ) )
-    @web.expose
-    def citable_repository_revision( self, trans, owner, name, changeset_revision ):
-        """Support for citable URL for a specified repository revision, e.g. http://example.org/view/owner/name/changeset_revision."""
-        try:
-            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
-        except:
-            repository = None
-        if repository:
-            repository_id = trans.security.encode_id( repository.id )
-            repository_metadata = suc.get_repository_metadata_by_repository_id_changset_revision( trans, repository_id, changeset_revision )
-            if not repository_metadata:
-                # Get updates to the received changeset_revision if any exist.
-                repo_dir = repository.repo_path( trans.app )
-                repo = hg.repository( suc.get_configured_ui(), repo_dir )
-                upper_bound_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
-                if upper_bound_changeset_revision:
-                    changeset_revision = upper_bound_changeset_revision
-                    repository_metadata = suc.get_repository_metadata_by_repository_id_changset_revision( trans, repository_id, changeset_revision )
-            if repository_metadata:
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='index',
-                                                                  repository_id=repository_id,
-                                                                  changeset_revision=changeset_revision ) )
-            else:
-                message = "The change log for the repository named <b>%s</b> owned by <b>%s</b> does not include revision <b>%s</b>." % \
-                    ( str( name ), str( owner ), str( changeset_revision ) )
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='index',
-                                                                  repository_id=repository_id,
-                                                                  message=message,
-                                                                  status='error' ) )
-        else:
-            # See if the owner is valid.
-            return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='citable_owner',
-                                                              owner=owner ) )                                      
     @web.expose
     def contact_owner( self, trans, id, **kwd ):
         params = util.Params( kwd )
@@ -1521,16 +1441,16 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 if repository_dependencies:
                     return encoding_util.tool_shed_encode( repository_dependencies )
         return ''
-    def get_repository_from_refresh_on_change( self, trans, **kwd ):
+    def __get_repository_from_refresh_on_change( self, trans, **kwd ):
         # The changeset_revision_select_field in several grids performs a refresh_on_change which sends in request parameters like
         # changeset_revison_1, changeset_revision_2, etc.  One of the many select fields on the grid performed the refresh_on_change,
         # so we loop through all of the received values to see which value is not the repository tip.  If we find it, we know the
         # refresh_on_change occurred and we have the necessary repository id and change set revision to pass on.
         repository_id = None
         for k, v in kwd.items():
-            changset_revision_str = 'changeset_revision_'
-            if k.startswith( changset_revision_str ):
-                repository_id = trans.security.encode_id( int( k.lstrip( changset_revision_str ) ) )
+            changeset_revision_str = 'changeset_revision_'
+            if k.startswith( changeset_revision_str ):
+                repository_id = trans.security.encode_id( int( k.lstrip( changeset_revision_str ) ) )
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
                 if repository.tip( trans.app ) != v:
                     return v, repository
@@ -1807,7 +1727,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 if repository.deprecated:
                     has_deprecated_repositories = True
                     break
-        # Route in may have been from a citable URL, in whcih case we'll have a user_id and possibly a name
+        # Route in may have been from a sharable URL, in whcih case we'll have a user_id and possibly a name
         # The received user_id will be the id of the repository owner.
         user_id = params.get( 'user_id', None )
         repository_id = params.get( 'repository_id', None )
@@ -2062,7 +1982,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 is_malicious = repository_metadata.malicious
             else:
                 # There is no repository_metadata defined for the changeset_revision, so see if it was defined in a previous changeset in the changelog.
-                previous_changeset_revision = suc.get_previous_downloadable_changset_revision( repository, repo, changeset_revision )
+                previous_changeset_revision = suc.get_previous_downloadable_changeset_revision( repository, repo, changeset_revision )
                 if previous_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, previous_changeset_revision )
                     if repository_metadata:
@@ -2243,7 +2163,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         # Get the lower bound changeset revision.
-        lower_bound_changeset_revision = suc.get_previous_downloadable_changset_revision( repository, repo, changeset_revision )
+        lower_bound_changeset_revision = suc.get_previous_downloadable_changeset_revision( repository, repo, changeset_revision )
         # Build the list of changeset revision hashes.
         changeset_hashes = []
         for changeset in suc.reversed_lower_upper_bounded_changelog( repo, lower_bound_changeset_revision, changeset_revision ):
@@ -2563,6 +2483,86 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                           malicious=malicious,
                                                           message=message,
                                                           status=status ) )
+    @web.expose
+    def sharable_owner( self, trans, owner ):
+        """Support for sharable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
+        try:
+            user = suc.get_user_by_username( trans, owner )
+        except:
+            user = None
+        if user:
+            user_id = trans.security.encode_id( user.id )
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='index',
+                                                              user_id=user_id ) )
+        else:
+            return trans.show_error_message( "The tool shed <b>%s</b> contains no repositories owned by <b>%s</b>." % \
+                                             ( web.url_for( '/', qualified=True ).rstrip( '/' ), str( owner ) ) )
+    @web.expose
+    def sharable_repository( self, trans, owner, name ):
+        """Support for sharable URL for a specified repository, e.g. http://example.org/view/owner/name."""
+        try:
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        except:
+            repository = None
+        if repository:
+            repository_id = trans.security.encode_id( repository.id )
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='index',
+                                                              repository_id=repository_id ) )
+        else:
+            # If the owner is valid, then show all of their repositories.
+            try:
+                user = suc.get_user_by_username( trans, owner )
+            except:
+                user = None
+            if user:
+                user_id = trans.security.encode_id( user.id )
+                message = "This list of repositories owned by <b>%s</b>, does not include one named <b>%s</b>." % ( str( owner ), str( name ) )
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='index',
+                                                                  user_id=user_id,
+                                                                  message=message,
+                                                                  status='error' ) )
+            else:
+                return trans.show_error_message( "The tool shed <b>%s</b> contains no repositories named <b>%s</b> with owner <b>%s</b>." % \
+                                                 ( web.url_for( '/', qualified=True ).rstrip( '/' ), str( name ), str( owner ) ) )
+    @web.expose
+    def sharable_repository_revision( self, trans, owner, name, changeset_revision ):
+        """Support for sharable URL for a specified repository revision, e.g. http://example.org/view/owner/name/changeset_revision."""
+        try:
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+        except:
+            repository = None
+        if repository:
+            repository_id = trans.security.encode_id( repository.id )
+            repository_metadata = suc.get_repository_metadata_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
+            if not repository_metadata:
+                # Get updates to the received changeset_revision if any exist.
+                repo_dir = repository.repo_path( trans.app )
+                repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                upper_bound_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
+                if upper_bound_changeset_revision:
+                    changeset_revision = upper_bound_changeset_revision
+                    repository_metadata = suc.get_repository_metadata_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
+            if repository_metadata:
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='index',
+                                                                  repository_id=repository_id,
+                                                                  changeset_revision=changeset_revision ) )
+            else:
+                message = "The change log for the repository named <b>%s</b> owned by <b>%s</b> does not include revision <b>%s</b>." % \
+                    ( str( name ), str( owner ), str( changeset_revision ) )
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='index',
+                                                                  repository_id=repository_id,
+                                                                  message=message,
+                                                                  status='error' ) )
+        else:
+            # See if the owner is valid.
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='sharable_owner',
+                                                              owner=owner ) )
     def __stringify( self, list ):
         if list:
             return ','.join( list )
