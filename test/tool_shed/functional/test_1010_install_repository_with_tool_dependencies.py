@@ -57,6 +57,11 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
                               commit_message="Uploaded invalid_tool_dependencies/tool_dependencies.xml.", 
                               remove_repo_files_not_in_tar='No' )
             self.upload_file( repository, 
+                              os.path.join( 'freebayes', 'malformed_tool_dependencies', 'tool_dependencies.xml' ),
+                              valid_tools_only=False,
+                              strings_displayed=[ 'Exception attempting to parse tool_dependencies.xml', 'not well-formed' ], 
+                              commit_message='Uploaded malformed tool dependency XML.' )
+            self.upload_file( repository, 
                               'freebayes/tool_dependencies.xml', 
                               valid_tools_only=False,
                               commit_message="Uploaded tool_dependencies.xml", 
