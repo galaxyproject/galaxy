@@ -158,6 +158,7 @@ class TabularToolDataTable( ToolDataTable ):
     def __init__( self, config_element, tool_data_path ):
         super( TabularToolDataTable, self ).__init__( config_element, tool_data_path )
         self.configure_and_load( config_element, tool_data_path )
+
     def configure_and_load( self, config_element, tool_data_path ):
         """
         Configure and load table from an XML element.
@@ -196,11 +197,14 @@ class TabularToolDataTable( ToolDataTable ):
                 self.missing_index_file = filename
                 log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
         self.data = all_rows
+
     def handle_found_index_file( self, filename ):
         self.missing_index_file = None
         self.data.extend( self.parse_file_fields( open( filename ) ) )
+
     def get_fields( self ):
         return self.data
+
     def parse_column_spec( self, config_element ):
         """
         Parse column definitions, which can either be a set of 'column' elements
@@ -230,14 +234,17 @@ class TabularToolDataTable( ToolDataTable ):
         assert 'value' in self.columns, "Required 'value' column missing from column def"
         if 'name' not in self.columns:
             self.columns['name'] = self.columns['value']
+
     def parse_file_fields( self, reader ):
         """
         Parse separated lines from file and return a list of tuples.
         
         TODO: Allow named access to fields using the column names.
         """
+        separator_char = (lambda c: '<TAB>' if c == '\t' else c)(self.separator)
+
         rval = []
-        for line in reader:
+        for i, line in enumerate( reader, start=1 ):
             if line.lstrip().startswith( self.comment_char ):
                 continue
             line = line.rstrip( "\n\r" )
@@ -245,6 +252,10 @@ class TabularToolDataTable( ToolDataTable ):
                 fields = line.split( self.separator )
                 if self.largest_index < len( fields ):
                     rval.append( fields )
+                else:
+                    log.warn( "Line %i in tool data table '%s' is invalid (HINT: "
+                              "'%s' characters must be used to separate fields):\n%s" 
+                              % ( i, self.name, separator_char, line ) )
         return rval
 
     def get_entry( self, query_attr, query_val, return_attr ):
