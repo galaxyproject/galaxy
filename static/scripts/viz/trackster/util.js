@@ -1,12 +1,10 @@
 define(function(){
 
-exports = {};
-
 /**
  * Implementation of a server-state based deferred. Server is repeatedly polled, and when
  * condition is met, deferred is resolved.
  */
-exports.ServerStateDeferred = Backbone.Model.extend({
+var ServerStateDeferred = Backbone.Model.extend({
     defaults: {
         ajax_settings: {},
         interval: 1000,
@@ -44,7 +42,7 @@ exports.ServerStateDeferred = Backbone.Model.extend({
  * or set of colors.
  * @param colors a color or list of colors in the format '#RRGGBB'
  */
-exports.get_random_color = function(colors) {
+var get_random_color = function(colors) {
     // Default for colors is white.
     if (!colors) { colors = "#ffffff"; }
     
@@ -110,6 +108,9 @@ exports.get_random_color = function(colors) {
     return '#' + ( 0x1000000 + new_color ).toString(16).substr(1,6);
 };
 
-return exports;
+return {
+    ServerStateDeferred : ServerStateDeferred,
+    get_random_color    : get_random_color
+};
 
-})
+});
