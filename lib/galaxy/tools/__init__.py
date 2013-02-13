@@ -1666,7 +1666,7 @@ class Tool( object ):
         # right now
         if self.tool_type.startswith( 'data_source' ):
             return False
-        if util.string_as_bool( root.get( "upload", "False" ) ):
+        if not util.string_as_bool( root.get( "workflow_compatible", "True" ) ):
             return False
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
