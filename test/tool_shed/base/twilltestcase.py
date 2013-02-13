@@ -493,6 +493,14 @@ class ShedTwillTestCase( TwillTestCase ):
             return os.path.abspath( os.path.join( filepath, filename ) )
         else:
             return os.path.abspath( os.path.join( self.file_dir, filename ) )
+    def get_last_reviewed_revision_by_user( self, user, repository ):
+        changelog_tuples = self.get_repository_changelog_tuples( repository )
+        reviews = test_db_util.get_reviews_ordered_by_changeset_revision( repository.id, changelog_tuples, reviewer_user_id = user.id )
+        if reviews:
+            last_review = reviews[ -1 ]
+        else:
+            last_review = None
+        return last_review
     def get_or_create_repository( self, owner=None, strings_displayed=[], strings_not_displayed=[], **kwd ):
         repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
         if repository is None:
@@ -508,9 +516,13 @@ class ShedTwillTestCase( TwillTestCase ):
             return self.hgweb_config_manager.get_entry( lhs )
         except:
             raise Exception( "Entry for repository %s missing in hgweb config file %s." % ( lhs, self.hgweb_config_manager.hgweb_config ) )
-    def get_repository_changelog( self, repository ):
+    def get_repository_changelog_tuples( self, repository ):
         repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
-        return [ ( repo.changectx( changeset ), changeset ) for changeset in repo.changelog ]
+        changelog_tuples = []
+        for changeset in repo.changelog:
+            ctx = repo.changectx( changeset )
+            changelog_tuples.append( ( ctx.rev(), repo.changectx( changeset ) ) )
+        return changelog_tuples
     def get_repository_datatypes_count( self, repository ):
         metadata = self.get_repository_metadata( repository )[0].metadata
         if 'datatypes' not in metadata:
