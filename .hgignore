@@ -79,7 +79,7 @@ tool-data/shared/jars/
 
 # CSS build artifacts.
 */variables.less
-static/june_2007_style/blue/base_sprites.less
+static/style/blue/base_sprites.less
 
 # Testing
 selenium-server.jar

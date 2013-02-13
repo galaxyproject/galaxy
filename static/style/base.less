@@ -5,6 +5,10 @@
 @import "fontawesome/font-awesome.less";
 
 @import "select2.less";
+/* fix for zero width select2 - remove when fixed there */
+.select2-container {
+    min-width: 256px;
+}
 
 // Mixins
 
