@@ -452,7 +452,10 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         user = test_db_util.get_user( common.test_user_2_email )
-        self.upload_file( repository, 'filtering/filtering_test_data.tar', commit_message="Uploaded test data." )
+        self.upload_file( repository,
+                          'filtering/filtering_test_data.tar',
+                          commit_message="Uploaded test data.",
+                          remove_repo_files_not_in_tar='No' )
     def test_0110_review_new_changeset_functional_tests( self ):
         '''Update the filtering repository's readme component review to reflect the presence of the readme file.'''
         """
