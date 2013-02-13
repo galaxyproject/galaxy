@@ -244,7 +244,7 @@ class TabularToolDataTable( ToolDataTable ):
         separator_char = (lambda c: '<TAB>' if c == '\t' else c)(self.separator)
 
         rval = []
-        for i, line in enumerate( reader, start=1 ):
+        for i, line in enumerate( reader ):
             if line.lstrip().startswith( self.comment_char ):
                 continue
             line = line.rstrip( "\n\r" )
@@ -255,7 +255,7 @@ class TabularToolDataTable( ToolDataTable ):
                 else:
                     log.warn( "Line %i in tool data table '%s' is invalid (HINT: "
                               "'%s' characters must be used to separate fields):\n%s" 
-                              % ( i, self.name, separator_char, line ) )
+                              % ( ( i + 1 ), self.name, separator_char, line ) )
         return rval
 
     def get_entry( self, query_attr, query_val, return_attr ):
