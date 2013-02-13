@@ -345,7 +345,7 @@
                     tool_help = tool.help
 
                 # Help is Mako template, so render using current static path.
-                tool_help = tool_help.render( static_path=h.url_for( '/static' ) )
+                tool_help = tool_help.render( static_path=h.url_for( '/static' ), host_url=h.url_for('/', qualified=True) )
 
                 # Convert to unicode to display non-ascii characters.
                 if type( tool_help ) is not unicode:
