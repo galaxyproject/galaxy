@@ -631,38 +631,51 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     ancestor_tools = ancestor_metadata_dict.get( 'tools', [] )
     ancestor_guids = [ tool_dict[ 'guid' ] for tool_dict in ancestor_tools ]
     ancestor_guids.sort()
+    ancestor_readme_files = ancestor_metadata_dict.get( 'readme_files', [] )
     ancestor_repository_dependencies_dict = ancestor_metadata_dict.get( 'repository_dependencies', {} )
     ancestor_repository_dependencies = ancestor_repository_dependencies_dict.get( 'repository_dependencies', [] )
-    ancestor_tool_dependencies = ancestor_metadata_dict.get( 'tool_dependencies', [] )
+    ancestor_tool_dependencies = ancestor_metadata_dict.get( 'tool_dependencies', {} )
     ancestor_workflows = ancestor_metadata_dict.get( 'workflows', [] )
     current_datatypes = current_metadata_dict.get( 'datatypes', [] )
     current_tools = current_metadata_dict.get( 'tools', [] )
     current_guids = [ tool_dict[ 'guid' ] for tool_dict in current_tools ]
     current_guids.sort()
+    current_readme_files = current_metadata_dict.get( 'readme_files', [] )
     current_repository_dependencies_dict = current_metadata_dict.get( 'repository_dependencies', {} )
     current_repository_dependencies = current_repository_dependencies_dict.get( 'repository_dependencies', [] )
-    current_tool_dependencies = current_metadata_dict.get( 'tool_dependencies', [] ) 
+    current_tool_dependencies = current_metadata_dict.get( 'tool_dependencies', {} ) 
     current_workflows = current_metadata_dict.get( 'workflows', [] )
     # Handle case where no metadata exists for either changeset.
     no_datatypes = not ancestor_datatypes and not current_datatypes
+    no_readme_files = not ancestor_readme_files and not current_readme_files
     no_repository_dependencies = not ancestor_repository_dependencies and not current_repository_dependencies
-    # Note: we currently don't need to check tool_dependencies since we're checking for guids - tool_dependencies always require tools (currently).
+    # Tool dependencies can define orphan dependencies in the tool shed.
     no_tool_dependencies = not ancestor_tool_dependencies and not current_tool_dependencies
     no_tools = not ancestor_guids and not current_guids
     no_workflows = not ancestor_workflows and not current_workflows
-    if no_datatypes and no_repository_dependencies and no_tool_dependencies and no_tools and no_workflows:
+    if no_datatypes and no_readme_files and no_repository_dependencies and no_tool_dependencies and no_tools and no_workflows:
         return 'no metadata'
+    # Uncomment the following if we decide that README files should affect how installable repository revisions are defined.  See the NOTE in the
+    # compare_readme_files() method.
+    # readme_file_comparision = compare_readme_files( ancestor_readme_files, current_readme_files )
     repository_dependency_comparison = compare_repository_dependencies( ancestor_repository_dependencies, current_repository_dependencies )
+    tool_dependency_comparison = compare_tool_dependencies( ancestor_tool_dependencies, current_tool_dependencies )
     workflow_comparison = compare_workflows( ancestor_workflows, current_workflows )
     datatype_comparison = compare_datatypes( ancestor_datatypes, current_datatypes )
     # Handle case where all metadata is the same.
-    if ancestor_guids == current_guids and repository_dependency_comparison == 'equal' and workflow_comparison == 'equal' and datatype_comparison == 'equal':
+    if ancestor_guids == current_guids and \
+        repository_dependency_comparison == 'equal' and \
+        tool_dependency_comparison == 'equal' and \
+        workflow_comparison == 'equal' and \
+        datatype_comparison == 'equal':
         return 'equal'
     # Handle case where ancestor metadata is a subset of current metadata.
+    # readme_file_is_subset = readme_file_comparision in [ 'equal', 'subset' ]
     repository_dependency_is_subset = repository_dependency_comparison in [ 'equal', 'subset' ]
+    tool_dependency_is_subset = tool_dependency_comparison in [ 'equal', 'subset' ]
     workflow_dependency_is_subset = workflow_comparison in [ 'equal', 'subset' ]
     datatype_is_subset = datatype_comparison in [ 'equal', 'subset' ]
-    if repository_dependency_is_subset and workflow_dependency_is_subset and datatype_is_subset:
+    if repository_dependency_is_subset and tool_dependency_is_subset and workflow_dependency_is_subset and datatype_is_subset:
         is_subset = True
         for guid in ancestor_guids:
             if guid not in current_guids:
@@ -694,6 +707,25 @@ def compare_datatypes( ancestor_datatypes, current_datatypes ):
         else:
             return 'subset'
     return 'not equal and not subset'
+def compare_readme_files( ancestor_readme_files, current_readme_files ):
+    """Determine if ancestor_readme_files is equal to or a subset of current_readme_files."""
+    # NOTE: Although repository README files are considered a Galaxy utility similar to tools, repository dependency definition files, etc.,
+    # we don't define installable repository revisions based on changes to README files.  To understand why, consider the following scenario:
+    # 1. Upload the filtering tool to a new repository - this will result in installable revision 0.
+    # 2. Upload a README file to the repository - this will move the installable revision from revision 0 to revision 1.
+    # 3. Delete the README file from the repository - this will move the installable revision from revision 1 to revision 2.
+    # The above scenario is the current behavior, and that is why this method is not currently called.  This method exists only in case we decide
+    # to change this current behavior.
+    # The lists of readme files looks something like: ["database/community_files/000/repo_2/readme.txt"]
+    if len( ancestor_readme_files ) <= len( current_readme_files ):
+        for ancestor_readme_file in ancestor_readme_files:
+            if ancestor_readme_file not in current_readme_files:
+                return 'not equal and not subset'
+        if len( ancestor_readme_files ) == len( current_readme_files ):
+            return 'equal'
+        else:
+            return 'subset'
+    return 'not equal and not subset'
 def compare_repository_dependencies( ancestor_repository_dependencies, current_repository_dependencies ):
     """Determine if ancestor_repository_dependencies is the same as or a subset of current_repository_dependencies."""
     # The list of repository_dependencies looks something like: [["http://localhost:9009", "emboss_datatypes", "test", "ab03a2a5f407"]].
@@ -717,6 +749,25 @@ def compare_repository_dependencies( ancestor_repository_dependencies, current_r
         else:
             return 'subset'
     return 'not equal and not subset'
+def compare_tool_dependencies( ancestor_tool_dependencies, current_tool_dependencies ):
+    """Determine if ancestor_tool_dependencies is the same as or a subset of current_tool_dependencies."""
+    # The tool_dependencies dictionary looks something like:
+    # {'bwa/0.5.9': {'readme': 'some string', 'version': '0.5.9', 'type': 'package', 'name': 'bwa'}}
+    if len( ancestor_tool_dependencies ) <= len( current_tool_dependencies ):
+        for ancestor_td_key, ancestor_requirements_dict in ancestor_tool_dependencies.items():
+            if ancestor_td_key in current_tool_dependencies:
+                # The only values that could have changed between the 2 dictionaries are the "readme" or "type" values.  Changing the readme value
+                # makes no difference.  Changing the type will change the installation process, but for now we'll assume it was a typo, so new metadata
+                # shouldn't be generated.
+                continue
+            else:
+                return 'not equal and not subset'
+        # At this point we know that ancestor_tool_dependencies is at least a subset of current_tool_dependencies.
+        if len( ancestor_tool_dependencies ) == len( current_tool_dependencies ):
+            return 'equal'
+        else:
+            return 'subset'
+    return 'not equal and not subset'
 def compare_workflows( ancestor_workflows, current_workflows ):
     """Determine if ancestor_workflows is the same as current_workflows or if ancestor_workflows is a subset of current_workflows."""
     if len( ancestor_workflows ) <= len( current_workflows ):
@@ -730,9 +781,7 @@ def compare_workflows( ancestor_workflows, current_workflows ):
             found_in_current = False
             for current_workflow_tup in current_workflows:
                 current_workflow_dict = current_workflow_tup[1]
-                # Assume that if the name and number of steps are euqal,
-                # then the workflows are the same.  Of course, this may
-                # not be true...
+                # Assume that if the name and number of steps are euqal, then the workflows are the same.  Of course, this may not be true...
                 if current_workflow_dict[ 'name' ] == ancestor_workflow_name and len( current_workflow_dict[ 'steps' ] ) == num_ancestor_workflow_steps:
                     found_in_current = True
                     break
@@ -1070,7 +1119,11 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     else:
         original_repository_metadata = None
     readme_file_names = get_readme_file_names( repository.name )
-    metadata_dict = { 'shed_config_filename' : shed_config_dict.get( 'config_filename' ) }
+    if app.name == 'galaxy':
+        # Shed related tool panel configs are only relevant to Galaxy.
+        metadata_dict = { 'shed_config_filename' : shed_config_dict.get( 'config_filename' ) }
+    else:
+        metadata_dict = {}
     readme_files = []
     invalid_file_tups = []
     invalid_tool_configs = []
@@ -2862,42 +2915,158 @@ def merge_missing_tool_dependencies_to_installed_container( containers_dict ):
             containers_dict[ 'tool_dependencies' ] = root_container
     containers_dict[ 'missing_tool_dependencies' ] = None
     return containers_dict
-def new_repository_dependency_metadata_required( trans, repository, metadata_dict ):
+def new_datatypes_metadata_required( trans, repository_metadata, metadata_dict ):
     """
-    Compare the last saved metadata for each repository dependency in the repository with the new metadata in metadata_dict to determine if a new
-    repository_metadata table record is required or if the last saved metadata record can be updated instead.
+    Compare the last saved metadata for each datatype in the repository with the new metadata in metadata_dict to determine if a new
+    repository_metadata table record is required or if the last saved metadata record can be updated for datatypes instead.
     """
-    if 'repository_dependencies' in metadata_dict:
-        repository_metadata = get_latest_repository_metadata( trans, repository.id )
+    # Datatypes are stored in metadata as a list of dictionaries that looks like:
+    # [{'dtype': 'galaxy.datatypes.data:Text', 'subclass': 'True', 'extension': 'acedb'}]
+    if 'datatypes' in metadata_dict:
+        current_datatypes = metadata_dict[ 'datatypes' ]
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                if 'repository_dependencies' in metadata:
-                    saved_repository_dependencies = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
-                    new_repository_dependencies = metadata_dict[ 'repository_dependencies' ][ 'repository_dependencies' ]
+                if 'datatypes' in metadata:
+                    ancestor_datatypes = metadata[ 'datatypes' ]
                     # The saved metadata must be a subset of the new metadata.
-                    for new_repository_dependency_metadata in new_repository_dependencies:
-                        if new_repository_dependency_metadata not in saved_repository_dependencies:
-                            return True
-                    for saved_repository_dependency_metadata in saved_repository_dependencies:
-                        if saved_repository_dependency_metadata not in new_repository_dependencies:
-                            return True
+                    datatype_comparison = compare_datatypes( ancestor_datatypes, current_datatypes )
+                    if datatype_comparison == 'not equal and not subset':
+                        return True
+                    else:
+                        return False
+                else:
+                    # The new metadata includes datatypes, but the stored metadata does not, so we can update the stored metadata.
+                    return False
             else:
-                # We have repository metadata that does not include metadata for any repository dependencies in the
-                # repository, so we can update the existing repository metadata.
+                # There is no stored metadata, so we can update the metadata column in the repository_metadata table.
                 return False
         else:
-            # There is no saved repository metadata, so we need to create a new repository_metadata table record.
+            # There is no stored repository metadata, so we need to create a new repository_metadata table record.
             return True
-    # The received metadata_dict includes no metadata for repository dependencies, so a new repository_metadata table record is not needed.
+    # The received metadata_dict includes no metadata for datatypes, so a new repository_metadata table record is not needed.
     return False
-def new_tool_metadata_required( trans, repository, metadata_dict ):
+def new_metadata_required_for_utilities( trans, repository, new_tip_metadata_dict ):
+    """
+    Galaxy utilities currently consist of datatypes, repository_dependency definitions, tools, tool_dependency definitions and exported
+    Galaxy workflows.  This method compares the last stored repository_metadata record associated with the received repository against the
+    contents of the received new_tip_metadata_dict and returns True or False for the union set of Galaxy utilities contained in both metadata
+    dictionaries.  The metadata contained in new_tip_metadata_dict may not be a subset of that contained in the last stored repository_metadata
+    record associated with the received repository because one or more Galaxy utilities may have been deleted from the repository in the new tip.
+    """
+    repository_metadata = get_latest_repository_metadata( trans, repository.id )
+    datatypes_required = new_datatypes_metadata_required( trans, repository_metadata, new_tip_metadata_dict )
+    # Uncomment the following if we decide that README files should affect how installable repository revisions are defined.  See the NOTE in the
+    # compare_readme_files() method.
+    # readme_files_required = new_readme_files_metadata_required( trans, repository_metadata, new_tip_metadata_dict )
+    repository_dependencies_required = new_repository_dependency_metadata_required( trans, repository_metadata, new_tip_metadata_dict )
+    tools_required = new_tool_metadata_required( trans, repository_metadata, new_tip_metadata_dict )
+    tool_dependencies_required = new_tool_dependency_metadata_required( trans, repository_metadata, new_tip_metadata_dict )
+    workflows_required = new_workflow_metadata_required( trans, repository_metadata, new_tip_metadata_dict )
+    if datatypes_required or repository_dependencies_required or tools_required or tool_dependencies_required or workflows_required:
+        return True
+    return False
+def new_readme_files_metadata_required( trans, repository_metadata, metadata_dict ):
+    """
+    Compare the last saved metadata for each readme file in the repository with the new metadata in metadata_dict to determine if a new
+    repository_metadata table record is required or if the last saved metadata record can be updated for readme files instead.
+    """
+    # Repository README files are kind of a special case because they have no effect on reproducibility.  We'll simply inspect the file names to
+    # determine if any that exist in the saved metadata are eliminated from the new metadata in the received metadata_dict.
+    if 'readme_files' in metadata_dict:
+        current_readme_files = metadata_dict[ 'readme_files' ]
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata:
+                if 'readme_files' in metadata:
+                    ancestor_readme_files = metadata[ 'readme_files' ]
+                    # The saved metadata must be a subset of the new metadata.
+                    readme_file_comparison = compare_readme_files( ancestor_readme_files, current_readme_files )
+                    if readme_file_comparison == 'not equal and not subset':
+                        return True
+                    else:
+                        return False
+                else:
+                    # The new metadata includes readme_files, but the stored metadata does not, so we can update the stored metadata.
+                    return False
+            else:
+                # There is no stored metadata, so we can update the metadata column in the repository_metadata table.
+                return False
+        else:
+            # There is no stored repository metadata, so we need to create a new repository_metadata table record.
+            return True
+    # The received metadata_dict includes no metadata for readme_files, so a new repository_metadata table record is not needed.
+    return False
+def new_repository_dependency_metadata_required( trans, repository_metadata, metadata_dict ):
+    """
+    Compare the last saved metadata for each repository dependency in the repository with the new metadata in metadata_dict to determine if a new
+    repository_metadata table record is required or if the last saved metadata record can be updated for repository_dependencies instead.
+    """
+    if repository_metadata:
+        metadata = repository_metadata.metadata
+        if 'repository_dependencies' in metadata:
+            saved_repository_dependencies = metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
+            new_repository_dependencies_metadata = metadata_dict.get( 'repository_dependencies', None )
+            if new_repository_dependencies_metadata:
+                new_repository_dependencies = metadata_dict[ 'repository_dependencies' ][ 'repository_dependencies' ]
+                # The saved metadata must be a subset of the new metadata.
+                for new_repository_dependency_metadata in new_repository_dependencies:
+                    if new_repository_dependency_metadata not in saved_repository_dependencies:
+                        return True
+                for saved_repository_dependency_metadata in saved_repository_dependencies:
+                    if saved_repository_dependency_metadata not in new_repository_dependencies:
+                        return True
+            else:
+                # The repository_dependencies.xml file must have been deleted, so create a new repository_metadata record so we always have
+                # access to the deleted file.
+                return True
+    else:
+        if 'repository_dependencies' in metadata_dict:
+            # There is no saved repository metadata, so we need to create a new repository_metadata record.
+            return True
+        else:
+            # The received metadata_dict includes no metadata for repository dependencies, so a new repository_metadata record is not needed.
+            return False
+def new_tool_dependency_metadata_required( trans, repository_metadata, metadata_dict ):
+    """
+    Compare the last saved metadata for each tool dependency in the repository with the new metadata in metadata_dict to determine if a new
+    repository_metadata table record is required or if the last saved metadata record can be updated for tool_dependencies instead.
+    """
+    if repository_metadata:
+        metadata = repository_metadata.metadata
+        if metadata:
+            if 'tool_dependencies' in metadata:
+                saved_tool_dependencies = metadata[ 'tool_dependencies' ]
+                new_tool_dependencies = metadata_dict.get( 'tool_dependencies', None )
+                if new_tool_dependencies:
+                    # The saved metadata must be a subset of the new metadata.
+                    for new_repository_dependency_metadata in new_tool_dependencies:
+                        if new_repository_dependency_metadata not in saved_tool_dependencies:
+                            return True
+                    for saved_repository_dependency_metadata in saved_tool_dependencies:
+                        if saved_repository_dependency_metadata not in new_tool_dependencies:
+                            return True
+                else:
+                    # The tool_dependencies.xml file must have been deleted, so create a new repository_metadata record so we always have
+                    # access to the deleted file.
+                    return True
+        else:
+            # We have repository metadata that does not include metadata for any tool dependencies in the repository, so we can update
+            # the existing repository metadata.
+            return False
+    else:
+        if 'tool_dependencies' in metadata_dict:
+            # There is no saved repository metadata, so we need to create a new repository_metadata record.
+            return True
+        else:
+            # The received metadata_dict includes no metadata for tool dependencies, so a new repository_metadata record is not needed.
+            return False
+def new_tool_metadata_required( trans, repository_metadata, metadata_dict ):
     """
     Compare the last saved metadata for each tool in the repository with the new metadata in metadata_dict to determine if a new repository_metadata
     table record is required, or if the last saved metadata record can be updated instead.
     """
     if 'tools' in metadata_dict:
-        repository_metadata = get_latest_repository_metadata( trans, repository.id )
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
@@ -2921,22 +3090,23 @@ def new_tool_metadata_required( trans, repository, metadata_dict ):
                     for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
                         if new_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
                             return True
+                else:
+                    # The new metadata includes tools, but the stored metadata does not, so we can update the stored metadata.
+                    return False
             else:
-                # We have repository metadata that does not include metadata for any tools in the
-                # repository, so we can update the existing repository metadata.
+                # There is no stored metadata, so we can update the metadata column in the repository_metadata table.
                 return False
         else:
-            # There is no saved repository metadata, so we need to create a new repository_metadata table record.
+            # There is no stored repository metadata, so we need to create a new repository_metadata table record.
             return True
     # The received metadata_dict includes no metadata for tools, so a new repository_metadata table record is not needed.
     return False
-def new_workflow_metadata_required( trans, repository, metadata_dict ):
+def new_workflow_metadata_required( trans, repository_metadata, metadata_dict ):
     """
     Currently everything about an exported workflow except the name is hard-coded, so there's no real way to differentiate versions of
     exported workflows.  If this changes at some future time, this method should be enhanced accordingly.
     """
     if 'workflows' in metadata_dict:
-        repository_metadata = get_latest_repository_metadata( trans, repository.id )
         if repository_metadata:
             # The repository has metadata, so update the workflows value - no new record is needed.
             return False
@@ -3206,9 +3376,9 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                                                                                             persist=False )
             # We'll only display error messages for the repository tip (it may be better to display error messages for each installable changeset revision).
             if current_changeset_revision == repository.tip( trans.app ):
-                invalid_file_tups.extend( invalid_tups )            
+                invalid_file_tups.extend( invalid_tups )
             if current_metadata_dict:
-                if not metadata_changeset_revision and not metadata_dict:
+                if metadata_changeset_revision is None and metadata_dict is None:
                     # We're at the first change set in the change log.
                     metadata_changeset_revision = current_changeset_revision
                     metadata_dict = current_metadata_dict
@@ -3344,17 +3514,15 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                                                                                  updating_installed_repository=False,
                                                                                  persist=False )
     if metadata_dict:
-        downloadable = is_downloadable( metadata_dict )
         repository_metadata = None
-        if new_repository_dependency_metadata_required( trans, repository, metadata_dict ) or \
-           new_tool_metadata_required( trans, repository, metadata_dict ) or \
-           new_workflow_metadata_required( trans, repository, metadata_dict ):
+        if new_metadata_required_for_utilities( trans, repository, metadata_dict ):
             # Create a new repository_metadata table row.
             repository_metadata = create_or_update_repository_metadata( trans, encoded_id, repository, repository.tip( trans.app ), metadata_dict )
             # If this is the first record stored for this repository, see if we need to send any email alerts.
             if len( repository.downloadable_revisions ) == 1:
                 handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=True, admin_only=False )
         else:
+            # Update the latest stored repository metadata with the contents and attributes of metadata_dict.
             repository_metadata = get_latest_repository_metadata( trans, repository.id )
             if repository_metadata:
                 downloadable = is_downloadable( metadata_dict )
@@ -3365,7 +3533,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
             else:
-                # There are no tools in the repository, and we're setting metadata on the repository tip.
+                # There are no metadata records associated with the repository.
                 repository_metadata = create_or_update_repository_metadata( trans, encoded_id, repository, repository.tip( trans.app ), metadata_dict )
         if 'tools' in metadata_dict and repository_metadata and status != 'error':
             # Set tool versions on the new downloadable change set.  The order of the list of changesets is critical, so we use the repo's changelog.
