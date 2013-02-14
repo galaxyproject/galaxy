@@ -111,7 +111,10 @@ class FeatureLocationIndexDataProvider( BaseDataProvider ):
         return result
         
 class GenomeDataProvider( BaseDataProvider ):
-    """ Base class for genome data providers. """
+    """ 
+    Base class for genome data providers. All genome providers should 
+    produce data with BED interval format: 0-based, half-open coordinates.
+    """
 
     dataset_type = None
     
@@ -819,8 +822,8 @@ class SummaryTreeDataProvider( GenomeDataProvider ):
 
 class BamDataProvider( GenomeDataProvider, FilterableMixin ):
     """
-    Provides access to intervals from a sorted indexed BAM file. Position data
-    is reported in 1-based, closed format, i.e. SAM/BAM format.
+    Provides access to intervals from a sorted indexed BAM file. Coordinate 
+    data is reported in BED format: 0-based, half-open.
     """
 
     dataset_type = 'bai'
