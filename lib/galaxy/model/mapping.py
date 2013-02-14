@@ -932,6 +932,23 @@ VisualizationUserShareAssociation.table = Table( "visualization_user_share_assoc
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
     )
     
+#Data Manager tables
+DataManagerHistoryAssociation.table = Table( "data_manager_history_association", metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
+    Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
+    )
+
+DataManagerJobAssociation.table = Table( "data_manager_job_association", metadata,
+    Column( "id", Integer, primary_key=True),
+    Column( "create_time", DateTime, default=now ),
+    Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
+    Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
+    Column( "data_manager_id", TEXT, index=True )
+    )
+
 # Tagging tables.
 
 Tag.table = Table( "tag", metadata,
@@ -1900,6 +1917,17 @@ assign_mapper( context, PageRatingAssociation, PageRatingAssociation.table,
 assign_mapper( context, VisualizationRatingAssociation, VisualizationRatingAssociation.table,
     properties=dict( visualization=relation( Visualization ), user=relation( User ) )
                     )
+
+#Data Manager tables
+assign_mapper( context, DataManagerHistoryAssociation, DataManagerHistoryAssociation.table,
+    properties=dict( history=relation( History ),
+                     user=relation( User, backref='data_manager_histories' )
+                    )
+              )
+
+assign_mapper( context, DataManagerJobAssociation, DataManagerJobAssociation.table,
+    properties=dict( job=relation( Job, backref=backref('data_manager_association', uselist=False ), uselist=False ) )
+              )
 
 # User tables.
                     

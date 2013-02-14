@@ -507,6 +507,8 @@ class AdminToolshed( AdminGalaxy ):
             if tool_shed_repository.includes_tools:
                 # Handle tool panel alterations.
                 shed_util.remove_from_tool_panel( trans, tool_shed_repository, shed_tool_conf, uninstall=remove_from_disk_checked )
+            if tool_shed_repository.includes_data_managers:
+                shed_util.remove_from_data_manager( trans.app, tool_shed_repository )
             if tool_shed_repository.includes_datatypes:
                 # Deactivate proprietary datatypes.
                 installed_repository_dict = shed_util.load_installed_datatypes( trans.app, tool_shed_repository, repository_install_dir, deactivate=True )
@@ -701,6 +703,9 @@ class AdminToolshed( AdminGalaxy ):
                                              shed_tool_conf=shed_tool_conf,
                                              tool_panel_dict=tool_panel_dict,
                                              new_install=True )
+        if 'data_manager' in metadata_dict:
+            rval = shed_util.install_data_managers( trans.app, trans.app.config.shed_data_manager_config_file, metadata_dict, shed_config_dict, relative_install_dir,
+                                                    tool_shed_repository, repository_tools_tups )
         if 'datatypes' in metadata_dict:
             tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:

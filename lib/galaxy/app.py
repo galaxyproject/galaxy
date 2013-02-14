@@ -18,6 +18,7 @@ from galaxy.tools.imp_exp import load_history_imp_exp_tools
 from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
+from galaxy.tools.data_manager.manager import DataManagers
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
@@ -95,6 +96,8 @@ class UniverseApplication( object ):
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
         # Search support for tools
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
+        # Load Data Manager
+        self.data_managers = DataManagers( self )
         # If enabled, poll respective tool sheds to see if updates are available for any installed tool shed repositories.
         if self.config.get_bool( 'enable_tool_shed_check', False ):
             from tool_shed import update_manager

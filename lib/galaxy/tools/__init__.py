@@ -7,7 +7,7 @@ pkg_resources.require( "simplejson" )
 pkg_resources.require( "MarkupSafe" ) #MarkupSafe must load before mako
 pkg_resources.require( "Mako" )
 
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback, re
+import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback, re, pipes
 import simplejson
 import binascii
 from mako.template import Template
@@ -26,6 +26,7 @@ from parameters.input_translation import ToolInputTranslator
 from galaxy.util.expressions import ExpressionContext
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.tools.actions import DefaultToolAction
+from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import DependencyManager
 from galaxy.model import directory_hash_id
 from galaxy.model.orm import *
@@ -86,6 +87,7 @@ class ToolBox( object ):
         # In-memory dictionary that defines the layout of the tool panel.
         self.tool_panel = odict()
         self.index = 0
+        self.data_manager_tools = odict()
         # File that contains the XML section and tool tags from all tool panel config files integrated into a
         # single file that defines the tool panel layout.  This file can be changed by the Galaxy administrator
         # (in a way similar to the single tool_conf.xml file in the past) to alter the layout of the tool panel.
@@ -515,7 +517,7 @@ class ToolBox( object ):
             self.integrated_tool_panel[ key ] = integrated_section
         else:
             self.integrated_tool_panel.insert( index, key, integrated_section )
-    def load_tool( self, config_file, guid=None ):
+    def load_tool( self, config_file, guid=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
         tree = util.parse_xml( config_file )
@@ -531,7 +533,7 @@ class ToolBox( object ):
             ToolClass = tool_types.get( root.get( 'tool_type' ) )
         else:
             ToolClass = Tool
-        return ToolClass( config_file, root, self.app, guid=guid )
+        return ToolClass( config_file, root, self.app, guid=guid, **kwds )
     def reload_tool_by_id( self, tool_id ):
         """
         Attempt to reload the tool identified by 'tool_id', if successful
@@ -567,6 +569,34 @@ class ToolBox( object ):
             message += "<b>name:</b> %s<br/>" % old_tool.name
             message += "<b>id:</b> %s<br/>" % old_tool.id
             message += "<b>version:</b> %s" % old_tool.version
+            status = 'done'
+        return message, status
+    def remove_tool_by_id( self, tool_id ):
+        """
+        Attempt to remove the tool identified by 'tool_id'.
+        """
+        if tool_id not in self.tools_by_id:
+            message = "No tool with id %s" % tool_id
+            status = 'error'
+        else:
+            tool = self.tools_by_id[ tool_id ]
+            del self.tools_by_id[ tool_id ]
+            tool_key = 'tool_' + tool_id
+            for key, val in self.tool_panel.items():
+                if key == tool_key:
+                    del self.tool_panel[ key ]
+                    break
+                elif key.startswith( 'section' ):
+                    if tool_key in val.elems:
+                        del self.tool_panel[ key ].elems[ tool_key ]
+                        break
+            if tool_id in self.data_manager_tools:
+                del self.data_manager_tools[ tool_id ]
+            #TODO: do we need to manually remove from the integrated panel here?
+            message = "Removed the tool:<br/>"
+            message += "<b>name:</b> %s<br/>" % tool.name
+            message += "<b>id:</b> %s<br/>" % tool.id
+            message += "<b>version:</b> %s" % tool.version
             status = 'done'
         return message, status
     def load_workflow( self, workflow_id ):
@@ -818,6 +848,7 @@ class Tool( object ):
     """
     
     tool_type = 'default'
+    default_tool_action = DefaultToolAction
     
     def __init__( self, config_file, root, app, guid=None ):
         """Load a tool from the config named by `config_file`"""
@@ -1070,7 +1101,7 @@ class Tool( object ):
         # Action
         action_elem = root.find( "action" )
         if action_elem is None:
-            self.tool_action = DefaultToolAction()
+            self.tool_action = self.default_tool_action()
         else:
             module = action_elem.get( 'module' )
             cls = action_elem.get( 'class' )
@@ -2612,12 +2643,14 @@ class Tool( object ):
                             extra_dir="dataset_%d_files" % hda.dataset.id, 
                             alt_name = f,
                             file_name = os.path.join(temp_file_path, f),
-                            create = True)
+                            create = True,
+                            preserve_symlinks = True )
                     # Clean up after being handled by object store. 
                     # FIXME: If the object (e.g., S3) becomes async, this will 
                     # cause issues so add it to the object store functionality?
                     shutil.rmtree(temp_file_path)
-            except:
+            except Exception, e:
+                log.debug( "Error in collect_associated_files: %s" % ( e ) )
                 continue
     def collect_child_datasets( self, output, job_working_directory ):
         """
@@ -2843,7 +2876,64 @@ class Tool( object ):
         
         return tool_dict
 
-class DataSourceTool( Tool ):
+    def get_default_history_by_trans( self, trans, create=False ):
+        return trans.get_history( create=create )
+
+
+class OutputParameterJSONTool( Tool ):
+    """
+    Alternate implementation of Tool that provides parameters and other values 
+    JSONified within the contents of an output dataset
+    """
+    tool_type = 'output_parameter_json'
+    def _prepare_json_list( self, param_list ):
+        rval = []
+        for value in param_list:
+            if isinstance( value, dict ):
+                rval.append( self._prepare_json_param_dict( value ) )
+            elif isinstance( value, list ):
+                rval.append( self._prepare_json_list( value ) )
+            else:
+                rval.append( str( value ) )
+        return rval
+    def _prepare_json_param_dict( self, param_dict ):
+        rval = {}
+        for key, value in param_dict.iteritems():
+            if isinstance( value, dict ):
+                rval[ key ] = self._prepare_json_param_dict( value )
+            elif isinstance( value, list ):
+                rval[ key ] = self._prepare_json_list( value )
+            else:
+                rval[ key ] = str( value )
+        return rval
+    def exec_before_job( self, app, inp_data, out_data, param_dict=None ):
+        if param_dict is None:
+            param_dict = {}        
+        json_params = {}
+        json_params[ 'param_dict' ] = self._prepare_json_param_dict( param_dict ) #it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
+        json_params[ 'output_data' ] = []
+        json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
+        json_filename = None
+        for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
+            #use wrapped dataset to access certain values 
+            wrapped_data = param_dict.get( out_name )
+            #allow multiple files to be created
+            file_name = str( wrapped_data )
+            extra_files_path = str( wrapped_data.files_path )
+            data_dict = dict( out_data_name = out_name,
+                              ext = data.ext,
+                              dataset_id = data.dataset.id,
+                              hda_id = data.id,
+                              file_name = file_name,
+                              extra_files_path = extra_files_path )
+            json_params[ 'output_data' ].append( data_dict )
+            if json_filename is None:
+                json_filename = file_name
+        out = open( json_filename, 'w' )
+        out.write( simplejson.dumps( json_params ) )
+        out.close()
+
+class DataSourceTool( OutputParameterJSONTool ):
     """
     Alternate implementation of Tool for data_source tools -- those that 
     allow the user to query and extract data from another web site.
@@ -2853,29 +2943,10 @@ class DataSourceTool( Tool ):
     def _build_GALAXY_URL_parameter( self ):
         return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id ) )
     def parse_inputs( self, root ):
-        Tool.parse_inputs( self, root )
+        super( DataSourceTool, self ).parse_inputs( root )
         if 'GALAXY_URL' not in self.inputs:
             self.inputs[ 'GALAXY_URL' ] = self._build_GALAXY_URL_parameter()
-    def _prepare_datasource_json_list( self, param_list ):
-        rval = []
-        for value in param_list:
-            if isinstance( value, dict ):
-                rval.append( self._prepare_datasource_json_param_dict( value ) )
-            elif isinstance( value, list ):
-                rval.append( self._prepare_datasource_json_list( value ) )
-            else:
-                rval.append( str( value ) )
-        return rval
-    def _prepare_datasource_json_param_dict( self, param_dict ):
-        rval = {}
-        for key, value in param_dict.iteritems():
-            if isinstance( value, dict ):
-                rval[ key ] = self._prepare_datasource_json_param_dict( value )
-            elif isinstance( value, list ):
-                rval[ key ] = self._prepare_datasource_json_list( value )
-            else:
-                rval[ key ] = str( value )
-        return rval
+            self.inputs_by_page[0][ 'GALAXY_URL' ] = self.inputs[ 'GALAXY_URL' ]
     def exec_before_job( self, app, inp_data, out_data, param_dict=None ):
         if param_dict is None:
             param_dict = {}
@@ -2885,7 +2956,7 @@ class DataSourceTool( Tool ):
         name = param_dict.get( 'name' )
         
         json_params = {}
-        json_params[ 'param_dict' ] = self._prepare_datasource_json_param_dict( param_dict ) #it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
+        json_params[ 'param_dict' ] = self._prepare_json_param_dict( param_dict ) #it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
         json_params[ 'output_data' ] = []
         json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
         json_filename = None
@@ -2976,9 +3047,59 @@ class ImportHistoryTool( Tool ):
 class GenomeIndexTool( Tool ):
     tool_type = 'index_genome'
 
+class DataManagerTool( OutputParameterJSONTool ):
+    tool_type = 'manage_data'
+    default_tool_action = DataManagerToolAction
+    
+    def __init__( self, config_file, root, app, guid=None, data_manager_id=None, **kwds ):
+        self.data_manager_id = data_manager_id
+        super( DataManagerTool, self ).__init__( config_file, root, app, guid=guid, **kwds )
+        if self.data_manager_id is None:
+            self.data_manager_id = self.id
+    
+    def exec_after_process( self, app, inp_data, out_data, param_dict, job = None, **kwds ):
+        #run original exec_after_process
+        super( DataManagerTool, self ).exec_after_process( app, inp_data, out_data, param_dict, job = job, **kwds )
+        #process results of tool
+        if job and job.state == job.states.ERROR:
+            return
+        data_manager_id = job.data_manager_association.data_manager_id
+        data_manager = self.app.data_managers.get_manager( data_manager_id, None )
+        assert data_manager is not None, "Invalid data manager (%s) requested. It may have been removed before the job completed." % ( data_manager_id )
+        data_manager.process_result( out_data )
+        
+    def get_default_history_by_trans( self, trans, create=False ):
+        def _create_data_manager_history( user ):
+            history = trans.app.model.History( name='Data Manager History (automatically created)', user=user )
+            data_manager_association = trans.app.model.DataManagerHistoryAssociation( user=user, history=history )
+            trans.sa_session.add_all( ( history, data_manager_association ) )
+            trans.sa_session.flush()
+            return history
+        user = trans.user
+        assert user, 'You must be logged in to use this tool.'
+        history = user.data_manager_histories
+        if not history:
+            #create
+            if create:
+                history = _create_data_manager_history( user )
+            else:
+                history = None
+        else:
+            for history in reversed( history ):
+                history = history.history
+                if not history.deleted:
+                    break
+            if history.deleted:
+                if create:
+                    history = _create_data_manager_history( user )
+                else:
+                    history = None
+        return history
+
+
 # Populate tool_type to ToolClass mappings
 tool_types = {}
-for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool ]:
+for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, AsyncDataSourceTool, DataManagerTool ]:
     tool_types[ tool_class.tool_type ] = tool_class
 
 # ---- Utility classes to be factored out -----------------------------------
@@ -3020,6 +3141,8 @@ class ToolParameterValueWrapper( object ):
     """
     def __nonzero__( self ):
         return bool( self.value )
+    def get_display_text( self, quote=True ):
+        return pipes.quote( self.input.value_to_display_text( self.value, self.input.tool.app ) )
 
 class RawObjectWrapper( ToolParameterValueWrapper ):
     """

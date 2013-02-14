@@ -2998,6 +2998,20 @@ class VisualizationRatingAssociation( ItemRatingAssociation ):
     def set_item( self, visualization ):
         self.visualization = visualization
 
+#Data Manager Classes
+class DataManagerHistoryAssociation( object ):
+    def __init__( self, id=None, history=None, user=None ):
+        self.id = id
+        self.history = history
+        self.user = user
+
+class DataManagerJobAssociation( object ):
+    def __init__( self, id=None, job=None, data_manager_id=None ):
+        self.id = id
+        self.job = job
+        self.data_manager_id = data_manager_id
+#end of Data Manager Classes
+
 class UserPreference ( object ):
     def __init__( self, name=None, value=None ):
         self.name = name
@@ -3163,6 +3177,11 @@ class ToolShedRepository( object ):
     def has_repository_dependencies( self ):
         if self.metadata:
             return 'repository_dependencies' in self.metadata
+        return False
+    @property
+    def includes_data_managers( self ):
+        if self.metadata:
+            return bool( len( self.metadata.get( 'data_manager', {} ).get( 'data_managers', {} ) ) )
         return False
     @property
     def includes_tools( self ):

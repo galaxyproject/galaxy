@@ -30,6 +30,7 @@ import markupsafe
 log = logging.getLogger( __name__ )
 
 INITIAL_CHANGELOG_HASH = '000000000000'
+REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = "data_manager_conf.xml"
 # Characters that must be html escaped
 MAPPED_CHARS = { '>' :'&gt;', 
                  '<' :'&lt;',
@@ -37,9 +38,10 @@ MAPPED_CHARS = { '>' :'&gt;',
                  '&' : '&amp;',
                  '\'' : '&apos;' }
 MAX_CONTENT_SIZE = 32768
-NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'repository_dependencies.xml', 'tool_dependencies.xml' ]
+NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'repository_dependencies.xml', 'tool_dependencies.xml', REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
 GALAXY_ADMIN_TOOL_SHED_CONTROLLER = 'GALAXY_ADMIN_TOOL_SHED_CONTROLLER'
 TOOL_SHED_ADMIN_CONTROLLER = 'TOOL_SHED_ADMIN_CONTROLLER'
+TOOL_TYPES_NOT_IN_TOOL_PANEL = [ 'manage_data' ]
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
 
 new_repo_email_alert_template = """
@@ -981,6 +983,14 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                                                  repository_dependencies,
                                                  tool_dependencies )
     return repo_info_dict
+def data_manager_config_elems_to_xml_file( app, config_elems, config_filename ):#, shed_tool_conf_filename ):
+    # Persist the current in-memory list of config_elems to a file named by the value of config_filename.  
+    fh = open( config_filename, 'wb' )
+    fh.write( '<?xml version="1.0"?>\n<data_managers>\n' )#% ( shed_tool_conf_filename ))
+    for elem in config_elems:
+        fh.write( util.xml_to_string( elem, pretty=True ) )
+    fh.write( '</data_managers>\n' )
+    fh.close()
 def ensure_required_repositories_exist_for_reinstall( trans, repository_dependencies ):
     """
     Inspect the received repository_dependencies dictionary and make sure tool_shed_repository objects exist in the database for each entry.  These
@@ -1008,6 +1018,64 @@ def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
         return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
     else:
         return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
+def generate_data_manager_metadata( app, repository, repo_dir, data_manager_config_filename, metadata_dict, shed_config_dict=None ):
+    """Update the received metadata_dict with information from the parsed data_manager_config_filename."""
+    if data_manager_config_filename is None:
+        return metadata_dict
+    try:
+        tree = util.parse_xml( data_manager_config_filename )
+    except Exception, e:
+        log.error( 'There was an error parsing your Data Manager config file "%s": %s' % ( data_manager_config_filename, e ) )
+        return metadata_dict #we are not able to load any data managers
+    tool_path = None
+    if shed_config_dict:
+        tool_path = shed_config_dict.get( 'tool_path', None )
+    tools = {}
+    for tool in metadata_dict.get( 'tools', [] ):
+        tool_conf_name = tool['tool_config']
+        if tool_path:
+            tool_conf_name = os.path.join( tool_path, tool_conf_name )
+        tools[tool_conf_name] = tool
+    repo_path = repository.repo_path( app )
+    try:
+        repo_files_directory = repository.repo_files_directory( app )
+        repo_dir = repo_files_directory
+    except AttributeError:
+        repo_files_directory = repo_path
+    relative_data_manager_dir = util.relpath( os.path.split( data_manager_config_filename )[0], repo_dir )
+    rel_data_manager_config_filename = os.path.join( relative_data_manager_dir, os.path.split( data_manager_config_filename )[1] )
+    data_managers = {}
+    data_manager_metadata = { 'config_filename': rel_data_manager_config_filename, 'data_managers': data_managers }#'tool_config_files': tool_files }
+    metadata_dict[ 'data_manager' ] = data_manager_metadata
+    root = tree.getroot()
+    data_manager_tool_path = root.get( 'tool_path', None )
+    if data_manager_tool_path:
+        relative_data_manager_dir = os.path.join( relative_data_manager_dir, data_manager_tool_path )
+    for data_manager_elem in root.findall( 'data_manager' ):
+        tool_file = data_manager_elem.get( 'tool_file', None )
+        data_manager_id = data_manager_elem.get( 'id', None )
+        if data_manager_id is None:
+            log.error( 'Data Manager entry is missing id attribute in "%s".' % ( data_manager_config_filename ) )
+            continue
+        data_tables = []
+        if tool_file is None:
+            log.error( 'Data Manager entry is missing tool_file attribute in "%s".' % ( data_manager_config_filename ) )
+        else:
+            for data_table_elem in data_manager_elem.findall( 'data_table' ):
+                data_table_name = data_table_elem.get( 'name', None )
+                if data_table_name is None:
+                    log.error( 'Data Manager data_table entry is name attribute in "%s".' % ( data_manager_config_filename ) )
+                else:
+                    data_tables.append( data_table_name )
+        data_manager_metadata_tool_file = os.path.join( relative_data_manager_dir, tool_file )
+        tool_metadata_tool_file = os.path.join( repo_files_directory, data_manager_metadata_tool_file )
+        tool = tools.get( tool_metadata_tool_file, None )
+        if tool is None:
+            log.error( "Unable to determine tools metadata for '%s'." % ( data_manager_metadata_tool_file ) )
+            continue
+        data_managers[ data_manager_id ] = { 'tool_config_file': data_manager_metadata_tool_file, 'data_tables': data_tables, 'tool_guid': tool['guid'] }
+        log.debug( 'Loaded Data Manager tool_files: %s' % ( tool_file ) )
+    return metadata_dict
 def generate_datatypes_metadata( datatypes_config, metadata_dict ):
     """Update the received metadata_dict with information from the parsed datatypes_config."""
     tree = ElementTree.parse( datatypes_config )
@@ -1252,6 +1320,9 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                         exported_workflow_dict = json.from_json_string( workflow_text )
                         if 'a_galaxy_workflow' in exported_workflow_dict and exported_workflow_dict[ 'a_galaxy_workflow' ] == 'true':
                             metadata_dict = generate_workflow_metadata( relative_path, exported_workflow_dict, metadata_dict )
+    # Handle any data manager entries
+    metadata_dict = generate_data_manager_metadata( app, repository, files_dir, get_config_from_disk( REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir ), metadata_dict, shed_config_dict=shed_config_dict )
+    
     if readme_files:
         metadata_dict[ 'readme_files' ] = readme_files
     # This step must be done after metadata for tools has been defined.
@@ -1531,6 +1602,7 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
                       description=tool.description,
                       version_string_cmd = tool.version_string_cmd,
                       tool_config=tool_config,
+                      tool_type=tool.tool_type,
                       requirements=tool_requirements,
                       tests=tool_tests )
     if 'tools' in metadata_dict:

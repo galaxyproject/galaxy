@@ -573,6 +573,16 @@ use_interactive = True
 # Details" option in the history.  Administrators can always see this.
 #expose_dataset_path = False
 
+# Data manager configuration options
+# Allow non-admin users to view available Data Manager options
+#enable_data_manager_user_view = False
+# File where Data Managers are configured
+#data_manager_config_file = data_manager_conf.xml
+# File where Tool Shed based Data Managers are configured 
+#shed_data_manager_config_file = shed_data_manager_conf.xml
+# Directory to store Data Manager based tool-data; defaults to tool_data_path
+#galaxy_data_manager_data_path = tool-data
+
 # -- Job Execution
 
 # To increase performance of job execution and the web interface, you can
