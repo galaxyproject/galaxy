@@ -280,23 +280,22 @@ class TabularToolDataTable( ToolDataTable ):
                 rval.append( None )
         return rval
     
-    def get_entry( self, query_attr, query_val, return_attr ):
+    def get_entry( self, query_attr, query_val, return_attr, default=None ):
         """
         Returns table entry associated with a col/val pair.
         """
         query_col = self.columns.get( query_attr, None )
-        if not query_col:
-            return None
+        if query_col is None:
+            return default
         return_col = self.columns.get( return_attr, None )
-        if not return_col:
-            return None
-        rval = None
+        if return_col is None:
+            return default
+        rval = default
         # Look for table entry.
         for fields in self.data:
             if fields[ query_col ] == query_val:
                 rval = fields[ return_col ]
                 break
-
         return rval
 
 # Registry of tool data types by type_key
