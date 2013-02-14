@@ -290,7 +290,7 @@ class TabularToolDataTable( ToolDataTable ):
         return_col = self.columns.get( return_attr, None )
         if not return_col:
             return None
-
+        rval = None
         # Look for table entry.
         for fields in self.data:
             if fields[ query_col ] == query_val:
