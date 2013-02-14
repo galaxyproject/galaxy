@@ -779,8 +779,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 case "=": // Equals.
                     if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
                         // Draw.
-                        // -1 b/c sequence data is 1-based but painter is 0-based.
-                        var seq = ref_seq.slice(seq_offset - 1, seq_offset + cig_len);
+                        var seq = ref_seq.slice(seq_offset, seq_offset + cig_len);
                         if (gap > 0) {
                             ctx.fillStyle = block_color;
                             ctx.fillRect(s_start - gap, y_center + 1, s_end - s_start, 9);
@@ -836,8 +835,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     var insert_x_coord = s_start - gap;
                     
                     if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
-                        // -1 b/c sequence data is 1-based but painter is 0-based.
-                        var seq = ref_seq.slice(seq_offset - 1, seq_offset + cig_len);
+                        var seq = ref_seq.slice(seq_offset, seq_offset + cig_len);
                         // Insertion point is between the sequence start and the previous base: (-gap) moves
                         // back from sequence start to insertion point.
                         if (this.prefs.show_insertions) {
