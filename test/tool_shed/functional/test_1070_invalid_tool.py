@@ -5,6 +5,7 @@ repository_name = 'bismark_0070'
 repository_description = "Galaxy's bismark wrapper"
 repository_long_description = "Long description of Galaxy's bismark wrapper"
 category_name = 'Test 0070 Invalid Tool Revisions'
+category_description = 'Test 1070 for a repository with an invalid tool.'
 
 class TestFreebayesRepository( ShedTwillTestCase ):
     '''Test repository with multiple revisions with invalid tools.'''
@@ -27,8 +28,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         admin_user_private_role = test_db_util.get_private_role( admin_user )
     def test_0005_ensure_existence_of_repository_and_category( self ):
         '''Create freebayes repository and upload only freebayes.xml. This should result in an error message and invalid tool.'''
-        self.create_category( name=category_name, 
-                              description='Test 1070 for a repository with an invalid tool.' )
+        self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         category = test_db_util.get_category_by_name( category_name )
@@ -40,16 +40,23 @@ class TestFreebayesRepository( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'bismark/bismark.tar', 
+                              filename='bismark/bismark.tar',
+                              filepath=None,
                               valid_tools_only=False,
-                              strings_displayed=[],
-                              commit_message='Uploaded the tool tarball.' )
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded bismark tarball.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             self.upload_file( repository, 
-                              'bismark/bismark_methylation_extractor.xml', 
-                              valid_tools_only=False, 
-                              strings_displayed=[],
-                              remove_repo_files_not_in_tar='No',
-                              commit_message='Uploaded an updated tool xml.' )
+                              filename='bismark/bismark_methylation_extractor.xml',
+                              filepath=None,
+                              valid_tools_only=False,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded an updated tool xml.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
     def test_0010_browse_tool_shed( self ):
         """Browse the available tool sheds in this Galaxy instance and preview the bismark repository."""
         self.galaxy_logout()

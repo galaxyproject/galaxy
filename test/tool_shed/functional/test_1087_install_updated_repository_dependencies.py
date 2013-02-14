@@ -44,9 +44,14 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'column_maker/column_maker.tar', 
+                              filename='column_maker/column_maker.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded column_maker tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded column_maker.tar.' )
+                              strings_not_displayed=[] )
     def test_0010_create_and_populate_convert_repository( self ):
         '''Create and populate the convert_chars repository.'''
         self.logout()
@@ -62,9 +67,14 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'convert_chars/convert_chars.tar', 
+                              filename='convert_chars/convert_chars.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded convert_chars tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded convert_chars.tar.' )
+                              strings_not_displayed=[] )
     def test_0015_install_and_uninstall_column_repository( self ):
         '''Install and uninstall the column_maker repository.'''
         self.galaxy_logout()

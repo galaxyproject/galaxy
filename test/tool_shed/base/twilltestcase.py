@@ -168,11 +168,11 @@ class ShedTwillTestCase( TwillTestCase ):
             raise AssertionError( errmsg )
     def create_category( self, **kwd ):
         category = test_db_util.get_category_by_name( kwd[ 'name' ] )
-        if category is not None:
-            return category
-        self.visit_url( '/admin/manage_categories?operation=create' )
-        self.submit_form( form_no=1, button="create_category_button", **kwd )
-        return test_db_util.get_category_by_name( kwd[ 'name' ] )
+        if category is None:
+            self.visit_url( '/admin/manage_categories?operation=create' )
+            self.submit_form( form_no=1, button="create_category_button", **kwd )
+            category = test_db_util.get_category_by_name( kwd[ 'name' ] )
+        return category
     def create_checkbox_query_string( self, field_name, value ):
         '''
         From galaxy.web.form_builder.CheckboxField:
@@ -213,8 +213,13 @@ class ShedTwillTestCase( TwillTestCase ):
                                                  dependency_description=dependency_description )
         self.upload_file( repository, 
                           'repository_dependencies.xml', 
-                          filepath=filepath, 
-                          commit_message='Uploaded dependency on %s.' % ', '.join( repo.name for repo in depends_on ) )
+                          filepath=filepath,
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded dependency on %s.' % ', '.join( repo.name for repo in depends_on ),
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def create_repository_review( self, repository, review_contents_dict, changeset_revision=None, copy_from=None):
         strings_displayed = []
         if not copy_from:
@@ -860,17 +865,35 @@ class ShedTwillTestCase( TwillTestCase ):
     def upload_file( self, 
                      repository, 
                      filename, 
-                     filepath=None,
-                     valid_tools_only=True, 
+                     filepath,
+                     valid_tools_only,
+                     uncompress_file,
+                     remove_repo_files_not_in_tar,
+                     commit_message,
                      strings_displayed=[], 
-                     strings_not_displayed=[],
-                     **kwd ):
+                     strings_not_displayed=[] ):
+        removed_message = 'files were removed from the repository'
+        if remove_repo_files_not_in_tar:
+            if not self.repository_is_new( repository ):
+                if removed_message not in strings_displayed:
+                    strings_displayed.append( removed_message )
+        else:
+            if removed_message not in strings_not_displayed:
+                strings_not_displayed.append( removed_message )
         self.visit_url( '/upload/upload?repository_id=%s' % self.security.encode_id( repository.id ) )
         if valid_tools_only:
             strings_displayed.extend( [ 'has been successfully', 'uploaded to the repository.' ] )
-        for key in kwd:
-            tc.fv( "1", key, kwd[ key ] )
         tc.formfile( "1", "file_data", self.get_filename( filename, filepath ) )
+        if uncompress_file:
+            tc.fv( 1, 'uncompress_file', 'Yes' )
+        else:
+            tc.fv( 1, 'uncompress_file', 'No' )
+        if not self.repository_is_new( repository ):
+            if remove_repo_files_not_in_tar:
+                tc.fv( 1, 'remove_repo_files_not_in_tar', 'Yes' )
+            else:
+                tc.fv( 1, 'remove_repo_files_not_in_tar', 'No' )
+        tc.fv( 1, 'commit_message', commit_message )
         tc.submit( "upload_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         # Uncomment this if it becomes necessary to wait for an asynchronous process to complete after submitting an upload.

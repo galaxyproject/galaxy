@@ -32,29 +32,59 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                                     category_id=self.security.encode_id( category.id ) )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'freebayes/freebayes.xml', 
-                              valid_tools_only=False, 
-                              commit_message="Uploaded freebayes.xml." )
-            self.upload_file( repository, 
-                              'freebayes/tool_data_table_conf.xml.sample', 
+                              filename='freebayes/freebayes.xml', 
+                              filepath=None,
                               valid_tools_only=False,
-                              commit_message="Uploaded tool_data_table_conf.xml.", 
-                              remove_repo_files_not_in_tar='No' )
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded the tool xml.',
+                              strings_displayed=[ 'Metadata may have been defined', 'This file requires an entry', 'tool_data_table_conf' ], 
+                              strings_not_displayed=[] )
             self.upload_file( repository, 
-                              'freebayes/sam_fa_indices.loc.sample', 
-                              commit_message="Uploaded sam_fa_indices.loc.sample.", 
+                              filename='freebayes/tool_data_table_conf.xml.sample', 
+                              filepath=None,
                               valid_tools_only=False,
-                             remove_repo_files_not_in_tar='No' )
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded the tool data table sample file.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             self.upload_file( repository, 
-                              'freebayes/invalid_tool_dependencies/tool_dependencies.xml', 
-                              valid_tools_only=False,
-                              commit_message="Uploaded invalid_tool_dependencies/tool_dependencies.xml.", 
-                              remove_repo_files_not_in_tar='No' )
+                              filename='freebayes/sam_fa_indices.loc.sample', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded tool data table .loc file.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             self.upload_file( repository, 
-                              'freebayes/tool_dependencies.xml', 
+                              filename=os.path.join( 'freebayes', 'malformed_tool_dependencies', 'tool_dependencies.xml' ), 
+                              filepath=None,
                               valid_tools_only=False,
-                              commit_message="Uploaded tool_dependencies.xml", 
-                              remove_repo_files_not_in_tar='No' )
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded malformed tool dependency XML.',
+                              strings_displayed=[ 'Exception attempting to parse tool_dependencies.xml', 'not well-formed' ], 
+                              strings_not_displayed=[] )
+            self.upload_file( repository, 
+                              filename=os.path.join( 'freebayes', 'invalid_tool_dependencies', 'tool_dependencies.xml' ), 
+                              filepath=None,
+                              valid_tools_only=False,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded invalid tool dependency XML.',
+                              strings_displayed=[ 'Name, version and type from a tool requirement tag does not match' ], 
+                              strings_not_displayed=[] )
+            self.upload_file( repository, 
+                              filename=os.path.join( 'freebayes', 'tool_dependencies.xml' ), 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded valid tool dependency XML.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
     def test_0010_install_freebayes_repository( self ):
         '''Install the freebayes repository into the Galaxy instance.'''
         self.galaxy_logout()

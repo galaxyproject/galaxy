@@ -47,21 +47,42 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                                               strings_displayed=[] )
         if self.repository_is_new( datatypes_repository ):
             running_standalone = True
-            self.upload_file( datatypes_repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
+            self.upload_file( datatypes_repository, 
+                              filename='emboss/datatypes/datatypes_conf.xml', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded datatypes_conf.xml.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             emboss_repository = self.get_or_create_repository( name=emboss_repository_name, 
                                                                description=emboss_repository_description, 
                                                                long_description=emboss_repository_long_description, 
                                                                owner=common.test_user_1_name,
                                                                category_id=self.security.encode_id( category.id ), 
                                                                strings_displayed=[] )
-            self.upload_file( emboss_repository, 'emboss/emboss.tar', commit_message='Uploaded emboss_5.tar' )
+            self.upload_file( emboss_repository, 
+                              filename='emboss/emboss.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded emboss.tar',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_1020', additional_paths=[ 'emboss', '5' ] )
             self.generate_repository_dependency_xml( [ datatypes_repository ], 
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
             self.upload_file( emboss_repository, 
-                              'repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              commit_message='Uploaded repository_dependencies.xml' )
+                              filename='repository_dependencies.xml', 
+                              filepath=repository_dependencies_path,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
         repository_datatypes_count = int( self.get_repository_datatypes_count( datatypes_repository ) )
     def test_0010_install_emboss_repository( self ):
         '''Install the emboss repository into the Galaxy instance.'''

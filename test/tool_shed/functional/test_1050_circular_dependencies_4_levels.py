@@ -63,9 +63,14 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         if self.repository_is_new( repository ):
             running_standalone = True
             self.upload_file( repository, 
-                              'convert_chars/convert_chars.tar', 
+                              filename='convert_chars/convert_chars.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded convert_chars tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded convert_chars.tar.' )
+                              strings_not_displayed=[] )
     def test_0010_create_column_repository( self ):
         '''Create and populate convert_chars_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -77,9 +82,14 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'column_maker/column_maker.tar', 
+                              filename='column_maker/column_maker.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded column_maker tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded column_maker.tar.' )
+                              strings_not_displayed=[] )
     def test_0015_create_emboss_datatypes_repository( self ):
         '''Create and populate emboss_datatypes_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -91,9 +101,14 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'emboss/datatypes/datatypes_conf.xml', 
+                              filename='emboss/datatypes/datatypes_conf.xml', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded datatypes_conf.xml.',
                               strings_displayed=[], 
-                              commit_message='Uploaded datatypes_conf.xml.' )
+                              strings_not_displayed=[] )
     def test_0020_create_emboss_repository( self ):
         '''Create and populate emboss_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -105,9 +120,14 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'emboss/emboss.tar', 
+                              filename='emboss/emboss.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded emboss tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded tool tarball.' )
+                              strings_not_displayed=[] )
     def test_0025_create_filtering_repository( self ):
         '''Create and populate filtering_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -119,9 +139,14 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'filtering/filtering_1.1.0.tar', 
+                              filename='filtering/filtering_1.1.0.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded filtering 1.1.0 tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded filtering.tar.' )
+                              strings_not_displayed=[] )
     def test_0030_create_freebayes_repository( self ):
         '''Create and populate freebayes_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -133,9 +158,14 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'freebayes/freebayes.tar', 
+                              filename='freebayes/freebayes.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded freebayes tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded freebayes.tar.' )
+                              strings_not_displayed=[] )
     def test_0035_create_bismark_repository( self ):
         '''Create and populate bismark_0050.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -147,10 +177,14 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'bismark/bismark.tar', 
-                              strings_displayed=[], 
+                              filename='bismark/bismark.tar',
+                              filepath=None,
                               valid_tools_only=False,
-                              commit_message='Uploaded bismark.tar.' )
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded bismark tarball.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
     def test_0040_create_and_upload_dependency_definitions( self ):
         '''Set up the dependency structure.'''
         global running_standalone

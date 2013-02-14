@@ -100,7 +100,15 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
                                                     owner=common.test_user_1_name,
                                                     category_id=self.security.encode_id( category.id ), 
                                                     strings_displayed=strings_displayed )
-        self.upload_file( repository, 'filtering/filtering_1.1.0.tar', commit_message="Uploaded filtering 1.1.0" )
+        self.upload_file( repository, 
+                          filename='filtering/filtering_1.1.0.tar',
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded filtering 1.1.0 tarball.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0020_review_initial_revision_data_types( self ):
         '''Review the datatypes component for the current tip revision.'''
         """
@@ -396,7 +404,15 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         user = test_db_util.get_user( common.test_user_2_email )
-        self.upload_file( repository, 'readme.txt', commit_message="Uploaded readme.txt" )
+        self.upload_file( repository, 
+                          filename='readme.txt',
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded readme.txt.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0095_review_new_changeset_readme_component( self ):
         '''Update the filtering repository's readme component review to reflect the presence of the readme file.'''
         """
@@ -452,10 +468,15 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         """
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         user = test_db_util.get_user( common.test_user_2_email )
-        self.upload_file( repository,
-                          'filtering/filtering_test_data.tar',
-                          commit_message="Uploaded test data.",
-                          remove_repo_files_not_in_tar='No' )
+        self.upload_file( repository, 
+                          filename='filtering/filtering_test_data.tar',
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded filtering 1.1.0 tarball.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0110_review_new_changeset_functional_tests( self ):
         '''Update the filtering repository's readme component review to reflect the presence of the readme file.'''
         """
@@ -509,9 +530,14 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         user = test_db_util.get_user( common.test_user_2_email )
         self.upload_file( repository, 
-                          'filtering/filtering_2.2.0.tar', 
-                          commit_message="Uploaded filtering 2.2.0", 
-                          remove_repo_files_not_in_tar='No' )
+                          filename='filtering/filtering_2.2.0.tar',
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded filtering 2.2.0 tarball.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0125_review_new_changeset_functional_tests( self ):
         '''Update the filtering repository's review to apply to the new changeset with filtering 2.2.0.'''
         """

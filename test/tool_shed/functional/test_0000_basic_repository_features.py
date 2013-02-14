@@ -56,7 +56,15 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0030_upload_filtering_1_1_0( self ):
         """Upload filtering_1.1.0.tar to the repository"""
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        self.upload_file( repository, 'filtering/filtering_1.1.0.tar', commit_message="Uploaded filtering 1.1.0" )
+        self.upload_file( repository, 
+                          filename='filtering/filtering_1.1.0.tar', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=True,
+                          commit_message="Uploaded filtering 1.1.0",
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0035_verify_repository( self ):
         '''Display basic repository pages'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
@@ -102,15 +110,27 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         '''Upload filtering.txt file associated with tool version 1.1.0.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
-                          'filtering/filtering_0000.txt', 
-                          commit_message="Uploaded filtering.txt", 
-                          uncompress_file='No', 
-                          remove_repo_files_not_in_tar='No' )
+                          filename='filtering/filtering_0000.txt', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message="Uploaded filtering.txt",
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
         self.display_manage_repository_page( repository, strings_displayed=[ 'Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0' ] )
     def test_0055_upload_filtering_test_data( self ):
         '''Upload filtering test data.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        self.upload_file( repository, 'filtering/filtering_test_data.tar', commit_message="Uploaded filtering test data", remove_repo_files_not_in_tar='No' )
+        self.upload_file( repository, 
+                          filename='filtering/filtering_test_data.tar', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message="Uploaded filtering test data",
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
         self.display_repository_file_contents( repository=repository,
                                                filename='1.bed',
                                                filepath='test-data',
@@ -121,9 +141,14 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         '''Upload filtering version 2.2.0'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
-                          'filtering/filtering_2.2.0.tar', 
-                          commit_message="Uploaded filtering 2.2.0", 
-                          remove_repo_files_not_in_tar='No' )
+                          filename='filtering/filtering_2.2.0.tar', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message="Uploaded filtering 2.2.0",
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0065_verify_filtering_repository( self ):
         '''Verify the new tool versions and repository metadata.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
@@ -138,7 +163,15 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0070_upload_readme_txt_file( self ):
         '''Upload readme.txt file associated with tool version 2.2.0.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        self.upload_file( repository, 'readme.txt', commit_message="Uploaded readme.txt" )
+        self.upload_file( repository, 
+                          filename='readme.txt', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message="Uploaded readme.txt",
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
         self.display_manage_repository_page( repository, strings_displayed=[ 'This&nbsp;is&nbsp;a&nbsp;readme&nbsp;file.' ] )
         # Verify that there is a different readme file for each metadata revision.
         metadata_revisions = self.get_repository_metadata_revisions( repository )

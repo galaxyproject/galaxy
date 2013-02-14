@@ -6,6 +6,8 @@ repository_description="Galaxy's filtering tool for test 0060"
 repository_long_description="Long description of Galaxy's filtering tool for test 0060"
 workflow_filename = 'Workflow_for_0060_filter_workflow_repository.ga'
 workflow_name = 'Workflow for 0060_filter_workflow_repository'
+category_name = 'Test 0060 Workflow Features'
+category_description = 'Test 0060 for workflow features'
 
 class TestToolShedWorkflowFeatures( ShedTwillTestCase ):
     '''Test valid and invalid workflows.'''
@@ -26,13 +28,14 @@ class TestToolShedWorkflowFeatures( ShedTwillTestCase ):
         self.create_category( name='Test 0060 Workflow Features', description='Test 0060 - Workflow Features' )
     def test_0010_create_repository( self ):
         """Create and populate the filtering repository"""
+        category = self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         self.get_or_create_repository( name=repository_name, 
                                        description=repository_description, 
                                        long_description=repository_long_description, 
                                        owner=common.test_user_1_name,
-                                       categories=[ 'Test 0060 Workflow Features' ], 
+                                       category_id=self.security.encode_id( category.id ), 
                                        strings_displayed=[] )
     def test_0015_upload_workflow( self ):
         '''Upload a workflow with a missing tool, and verify that the tool specified is marked as missing.'''
@@ -44,18 +47,27 @@ class TestToolShedWorkflowFeatures( ShedTwillTestCase ):
             os.makedirs( workflow_filepath )
         file( os.path.join( workflow_filepath, workflow_filename ), 'w+' ).write( workflow )
         self.upload_file( repository, 
-                          workflow_filename, 
+                          filename=workflow_filename, 
                           filepath=workflow_filepath, 
-                          commit_message='Uploaded filtering workflow.' )
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded filtering workflow.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
         self.load_workflow_image_in_tool_shed( repository, workflow_name, strings_displayed=[ '#EBBCB2' ] )
     def test_0020_upload_tool( self ):
         '''Upload the missing tool for the workflow in the previous step, and verify that the error is no longer present.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
-                          'filtering/filtering_2.2.0.tar', 
-                          commit_message="Uploaded filtering 2.2.0", 
-                          remove_repo_files_not_in_tar='No' )
-#        raise Exception( self.get_repository_tip( repository ) )
+                          filename='filtering/filtering_2.2.0.tar', 
+                          filepath=None, 
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded filtering 2.2.0.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
         self.load_workflow_image_in_tool_shed( repository, workflow_name, strings_not_displayed=[ '#EBBCB2' ] )
     def test_0025_verify_repository_metadata( self ):
         '''Verify that resetting the metadata does not change it.'''

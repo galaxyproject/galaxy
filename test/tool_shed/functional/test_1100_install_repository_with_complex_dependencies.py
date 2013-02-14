@@ -47,10 +47,14 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             file( xml_filename, 'w' ).write( file( old_tool_dependency, 'r' )
                                      .read().replace( '__PATH__', self.get_filename( 'bwa/complex' ) ) )
             self.upload_file( repository, 
-                              xml_filename,
-                              filepath=new_tool_dependency_path, 
-                              strings_displayed=[], 
-                              commit_message='Uploaded tool_dependencies.xml.' )
+                              filename=xml_filename,
+                              filepath=new_tool_dependency_path,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded tool_dependencies.xml.',
+                              strings_displayed=[ 'Name, version and type from a tool requirement tag does not match' ], 
+                              strings_not_displayed=[] )
             self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'may not be', 'in this repository' ] )
     def test_0010_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0100.'''
@@ -67,9 +71,14 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                                                         strings_displayed=[] )
             tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
             self.upload_file( repository, 
-                              'bwa/complex/bwa_base.tar', 
+                              filename='bwa/complex/bwa_base.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded bwa_base.tar with tool wrapper XML, but without tool dependency XML.',
                               strings_displayed=[], 
-                              commit_message='Uploaded bwa_base.tar with tool wrapper XML, but without tool dependency XML.' )
+                              strings_not_displayed=[] )
     def test_0015_generate_complex_repository_dependency_invalid_shed_url( self ):
         '''Generate and upload a complex repository definition that specifies an invalid tool shed URL.'''
         global running_standalone
@@ -85,38 +94,44 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
             strings_displayed = [ 'Invalid tool shed <b>%s</b> defined' % url ] 
             self.upload_file( repository, 
-                              'tool_dependencies.xml',
-                              valid_tools_only=False,
+                              filename='tool_dependencies.xml',
                               filepath=dependency_path, 
+                              valid_tools_only=False,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded dependency on bwa_tool_0100 with invalid url.',
-                              strings_displayed=strings_displayed )
+                              strings_displayed=strings_displayed, 
+                              strings_not_displayed=[] )
     def test_0020_generate_complex_repository_dependency_invalid_repository_name( self ):
         '''Generate and upload a complex repository definition that specifies an invalid repository name.'''
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path( 'test_0100', additional_paths=[ 'complex', 'shed' ] )
             xml_filename = self.get_filename( 'tool_dependencies.xml', filepath=dependency_path )
-            repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+            base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
             tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
             url = self.url
             name = 'invalid_repository!?'
             owner = tool_repository.user.username
             changeset_revision = self.get_repository_tip( tool_repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
-            strings_displayed = 'Invalid repository name <b>%s</b> defined.' % name 
-            self.upload_file( repository, 
-                              'tool_dependencies.xml', 
-                              valid_tools_only=False,
+            strings_displayed = [ 'Invalid repository name <b>%s</b> defined.' % name ]
+            self.upload_file( base_repository, 
+                              filename='tool_dependencies.xml',
                               filepath=dependency_path, 
+                              valid_tools_only=False,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded dependency on bwa_tool_0100 with invalid repository name.',
-                              strings_displayed=[ strings_displayed ] )
+                              strings_displayed=strings_displayed, 
+                              strings_not_displayed=[] )
     def test_0025_generate_complex_repository_dependency_invalid_owner_name( self ):
         '''Generate and upload a complex repository definition that specifies an invalid owner.'''
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path( 'test_0100', additional_paths=[ 'complex', 'shed' ] )
             xml_filename = self.get_filename( 'tool_dependencies.xml', filepath=dependency_path )
-            repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+            base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
             tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
             url = self.url
             name = tool_repository.name
@@ -124,32 +139,38 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             changeset_revision = self.get_repository_tip( tool_repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
             strings_displayed = [ 'Invalid owner <b>%s</b> defined' % owner ]
-            self.upload_file( repository, 
-                              'tool_dependencies.xml', 
-                              valid_tools_only=False,
+            self.upload_file( base_repository, 
+                              filename='tool_dependencies.xml',
                               filepath=dependency_path, 
+                              valid_tools_only=False,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded dependency on bwa_tool_0100 with invalid owner.',
-                              strings_displayed=strings_displayed )
+                              strings_displayed=strings_displayed, 
+                              strings_not_displayed=[] )
     def test_0030_generate_complex_repository_dependency_invalid_changeset_revision( self ):
         '''Generate and upload a complex repository definition that specifies an invalid changeset revision.'''
         global running_standalone
         if running_standalone:
             dependency_path = self.generate_temp_path( 'test_0100', additional_paths=[ 'complex', 'shed' ] )
             xml_filename = self.get_filename( 'tool_dependencies.xml', filepath=dependency_path )
-            repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+            base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
             tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
             url = self.url
             name = tool_repository.name
             owner = tool_repository.user.username
             changeset_revision = '1234abcd'
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
-            strings_displayed = 'Invalid changeset revision <b>%s</b> defined.' % changeset_revision 
-            self.upload_file( repository, 
-                              'tool_dependencies.xml', 
-                              valid_tools_only=False,
+            strings_displayed = [ 'Invalid changeset revision <b>%s</b> defined.' % changeset_revision ]
+            self.upload_file( base_repository, 
+                              filename='tool_dependencies.xml',
                               filepath=dependency_path, 
+                              valid_tools_only=False,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded dependency on bwa_tool_0100 with invalid changeset revision.',
-                              strings_displayed=[ strings_displayed ] )
+                              strings_displayed=strings_displayed, 
+                              strings_not_displayed=[] )
     def test_0035_generate_valid_complex_repository_dependency( self ):
         '''Generate and upload a valid tool_dependencies.xml file that specifies bwa_tool_repository_0100.'''
         global running_standalone
@@ -164,10 +185,14 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             changeset_revision = self.get_repository_tip( tool_repository )
             self.generate_repository_dependency_xml( [ tool_repository ], xml_filename, complex=True, package='bwa', version='0.5.9' )
             self.upload_file( base_repository, 
-                              'tool_dependencies.xml', 
-                              valid_tools_only=True,
+                              filename='tool_dependencies.xml',
                               filepath=dependency_path, 
-                              commit_message='Uploaded valid complex dependency on bwa_tool_0100.' )
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded valid complex dependency on bwa_tool_0100.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             self.check_repository_dependency( base_repository, tool_repository )
             self.display_manage_repository_page( base_repository, strings_displayed=[ 'bwa', '0.5.9', 'package' ] )
     def test_0040_update_tool_repository( self ):
@@ -183,10 +208,14 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             file( xml_filename, 'w' ).write( file( old_tool_dependency, 'r' )
                                      .read().replace( '__PATH__', self.get_filename( 'bwa/complex' ) ) )
             self.upload_file( tool_repository, 
-                              xml_filename,
+                              filename=xml_filename,
                               filepath=new_tool_dependency_path, 
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded new tool_dependencies.xml.',
                               strings_displayed=[], 
-                              commit_message='Uploaded new tool_dependencies.xml.' )
+                              strings_not_displayed=[] )
             # Verify that the dependency display has been updated as a result of the new tool_dependencies.xml file.
             self.display_manage_repository_page( base_repository, 
                                                  strings_displayed=[ self.get_repository_tip( tool_repository ), 'bwa', '0.5.9', 'package' ],

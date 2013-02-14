@@ -46,9 +46,14 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'column_maker/column_maker.tar', 
+                              filename='column_maker/column_maker.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded column_maker tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded column_maker.tar.' )
+                              strings_not_displayed=[] )
     def test_0010_create_and_populate_convert_repository( self ):
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
@@ -63,9 +68,14 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'convert_chars/convert_chars.tar', 
+                              filename='convert_chars/convert_chars.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded convert_chars tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded convert_chars.tar.' )
+                              strings_not_displayed=[] )
     def test_0015_create_and_upload_dependency_files( self ):
         convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
@@ -74,9 +84,14 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                  dependency_description='Column maker depends on the convert_chars repository.' )
         self.upload_file( column_repository, 
-                          'repository_dependencies.xml', 
-                          filepath=repository_dependencies_path, 
-                          commit_message='Uploaded dependency on convert' )
+                          filename='repository_dependencies.xml', 
+                          filepath=repository_dependencies_path,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded dependency on convert_chars.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
         convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_1085', additional_paths=[ 'convert' ] )
@@ -84,9 +99,14 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                  dependency_description='Convert chars depends on the column_maker repository.' )
         self.upload_file( convert_repository, 
-                          'repository_dependencies.xml', 
-                          filepath=repository_dependencies_path, 
-                          commit_message='Uploaded dependency on column' )
+                          filename='repository_dependencies.xml', 
+                          filepath=repository_dependencies_path,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded dependency on column_maker.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0020_install_repositories( self ):
         '''Install column_maker into column_maker tool panel section and install repository dependencies.'''
         self.galaxy_logout()

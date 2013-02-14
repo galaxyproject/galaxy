@@ -37,7 +37,15 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
                                              owner=common.test_user_1_name,
                                              category_id=self.security.encode_id( category.id ), 
                                              strings_displayed=[] )
-        self.upload_file( repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
+        self.upload_file( repository, 
+                          filename='emboss/datatypes/datatypes_conf.xml', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded datatypes_conf.xml.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0015_verify_datatypes_in_datatypes_repository( self ):
         '''Verify that the emboss_datatypes repository contains datatype entries.'''
         repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
@@ -51,7 +59,15 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
                                              owner=common.test_user_1_name,
                                              category_id=self.security.encode_id( category.id ), 
                                              strings_displayed=[] )
-        self.upload_file( repository, 'emboss/emboss.tar', commit_message='Uploaded emboss_5.tar' )
+        self.upload_file( repository, 
+                          filename='emboss/emboss.tar', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded emboss.tar',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0025_generate_and_upload_repository_dependencies_xml( self ):
         '''Generate and upload the repository_dependencies.xml file'''
         repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
@@ -60,9 +76,14 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
         self.generate_repository_dependency_xml( [ datatypes_repository ], 
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
         self.upload_file( repository, 
-                          'repository_dependencies.xml', 
-                          filepath=repository_dependencies_path, 
-                          commit_message='Uploaded repository_dependencies.xml' )
+                          filename='repository_dependencies.xml', 
+                          filepath=repository_dependencies_path,
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded repository_dependencies.xml.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0030_verify_emboss_5_dependencies( self ):
         '''Verify that the emboss_5 repository now depends on the emboss_datatypes repository with correct name, owner, and changeset revision.'''
         repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
