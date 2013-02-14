@@ -196,7 +196,18 @@ def restore_text(text):
     return text
 
 def sanitize_text(text):
-    """Restricts the characters that are allowed in a text"""
+    """
+    Restricts the characters that are allowed in text; accepts both strings
+    and lists of strings.
+    """
+    if isinstance( text, basestring ):
+        return _sanitize_text_helper(text)
+    elif isinstance( text, list ):
+        return [ _sanitize_text_helper(t) for t in text ]
+
+def _sanitize_text_helper(text):
+    """Restricts the characters that are allowed in a string"""
+
     out = []
     for c in text:
         if c in valid_chars:
