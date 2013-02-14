@@ -46,6 +46,8 @@ integrated_tool_panel.xml
 openid_conf.xml
 shed_tool_data_table_conf.xml
 job_conf.xml
+data_manager_conf.xml
+shed_data_manager_conf.xml
 
 static/welcome.html.*
 static/welcome.html
