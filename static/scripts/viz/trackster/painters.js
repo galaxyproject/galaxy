@@ -236,9 +236,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
     // Paint track.
     for (var i = 0, len = data.length; i < len; i++) {
         ctx.fillStyle = ctx.strokeStyle = this.prefs.color;
-        // -1 because LineTrack data uses 1-based coordinate system but painter 
-        // uses 0-based system.
-        x_scaled = Math.round((data[i][0] - view_start - 1) * w_scale);
+        x_scaled = Math.round((data[i][0] - view_start) * w_scale);
         y = data[i][1];
         var top_overflow = false, bot_overflow = false;
         if (y === null) {
