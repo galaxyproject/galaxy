@@ -1188,6 +1188,7 @@ def install_data_managers( app, shed_data_manager_conf_filename, metadata_dict, 
         if repo_data_manager_conf_filename is None:
             log.debug( "No data_manager_conf.xml file has been defined." )
             return rval
+        data_manager_config_has_changes = False
         relative_repo_data_manager_dir = os.path.join( shed_config_dict.get( 'tool_path', '' ), relative_install_dir )
         repo_data_manager_conf_filename = os.path.join( relative_repo_data_manager_dir, repo_data_manager_conf_filename )
         tree = util.parse_xml( repo_data_manager_conf_filename )
@@ -1236,8 +1237,10 @@ def install_data_managers( app, shed_data_manager_conf_filename, metadata_dict, 
             else:
                 log.warning( "Encountered unexpected element '%s':\n%s" % ( elem.tag, util.xml_to_string( elem ) ) )
             config_elems.append( elem )
-        # Persist the altered shed_tool_config file.
-        suc.data_manager_config_elems_to_xml_file( app, config_elems, shed_data_manager_conf_filename  )
+            data_manager_config_has_changes = True
+        # Persist the altered shed_data_manager_config file.
+        if data_manager_config_has_changes:
+            suc.data_manager_config_elems_to_xml_file( app, config_elems, shed_data_manager_conf_filename  )
     return rval
     
 def is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ):
