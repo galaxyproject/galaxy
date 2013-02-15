@@ -88,14 +88,14 @@ class BasicToolShedFeatures( ShedTwillTestCase ):
                                  'Test 0000 Basic Repository Features 1', 
                                  new_tool_panel_section='test_1000' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'filtering_0000',
+                              "Galaxy's filtering tool",
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
-        self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
+        strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
     def test_0030_verify_installed_repository_metadata( self ):
         '''Verify that resetting the metadata on an installed repository does not change the metadata.'''

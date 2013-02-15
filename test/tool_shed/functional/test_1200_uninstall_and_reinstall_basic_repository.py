@@ -101,8 +101,8 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
-        self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
+        strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
     def test_0025_deactivate_filtering_repository( self ):
         '''Deactivate the filtering repository without removing it from disk.'''
@@ -122,6 +122,6 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                               self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
-        self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
+        strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )

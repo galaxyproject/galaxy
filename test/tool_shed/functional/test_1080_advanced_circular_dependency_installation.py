@@ -199,12 +199,16 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                                                             common.test_user_1_name )
         self.reactivate_repository( installed_convert_repository )
         strings_displayed = [ 'convert_chars_0080',
-                              'Convert delimiters',
-                              self.url.replace( 'http://', '' ), 
-                              installed_convert_repository.installed_changeset_revision,
+                              'Compute',
+                              'an expression on every row',
+                              '1.1.0', 
                               'column_maker_0080',
-                              installed_column_repository.installed_changeset_revision,
-                              'Installed repository dependencies' ]
+                              'Installed repository dependencies',
+                              self.url.replace( 'http://', '' ),
+                              installed_column_repository.installed_changeset_revision, 
+                              installed_convert_repository.installed_changeset_revision ]
+        self.display_installed_repository_manage_page( installed_column_repository, 
+                                                       strings_displayed=strings_displayed )
     def test_0040_deactivate_column_repository( self ):
         '''Deactivate column_maker, verify that convert_chars is installed and missing repository dependencies.'''
         installed_convert_repository = test_db_util.get_installed_repository_by_name_owner( convert_repository_name, 

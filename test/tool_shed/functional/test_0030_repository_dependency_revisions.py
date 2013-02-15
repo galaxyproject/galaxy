@@ -178,7 +178,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
         # Iterate through all metadata revisions and check for repository dependencies.
         for metadata, changeset_revision in repository_metadata:
             # Add the dependency description and datatypes repository details to the strings to check.
-            strings_displayed.extend( [ 'Emboss requires the Emboss', 'emboss_datatypes_0030', 'user1', datatypes_tip ] )
+            strings_displayed = [ 'Emboss requires the Emboss', 'emboss_datatypes_0030', 'user1', datatypes_tip ]
             strings_displayed.extend( [ 'Tool dependencies', 'emboss', '5.0.0', 'package' ] )
             self.display_manage_repository_page( repository, 
                                                  changeset_revision=changeset_revision, 

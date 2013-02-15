@@ -109,9 +109,10 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                               self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
-        self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'antigenic' ] )
-        self.check_installed_repository_tool_dependencies( installed_repository, dependencies_installed=False )
+        strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'antigenic' ] )
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
+        strings_displayed = [ 'emboss', '5.0.0', 'package' ]
+        self.check_installed_repository_tool_dependencies( installed_repository, strings_displayed=strings_displayed, dependencies_installed=False )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
         current_datatypes = int( self.get_datatypes_count() )
         assert current_datatypes == base_datatypes_count + repository_datatypes_count, 'Installing emboss did not add new datatypes. Expected: %d. Found: %d' % \

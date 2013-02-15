@@ -238,19 +238,24 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
         '''Verify that the installed repositories are displayed properly.'''
         base_repository = test_db_util.get_installed_repository_by_name_owner( bwa_base_repository_name, common.test_user_1_name )
         tool_repository = test_db_util.get_installed_repository_by_name_owner( bwa_tool_repository_name, common.test_user_1_name )
-        strings_displayed = [ base_repository.name, base_repository.owner, base_repository.installed_changeset_revision ]
-        strings_displayed.extend( [ tool_repository.name, tool_repository.owner, tool_repository.installed_changeset_revision ] )
+        strings_displayed = [ 'bwa_base_repository_0100', 'user1', base_repository.installed_changeset_revision ]
+        strings_displayed.extend( [ 'bwa_tool_repository_0100', 'user1', tool_repository.installed_changeset_revision ] )
         strings_displayed.append( self.url.replace( 'http://', '' ) )
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=[] )
-        checks = [ ( tool_repository,
-                     [ 'bwa_tool_repository_0100', 'user1', tool_repository.installed_changeset_revision ],
-                     [ 'Missing tool dependencies' ] ),
-                   ( base_repository, 
-                     [ 'bwa_base_repository_0100', 'user1', base_repository.installed_changeset_revision, 'bwa_tool_repository_0100', 
-                       tool_repository.installed_changeset_revision ],
-                     [ 'Missing tool dependencies' ] ) ]
-        for repository, strings_displayed, strings_not_displayed in checks:
-            self.display_installed_repository_manage_page( repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
+        strings_displayed = [ 'bwa_tool_repository_0100', 'user1', tool_repository.installed_changeset_revision ]
+        strings_not_displayed = [ 'Missing tool dependencies' ]
+        self.display_installed_repository_manage_page( tool_repository, 
+                                                       strings_displayed=strings_displayed, 
+                                                       strings_not_displayed=strings_not_displayed )
+        strings_displayed = [ 'bwa_base_repository_0100',
+                              'user1', 
+                              'bwa_tool_repository_0100', 
+                              base_repository.installed_changeset_revision, 
+                              tool_repository.installed_changeset_revision ]
+        strings_not_displayed = [ 'Missing tool dependencies' ]
+        self.display_installed_repository_manage_page( base_repository, 
+                                                       strings_displayed=strings_displayed, 
+                                                       strings_not_displayed=strings_not_displayed )
     def test_0055_verify_complex_tool_dependency( self ):
         '''Verify that the generated env.sh contains the right data.'''
         base_repository = test_db_util.get_installed_repository_by_name_owner( bwa_base_repository_name, common.test_user_1_name )

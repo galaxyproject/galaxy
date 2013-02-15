@@ -157,7 +157,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         category = test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
         tip = self.get_repository_tip( repository )
         self.check_for_valid_tools( repository )
-        strings_displayed = self.get_repository_metadata_revisions( repository ).append( 'Select a revision' )
+        strings_displayed = [ 'Select a revision' ]
         self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
         self.check_count_of_metadata_revisions_associated_with_repository( repository, metadata_count=2 )
         self.check_repository_tools_for_changeset_revision( repository, tip )

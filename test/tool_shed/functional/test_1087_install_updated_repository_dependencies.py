@@ -108,5 +108,5 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         url = '/admin_toolshed/browse_repositories?operation=activate+or+reinstall&id=%s' % self.security.encode_id( installed_column_repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed )
-        uninstalled_repositories = [ ( column_repository_name, common.test_user_1_name )  ]
-        self.verify_installed_uninstalled_repositories( uninstalled_repositories=uninstalled_repositories, installed_repositories=[] )
+        strings_not_displayed = [ 'column_maker_1087' ]
+        self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )

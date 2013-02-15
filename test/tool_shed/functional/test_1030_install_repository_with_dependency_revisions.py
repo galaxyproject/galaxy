@@ -175,13 +175,14 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0030', common.test_user_1_name )
         strings_displayed = [ 'emboss_0030',
                               'Galaxy wrappers for Emboss version 5.0.0 tools for test 0030',
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
-        self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'antigenic' ] )
-        self.check_installed_repository_tool_dependencies( installed_repository, dependencies_installed=False )
+        strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'antigenic' ] )
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
+        strings_displayed = [ 'emboss', '5.0.0', 'package' ]
+        self.check_installed_repository_tool_dependencies( installed_repository, strings_displayed=strings_displayed, dependencies_installed=False )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
         self.update_installed_repository( installed_repository, strings_displayed=[ "there are no updates available" ] )
         current_datatypes = int( self.get_datatypes_count() )

@@ -83,20 +83,20 @@ class ShedTwillTestCase( TwillTestCase ):
         tool_panel_section = tool_panel_section_metadata[ tool_guid ][ 0 ][ 'name' ]
         assert tool_panel_section == expected_tool_panel_section, 'Expected tool panel section %s, found %s\nMetadata: %s\n' % \
             ( expected_tool_panel_section, tool_panel_section, metadata )
-    def check_installed_repository_tool_dependencies( self, installed_repository, dependencies_installed=False ):
+    def check_installed_repository_tool_dependencies( self, 
+                                                      installed_repository, 
+                                                      strings_displayed=[], 
+                                                      strings_not_displayed=[], 
+                                                      dependencies_installed=False ):
         # Tool dependencies are not being installed in these functional tests. If this is changed, the test method will also need to be updated.
-        strings_not_displayed = []
         if not dependencies_installed:
-            strings_displayed = [ 'Missing tool dependencies' ]
+            strings_displayed.append( 'Missing tool dependencies' )
         else:
-            strings_displayed = [ 'Tool dependencies' ]
-        for dependency in installed_repository.metadata[ 'tool_dependencies' ]:
-            tool_dependency = installed_repository.metadata[ 'tool_dependencies' ][ dependency ]
-            strings_displayed.extend( [ tool_dependency[ 'name' ], tool_dependency[ 'version' ], tool_dependency[ 'type' ] ] )
-            if dependencies_installed:
-                strings_displayed.append( 'Installed' )
-            else:
-                strings_displayed.append( 'Never installed' )
+            strings_displayed.append( 'Tool dependencies' )
+        if dependencies_installed:
+            strings_displayed.append( 'Installed' )
+        else:
+            strings_displayed.append( 'Never installed' )
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
@@ -122,6 +122,7 @@ class ShedTwillTestCase( TwillTestCase ):
         Loop through each tool dictionary in the repository metadata associated with the received changeset_revision. 
         For each of these, check for a tools attribute, and load the tool metadata page if it exists, then display that tool's page.
         '''
+        test_db_util.refresh( repository )
         repository_metadata = self.get_repository_metadata_by_changeset_revision( repository, changeset_revision )
         metadata = repository_metadata.metadata
         if 'tools' not in metadata:
@@ -297,11 +298,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def display_installed_repository_manage_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
-        strings_displayed.extend( [ installed_repository.name, 
-                                    installed_repository.description, 
-                                    installed_repository.owner, 
-                                    installed_repository.tool_shed, 
-                                    installed_repository.installed_changeset_revision ] )
+        strings_displayed.append( installed_repository.installed_changeset_revision )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_installed_workflow_image( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/generate_workflow_image?repository_id=%s&workflow_name=%s' % \
@@ -316,19 +313,6 @@ class ShedTwillTestCase( TwillTestCase ):
             changeset_revision = self.get_repository_tip( repository )
             url = base_url
         self.visit_url( url )
-        metadata = self.get_repository_metadata_by_changeset_revision( repository, changeset_revision )
-        if metadata:
-            if 'tool_dependencies' in metadata.metadata:
-                strings_displayed.append( 'Tool dependencies' )
-                for dependency in metadata.metadata[ 'tool_dependencies' ]:
-                    if dependency == 'set_environment':
-                        for environment_dependency in metadata.metadata[ 'tool_dependencies' ][ dependency ]:
-                            strings_displayed.append( environment_dependency[ 'name' ] )
-                            strings_displayed.append( environment_dependency[ 'type' ] )
-                    else:
-                        strings_displayed.append( metadata.metadata[ 'tool_dependencies' ][ dependency ][ 'name' ] )
-                        strings_displayed.append( metadata.metadata[ 'tool_dependencies' ][ dependency ][ 'version' ] )
-                        strings_displayed.append( metadata.metadata[ 'tool_dependencies' ][ dependency ][ 'type' ] )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def display_repository_clone_page( self, owner_name, repository_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repos/%s/%s' % ( owner_name, repository_name )
@@ -907,19 +891,12 @@ class ShedTwillTestCase( TwillTestCase ):
         #        else:
         #            time.sleep( 1 )
         #            continue
-    def verify_installed_uninstalled_repositories( self, installed_repositories=[], uninstalled_repositories=[] ):
-        strings_displayed = []
-        strings_not_displayed = []
-        for repository_name, repository_owner in uninstalled_repositories:
-            repository = test_db_util.get_repository_by_name_and_owner( repository_name, repository_owner )
-            strings_not_displayed.extend( [ repository_name, self.get_repository_tip( repository ) ] )
+    def verify_installed_repositories( self, installed_repositories=[], uninstalled_repositories=[] ):
         for repository_name, repository_owner in installed_repositories:
-            repository = test_db_util.get_repository_by_name_and_owner( repository_name, repository_owner )
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, repository_owner )
             if galaxy_repository:
-                assert galaxy_repository.status == 'Installed', 'Repository %s should be installed, but is %s' % ( repository_name, galaxy_repository.status )
-            strings_displayed.extend( [ repository_name, self.get_repository_tip( repository ) ] )
-        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
+                assert galaxy_repository.status == 'Installed', \
+                    'Repository %s should be installed, but is %s' % ( repository_name, galaxy_repository.status )
     def verify_installed_repository_metadata_unchanged( self, name, owner ):
         installed_repository = test_db_util.get_installed_repository_by_name_owner( name, owner )
         metadata = installed_repository.metadata

@@ -261,7 +261,7 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
         for repository in [ emboss_datatypes_repository, emboss_repository, column_repository ]:
             self.check_repository_dependency( freebayes_repository, repository )
         freebayes_dependencies = [ freebayes_repository, emboss_datatypes_repository, emboss_repository, column_repository ]
-        strings_displayed = [ '%s depends on %s.' % ( freebayes_repository.name, ', '.join( repo.name for repo in freebayes_dependencies ) ) ]
+        strings_displayed = [ 'freebayes_0050 depends on freebayes_0050, emboss_datatypes_0050, emboss_0050, column_maker_0050.' ]
         self.display_manage_repository_page( freebayes_repository, 
                                              strings_displayed=strings_displayed )
     def test_0050_verify_tool_dependencies( self ):
@@ -269,7 +269,7 @@ class TestRepositoryCircularDependenciesToNLevels( ShedTwillTestCase ):
         freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         emboss_repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
         self.display_manage_repository_page( freebayes_repository, 
-                                             strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Tool dependencies' ] )
+                                             strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Tool dependencies', 'package' ] )
         self.display_manage_repository_page( emboss_repository, strings_displayed=[ 'Tool dependencies', 'emboss', '5.0.0', 'package' ] )
     def test_0055_verify_repository_metadata( self ):
         '''Verify that resetting the metadata does not change it.'''

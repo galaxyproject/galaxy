@@ -116,5 +116,5 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         '''Verify that the uploaded tool_dependencies.xml specifies the correct package versions.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.display_manage_repository_page( repository, 
-                                             strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Valid tools' ],
+                                             strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Valid tools', 'package' ],
                                              strings_not_displayed=[ 'Invalid tools' ] )
