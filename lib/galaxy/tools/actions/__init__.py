@@ -76,10 +76,10 @@ class DefaultToolAction( object ):
                             else:
                                 raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, conversion_extensions )
                         if parent:
-                            parent[input.name] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            parent[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 #allow explicit conversion to be stored in job_parameter table
-                                parent[ conversion_name ] = conversion_data.id #a more robust way to determine JSONable value is desired
+                                parent[ conversion_name ][i] = conversion_data.id #a more robust way to determine JSONable value is desired
                         else:
                             param_values[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
