@@ -1527,14 +1527,18 @@ def remove_from_data_manager( app, repository ):
         root = tree.getroot()
         assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % ( shed_data_manager_conf_filename )
         guids = [ data_manager_dict.get( 'guid' ) for data_manager_dict in metadata_dict.get( 'data_manager', {} ).get( 'data_managers', {} ).itervalues() if 'guid' in data_manager_dict ]
+        data_manager_config_has_changes = False
         config_elems = []
         for elem in root:
             if elem.tag != 'data_manager' or elem.get( 'guid', None ) not in guids:
                 config_elems.append( elem )
+            else:
+                data_manager_config_has_changes = True
         #remove data managers from in memory
         app.data_managers.remove_manager( guids )
         # Persist the altered shed_data_manager_config file.
-        suc.data_manager_config_elems_to_xml_file( app, config_elems, shed_data_manager_conf_filename  )
+        if data_manager_config_has_changes:
+            suc.data_manager_config_elems_to_xml_file( app, config_elems, shed_data_manager_conf_filename  )
 def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     # A tool shed repository is being uninstalled so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have
