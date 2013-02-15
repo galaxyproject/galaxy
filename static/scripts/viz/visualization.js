@@ -236,8 +236,8 @@ var GenomeDataManager = Cache.extend({
             ready_deferred = $.Deferred(),
             // If requesting raw data, query dataset state; if requesting (converted) data, 
             // need to query converted datasets state.
-            query_type = (this.get('data_type') == 'raw_data' ? 'state' : 
-                          this.get('data_type') == 'data' ? 'converted_datasets_state' : "error" ),
+            query_type = (this.get('data_type') === 'raw_data' ? 'state' : 
+                          this.get('data_type') === 'data' ? 'converted_datasets_state' : "error" ),
             ss_deferred = new util_mod.ServerStateDeferred({
                 ajax_settings: {
                     url: this.get('dataset').url(),
@@ -575,7 +575,7 @@ var Genome = Backbone.Model.extend({
      */
     get_chrom_region: function(chr_name) {
         var chrom_info = _.find(this.get_chroms_info(), function(chrom_info) { 
-            return chrom_info.chrom == chr_name;
+            return chrom_info.chrom === chr_name;
         });
         return new GenomeRegion({
             chrom: chrom_info.chrom,
