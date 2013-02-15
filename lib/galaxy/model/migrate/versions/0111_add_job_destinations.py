@@ -26,14 +26,14 @@ def upgrade():
     try:
         c.create( Job_table )
         assert c is Job_table.c.destination_id
-    except:
+    except Exception, e:
         log.error( "Adding column 'destination_id' to job table failed: %s" % str( e ) )
 
     c = Column( "destination_params", JSONType, nullable=True )
     try:
         c.create( Job_table )
         assert c is Job_table.c.destination_params
-    except:
+    except Exception, e:
         log.error( "Adding column 'destination_params' to job table failed: %s" % str( e ) )
 
 def downgrade():
