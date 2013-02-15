@@ -705,7 +705,7 @@ class AdminToolshed( AdminGalaxy ):
                                              new_install=True )
         if 'data_manager' in metadata_dict:
             new_data_managers = shed_util.install_data_managers( trans.app, trans.app.config.shed_data_manager_config_file, metadata_dict, shed_config_dict, relative_install_dir,
-                                                    tool_shed_repository, repository_tools_tups )
+                                                                 tool_shed_repository, repository_tools_tups )
         if 'datatypes' in metadata_dict:
             tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
