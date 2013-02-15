@@ -2,12 +2,12 @@ from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 
 freebayes_repository_name = 'freebayes_0040'
-freebayes_repository_description = "Galaxy's freebayes tool"
-freebayes_repository_long_description = "Long description of Galaxy's freebayes tool"
+freebayes_repository_description = "Galaxy's freebayes tool for test 0040"
+freebayes_repository_long_description = "Long description of Galaxy's freebayes tool for test 0040"
 
 filtering_repository_name = 'filtering_0040'
-filtering_repository_description = "Galaxy's filtering tool"
-filtering_repository_long_description = "Long description of Galaxy's filtering tool"
+filtering_repository_description = "Galaxy's filtering tool for test 0040"
+filtering_repository_long_description = "Long description of Galaxy's filtering tool for test 0040"
 
 category_name = 'test_0040_repository_circular_dependencies'
 
@@ -164,6 +164,6 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         self.check_galaxy_repository_tool_panel_section( installed_freebayes_repository, 'freebayes' )
         strings_displayed = [ 'Missing repository', 'freebayes' ]
         self.display_installed_repository_manage_page( installed_filtering_repository, strings_displayed=strings_displayed )
-        self.check_galaxy_repository_db_status( freebayes_repository_name, 
-                                                common.test_user_1_name, 
+        self.check_galaxy_repository_db_status( 'freebayes_0040', 
+                                                'user1', 
                                                 'Uninstalled' )

@@ -941,7 +941,10 @@ class ShedTwillTestCase( TwillTestCase ):
             for data_table in data_tables:
                 if 'name' in table_elem.attrib and table_elem.attrib[ 'name' ] == data_table:
                     file_elem = table_elem.find( 'file' )
-                    assert os.path.exists( file_elem.attrib[ 'path' ] ), 'Tool data table file %s not found.' % file_elem.path
+                    file_path = file_elem.get( 'path', None )
+                    full_path = os.path.join( self.tool_data_path, file_path )
+                    assert file_path is not None, 'No file path configured for this data table.'
+                    assert os.path.exists( full_path ), 'Tool data table file %s not found.' % full_path
                     found = True
                     break
                 assert found, 'No entry for %s in %s.' % ( data_table, self.shed_tool_data_table_conf )

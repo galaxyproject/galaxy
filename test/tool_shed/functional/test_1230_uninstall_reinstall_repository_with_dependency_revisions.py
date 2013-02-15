@@ -158,10 +158,10 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                  strings_displayed=strings_displayed,
                                  new_tool_panel_section='test_1210' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'emboss_0030',
+                              'Galaxy wrappers for Emboss version 5.0.0 tools',
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         current_datatypes = int( self.get_datatypes_count() )
@@ -182,10 +182,10 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         '''Reinstall the emboss repository.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         self.reinstall_repository( installed_repository )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'emboss_0030',
+                              'Galaxy wrappers for Emboss version 5.0.0 tools',
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         self.display_installed_repository_manage_page( installed_repository, 
@@ -201,10 +201,10 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         '''Reactivate the emboss repository and verify that it now shows up in the list of installed repositories.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         self.reactivate_repository( installed_repository )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'emboss_0030',
+                              'Galaxy wrappers for Emboss version 5.0.0 tools',
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         self.display_installed_repository_manage_page( installed_repository, 

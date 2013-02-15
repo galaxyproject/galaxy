@@ -243,11 +243,11 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
         strings_displayed.append( self.url.replace( 'http://', '' ) )
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=[] )
         checks = [ ( tool_repository,
-                     [ tool_repository.name, tool_repository.owner, tool_repository.installed_changeset_revision ],
+                     [ 'bwa_tool_repository_0100', 'user1', tool_repository.installed_changeset_revision ],
                      [ 'Missing tool dependencies' ] ),
                    ( base_repository, 
-                     [ base_repository.name, base_repository.owner, base_repository.installed_changeset_revision, tool_repository.name, 
-                       tool_repository.owner, tool_repository.installed_changeset_revision ],
+                     [ 'bwa_base_repository_0100', 'user1', base_repository.installed_changeset_revision, 'bwa_tool_repository_0100', 
+                       tool_repository.installed_changeset_revision ],
                      [ 'Missing tool dependencies' ] ) ]
         for repository, strings_displayed, strings_not_displayed in checks:
             self.display_installed_repository_manage_page( repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )

@@ -270,9 +270,9 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         bwa_color_revision = self.get_repository_tip( bwa_color_repository )
         self.search_for_valid_tools( search_fields={ 'tool_id': 'bwa' }, 
                                      exact_matches=False, from_galaxy=True, 
-                                     strings_displayed=[ bwa_color_repository_name, bwa_base_repository_name, bwa_base_revision, bwa_color_revision  ] )
-        strings_displayed=[ freebayes_repository_name, emboss_repository_name, filtering_repository_name ]
-        strings_displayed.extend( [ bwa_color_repository_name, bwa_base_repository_name, emboss_datatypes_repository_name ] )
+                                     strings_displayed=[ 'bwa_color_0090', 'bwa_base_0090', bwa_base_revision, bwa_color_revision  ] )
+        strings_displayed=[ 'freebayes_0090', 'emboss_0090', 'filtering_0090' ]
+        strings_displayed.extend( [ 'bwa_color_0090', 'bwa_base_0090', 'emboss_datatypes_0090' ] )
         strings_displayed.extend( [ 'bwa', 'Handle', 'tool dependencies' ] )
         repositories_to_install = [ bwa_color_repository, bwa_base_repository ]
         # BWA is a good candidate for testing the installation of tool dependencies, but it is a core requirement of functional 

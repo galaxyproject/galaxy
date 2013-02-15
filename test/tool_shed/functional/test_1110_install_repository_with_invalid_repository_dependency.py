@@ -174,7 +174,7 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
-        preview_strings_displayed = [ repository.name, self.get_repository_tip( repository ), 'will be ignored' ]
+        preview_strings_displayed = [ 'emboss_0110', self.get_repository_tip( repository ), 'will be ignored' ]
         self.install_repository( emboss_repository_name, 
                                  common.test_user_1_name, 
                                  category_name,

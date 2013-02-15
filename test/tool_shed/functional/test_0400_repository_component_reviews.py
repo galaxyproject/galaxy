@@ -474,7 +474,7 @@ class TestRepositoryComponentReviews( ShedTwillTestCase ):
                           valid_tools_only=True,
                           uncompress_file=True,
                           remove_repo_files_not_in_tar=False, 
-                          commit_message='Uploaded filtering 1.1.0 tarball.',
+                          commit_message='Uploaded filtering test data.',
                           strings_displayed=[], 
                           strings_not_displayed=[] )
     def test_0110_review_new_changeset_functional_tests( self ):

@@ -6,8 +6,8 @@ datatypes_repository_description = "Galaxy applicable data formats used by Embos
 datatypes_repository_long_description = "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
 
 emboss_repository_name = 'emboss_0020'
-emboss_repository_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
-emboss_repository_long_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
+emboss_repository_description = 'Galaxy wrappers for Emboss version 5.0.0 tools for test 0020'
+emboss_repository_long_description = 'Galaxy wrappers for Emboss version 5.0.0 tools for test 0020'
 
 base_datatypes_count = 0
 repository_datatypes_count = 0
@@ -103,10 +103,10 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                  install_tool_dependencies=False, 
                                  new_tool_panel_section='test_1020' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0020', common.test_user_1_name )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'emboss_0020',
+                              'Galaxy wrappers for Emboss version 5.0.0 tools for test 0020',
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         self.display_installed_repository_manage_page( installed_repository, 

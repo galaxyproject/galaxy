@@ -83,7 +83,9 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
-        self.set_repository_malicious( repository, set_malicious=True, strings_displayed=[ 'The repository tip has been defined as malicious.' ] )
+        self.set_repository_malicious( repository, 
+                                       set_malicious=True, 
+                                       strings_displayed=[ 'The repository tip has been defined as malicious.' ] )
         self.set_repository_malicious( repository, 
                                        set_malicious=False, 
                                        strings_displayed=[ 'The repository tip has been defined as <b>not</b> malicious.' ] )
@@ -92,8 +94,8 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         self.set_repository_deprecated( repository, 
                                         strings_displayed=[ 'has been marked as deprecated', 'Mark as not deprecated' ] )
         self.display_manage_repository_page( repository, 
-                                strings_displayed=[ 'This repository has been marked as deprecated' ],
-                                strings_not_displayed=[ 'Upload files', 'Reset all repository metadata' ] )
+                                             strings_displayed=[ 'This repository has been marked as deprecated' ],
+                                             strings_not_displayed=[ 'Upload files', 'Reset all repository metadata' ] )
         self.browse_repository( repository, strings_not_displayed=[ 'Upload files' ] )
         self.set_repository_deprecated( repository, 
                                         strings_displayed=[ 'has been marked as not deprecated', 'Mark as deprecated' ],
@@ -197,16 +199,18 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0090_verify_reserved_repository_name_handling( self ):
         '''Check that reserved repository names are handled correctly.'''
         category = test_db_util.get_category_by_name( 'Test 0000 Basic Repository Features 1' )
+        error_message = 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a repository name.'
         self.get_or_create_repository( name='repos', 
                                        description=repository_description, 
                                        long_description=repository_long_description, 
                                        owner=common.test_user_1_name,
                                        category_id=self.security.encode_id( category.id ), 
-                                       strings_displayed=[ 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a repository name.' ] )
+                                       strings_displayed=[ error_message ] )
     def test_0100_verify_reserved_username_handling( self ):
         '''Check that reserved usernames are handled correctly.'''
         self.logout()
         self.login( email='baduser@bx.psu.edu', username='repos' )
         test_user_1 = test_db_util.get_user( 'baduser@bx.psu.edu' )
         assert test_user_1 is None, 'Creating user with public name "repos" succeeded.'
-        self.check_for_strings( strings_displayed=[ 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a public user name.' ] )
+        error_message = 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a public user name.'
+        self.check_for_strings( strings_displayed=[ error_message ] )

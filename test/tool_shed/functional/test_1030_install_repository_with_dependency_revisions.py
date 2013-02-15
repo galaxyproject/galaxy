@@ -8,8 +8,8 @@ datatypes_repository_long_description = "Galaxy applicable data formats used by 
 emboss_repository_name = 'emboss_0030'
 emboss_5_repository_name = 'emboss_5_0030'
 emboss_6_repository_name = 'emboss_6_0030'
-emboss_repository_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
-emboss_repository_long_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
+emboss_repository_description = 'Galaxy wrappers for Emboss version 5.0.0 tools for test 0030'
+emboss_repository_long_description = 'Galaxy wrappers for Emboss version 5.0.0 tools for test 0030'
 
 base_datatypes_count = 0
 repository_datatypes_count = 0
@@ -173,8 +173,8 @@ class RepositoryWithDependencyRevisions( ShedTwillTestCase ):
                                  install_tool_dependencies=False, 
                                  new_tool_panel_section='test_1030' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'emboss_0030', common.test_user_1_name )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
+        strings_displayed = [ 'emboss_0030',
+                              'Galaxy wrappers for Emboss version 5.0.0 tools for test 0030',
                               installed_repository.owner, 
                               installed_repository.tool_shed, 
                               installed_repository.installed_changeset_revision ]

@@ -131,15 +131,15 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                                                             common.test_user_1_name )
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                            common.test_user_1_name )
-        browse_strings_displayed = [ installed_convert_repository.name,
-                                     installed_convert_repository.description,
-                                     installed_convert_repository.tool_shed, 
+        browse_strings_displayed = [ 'convert_chars_0080',
+                                     'Convert delimiters',
+                                     self.url.replace( 'http://', '' ), 
                                      installed_convert_repository.installed_changeset_revision ]
-        strings_displayed = [ installed_convert_repository.name,
-                              installed_convert_repository.description,
-                              installed_convert_repository.tool_shed, 
+        strings_displayed = [ 'convert_chars_0080',
+                              'Convert delimiters',
+                              self.url.replace( 'http://', '' ), 
                               installed_convert_repository.installed_changeset_revision,
-                              installed_column_repository.name,
+                              'column_maker_0080',
                               installed_column_repository.installed_changeset_revision,
                               'Missing repository dependencies' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=browse_strings_displayed )
@@ -157,18 +157,18 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                                                             common.test_user_1_name )
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                            common.test_user_1_name )
-        browse_strings_displayed = [ installed_convert_repository.name,
-                                     installed_convert_repository.description,
-                                     installed_convert_repository.tool_shed, 
+        browse_strings_displayed = [ 'convert_chars_0080',
+                                     'Convert delimiters',
+                                     self.url.replace( 'http://', '' ), 
                                      installed_convert_repository.installed_changeset_revision,
-                                     installed_column_repository.name,
-                                     installed_column_repository.description,
+                                     'column_maker_0080',
+                                     'Add column',
                                      installed_column_repository.installed_changeset_revision ]
-        strings_displayed = [ installed_column_repository.name,
-                              installed_column_repository.description,
-                              installed_column_repository.tool_shed, 
+        strings_displayed = [ 'column_maker_0080',
+                              'Add column',
+                              self.url.replace( 'http://', '' ), 
                               installed_column_repository.installed_changeset_revision,
-                              installed_convert_repository.name,
+                              'convert_chars_0080',
                               installed_convert_repository.installed_changeset_revision,
                               'Installed repository dependencies' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=browse_strings_displayed )
@@ -181,11 +181,11 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.uninstall_repository( installed_convert_repository, remove_from_disk=False )
-        strings_displayed = [ installed_column_repository.name,
-                              installed_column_repository.description,
-                              installed_column_repository.tool_shed, 
+        strings_displayed = [ 'column_maker_0080',
+                              'Add column',
+                              self.url.replace( 'http://', '' ), 
                               installed_column_repository.installed_changeset_revision,
-                              installed_convert_repository.name,
+                              'convert_chars_0080',
                               installed_convert_repository.installed_changeset_revision,
                               'Missing repository dependencies',
                               'Deactivated' ]
@@ -198,11 +198,11 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.reactivate_repository( installed_convert_repository )
-        strings_displayed = [ installed_convert_repository.name,
-                              installed_convert_repository.description,
-                              installed_convert_repository.tool_shed, 
+        strings_displayed = [ 'convert_chars_0080',
+                              'Convert delimiters',
+                              self.url.replace( 'http://', '' ), 
                               installed_convert_repository.installed_changeset_revision,
-                              installed_column_repository.name,
+                              'column_maker_0080',
                               installed_column_repository.installed_changeset_revision,
                               'Installed repository dependencies' ]
     def test_0040_deactivate_column_repository( self ):
@@ -212,11 +212,11 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.uninstall_repository( installed_column_repository, remove_from_disk=False )
-        strings_displayed = [ installed_convert_repository.name,
-                              installed_convert_repository.description,
-                              installed_convert_repository.tool_shed, 
+        strings_displayed = [ 'convert_chars_0080',
+                              'Convert delimiters',
+                              self.url.replace( 'http://', '' ), 
                               installed_convert_repository.installed_changeset_revision,
-                              installed_column_repository.name,
+                              'column_maker_0080',
                               installed_column_repository.installed_changeset_revision,
                               'Missing repository dependencies',
                               'Deactivated' ]
@@ -229,9 +229,9 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.uninstall_repository( installed_convert_repository, remove_from_disk=False )
-        strings_not_displayed = [ installed_column_repository.name,
+        strings_not_displayed = [ 'column_maker_0080',
                                   installed_column_repository.installed_changeset_revision,
-                                  installed_convert_repository.name,
+                                  'convert_chars_0080',
                                   installed_convert_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
     def test_0050_reactivate_column_repository( self ):
@@ -241,11 +241,11 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.reactivate_repository( installed_column_repository )
-        strings_displayed = [ installed_column_repository.name,
-                              installed_column_repository.description,
-                              installed_column_repository.tool_shed, 
+        strings_displayed = [ 'column_maker_0080',
+                              'Add column',
+                              self.url.replace( 'http://', '' ), 
                               installed_column_repository.installed_changeset_revision,
-                              installed_convert_repository.name,
+                              'convert_chars_0080',
                               installed_convert_repository.installed_changeset_revision,
                               'Missing repository dependencies',
                               'Deactivated' ]
@@ -258,20 +258,20 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.reactivate_repository( installed_convert_repository )
-        strings_displayed = [ installed_column_repository.name,
-                              installed_column_repository.description,
-                              installed_column_repository.tool_shed, 
+        strings_displayed = [ 'column_maker_0080',
+                              'Add column',
+                              self.url.replace( 'http://', '' ), 
                               installed_column_repository.installed_changeset_revision,
-                              installed_convert_repository.name,
+                              'convert_chars_0080',
                               installed_convert_repository.installed_changeset_revision,
                               'Installed repository dependencies' ]
         self.display_installed_repository_manage_page( installed_column_repository, 
                                                        strings_displayed=strings_displayed )
-        strings_displayed = [ installed_convert_repository.name,
-                              installed_convert_repository.description,
-                              installed_convert_repository.tool_shed, 
+        strings_displayed = [ 'convert_chars_0080',
+                              'Convert delimiters',
+                              self.url.replace( 'http://', '' ), 
                               installed_convert_repository.installed_changeset_revision,
-                              installed_column_repository.name,
+                              'column_maker_0080',
                               installed_column_repository.installed_changeset_revision,
                               'Installed repository dependencies' ]
         self.display_installed_repository_manage_page( installed_convert_repository, 
@@ -283,11 +283,11 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.uninstall_repository( installed_column_repository, remove_from_disk=True )
-        strings_displayed = [ installed_convert_repository.name,
-                              installed_convert_repository.description,
-                              installed_convert_repository.tool_shed, 
+        strings_displayed = [ 'convert_chars_0080',
+                              'Convert delimiters',
+                              self.url.replace( 'http://', '' ), 
                               installed_convert_repository.installed_changeset_revision,
-                              installed_column_repository.name,
+                              'column_maker_0080',
                               installed_column_repository.installed_changeset_revision,
                               'Missing repository dependencies',
                               'Uninstalled' ]
@@ -301,20 +301,20 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.reinstall_repository( installed_column_repository, install_repository_dependencies=False )
-        strings_displayed = [ installed_column_repository.name,
-                              installed_column_repository.description,
-                              installed_column_repository.tool_shed, 
+        strings_displayed = [ 'column_maker_0080',
+                              'Add column',
+                              self.url.replace( 'http://', '' ), 
                               installed_column_repository.installed_changeset_revision,
-                              installed_convert_repository.name,
+                              'convert_chars_0080',
                               installed_convert_repository.installed_changeset_revision,
                               'Installed repository dependencies' ]
         self.display_installed_repository_manage_page( installed_column_repository, 
                                                        strings_displayed=strings_displayed )
-        strings_displayed = [ installed_convert_repository.name,
-                              installed_convert_repository.description,
-                              installed_convert_repository.tool_shed, 
+        strings_displayed = [ 'convert_chars_0080',
+                              'Convert delimiters',
+                              self.url.replace( 'http://', '' ), 
                               installed_convert_repository.installed_changeset_revision,
-                              installed_column_repository.name,
+                              'column_maker_0080',
                               installed_column_repository.installed_changeset_revision,
                               'Installed repository dependencies' ]
         self.display_installed_repository_manage_page( installed_convert_repository, 
@@ -326,11 +326,11 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.uninstall_repository( installed_convert_repository, remove_from_disk=True )
-        strings_displayed = [ installed_column_repository.name,
-                              installed_column_repository.description,
-                              installed_column_repository.tool_shed, 
+        strings_displayed = [ 'column_maker_0080',
+                              'Add column',
+                              self.url.replace( 'http://', '' ), 
                               installed_column_repository.installed_changeset_revision,
-                              installed_convert_repository.name,
+                              'convert_chars_0080',
                               installed_convert_repository.installed_changeset_revision,
                               'Missing repository dependencies',
                               'Uninstalled' ]
@@ -344,11 +344,11 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, 
                                                                                             common.test_user_1_name )
         self.uninstall_repository( installed_column_repository, remove_from_disk=True )
-        strings_displayed = [ installed_convert_repository.name,
-                              installed_convert_repository.description,
-                              installed_convert_repository.tool_shed, 
+        strings_displayed = [ 'convert_chars_0080',
+                              'Convert delimiters',
+                              self.url.replace( 'http://', '' ), 
                               installed_convert_repository.installed_changeset_revision,
-                              installed_column_repository.name,
+                              'column_maker_0080',
                               installed_column_repository.installed_changeset_revision,
                               'Missing repository dependencies',
                               'Activate or reinstall repository',
@@ -365,20 +365,20 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                    install_repository_dependencies=True, 
                                    no_changes=False, 
                                    new_tool_panel_section='convert_maker' )
-        strings_displayed = [ installed_column_repository.name,
-                              installed_column_repository.description,
-                              installed_column_repository.tool_shed, 
+        strings_displayed = [ 'column_maker_0080',
+                              'Add column',
+                              self.url.replace( 'http://', '' ), 
                               installed_column_repository.installed_changeset_revision,
-                              installed_convert_repository.name,
+                              'convert_chars_0080',
                               installed_convert_repository.installed_changeset_revision,
                               'Installed repository dependencies' ]
         self.display_installed_repository_manage_page( installed_column_repository, 
                                                        strings_displayed=strings_displayed )
-        strings_displayed = [ installed_convert_repository.name,
-                              installed_convert_repository.description,
-                              installed_convert_repository.tool_shed, 
+        strings_displayed = [ 'convert_chars_0080',
+                              'Convert delimiters',
+                              self.url.replace( 'http://', '' ), 
                               installed_convert_repository.installed_changeset_revision,
-                              installed_column_repository.name,
+                              'column_maker_0080',
                               installed_column_repository.installed_changeset_revision,
                               'Installed repository dependencies' ]
         self.display_installed_repository_manage_page( installed_convert_repository, 

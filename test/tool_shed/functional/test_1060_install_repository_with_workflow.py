@@ -84,6 +84,6 @@ class ToolWithRepositoryDependencies( ShedTwillTestCase ):
                                                workflow_name, 
                                                strings_displayed=[ '#EBD9B2' ],
                                                strings_not_displayed=[ '#EBBCB2' ] )
-        self.display_all_workflows( strings_not_displayed=[ workflow_name ] )
+        self.display_all_workflows( strings_not_displayed=[ 'Workflow for 0060_filter_workflow_repository' ] )
         self.import_workflow( installed_repository, workflow_name )
-        self.display_all_workflows( strings_displayed=[ workflow_name ] )
+        self.display_all_workflows( strings_displayed=[ 'Workflow for 0060_filter_workflow_repository' ] )

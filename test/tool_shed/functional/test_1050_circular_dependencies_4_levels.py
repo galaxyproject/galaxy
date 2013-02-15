@@ -343,9 +343,9 @@ class TestInstallRepositoryCircularDependencies( ShedTwillTestCase ):
         assert original_datatypes < self.get_datatypes_count(), 'Installing a repository that depends on emboss_datatypes did not add datatypes.'
         emboss_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         datatypes_repository = test_db_util.get_installed_repository_by_name_owner( emboss_datatypes_repository_name, common.test_user_1_name )
-        strings_displayed = [ emboss_repository.name, 
+        strings_displayed = [ 'emboss_0050', 
+                              'emboss_datatypes_0050', 
                               emboss_repository.installed_changeset_revision, 
-                              datatypes_repository.name, 
                               datatypes_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         # Installing freebayes should automatically reinstall emboss and reactivate emboss_datatypes.

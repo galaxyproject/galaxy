@@ -1,6 +1,7 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
-
+import logging
+log = logging.getLogger(__name__)
 datatypes_repository_name = 'emboss_datatypes_0030'
 datatypes_repository_description = "Galaxy applicable data formats used by Emboss tools."
 datatypes_repository_long_description = "Galaxy applicable data formats used by Emboss tools.  This repository contains no tools."
@@ -8,8 +9,8 @@ datatypes_repository_long_description = "Galaxy applicable data formats used by 
 emboss_repository_name = 'emboss_0030'
 emboss_5_repository_name = 'emboss_5_0030'
 emboss_6_repository_name = 'emboss_6_0030'
-emboss_repository_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
-emboss_repository_long_description = 'Galaxy wrappers for Emboss version 5.0.0 tools'
+emboss_repository_description = 'Galaxy wrappers for Emboss version 5.0.0 tools for test 0030'
+emboss_repository_long_description = 'Galaxy wrappers for Emboss version 5.0.0 tools for test 0030'
 
 class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
     '''Test dependencies on different revisions of a repository.'''
@@ -91,10 +92,10 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         category = test_db_util.get_category_by_name( 'Test 0030 Repository Dependency Revisions' )
         repository = self.get_or_create_repository( name=emboss_repository_name, 
-                                                           description=emboss_repository_description, 
-                                                           long_description=emboss_repository_long_description, 
-                                                           owner=common.test_user_1_name,
-                                                           category_id=self.security.encode_id( category.id ) )
+                                                    description=emboss_repository_description, 
+                                                    long_description=emboss_repository_long_description, 
+                                                    owner=common.test_user_1_name,
+                                                    category_id=self.security.encode_id( category.id ) )
         self.upload_file( repository, 
                           filename='emboss/emboss.tar', 
                           filepath=None,
@@ -175,14 +176,8 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
         datatypes_tip = self.get_repository_tip( datatypes_repository )
         # Iterate through all metadata revisions and check for repository dependencies.
         for metadata, changeset_revision in repository_metadata:
-            strings_displayed = [ str( metadata_elem ) for metadata_elem in metadata[ 'repository_dependencies' ][ 'repository_dependencies' ][ 0 ] ]
-            # Remove the tool shed URL, because that's not displayed on the page (yet?)
-            strings_displayed.pop( strings_displayed.index( self.url ) )
             # Add the dependency description and datatypes repository details to the strings to check.
-            strings_displayed.extend( [ metadata[ 'repository_dependencies' ][ 'description' ], 
-                                      datatypes_repository_name, 
-                                      datatypes_repository.user.username, 
-                                      datatypes_tip ] )
+            strings_displayed.extend( [ 'Emboss requires the Emboss', 'emboss_datatypes_0030', 'user1', datatypes_tip ] )
             strings_displayed.extend( [ 'Tool dependencies', 'emboss', '5.0.0', 'package' ] )
             self.display_manage_repository_page( repository, 
                                                  changeset_revision=changeset_revision, 

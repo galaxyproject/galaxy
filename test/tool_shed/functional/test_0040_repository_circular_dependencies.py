@@ -2,12 +2,12 @@ from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 
 freebayes_repository_name = 'freebayes_0040'
-freebayes_repository_description = "Galaxy's freebayes tool"
-freebayes_repository_long_description = "Long description of Galaxy's freebayes tool"
+freebayes_repository_description = "Galaxy's freebayes tool for test 0040"
+freebayes_repository_long_description = "Long description of Galaxy's freebayes tool for test 0040"
 
 filtering_repository_name = 'filtering_0040'
-filtering_repository_description = "Galaxy's filtering tool"
-filtering_repository_long_description = "Long description of Galaxy's filtering tool"
+filtering_repository_description = "Galaxy's filtering tool for test 0040"
+filtering_repository_long_description = "Long description of Galaxy's filtering tool for test 0040"
 
 class TestRepositoryCircularDependencies( ShedTwillTestCase ):
     '''Verify that the code correctly displays repositories with circular repository dependencies.'''

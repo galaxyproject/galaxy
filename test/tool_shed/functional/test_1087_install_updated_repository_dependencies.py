@@ -103,7 +103,7 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         '''Reinstall column_maker and verify that it now shows repository dependencies.'''
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
         convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
-        strings_displayed=[ 'Handle repository dependencies', convert_repository.name, self.get_repository_tip( convert_repository ) ]
+        strings_displayed=[ 'Handle repository dependencies', 'convert_chars_1087', self.get_repository_tip( convert_repository ) ]
         # Due to twill's limitations, only check for strings on the (redirected) reselect tool panel section page, don't actually reinstall.
         url = '/admin_toolshed/browse_repositories?operation=activate+or+reinstall&id=%s' % self.security.encode_id( installed_column_repository.id )
         self.visit_galaxy_url( url )

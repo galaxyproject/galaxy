@@ -111,10 +111,10 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
                                  install_tool_dependencies=False, 
                                  new_tool_panel_section='test_1010' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, common.test_user_1_name )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'freebayes_0010',
+                              "Galaxy's freebayes tool",
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         self.display_installed_repository_manage_page( installed_repository, 

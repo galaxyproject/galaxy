@@ -96,10 +96,10 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                  strings_displayed=strings_displayed,
                                  new_tool_panel_section='test_1210' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'freebayes_0010', common.test_user_1_name )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'freebayes_0010',
+                              "Galaxy's freebayes tool",
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
     def test_0015_uninstall_freebayes_repository( self ):
@@ -112,10 +112,10 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         '''Reinstall the freebayes repository.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'freebayes_0010', common.test_user_1_name )
         self.reinstall_repository( installed_repository )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'freebayes_0010',
+                              "Galaxy's freebayes tool",
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         self.display_installed_repository_manage_page( installed_repository, 
@@ -131,10 +131,10 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         '''Reactivate the freebayes repository and verify that it now shows up in the list of installed repositories.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'freebayes_0010', common.test_user_1_name )
         self.reactivate_repository( installed_repository )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'freebayes_0010',
+                              "Galaxy's freebayes tool",
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         self.display_installed_repository_manage_page( installed_repository, 
