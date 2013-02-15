@@ -64,31 +64,38 @@ class DataManagers( object ):
             self.managed_data_tables[ data_table_name ].append( data_manager )
     def get_manager( self, *args, **kwds ):
         return self.data_managers.get( *args, **kwds )
-    def remove_manager( self, manager_id ):
-        data_manager = self.get_manager( manager_id, None )
-        if data_manager is not None:
-            del self.data_managers[ manager_id ]
-            #remove tool from toolbox
-            if data_manager.tool:
-                self.app.toolbox.remove_tool_by_id( data_manager.tool.id )
-            #determine if any data_tables are no longer tracked
-            for data_table_name in data_manager.data_tables.keys():
-                remove_data_table_tracking = True
-                for other_data_manager in self.data_managers.itervalues():
-                    if data_table_name in other_data_manager.data_tables:
-                        remove_data_table_tracking = False
-                        break
-                if remove_data_table_tracking and data_table_name in self.managed_data_tables:
-                    del self.managed_data_tables[ data_table_name ]
+    def remove_manager( self, manager_ids ):
+        if not isinstance( manager_ids, list ):
+            manager_ids = [ manager_ids ]
+        for manager_id in manager_ids:
+            data_manager = self.get_manager( manager_id, None )
+            if data_manager is not None:
+                del self.data_managers[ manager_id ]
+                #remove tool from toolbox
+                if data_manager.tool:
+                    self.app.toolbox.remove_tool_by_id( data_manager.tool.id )
+                #determine if any data_tables are no longer tracked
+                for data_table_name in data_manager.data_tables.keys():
+                    remove_data_table_tracking = True
+                    for other_data_manager in self.data_managers.itervalues():
+                        if data_table_name in other_data_manager.data_tables:
+                            remove_data_table_tracking = False
+                            break
+                    if remove_data_table_tracking and data_table_name in self.managed_data_tables:
+                        del self.managed_data_tables[ data_table_name ]
 
 class DataManager( object ):
+    GUID_TYPE = 'data_manager'
+    DEFAULT_VERSION = "0.0.1"
+    
     def __init__( self, data_managers, elem=None, tool_path=None ):
         self.data_managers = data_managers
         self.declared_id = None
         self.name = None
         self.description = None
+        self.version = self.DEFAULT_VERSION
+        self.guid = None
         self.tool = None
-        self.tool_guid = None
         self.data_tables = odict()
         self.output_ref_by_data_table = {}
         self.move_by_data_table_column = {}
@@ -98,12 +105,14 @@ class DataManager( object ):
     def load_from_element( self, elem, tool_path ):
         assert elem.tag == 'data_manager', 'A data manager configuration must have a "data_manager" tag as the root. "%s" is present' % ( root.tag )
         self.declared_id = elem.get( 'id', None )
+        self.guid = elem.get( 'guid', None )
         path = elem.get( 'tool_file', None )
+        tool_guid = None
         if path is None:
             tool_elem = elem.find( 'tool' )
             assert tool_elem is not None, "Error loading tool for data manager. Make sure that a tool_file attribute or a tool tag set has been defined:\n%s" % ( util.xml_to_string( elem ) )
             path = tool_elem.get( "file", None )
-            self.tool_guid = tool_elem.get( "guid", None )
+            tool_guid = tool_elem.get( "guid", None )
             #use shed_conf_file to determine tool_path
             shed_conf_file = elem.get( "shed_conf_file", None )
             if shed_conf_file:
@@ -111,7 +120,7 @@ class DataManager( object ):
                 if shed_conf:
                     tool_path = shed_conf.get( "tool_path", tool_path )
         assert path is not None, "A tool file path could not be determined:\n%s" % ( util.xml_to_string( elem ) )
-        self.load_tool( os.path.join( tool_path, path ), guid=self.tool_guid, data_manager_id=self.id )
+        self.load_tool( os.path.join( tool_path, path ), guid=tool_guid, data_manager_id=self.id )
         self.name = elem.get( 'name', self.tool.name )
         self.description = elem.get( 'description', self.tool.description )
         
@@ -164,7 +173,7 @@ class DataManager( object ):
                         self.move_by_data_table_column[ data_table_name ][ data_table_coumn_name ] = dict( type=move_type, source_base=source_base, source_value=source_value, target_base=target_base, target_value=target_value, relativize_symlinks=relativize_symlinks )
     @property
     def id( self ):
-        return self.tool_guid or self.declared_id #if we have a tool with a guid, we will use that as the tool_manager id
+        return self.guid or self.declared_id #if we have a guid, we will use that as the data_manager id
     def load_tool( self, tool_filename, guid=None, data_manager_id=None ):
         tool = self.data_managers.app.toolbox.load_tool( tool_filename, guid=guid, data_manager_id=data_manager_id )
         self.data_managers.app.toolbox.data_manager_tools[ tool.id ] = tool

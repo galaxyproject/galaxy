@@ -1194,7 +1194,11 @@ def install_data_managers( app, shed_data_manager_conf_filename, metadata_dict, 
                 if data_manager_dict is None:
                     log.error( "Data manager metadata is not defined properly for '%s'." % ( data_manager_id ) )
                     continue
-                
+                guid = data_manager_dict.get( 'guid', None )
+                if guid is None:
+                    log.error( "Data manager guid '%s' is not set in metadata for '%s'." % ( guid, data_manager_id ) )
+                    continue
+                elem.set( 'guid', guid )
                 tool_guid = data_manager_dict.get( 'tool_guid', None )
                 if tool_guid is None:
                     log.error( "Data manager tool guid '%s' is not set in metadata for '%s'." % ( tool_guid, data_manager_id ) )
@@ -1510,27 +1514,18 @@ def pull_repository( repo, repository_clone_url, ctx_rev ):
 def remove_from_data_manager( app, repository ):
     metadata_dict = repository.metadata
     if metadata_dict and 'data_manager' in metadata_dict:
-        data_manager_tool_guids = [ data_manager_dict.get( 'tool_guid' ) for data_manager_dict in metadata_dict.get( 'data_manager', {} ).get( 'data_managers', {} ).itervalues() if 'tool_guid' in data_manager_dict ]
         shed_data_manager_conf_filename = app.config.shed_data_manager_config_file
         tree = util.parse_xml( shed_data_manager_conf_filename )
         root = tree.getroot()
         assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % ( shed_data_manager_conf_filename )
+        guids = [ data_manager_dict.get( 'guid' ) for data_manager_dict in metadata_dict.get( 'data_manager', {} ).get( 'data_managers', {} ).itervalues() if 'guid' in data_manager_dict ]
         config_elems = []
         for elem in root:
-            keep_elem = True
-            if elem.tag == 'data_manager':
-                tool_elem = elem.find( 'tool' )
-                if tool_elem is not None:
-                    tool_guid = tool_elem.get( 'guid', None )
-                    if tool_guid in data_manager_tool_guids:
-                        keep_elem = False
-            if keep_elem:
+            if elem.tag != 'data_manager' or elem.get( 'guid', None ) not in guids:
                 config_elems.append( elem )
-        #remove data manager from in memory
-        for data_manager_tool_guids in data_manager_tool_guids:
-            #for shed-based data managers, the data_manager id is the same as the tool guid
-            app.data_managers.remove_manager( data_manager_tool_guids )
-        # Persist the altered shed_tool_config file.
+        #remove data managers from in memory
+        app.data_managers.remove_manager( guids )
+        # Persist the altered shed_data_manager_config file.
         suc.data_manager_config_elems_to_xml_file( app, config_elems, shed_data_manager_conf_filename  )
 def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     # A tool shed repository is being uninstalled so change the shed_tool_conf file.  Parse the config file to generate the entire list

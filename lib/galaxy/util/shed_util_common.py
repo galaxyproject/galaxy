@@ -13,6 +13,7 @@ from galaxy.model.orm import and_
 import sqlalchemy.orm.exc
 from galaxy.tools.parameters import dynamic_options
 from galaxy.tool_shed import encoding_util
+from galaxy.tools.data_manager.manager import DataManager
 
 from galaxy import eggs
 import pkg_resources
@@ -1012,7 +1013,7 @@ def generate_clone_url_for_installed_repository( app, repository ):
 def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
     """Generate the URL for cloning a repository that is in the tool shed."""
     base_url = url_for( '/', qualified=True ).rstrip( '/' )
-    if trans.user:
+    if trans and trans.user:
         protocol, base = base_url.split( '://' )
         username = '%s@' % trans.user.username
         return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
@@ -1038,10 +1039,14 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
         tools[tool_conf_name] = tool
     repo_path = repository.repo_path( app )
     try:
+        #Galaxy Side
         repo_files_directory = repository.repo_files_directory( app )
         repo_dir = repo_files_directory
+        repository_clone_url = generate_clone_url_for_installed_repository( app, repository )
     except AttributeError:
+        #Tool Shed side
         repo_files_directory = repo_path
+        repository_clone_url = generate_clone_url_for_repository_in_tool_shed( None, repository )
     relative_data_manager_dir = util.relpath( os.path.split( data_manager_config_filename )[0], repo_dir )
     rel_data_manager_config_filename = os.path.join( relative_data_manager_dir, os.path.split( data_manager_config_filename )[1] )
     data_managers = {}
@@ -1057,6 +1062,8 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
         if data_manager_id is None:
             log.error( 'Data Manager entry is missing id attribute in "%s".' % ( data_manager_config_filename ) )
             continue
+        version = data_manager_elem.get( 'version', DataManager.DEFAULT_VERSION )
+        guid = generate_guid_for_object( repository_clone_url, DataManager.GUID_TYPE, data_manager_id, version )
         data_tables = []
         if tool_file is None:
             log.error( 'Data Manager entry is missing tool_file attribute in "%s".' % ( data_manager_config_filename ) )
@@ -1073,7 +1080,7 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
         if tool is None:
             log.error( "Unable to determine tools metadata for '%s'." % ( data_manager_metadata_tool_file ) )
             continue
-        data_managers[ data_manager_id ] = { 'tool_config_file': data_manager_metadata_tool_file, 'data_tables': data_tables, 'tool_guid': tool['guid'] }
+        data_managers[ data_manager_id ] = { 'guid': guid, 'version': version, 'tool_config_file': data_manager_metadata_tool_file, 'data_tables': data_tables, 'tool_guid': tool['guid'] }
         log.debug( 'Loaded Data Manager tool_files: %s' % ( tool_file ) )
     return metadata_dict
 def generate_datatypes_metadata( datatypes_config, metadata_dict ):
@@ -1555,6 +1562,9 @@ def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, t
     version_elem = SubElement( tool_elem, 'version' )
     version_elem.text = tool.version
     return tool_elem
+def generate_guid_for_object( repository_clone_url, guid_type, obj_id, version ):
+    tmp_url = clean_repository_clone_url( repository_clone_url )
+    return '%s/%s/%s/%s' % ( tmp_url, guid_type, obj_id, version )
 def generate_tool_guid( repository_clone_url, tool ):
     """
     Generate a guid for the installed tool.  It is critical that this guid matches the guid for
