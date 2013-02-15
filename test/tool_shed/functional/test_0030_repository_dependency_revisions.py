@@ -174,6 +174,7 @@ class TestRepositoryDependencyRevisions( ShedTwillTestCase ):
         repository_metadata = [ ( metadata.metadata, metadata.changeset_revision ) for metadata in self.get_repository_metadata( repository ) ]
         datatypes_repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
         datatypes_tip = self.get_repository_tip( datatypes_repository )
+        strings_displayed = []
         # Iterate through all metadata revisions and check for repository dependencies.
         for metadata, changeset_revision in repository_metadata:
             # Add the dependency description and datatypes repository details to the strings to check.

@@ -80,7 +80,7 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
                               uncompress_file=False,
                               remove_repo_files_not_in_tar=False,
                               commit_message='Uploaded invalid tool dependency XML.',
-                              strings_displayed=[ 'Name, version and type from a tool requirement tag does not match' ], 
+                              strings_displayed=[ 'The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool configuration' ], 
                               strings_not_displayed=[] )
             self.upload_file( repository, 
                               filename=os.path.join( 'freebayes', 'tool_dependencies.xml' ), 

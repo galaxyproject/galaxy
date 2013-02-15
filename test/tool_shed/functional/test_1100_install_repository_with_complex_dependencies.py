@@ -53,7 +53,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               uncompress_file=False,
                               remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded tool_dependencies.xml.',
-                              strings_displayed=[ 'Name, version and type from a tool requirement tag does not match' ], 
+                              strings_displayed=[ 'The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool' ], 
                               strings_not_displayed=[] )
             self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'may not be', 'in this repository' ] )
     def test_0010_create_bwa_base_repository( self ):
@@ -92,7 +92,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             owner = tool_repository.user.username
             changeset_revision = self.get_repository_tip( tool_repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
-            strings_displayed = [ 'Invalid tool shed <b>%s</b> defined' % url ] 
+            strings_displayed = [ 'Repository dependencies are currently supported only within the same tool shed' ] 
             self.upload_file( repository, 
                               filename='tool_dependencies.xml',
                               filepath=dependency_path, 
@@ -115,7 +115,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             owner = tool_repository.user.username
             changeset_revision = self.get_repository_tip( tool_repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
-            strings_displayed = [ 'Invalid repository name <b>%s</b> defined.' % name ]
+            strings_displayed = [ 'because the name is invalid.' ]
             self.upload_file( base_repository, 
                               filename='tool_dependencies.xml',
                               filepath=dependency_path, 
@@ -138,7 +138,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             owner = 'invalid_owner!?'
             changeset_revision = self.get_repository_tip( tool_repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
-            strings_displayed = [ 'Invalid owner <b>%s</b> defined' % owner ]
+            strings_displayed = [ 'because the owner is invalid.' ]
             self.upload_file( base_repository, 
                               filename='tool_dependencies.xml',
                               filepath=dependency_path, 
@@ -161,7 +161,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             owner = tool_repository.user.username
             changeset_revision = '1234abcd'
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
-            strings_displayed = [ 'Invalid changeset revision <b>%s</b> defined.' % changeset_revision ]
+            strings_displayed = [ 'because the changeset revision is invalid.' ]
             self.upload_file( base_repository, 
                               filename='tool_dependencies.xml',
                               filepath=dependency_path, 

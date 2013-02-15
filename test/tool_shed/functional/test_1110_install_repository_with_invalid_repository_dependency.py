@@ -90,7 +90,7 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
             owner = repository.user.username
             changeset_revision = self.get_repository_tip( repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=False, description='This is invalid.' )
-            strings_displayed = [ 'Invalid tool shed <b>%s</b> defined for repository <b>%s</b>' % ( url, repository.name ) ] 
+            strings_displayed = [ 'Repository dependencies are currently supported only within the same tool shed' ] 
             self.upload_file( emboss_repository, 
                               filename='repository_dependencies.xml',
                               filepath=dependency_path,
@@ -113,7 +113,7 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
             owner = repository.user.username
             changeset_revision = self.get_repository_tip( repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=False, description='This is invalid.' )
-            strings_displayed = [ 'Invalid repository name <b>%s</b> defined.' % name ] 
+            strings_displayed = [ 'because the name is invalid.' ] 
             self.upload_file( emboss_repository, 
                               filename='repository_dependencies.xml',
                               filepath=dependency_path,
@@ -136,7 +136,7 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
             owner = '!?invalid?!'
             changeset_revision = self.get_repository_tip( repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=False, description='This is invalid.' )
-            strings_displayed = [ 'Invalid owner <b>%s</b> defined for repository <b>%s</b>' % ( owner, repository.name ) ] 
+            strings_displayed = [ 'because the owner is invalid' ] 
             self.upload_file( emboss_repository, 
                               filename='repository_dependencies.xml',
                               filepath=dependency_path,
@@ -159,7 +159,7 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
             owner = repository.user.username
             changeset_revision = '!?invalid?!'
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=False, description='This is invalid.' )
-            strings_displayed = [ 'Invalid changeset revision <b>%s</b> defined.' % changeset_revision ] 
+            strings_displayed = [ 'because the changeset revision is invalid.' ] 
             self.upload_file( emboss_repository, 
                               filename='repository_dependencies.xml',
                               filepath=dependency_path,
@@ -174,7 +174,7 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
-        preview_strings_displayed = [ 'emboss_0110', self.get_repository_tip( repository ), 'will be ignored' ]
+        preview_strings_displayed = [ 'emboss_0110', self.get_repository_tip( repository ), 'Ignoring repository dependency definition' ]
         self.install_repository( emboss_repository_name, 
                                  common.test_user_1_name, 
                                  category_name,

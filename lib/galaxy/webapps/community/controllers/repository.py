@@ -2001,11 +2001,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                                   all_repository_dependencies=None,
                                                                                                   handled_key_rd_dicts=None )
                 if metadata:
-                    if 'repository_dependencies' in metadata and not repository_dependencies:
-                        message += 'The repository dependency definitions for this repository are invalid and will be ignored.  Make sure valid <b>toolshed</b>, '
-                        message += '<b>name</b>, <b>owner</b> and <b>changeset_revision</b> values are defined in the contained <b>repository_dependencies.xml</b> '
-                        message += 'file to correct this problem.'
-                        status = 'error'
+                    if 'orphan_tool_dependencies' in metadata:
+                        orphan_message, status = suc.generate_message_for_orphan_tool_dependencies( metadata )
+                        message += orphan_message
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push
@@ -2221,7 +2219,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             message = suc.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
             status = 'error'
         else:
-            message = "All repository metadata has been reset."
+            message = "All repository metadata has been reset.  "
             status = 'done'
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='manage_repository',
@@ -2755,9 +2753,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                               all_repository_dependencies=None,
                                                                                               handled_key_rd_dicts=None )
             if metadata:
-                if 'repository_dependencies' in metadata and not repository_dependencies:
-                    message += 'The repository dependency definitions for this repository are invalid and will be ignored.'
-                    status = 'error'
+                if 'orphan_tool_dependencies' in metadata:
+                    orphan_message, status = suc.generate_message_for_orphan_tool_dependencies( metadata )
+                    message += orphan_message
         else:
             repository_metadata_id = None
             metadata = None

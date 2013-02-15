@@ -15,6 +15,8 @@ class Folder( object ):
         self.description = None
         self.datatypes = []
         self.folders = []
+        self.invalid_repository_dependencies = []
+        self.invalid_tool_dependencies = []
         self.invalid_tools = []
         self.valid_tools = []
         self.tool_dependencies = []
@@ -54,6 +56,16 @@ class Datatype( object ):
         self.mimetype = mimetype
         self.subclass = subclass
 
+class InvalidRepositoryDependency( object ):
+    """Invalid repository dependency definition object"""
+    def __init__( self, id=None, toolshed=None, repository_name=None, repository_owner=None, changeset_revision=None, error=None ):
+        self.id = id
+        self.toolshed = toolshed
+        self.repository_name = repository_name
+        self.repository_owner = repository_owner
+        self.changeset_revision = changeset_revision
+        self.error = error
+
 class InvalidTool( object ):
     """Invalid tool object"""
     def __init__( self, id=None, tool_config=None, repository_id=None, changeset_revision=None, repository_installation_status=None ):
@@ -62,6 +74,15 @@ class InvalidTool( object ):
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
         self.repository_installation_status = repository_installation_status
+
+class InvalidToolDependency( object ):
+    """Invalid tool dependency definition object"""
+    def __init__( self, id=None, name=None, version=None, type=None, error=None ):
+        self.id = id
+        self.name = name
+        self.version = version
+        self.type = type
+        self.error = error
 
 class ReadMe( object ):
     """Readme text object"""
@@ -158,6 +179,79 @@ def build_datatypes_folder( trans, folder_id, datatypes, label='Datatypes' ):
     else:
         datatypes_root_folder = None
     return folder_id, datatypes_root_folder
+def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid_repository_dependencies_dict ):
+    """Return a folder hierarchy containing invalid repository dependencies."""
+    label = 'Invalid repository dependencies'
+    if invalid_repository_dependencies_dict:
+        invalid_repository_dependency_id = 0
+        folder_id += 1
+        invalid_repository_dependencies_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
+        folder_id += 1
+        invalid_repository_dependencies_folder = Folder( id=folder_id,
+                                                         key='invalid_repository_dependencies',
+                                                         label=label,
+                                                         parent=invalid_repository_dependencies_root_folder )
+        invalid_repository_dependencies_root_folder.folders.append( invalid_repository_dependencies_folder )
+        invalid_repository_dependencies = invalid_repository_dependencies_dict[ 'repository_dependencies' ]
+        for invalid_repository_dependency in invalid_repository_dependencies:
+            folder_id += 1
+            invalid_repository_dependency_id += 1
+            toolshed, name, owner, changeset_revision, error = invalid_repository_dependency
+            key = generate_repository_dependencies_key_for_repository( toolshed, name, owner, changeset_revision )
+            label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % ( name, changeset_revision, owner )
+            folder = Folder( id=folder_id,
+                             key=key,
+                             label=label,
+                             parent=invalid_repository_dependencies_folder )
+            ird = InvalidRepositoryDependency( id=invalid_repository_dependency_id,
+                                               toolshed=toolshed,
+                                               repository_name=name,
+                                               repository_owner=owner,
+                                               changeset_revision=changeset_revision,
+                                               error=error )
+            folder.invalid_repository_dependencies.append( ird )
+            invalid_repository_dependencies_folder.folders.append( folder )
+    else:
+        invalid_repository_dependencies_root_folder = None
+    return folder_id, invalid_repository_dependencies_root_folder
+def build_invalid_tool_dependencies_root_folder( trans, folder_id, invalid_tool_dependencies_dict ):
+    """Return a folder hierarchy containing invalid tool dependencies."""
+    # # INvalid tool dependencies are always packages like:
+    # {"R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1" "error" : "some sting" }
+    label = 'Invalid tool dependencies'
+    if invalid_tool_dependencies_dict:
+        invalid_tool_dependency_id = 0
+        folder_id += 1
+        invalid_tool_dependencies_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
+        folder_id += 1
+        invalid_tool_dependencies_folder = Folder( id=folder_id,
+                                                   key='invalid_tool_dependencies',
+                                                   label=label,
+                                                   parent=invalid_tool_dependencies_root_folder )
+        invalid_tool_dependencies_root_folder.folders.append( invalid_tool_dependencies_folder )
+        for td_key, requirements_dict in invalid_tool_dependencies_dict.items():
+            folder_id += 1
+            invalid_tool_dependency_id += 1
+            name = requirements_dict[ 'name' ]
+            type = requirements_dict[ 'type' ]
+            version = requirements_dict[ 'version' ]
+            error = requirements_dict[ 'error' ]
+            key = generate_tool_dependencies_key( name, version, type )
+            label = "Version <b>%s</b> of the <b>%s</b> <b>%s</b>" % ( version, name, type )
+            folder = Folder( id=folder_id,
+                             key=key,
+                             label=label,
+                             parent=invalid_tool_dependencies_folder )
+            itd = InvalidToolDependency( id=invalid_tool_dependency_id,
+                                         name=name,
+                                         version=version,
+                                         type=type,
+                                         error=error )
+            folder.invalid_tool_dependencies.append( itd )
+            invalid_tool_dependencies_folder.folders.append( folder )
+    else:
+        invalid_tool_dependencies_root_folder = None
+    return folder_id, invalid_tool_dependencies_root_folder
 def build_invalid_tools_folder( trans, folder_id, invalid_tool_configs, changeset_revision, repository=None, label='Invalid tools' ):
     """Return a folder hierarchy containing invalid tools."""
     # TODO: Should we display invalid tools on the tool panel selection page when installing the repository into Galaxy?
@@ -346,7 +440,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
             if dependency_key in [ 'set_environment' ]:
                 for set_environment_dict in requirements_dict:
                     if trans.webapp.name == 'community':
-                        is_orphan = set_environment_dict.get( 'is_orphan_in_tool_shed', False )
+                        is_orphan = set_environment_dict.get( 'is_orphan', False )
                     else:
                         # TODO: handle this is Galaxy
                         is_orphan = False
@@ -373,7 +467,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                     folder.tool_dependencies.append( tool_dependency )
             else:
                 if trans.webapp.name == 'community':
-                    is_orphan = requirements_dict.get( 'is_orphan_in_tool_shed', False )
+                    is_orphan = requirements_dict.get( 'is_orphan', False )
                 else:
                     # TODO: handle this is Galaxy
                     is_orphan = False
@@ -476,6 +570,8 @@ def generate_repository_dependencies_key_for_repository( toolshed_base_url, repo
                                 str( repository_owner ),
                                 STRSEP,
                                 str( changeset_revision ) )
+def generate_tool_dependencies_key( name, version, type ):
+    return '%s%s%s%s%s' % ( str( name ), STRSEP, str( version ), STRSEP, str( type ) )
 def get_folder( folder, key ):
     if folder.key == key:
         return folder

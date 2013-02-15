@@ -98,7 +98,7 @@ class TestFreebayesRepository( ShedTwillTestCase ):
                           uncompress_file=False,
                           remove_repo_files_not_in_tar=False,
                           commit_message='Uploaded invalid tool dependency XML.',
-                          strings_displayed=[ 'Name, version and type from a tool requirement tag does not match' ], 
+                          strings_displayed=[ 'The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool configuration' ], 
                           strings_not_displayed=[] )
     def test_0035_upload_valid_tool_dependency_xml( self ):
         '''Upload tool_dependencies.xml defining version 0.9.4_9696d0ce8a962f7bb61c4791be5ce44312b81cf8 of the freebayes package.'''
