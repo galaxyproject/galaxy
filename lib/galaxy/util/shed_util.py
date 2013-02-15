@@ -1058,30 +1058,32 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
     tool_section = None
     tool_panel_section_key = None
     if 'tools' in metadata:
-        if 'tool_panel_section' in metadata:
-            tool_panel_dict = metadata[ 'tool_panel_section' ]
-            if not tool_panel_dict:
-                tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
-        else:
-            tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
         # This forces everything to be loaded into the same section (or no section) in the tool panel.
-        tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
-        tool_section_dict = tool_section_dicts[ 0 ]
-        original_section_id = tool_section_dict[ 'id' ]
-        original_section_name = tool_section_dict[ 'name' ]
         if no_changes_checked:
-            if original_section_id:
-                tool_panel_section_key = 'section_%s' % str( original_section_id )
-                if tool_panel_section_key in trans.app.toolbox.tool_panel:
-                    tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-                else:
-                    # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
-                    elem = Element( 'section' )
-                    elem.attrib[ 'name' ] = original_section_name
-                    elem.attrib[ 'id' ] = original_section_id
-                    elem.attrib[ 'version' ] = ''
-                    tool_section = galaxy.tools.ToolSection( elem )
-                    trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
+            if 'tool_panel_section' in metadata:
+                tool_panel_dict = metadata[ 'tool_panel_section' ]
+                if not tool_panel_dict:
+                    tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
+            else:
+                tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
+            if tool_panel_dict:
+                #tool_panel_dict is empty when tools exist but are not installed into a tool panel
+                tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+                tool_section_dict = tool_section_dicts[ 0 ]
+                original_section_id = tool_section_dict[ 'id' ]
+                original_section_name = tool_section_dict[ 'name' ]
+                if original_section_id:
+                    tool_panel_section_key = 'section_%s' % str( original_section_id )
+                    if tool_panel_section_key in trans.app.toolbox.tool_panel:
+                        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+                    else:
+                        # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
+                        elem = Element( 'section' )
+                        elem.attrib[ 'name' ] = original_section_name
+                        elem.attrib[ 'id' ] = original_section_id
+                        elem.attrib[ 'version' ] = ''
+                        tool_section = galaxy.tools.ToolSection( elem )
+                        trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
         else:
             # The user elected to change the tool panel section to contain the tools.
             if new_tool_panel_section:
