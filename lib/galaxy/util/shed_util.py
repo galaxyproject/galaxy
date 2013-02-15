@@ -42,6 +42,11 @@ def activate_repository( trans, repository ):
                            shed_tool_conf,
                            tool_panel_dict,
                            new_install=False )
+        if repository.includes_data_managers:
+            tp, data_manager_relative_install_dir = repository.get_tool_relative_path( trans.app )
+            data_manager_relative_install_dir = os.path.join( data_manager_relative_install_dir, repository.name ) #hack to add repository.name here, which is actually the root of the installed repository
+            new_data_managers = install_data_managers( trans.app, trans.app.config.shed_data_manager_config_file, metadata, repository.get_shed_config_dict( trans.app ), data_manager_relative_install_dir,
+                                                        repository, repository_tools_tups )
     trans.sa_session.add( repository )
     trans.sa_session.flush()
     if repository.includes_datatypes:
