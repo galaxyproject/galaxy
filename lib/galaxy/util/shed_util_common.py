@@ -1614,7 +1614,8 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
                       tool_config=tool_config,
                       tool_type=tool.tool_type,
                       requirements=tool_requirements,
-                      tests=tool_tests )
+                      tests=tool_tests,
+                      add_to_tool_panel=tool.tool_type not in TOOL_TYPES_NOT_IN_TOOL_PANEL )
     if 'tools' in metadata_dict:
         metadata_dict[ 'tools' ].append( tool_dict )
     else:

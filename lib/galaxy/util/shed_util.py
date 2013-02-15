@@ -469,13 +469,14 @@ def generate_tool_panel_dict_for_new_install( tool_dicts, tool_section=None ):
         section_name = ''
         section_version = ''
     for tool_dict in tool_dicts:
-        guid = tool_dict[ 'guid' ]
-        tool_config = tool_dict[ 'tool_config' ]
-        tool_section_dict = dict( tool_config=tool_config, id=section_id, name=section_name, version=section_version )
-        if guid in tool_panel_dict:
-            tool_panel_dict[ guid ].append( tool_section_dict )
-        else:
-            tool_panel_dict[ guid ] = [ tool_section_dict ]
+        if tool_dict.get( 'add_to_tool_panel', True ):
+            guid = tool_dict[ 'guid' ]
+            tool_config = tool_dict[ 'tool_config' ]
+            tool_section_dict = dict( tool_config=tool_config, id=section_id, name=section_name, version=section_version )
+            if guid in tool_panel_dict:
+                tool_panel_dict[ guid ].append( tool_section_dict )
+            else:
+                tool_panel_dict[ guid ] = [ tool_section_dict ]
     return tool_panel_dict
 def generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=None ):
     """
