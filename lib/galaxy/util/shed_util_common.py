@@ -1429,8 +1429,8 @@ def generate_package_dependency_metadata( app, elem, valid_tool_dependencies_dic
                 # We have a complex repository dependency.  If the retruned value of repository_dependency_is_valid is True, the tool
                 # dependency definition will be set as invalid.  This is currently the only case where a tool dependency definition is
                 # considered invalid.
-                repository_dependencies_tup, repository_dependency_is_valid, error_message = handle_repository_elem( app=app,
-                                                                                                                     repository_elem=sub_elem )
+                repository_dependency_tup, repository_dependency_is_valid, error_message = \
+                    handle_repository_elem( app=app, repository_elem=sub_elem )
     if requirements_dict:
         dependency_key = '%s/%s' % ( package_name, package_version )
         if repository_dependency_is_valid:
@@ -1490,19 +1490,6 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
     If the combination of name, version and type of each element is defined in the <requirement> tag for at least one tool in the repository,
     then update the received metadata_dict with information from the parsed tool_dependencies_config.
     """
-    """
-    "{"orphan_tool_dependencies": 
-        {"bwa/0.5.9": 
-            {"name": "bwa", 
-             "readme": "\\nCompiling BWA requires zlib and libpthread to be present on your system.\\n        ", 
-             "type": "package", "version": "0.5.9"}}, 
-     "tool_dependencies": 
-         {"bwa/0.5.9": 
-             {"name": "bwa", 
-             "readme": "\\nCompiling BWA requires zlib and libpthread to be present on your system.\\n        ", 
-             "type": "package", 
-             "version": "0.5.9"}}}"
-    """
     error_message = ''
     if original_repository_metadata:
         # Keep a copy of the original tool dependencies dictionary and the list of tool dictionaries in the metadata.
@@ -1538,7 +1525,8 @@ def generate_tool_dependency_metadata( app, repository, changeset_revision, repo
                     # We have an invalid complex repository dependency, so mark the tool dependency as invalid.
                     tool_dependency_is_valid = False
                     # Append the error message to the invalid repository dependency tuple.
-                    repository_dependency_tup.append( message )
+                    toolshed, name, owner, changeset_revision = repository_dependency_tup
+                    repository_dependency_tup = ( toolshed, name, owner, changeset_revision, message )
                     invalid_repository_dependency_tups.append( repository_dependency_tup )
                     error_message = '%s  %s' % ( error_message, message )
         elif elem.tag == 'set_environment':
