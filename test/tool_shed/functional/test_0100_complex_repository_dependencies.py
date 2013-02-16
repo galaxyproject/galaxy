@@ -27,10 +27,11 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
         admin_user_private_role = test_db_util.get_private_role( admin_user )
     def test_0005_create_bwa_tool_repository( self ):
-        '''Create and populate bwa_tool_0100.'''
+        '''Create and populate bwa_tool_repository_0100.'''
         category = self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
+        # Create a repository named bwa_tool_repository_0100 owned by user1.
         repository = self.get_or_create_repository( name=bwa_tool_repository_name, 
                                                     description=bwa_tool_repository_description, 
                                                     long_description=bwa_tool_repository_long_description, 
@@ -46,19 +47,21 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
                           commit_message='Uploaded tool_dependencies.xml.',
                           strings_displayed=[ 'The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool' ], 
                           strings_not_displayed=[] )
+        # Visit the manage repository page for bwa_tool_repository_0100.
         self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'may not be', 'in this repository' ] )
     def test_0010_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0100.'''
         category = self.create_category( name=category_name, description=category_description )
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
+        # Create a repository named bwa_base_repository_0100 owned by user1.
         repository = self.get_or_create_repository( name=bwa_base_repository_name, 
                                                     description=bwa_base_repository_description, 
                                                     long_description=bwa_base_repository_long_description, 
                                                     owner=common.test_user_1_name,
                                                     category_id=self.security.encode_id( category.id ), 
                                                     strings_displayed=[] )
-        tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
+        # Populate the repository named bwa_base_repository_0100 with a bwa_base tool archive.
         self.upload_file( repository, 
                           filename='bwa/complex/bwa_base.tar',
                           filepath=None,
@@ -72,14 +75,17 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
         '''Generate and upload a complex repository definition that specifies an invalid tool shed URL.'''
         dependency_path = self.generate_temp_path( 'test_0100', additional_paths=[ 'complex', 'invalid' ] )
         xml_filename = self.get_filename( 'tool_dependencies.xml', filepath=dependency_path )
+        # The repository named bwa_base_repository_0100 is the dependent repository.
         repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+        # The tool_repository named bwa_tool_repository_0100 is the required repository.
         tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
         url = 'http://http://this is not an url!'
-        name = tool_repository.name
-        owner = tool_repository.user.username
+        name = 'bwa_tool_repository_0100'
+        owner = 'user1'
         changeset_revision = self.get_repository_tip( tool_repository )
         self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
         strings_displayed = [ 'Repository dependencies are currently supported only within the same tool shed' ] 
+        # Populate the dependent repository named bwa_base_repository_0100 with an invalid tool_dependencies.xml file.
         self.upload_file( repository, 
                           filename='tool_dependencies.xml',
                           filepath=dependency_path, 
@@ -93,14 +99,17 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
         '''Generate and upload a complex repository definition that specifies an invalid repository name.'''
         dependency_path = self.generate_temp_path( 'test_0100', additional_paths=[ 'complex', 'invalid' ] )
         xml_filename = self.get_filename( 'tool_dependencies.xml', filepath=dependency_path )
+        # The base_repository named bwa_base_repository_0100 is the dependent repository.
         base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+        # The tool_repository named bwa_tool_repository_0100 is the required repository.
         tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
         url = self.url
         name = 'invalid_repository!?'
-        owner = tool_repository.user.username
+        owner = 'user1'
         changeset_revision = self.get_repository_tip( tool_repository )
         self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
-        strings_displayed = [ 'because the name is invalid' ] 
+        strings_displayed = [ 'because the name is invalid' ]
+        # # Populate the dependent base_repository named bwa_tool_repository_0100 with an invalid tool_dependencies.xml file.
         self.upload_file( base_repository, 
                           filename='tool_dependencies.xml',
                           filepath=dependency_path, 
@@ -114,10 +123,12 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
         '''Generate and upload a complex repository definition that specifies an invalid owner.'''
         dependency_path = self.generate_temp_path( 'test_0100', additional_paths=[ 'complex', 'invalid' ] )
         xml_filename = self.get_filename( 'tool_dependencies.xml', filepath=dependency_path )
+        # The base_repository named bwa_base_repository_0100 is the dependent repository.
         base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+        # The tool_repository named bwa_tool_repository_0100 is the required repository.
         tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
         url = self.url
-        name = tool_repository.name
+        name = 'bwa_tool_repository_0100'
         owner = 'invalid_owner!?'
         changeset_revision = self.get_repository_tip( tool_repository )
         self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
@@ -135,11 +146,13 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
         '''Generate and upload a complex repository definition that specifies an invalid changeset revision.'''
         dependency_path = self.generate_temp_path( 'test_0100', additional_paths=[ 'complex', 'invalid' ] )
         xml_filename = self.get_filename( 'tool_dependencies.xml', filepath=dependency_path )
+        # The base_repository named bwa_base_repository_0100 is the dependent repository.
         base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+        # The tool_repository named bwa_tool_repository_0100 is the required repository.
         tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
         url = self.url
-        name = tool_repository.name
-        owner = tool_repository.user.username
+        name = 'bwa_tool_repository_0100'
+        owner = 'user1'
         changeset_revision = '1234abcd'
         self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
         strings_displayed = [ 'because the changeset revision is invalid.' ] 
@@ -154,15 +167,19 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
                           strings_not_displayed=[] )
     def test_0035_generate_complex_repository_dependency( self ):
         '''Generate and upload a valid tool_dependencies.xml file that specifies bwa_tool_repository_0100.'''
+        # The base_repository named bwa_base_repository_0100 is the dependent repository.
         base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+        # The tool_repository named bwa_tool_repository_0100 is the required repository.
         tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
         dependency_path = self.generate_temp_path( 'test_0100', additional_paths=[ 'complex' ] )
         xml_filename = self.get_filename( 'tool_dependencies.xml', filepath=dependency_path )
         url = self.url
-        name = tool_repository.name
-        owner = tool_repository.user.username
+        name = 'bwa_tool_repository_0100'
+        owner = 'user1'
         changeset_revision = self.get_repository_tip( tool_repository )
         self.generate_repository_dependency_xml( [ tool_repository ], xml_filename, complex=True, package='bwa', version='0.5.9' )
+        # Upload the valid tool_dependencies.xml file to bwa_base_repository_0100 that specifies bwa_tool_repository_0100
+        # as a repository dependency via a complex repository dependency definition.
         self.upload_file( base_repository, 
                           filename='tool_dependencies.xml',
                           filepath=dependency_path, 
@@ -176,7 +193,9 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
         self.display_manage_repository_page( base_repository, strings_displayed=[ 'bwa', '0.5.9', 'package' ] )
     def test_0040_generate_tool_dependency( self ):
         '''Generate and upload a new tool_dependencies.xml file that specifies an arbitrary file on the filesystem, and verify that bwa_base depends on the new changeset revision.'''
+        # The base_repository named bwa_base_repository_0100 is the dependent repository.
         base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+        # The tool_repository named bwa_tool_repository_0100 is the required repository.
         tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
         previous_changeset = self.get_repository_tip( tool_repository )
         old_tool_dependency = self.get_filename( os.path.join( 'bwa', 'complex', 'readme', 'tool_dependencies.xml' ) )
@@ -195,6 +214,21 @@ class TestComplexRepositoryDependencies( ShedTwillTestCase ):
                           strings_displayed=[], 
                           strings_not_displayed=[] )
         # Verify that the dependency display has been updated as a result of the new tool_dependencies.xml file.
+        repository_tip = self.get_repository_tip( tool_repository )
+        strings_displayed = [ 'bwa', '0.5.9', 'package' ]
+        strings_displayed.append( repository_tip )
+        strings_not_displayed=[ previous_changeset ]
+        self.display_manage_repository_page( tool_repository, 
+                                             strings_displayed=strings_displayed,
+                                             strings_not_displayed=strings_not_displayed )
+        # Visit the manage page of the bwa_tool_repository_0100 to confirm the valid tool dependency definition.
+        self.display_manage_repository_page( tool_repository, 
+                                             strings_displayed=strings_displayed,
+                                             strings_not_displayed=strings_not_displayed )
+        # Visit the manage page of the bwa_base_repository_0100 to confirm the valid tool dependency definition
+        # and the updated changeset revision (updated tip) of the bwa_tool_repository_0100 repository is displayed
+        # as the required repository revision.  The original revision defined in the previously uploaded
+        # tool_dependencies.xml file will be updated.
         self.display_manage_repository_page( base_repository, 
-                                             strings_displayed=[ self.get_repository_tip( tool_repository ), 'bwa', '0.5.9', 'package' ],
-                                             strings_not_displayed=[ previous_changeset ] )
+                                             strings_displayed=strings_displayed,
+                                             strings_not_displayed=strings_not_displayed )
