@@ -607,7 +607,7 @@ class DefaultJobDispatcher( object ):
             try:
                 self.job_runners[runner_name].stop_job( job )
             except KeyError:
-                log.error( 'stop(): (%s) Invalid job runner: %s' % ( job_wrapper.job_id, runner_name ) )
+                log.error( 'stop(): (%s) Invalid job runner: %s' % ( job.get_id(), runner_name ) )
                 # Job and output dataset states have already been updated, so nothing is done here.
 
     def recover( self, job, job_wrapper ):
