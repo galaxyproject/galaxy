@@ -4,18 +4,6 @@
 // not appended to the identifier of a nested array.
 jQuery.ajaxSettings.traditional = true;
 
-// Initialize grid objects on load.
-$(document).ready(function() {
-    init_grid_elements();
-    init_grid_controls();
-    
-    // Initialize text filters to select text on click and use normal font when user is typing.
-    $('input[type=text]').each(function() {
-        $(this).click(function() { $(this).select(); } )
-               .keyup(function () { $(this).css("font-style", "normal"); });
-    });
-});
-
 /**
  * A Galaxy grid.
  */
