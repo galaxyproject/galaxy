@@ -129,6 +129,19 @@
             cur_page: ${cur_page_num},
             num_pages: ${num_pages}
         });
+
+        // Initialize grid objects on load.
+        // FIXME: use a grid view object eventually.
+        $(document).ready(function() {
+            init_grid_elements();
+            init_grid_controls();
+            
+            // Initialize text filters to select text on click and use normal font when user is typing.
+            $('input[type=text]').each(function() {
+                $(this).click(function() { $(this).select(); } )
+                       .keyup(function () { $(this).css("font-style", "normal"); });
+            });
+        });
     </script>
 </%def>
 
