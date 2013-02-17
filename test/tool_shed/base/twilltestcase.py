@@ -903,28 +903,58 @@ class ShedTwillTestCase( TwillTestCase ):
         self.reset_installed_repository_metadata( installed_repository )
         new_metadata = installed_repository.metadata
         assert metadata == new_metadata, 'Metadata for installed repository %s differs after metadata reset.' % name
-    def verify_installed_repository_data_table_entries( self, data_tables=[] ):
-        data_table = util.parse_xml( self.shed_tool_data_table_conf )
+    def verify_installed_repository_data_table_entries( self, required_data_table_entries ):
+        # The value of the received required_data_table_entries will be something like: [ 'sam_fa_indexes' ]
+        data_tables = util.parse_xml( self.shed_tool_data_table_conf )
         found = False
+        # With the tool shed, the "path" attribute that is hard-coded into the tool_data_tble_conf.xml
+        # file is ignored.  This is because the tool shed requires the directory location to which this
+        # path points to be empty except when a specific tool is loaded.  The default location for this
+        # directory configured for the tool shed is <Galaxy root>/shed-tool-data.  When a tool is loaded
+        # in the tool shed, all contained .loc.sample files are copied to this directory and the 
+        # ToolDataTableManager parses and loads the files in the same way that Galaxy does with a very
+        # important exception.  When the tool shed loads a tool and parses and loads the copied ,loc.sample
+        # files, the ToolDataTableManager is already instantiated, and so it's add_new_entries_from_config_file()
+        # method is called and the tool_data_path parameter is used to over-ride the hard-coded "tool-data"
+        # directory that Galaxy always uses.
+        #
         # Tool data table xml structure:
         # <tables>
-        #     <!-- Locations of all fasta files under genome directory -->
-        #     <table name="all_fasta" comment_char="#">
-        #         <columns>value, dbkey, name, path</columns>
-        #         <file path="tool-data/all_fasta.loc" />
+        #     <table comment_char="#" name="sam_fa_indexes">
+        #        <columns>line_type, value, path</columns>
+        #        <file path="tool-data/sam_fa_indices.loc" />
         #     </table>
         # </tables>
-        for table_elem in data_table.findall( 'table' ):
-            for data_table in data_tables:
-                if 'name' in table_elem.attrib and table_elem.attrib[ 'name' ] == data_table:
-                    file_elem = table_elem.find( 'file' )
-                    file_path = file_elem.get( 'path', None )
-                    full_path = os.path.join( self.tool_data_path, file_path )
-                    assert file_path is not None, 'No file path configured for this data table.'
-                    assert os.path.exists( full_path ), 'Tool data table file %s not found.' % full_path
+        for table_elem in data_tables.findall( 'table' ):
+            # The value of table_elem will be something like: <table comment_char="#" name="sam_fa_indexes">
+            for required_data_table_entry in required_data_table_entries:
+                # The value of required_data_table_entry will be something like: 'sam_fa_indexes'
+                if 'name' in table_elem.attrib and table_elem.attrib[ 'name' ] == required_data_table_entry:
                     found = True
+                    # We're processing something like: sam_fa_indexes
+                    file_elem = table_elem.find( 'file' )
+                    # We have something like: <file path="tool-data/sam_fa_indices.loc" />
+                    # The "path" attribute of the "file" tag is the location that Galaxy always uses because the
+                    # Galaxy ToolDataTableManager was implemented in such a way that the hard-coded path is used
+                    # rather than allowing the location to be a configurable setting like the tool shed requires.
+                    file_path = file_elem.get( 'path', None )
+                    # The value of file_path will be something like: "tool-data/all_fasta.loc"
+                    assert file_path is not None, 'The "path" attribute is missing for the %s entry.' % name
+                    # The following test is probably not necesary, but the tool-data directory should exist!
+                    galaxy_tool_data_dir, loc_file_name = os.path.split( file_path )
+                    assert galaxy_tool_data_dir is not None, 'The hard-coded Galaxy tool-data directory is missing for the %s entry.' % name
+                    assert os.path.exists( galaxy_tool_data_dir ), 'The Galaxy tool-data directory does not exist.'
+                    # Make sure the loc_file_name was correctly copied into the configured directory location.
+                    configured_file_location = os.path.join( self.tool_data_path, loc_file_name )
+                    assert os.path.isfile( configured_file_location ), 'The expected copied file "%s" is missing.' % configured_file_location
+                    # We've found the value of the required_data_table_entry in data_tables, which is the parsed
+                    # shed_tool_data_table_conf.xml, so all is well!
                     break
-                assert found, 'No entry for %s in %s.' % ( data_table, self.shed_tool_data_table_conf )
+            if found:
+                break
+        # We better have an entry like: <table comment_char="#" name="sam_fa_indexes"> in our parsed data_tables
+        # or we know that the repository was not correctly installed!
+        assert found, 'No entry for %s in %s.' % ( required_data_table_entry, self.shed_tool_data_table_conf )
     def verify_repository_reviews( self, repository, reviewer=None, strings_displayed=[], strings_not_displayed=[] ):
         changeset_revision = self.get_repository_tip( repository )
         # Verify that the currently logged in user has a repository review for the specified repository, reviewer, and changeset revision.

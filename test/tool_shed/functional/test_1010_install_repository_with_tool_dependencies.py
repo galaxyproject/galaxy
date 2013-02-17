@@ -127,5 +127,5 @@ class ToolWithToolDependencies( ShedTwillTestCase ):
         self.verify_installed_repository_metadata_unchanged( repository_name, common.test_user_1_name )
     def test_0025_verify_sample_files( self ):
         '''Verify that the installed repository populated shed_tool_data_table.xml and the sample files.'''
-        self.verify_installed_repository_data_table_entries( data_tables=[ 'sam_fa_indexes' ] )
+        self.verify_installed_repository_data_table_entries( required_data_table_entries=[ 'sam_fa_indexes' ] )
         
