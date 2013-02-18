@@ -120,12 +120,24 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     be False when a tool shed repository is being installed.  Since installation is occurring after the datatypes registry
     has been initialized, the registry's contents cannot be overridden by conflicting data types.
     """
-    tree = util.parse_xml( datatypes_config )
+    try:
+        tree = util.parse_xml( datatypes_config )
+    except Exception, e:
+        log.debug( "Error parsing %s, exception: %s" % ( datatypes_config, str( e ) ) )
+        return None, None
     datatypes_config_root = tree.getroot()
-    # Path to datatype converters
-    converter_path = None
-    # Path to datatype display applications
-    display_path = None
+    registration = datatypes_config_root.find( 'registration' )
+    if registration is None:
+        # We have valid XML, but not a valid proprietary datatypes definition.
+        return None, None
+    sniffers = datatypes_config_root.find( 'sniffers' )
+    converter_path, display_path = get_converter_and_display_paths( registration, relative_install_dir )
+    if converter_path:
+         # Path to datatype converters
+        registration.attrib[ 'proprietary_converter_path' ] = converter_path
+    if display_path:
+        # Path to datatype display applications
+        registration.attrib[ 'proprietary_display_path' ] = display_path
     relative_path_to_datatype_file_name = None
     datatype_files = datatypes_config_root.find( 'datatype_files' )
     datatype_class_modules = []
@@ -148,12 +160,6 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
                                 break
                 break
         if datatype_class_modules:
-            registration = datatypes_config_root.find( 'registration' )
-            converter_path, display_path = get_converter_and_display_paths( registration, relative_install_dir )
-            if converter_path:
-                registration.attrib[ 'proprietary_converter_path' ] = converter_path
-            if display_path:
-                registration.attrib[ 'proprietary_display_path' ] = display_path
             for relative_path_to_datatype_file_name in datatype_class_modules:
                 datatype_file_name_path, datatype_file_name = os.path.split( relative_path_to_datatype_file_name )
                 for elem in registration.findall( 'datatype' ):
@@ -170,20 +176,16 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
                         # The value of proprietary_path must be an absolute path due to job_working_directory.
                         elem.attrib[ 'proprietary_path' ] = os.path.abspath( datatype_file_name_path )
                         elem.attrib[ 'proprietary_datatype_module' ] = proprietary_datatype_module
-            sniffers = datatypes_config_root.find( 'sniffers' )
-        else:
-            sniffers = None
-        fd, proprietary_datatypes_config = tempfile.mkstemp()
-        os.write( fd, '<?xml version="1.0"?>\n' )
-        os.write( fd, '<datatypes>\n' )
-        os.write( fd, '%s' % util.xml_to_string( registration ) )
-        if sniffers:
-            os.write( fd, '%s' % util.xml_to_string( sniffers ) )
-        os.write( fd, '</datatypes>\n' )
-        os.close( fd )
-        os.chmod( proprietary_datatypes_config, 0644 )
-    else:
-        proprietary_datatypes_config = datatypes_config
+    # Temporarily persist the proprietary datatypes configuration file so it can be loaded into the datatypes registry.
+    fd, proprietary_datatypes_config = tempfile.mkstemp()
+    os.write( fd, '<?xml version="1.0"?>\n' )
+    os.write( fd, '<datatypes>\n' )
+    os.write( fd, '%s' % util.xml_to_string( registration ) )
+    if sniffers:
+        os.write( fd, '%s' % util.xml_to_string( sniffers ) )
+    os.write( fd, '</datatypes>\n' )
+    os.close( fd )
+    os.chmod( proprietary_datatypes_config, 0644 )
     # Load proprietary datatypes
     app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=proprietary_datatypes_config, deactivate=deactivate, override=override )
     if datatype_files:
