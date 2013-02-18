@@ -714,7 +714,11 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
             for rd_tup in rd_tups:
                 tool_shed, name, owner, changeset_revision = rd_tup
                 # Updates to installed repository revisions may have occurred, so make sure to locate the appropriate repository revision if one exists.
-                repository, current_changeset_revision = repository_was_previously_installed( trans, tool_shed, name, repo_info_tuple )
+                # We need to create a temporary repo_info_tuple that includes the correct repository owner which we get from the current rd_tup.  The current
+                # tuple looks like: ( description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td )
+                tmp_clone_url = suc.generate_clone_url_from_repo_info_tup( rd_tup )
+                tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
+                repository, current_changeset_revision = repository_was_previously_installed( trans, tool_shed, name, tmp_repo_info_tuple )
                 if repository:
                     new_rd_tup = [ tool_shed, name, owner, changeset_revision, repository.id, repository.status ]
                     if repository.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
