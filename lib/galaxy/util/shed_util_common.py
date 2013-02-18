@@ -188,8 +188,8 @@ def build_readme_files_dict( metadata, tool_path=None ):
                     log.debug( "Error reading README file '%s' defined in metadata: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
     return readme_files_dict
 def build_repository_containers_for_galaxy( trans, repository, datatypes, invalid_tools, missing_repository_dependencies, missing_tool_dependencies,
-                                            readme_files_dict, repository_dependencies, tool_dependencies, valid_tools, workflows, new_install=False,
-                                            reinstalling=False ):
+                                            readme_files_dict, repository_dependencies, tool_dependencies, valid_tools, workflows, valid_data_managers,
+                                            invalid_data_managers, data_managers_errors, new_install=False, reinstalling=False ):
     """Return a dictionary of containers for the received repository's dependencies and readme files for display during installation to Galaxy."""
     containers_dict = dict( datatypes=None,
                             invalid_tools=None,
@@ -199,7 +199,9 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
                             missing_repository_dependencies=None,
                             tool_dependencies=None,
                             valid_tools=None,
-                            workflows=None )
+                            workflows=None,
+                            valid_data_managers=None,
+                            invalid_data_managers=None )
     # Some of the tool dependency folders will include links to display tool dependency information, and some of these links require the repository
     # id.  However we need to be careful because sometimes the repository object is None.
     if repository:
@@ -294,6 +296,19 @@ def build_repository_containers_for_galaxy( trans, repository, datatypes, invali
                                                                                       repository_id=repository_id,
                                                                                       label='Workflows' )
             containers_dict[ 'workflows' ] = workflows_root_folder
+        if valid_data_managers:
+            folder_id, valid_data_managers_root_folder = container_util.build_data_managers_folder( trans=trans,
+                                                                                      folder_id=folder_id,
+                                                                                      data_managers=valid_data_managers,
+                                                                                      label='Valid Data Managers' )
+            containers_dict[ 'valid_data_managers' ] = valid_data_managers_root_folder
+        if invalid_data_managers or data_managers_errors:
+            folder_id, invalid_data_managers_root_folder = container_util.build_invalid_data_managers_folder( trans=trans,
+                                                                                      folder_id=folder_id,
+                                                                                      data_managers=invalid_data_managers,
+                                                                                      error_messages=data_managers_errors,
+                                                                                      label='Invalid Data Managers' )
+            containers_dict[ 'invalid_data_managers' ] = invalid_data_managers_root_folder
     except Exception, e:
         log.debug( "Exception in build_repository_containers_for_galaxy: %s" % str( e ) )
     finally:
@@ -307,7 +322,9 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                             repository_dependencies=None,
                             tool_dependencies=None,
                             valid_tools=None,
-                            workflows=None )
+                            workflows=None,
+                            valid_data_managers=None
+                             )
     if repository_metadata:
         metadata = repository_metadata.metadata
         lock = threading.Lock()
@@ -399,6 +416,17 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                                                                                               repository_id=None,
                                                                                               label='Workflows' )
                     containers_dict[ 'workflows' ] = workflows_root_folder
+            # Valid Data Managers container
+            if metadata:
+                if 'data_manager' in metadata:
+                    data_managers = metadata['data_manager'].get( 'data_managers', None )
+                    folder_id, data_managers_root_folder = container_util.build_data_managers_folder( trans, folder_id, data_managers, label="Data Managers" )
+                    containers_dict[ 'valid_data_managers' ] = data_managers_root_folder
+                    error_messages = metadata['data_manager'].get( 'error_messages', None )
+                    data_managers = metadata['data_manager'].get( 'invalid_data_managers', None )
+                    folder_id, data_managers_root_folder = container_util.build_invalid_data_managers_folder( trans, folder_id, data_managers, error_messages, label="Invalid Data Managers" )
+                    containers_dict[ 'invalid_data_managers' ] = data_managers_root_folder
+                    
         except Exception, e:
             log.debug( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
         finally:
@@ -1044,20 +1072,6 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
     """Update the received metadata_dict with information from the parsed data_manager_config_filename."""
     if data_manager_config_filename is None:
         return metadata_dict
-    try:
-        tree = util.parse_xml( data_manager_config_filename )
-    except Exception, e:
-        log.error( 'There was an error parsing your Data Manager config file "%s": %s' % ( data_manager_config_filename, e ) )
-        return metadata_dict #we are not able to load any data managers
-    tool_path = None
-    if shed_config_dict:
-        tool_path = shed_config_dict.get( 'tool_path', None )
-    tools = {}
-    for tool in metadata_dict.get( 'tools', [] ):
-        tool_conf_name = tool['tool_config']
-        if tool_path:
-            tool_conf_name = os.path.join( tool_path, tool_conf_name )
-        tools[tool_conf_name] = tool
     repo_path = repository.repo_path( app )
     try:
         #Galaxy Side
@@ -1071,37 +1085,65 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
     relative_data_manager_dir = util.relpath( os.path.split( data_manager_config_filename )[0], repo_dir )
     rel_data_manager_config_filename = os.path.join( relative_data_manager_dir, os.path.split( data_manager_config_filename )[1] )
     data_managers = {}
-    data_manager_metadata = { 'config_filename': rel_data_manager_config_filename, 'data_managers': data_managers }#'tool_config_files': tool_files }
+    invalid_data_managers = []
+    data_manager_metadata = { 'config_filename': rel_data_manager_config_filename, 'data_managers': data_managers, 'invalid_data_managers': invalid_data_managers, 'error_messages': [] }#'tool_config_files': tool_files }
     metadata_dict[ 'data_manager' ] = data_manager_metadata
+    try:
+        tree = util.parse_xml( data_manager_config_filename )
+    except Exception, e:
+        error_message = 'There was an error parsing your Data Manager config file "%s": %s' % ( data_manager_config_filename, e )
+        log.error( error_message )
+        data_manager_metadata['error_messages'].append( error_message )
+        return metadata_dict #we are not able to load any data managers
+    tool_path = None
+    if shed_config_dict:
+        tool_path = shed_config_dict.get( 'tool_path', None )
+    tools = {}
+    for tool in metadata_dict.get( 'tools', [] ):
+        tool_conf_name = tool['tool_config']
+        if tool_path:
+            tool_conf_name = os.path.join( tool_path, tool_conf_name )
+        tools[tool_conf_name] = tool
     root = tree.getroot()
     data_manager_tool_path = root.get( 'tool_path', None )
     if data_manager_tool_path:
         relative_data_manager_dir = os.path.join( relative_data_manager_dir, data_manager_tool_path )
-    for data_manager_elem in root.findall( 'data_manager' ):
+    for i, data_manager_elem in enumerate( root.findall( 'data_manager' ) ):
         tool_file = data_manager_elem.get( 'tool_file', None )
         data_manager_id = data_manager_elem.get( 'id', None )
         if data_manager_id is None:
             log.error( 'Data Manager entry is missing id attribute in "%s".' % ( data_manager_config_filename ) )
+            invalid_data_managers.append( { 'index': i, 'error_message': 'Data Manager entry is missing id attribute' } )
             continue
+        data_manager_name = data_manager_elem.get( 'name', data_manager_id ) #fix me, default behavior is to fall back to tool.name
         version = data_manager_elem.get( 'version', DataManager.DEFAULT_VERSION )
         guid = generate_guid_for_object( repository_clone_url, DataManager.GUID_TYPE, data_manager_id, version )
         data_tables = []
         if tool_file is None:
             log.error( 'Data Manager entry is missing tool_file attribute in "%s".' % ( data_manager_config_filename ) )
+            invalid_data_managers.append( { 'index': i, 'error_message': 'Data Manager entry is missing tool_file attribute' } )
+            continue
         else:
+            bad_data_table = False
             for data_table_elem in data_manager_elem.findall( 'data_table' ):
                 data_table_name = data_table_elem.get( 'name', None )
                 if data_table_name is None:
-                    log.error( 'Data Manager data_table entry is name attribute in "%s".' % ( data_manager_config_filename ) )
+                    log.error( 'Data Manager data_table entry is missing name attribute in "%s".' % ( data_manager_config_filename ) )
+                    invalid_data_managers.append( { 'index': i, 'error_message': 'Data Manager entry is missing name attribute' } )
+                    bad_data_table = True
+                    break
                 else:
                     data_tables.append( data_table_name )
+            if bad_data_table:
+                continue
         data_manager_metadata_tool_file = os.path.join( relative_data_manager_dir, tool_file )
         tool_metadata_tool_file = os.path.join( repo_files_directory, data_manager_metadata_tool_file )
         tool = tools.get( tool_metadata_tool_file, None )
         if tool is None:
             log.error( "Unable to determine tools metadata for '%s'." % ( data_manager_metadata_tool_file ) )
+            invalid_data_managers.append( { 'index': i, 'error_message': 'Unable to determine tools metadata' } )
             continue
-        data_managers[ data_manager_id ] = { 'guid': guid, 'version': version, 'tool_config_file': data_manager_metadata_tool_file, 'data_tables': data_tables, 'tool_guid': tool['guid'] }
+        data_managers[ data_manager_id ] = { 'id': data_manager_id, 'name': data_manager_name, 'guid': guid, 'version': version, 'tool_config_file': data_manager_metadata_tool_file, 'data_tables': data_tables, 'tool_guid': tool['guid'] }
         log.debug( 'Loaded Data Manager tool_files: %s' % ( tool_file ) )
     return metadata_dict
 def generate_datatypes_metadata( datatypes_config, metadata_dict ):

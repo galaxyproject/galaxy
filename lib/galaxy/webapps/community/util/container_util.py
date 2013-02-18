@@ -19,6 +19,8 @@ class Folder( object ):
         self.invalid_tool_dependencies = []
         self.invalid_tools = []
         self.valid_tools = []
+        self.valid_data_managers = []
+        self.invalid_data_managers = []
         self.tool_dependencies = []
         self.repository_dependencies = []
         self.readme_files = []
@@ -47,6 +49,14 @@ class Folder( object ):
                                      repository_owner=owner,
                                      changeset_revision=changeset_revision )
 
+class DataManager( object ):
+    """Data Manager object"""
+    def __init__( self, id=None, name=None, version=None, data_tables=None ):
+        self.id = id
+        self.name = name
+        self.version = version
+        self.data_tables = data_tables
+
 class Datatype( object ):
     """Datatype object"""
     def __init__( self, id=None, extension=None, type=None, mimetype=None, subclass=None ):
@@ -55,6 +65,13 @@ class Datatype( object ):
         self.type = type
         self.mimetype = mimetype
         self.subclass = subclass
+
+class InvalidDataManager( object ):
+    """Data Manager object"""
+    def __init__( self, id=None, index=None, error=None ):
+        self.id = id
+        self.index = index
+        self.error = error
 
 class InvalidRepositoryDependency( object ):
     """Invalid repository dependency definition object"""
@@ -151,6 +168,35 @@ class Workflow( object ):
         self.repository_metadata_id = repository_metadata_id
         self.repository_id = repository_id
 
+def build_data_managers_folder( trans, folder_id, data_managers, label=None ):
+    """Return a folder hierarchy containing Data Managers."""
+    if data_managers:
+        if label is None:
+            label = "Data Managers"
+        data_manager_id = 0
+        folder_id += 1
+        data_managers_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
+        folder_id += 1
+        key = "valid_data_managers"
+        folder = Folder( id=folder_id, key=key, label=label, parent=data_managers_root_folder )
+        data_managers_root_folder.folders.append( folder )
+        # Insert a header row.
+        data_manager_id += 1
+        data_manager = DataManager( id=data_manager_id,
+                             name='Name',
+                             version='Version',
+                             data_tables='Data Tables' )
+        folder.valid_data_managers.append( data_manager )
+        for data_manager_dict in data_managers.itervalues():
+            data_manager_id += 1
+            data_manager = DataManager( id=data_manager_id,
+                                 name=data_manager_dict.get( 'name', '' ),
+                                 version=data_manager_dict.get( 'version', '' ),
+                                 data_tables=", ".join( data_manager_dict.get( 'data_tables', '' ) ) )
+            folder.valid_data_managers.append( data_manager )
+    else:
+        data_managers_root_folder = None
+    return folder_id, data_managers_root_folder
 def build_datatypes_folder( trans, folder_id, datatypes, label='Datatypes' ):
     """Return a folder hierarchy containing datatypes."""
     if datatypes:
@@ -179,6 +225,42 @@ def build_datatypes_folder( trans, folder_id, datatypes, label='Datatypes' ):
     else:
         datatypes_root_folder = None
     return folder_id, datatypes_root_folder
+def build_invalid_data_managers_folder( trans, folder_id, data_managers, error_messages=None, label=None ):
+    """Return a folder hierarchy containing invalid Data Managers."""
+    if data_managers or error_messages:
+        if label is None:
+            label = "Invalid Data Managers"
+        data_manager_id = 0
+        folder_id += 1
+        data_managers_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
+        folder_id += 1
+        key = "invalid_data_managers"
+        folder = Folder( id=folder_id, key=key, label=label, parent=data_managers_root_folder )
+        data_managers_root_folder.folders.append( folder )
+        # Insert a header row.
+        data_manager_id += 1
+        data_manager = InvalidDataManager( id=data_manager_id,
+                             index='Element Index',
+                             error='Error' )
+        folder.invalid_data_managers.append( data_manager )
+        if error_messages:
+            for error_message in error_messages:
+                data_manager_id += 1
+                data_manager = InvalidDataManager( id=data_manager_id,
+                                        index=0,
+                                        error=error_message )
+                folder.invalid_data_managers.append( data_manager )
+                has_errors = True
+        for data_manager_dict in data_managers:
+            data_manager_id += 1
+            data_manager = InvalidDataManager( id=data_manager_id,
+                                        index=data_manager_dict.get( 'index', 0 ) + 1,
+                                        error=data_manager_dict.get( 'error_message', '' ) )
+            folder.invalid_data_managers.append( data_manager )
+            has_errors = True
+    else:
+        data_managers_root_folder = None
+    return folder_id, data_managers_root_folder
 def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid_repository_dependencies_dict ):
     """Return a folder hierarchy containing invalid repository dependencies."""
     label = 'Invalid repository dependencies'

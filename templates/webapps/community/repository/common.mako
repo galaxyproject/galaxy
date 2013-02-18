@@ -248,6 +248,14 @@
                     else:
                         folder_label = "%s<i> - click the name to view an SVG image of the workflow</i>" % folder_label
                     col_span_str = 'colspan="4"'
+                elif folder.valid_data_managers:
+                    if folder.description:
+                        folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
+                    col_span_str = 'colspan="3"'
+                elif folder.invalid_data_managers:
+                    if folder.description:
+                        folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
+                    col_span_str = 'colspan="2"'
             %>
             <td ${col_span_str} style="padding-left: ${folder_pad}px;">
                 <span class="expandLink folder-${encoded_id}-click">
@@ -305,6 +313,18 @@
             ${render_datatype( datatype, pad, my_row, row_counter, row_is_header )}
         %endfor
     %endif
+    %if folder.valid_data_managers:
+        %for index, data_manager in enumerate( folder.valid_data_managers ):
+            <% row_is_header = index == 0 %>
+            ${render_valid_data_manager( data_manager, pad, my_row, row_counter, row_is_header )}
+        %endfor
+    %endif
+    %if folder.invalid_data_managers:
+        %for index, data_manager in enumerate( folder.invalid_data_managers ):
+            <% row_is_header = index == 0 %>
+            ${render_invalid_data_manager( data_manager, pad, my_row, row_counter, row_is_header )}
+        %endfor
+    %endif
 </%def>
 
 <%def name="render_datatype( datatype, pad, parent, row_counter, row_is_header=False )">
@@ -324,6 +344,51 @@
         <${cell_type}>${datatype.type | h}</${cell_type}>
         <${cell_type}>${datatype.mimetype | h}</${cell_type}>
         <${cell_type}>${datatype.subclass | h}</${cell_type}>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_valid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( data_manager.id )
+        if row_is_header:
+            cell_type = 'th'
+        else:
+            cell_type = 'td'
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.name | h}</${cell_type}>
+        <${cell_type}>${data_manager.version | h}</${cell_type}>
+        <${cell_type}>${data_manager.data_tables | h}</${cell_type}>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_invalid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( data_manager.id )
+        if row_is_header:
+            cell_type = 'th'
+        else:
+            cell_type = 'td'
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.index | h}</${cell_type}>
+        <${cell_type}>${data_manager.error | h}</${cell_type}>
     </tr>
     <%
         my_row = row_counter.count
@@ -638,6 +703,8 @@
         missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
         valid_tools_root_folder = containers_dict.get( 'valid_tools', None )
         workflows_root_folder = containers_dict.get( 'workflows', None )
+        valid_data_managers_root_folder = containers_dict.get( 'valid_data_managers', None )
+        invalid_data_managers_root_folder = containers_dict.get( 'invalid_data_managers', None )
         
         has_contents = datatypes_root_folder or invalid_tools_root_folder or valid_tools_root_folder or workflows_root_folder
         has_dependencies = \
@@ -734,6 +801,20 @@
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tools">
                         ${render_folder( invalid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    </table>
+                %endif
+                %if valid_data_managers_root_folder:
+                    <p/>
+                    <% row_counter = RowCounter() %>
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="valid_tools">
+                        ${render_folder( valid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    </table>
+                %endif
+                %if invalid_data_managers_root_folder:
+                    <p/>
+                    <% row_counter = RowCounter() %>
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tools">
+                        ${render_folder( invalid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
                 %if workflows_root_folder:
