@@ -61,7 +61,7 @@
 
 <%def name="render_item( data, data_to_render )">
     ## Chunkable data is rendered in JavaScript above; render unchunkable data below.
-    %if not data.datatype.CHUNKABLE:
+    %if not data.datatype.CHUNKABLE and data_to_render:
         %if truncated:
             <div class="warningmessagelarge">
                  This dataset is large and only the first megabyte is shown below. | 
@@ -70,6 +70,8 @@
         %endif
         ## TODO: why is the default font size so small?
         <pre style="font-size: 135%">${ data_to_render | h }</pre>
+    %else:
+        <p align='center'>Cannot show dataset content</p>
     %endif
 </%def>
 

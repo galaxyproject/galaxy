@@ -20,6 +20,7 @@ from paste.httpexceptions import *
 from galaxy.exceptions import *
 from galaxy.model import NoConverterException, ConverterDependencyException
 from galaxy.datatypes.interval import ChromatinInteractions
+from galaxy.datatypes.data import Text
 
 from Cheetah.Template import Template
 
@@ -270,17 +271,22 @@ class UsesHistoryDatasetAssociationMixin:
         
     def get_data( self, dataset, preview=True ):
         """ Gets a dataset's data. """
+
         # Get data from file, truncating if necessary.
         truncated = False
         dataset_data = None
         if os.path.exists( dataset.file_name ):
-            max_peek_size = 1000000 # 1 MB
-            if preview and os.stat( dataset.file_name ).st_size > max_peek_size:
-                dataset_data = open( dataset.file_name ).read(max_peek_size)
-                truncated = True
+            if isinstance( dataset.datatype, Text ):
+                max_peek_size = 1000000 # 1 MB
+                if preview and os.stat( dataset.file_name ).st_size > max_peek_size:
+                    dataset_data = open( dataset.file_name ).read(max_peek_size)
+                    truncated = True
+                else:
+                    dataset_data = open( dataset.file_name ).read(max_peek_size)
+                    truncated = False
             else:
-                dataset_data = open( dataset.file_name ).read(max_peek_size)
-                truncated = False
+                # For now, cannot get data from non-text datasets.
+                dataset_data = None
         return truncated, dataset_data
         
     def check_dataset_state( self, trans, dataset ):
