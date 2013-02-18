@@ -695,11 +695,37 @@ class ShedTwillTestCase( TwillTestCase ):
             self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
         self.wait_for_repository_installation( repository_ids )
-    def load_invalid_tool_page( self, repository, tool_xml, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
-        url = '/repository/load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
-              ( self.security.encode_id( repository.id ), tool_xml, changeset_revision )
+    def load_citable_url( self, 
+                          username, 
+                          repository_name, 
+                          changeset_revision, 
+                          encoded_user_id,
+                          encoded_repository_id, 
+                          strings_displayed=[], 
+                          strings_not_displayed=[],
+                          strings_displayed_in_iframe=[],
+                          strings_not_displayed_in_iframe=[] ):
+        url = '%s/view/%s' % ( self.url, username )
+        # If repository name is passed in, append that to the url.
+        if repository_name:
+            url += '/%s' % repository_name
+        if changeset_revision:
+            # Changeset revision should never be provided unless repository name also is.
+            assert repository_name is not None, 'Changeset revision is present, but repository name is not - aborting.'
+            url += '/%s' % changeset_revision
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        # Now load the page that should be displayed inside the iframe and check for strings.
+        if encoded_repository_id:
+            url = '/repository/view_repository?id=%s&operation=view_or_manage_repository' % encoded_repository_id
+            if changeset_revision:
+                url += '&changeset_revision=%s' % changeset_revision
+            self.visit_url( url )
+            self.check_for_strings( strings_displayed_in_iframe, strings_not_displayed_in_iframe )
+        elif encoded_user_id:
+            url = '/repository/browse_repositories?user_id=%s&operation=repositories_by_user' % encoded_user_id
+            self.visit_url( url )
+            self.check_for_strings( strings_displayed_in_iframe, strings_not_displayed_in_iframe )
     def load_display_tool_page( self, repository, tool_xml_path, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
@@ -708,6 +734,11 @@ class ShedTwillTestCase( TwillTestCase ):
     def load_galaxy_tool_migrations_page( self, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin/review_tool_migration_stages'
         self.visit_galaxy_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+    def load_invalid_tool_page( self, repository, tool_xml, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
+              ( self.security.encode_id( repository.id ), tool_xml, changeset_revision )
+        self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
     def load_workflow_image_in_tool_shed( self, repository, workflow_name, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         if not changeset_revision:
