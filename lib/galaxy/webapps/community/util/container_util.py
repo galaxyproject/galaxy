@@ -514,7 +514,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                               installation_status=None,
                                               repository_id=None,
                                               tool_dependency_id=None,
-                                              is_orphan=None )
+                                              is_orphan='Orphan' )
         folder.tool_dependencies.append( tool_dependency )
         is_orphan_description = "these dependencies may not be required by tools in this repository"
         for dependency_key, requirements_dict in tool_dependencies.items():
