@@ -1418,7 +1418,7 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         # Handle Data Managers
         valid_data_managers = None
         invalid_data_managers = None
-        data_manager_errors = None
+        data_managers_errors = None
         if 'data_manager' in metadata:
             valid_data_managers = metadata['data_manager'].get( 'data_managers', None )
             invalid_data_managers = metadata['data_manager'].get( 'invalid_data_managers', None )
