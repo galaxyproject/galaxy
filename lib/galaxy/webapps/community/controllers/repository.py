@@ -2000,10 +2000,11 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                                   key_rd_dicts_to_be_processed=None,
                                                                                                   all_repository_dependencies=None,
                                                                                                   handled_key_rd_dicts=None )
-                if metadata:
-                    if 'orphan_tool_dependencies' in metadata:
-                        orphan_message, status = suc.generate_message_for_orphan_tool_dependencies( metadata )
-                        message += orphan_message
+                # Handle messaging for orphan tool dependencies.
+                orphan_message = suc.generate_message_for_orphan_tool_dependencies( metadata )
+                if orphan_message:
+                    message += orphan_message
+                    status = 'warning'
         if is_malicious:
             if trans.app.security_agent.can_push( trans.app, trans.user, repository ):
                 message += malicious_error_can_push
@@ -2752,10 +2753,11 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                               key_rd_dicts_to_be_processed=None,
                                                                                               all_repository_dependencies=None,
                                                                                               handled_key_rd_dicts=None )
-            if metadata:
-                if 'orphan_tool_dependencies' in metadata:
-                    orphan_message, status = suc.generate_message_for_orphan_tool_dependencies( metadata )
-                    message += orphan_message
+            # Handle messaging for orphan tool dependencies.
+            orphan_message = suc.generate_message_for_orphan_tool_dependencies( metadata )
+            if orphan_message:
+                message += orphan_message
+                status = 'warning'
         else:
             repository_metadata_id = None
             metadata = None

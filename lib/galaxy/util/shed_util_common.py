@@ -1166,6 +1166,33 @@ def generate_environment_dependency_metadata( elem, valid_tool_dependencies_dict
             else:
                 valid_tool_dependencies_dict[ 'set_environment' ] = [ requirements_dict ]
     return valid_tool_dependencies_dict
+def generate_message_for_invalid_repository_dependencies( metadata_dict ):
+    """Return the error message associated with an invalid repository dependency for display in the caller."""
+    message = ''
+    if metadata_dict:
+        invalid_repository_dependencies_dict = metadata_dict.get( 'invalid_repository_dependencies', None )
+        if invalid_repository_dependencies_dict:
+            invalid_repository_dependencies = invalid_repository_dependencies_dict[ 'invalid_repository_dependencies' ]
+            for repository_dependency_tup in invalid_repository_dependencies:
+                toolshed, name, owner, changeset_revision, error = repository_dependency_tup
+                if error:
+                    message = '%s  ' % str( error )
+    return message
+def generate_message_for_invalid_tool_dependencies( metadata_dict ):
+    """
+    Due to support for orphan tool dependencies (which are always valid) tool dependency definitions can only be invalid if they include a definition for a complex
+    repository dependency and the repository dependency definition is invalid.  This method retrieves the error message associated with the invalid tool dependency
+    for display in the caller.
+    """
+    message = ''
+    if metadata_dict:
+        invalid_tool_dependencies = metadata_dict.get( 'invalid_tool_dependencies', None )
+        if invalid_tool_dependencies:
+            for td_key, requirement_dict in invalid_tool_dependencies.items():
+                error = requirement_dict.get( 'error', None )
+                if error:
+                    message = '%s  ' % str( error )
+    return message
 def generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False ):
     if as_html:
         new_line = '<br/>'
@@ -1211,7 +1238,6 @@ def generate_message_for_orphan_tool_dependencies( metadata_dict ):
     is considered valid but perhaps an orphan due to it's actual invalidity.
     """
     message = ''
-    status = 'done'
     if metadata_dict:
         orphan_tool_dependencies = metadata_dict.get( 'orphan_tool_dependencies', None )
         if orphan_tool_dependencies:
@@ -1237,8 +1263,7 @@ def generate_message_for_orphan_tool_dependencies( metadata_dict ):
                     version = requirements_dict[ 'version' ]
                     message += "<b>* name:</b> %s, <b>type:</b> %s, <b>version:</b> %s<br/>" % ( str( name ), str( type ), str( version ) )
                 message += "<br/>"
-        status = 'warning'
-    return message, status
+    return message
 def generate_metadata_for_changeset_revision( app, repository, changeset_revision, repository_clone_url, shed_config_dict=None, relative_install_dir=None,
                                               repository_files_dir=None, resetting_all_metadata_on_repository=False, updating_installed_repository=False,
                                               persist=False ):
