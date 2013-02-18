@@ -1068,6 +1068,12 @@ def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
         return '%s://%s%s/repos/%s/%s' % ( protocol, username, base, repository.user.username, repository.name )
     else:
         return '%s/repos/%s/%s' % ( base_url, repository.user.username, repository.name )
+def generate_clone_url_from_repo_info_tup( repo_info_tup ):
+    """Generate teh URL for cloning a repositoyr given a tuple of toolshed, name, owner, changeset_revision."""
+    # Example tuple: ['http://localhost:9009', 'blast_datatypes', 'test', '461a4216e8ab']
+    toolshed, name, owner, changeset_revision = repo_info_tup
+    # Don't include the changeset_revision in clone urls.
+    return url_join( toolshed, 'repos', owner, name )
 def generate_data_manager_metadata( app, repository, repo_dir, data_manager_config_filename, metadata_dict, shed_config_dict=None ):
     """Update the received metadata_dict with information from the parsed data_manager_config_filename."""
     if data_manager_config_filename is None:

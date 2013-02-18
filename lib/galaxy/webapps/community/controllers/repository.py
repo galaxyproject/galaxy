@@ -1472,12 +1472,15 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
             metadata = repository_metadata.metadata
-            if not includes_tools and 'tools' in metadata:
-                includes_tools = True
-            if not has_repository_dependencies and 'repository_dependencies' in metadata:
-                has_repository_dependencies = True
-            if not includes_tool_dependencies and 'tool_dependencies' in metadata:
-                includes_tool_dependencies = True
+            if not includes_tools:
+                if 'tools' in metadata:
+                    includes_tools = True
+            if not has_repository_dependencies:
+                if 'repository_dependencies' in metadata:
+                    has_repository_dependencies = True
+            if not includes_tool_dependencies:
+                if 'tool_dependencies' in metadata:
+                    includes_tool_dependencies = True
             repo_dir = repository.repo_path( trans.app )
             repo = hg.repository( suc.get_configured_ui(), repo_dir )
             ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
