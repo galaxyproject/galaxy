@@ -84,7 +84,6 @@ def get_webapp_global_conf():
         global_conf.update( get_static_settings() )
     return global_conf
 
-
 def parse_tool_panel_config( config, shed_tools_dict ):
     """
     Parse a shed-related tool panel config to generate the shed_tools_dict. This only happens when testing tools installed from the tool shed.
@@ -293,6 +292,7 @@ def main():
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
         # Build the Universe Application
+        log.debug( 'app.kwargs:\n%s', pprint.pformat( kwargs ) )
         app = UniverseApplication( job_queue_workers = 5,
                                    id_secret = 'changethisinproductiontoo',
                                    template_path = "templates",
