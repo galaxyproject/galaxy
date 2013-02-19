@@ -745,8 +745,8 @@ class AdminToolshed( AdminGalaxy ):
         repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
         changeset_revision = repository.changeset_revision
         metadata = repository.metadata
-        workflows = metadata[ 'workflows' ]
-        tools_metadata = metadata[ 'tools' ]
+        workflows = metadata.get( 'workflows', [] )
+        tools_metadata = metadata.get( 'tools', [] )
         workflow_dict = None
         for workflow_data_tuple in workflows:
             # The value of workflow_data_tuple is ( relative_path_to_workflow_file, exported_workflow_dict ).
