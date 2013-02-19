@@ -88,6 +88,8 @@ class TestToolShedWorkflowFeatures( ShedTwillTestCase ):
                                        strings_displayed=[] )
         workflow = file( self.get_filename( 'filtering_workflow/Workflow_for_0060_filter_workflow_repository.ga' ), 'r' ).read()
         workflow = workflow.replace(  '__TEST_TOOL_SHED_URL__', self.url.replace( 'http://', '' ) )
+        workflow = workflow.replace( 'Workflow for 0060_filter_workflow_repository', 
+                                     'New workflow for 0060_filter_workflow_repository' )
         workflow_filepath = self.generate_temp_path( 'test_0060', additional_paths=[ 'filtering_workflow_2' ] )
         if not os.path.exists( workflow_filepath ):
             os.makedirs( workflow_filepath )
@@ -106,7 +108,7 @@ class TestToolShedWorkflowFeatures( ShedTwillTestCase ):
     def test_0030_check_workflow_repository( self ):
         """Check for strings on the manage page for the filtering_workflow_0060 repository."""
         repository = test_db_util.get_repository_by_name_and_owner( workflow_repository_name, common.test_user_1_name )
-        strings_displayed = [ 'Workflows', 'Workflow for 0060_filter', '0.1' ]
+        strings_displayed = [ 'Workflows', 'New workflow for 0060_filter', '0.1' ]
         strings_not_displayed = [ 'Valid tools', 'Invalid tools' ]
         self.display_manage_repository_page( repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
     def test_0035_verify_repository_metadata( self ):
