@@ -40,6 +40,7 @@ import nose.config
 import nose.loader
 import nose.plugins.manager
 
+import pprint
 log = logging.getLogger( "functional_tests.py" )
 
 default_galaxy_test_host = "localhost"
