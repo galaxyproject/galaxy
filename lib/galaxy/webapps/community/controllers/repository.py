@@ -1298,21 +1298,29 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     def get_changeset_revision_and_ctx_rev( self, trans, **kwd ):
         """Handle a request from a local Galaxy instance to retrieve the changeset revision hash to which an installed repository can be updated."""
-        def has_tools_and_repository_dependencies( repository_metadata ):
+        def has_galaxy_utilities( repository_metadata ):
+            includes_data_managers = False
+            includes_datatypes = False
             includes_tools = False
             has_repository_dependencies = False
+            includes_tool_dependencies = False
+            includes_workflows = False
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
+                    if 'data_manager' in metadata:
+                        includes_data_managers = True
+                    if 'datatypes' in metadata:
+                        includes_datatypes = True
                     if 'tools' in metadata:
                         includes_tools = True
-                    else:
-                        includes_tools = False
+                    if 'tool_dependencies' in metadata:
+                        includes_tool_dependencies = True
                     if 'repository_dependencies' in metadata:
                         has_repository_dependencies = True
-                    else:
-                        has_repository_dependencies = False
-            return includes_tools, has_repository_dependencies
+                    if 'workflows' in metadata:
+                        includes_workflows = True
+            return includes_data_managers, includes_datatypes, includes_tools, includes_tool_dependencies, has_repository_dependencies, includes_workflows
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -1324,7 +1332,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
                                                                                  trans.security.encode_id( repository.id ),
                                                                                  changeset_revision )
-        includes_tools, has_repository_dependencies = has_tools_and_repository_dependencies( repository_metadata )
+        includes_data_managers, includes_datatypes, includes_tools, includes_tool_dependencies, has_repository_dependencies, includes_workflows = \
+            has_galaxy_utilities( repository_metadata )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         # Default to the received changeset revision and ctx_rev.
@@ -1333,8 +1342,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         latest_changeset_revision = changeset_revision
         update_dict = dict( changeset_revision=changeset_revision,
                             ctx_rev=ctx_rev,
+                            includes_data_managers=includes_data_managers,
+                            includes_datatypes=includes_datatypes,
                             includes_tools=includes_tools,
-                            has_repository_dependencies=has_repository_dependencies )
+                            includes_tool_dependencies=includes_tool_dependencies,
+                            has_repository_dependencies=has_repository_dependencies,
+                            includes_workflows=includes_workflows )
         if changeset_revision == repository.tip( trans.app ):
             # If changeset_revision is the repository tip, there are no additional updates.
             return encoding_util.tool_shed_encode( update_dict )
@@ -1356,7 +1369,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                                            trans.security.encode_id( repository.id ),
                                                                                                            changeset_hash )
                         if update_to_repository_metadata:
-                            includes_tools, has_repository_dependencies = has_tools_and_repository_dependencies( update_to_repository_metadata )
+                            includes_data_managers, includes_datatypes, includes_tools, includes_tool_dependencies, has_repository_dependencies, includes_workflows = \
+                                has_galaxy_utilities( update_to_repository_metadata )
                             # We found a RepositoryMetadata record.
                             if changeset_hash == repository.tip( trans.app ):
                                 # The current ctx is the repository tip, so use it.
@@ -1369,7 +1383,11 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     elif not update_to_changeset_hash and changeset_hash == changeset_revision:
                         # We've found the changeset in the changelog for which we need to get the next update.
                         update_to_changeset_hash = changeset_hash
+                update_dict[ 'includes_data_managers' ] = includes_data_managers
+                update_dict[ 'includes_datatypes' ] = includes_datatypes
                 update_dict[ 'includes_tools' ] = includes_tools
+                update_dict[ 'includes_tool_dependencies' ] = includes_tool_dependencies
+                update_dict[ 'includes_workflows' ] = includes_workflows
                 update_dict[ 'has_repository_dependencies' ] = has_repository_dependencies
                 update_dict[ 'changeset_revision' ] = str( latest_changeset_revision )
         update_dict[ 'ctx_rev' ] = str( update_to_ctx.rev() )
@@ -1601,16 +1619,22 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                     repository_metadata=repository_metadata,
                                                     tool_dependencies=None,
                                                     repository_dependencies=None )
+        includes_data_managers = False
+        includes_datatypes = False
+        includes_tools = False
+        includes_workflows = False
+        readme_files_dict = None
         metadata = repository_metadata.metadata
         if metadata:
-            readme_files_dict = suc.build_readme_files_dict( metadata )
+            if 'data_manager' in metadata:
+                includes_data_managers = True
+            if 'datatypes' in metadata:
+                includes_datatypes = True
             if 'tools' in metadata:
                 includes_tools = True
-            else:
-                includes_tools = False
-        else:
-            readme_files_dict = None
-            includes_tools = False
+            if 'workflows' in metadata:
+                includes_workflows = True
+            readme_files_dict = suc.build_readme_files_dict( metadata )
         # See if the repo_info_dict was populated with repository_dependencies or tool_dependencies.
         for name, repo_info_tuple in repo_info_dict.items():
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
@@ -1623,9 +1647,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 includes_tool_dependencies = True
             else:
                 includes_tool_dependencies = False
-        return dict( includes_tools=includes_tools,
+        return dict( includes_data_managers=includes_data_managers,
+                     includes_datatypes=includes_datatypes,
+                     includes_tools=includes_tools,
                      has_repository_dependencies=has_repository_dependencies,
                      includes_tool_dependencies=includes_tool_dependencies,
+                     includes_workflows=includes_workflows,
                      readme_files_dict=readme_files_dict,
                      repo_info_dict=repo_info_dict )
     def get_versions_of_tool( self, trans, repository, repository_metadata, guid ):

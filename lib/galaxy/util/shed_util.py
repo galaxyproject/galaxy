@@ -951,6 +951,7 @@ def get_tool_version_association( app, parent_tool_version, tool_version ):
                      .first()
 def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     """Return the changeset revision hash to which the repository can be updated."""
+    changeset_revision_dict = {}
     tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
     url = suc.url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
         ( repository.name, repository.owner, repository.installed_changeset_revision ) )
@@ -959,18 +960,34 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
         encoded_update_dict = response.read()
         if encoded_update_dict:
             update_dict = encoding_util.tool_shed_decode( encoded_update_dict )
-            changeset_revision = update_dict[ 'changeset_revision' ]
-            ctx_rev = update_dict[ 'ctx_rev' ]
+            includes_data_managers = update_dict.get( 'includes_data_managers', False )
+            includes_datatypes = update_dict.get( 'includes_datatypes', False )
             includes_tools = update_dict.get( 'includes_tools', False )
+            includes_tool_dependencies = update_dict.get( 'includes_tool_dependencies', False )
+            includes_workflows = update_dict.get( 'includes_workflows', False )
             has_repository_dependencies = update_dict.get( 'has_repository_dependencies', False )
+            changeset_revision = update_dict.get( 'changeset_revision', None )
+            ctx_rev = update_dict.get( 'ctx_rev', None )
         response.close()
+        changeset_revision_dict[ 'includes_data_managers' ] = includes_data_managers
+        changeset_revision_dict[ 'includes_datatypes' ] = includes_datatypes
+        changeset_revision_dict[ 'includes_tools' ] = includes_tools
+        changeset_revision_dict[ 'includes_tool_dependencies' ] = includes_tool_dependencies
+        changeset_revision_dict[ 'includes_workflows' ] = includes_workflows
+        changeset_revision_dict[ 'has_repository_dependencies' ] = has_repository_dependencies
+        changeset_revision_dict[ 'changeset_revision' ] = changeset_revision
+        changeset_revision_dict[ 'ctx_rev' ] = ctx_rev
     except Exception, e:
         log.debug( "Error getting change set revision for update from the tool shed for repository '%s': %s" % ( repository.name, str( e ) ) )
-        includes_tools = False
-        has_repository_dependencies = False
-        changeset_revision = None
-        ctx_rev = None
-    return changeset_revision, ctx_rev, includes_tools, has_repository_dependencies
+        changeset_revision_dict[ 'includes_data_managers' ] = False
+        changeset_revision_dict[ 'includes_datatypes' ] = False
+        changeset_revision_dict[ 'includes_tools' ] = False
+        changeset_revision_dict[ 'includes_tool_dependencies' ] = False
+        changeset_revision_dict[ 'includes_workflows' ] = False
+        changeset_revision_dict[ 'has_repository_dependencies' ] = False
+        changeset_revision_dict[ 'changeset_revision' ] = None
+        changeset_revision_dict[ 'ctx_rev' ] = None
+    return changeset_revision_dict
 def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the
