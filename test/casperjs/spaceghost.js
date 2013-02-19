@@ -72,6 +72,14 @@ utils.inherits( SpaceGhost, Casper );
 
 //console.debug( 'CasperError:' + CasperError );
 
+// ------------------------------------------------------------------- included libs
+//??: can we require underscore, etc. from the ../../static/scripts/lib?
+// yep!
+//var _ = require( '../../static/scripts/libs/underscore' );
+//var stooges = [{name : 'moe', age : 40}, {name : 'larry', age : 50}, {name : 'curly', age : 60}];
+//console.debug( JSON.stringify( _.pluck(stooges, 'name') ) );
+//exports._ = _;
+
 // ------------------------------------------------------------------- error types
 PageError.prototype = new CasperError();
 PageError.prototype.constructor = CasperError;
@@ -79,6 +87,7 @@ function PageError(){
     CasperError.apply( this, arguments );
     this.name = "PageError";
 }
+SpaceGhost.prototype.PageError = PageError;
 
 GalaxyError.prototype = new CasperError();
 GalaxyError.prototype.constructor = CasperError;
@@ -86,6 +95,7 @@ function GalaxyError(){
     CasperError.apply( this, arguments );
     this.name = "GalaxyError";
 }
+SpaceGhost.prototype.GalaxyError = GalaxyError;
 
 AlertError.prototype = new CasperError();
 AlertError.prototype.constructor = CasperError;
@@ -93,11 +103,12 @@ function AlertError(){
     CasperError.apply( this, arguments );
     this.name = "AlertError";
 }
+SpaceGhost.prototype.AlertError = AlertError;
 
 // =================================================================== METHODS / OVERRIDES
 // ------------------------------------------------------------------- set up
 /** More initialization: cli, event handlers, etc.
- * @param {Object} options  option hash
+ *  @param {Object} options  option hash
  */
 SpaceGhost.prototype.init = function init( options ){
     //console.debug( 'init, options:', JSON.stringify( options, null, 2 ) );
@@ -121,6 +132,8 @@ SpaceGhost.prototype.init = function init( options ){
         //...
     ].concat( this.options.clientScripts );
     this.debug( 'clientScripts:\n' + this.jsonStr( this.options.clientScripts ) );
+
+    this._loadModules();
 
 };
 
@@ -371,7 +384,16 @@ SpaceGhost.prototype._setUpEventHandlers = function _setUpEventHandlers(){
 
 };
 
-// ------------------------------------------------------------------- page control
+// ------------------------------------------------------------------- sub modules
+/** Load sub modules (similar to casperjs.test)
+ */
+SpaceGhost.prototype._loadModules = function _loadModules(){
+    this.user  = require( this.options.scriptDir + 'modules/user'  ).create( this );
+    this.tools = require( this.options.scriptDir + 'modules/tools' ).create( this );
+    this.historypanel = require( this.options.scriptDir + 'modules/historypanel' ).create( this );
+};
+
+// =================================================================== PAGE CONTROL
 /** An override of casper.open specifically for Galaxy.
  *      (Currently only used to change language headers)
  */
@@ -530,327 +552,8 @@ SpaceGhost.prototype.tryClick = function tryClick( selector ){
 };
 
 
+
 // =================================================================== GALAXY CONVENIENCE
-/** Gets a psuedo-random (unique?) email based on the time stamp.
- *      Helpful for testing registration.
- *  @param {String} username    email user (defaults to 'test')
- *  @param {String} domain      email domain (defaults to 'test.test')
- */
-SpaceGhost.prototype.getRandomEmail = function getRandomEmail( username, domain ){
-    username = username || 'test';
-    domain = domain || 'test.test';
-    return username + Date.now() + '@' + domain;
-};
-
-
-/** Tests registering a new user on the Galaxy instance by submitting the registration form.
- *      NOTE: this version does NOT throw an error on a bad registration.
- *      It is meant for testing the registration functionality and, therefore, is marked as private.
- *      Other tests should use registerUser
- *  @param {String} email       the users email address
- *  @param {String} password    the users password
- *  @param {String} username    the users ...username! (optional: will use 1st part of email)
- *  @param {String} confirm     password confirmation (optional: defaults to password)
- */
-SpaceGhost.prototype._submitUserRegistration = function _submitUserRegistration( email, password, username, confirm ){
-    var userInfo = {
-            email   : email,
-            password: password,
-            // default username to first part of email
-            username:( !username && email.match( /^\w*/ ) )?( email.match( /^\w*/ ) ):( username ),
-            // default confirm duplicate of password
-            confirm : ( confirm !== undefined )?( confirm ):( password )
-        };
-    this.debug( 'registering user:\n' + this.jsonStr( userInfo ) );
-
-    this.thenOpen( this.baseUrl, function(){
-
-        this.clickLabel( this.labels.masthead.menus.user );
-        this.clickLabel( this.labels.masthead.userMenu.register );
-
-        this.withFrame( this.selectors.frames.main, function mainBeforeRegister(){
-            this.debug( 'submitting registration... ' + this.getCurrentUrl() );
-            this.fill( this.selectors.registrationPage.form, userInfo, false );
-            // need manual up
-            this.click( xpath( this.selectors.registrationPage.submit_xpath ) );
-        });
-
-        this.withFrame( this.selectors.frames.main, function mainAfterRegister(){
-            var messageInfo = this.getElementInfo( this.selectors.messages.all );
-            this.debug( 'post registration message:\n' + this.jsonStr( messageInfo ) );
-        });
-    });
-};
-
-/** Register a new user on the Galaxy instance.
- *  @param {String} email       the users email address
- *  @param {String} password    the users password
- *  @param {String} username    the users ...username! (optional: will use 1st part of email)
- */
-SpaceGhost.prototype.registerUser = function registerUser( email, password, username ){
-    this._submitUserRegistration( email, password, username );
-    this.then( function(){
-        this.withFrame( this.selectors.frames.main, function mainAfterRegister(){
-            var messageInfo = this.getElementInfo( this.selectors.messages.all );
-            this.debug( 'post registration message:\n' + this.jsonStr( messageInfo ) );
-
-            if( messageInfo.attributes[ 'class' ] === 'errormessage' ){
-                throw new GalaxyError( 'RegistrationError: ' + messageInfo.html );
-            }
-        });
-    });
-    return this;
-};
-
-/** Log out the current user
- */
-SpaceGhost.prototype.logout = function logoutUser(){
-    this.clickLabel( this.labels.masthead.menus.user );
-    this.clickLabel( this.labels.masthead.userMenu.login );
-    this.thenOpen( this.baseUrl, function(){
-        //TODO: handle already logged out
-        this.clickLabel( this.labels.masthead.menus.user );
-        this.clickLabel( this.labels.masthead.userMenu.logout );
-    });
-};
-
-/** Tests logging in a user on the Galaxy instance by submitting the login form.
- *      NOTE: this version does NOT throw an error on a bad login.
- *      It is meant for testing the login functionality and, therefore, is marked as private.
- *      Other tests should use login
- *  @param {String} email       the users email address
- *  @param {String} password    the users password
- */
-SpaceGhost.prototype._submitLogin = function logoutUser( email, password ){
-    var loginInfo = {
-        //NOTE: keys are used as name selectors in the fill fn - must match the names of the inputs
-            email: email,
-            password: password
-        };
-
-    this.thenOpen( this.baseUrl, function(){
-
-        this.clickLabel( this.labels.masthead.menus.user );
-        this.clickLabel( this.labels.masthead.userMenu.login );
-
-        this.withFrame( this.selectors.frames.main, function mainBeforeLogin(){
-            this.debug( '(' + this.getCurrentUrl() + ') logging in user:\n' + this.jsonStr( loginInfo ) );
-            this.fill( this.selectors.loginPage.form, loginInfo, false );
-            this.click( xpath( this.selectors.loginPage.submit_xpath ) );
-        });
-        this.withFrame( this.selectors.frames.main, function mainAfterLogin(){
-            //TODO: prob. could use a more generalized form of this for url breakdown/checking
-            if( this.getCurrentUrl().search( this.selectors.loginPage.url_regex ) != -1 ){
-                var messageInfo = this.getElementInfo( this.selectors.messages.all );
-                this.debug( 'post login message:\n' + this.jsonStr( messageInfo ) );
-            }
-        });
-    });
-};
-
-/** Logs in a user. Throws error on bad log in.
- *  @param {String} email       the users email address
- *  @param {String} password    the users password
- */
-SpaceGhost.prototype.login = function login( email, password ){
-    this._submitLogin( email, password );
-    this.then( function(){
-        this.withFrame( this.selectors.frames.main, function mainAfterLogin(){
-            if( this.getCurrentUrl().search( this.selectors.loginPage.url_regex ) != -1 ){
-                var messageInfo = this.getElementInfo( this.selectors.messages.all );
-                if( messageInfo && messageInfo.attributes[ 'class' ] === 'errormessage' ){
-                    throw new GalaxyError( 'LoginError: ' + messageInfo.html );
-                }
-            }
-        });
-        if( this.loggedInAs() === email ){
-            this.debug( 'logged in as ' + email );
-        }
-    });
-    return this;
-};
-
-/** Fetch the email of the currently logged in user (or '' if not logged in)
- *  @returns {String} email of currently logged in user or '' if no one logged in
- */
-SpaceGhost.prototype.loggedInAs = function loggedInAs(){
-    var userEmail = '';
-    try {
-        var loggedInInfo = this.getElementInfo( xpath( this.selectors.masthead.userMenu.userEmail_xpath ) );
-        userEmail = loggedInInfo.text;
-    } catch( err ){
-        this.error( err );
-    }
-    //console.debug( 'loggedInInfo:', this.jsonStr( loggedInInfo ) );
-    return userEmail;
-};
-
-/** Attempts to login a user - if that raises an error (LoginError), register the user
- *  @param {String} email       the users email address
- *  @param {String} password    the users password
- *  @param {String} username    the users ...username! (optional: will use 1st part of email)
- */
-SpaceGhost.prototype.loginOrRegisterUser = function loginOrRegisterUser( email, password, username ){
-    // attempt a login, if that fails - register
-    this.tryStepsCatch( function tryToLogin(){
-        this.open( this.baseUrl ).login( email, password );
-
-    }, function failedLoginRegister(){
-        this.open( this.baseUrl ).registerUser( email, password, username );
-    });
-    return this;
-};
-
-/** Tests uploading a file.
- *      NOTE: this version does NOT throw an error on a bad upload.
- *      It is meant for testing the upload functionality and, therefore, is marked as private.
- *      Other tests should use uploadFile
- *  @param {String} filepath    the local filesystem path of the file to upload (absolute (?))
- */
-SpaceGhost.prototype._uploadFile = function _uploadFile( filepath ){
-    var uploadInfo = {};
-    //TODO: check file exists using phantom.fs
-    //TODO: pull from test data
-    uploadInfo[ this.tools.upload.fileInput ] = filepath;
-    this.debug( 'uploading file: ' + filepath );
-
-    spaceghost.then( function(){
-        spaceghost.withFrame( this.selectors.frames.tools, function(){
-            this.clickLabel( this.tools.upload.panelLabel );
-        });
-    });
-
-    this.then( function beginUpload(){
-        spaceghost.withFrame( this.selectors.frames.main, function(){
-            this.fill( this.tools.general.form, uploadInfo, false );
-
-            // the following throws:
-            //  [error] [remote] Failed dispatching clickmouse event on xpath selector: //input[@value="Execute"]:
-            //  PageError: TypeError: 'undefined' is not a function (evaluating '$(this).formSerialize()')
-
-            // ...and yet the upload still seems to work
-            this.click( xpath( this.tools.general.executeButton_xpath ) );
-        });
-    });
-    this.withFrame( this.selectors.frames.main, function afterUpload(){
-        var messageInfo = this.elementInfoOrNull( this.selectors.messages.all );
-        this.debug( 'post upload message:\n' + this.jsonStr( messageInfo ) );
-    });
-};
-
-/** Uploads a file.
- *  @param {String} filepath     the local filesystem path of the file to upload (absolute (?))
- */
-SpaceGhost.prototype.uploadFile = function uploadFile( filepath ){
-    this._uploadFile( filepath );
-    this.then( function(){
-        this.withFrame( this.selectors.frames.main, function mainAfterUpload(){
-            var messageInfo = this.elementInfoOrNull( this.selectors.messages.all );
-            if( ( !messageInfo )
-            ||  ( messageInfo.attributes[ 'class' ] !== 'donemessagelarge' )
-            ||  ( messageInfo.text.indexOf( this.text.upload.success ) === -1 ) ){
-                throw new GalaxyError( 'UploadError: ' + this.jsonStr( messageInfo ) );
-            }
-        });
-    });
-    return this;
-};
-
-/** Parses the hid and name of a newly uploaded file from the tool execution donemessagelarge
- *  @param {String} doneMsgText     the text extracted from the donemessagelarge after a tool execution
- */
-SpaceGhost.prototype.parseDoneMessageForTool = function parseDoneMessageForTool( doneMsgText ){
-    //TODO: test on non-upload
-    var executionInfo = {};
-    var textMatch = doneMsgText.match( /added to the queue:\n\n(\d+)\: (.*)\n/m );
-    if( textMatch ){
-        if( textMatch.length > 1 ){
-            executionInfo.hid = parseInt( textMatch[1], 10 );
-        }
-        if( textMatch.length > 2 ){
-            executionInfo.name = textMatch[2];
-        }
-        executionInfo.name = textMatch[2];
-    }
-    return executionInfo;
-};
-
-/** Find the casper element info of the hda wrapper given the hda title and hid.
- *      NOTE: if more than one is found, will return the first found.
- *      precondition: you should wrap this with withFrame( 'galaxy_history' ) :(
- *  @param {String} title   the title of the hda
- *  @param {Int} hid        (optional) the hid of the hda to look for
- *  @returns {Object|null} ElementInfo of the historyItemWrapper found, null if not found
- */
-SpaceGhost.prototype.hdaElementInfoByTitle = function hdaElementInfoByTitle( title, hid ){
-    var spaceghost = this,
-        titleContains = ( hid !== undefined )?( hid + ': ' + title ):( title ),
-        wrapperInfo = null;
-
-    wrapperInfo = spaceghost.evaluate( function( titleContains ){
-        // find the title, then the wrapper (2 containers up)
-        var $title = $( '.historyItemTitle:contains(' + titleContains + ')' );
-        var $wrapper = $title.parent().parent();
-        return (( $wrapper.attr( 'id' ) )?( __utils__.getElementInfo(  '#' + $wrapper.attr( 'id' ) )):( null ));
-    }, titleContains );
-
-    return wrapperInfo;
-};
-
-/** Wait for the hda with given id to move into the given state.
- *  @param {String} hdaSelector     selector for hda (should be historyItemWrapper)
- *  @param {String} finalState      hda state to wait for (e.g. 'ok', 'error', 'running', 'queued', etc.)
- *  @param {Function} whenInStateFn called when hda goes into finalState
- *  @param {Function} timeoutFn     called when maxWaitMs have passed without the desired state
- *  @param {Int} maxWaitMs          number of milliseconds to wait before timing out (defaults to options.waitTimeout)
- */
-SpaceGhost.prototype.waitForHdaState = function waitForHdaState( hdaSelector, finalState,
-                                                                 whenInStateFn, timeoutFn, maxWaitMs ){
-    //TODO:?? explicitly a historyWrapper id?
-    maxWaitMs = maxWaitMs || this.options.waitTimeout;
-    var finalStateClass = '.historyItem-' + finalState;
-
-    this.then( function(){
-        this.withFrame( this.selectors.frames.history, function(){
-            // wait for state, preferrably debugging intermediate states
-            var spaceghost = this,
-
-                // we need a larger timeout for these - it can take a bit
-                oldWaitTimeout = this.options.waitTimeout,
-
-                // output some progress indicator within the test (debug)
-                progressIntervalId = setInterval( function progress(){
-                    var state = spaceghost.evaluate( function( hdaSelector ){
-                        var $wrapperClasses = $( hdaSelector ).attr( 'class' );
-                        return $wrapperClasses.match( /historyItem\-(\w+)/ )[1];
-                    }, hdaSelector );
-                    spaceghost.debug( hdaSelector + ': ' + state );
-                }, 1000 ),
-
-                // when done, close down the progress reporter and reset the wait timeout to what it was
-                finallyFn = function(){
-                    spaceghost.options.waitTimeout = oldWaitTimeout;
-                    clearInterval( progressIntervalId );
-                };
-
-            this.options.waitTimeout = maxWaitMs;
-            this.waitForSelector( hdaSelector + finalStateClass, function _whenInState(){
-                    this.debug( 'HDA now in state ' + finalState + ':\n'
-                        + this.jsonStr( this.elementInfoOrNull( hdaSelector ) ) );
-                    whenInStateFn.call( this );
-                    finallyFn();
-
-                }, function timeout(){
-                    this.debug( 'timed out:\n'
-                        + this.jsonStr( this.elementInfoOrNull( hdaSelector ) ) );
-                    timeoutFn.call( this );
-                    finallyFn();
-                }
-            );
-        });
-    });
-};
-
 // =================================================================== MISCELAIN
 /** Send message to stderr
  */
@@ -958,9 +661,10 @@ SpaceGhost.prototype.selectors = {
         history : 'galaxy_history'
     },
     messages : {
-        all             : '[class*="message"]',
+        all         : '[class*="message"]',
         error       : '.errormessage',
-        done        : '.donemessage'
+        done        : '.donemessage',
+        donelarge   : '.donemessagelarge'
     },
     loginPage : {
         form            : 'form#login',
@@ -970,6 +674,15 @@ SpaceGhost.prototype.selectors = {
     registrationPage : {
         form            : 'form#registration',
         submit_xpath    : "//input[@value='Submit']"
+    },
+    tools : {
+        general : {
+            form : 'form#tool_form',
+            executeButton_xpath : '//input[@value="Execute"]'
+        },
+        upload : {
+            fileInput   : 'files_0|file_data'   // is this general?
+        }
     }
 };
 
@@ -983,17 +696,11 @@ SpaceGhost.prototype.labels = {
             login       : 'Login',
             logout      : 'Logout'
         }
-    }
-};
-
-SpaceGhost.prototype.tools = {
-    general : {
-        form : 'form#tool_form',
-        executeButton_xpath : '//input[@value="Execute"]'
     },
-    upload : {
-        panelLabel  : 'Upload File',
-        fileInput   : 'files_0|file_data'   // is this general?
+    tools : {
+        upload : {
+            panelLabel  : 'Upload File'
+        }
     }
 };
 
@@ -1005,6 +712,12 @@ SpaceGhost.prototype.text = {
     upload : {
         success : 'The following job has been successfully added to the queue'
     }
+};
+
+SpaceGhost.prototype.loadJSONFile = function loadJSONFile( filepath ){
+    //precondition: filepath is relative to script dir
+    filepath = this.options.scriptDir + filepath;
+    return JSON.parse( require( 'fs' ).read( filepath ) );
 };
 
 // =================================================================== EXPORTS
@@ -1021,10 +734,3 @@ exports.create = function create(options) {
     return new SpaceGhost(options);
 };
 
-// ------------------------------------------------------------------- included libs
-//??: can we require underscore, etc. from the ../../static/scripts/lib?
-// yep!
-//var _ = require( '../../static/scripts/libs/underscore' );
-//var stooges = [{name : 'moe', age : 40}, {name : 'larry', age : 50}, {name : 'curly', age : 60}];
-//console.debug( JSON.stringify( _.pluck(stooges, 'name') ) );
-//exports._ = _;

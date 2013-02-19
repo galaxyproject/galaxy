@@ -95,6 +95,8 @@ class CasperJSTestCase( unittest.TestCase ):
                 stderr_msg = process.stderr.readline()
                 stderr_msg = self.strip_escape_codes( stderr_msg.strip() )
                 log.debug( '(%s): %s', rel_script_path, stderr_msg )
+                # HACK: this is the last string displayed using the debug settings - afterwards it hangs
+                #   so: bail on this string
                 if stderr_msg.startswith( self.casper_done_str ):
                     break
 
@@ -117,7 +119,7 @@ class CasperJSTestCase( unittest.TestCase ):
                     self.exec_path, self.casper_info )
             raise
 
-        self.handle_js_results( stdout_output )
+        return self.handle_js_results( stdout_output )
 
     def build_command_line( self, rel_script_path, *args, **kwargs ):
         """Build the headless browser command line list for subprocess.
@@ -284,35 +286,61 @@ def teardown_module():
     log.debug( '\n--------------- tearing down module' )
 
 
+test_user = {
+    'email': 'test1@test.test',
+    'password': '123456'
+}
+
 # ==================================================================== TESTCASE EXAMPLE
-# these could be broken out into other files - shouldn't be necc. ATM
-class UserTests( CasperJSTestCase ):
+# these could be broken out into other py files - shouldn't be necc. ATM
+class Test_01_User( CasperJSTestCase ):
     """TestCase that uses javascript and a headless browser to test dynamic pages.
     """
+    #debug = True
     def test_10_registration( self ):
         """User registration tests: register new user, logout, attempt bad registrations.
         """
         # all keywords will be compiled into a single JSON obj and passed to the server
-        self.run_js_script( 'registration-tests.js', self.env.url,
-            testuser={ 'email': 'test1@test.test', 'password':  '123456' })
+        self.run_js_script( 'registration-tests.js',
+            testuser=test_user )
+
         #TODO:?? could theoretically do db cleanup, checks here with SQLALX
         #TODO: have run_js_script return other persistant fixture data (uploaded files, etc.)
 
     def test_20_login( self ):
         """User log in tests.
         """
-        self.run_js_script( 'login-tests.js', self.env.url,
-            testuser={ 'email': 'test1@test.test', 'password': '123456' })
+        self.run_js_script( 'login-tests.js',
+            testuser=test_user )
 
 
-class ToolTests( CasperJSTestCase ):
+class Test_02_Tools( CasperJSTestCase ):
     """(Minimal) casperjs tests for tools.
     """
     #debug = True
     def test_10_upload( self ):
         """Tests uploading files
         """
-        self.run_js_script( 'upload-tests.js' )
+        self.run_js_script( 'upload-tests.js',
+            testuser=test_user )
+
+
+class Test_03_HistoryPanel( CasperJSTestCase ):
+    """(Minimal) casperjs tests for tools.
+    """
+    #debug = True
+    def test_00_history_panel( self ):
+        """Test history panel basics (controls, structure, refresh, history options menu, etc.).
+        """
+        self.run_js_script( 'history-panel-tests.js',
+            testuser=test_user )
+
+    def test_10_anonymous_histories( self ):
+        """Test history panel basics with an anonymous user.
+        """
+        self.run_js_script( 'anon-history-tests.js',
+            testuser=test_user )
+
 
 
 # ==================================================================== MAIN

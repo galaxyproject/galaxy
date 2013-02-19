@@ -24,7 +24,6 @@ try {
     phantom.exit( 1 );
 }
 
-
 // ===================================================================
 /* TODO:
     move selectors and assertText strings into global object for easier editing
@@ -33,7 +32,7 @@ try {
 
 */
 // =================================================================== globals and helpers
-var email = spaceghost.getRandomEmail(),
+var email = spaceghost.user.getRandomEmail(),
     password = '123456',
     confirm = password,
     username = 'test' + Date.now();
@@ -60,29 +59,27 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
 // ------------------------------------------------------------------- register a new user
 spaceghost.then( function(){
     this.test.comment( 'registering user: ' + email );
-    this._submitUserRegistration( email, password, username, confirm );
+    this.user._submitRegistration( email, password, username, confirm );
 });
 spaceghost.thenOpen( spaceghost.baseUrl, function(){
     this.clickLabel( 'User' );
     this.test.assertSelectorHasText( 'a #user-email', email, '#user-email === ' + email );
 });
 
-
 // ------------------------------------------------------------------- log out that user
 spaceghost.then( function(){
     this.test.comment( 'logging out user: ' + email );
-    this.logout();
+    this.user.logout();
 });
 spaceghost.then( function(){
     this.debug( 'email:' + this.getElementInfo( 'a #user-email' ).html );
     this.test.assert( !this.getElementInfo( 'a #user-email' ).html, '#user-email is empty' );
 });
 
-
 // ------------------------------------------------------------------- bad user registrations
 spaceghost.then( function(){
     this.test.comment( 'attempting to re-register user: ' + email );
-    this._submitUserRegistration( email, password, username, confirm );
+    this.user._submitRegistration( email, password, username, confirm );
 });
 spaceghost.then(function(){
     this.assertErrorMessage( 'User with that email already exists' );
@@ -93,7 +90,7 @@ var badEmails = [ 'bob', 'bob@', 'bob@idontwanttocleanup', 'bob.cantmakeme' ];
 spaceghost.each( badEmails, function( self, badEmail ){
     self.then( function(){
         this.test.comment( 'attempting bad email: ' + badEmail );
-        this._submitUserRegistration( badEmail, password, username, confirm );
+        this.user._submitRegistration( badEmail, password, username, confirm );
     });
     self.then(function(){
         this.assertErrorMessage( 'Enter a real email address' );
@@ -105,7 +102,7 @@ var badPasswords = [ '1234' ];
 spaceghost.each( badPasswords, function( self, badPassword ){
     self.then( function(){
         this.test.comment( 'attempting bad password: ' + badPassword );
-        this._submitUserRegistration( spaceghost.getRandomEmail(), badPassword, username, confirm );
+        this.user._submitRegistration( spaceghost.user.getRandomEmail(), badPassword, username, confirm );
     });
     self.then(function(){
         this.assertErrorMessage( 'Use a password of at least 6 characters' );
@@ -117,7 +114,7 @@ var badConfirms = [ '1234', '12345678', '123456 7', '' ];
 spaceghost.each( badConfirms, function( self, badConfirm ){
     self.then( function(){
         this.test.comment( 'attempting bad password confirmation: ' + badConfirm );
-        this._submitUserRegistration( spaceghost.getRandomEmail(), password, username, badConfirm );
+        this.user._submitRegistration( spaceghost.user.getRandomEmail(), password, username, badConfirm );
     });
     self.then(function(){
         this.assertErrorMessage( 'Passwords do not match' );
@@ -128,10 +125,10 @@ spaceghost.each( badConfirms, function( self, badConfirm ){
 //NOTE: that short username errors only show AFTER checking for existing/valid emails
 //  so: we need to generate new emails for each one
 spaceghost.then( function(){
-    var newEmail = spaceghost.getRandomEmail(),
+    var newEmail = spaceghost.user.getRandomEmail(),
         badUsername = 'bob';
     this.test.comment( 'attempting short username: ' + badUsername );
-    this._submitUserRegistration( newEmail, password, badUsername, confirm );
+    this.user._submitRegistration( newEmail, password, badUsername, confirm );
 });
 spaceghost.then(function(){
     this.assertErrorMessage( 'Public name must be at least 4 characters in length' );
@@ -141,9 +138,9 @@ spaceghost.then(function(){
 var badUsernames = [ 'BOBERT', 'Robert Paulson', 'bobert!', 'bob_dobbs' ];
 spaceghost.each( badUsernames, function( self, badUsername ){
     self.then( function(){
-        var newEmail = spaceghost.getRandomEmail();
+        var newEmail = spaceghost.user.getRandomEmail();
         this.test.comment( 'attempting bad username: ' + badUsername );
-        this._submitUserRegistration( newEmail, password, badUsername, confirm );
+        this.user._submitRegistration( newEmail, password, badUsername, confirm );
     });
     self.then(function(){
         this.assertErrorMessage( "Public name must contain only lower-case letters, numbers and '-'" );
@@ -152,28 +149,29 @@ spaceghost.each( badUsernames, function( self, badUsername ){
 
 // ...and the name can't be used already
 spaceghost.then( function(){
-    var newEmail = spaceghost.getRandomEmail();
+    var newEmail = spaceghost.user.getRandomEmail();
     this.test.comment( 'attempting previously used username with new user: ' + newEmail );
-    this._submitUserRegistration( newEmail, password, username, confirm );
+    this.user._submitRegistration( newEmail, password, username, confirm );
 });
 spaceghost.then(function(){
     this.assertErrorMessage( 'Public name is taken; please choose another' );
 });
 
 
-// ------------------------------------------------------------------- test the tests
+// ------------------------------------------------------------------- test the convenience fns
 // these versions are for conv. use in other tests, they should throw errors if used improperly
 spaceghost.then( function(){
     this.assertStepsRaise( 'GalaxyError: RegistrationError', function(){
         this.then( function(){
             this.test.comment( 'testing (js) error thrown on bad email' );
-            this.registerUser( '@internet', '123456', 'ignobel' );
+            this.user.registerUser( '@internet', '123456', 'ignobel' );
         });
     });
 });
 
 spaceghost.then( function(){
-    this.logout();
+    //??: necessary?
+    this.user.logout();
 });
 
 // ===================================================================

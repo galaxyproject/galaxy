@@ -32,7 +32,7 @@ try {
     general tool execution
 */
 // =================================================================== globals and helpers
-var email = spaceghost.getRandomEmail(),
+var email = spaceghost.user.getRandomEmail(),
     password = '123456';
 if( spaceghost.fixtureData.testUser ){
     email = spaceghost.fixtureData.testUser.email;
@@ -42,44 +42,22 @@ if( spaceghost.fixtureData.testUser ){
 
 // =================================================================== TESTS
 // ------------------------------------------------------------------- start a new user
-spaceghost.loginOrRegisterUser( email, password );
+spaceghost.user.loginOrRegisterUser( email, password );
 //??: why is a reload needed here? If we don't, loggedInAs === '' ...
 spaceghost.thenOpen( spaceghost.baseUrl, function(){
-    var loggedInAs = spaceghost.loggedInAs();
+    var loggedInAs = spaceghost.user.loggedInAs();
     this.test.assert( loggedInAs === email, 'loggedInAs() matches email: "' + loggedInAs + '"' );
 });
 
-// ------------------------------------------------------------------- get avail. tools
-// list available tools
-//spaceghost.then( function(){
-//    spaceghost.withFrame( 'galaxy_tools', function(){
-//        //var availableTools = this.fetchText( 'a.tool-link' );
-//
-//        var availableTools = this.evaluate( function(){
-//            //var toolTitles = __utils__.findAll( 'div.toolTitle' );
-//            //return Array.prototype.map.call( toolTitles, function( e ){
-//            //    //return e.innerHtml;
-//            //    return e.textContent || e.innerText;
-//            //}).join( '\n' );
-//
-//            var toolLinks = __utils__.findAll( 'a.tool-link' );
-//            return Array.prototype.map.call( toolLinks, function( e ){
-//                //return e.innerHtml;
-//                return e.textContent || e.innerText;
-//            }).join( '\n' );
-//        });
-//        this.debug( 'availableTools: ' + availableTools );
-//    });
-//});
 
-// ------------------------------------------------------------------- upload from fs
-// test uploading from the filesystem
+// ------------------------------------------------------------------- long form
+// upload a file from the filesystem
 var uploadInfo = {};
 spaceghost.then( function(){
     // strangely, this works with a non-existant file --> empty txt file
     var filename = '1.sam';
     var filepath = this.options.scriptDir + '/../../test-data/' + filename;
-    this._uploadFile( filepath );
+    this.tools._uploadFile( filepath );
 
     // when an upload begins successfully...
     // 1. main should reload with a donemessagelarge
@@ -90,7 +68,7 @@ spaceghost.then( function(){
         this.test.assert( doneElementInfo !== null,
             "Found donemessagelarge after uploading file" );
 
-        uploadInfo = this.parseDoneMessageForTool( doneElementInfo.text );
+        uploadInfo = this.tools._parseDoneMessageForTool( doneElementInfo.text );
         this.test.assert( uploadInfo.hid >= 0,
             'Found sensible hid from upload donemessagelarge: ' + uploadInfo.hid );
         this.test.assert( uploadInfo.name === filename,
@@ -99,12 +77,12 @@ spaceghost.then( function(){
 
 });
 
-// wait for upload to finish
+// move to the history panel and wait for upload to finish
 spaceghost.then( function(){
     var hdaInfo = null;
 
     this.withFrame( 'galaxy_history', function(){
-        hdaInfo = this.hdaElementInfoByTitle( uploadInfo.name, uploadInfo.hid );
+        hdaInfo = this.historypanel.hdaElementInfoByTitle( uploadInfo.name, uploadInfo.hid );
         this.debug( 'hda:\n' + this.jsonStr( hdaInfo ) );
     });
 
@@ -113,7 +91,7 @@ spaceghost.then( function(){
         //precondition: needs class
         var hdaStateClass = hdaInfo.attributes[ 'class' ].match( /historyItem\-(\w+)/ )[0];
         if( hdaStateClass !== 'historyItem-ok' ){
-            this.waitForHdaState( '#' + hdaInfo.attributes.id, 'ok',
+            this.historypanel.waitForHdaState( '#' + hdaInfo.attributes.id, 'ok',
                 function whenInStateFn(){
                     this.test.assert( true, 'Upload completed successfully for: ' + uploadInfo.name );
 
@@ -125,6 +103,34 @@ spaceghost.then( function(){
         }
     });
 });
+
+spaceghost.then( function(){
+    this.test.comment( 'testing convenience function' );
+    spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
+        this.test.assert( uploadInfo.hdaElement !== null, "Convenience function produced hda in ok state" );
+    });
+});
+
+/*
+//??: this error's AND waitFor()s THREE times - something to do with assertStepsRaise + waitFor
+spaceghost.then( function(){
+    this.test.comment( 'testing convenience function timeout error' );
+    this.assertStepsRaise( 'GalaxyError: Upload Error: timeout waiting', function(){
+        spaceghost.then( function(){
+            spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
+                this.test.fail( "Convenience function did not timeout!" );
+            }, 250 );
+        });
+    });
+});
+
+// this correctly errors
+spaceghost.then( function(){
+    spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
+        this.test.fail( "Convenience function did not timeout!" );
+    }, 250 );
+});
+*/
 
 // ===================================================================
 spaceghost.run( function(){
