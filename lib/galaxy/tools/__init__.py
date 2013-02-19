@@ -2635,19 +2635,26 @@ class Tool( object ):
         """
         for name, hda in output.items():
             temp_file_path = os.path.join( job_working_directory, "dataset_%s_files" % ( hda.dataset.id ) )
+            extra_dir = None
             try:
-                a_files = os.listdir( temp_file_path )
-                if len( a_files ) > 0:
-                    for f in a_files:
+                # This skips creation of directories - object store
+                # automatically creates them.  However, empty directories will
+                # not be created in the object store at all, which might be a
+                # problem.
+                for root, dirs, files in os.walk( temp_file_path ):
+                    extra_dir = root.replace(job_working_directory, '', 1).lstrip(os.path.sep)
+                    for f in files:
                         self.app.object_store.update_from_file(hda.dataset,
-                            extra_dir="dataset_%d_files" % hda.dataset.id, 
+                            extra_dir=extra_dir,
                             alt_name = f,
-                            file_name = os.path.join(temp_file_path, f),
+                            file_name = os.path.join(root, f),
                             create = True,
                             preserve_symlinks = True )
-                    # Clean up after being handled by object store. 
-                    # FIXME: If the object (e.g., S3) becomes async, this will 
-                    # cause issues so add it to the object store functionality?
+                # Clean up after being handled by object store. 
+                # FIXME: If the object (e.g., S3) becomes async, this will 
+                # cause issues so add it to the object store functionality?
+                if extra_dir is not None:
+                    # there was an extra_files_path dir, attempt to remove it
                     shutil.rmtree(temp_file_path)
             except Exception, e:
                 log.debug( "Error in collect_associated_files: %s" % ( e ) )
