@@ -1016,8 +1016,6 @@ class Admin( object ):
         deleted = []
         msg = None
         status = None
-        if self.app.config.job_manager != self.app.config.server_name:
-            return trans.show_error_message( 'This Galaxy instance (%s) is not the job manager (%s).  If using multiple servers, please directly access the job manager instance to manage jobs.' % (self.app.config.server_name, self.app.config.job_manager) )
         job_ids = util.listify( stop )
         if job_ids and stop_msg in [ None, '' ]:
             msg = 'Please enter an error message to display to the user describing why the job was terminated'
@@ -1026,7 +1024,15 @@ class Admin( object ):
             if stop_msg[-1] not in PUNCTUATION:
                 stop_msg += '.'
             for job_id in job_ids:
-                trans.app.job_manager.job_stop_queue.put( job_id, error_msg="This job was stopped by an administrator: %s  For more information or help" % stop_msg )
+                error_msg = "This job was stopped by an administrator: %s  <a href='%s' target='_blank'>Contact support</a> for additional help." \
+                        % ( stop_msg, self.app.config.get("support_url", "http://wiki.galaxyproject.org/Support" ) )
+                if trans.app.config.track_jobs_in_database:
+                    job = trans.app.model.Job.get( job_id )
+                    job.stderr = error_msg
+                    job.state = trans.app.model.Job.states.DELETED_NEW
+                    trans.sa_session.add( job )
+                else:
+                    trans.app.job_manager.job_stop_queue.put( job_id, error_msg=error_msg )
                 deleted.append( str( job_id ) )
         if deleted:
             msg = 'Queued job'
@@ -1035,11 +1041,7 @@ class Admin( object ):
             msg += ' for deletion: '
             msg += ', '.join( deleted )
             status = 'done'
-        if ajl_submit:
-            if job_lock == 'on':
-                trans.app.job_manager.job_queue.job_lock = True
-            else:
-                trans.app.job_manager.job_queue.job_lock = False
+            trans.sa_session.flush()
         cutoff_time = datetime.utcnow() - timedelta( seconds=int( cutoff ) )
         jobs = trans.sa_session.query( trans.app.model.Job ) \
                                .filter( and_( trans.app.model.Job.table.c.update_time < cutoff_time,
@@ -1060,8 +1062,7 @@ class Admin( object ):
                                     last_updated = last_updated,
                                     cutoff = cutoff,
                                     msg = msg,
-                                    status = status,
-                                    job_lock = trans.app.job_manager.job_queue.job_lock )
+                                    status = status )
 
 ## ---- Utility methods -------------------------------------------------------
 

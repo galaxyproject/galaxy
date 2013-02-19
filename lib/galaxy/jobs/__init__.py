@@ -1690,7 +1690,7 @@ class NoopQueue( object ):
     """
     Implements the JobQueue / JobStopQueue interface but does nothing
     """
-    def put( self, *args ):
+    def put( self, *args, **kwargs ):
         return
     def put_stop( self, *args ):
         return

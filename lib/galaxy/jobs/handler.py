@@ -493,7 +493,7 @@ class JobHandlerStopQueue( object ):
                                      .filter( ( model.Job.state == model.Job.states.DELETED_NEW ) \
                                               & ( model.Job.handler == self.app.config.server_name ) ).all()
             for job in newly_deleted_jobs:
-                jobs_to_check.append( ( job, None ) )
+                jobs_to_check.append( ( job, job.stderr ) )
         # Also pull from the queue (in the case of Administrative stopped jobs)
         try:
             while 1:

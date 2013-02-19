@@ -46,6 +46,7 @@
             <td>Last Update</td>
             <td>Tool</td>
             <td>State</td>
+            <td>Inputs</td>
             <td>Command Line</td>
             <td>Job Runner</td>
             <td>PID/Cluster ID</td>
@@ -67,6 +68,13 @@
                 <td>${last_updated[job.id]} ago</td>
                 <td>${job.tool_id}</td>
                 <td>${job.state}</td>
+                <%
+                    try:
+                        inputs = ", ".join( [ '%s&nbsp;%s' % ( da.dataset.id, da.dataset.state ) for da in job.input_datasets ] )
+                    except:
+                        inputs = 'Unable to determine inputs'
+                %>
+                <td>${inputs}</td>
                 <td>${job.command_line}</td>
                 <td>${job.job_runner_name}</td>
                 <td>${job.job_runner_external_id}</td>
@@ -121,35 +129,6 @@
             </div>
             <div class="form-row">
                 <input type="submit" class="primary-button" name="submit" value="Refresh">
-            </div>
-        </div>
-    </div>
-</form>
-<form name="jobs" action="${h.url_for(controller='admin', action='jobs')}" method="POST">
-    <p/>
-    <div class="toolForm">
-        <div class="toolFormTitle">
-            Administrative Job Lock
-        </div>
-        <div class="toolFormBody">
-            <div class="form-row">
-                <input type="hidden" name="ajl_submit" value="True"/>
-    %if job_lock==True:
-                <p>Job dispatching is currently <strong>locked</strong>.</p>
-                <label>
-                    <input type='checkbox' name='job_lock' checked='checked' />
-                    Prevent jobs from dispatching.
-                </label>
-    %else:
-                <p>Job dispatching is currently <strong>unlocked</strong>.</p>
-                <label>
-                    <input type='checkbox' name='job_lock' />
-                    Prevent jobs from dispatching.
-                </label>
-    %endif
-            </div>
-            <div class="form-row">
-                <input type="submit" class="primary-button" name="submit" value="Update">
             </div>
         </div>
     </div>
