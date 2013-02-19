@@ -1427,11 +1427,12 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         
         // -- Drawing code --
         
-        // Calculate resolution in both pixels/base and bases/pixel; round bases/pixels for tile calculations.
-        // TODO: require minimum difference in new resolution to update?
+        // Calculate resolution in both pixels/base and bases/pixel.
+        // TODO: require minimum difference in new resolution to update? This 
+        // would help alleviate issues when window is being resized.
         this.resolution_b_px = (this.high - this.low) / this.viewport_container.width();
-        this.resolution_px_b = this.viewport_container.width() / (this.high - this.low);
-                    
+        this.resolution_px_b = 1 / this.resolution_b_px;
+        
         // Overview
         var left_px = ( this.low / (this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
         var width_px = ( (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
