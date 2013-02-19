@@ -166,21 +166,33 @@ var Cache = Backbone.Model.extend({
         return value;
     },
     
-    // Move key to end of cache. Keys are removed from the front, so moving a key to the end 
-    // delays the key's removal.
+    /** 
+     * Move key to end of cache. Keys are removed from the front, so moving a key to the end 
+     * delays the key's removal.
+     */
     move_key_to_end: function(key, index) {
         this.attributes.key_ary.splice(index, 1);
         this.attributes.key_ary.push(key);
     },
     
+    /**
+     * Clear all elements from the cache.
+     */
     clear: function() {
         this.attributes.obj_cache = {};
         this.attributes.key_ary = [];
     },
     
-    // Returns the number of elements in the cache.
+    /** Returns the number of elements in the cache. */
     size: function() {
         return this.attributes.key_ary.length;
+    },
+
+    /** Returns key most recently added to cache. */
+    most_recently_added: function() {
+        return this.size() === 0 ? null : 
+               // Most recent key is at the end of key array. 
+               this.attributes.key_ary[this.attributes.key_ary.length - 1];
     }
 });
 
@@ -190,7 +202,9 @@ var Cache = Backbone.Model.extend({
 var GenomeDataManager = Cache.extend({
     defaults: _.extend({}, Cache.prototype.defaults, {
         dataset: null,
+        genome: null,
         init_data: null,
+        min_region_size: 200,
         filters_manager: null,
         data_type: "data",
         data_mode_compatible: function(entry, mode) { return true; },
@@ -354,6 +368,28 @@ var GenomeDataManager = Cache.extend({
                     return entry;
                 }
             }
+        }
+
+        // If needed, extend region to make it minimum size.
+        if (region.length() < this.attributes.min_region_size) {
+            // IDEA: alternative heuristic is to find adjacent cache entry to region and use that to extend.
+            // This would prevent bad extensions when zooming in/out while still preserving the behavior
+            // below.
+
+            // Use heuristic to extend region: extend relative to last data request.
+            var last_request = new GenomeRegion({from_str: this.most_recently_added()});
+            if (!last_request || (region.get('start') > last_request.get('start'))) {
+                // This request is after the last request, so extend right.
+                region.set('end', region.get('start') + this.attributes.min_region_size);
+            }
+            else {
+                // This request is after the last request, so extend left.
+                region.set('start', region.get('end') - this.attributes.min_region_size);
+            }
+
+            // Trim region to avoid invalid coordinates.
+            region.set('genome', this.attributes.genome);
+            region.trim();
         }
 
         return this.load_data(region, mode, resolution, extra_params);
@@ -574,6 +610,7 @@ var Genome = Backbone.Model.extend({
      * Returns a GenomeRegion object denoting a complete chromosome.
      */
     get_chrom_region: function(chr_name) {
+        // FIXME: use findWhere in underscore 1.4
         var chrom_info = _.find(this.get_chroms_info(), function(chrom_info) { 
             return chrom_info.chrom === chr_name;
         });
@@ -581,6 +618,14 @@ var Genome = Backbone.Model.extend({
             chrom: chrom_info.chrom,
             end: chrom_info.len
         });
+    },
+
+    /** Returns the length of a chromosome. */
+    get_chrom_len: function(chr_name) {
+        // FIXME: use findWhere in underscore 1.4
+        return _.find(this.get_chroms_info(), function(chrom_info) { 
+            return chrom_info.chrom === chr_name;
+        }).len;
     }
 });
 
@@ -591,7 +636,8 @@ var GenomeRegion = Backbone.RelationalModel.extend({
     defaults: {
         chrom: null,
         start: 0,
-        end: 0
+        end: 0,
+        genome: null
     },
     
     /**
@@ -645,24 +691,24 @@ var GenomeRegion = Backbone.RelationalModel.extend({
             first_end = this.get('end'), second_end = a_region.get('end'),
             overlap;
             
-        // Look at chroms.
+        // Compare chroms.
         if (first_chrom && second_chrom && first_chrom !== second_chrom) {
             return GenomeRegion.overlap_results.DIF_CHROMS;
         }
         
-        // Look at regions.
+        // Compare regions.
         if (first_start < second_start) {
             if (first_end < second_start) {
                 overlap = GenomeRegion.overlap_results.BEFORE;
             }
-            else if (first_end <= second_end) {
+            else if (first_end < second_end) {
                 overlap = GenomeRegion.overlap_results.OVERLAP_START;
             }
-            else { // first_end > second_end
+            else { // first_end >= second_end
                 overlap = GenomeRegion.overlap_results.CONTAINS;
             }
         }
-        else { // first_start >= second_start
+        else if (first_start > second_start) {
             if (first_start > second_end) {
                 overlap = GenomeRegion.overlap_results.AFTER;
             }
@@ -673,8 +719,33 @@ var GenomeRegion = Backbone.RelationalModel.extend({
                 overlap = GenomeRegion.overlap_results.OVERLAP_END;
             }
         }
+        else { // first_start === second_start
+            overlap = (first_end >= second_end ? 
+                       GenomeRegion.overlap_results.CONTAINS : 
+                       GenomeRegion.overlap_results.CONTAINED_BY);
+        }
 
         return overlap;
+    },
+
+    /**
+     * Trim a region to match genome's constraints.
+     */
+    trim: function(genome) {
+        // Assume that all chromosome/contigs start at 0.
+        if (this.attributes.start < 0) {
+            this.attributes.start = 0;
+        }
+
+        // Only try to trim the end if genome is set.
+        if (this.attributes.genome) {
+            var chrom_len = this.attributes.genome.get_chrom_len(this.attributes.chrom);
+            if (this.attributes.end > chrom_len) {
+                this.attributes.end = chrom_len - 1;
+            }
+        }
+
+        return this;
     },
     
     /**
