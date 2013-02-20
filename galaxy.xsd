@@ -126,17 +126,24 @@
 	    <xs:element name="options" type="OptionsElement" minOccurs="0" maxOccurs="1" />
 	  </xs:choice>
 	</xs:sequence>
-    <xs:attribute name="label" type="xs:string" />
-    <xs:attribute name="help" type="xs:string" />
 	<xs:attribute name="type" type="ParamType" use="required" />
+	<xs:attribute name="label" type="xs:string" />
+	<xs:attribute name="help" type="xs:string" />
 	<xs:attribute name="value" type="xs:string" />
 	<xs:attribute name="optional" type="xs:string" default="false" />
+	<xs:attribute name="min" type="xs:integer" />
+	<xs:attribute name="max" type="xs:integer" />
 	<xs:attribute name="format" type="xs:string" />
-	<xs:attribute name="accept_default" type="xs:boolean" />
+	<xs:attribute name="data_ref" type="xs:string" />
+	<xs:attribute name="accept_default" type="xs:boolean" /> <!-- Not in doc, still used? -->
 	<xs:attribute name="force_select" type="xs:boolean" />
+	<xs:attribute name="display" type="DisplayType" />
 	<xs:attribute name="multiple" type="xs:boolean" />
-	<xs:attribute name="truevalue" type="xs:string" default="true" />
-	<xs:attribute name="falsevalue" type="xs:string" default="false" />
+	<xs:attribute name="numerical" type="xs:boolean" />
+	<xs:attribute name="hierarchy" type="HierarchyType" />
+	<xs:attribute name="checked" type="CheckedType" />
+	<xs:attribute name="truevalue" type="xs:string" />
+	<xs:attribute name="falsevalue" type="xs:string" />
 	<xs:attribute name="size" type="xs:int" />
       </xs:extension>
     </xs:complexContent>
@@ -247,6 +254,28 @@
       <xs:enumeration value="python-module" />
       <xs:enumeration value="binary" />
       <xs:enumeration value="package" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="DisplayType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="checkboxes" />
+      <xs:enumeration value="radio" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="HierarchyType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="exact" />
+      <xs:enumeration value="recurse" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="CheckedType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="yes" />
+      <xs:enumeration value="true" />
+      <xs:enumeration value="on" />
     </xs:restriction>
   </xs:simpleType>
 
