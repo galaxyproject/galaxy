@@ -277,7 +277,6 @@ def main():
                 os.makedirs( dir )
             except OSError:
                 pass
-    log.info( "Database connection:", database_connection )
 
     # ---- Build Application -------------------------------------------------- 
     app = None 
@@ -293,7 +292,7 @@ def main():
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
         # Build the Universe Application
-        log.debug( 'app.kwargs:\n%s', pprint.pformat( kwargs ) )
+        print 'app.kwargs:\n%s' %( pprint.pformat( kwargs ) )
         app = UniverseApplication( job_queue_workers = 5,
                                    id_secret = 'changethisinproductiontoo',
                                    template_path = "templates",
@@ -321,6 +320,7 @@ def main():
                                    running_functional_tests=True,
                                    **kwargs )
         log.info( "Embedded Universe application started" )
+
     # ---- Run webserver ------------------------------------------------------
     server = None
     
