@@ -587,13 +587,20 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         strings_displayed = [ "Role '%s' has been updated" % role.name ]
         self.check_for_strings( strings_displayed, strings_not_displayed )
-    def grant_write_access( self, repository, usernames=[], strings_displayed=[], strings_not_displayed=[] ):
+    def grant_write_access( self, 
+                            repository, 
+                            usernames=[], 
+                            strings_displayed=[], 
+                            strings_not_displayed=[], 
+                            post_submit_strings_displayed=[], 
+                            post_submit_strings_not_displayed=[] ):
         self.display_manage_repository_page( repository )
-        tc.fv( "3", "allow_push", '-Select one' )
-        for username in usernames:
-            tc.fv( "3", "allow_push", '+%s' % username )
-        tc.submit( 'user_access_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        tc.fv( "user_access", "allow_push", '-Select one' )
+        for username in usernames:
+            tc.fv( "user_access", "allow_push", '+%s' % username )
+        tc.submit( 'user_access_button' )
+        self.check_for_strings( post_submit_strings_displayed, post_submit_strings_not_displayed )
     def import_workflow( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/import_workflow?repository_id=%s&workflow_name=%s' % \
             ( self.security.encode_id( repository.id ), tool_shed_encode( workflow_name ) )
@@ -847,6 +854,19 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "1", field_name, search_string )
             tc.submit()
             self.check_for_strings( strings_displayed, strings_not_displayed ) 
+    def send_message_to_repository_owner( self, 
+                                          repository, 
+                                          message, 
+                                          strings_displayed=[], 
+                                          strings_not_displayed=[], 
+                                          post_submit_strings_displayed=[], 
+                                          post_submit_strings_not_displayed=[] ):
+        url = '/repository/contact_owner?id=%s' % self.security.encode_id( repository.id )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed ) 
+        tc.fv( 1, 'message', message )
+        tc.submit()
+        self.check_for_strings( post_submit_strings_displayed, post_submit_strings_not_displayed ) 
     def set_repository_deprecated( self, repository, set_deprecated=True, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/deprecate?id=%s&mark_deprecated=%s' % ( self.security.encode_id( repository.id ), set_deprecated )
         self.visit_url( url )

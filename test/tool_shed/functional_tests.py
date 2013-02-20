@@ -199,6 +199,8 @@ def main():
                                                new_file_path = new_repos_path,
                                                running_functional_tests = True,
                                                shed_tool_data_table_config = shed_tool_data_table_conf_file,
+                                               smtp_server = 'smtp.dummy.string.tld',
+                                               email_from = 'functional@localhost',
                                                template_path = 'templates',
                                                tool_path=tool_path,
                                                tool_parse_help = False,

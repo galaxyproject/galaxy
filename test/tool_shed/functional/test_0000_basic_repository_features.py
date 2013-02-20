@@ -9,10 +9,16 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     '''Test core repository features.'''
     def test_0000_initiate_users( self ):
         """Create necessary user accounts and login as an admin user."""
+        self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         test_user_1 = test_db_util.get_user( common.test_user_1_email )
         assert test_user_1 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_1_email
         test_user_1_private_role = test_db_util.get_private_role( test_user_1 )
+        self.logout()
+        self.login( email=common.test_user_2_email, username=common.test_user_2_name )
+        test_user_2 = test_db_util.get_user( common.test_user_2_email )
+        assert test_user_2 is not None, 'Problem retrieving user with email %s from the database' % common.test_user_2_email
+        test_user_2_private_role = test_db_util.get_private_role( test_user_2 )
         self.logout()
         self.login( email=common.admin_email, username=common.admin_username )
         admin_user = test_db_util.get_user( common.admin_email )
@@ -51,8 +57,8 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
     def test_0025_grant_write_access( self ):
         '''Grant write access to another user'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
-        self.grant_write_access( repository, usernames=[ common.admin_username ] )
-        self.revoke_write_access( repository, common.admin_username )
+        self.grant_write_access( repository, usernames=[ common.test_user_2_name ] )
+        self.revoke_write_access( repository, common.test_user_2_name )
     def test_0030_upload_filtering_1_1_0( self ):
         """Upload filtering_1.1.0.tar to the repository"""
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
@@ -214,3 +220,22 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         assert test_user_1 is None, 'Creating user with public name "repos" succeeded.'
         error_message = 'The term <b>repos</b> is a reserved word in the tool shed, so it cannot be used as a public user name.'
         self.check_for_strings( strings_displayed=[ error_message ] )
+    def test_0105_contact_repository_owner( self ):
+        '''Fill out and submit the form to contact the owner of a repository.'''
+        '''
+        This test should not actually send the email, since functional tests are designed to function without
+        any external network connection. The embedded tool shed server these tests are running against has been configured
+        with an SMTP server address that will not and should not resolve correctly. However, since the successful sending of
+        the email is the last step in the process, this will verify functional correctness of all preceding steps.
+        '''
+        self.logout()
+        self.login( email=common.test_user_2_email, username=common.test_user_2_name )
+        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        message = 'This is a test message.'
+        strings_displayed = [ 'Contact the owner of the repository named', repository.name, 'streamline appropriate communication' ]
+        post_submit_strings_displayed = [ 'An error occurred sending your message by email' ]
+        self.send_message_to_repository_owner( repository=repository, 
+                                               message=message, 
+                                               strings_displayed=strings_displayed,
+                                               post_submit_strings_displayed=post_submit_strings_displayed )
+        
