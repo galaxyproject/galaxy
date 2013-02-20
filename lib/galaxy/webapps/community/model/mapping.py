@@ -130,7 +130,11 @@ RepositoryMetadata.table = Table( "repository_metadata", metadata,
     Column( "metadata", JSONType, nullable=True ),
     Column( "tool_versions", JSONType, nullable=True ),
     Column( "malicious", Boolean, default=False ),
-    Column( "downloadable", Boolean, default=True ) )
+    Column( "downloadable", Boolean, default=True ),
+    Column( "tools_functionally_correct", Boolean, default=False, index=True ),
+    Column( "do_not_test", Boolean, default=False, index=True ),
+    Column( "time_last_tested", DateTime, default=None, nullable=True ),
+    Column( "tool_test_errors", JSONType, nullable=True ) )
 
 RepositoryReview.table = Table( "repository_review", metadata,
     Column( "id", Integer, primary_key=True ),

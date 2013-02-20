@@ -170,13 +170,18 @@ class Repository( object, APIItem ):
 class RepositoryMetadata( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable' )
     api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable' )
-    def __init__( self, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False ):
+    def __init__( self, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
+                  tools_functionally_correct=False, do_not_test=False, time_last_tested=None, tool_test_errors=None ):
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
         self.metadata = metadata or dict()
         self.tool_versions = tool_versions or dict()
         self.malicious = malicious
         self.downloadable = downloadable
+        self.tools_functionally_correct = tools_functionally_correct
+        self.do_not_test = do_not_test
+        self.time_last_tested = time_last_tested
+        self.tool_test_errors = tool_test_errors
     def get_api_value( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
