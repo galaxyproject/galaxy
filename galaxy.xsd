@@ -8,6 +8,7 @@
       <xs:all>
         <xs:element name="requirements" type="Requirements" minOccurs="0" />
         <xs:element name="description" type="xs:string" minOccurs="0" />
+        <xs:element name="parallelism" type="Parallelism" minOccurs="0" />
         <xs:element name="command" type="Command" />
         <xs:element name="configfiles" type="ConfigFiles" minOccurs="0" />
         <xs:element name="outputs" type="Outputs" minOccurs="0" />
@@ -36,6 +37,10 @@
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
+
+  <xs:complexType name="Parallelism">
+    <xs:attribute name="method" type="MethodType"/>
+  </xs:complexType> 
 
   <xs:complexType name="Tests">
     <xs:sequence>
@@ -258,6 +263,13 @@
       <xs:enumeration value="python-module" />
       <xs:enumeration value="binary" />
       <xs:enumeration value="package" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="MethodType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="basic" />
+      <xs:enumeration value="multi" />
     </xs:restriction>
   </xs:simpleType>
 
