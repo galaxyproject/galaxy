@@ -62,6 +62,7 @@
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required" />
     <xs:attribute name="value" type="xs:string" />
+    <xs:attribute name="ftype" type="xs:string" />
   </xs:complexType>
 
   <xs:complexType name="TestOutput">
