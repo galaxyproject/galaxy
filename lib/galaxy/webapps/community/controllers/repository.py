@@ -1,4 +1,4 @@
-import os, logging, re, tempfile, shutil, ConfigParser
+import os, logging, re, tempfile, shutil, ConfigParser, string
 from time import gmtime, strftime
 from datetime import date, datetime
 from galaxy import util, web
