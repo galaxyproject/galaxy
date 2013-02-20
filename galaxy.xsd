@@ -14,6 +14,7 @@
         <xs:element name="outputs" type="Outputs" minOccurs="0" />
         <xs:element name="inputs" type="Inputs" minOccurs="0" />
 	<xs:element name="tests" type="Tests" minOccurs="0" />
+	<xs:element name="stdio" type="Stdio" minOccurs="0" />
         <xs:element name="help" type="xs:string" minOccurs="0" />
       </xs:all>
       <xs:attribute name="id" type="xs:string" use="required" />
@@ -238,6 +239,26 @@
     </xs:simpleContent>
   </xs:complexType>
 
+  <xs:complexType name="Stdio">
+    <xs:sequence>
+      <xs:element name="regex" minOccurs="0" maxOccurs="unbounded" type="Regex" />
+      <xs:element name="exit_code" minOccurs="0" maxOccurs="unbounded" type="ExitCode" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:complexType name="ExitCode">
+    <xs:attribute name="range" type="RangeType"/>
+    <xs:attribute name="level" type="LevelType"/>
+    <xs:attribute name="description" type="xs:string"/>
+  </xs:complexType> 
+
+  <xs:complexType name="Regex">
+    <xs:attribute name="source" type="SourceType"/>
+    <xs:attribute name="match" type="xs:string"/>
+    <xs:attribute name="level" type="LevelType"/>
+    <xs:attribute name="description" type="xs:string"/>
+  </xs:complexType>
+
   <xs:simpleType name="ConfigFileType">
     <xs:restriction base="xs:string">
       <xs:enumeration value="template" />
@@ -292,6 +313,28 @@
       <xs:enumeration value="yes" />
       <xs:enumeration value="true" />
       <xs:enumeration value="on" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="LevelType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="fatal" />
+      <xs:enumeration value="warning" />
+      <xs:enumeration value="log" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="RangeType">
+    <xs:restriction base="xs:string">
+      <xs:pattern value="(\d)*:?(\d)*"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="SourceType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="stdout" />
+      <xs:enumeration value="stderr" />
+      <xs:enumeration value="both" />
     </xs:restriction>
   </xs:simpleType>
 
