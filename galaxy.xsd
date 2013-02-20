@@ -5,7 +5,7 @@
 
   <xs:element name="tool">
     <xs:complexType>
-      <xs:sequence>
+      <xs:all>
         <xs:element name="description" type="xs:string" minOccurs="0" />
         <xs:element name="command" type="Command" />
         <xs:element name="configfiles" type="ConfigFiles" minOccurs="0" />
@@ -13,7 +13,7 @@
         <xs:element name="inputs" type="Inputs" minOccurs="0" />
 	<xs:element name="tests" type="Tests" minOccurs="0" />
         <xs:element name="help" type="xs:string" minOccurs="0" />
-      </xs:sequence>
+      </xs:all>
       <xs:attribute name="id" type="xs:string" use="required" />
       <xs:attribute name="name" type="xs:string" use="required" />
       <xs:attribute name="version" type="xs:string" default="1.0.0" />
