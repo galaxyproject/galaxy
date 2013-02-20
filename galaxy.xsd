@@ -120,7 +120,10 @@
     <xs:complexContent>
       <xs:extension base="InputType">
 	<xs:sequence>
-	  <xs:element name="option" type="ParamOption" minOccurs="0" maxOccurs="unbounded" />
+	  <xs:choice>
+	    <xs:element name="option" type="ParamOption" minOccurs="0" maxOccurs="unbounded" />
+	    <xs:element name="options" type="OptionsElement" minOccurs="0" maxOccurs="1" />
+	  </xs:choice>
 	</xs:sequence>
     <xs:attribute name="label" type="xs:string" />
     <xs:attribute name="help" type="xs:string" />
@@ -170,6 +173,15 @@
         <xs:attribute name="selected" type="xs:boolean" default="false" />
       </xs:extension>
     </xs:simpleContent>
+  </xs:complexType>
+
+  <xs:complexType name="OptionsElement">
+    <!-- <column> must be defined here -->
+    <!-- <filter> msut be defined here -->
+        <xs:attribute name="from_dataset" type="xs:string" />
+        <xs:attribute name="from_file" type="xs:string" />
+        <xs:attribute name="from_data_table" type="xs:string" />
+        <xs:attribute name="from_parameter" type="xs:string" />
   </xs:complexType>
 
   <xs:complexType name="Outputs">
