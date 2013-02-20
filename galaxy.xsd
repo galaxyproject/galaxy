@@ -190,13 +190,42 @@
   </xs:complexType>
 
   <xs:complexType name="OptionsElement">
-    <!-- <column> must be defined here -->
-    <!-- <filter> msut be defined here -->
+    <xs:sequence>
+       <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded" />
+       <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded" />
+       <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1" />
+       <xs:element name="file" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
         <xs:attribute name="from_dataset" type="xs:string" />
         <xs:attribute name="from_file" type="xs:string" />
         <xs:attribute name="from_data_table" type="xs:string" />
         <xs:attribute name="from_parameter" type="xs:string" />
   </xs:complexType>
+
+  <xs:complexType name="Column">
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="index" type="xs:decimal" use="required" />
+  </xs:complexType> 
+
+  <xs:complexType name="Validator">
+    <xs:attribute name="type" type="ValidatorType" use="required" />
+    <xs:attribute name="message" type="xs:string" />
+    <xs:attribute name="filename" type="xs:string" />
+    <xs:attribute name="metadata_name" type="xs:string" />
+    <xs:attribute name="metadata_column" type="xs:integer" />
+    <xs:attribute name="line_startswith" type="xs:string" />
+    <xs:attribute name="min" type="xs:integer" />
+    <xs:attribute name="max" type="xs:integer" />
+  </xs:complexType> 
+
+  <xs:complexType name="Filter">
+    <xs:attribute name="type" type="FilterType" use="required" />
+    <xs:attribute name="name" type="xs:string" />
+    <xs:attribute name="column" type="xs:integer" use="required" />
+    <xs:attribute name="ref" type="xs:string" />
+    <xs:attribute name="key" type="xs:string" />
+    <xs:attribute name="separator" type="xs:string" />
+  </xs:complexType> 
 
   <xs:complexType name="Outputs">
     <xs:sequence>
@@ -313,6 +342,33 @@
       <xs:enumeration value="yes" />
       <xs:enumeration value="true" />
       <xs:enumeration value="on" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ValidatorType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="expression" />
+      <xs:enumeration value="regex" />
+      <xs:enumeration value="in_range" />
+      <xs:enumeration value="length" />
+      <xs:enumeration value="metadata" />
+      <xs:enumeration value="unspecified_build" />
+      <xs:enumeration value="no_options" />
+      <xs:enumeration value="empty_field" />
+      <xs:enumeration value="dataset_metadata_in_file" />
+      <xs:enumeration value="dataset_ok_validator" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="FilterType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="data_meta" />
+      <xs:enumeration value="param_value" />
+      <xs:enumeration value="static_value" />
+      <xs:enumeration value="unique_value" />
+      <xs:enumeration value="multiple_splitter" />
+      <xs:enumeration value="add_value" />
+      <xs:enumeration value="sort_by" />
     </xs:restriction>
   </xs:simpleType>
 
