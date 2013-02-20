@@ -201,11 +201,15 @@
   <xs:complexType name="Data">
     <xs:sequence>
       <xs:element name="change_format" type="ChangeFormat" minOccurs="0" />
+      <xs:element name="filter" type="xs:string" minOccurs="0" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required" />
-    <xs:attribute name="metadata_source" type="xs:string" />
     <xs:attribute name="format" type="xs:string" use="required" />
+    <xs:attribute name="format_source" type="xs:string" />
+    <xs:attribute name="metadata_source" type="xs:string" />
     <xs:attribute name="label" type="xs:string" />
+    <xs:attribute name="from_work_dir" type="xs:string" />
+    <xs:attribute name="hidden" type="xs:boolean" />
   </xs:complexType>
 
   <xs:complexType name="ConfigFiles">
