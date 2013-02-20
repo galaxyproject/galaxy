@@ -6,6 +6,7 @@
   <xs:element name="tool">
     <xs:complexType>
       <xs:all>
+        <xs:element name="requirements" type="Requirements" minOccurs="0" />
         <xs:element name="description" type="xs:string" minOccurs="0" />
         <xs:element name="command" type="Command" />
         <xs:element name="configfiles" type="ConfigFiles" minOccurs="0" />
@@ -20,6 +21,21 @@
       <xs:attribute name="hidden" type="xs:boolean" default="false" />
     </xs:complexType>
   </xs:element>
+
+  <xs:complexType name="Requirements">
+    <xs:sequence>
+      <xs:element name="requirement" type="Requirement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+    <xs:complexType name="Requirement">
+      <xs:simpleContent>
+        <xs:extension base="xs:string">
+          <xs:attribute name="type" type="RequirementType" use="required" />
+          <xs:attribute name="version" type="xs:decimal" use="required" />
+        </xs:extension>
+      </xs:simpleContent>
+    </xs:complexType>
 
   <xs:complexType name="Tests">
     <xs:sequence>
@@ -210,5 +226,13 @@
     <xs:attribute name="value" type="xs:string" use="required" />
     <xs:attribute name="format" type="xs:string" use="required" />
   </xs:complexType>
+
+  <xs:simpleType name="RequirementType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="python-module" />
+      <xs:enumeration value="binary" />
+      <xs:enumeration value="package" />
+    </xs:restriction>
+  </xs:simpleType>
 
 </xs:schema>
