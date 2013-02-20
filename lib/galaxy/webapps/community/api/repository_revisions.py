@@ -1,10 +1,11 @@
-from galaxy import web, util, logging
+from galaxy import web, util
 from galaxy.web.base.controller import BaseController, BaseAPIController
 from galaxy.web.framework.helpers import is_true
 
 import pkg_resources
 pkg_resources.require( "Routes" )
 import routes
+import logging
 
 log = logging.getLogger( __name__ )
 
