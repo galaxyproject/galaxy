@@ -110,6 +110,8 @@
           <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded" />
         </xs:sequence>
         <xs:attribute name="title" type="xs:string" />
+        <xs:attribute name="min" type="xs:integer" />
+        <xs:attribute name="max" type="xs:integer" />
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
