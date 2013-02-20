@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# NOTE: This script cannot be run directly, because it needs to have test/functional/test_toolbox.py in sys.argv in 
+#       order to run functional tests on repository tools after installation. The install_and_test_tool_shed_repositories.sh
+#       will execute this script with the appropriate parameters.
+
 import os, sys, shutil, tempfile, re, string
 
 # Assume we are run from the galaxy root directory, add lib to the python path
@@ -8,9 +12,9 @@ sys.path.append( cwd )
 
 test_home_directory = os.path.join( cwd, 'test', 'install_and_test_tool_shed_repositories' )
 default_test_file_dir = os.path.join( test_home_directory, 'test_data' )
+
 # Here's the directory where everything happens.  Temporary directories are created within this directory to contain
-# the hgweb.config file, the database, new repositories, etc.  Since the tool shed browses repository contents via HTTP,
-# the full path to the temporary directroy wher eht repositories are located cannot contain invalid url characters.
+# the database, new repositories, etc.
 galaxy_test_tmp_dir = os.path.join( test_home_directory, 'tmp' )
 default_galaxy_locales = 'en'
 default_galaxy_test_file_dir = "test-data"
@@ -43,11 +47,14 @@ from paste import httpserver
 import galaxy.app
 from galaxy.app import UniverseApplication
 from galaxy.web import buildapp
+from galaxy.util import parse_xml
 
 import nose.core
 import nose.config
 import nose.loader
 import nose.plugins.manager
+
+from base.util import parse_tool_panel_config
 
 log = logging.getLogger( 'install_and_test_repositories' )
 
@@ -66,11 +73,13 @@ tool_sheds_conf_xml = '''<?xml version="1.0"?>
 </tool_sheds>
 '''
 
+# Create a blank shed_tool_conf.xml to hold the installed repositories.
 shed_tool_conf_xml_template = '''<?xml version="1.0"?>
 <toolbox tool_path="${shed_tool_path}">
 </toolbox>
 '''
 
+# Since we will be running functional tests, we'll need the upload tool, but the rest can be omitted.
 tool_conf_xml = '''<?xml version="1.0"?>
 <toolbox>
     <section name="Get Data" id="getext">
@@ -79,11 +88,13 @@ tool_conf_xml = '''<?xml version="1.0"?>
 </toolbox>
 '''
 
+# And set up a blank tool_data_table_conf.xml and shed_tool_data_table_conf.xml.
 tool_data_table_conf_xml_template = '''<?xml version="1.0"?>
 <tables>
 </tables>
 '''
 
+# Define a default location to find the list of repositories to check.
 galaxy_repository_list = os.environ.get( 'GALAXY_INSTALL_TEST_REPOSITORY_FILE', 'repository_list.json' )
 
 if 'GALAXY_INSTALL_TEST_SECRET' not in os.environ:
@@ -92,7 +103,7 @@ if 'GALAXY_INSTALL_TEST_SECRET' not in os.environ:
 else:
     galaxy_encode_secret = os.environ[ 'GALAXY_INSTALL_TEST_SECRET' ]
 
-def get_repositories_to_install():
+def get_repositories_to_install( format='json' ):
     '''
     Get a list of repository info dicts to install. This method expects a json list of dicts with the following structure:
     [
@@ -107,7 +118,10 @@ def get_repositories_to_install():
     ]
     NOTE: If the tool shed URL specified in any dict is not present in the tool_sheds_conf.xml, the installation will fail.
     '''
-    return simplejson.loads( file( galaxy_repository_list, 'r' ).read() )
+    if format == 'json':
+        return simplejson.loads( file( galaxy_repository_list, 'r' ).read() )
+    else:
+        raise AssertonError( 'Unknown format %s.' % format )
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
@@ -126,7 +140,7 @@ def run_tests( test_config ):
 def main():
     # ---- Configuration ------------------------------------------------------
     galaxy_test_host = os.environ.get( 'GALAXY_INSTALL_TEST_HOST', default_galaxy_test_host )
-    galaxy_test_port = os.environ.get( 'GALAXY_INSTALL_TEST_PORT', None )
+    galaxy_test_port = os.environ.get( 'GALAXY_INSTALL_TEST_PORT', str( default_galaxy_test_port_max ) )
     
     tool_path = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_PATH', 'tools' )
     if 'HTTP_ACCEPT_LANGUAGE' not in os.environ:
@@ -134,28 +148,32 @@ def main():
     galaxy_test_file_dir = os.environ.get( 'GALAXY_INSTALL_TEST_FILE_DIR', default_galaxy_test_file_dir )
     if not os.path.isabs( galaxy_test_file_dir ):
         galaxy_test_file_dir = os.path.abspath( galaxy_test_file_dir )
+    # Set up the tool dependency path for the Galaxy instance.
     tool_dependency_dir = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR', None )
     use_distributed_object_store = os.environ.get( 'GALAXY_INSTALL_TEST_USE_DISTRIBUTED_OBJECT_STORE', False )
     if not os.path.isdir( galaxy_test_tmp_dir ):
         os.mkdir( galaxy_test_tmp_dir )
     galaxy_test_proxy_port = None
+    # Set up the configuration files for the Galaxy instance.
     shed_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DATA_TABLE_CONF', os.path.join( galaxy_test_tmp_dir, 'test_shed_tool_data_table_conf.xml' ) )
     galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DATA_TABLE_CONF', os.path.join( galaxy_test_tmp_dir, 'test_tool_data_table_conf.xml' ) )
     galaxy_tool_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_CONF', os.path.join( galaxy_test_tmp_dir, 'test_tool_conf.xml' ) )
     galaxy_shed_tool_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_CONF', os.path.join( galaxy_test_tmp_dir, 'test_shed_tool_conf.xml' ) )
     galaxy_migrated_tool_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_MIGRATED_TOOL_CONF', os.path.join( galaxy_test_tmp_dir, 'test_migrated_tool_conf.xml' ) )
     galaxy_tool_sheds_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF', os.path.join( galaxy_test_tmp_dir, 'test_tool_sheds_conf.xml' ) )
-    shed_tool_dict = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DICT_FILE', os.path.join( galaxy_test_tmp_dir, 'shed_tool_dict' ) )
+    galaxy_shed_tools_dict = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DICT_FILE', os.path.join( galaxy_test_tmp_dir, 'shed_tool_dict' ) )
     if 'GALAXY_INSTALL_TEST_TOOL_DATA_PATH' in os.environ:
         tool_data_path = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DATA_PATH' )
     else:
         tool_data_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
         os.environ[ 'GALAXY_INSTALL_TEST_TOOL_DATA_PATH' ] = tool_data_path
+    # Configure the database connection and path.
     if 'GALAXY_INSTALL_TEST_DBPATH' in os.environ:
         galaxy_db_path = os.environ[ 'GALAXY_INSTALL_TEST_DBPATH' ]
     else: 
         tempdir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
         galaxy_db_path = os.path.join( tempdir, 'database' )
+    # Configure the paths Galaxy needs to install and test tools.
     galaxy_file_path = os.path.join( galaxy_db_path, 'files' )
     new_repos_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     galaxy_tempfiles = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
@@ -239,6 +257,7 @@ def main():
                                          static_enabled=False,
                                          app=app )
 
+    # Serve the app on a specified or random port.
     if galaxy_test_port is not None:
         server = httpserver.serve( webapp, host=galaxy_test_host, port=galaxy_test_port, start_loop=False )
     else:
@@ -260,9 +279,10 @@ def main():
         os.environ[ 'GALAXY_INSTALL_TEST_PORT' ] = galaxy_test_proxy_port
     else:
         os.environ[ 'GALAXY_INSTALL_TEST_PORT' ] = galaxy_test_port
+    # Start the server.
     t = threading.Thread( target=server.serve_forever )
     t.start()
-    # Test if the server is up
+    # Test if the server is up.
     for i in range( 10 ):
         # Directly test the app, not the proxy.
         conn = httplib.HTTPConnection( galaxy_test_host, galaxy_test_port )
@@ -273,27 +293,71 @@ def main():
     else:
         raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
     log.info( "Embedded galaxy web server started" )
-    # ---- Load the module to generate installation methods -------------------
+    # ---- Load the modules to generate installation, testing, and uninstallation methods -------------------
     import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
+    import functional.test_toolbox as test_toolbox
     if galaxy_test_proxy_port:
         log.info( "Tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
     else:
         log.info( "Tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
+        # Iterate through a list of repository info dicts.
         for repository_dict in get_repositories_to_install():
-            test_install_repositories.build_tests( repository_dict )
+            # Generate the method that will install this repository into the running Galaxy instance.
+            test_install_repositories.generate_install_method( repository_dict )
             os.environ[ 'GALAXY_INSTALL_TEST_HOST' ] = galaxy_test_host
+            # Configure nose to run the install method as a test.
             test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
             test_config.configure( sys.argv )
-            # Run the tests.
+            # Run the configured install method as a test. This method uses the Galaxy web interface to install the specified
+            # repository, with tool and repository dependencies also selected for installation.
             result = run_tests( test_config )
             success = result.wasSuccessful()
+            # If the installation succeeds, set up and run functional tests for this repository. This is equivalent to 
+            # sh run_functional_tests.sh -installed
+            if success:
+                log.debug( 'Installation of %s succeeded, running any defined functional tests.' % repository_dict[ 'name' ] )
+                # Parse the tool panel config to get the test-data path for this repository.
+                shed_tools_dict = parse_tool_panel_config( galaxy_shed_tool_conf_file, {} )
+                # Write this to a file, so the functional test framework can find it.
+                file( galaxy_shed_tools_dict, 'w' ).write( simplejson.dumps( shed_tools_dict ) )
+                # Set up the environment so that test.functional.test_toolbox can find the Galaxy server we configured in this framework.
+                os.environ[ 'GALAXY_TOOL_SHED_TEST_FILE' ] = galaxy_shed_tools_dict
+                os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
+                os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_port
+                # Set the module-level variable 'toolbox', so that test.functional.test_toolbox will generate the appropriate test methods.
+                test_toolbox.toolbox = app.toolbox
+                # Generate the test methods for this installed repository. We need to pass in True here, or it will look 
+                # in $GALAXY_HOME/test-data for test data, which may result in missing or invalid test files.
+                test_toolbox.build_tests( testing_shed_tools=True )
+                # Set up nose to run the generated functional tests.
+                test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
+                test_config.configure( sys.argv )
+                # Run the configured tests.
+                result = run_tests( test_config )
+                success = result.wasSuccessful()
+                if success:
+                    log.debug( 'Repository %s installed and passed functional tests.' % repository_dict[ 'name' ] ) 
+                else:
+                    log.debug( 'Repository %s installed, but did not pass functional tests.' % repository_dict[ 'name' ] )
+                # Generate an uninstall method for this repository, so that the next repository has a clean environment for testing.
+                test_install_repositories.generate_uninstall_method( repository_dict )
+                # Set up nose to run the generated uninstall method as a functional test.
+                test_config = nose.config.Config( env=os.environ, plugins=nose.plugins.manager.DefaultPluginManager() )
+                test_config.configure( sys.argv )
+                # Run the uninstall method. This method uses the Galaxy web interface to uninstall the previously installed 
+                # repository and delete it from disk.
+                result = run_tests( test_config )
+                success = result.wasSuccessful()
+            else:
+                log.debug( 'Repository %s failed to install correctly.' % repository_dict[ 'name' ] )
     except:
         log.exception( "Failure running tests" )
         
     log.info( "Shutting down" )
     # ---- Tear down -----------------------------------------------------------
+    # Gracefully shut down the embedded web server and UniverseApplication.
     if server:
         log.info( "Shutting down embedded galaxy web server" )
         server.server_close()
@@ -304,6 +368,7 @@ def main():
         app.shutdown()
         app = None
         log.info( "Embedded galaxy application stopped" )
+    # Clean up test files unless otherwise specified.
     if 'GALAXY_INSTALL_TEST_NO_CLEANUP' not in os.environ:
         try:
             for dir in [ galaxy_test_tmp_dir ]:

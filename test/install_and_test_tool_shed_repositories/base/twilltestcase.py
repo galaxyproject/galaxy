@@ -121,4 +121,12 @@ class InstallTestRepository( TwillTestCase ):
                                               ( timeout_counter, repository.status ) )
                         break
                     time.sleep( 1 )
+    def uninstall_repository( self, installed_repository ):
+        url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
+        self.visit_url( url )
+        tc.fv ( 1, "remove_from_disk", 'true' )
+        tc.submit( 'deactivate_or_uninstall_repository_button' )
+        strings_displayed = [ 'The repository named' ]
+        strings_displayed.append( 'has been uninstalled' )
+        self.check_for_strings( strings_displayed, strings_not_displayed=[] )
 
