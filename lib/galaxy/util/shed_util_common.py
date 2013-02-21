@@ -30,17 +30,11 @@ import markupsafe
 log = logging.getLogger( __name__ )
 
 INITIAL_CHANGELOG_HASH = '000000000000'
-# Characters that must be html escaped
-MAPPED_CHARS = { '>' :'&gt;', 
-                 '<' :'&lt;',
-                 '"' : '&quot;',
-                 '&' : '&amp;',
-                 '\'' : '&apos;' }
 MAX_CONTENT_SIZE = 32768
 NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'repository_dependencies.xml', 'tool_dependencies.xml' ]
 GALAXY_ADMIN_TOOL_SHED_CONTROLLER = 'GALAXY_ADMIN_TOOL_SHED_CONTROLLER'
 TOOL_SHED_ADMIN_CONTROLLER = 'TOOL_SHED_ADMIN_CONTROLLER'
-VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}" )
+VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
 
 new_repo_email_alert_template = """
 Repository name:       ${repository_name}
@@ -3420,12 +3414,14 @@ def tool_dependency_is_orphan_in_tool_shed( type, name, version, tools ):
 def to_safe_string( text, to_html=True ):
     """Translates the characters in text to an html string"""
     if text:
+        if to_html:
+            escaped_text = str( markupsafe.escape( text ) )
+        else:
+            escaped_text = str( text )
         translated = []
-        for c in text:
+        for c in escaped_text:
             if c in VALID_CHARS:
                 translated.append( c )
-            elif c in MAPPED_CHARS:
-                translated.append( MAPPED_CHARS[ c ] )
             elif c in [ '\n' ]:
                 if to_html:
                     translated.append( '<br/>' )
@@ -3437,8 +3433,6 @@ def to_safe_string( text, to_html=True ):
                 translated.append( c )
             else:
                 translated.append( '' )
-        if to_html:
-            str( markupsafe.escape( ''.join( translated ) ) )
         return ''.join( translated )
     return text
 def tool_shed_from_repository_clone_url( repository_clone_url ):
