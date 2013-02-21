@@ -76,6 +76,8 @@
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required" />
     <xs:attribute name="file" type="xs:string" />
+    <xs:attribute name="ftype" type="xs:string" /> <!-- undocumented -->
+    <xs:attribute name="sort" type="PermissiveBoolean" /> <!-- undocumented -->
   </xs:complexType>
 
   <xs:complexType name="Inputs">
