@@ -430,6 +430,7 @@
       <xs:enumeration value="on" />
       <xs:enumeration value="false" /> <!-- undocumented -->
       <xs:enumeration value="False" /> <!-- undocumented -->
+      <xs:enumeration value="no" /> <!-- undocumented -->
     </xs:restriction>
   </xs:simpleType>
 
