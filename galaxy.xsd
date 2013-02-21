@@ -22,6 +22,8 @@
       <xs:attribute name="name" type="xs:string" use="required" />
       <xs:attribute name="version" type="xs:string" default="1.0.0" />
       <xs:attribute name="hidden" type="xs:boolean" default="false" />
+      <xs:attribute name="tool_type" type="ToolTypeType" />
+      <xs:attribute name="URL_method" type="URLmethodType" />
     </xs:complexType>
   </xs:element>
 
@@ -384,6 +386,19 @@
       <xs:enumeration value="python-module" />
       <xs:enumeration value="binary" />
       <xs:enumeration value="package" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ToolTypeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="data_source" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="URLmethodType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="get" />
+      <xs:enumeration value="post" />
     </xs:restriction>
   </xs:simpleType>
 
