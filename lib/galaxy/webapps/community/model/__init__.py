@@ -114,14 +114,14 @@ class GalaxySession( object ):
         self.prev_session_id = prev_session_id
 
 class Repository( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name', 'description', 'user_id', 'private', 'times_downloaded', 'deprecated' )
-    api_element_visible_keys = ( 'id', 'name', 'description', 'long_description', 'user_id', 'private', 'times_downloaded', 'deprecated' )
+    api_collection_visible_keys = ( 'id', 'name', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
+    api_element_visible_keys = ( 'id', 'name', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
     file_states = Bunch( NORMAL = 'n',
                          NEEDS_MERGING = 'm',
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
-    def __init__( self, id=None, name=None, description=None, long_description=None, user_id=None, private=False, email_alerts=None,
+    def __init__( self, id=None, name=None, description=None, long_description=None, user_id=None, private=False, deleted=None, email_alerts=None,
                   times_downloaded=0, deprecated=False ):
         self.id = id
         self.name = name or "Unnamed repository"
@@ -129,12 +129,14 @@ class Repository( object, APIItem ):
         self.long_description = long_description
         self.user_id = user_id
         self.private = private
+        self.deleted = deleted
         self.email_alerts = email_alerts
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
     def as_dict( self, trans ):
-        repository_dict = self.get_api_value( view='element' )
-        repository_dict[ 'id' ] = trans.security.encode_id( self.id )    
+        value_mapper={ 'id' : trans.security.encode_id( self.id ),
+                       'user_id' : trans.security.encode_id( self.user_id ) }
+        repository_dict = self.get_api_value( view='element', value_mapper=value_mapper )
         return repository_dict
     def get_api_value( self, view='collection', value_mapper=None ):
         if value_mapper is None:

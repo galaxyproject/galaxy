@@ -26,7 +26,9 @@ class RepositoryRevisionsController( BaseAPIController ):
                                     .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
                                     .all()
             for repository_metadata in query:
-                item = repository_metadata.get_api_value( value_mapper={ 'id' : trans.security.encode_id( repository_metadata.id ) } )
+                value_mapper={ 'id' : trans.security.encode_id( repository_metadata.id ),
+                               'repository_id' : trans.security.encode_id( repository_metadata.repository_id ) }
+                item = repository_metadata.get_api_value( view='collection', value_mapper=value_mapper )
                 item[ 'url' ] = web.url_for( 'repository_revision', id=trans.security.encode_id( repository_metadata.id ) )
                 rval.append( item )
         except Exception, e:

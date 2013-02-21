@@ -26,7 +26,9 @@ class RepositoriesController( BaseAPIController ):
                                     .order_by( trans.app.model.Repository.table.c.name ) \
                                     .all()
             for repository in query:
-                item = repository.get_api_value( value_mapper={ 'id' : trans.security.encode_id( repository.id ) } )
+                value_mapper={ 'id' : trans.security.encode_id( repository.id ),
+                               'user_id' : trans.security.encode_id( repository.user_id ) }
+                item = repository.get_api_value( view='collection', value_mapper=value_mapper )
                 item[ 'url' ] = web.url_for( 'repository_contents', repository_id=trans.security.encode_id( repository.id ) )
                 rval.append( item )
         except Exception, e:
@@ -43,7 +45,9 @@ class RepositoriesController( BaseAPIController ):
         """
         try:
             repository = suc.get_repository_in_tool_shed( trans, id )
-            repository_data = repository.get_api_value( view='element', value_mapper={ 'id' : trans.security.encode_id( repository.id ) } )
+            value_mapper={ 'id' : trans.security.encode_id( repository.id ),
+                           'user_id' : trans.security.encode_id( repository.user_id ) }
+            repository_data = repository.get_api_value( view='element', value_mapper=value_mapper )
             repository_data[ 'contents_url' ] = web.url_for( 'repository_contents', repository_id=id )
         except Exception, e:
             message = "Error in the Tool Shed API at show: %s" % str( e )
