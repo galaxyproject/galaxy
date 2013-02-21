@@ -462,13 +462,25 @@
         from galaxy.util.shed_util_common import to_safe_string
         encoded_id = trans.security.encode_id( readme.id )
     %>
+    <style type="text/css">
+        #readme_table{ table-layout:fixed;
+                       width:100%;
+                       overflow-wrap:normal;
+                       overflow:hidden;
+                       border:0px; 
+                       word-break:keep-all;
+                       word-wrap:break-word;
+                       line-break:strict; }
+    </style>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            ${ to_safe_string( readme.text, to_html=True ) }
+            <table id="readme_table">
+                <tr><td>${ to_safe_string( readme.text, to_html=True ) }</td></tr>
+            </table>
         </td>
     </tr>
     <%
