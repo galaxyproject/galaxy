@@ -247,8 +247,8 @@
     <xs:attribute name="metadata_name" type="xs:string" />
     <xs:attribute name="metadata_column" type="xs:integer" />
     <xs:attribute name="line_startswith" type="xs:string" />
-    <xs:attribute name="min" type="xs:integer" />
-    <xs:attribute name="max" type="xs:integer" />
+    <xs:attribute name="min" type="xs:decimal" />
+    <xs:attribute name="max" type="xs:decimal" />
     <xs:attribute name="split" type="xs:string" />
   </xs:complexType>
 
