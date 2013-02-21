@@ -112,7 +112,7 @@ class BaseJobRunner( object ):
             job_wrapper.prepare()
             job_wrapper.runner_command_line = self.build_command_line( job_wrapper )
         except:
-            log.exception("(%d) Failure preparing job" % job_id)
+            log.exception("(%s) Failure preparing job" % job_id)
             job_wrapper.fail( "failure preparing job", exception=True )
             return
 
