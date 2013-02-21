@@ -220,6 +220,8 @@
     <xs:attribute name="from_file" type="xs:string" />
     <xs:attribute name="from_data_table" type="xs:string" />
     <xs:attribute name="from_parameter" type="xs:string" />
+    <xs:attribute name="options_filter_attribute" type="xs:string" /> <!-- undocumented -->
+    <xs:attribute name="transform_lines" type="xs:string" /> <!-- undocumented -->
   </xs:complexType>
 
   <xs:group name="OptionsElement">
