@@ -114,14 +114,16 @@ class GalaxySession( object ):
         self.prev_session_id = prev_session_id
 
 class Repository( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name', 'description' )
+    api_collection_visible_keys = ( 'id', 'name', 'description', 'user_id', 'private', 'times_downloaded', 'deprecated' )
+    api_element_visible_keys = ( 'id', 'name', 'description', 'long_description', 'user_id', 'private', 'times_downloaded', 'deprecated' )
     file_states = Bunch( NORMAL = 'n',
                          NEEDS_MERGING = 'm',
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
-    def __init__( self, name=None, description=None, long_description=None, user_id=None, private=False, email_alerts=None, times_downloaded=0, deprecated=False ):
+    def __init__( self, id=None, name=None, description=None, long_description=None, user_id=None, private=False, email_alerts=None,
+                  times_downloaded=0, deprecated=False ):
+        self.id = id
         self.name = name or "Unnamed repository"
         self.description = description
         self.long_description = long_description
@@ -130,6 +132,28 @@ class Repository( object, APIItem ):
         self.email_alerts = email_alerts
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
+    def as_dict( self, trans ):
+        repository_dict = self.get_api_value( view='element' )
+        repository_dict[ 'id' ] = trans.security.encode_id( self.id )    
+        return repository_dict
+    def get_api_value( self, view='collection', value_mapper=None ):
+        if value_mapper is None:
+            value_mapper = {}
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[ key ] = self.__getattribute__( key )
+                if key in value_mapper:
+                    rval[ key ] = value_mapper.get( key, rval[ key ] )
+            except AttributeError:
+                rval[ key ] = None
+        if 'user_id' in rval:
+            rval[ 'owner' ] = self.user.username
+        return rval
     def repo_path( self, app ):
         return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )
     def revision( self, app ):
@@ -194,7 +218,7 @@ class RepositoryMetadata( object, APIItem ):
             try:
                 rval[ key ] = self.__getattribute__( key )
                 if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key )( rval[ key ] )
+                    rval[ key ] = value_mapper.get( key, rval[ key ] )
             except AttributeError:
                 rval[ key ] = None
         return rval
