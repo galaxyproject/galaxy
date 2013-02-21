@@ -16,6 +16,7 @@
 	<xs:element name="tests" type="Tests" minOccurs="0" />
 	<xs:element name="stdio" type="Stdio" minOccurs="0" />
         <xs:element name="help" type="xs:string" minOccurs="0" />
+	<xs:element name="code" type="Code" minOccurs="0" />
       </xs:all>
       <xs:attribute name="id" type="xs:string" use="required" />
       <xs:attribute name="name" type="xs:string" use="required" />
@@ -41,6 +42,10 @@
 
   <xs:complexType name="Parallelism">
     <xs:attribute name="method" type="MethodType"/>
+  </xs:complexType> 
+
+  <xs:complexType name="Code">
+    <xs:attribute name="file" type="xs:string"/>
   </xs:complexType> 
 
   <xs:complexType name="Tests">
