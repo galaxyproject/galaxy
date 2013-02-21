@@ -241,6 +241,9 @@
     <xs:attribute name="ref" type="xs:string" />
     <xs:attribute name="key" type="xs:string" />
     <xs:attribute name="separator" type="xs:string" />
+    <xs:attribute name="compare" type="CompareType" /><!-- undocumented -->
+    <xs:attribute name="keep" type="PermissiveBoolean" /><!-- undocumented -->
+    <xs:attribute name="value" type="xs:string" /><!-- undocumented -->
   </xs:complexType> 
 
   <xs:complexType name="Outputs">
@@ -414,6 +417,12 @@
     <xs:restriction base="xs:string">
       <xs:enumeration value="format" />
       <xs:enumeration value="metadata" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="CompareType"> <!-- undocumented -->
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="startswith" />
     </xs:restriction>
   </xs:simpleType>
 
