@@ -229,6 +229,7 @@
     <xs:attribute name="line_startswith" type="xs:string" />
     <xs:attribute name="min" type="xs:integer" />
     <xs:attribute name="max" type="xs:integer" />
+    <xs:attribute name="split" type="xs:string" />
   </xs:complexType> 
 
   <xs:complexType name="Filter">
