@@ -137,6 +137,7 @@
 	    <xs:element name="option" type="ParamOption" minOccurs="0" maxOccurs="unbounded" />
 	    <xs:element name="options" type="Options" minOccurs="0" maxOccurs="1" />
 	  </xs:choice>
+	  <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="unbounded" />
 	</xs:sequence>
 	<xs:attribute name="type" type="ParamType" use="required" />
 	<xs:attribute name="label" type="xs:string" />
