@@ -299,6 +299,7 @@
     <xs:attribute name="compare" type="CompareType" /><!-- undocumented -->
     <xs:attribute name="keep" type="PermissiveBoolean" /><!-- undocumented -->
     <xs:attribute name="value" type="xs:string" /><!-- undocumented -->
+    <xs:attribute name="ref_attribute" type="xs:string" /><!-- undocumented -->
   </xs:complexType> 
 
   <xs:complexType name="Outputs">
