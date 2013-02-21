@@ -251,6 +251,7 @@
     <xs:sequence>
       <xs:element name="change_format" type="ChangeFormat" minOccurs="0" />
       <xs:element name="filter" type="xs:string" minOccurs="0" />
+      <xs:element name="actions" type="Actions" minOccurs="0" />
     </xs:sequence>
     <xs:attribute name="name" type="xs:string" use="required" />
     <xs:attribute name="format" type="xs:string" use="required" />
@@ -259,6 +260,25 @@
     <xs:attribute name="label" type="xs:string" />
     <xs:attribute name="from_work_dir" type="xs:string" />
     <xs:attribute name="hidden" type="xs:boolean" />
+  </xs:complexType>
+
+  <xs:complexType name="Actions">
+    <xs:sequence>
+      <xs:group ref="ActionElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+  </xs:complexType>
+
+  <xs:group name="ActionElement">
+    <xs:choice>
+      <xs:element name="action" type="Action" />
+      <xs:element name="conditional" type="Conditional" />
+    </xs:choice>
+  </xs:group>
+
+  <xs:complexType name="Action">
+    <xs:attribute name="type" type="ActionType"/>
+    <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="default" type="xs:string"/>
   </xs:complexType>
 
   <xs:complexType name="ConfigFiles">
@@ -383,6 +403,13 @@
       <xs:enumeration value="multiple_splitter" />
       <xs:enumeration value="add_value" />
       <xs:enumeration value="sort_by" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ActionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="format" />
+      <xs:enumeration value="metadata" />
     </xs:restriction>
   </xs:simpleType>
 
