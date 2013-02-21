@@ -318,6 +318,8 @@ var GenomeDataManager = Cache.extend({
         // Do request.
         var manager = this,
             entry = $.getJSON(dataset.url(), params, function (result) {
+                // Add region to the result.
+                result.region = region;
                 manager.set_data(region, result);
             });
 
@@ -582,7 +584,25 @@ var ReferenceTrackDataManager = GenomeDataManager.extend({
             return { data: null };
         }
         return GenomeDataManager.prototype.load_data.call(this, region, mode, resolution, extra_params);
-    } 
+    },
+
+    /**
+     * Return an entry that includes only data in the subregion.
+     */
+    subset_entry: function(entry, subregion) {
+        var seq_data = entry.data;
+        if (!entry.region.same(subregion)) {
+            // Need to subset sequence data.
+            var seq_start = subregion.get('start') - entry.region.get('start'),
+                seq_end = entry.data.length - ( entry.region.get('end') - subregion.get('end') );
+            seq_data = entry.data.slice(seq_start, seq_end);
+        }
+
+        return {
+            region: subregion,
+            data: seq_data
+        };
+    }
 });
  
 /**
@@ -638,6 +658,16 @@ var GenomeRegion = Backbone.RelationalModel.extend({
         start: 0,
         end: 0,
         genome: null
+    },
+
+    /**
+     * Returns true if this region is the same as a given region.
+     * It does not test the genome right now.
+     */
+    same: function(region) {
+        return this.attributes.chrom === region.get('chrom') &&
+               this.attributes.start === region.get('start') &&
+               this.attributes.end === region.get('end');
     },
     
     /**
