@@ -437,4 +437,15 @@
     </xs:restriction>
   </xs:simpleType>
 
+ <xs:simpleType name="PermissiveBoolean">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="0"/>
+      <xs:enumeration value="1"/>
+      <xs:enumeration value="true"/>
+      <xs:enumeration value="false"/>
+      <xs:enumeration value="True"/>
+      <xs:enumeration value="False"/>
+    </xs:restriction>
+  </xs:simpleType>
+
 </xs:schema>
