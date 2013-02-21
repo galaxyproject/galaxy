@@ -189,7 +189,7 @@
       <xs:enumeration value="select" />
       <xs:enumeration value="data_column" />
       <xs:enumeration value="hidden" />
-      <xs:enumeration value="base_url" />
+      <xs:enumeration value="baseurl" />
       <xs:enumeration value="file" />
       <xs:enumeration value="data" />
       <xs:enumeration value="drill_down" />
