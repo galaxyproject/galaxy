@@ -152,6 +152,7 @@
 	    <xs:element name="options" type="Options" minOccurs="0" maxOccurs="1" />
 	  </xs:choice>
 	  <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="unbounded" />
+	  <xs:element name="sanitizer" type="Sanitizer" minOccurs="0" maxOccurs="1" />
 	</xs:sequence>
 	<xs:attribute name="type" type="ParamType" use="required" />
 	<xs:attribute name="label" type="xs:string" />
@@ -244,7 +245,46 @@
     <xs:attribute name="min" type="xs:integer" />
     <xs:attribute name="max" type="xs:integer" />
     <xs:attribute name="split" type="xs:string" />
-  </xs:complexType> 
+  </xs:complexType>
+
+  <xs:complexType name="Sanitizer">
+    <xs:sequence>
+      <xs:element name="valid" type="Valid" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="sanitize" type="PermissiveBoolean" />
+    <xs:attribute name="invalid_char" type="xs:string" />
+  </xs:complexType>
+
+  <xs:complexType name="Valid">
+    <xs:sequence>
+      <xs:group ref="ValidElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="initial" type="xs:string" />
+  </xs:complexType>
+
+  <xs:complexType name="ValidElementType" abstract="true">
+    <xs:attribute name="preset" type="xs:string" />
+    <xs:attribute name="value" type="xs:string" />
+  </xs:complexType>
+
+  <xs:complexType name="Add">
+    <xs:complexContent>
+      <xs:extension base="ValidElementType" />
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="Remove">
+    <xs:complexContent>
+      <xs:extension base="ValidElementType" />
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:group name="ValidElement">
+    <xs:choice>
+      <xs:element name="add" type="Add" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="remove" type="Remove" minOccurs="0" maxOccurs="unbounded" />
+    </xs:choice>
+  </xs:group>
 
   <xs:complexType name="Filter">
     <xs:attribute name="type" type="FilterType" use="required" />
