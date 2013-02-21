@@ -456,6 +456,7 @@
     <xs:restriction base="xs:string">
       <xs:enumeration value="from_data_table" />
       <xs:enumeration value="from_param" />
+      <xs:enumeration value="from_file" />
     </xs:restriction>
   </xs:simpleType>
 
