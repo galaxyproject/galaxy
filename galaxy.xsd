@@ -135,7 +135,7 @@
 	  <xs:element name="label" type="xs:string" minOccurs="0" maxOccurs="1" />
 	  <xs:choice>
 	    <xs:element name="option" type="ParamOption" minOccurs="0" maxOccurs="unbounded" />
-	    <xs:element name="options" type="OptionsElement" minOccurs="0" maxOccurs="1" />
+	    <xs:element name="options" type="Options" minOccurs="0" maxOccurs="1" />
 	  </xs:choice>
 	</xs:sequence>
 	<xs:attribute name="type" type="ParamType" use="required" />
@@ -195,18 +195,24 @@
     </xs:simpleContent>
   </xs:complexType>
 
-  <xs:complexType name="OptionsElement">
+  <xs:complexType name="Options">
     <xs:sequence>
-       <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded" />
-       <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded" />
-       <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1" />
-       <xs:element name="file" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
-        <xs:attribute name="from_dataset" type="xs:string" />
-        <xs:attribute name="from_file" type="xs:string" />
-        <xs:attribute name="from_data_table" type="xs:string" />
-        <xs:attribute name="from_parameter" type="xs:string" />
+    <xs:attribute name="from_dataset" type="xs:string" />
+    <xs:attribute name="from_file" type="xs:string" />
+    <xs:attribute name="from_data_table" type="xs:string" />
+    <xs:attribute name="from_parameter" type="xs:string" />
   </xs:complexType>
+
+  <xs:group name="OptionsElement">
+    <xs:choice>
+      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded" />
+      <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1" />
+      <xs:element name="file" type="xs:string" minOccurs="0" maxOccurs="unbounded" />
+    </xs:choice>
+  </xs:group>
 
   <xs:complexType name="Column">
     <xs:attribute name="name" type="xs:string" use="required" />
