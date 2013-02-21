@@ -92,6 +92,10 @@
     <xs:sequence>
       <xs:group ref="InputElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
+    <xs:attribute name="action" type="xs:string" /> <!-- undocumented -->
+    <xs:attribute name="check_values" type="xs:boolean" /> <!-- undocumented -->
+    <xs:attribute name="method" type="URLmethodType" /> <!-- undocumented -->
+    <xs:attribute name="target" type="TargetType" /> <!-- undocumented -->
   </xs:complexType>
 
   <xs:group name="InputElement">
@@ -404,6 +408,13 @@
     <xs:restriction base="xs:string">
       <xs:enumeration value="get" />
       <xs:enumeration value="post" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="TargetType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="_top" />
+      <xs:enumeration value="_parent" />
     </xs:restriction>
   </xs:simpleType>
 
