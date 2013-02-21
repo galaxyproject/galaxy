@@ -68,6 +68,7 @@
     <xs:attribute name="name" type="xs:string" use="required" />
     <xs:attribute name="value" type="xs:string" />
     <xs:attribute name="ftype" type="xs:string" />
+    <xs:attribute name="dbkey" type="xs:string" /> <!-- undocumented -->
   </xs:complexType>
 
   <xs:complexType name="TestOutput">
