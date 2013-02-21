@@ -194,7 +194,7 @@
     <xs:simpleContent>
       <xs:extension base="xs:string">
         <xs:attribute name="value" type="xs:string" />
-        <xs:attribute name="selected" type="xs:boolean" default="false" />
+        <xs:attribute name="selected" type="PermissiveBoolean" default="false" />
       </xs:extension>
     </xs:simpleContent>
   </xs:complexType>
