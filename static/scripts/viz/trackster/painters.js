@@ -258,7 +258,8 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
             // y becomes the bar height in pixels, which is the negated for canvas coords
             y = Math.round( y / vertical_range * height_px );
             ctx.fillRect(x_scaled, y_zero, delta_x_px, - y );
-        } else if (mode === "Intensity") {
+        } 
+        else if (mode === "Intensity") {
             var 
                 saturation = (y - min_value) / vertical_range,
                 // Range is [pref_color, 255] where saturation = 0 --> 255 and saturation = 1 --> pref color
@@ -267,18 +268,21 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
                 new_b = Math.round( pref_b + (255 - pref_b) * (1 - saturation) );
             ctx.fillStyle = "rgb(" + new_r + "," + new_g + "," + new_b + ")";
             ctx.fillRect(x_scaled, 0, delta_x_px, height_px);
-        } else {
+        } 
+        else {
             // console.log(y, track.min_value, track.vertical_range, (y - track.min_value) / track.vertical_range * track.height_px);
             y = Math.round( height_px - (y - min_value) / vertical_range * height_px );
             // console.log(canvas.get(0).height, canvas.get(0).width);
             if (in_path) {
                 ctx.lineTo(x_scaled, y);
-            } else {
+            } 
+            else {
                 in_path = true;
                 if (mode === "Filled") {
                     ctx.moveTo(x_scaled, height_px);
                     ctx.lineTo(x_scaled, y);
-                } else {
+                } 
+                else {
                     ctx.moveTo(x_scaled, y);
                 }
             }
@@ -289,7 +293,8 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
             var overflow_x;
             if (mode === "Histogram" || mode === "Intensity") {
                 overflow_x = delta_x_px;
-            } else { // Line and Filled, which are points
+            } 
+            else { // Line and Filled, which are points
                 x_scaled -= 2; // Move it over to the left so it's centered on the point
                 overflow_x = 4;
             }
@@ -308,7 +313,8 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
             ctx.lineTo( 0, y_zero );
         }
         ctx.fill();
-    } else {
+    } 
+    else {
         ctx.stroke();
     }
     
@@ -469,7 +475,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
      */
     get_row_height: function() {
         var mode = this.mode, height;
-           if (mode === "Dense") {
+        if (mode === "Dense") {
             height = DENSE_TRACK_HEIGHT;            
         }
         else if (mode === "no_detail") {

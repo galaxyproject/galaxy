@@ -355,25 +355,38 @@ var GenomeDataManager = Cache.extend({
         //
         var key_ary = this.get('key_ary'),
             obj_cache = this.get('obj_cache'),
-            key, entry_region;
+            key, entry_region, is_subregion;
         for (var i = 0; i < key_ary.length; i++) {
             key = key_ary[i];
             entry_region = new GenomeRegion({from_str: key});
         
             if (entry_region.contains(region)) {
+                is_subregion = true;
+
                 // This entry has data in the requested range. Return if data
                 // is compatible and can be subsetted.
                 entry = obj_cache[key];
                 if ( is_deferred(entry) || 
                     ( this.get('data_mode_compatible')(entry, mode) && this.get('can_subset')(entry) ) ) {
                     this.move_key_to_end(key, i);
+
+                    // If there's data, subset it.
+                    if ( !is_deferred(entry) ) {
+                        var subset_entry = this.subset_entry(entry, region);
+                        this.set(region, subset_entry);
+                        entry = subset_entry;
+                    }
+
                     return entry;
                 }
             }
         }
 
+        // FIXME: There _may_ be instances where region is a subregion of another entry but cannot be 
+        // subsetted. For these cases, do not increase length because region will never be found (and
+        // an infinite loop will occur.)
         // If needed, extend region to make it minimum size.
-        if (region.length() < this.attributes.min_region_size) {
+        if (!is_subregion && region.length() < this.attributes.min_region_size) {
             // IDEA: alternative heuristic is to find adjacent cache entry to region and use that to extend.
             // This would prevent bad extensions when zooming in/out while still preserving the behavior
             // below.
@@ -553,7 +566,40 @@ var GenomeDataManager = Cache.extend({
 
         return deferred;
     },
-        
+
+    /**
+     * Returns entry with only data in the subregion.
+     */
+    subset_entry: function(entry, subregion) {
+        // Dictionary from entry type to function for subsetting data.
+        var subset_fns = {
+            bigwig: function(data, subregion) {
+                return _.filter(data, function(data_point) {
+                    return data_point[0] >= subregion.get('start') && 
+                           data_point[0] <= subregion.get('end');
+                });
+            },
+            'refseq': function(data, subregion) {
+                var seq_start = subregion.get('start') - entry.region.get('start'),
+                    seq_end = entry.data.length - ( entry.region.get('end') - subregion.get('end') );
+                return entry.data.slice(seq_start, seq_end);
+            }
+        };
+
+        // Subset entry if there is a function for subsetting and regions are not the same.
+        var subregion_data = entry.data;
+        if (!entry.region.same(subregion) && entry.dataset_type in subset_fns) {
+            subregion_data = subset_fns[entry.dataset_type](entry.data, subregion);
+        }
+
+        // Return entry with subregion's data.
+        return {
+            region: subregion,
+            data: subregion_data,
+            dataset_type: entry.dataset_type
+        };
+    },
+
     /**
      * Get data from the cache.
      */
@@ -584,24 +630,6 @@ var ReferenceTrackDataManager = GenomeDataManager.extend({
             return { data: null };
         }
         return GenomeDataManager.prototype.load_data.call(this, region, mode, resolution, extra_params);
-    },
-
-    /**
-     * Return an entry that includes only data in the subregion.
-     */
-    subset_entry: function(entry, subregion) {
-        var seq_data = entry.data;
-        if (!entry.region.same(subregion)) {
-            // Need to subset sequence data.
-            var seq_start = subregion.get('start') - entry.region.get('start'),
-                seq_end = entry.data.length - ( entry.region.get('end') - subregion.get('end') );
-            seq_data = entry.data.slice(seq_start, seq_end);
-        }
-
-        return {
-            region: subregion,
-            data: seq_data
-        };
     }
 });
  

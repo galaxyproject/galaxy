@@ -1044,9 +1044,7 @@ class BBIDataProvider( GenomeDataProvider ):
         return all_dat is not None
 
     def get_data( self, chrom, start, end, start_val=0, max_vals=None, num_samples=1000, **kwargs ):
-        # Subtract 1 because start/end are in 0-based coordinate system but BBI
-        #  provider uses 1-based coordinate system.
-        start = int( start ) - 1
+        start = int( start )
         end = int( end )
 
         # Helper function for getting summary data regardless of chromosome

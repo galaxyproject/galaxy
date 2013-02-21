@@ -3540,6 +3540,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     on_resize: function() {
         this.request_draw(true);
     },
+
     /**
      * Set track minimum value.
      */
@@ -3549,6 +3550,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         this.tile_cache.clear();
         this.request_draw();
     },
+    
     /**
      * Set track maximum value.
      */
@@ -3558,6 +3560,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         this.tile_cache.clear();
         this.request_draw();
     },
+    
     predraw_init: function() {
         var track = this;
         track.vertical_range = undefined;
@@ -3618,6 +3621,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 .prependTo(track.container_div);
         });
     },
+
     /**
      * Draw LineTrack tile.
      */
@@ -3632,11 +3636,12 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         
         return new Tile(this, region, resolution, canvas, result.data);
     },
+
     /**
-     * LineTrack data cannot currently be subsetted.
+     * Subset line tracks only if resolution is single-base pair.
      */
-    can_subset: function(data) {
-        return false;
+    can_subset: function(entry) { 
+        return (entry.data[1][0] - entry.data[0][0] === 1);
     }
 });
 
