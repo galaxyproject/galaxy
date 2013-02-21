@@ -803,6 +803,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                 }
                             }
                         } else {
+                            // Not enough detail to draw sequence data.
                             ctx.fillStyle = block_color;
                             // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
                             ctx.fillRect(s_start, y_center + 4, s_end - s_start, SQUISH_FEATURE_HEIGHT);

@@ -3465,11 +3465,11 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      */
     draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
         if (w_scale > this.view.canvas_manager.char_width_px) {
-            this.show_contents();
+             this.tiles_div.show();
             return TiledTrack.prototype.draw_helper.call(this, force, region, resolution, parent_element, w_scale, kwargs);
         }
         else {
-            this.hide_contents();
+             this.tiles_div.hide();
             return null;
         }
     },
@@ -3480,22 +3480,18 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Draw ReferenceTrack tile.
      */
     draw_tile: function(data, ctx, mode, resolution, region, w_scale) {
-        if (w_scale > this.view.canvas_manager.char_width_px) {
-            // Try to subset data.
-            var subset = this.data_manager.subset_entry(data, region),
-                seq_data = subset.data;
-            
-            // Draw sequence data.
-            var canvas = ctx.canvas;
-            ctx.font = ctx.canvas.manager.default_font;
-            ctx.textAlign = "center";            
-            for (var c = 0, str_len = seq_data.length; c < str_len; c++) {
-                ctx.fillText(seq_data[c], Math.floor(c * w_scale), 10);
-            }
-            return new Tile(this, region, resolution, canvas, subset);
+        // Try to subset data.
+        var subset = this.data_manager.subset_entry(data, region),
+            seq_data = subset.data;
+        
+        // Draw sequence data.
+        var canvas = ctx.canvas;
+        ctx.font = ctx.canvas.manager.default_font;
+        ctx.textAlign = "center";            
+        for (var c = 0, str_len = seq_data.length; c < str_len; c++) {
+            ctx.fillText(seq_data[c], Math.floor(c * w_scale), 10);
         }
-
-        this.hide_contents();
+        return new Tile(this, region, resolution, canvas, subset);
     }
 });
 
