@@ -269,21 +269,52 @@
 
   <xs:complexType name="Actions">
     <xs:sequence>
-      <xs:group ref="ActionElement" minOccurs="0" maxOccurs="unbounded" />
+      <xs:group ref="ActionsElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
   </xs:complexType>
 
-  <xs:group name="ActionElement">
+  <xs:group name="ActionsElement">
     <xs:choice>
       <xs:element name="action" type="Action" />
-      <xs:element name="conditional" type="Conditional" />
+      <xs:element name="conditional" type="ActionsConditional" />
     </xs:choice>
   </xs:group>
 
   <xs:complexType name="Action">
+    <xs:sequence>
+      <xs:element name="option" type="ActionsOption" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
     <xs:attribute name="type" type="ActionType"/>
     <xs:attribute name="name" type="xs:string"/>
     <xs:attribute name="default" type="xs:string"/>
+  </xs:complexType>
+
+ <xs:complexType name="ActionsOption">
+    <xs:sequence>
+      <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="type" type="ActionsOptionType"/>
+    <xs:attribute name="name" type="xs:string"/>
+    <xs:attribute name="column" type="xs:integer"/>
+    <xs:attribute name="offset" type="xs:integer"/>
+    <xs:attribute name="param_attribute" type="xs:string"/><!-- undocumented -->
+  </xs:complexType>
+
+  <xs:complexType name="ActionsConditional">
+    <xs:complexContent>
+      <xs:extension base="InputType">
+	<xs:sequence>
+	  <xs:element name="when" type="ActionsConditionalWhen" minOccurs="0" maxOccurs="unbounded" />
+	</xs:sequence>
+      </xs:extension>
+    </xs:complexContent>
+  </xs:complexType>
+
+  <xs:complexType name="ActionsConditionalWhen">
+    <xs:sequence>
+      <xs:element name="action" type="Action" minOccurs="1" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="value" type="xs:string" use="required" />
   </xs:complexType>
 
   <xs:complexType name="ConfigFiles">
@@ -417,6 +448,13 @@
     <xs:restriction base="xs:string">
       <xs:enumeration value="format" />
       <xs:enumeration value="metadata" />
+    </xs:restriction>
+  </xs:simpleType>
+
+  <xs:simpleType name="ActionsOptionType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="from_data_table" />
+      <xs:enumeration value="from_param" />
     </xs:restriction>
   </xs:simpleType>
 
