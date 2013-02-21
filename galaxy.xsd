@@ -173,6 +173,7 @@
 	<xs:attribute name="truevalue" type="xs:string" />
 	<xs:attribute name="falsevalue" type="xs:string" />
 	<xs:attribute name="size" type="xs:int" />
+	<xs:attribute name="metadata_name" type="xs:string" /> <!-- undocumented -->
       </xs:extension>
     </xs:complexContent>
   </xs:complexType>
