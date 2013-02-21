@@ -17,6 +17,7 @@
 	<xs:element name="stdio" type="Stdio" minOccurs="0" />
         <xs:element name="help" type="xs:string" minOccurs="0" />
 	<xs:element name="code" type="Code" minOccurs="0" />
+	<xs:element name="uihints" type="UIhints" minOccurs="0" />
       </xs:all>
       <xs:attribute name="id" type="xs:string" use="required" />
       <xs:attribute name="name" type="xs:string" use="required" />
@@ -48,6 +49,10 @@
 
   <xs:complexType name="Code">
     <xs:attribute name="file" type="xs:string"/>
+  </xs:complexType> 
+
+  <xs:complexType name="UIhints">
+    <xs:attribute name="minwidth" type="xs:integer"/>
   </xs:complexType> 
 
   <xs:complexType name="Tests">
