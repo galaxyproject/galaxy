@@ -156,8 +156,8 @@
 	<xs:attribute name="accept_default" type="xs:boolean" /> <!-- Not in doc, still used? -->
 	<xs:attribute name="force_select" type="xs:boolean" />
 	<xs:attribute name="display" type="DisplayType" />
-	<xs:attribute name="multiple" type="xs:boolean" />
-	<xs:attribute name="numerical" type="xs:boolean" />
+	<xs:attribute name="multiple" type="PermissiveBoolean" />
+	<xs:attribute name="numerical" type="PermissiveBoolean" />
 	<xs:attribute name="hierarchy" type="HierarchyType" />
 	<xs:attribute name="checked" type="CheckedType" />
 	<xs:attribute name="truevalue" type="xs:string" />
