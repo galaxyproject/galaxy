@@ -586,12 +586,17 @@ class AdminController( BaseUIController, Admin ):
             deleted_repositories = ""
             for repository_id in ids:
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                if not repository.deleted:
-                    repository.deleted = True
-                    trans.sa_session.add( repository )
-                    trans.sa_session.flush()
-                    count += 1
-                    deleted_repositories += " %s " % repository.name
+                if repository:
+                    if not repository.deleted:
+                        # Mark all installable repository_metadata records as not installable.
+                        for repository_metadata in repository.downloadable_revisions:
+                            repository_metadata.downloadable = False
+                            trans.sa_session.add( repository_metadata )
+                        repository.deleted = True
+                        trans.sa_session.add( repository )
+                        trans.sa_session.flush()
+                        count += 1
+                        deleted_repositories += " %s " % repository.name
             if count:
                 message = "Deleted %d %s: %s" % ( count, inflector.cond_plural( len( ids ), "repository" ), deleted_repositories )
             else:
@@ -740,12 +745,20 @@ class AdminController( BaseUIController, Admin ):
             undeleted_repositories = ""
             for repository_id in ids:
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                if repository.deleted:
-                    repository.deleted = False
-                    trans.sa_session.add( repository )
-                    trans.sa_session.flush()
-                    count += 1
-                    undeleted_repositories += " %s" % repository.name
+                if repository:
+                    if repository.deleted:
+                        # Inspect all repository_metadata records to determine those that are installable, and mark them accordingly.
+                        for repository_metadata in repository.metadata_revisions:
+                            metadata = repository_metadata.metadata
+                            if metadata:
+                                if suc.is_downloadable( metadata ):
+                                    repository_metadata.downloadable = True
+                                    trans.sa_session.add( repository_metadata )
+                        repository.deleted = False
+                        trans.sa_session.add( repository )
+                        trans.sa_session.flush()
+                        count += 1
+                        undeleted_repositories += " %s" % repository.name
             if count:
                 message = "Undeleted %d %s: %s" % ( count, inflector.cond_plural( count, "repository" ), undeleted_repositories )
             else:
