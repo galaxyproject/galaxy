@@ -77,6 +77,12 @@ def app_factory( global_conf, **kwargs ):
                                 name_prefix='repository_',
                                 path_prefix='/api/repositories/:repository_id',
                                 parent_resources=dict( member_name='repository', collection_name='repositories' ) )
+    webapp.api_mapper.resource( 'content',
+                                'contents',
+                                controller='repository_revision_contents',
+                                name_prefix='repository_revision_',
+                                path_prefix='/api/repository_revisions/:repository_metadata_id',
+                                parent_resources=dict( member_name='repository_revision', collection_name='repository_revisions' ) )
     webapp.api_mapper.resource( 'repository', 'repositories', path_prefix='/api' )
     webapp.api_mapper.resource( 'repository_revision', 'repository_revisions', path_prefix='/api' )
     webapp.finalize_config()

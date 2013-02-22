@@ -133,11 +133,8 @@ class Repository( object, APIItem ):
         self.email_alerts = email_alerts
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
-    def as_dict( self, trans ):
-        value_mapper={ 'id' : trans.security.encode_id( self.id ),
-                       'user_id' : trans.security.encode_id( self.user_id ) }
-        repository_dict = self.get_api_value( view='element', value_mapper=value_mapper )
-        return repository_dict
+    def as_dict( self, value_mapper=None ):
+        return self.get_api_value( view='element', value_mapper=value_mapper )
     def get_api_value( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}
@@ -194,10 +191,13 @@ class Repository( object, APIItem ):
         fp.close()
 
 class RepositoryMetadata( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable' )
-    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable' )
-    def __init__( self, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
+    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct',
+                                    'do_not_test', 'time_last_tested', 'tool_test_errors' )
+    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct',
+                                 'do_not_test', 'time_last_tested', 'tool_test_errors' )
+    def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
                   tools_functionally_correct=False, do_not_test=False, time_last_tested=None, tool_test_errors=None ):
+        self.id = id
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
         self.metadata = metadata or dict()
@@ -208,6 +208,8 @@ class RepositoryMetadata( object, APIItem ):
         self.do_not_test = do_not_test
         self.time_last_tested = time_last_tested
         self.tool_test_errors = tool_test_errors
+    def as_dict( self, value_mapper=None ):
+        return self.get_api_value( view='element', value_mapper=value_mapper )
     def get_api_value( self, view='collection', value_mapper=None ):
         if value_mapper is None:
             value_mapper = {}

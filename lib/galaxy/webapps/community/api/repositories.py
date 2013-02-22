@@ -32,7 +32,7 @@ class RepositoriesController( BaseAPIController ):
                 item[ 'url' ] = web.url_for( 'repository_contents', repository_id=trans.security.encode_id( repository.id ) )
                 rval.append( item )
         except Exception, e:
-            message = "Error in the Tool Shed API at index: %s" % str( e )
+            message = "Error in the Tool Shed repositories API in index: %s" % str( e )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
@@ -50,7 +50,7 @@ class RepositoriesController( BaseAPIController ):
             repository_data = repository.get_api_value( view='element', value_mapper=value_mapper )
             repository_data[ 'contents_url' ] = web.url_for( 'repository_contents', repository_id=id )
         except Exception, e:
-            message = "Error in the Tool Shed API at show: %s" % str( e )
+            message = "Error in the Tool Shed repositories API in show: %s" % str( e )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
