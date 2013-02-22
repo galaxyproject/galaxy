@@ -14,6 +14,8 @@ from galaxy.web.framework.helpers import to_unicode
 from galaxy.datatypes.display_applications import util
 from galaxy.datatypes.metadata import FileParameter
 
+from galaxy.datatypes.display_applications.link_generator import get_display_app_link_generator
+
 import pkg_resources
 pkg_resources.require( "Routes" )
 import routes
@@ -128,8 +130,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}
         Displays information about a history content (dataset).
-
-        
         """
         hda_dict = {}
         try:
@@ -225,7 +225,8 @@ def get_hda_dict( trans, history, hda, for_editing ):
             hda_dict[ 'meta_files' ] = meta_files
 
     hda_dict[ 'display_apps' ] = get_display_apps( trans, hda )
-    #hda_dict[ 'display_types' ] = get_display_types( trans, hda )
+    hda_dict[ 'display_types' ] = get_old_display_applications( trans, hda )
+
     hda_dict[ 'visualizations' ] = hda.get_visualizations()
     hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
 
@@ -262,21 +263,21 @@ def get_display_apps( trans, hda ):
 
     return display_apps
 
-def get_display_types( trans, hda ):
-    #TODO: make more straightforward (somehow)
-    #FIXME: need to force a transition to all new-style display applications
+def get_old_display_applications( trans, hda ):
     display_apps = []
-    
-    for display_app in hda.datatype.get_display_types():
+    for display_app_name in hda.datatype.get_display_types():
+        link_generator = get_display_app_link_generator( display_app_name )
+        display_links = link_generator.generate_links( trans, hda )
+
         app_links = []
-        target_frame, display_links = hda.datatype.get_display_links( hda, display_app, trans.app, trans.request.base )
         for display_name, display_link in display_links:
             app_links.append({
-                'target' : target_frame,
+                'target' : '_blank',
                 'href' : display_link,
                 'text' : display_name
             })
         if app_links:
-            display_apps.append( dict( label=hda.datatype.get_display_label( display_app ), links=app_links ) )
+            display_apps.append( dict( label=hda.datatype.get_display_label( display_app_name ), links=app_links ) )
 
     return display_apps
+
