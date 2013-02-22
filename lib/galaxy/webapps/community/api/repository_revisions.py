@@ -2,6 +2,7 @@ import datetime
 from galaxy.web.framework.helpers import time_ago
 import galaxy.util.shed_util_common as suc
 from galaxy import web, util
+from galaxy.model.orm import and_, or_
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.framework.helpers import is_true
 
@@ -13,29 +14,56 @@ import logging
 log = logging.getLogger( __name__ )
 
 def default_value_mapper( trans, repository_metadata ):
-    return { 'id' : trans.security.encode_id( repository_metadata.id ),
-             'repository_id' : trans.security.encode_id( repository_metadata.repository_id ),
-             'time_last_tested' : time_ago( repository_metadata.time_last_tested ) }
+    value_mapper = { 'id' : trans.security.encode_id( repository_metadata.id ),
+                     'repository_id' : trans.security.encode_id( repository_metadata.repository_id ) }
+    if repository_metadata.time_last_tested:
+        value_mapper[ 'time_last_tested' ] = time_ago( repository_metadata.time_last_tested )
+    return value_mapper
 
 class RepositoryRevisionsController( BaseAPIController ):
     """RESTful controller for interactions with tool shed repository revisions."""
     @web.expose_api
-    def index( self, trans, downloadable=True, **kwd ):
+    def index( self, trans, **kwd ):
         """
         GET /api/repository_revisions
         Displays a collection (list) of repository revisions.
         """
         rval = []
-        downloadable = util.string_as_bool( downloadable )
+        # Build up an anded clause list of filters.
+        clause_list = []
+        # Filter by downloadable if received.
+        downloadable =  kwd.get( 'downloadable', None )
+        if downloadable is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.downloadable == util.string_as_bool( downloadable ) )
+        # Filter by tools_functionally_correct if received.
+        tools_functionally_correct = kwd.get( 'tools_functionally_correct', None )
+        if tools_functionally_correct is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.tools_functionally_correct == util.string_as_bool( tools_functionally_correct ) )
+        # Filter by do_not_test if received.
+        do_not_test = kwd.get( 'do_not_test', None )
+        if do_not_test is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.do_not_test == util.string_as_bool( do_not_test ) )
+        # Filter by must_include_tools if received.
+        must_include_tools = kwd.get( 'must_include_tools', False )
         try:
             query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
-                                    .filter( trans.app.model.RepositoryMetadata.table.c.downloadable == downloadable ) \
+                                    .filter( and_( *clause_list ) ) \
                                     .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
                                     .all()
             for repository_metadata in query:
-                item = repository_metadata.get_api_value( view='collection', value_mapper=default_value_mapper( trans, repository_metadata ) )
-                item[ 'url' ] = web.url_for( 'repository_revision', id=trans.security.encode_id( repository_metadata.id ) )
-                rval.append( item )
+                if must_include_tools:
+                    metadata = repository_metadata.metadata
+                    if 'tools' in metadata:
+                        ok_to_return = True
+                    else:
+                        ok_to_return = False
+                else:
+                    ok_to_return = True
+                if ok_to_return:
+                    item = repository_metadata.get_api_value( view='collection',
+                                                              value_mapper=default_value_mapper( trans, repository_metadata ) )
+                    item[ 'url' ] = web.url_for( 'repository_revision', id=trans.security.encode_id( repository_metadata.id ) )
+                    rval.append( item )
         except Exception, e:
             rval = "Error in the Tool Shed repository_revisions API in index: " + str( e )
             log.error( rval + ": %s" % str( e ) )
@@ -49,7 +77,8 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         try:
             repository_metadata = suc.get_repository_metadata_by_id( trans, id )
-            repository_data = repository_metadata.get_api_value( view='element',  value_mapper=default_value_mapper( trans, repository_metadata ) )
+            repository_data = repository_metadata.get_api_value( view='element',
+                                                                 value_mapper=default_value_mapper( trans, repository_metadata ) )
             repository_data[ 'contents_url' ] = web.url_for( 'repository_revision_contents', repository_metadata_id=id )
         except Exception, e:
             message = "Error in the Tool Shed repository_revisions API in show: %s" % str( e )

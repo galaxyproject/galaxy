@@ -11,9 +11,11 @@ import routes
 log = logging.getLogger( __name__ )
 
 def default_value_mapper( trans, repository_metadata ):
-    return { 'id' : trans.security.encode_id( repository_metadata.id ),
-             'repository_id' : trans.security.encode_id( repository_metadata.repository_id ),
-             'time_last_tested' : time_ago( repository_metadata.time_last_tested ) }
+    value_mapper = { 'id' : trans.security.encode_id( repository_metadata.id ),
+                     'repository_id' : trans.security.encode_id( repository_metadata.repository_id ) }
+    if repository_metadata.time_last_tested:
+        value_mapper[ 'time_last_tested' ] = time_ago( repository_metadata.time_last_tested )
+    return value_mapper
 
 class RepositoryRevisionContentsController( BaseAPIController ):
     @web.expose_api
