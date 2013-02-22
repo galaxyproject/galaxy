@@ -244,7 +244,7 @@ def get_display_apps( trans, hda ):
     def get_display_app_url( display_app_link, hda, trans ):
         web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
         dataset_hash, user_hash = util.encode_dataset_user( trans, hda, None )
-        return web_url_for( controller='/dataset',
+        return web_url_for( controller='dataset',
                         action="display_application",
                         dataset_id=dataset_hash,
                         user_id=user_hash,
@@ -280,4 +280,3 @@ def get_old_display_applications( trans, hda ):
             display_apps.append( dict( label=hda.datatype.get_display_label( display_app_name ), links=app_links ) )
 
     return display_apps
-

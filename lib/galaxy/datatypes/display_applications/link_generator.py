@@ -1,4 +1,6 @@
-"""Separating Transaction based elements of display applications from datatypes.
+"""Classes to generate links for display applications.
+
+Separating Transaction based elements of display applications from datatypes.
 """
 
 import urllib
@@ -10,19 +12,22 @@ import routes
 
 from galaxy import util
 from galaxy.web import url_for
-
 from galaxy.datatypes.interval import Interval, Gff, Wiggle, CustomTrack
 
+#TODO: Ideally, these classes would be instantiated in the trans (or some other semi-persistant fixture)
+#   Currently, these are instantiated per HDA which is not the best solution
+
+#TODO: these could be extended to handle file_function and parse/contain the builds.txt files
 
 def get_display_app_link_generator( display_app_name ):
     """Returns an instance of the proper link generator class
     based on the display_app_name or DisplayAppLinkGenerator
-    if the name is unrecognized.
+    if the display_app_name is unrecognized.
     """
     if display_app_name == 'ucsc':
         return UCSCDisplayAppLinkGenerator()
 
-    if display_app_name == 'gbrowse':
+    elif display_app_name == 'gbrowse':
         return GBrowseDisplayAppLinkGenerator()
 
     return DisplayAppLinkGenerator()
@@ -58,9 +63,10 @@ class DisplayAppLinkGenerator( object ):
 
 
 class UCSCDisplayAppLinkGenerator( DisplayAppLinkGenerator ):
-    """Class for UCSC display application link generators.
+    """Class for generating links to display data in the
+    UCSC genome browser.
 
-    This class returns UCSC main and test links for the following datatypes:
+    This class returns links for the following datatypes and their subclasses:
         Interval, Wiggle, Gff, CustomTrack
     """
     def __init__( self ):
@@ -69,7 +75,6 @@ class UCSCDisplayAppLinkGenerator( DisplayAppLinkGenerator ):
     def _link_function_from_datatype( self, datatype ):
         """Dispatch to proper link generating function based on datatype.
         """
-        # they're all the same
         if( ( isinstance( datatype, Interval ) )
         or  ( isinstance( datatype, Wiggle ) )
         or  ( isinstance( datatype, Gff ) )
@@ -83,8 +88,6 @@ class UCSCDisplayAppLinkGenerator( DisplayAppLinkGenerator ):
         and content of dataset.
         """
         # this is a refactor of Interval.ucsc_links, GFF.ucsc_links, Wiggle.ucsc_links, and CustomTrack.ucsc_links
-        #   ...which are all the same function
-
         #TODO: app vars can be moved into init (and base_url as well)
         chrom, start, stop = dataset.datatype.get_estimated_display_viewport( dataset )
         if chrom is None:
@@ -107,10 +110,11 @@ class UCSCDisplayAppLinkGenerator( DisplayAppLinkGenerator ):
 
 
 class GBrowseDisplayAppLinkGenerator( DisplayAppLinkGenerator ):
-    """Class for UCSC display application link generators.
+    """Class for generating links to display data in the
+    GBrowse genome browser.
 
-    This class returns UCSC main and test links for the following datatypes:
-        Interval, Wiggle, Gff, CustomTrack
+    This class returns links for the following datatypes and their subclasses:
+        Gff, Wiggle
     """
     def __init__( self ):
         self.display_app_name = 'gbrowse'
@@ -118,7 +122,6 @@ class GBrowseDisplayAppLinkGenerator( DisplayAppLinkGenerator ):
     def _link_function_from_datatype( self, datatype ):
         """Dispatch to proper link generating function based on datatype.
         """
-        # they're all the same
         if( ( isinstance( datatype, Gff ) )
         or  ( isinstance( datatype, Wiggle ) ) ):
             return self.gbrowse_links
