@@ -1552,7 +1552,7 @@ class DataToolParameter( ToolParameter ):
         # although, this should never be called in workflow mode right?
         if trans.workflow_building_mode:
             return None
-        if not value:
+        if not value and not self.optional:
             raise ValueError( "History does not include a dataset of the required format / build" )
         if value in [None, "None"]:
             return None
