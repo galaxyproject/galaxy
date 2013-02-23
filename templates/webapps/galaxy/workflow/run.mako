@@ -33,12 +33,12 @@
                     } else {
                         select.val($('option:last', select).val());
                     }
+                    select.siblings('img').hide();
                     select.removeAttr('multiple').removeAttr('size');
                     placeholder = 'type to filter';
                 } else {
-                    // Comment out the following line to multiple batch input workflows in UI.
-                    $('.multiinput').addClass('disabled');
                     $('.multiinput', select.closest('.form-row')).removeClass('disabled');
+                    select.siblings('img').show();
                     select.attr('multiple', 'multiple').attr('size', 8);
                     placeholder = 'type to filter, [enter] to select all';
                 }
@@ -125,6 +125,57 @@
                 }).width(new_width).css('display', 'block');
                 select.after(filter);
                 select.width(new_width);
+            });
+
+            // Augment hidden fields with icons.
+            // http://stackoverflow.com/a/2088430
+            var imgOn='${h.url_for("/static/images/silk/link.png")}';
+            var imgOff='${h.url_for("/static/images/silk/link_break.png")}';
+            $(function(){
+                $(".multi-mode").each(function(){
+                    if($(this).val() == "matched") { 
+                        $(this).before($(document.createElement("img"))
+                            .attr({src:imgOn,title:'Checkbox', id:$(this).attr("id")})
+                            .css("display", $(this).css("display"))
+                            .addClass("chkBoxImg"));
+                    } else {
+                        $(this).before($(document.createElement("img"))
+                        .attr({src:imgOff, title:'Checkbox',id:$(this).attr("id")})
+                        .css("display", $(this).css("display"))
+                        .addClass("chkBoxImg"));
+                    }
+                });
+                $("img.chkBoxImg").click(function(){
+                    i= $(this).siblings("input[type=hidden]");
+                    s=$(this).attr("src");
+                    if(s==imgOn) {
+                        $(this).attr("src",imgOff);
+                        $(i).val("product");
+                    } else {
+                        $(this).attr("src",imgOn);
+                        $(i).val("matched");
+                    }
+                });
+            });
+            $("#tool_form").submit(function(e) {
+                var matchLength = -1;
+                $('span.multiinput_wrap select[name*="|input"]').each(function() {
+                    var value = $(this).val();
+                    if(value instanceof Array) {
+                        // Multi-value
+                        if($(this).siblings("input[type=hidden]").val() == "matched") {
+                            var length = $(this).val().length;
+                            if(matchLength == -1) {
+                                matchLength = length;
+                            } else if(length != matchLength) {
+                                e.preventDefault();
+                                alert("Linked inputs must be submitted in equal number.");
+                                return false;
+                            }
+                        }
+                    }
+                });
+                return true;
             });
         });
     </script>
@@ -260,6 +311,7 @@ if wf_parms:
                     %if step.type == 'data_input':
                     ##Input Dataset Step, wrap for multiinput.
                         <span class='multiinput_wrap'>
+                        <input class="multi-mode" type="hidden" name="${str(step.id)}|multi_mode" id="${str(step.id)}|multi_mode" value="matched" />
                         ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
                         </span>
                     %else:
@@ -339,30 +391,6 @@ if wf_parms:
 
 <form id="tool_form" name="tool_form" method="POST">
 ## <input type="hidden" name="workflow_name" value="${h.to_unicode( workflow.name ) | h}" />
-
-<!-- TODO: Implement UI for selecting between product and matched mode
-     for batch workflows in multiple inputs are selected for 2 or more
-     params.
-
-     1) Delete this line above: $('.multiinput').addClass('disabled');
-     2) Allow user to select between product and matched mode.
-
-     If user selected 5 inputs for one param and 5 inputs for another
-     in matched mode that will be run the workflow 5 times matching
-     each input and in product mode it will run the workflow 25 times
-     with every combination of input pairs. If user selects 6 inputs
-     for one param and 4 for another, in product mode 24 workflows
-     will run and in matched mode the submission will fail.
-
-     In matched mode the inputs are matched from top to bottom
-     regardless of the order they are actually select in. This
-     behavior is I assume the desired behavior but I have only tested
-     it in chrome, care should be taken to test behavior on other
-     browsers and augment UI to ensure numbers of inputs matches
-     up.
--->
-<input type="hidden" name="multiple_input_mode" value="matched" /> <!-- product or matched -->
-
 
 %if wf_parms:
 <div class="metadataForm">

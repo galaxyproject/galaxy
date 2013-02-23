@@ -2110,7 +2110,6 @@ def _expand_multiple_inputs(kwargs, mode):
        _split_inputs(kwargs, mode)
 
     # Build up every combination of inputs to be run together.
-    #input_combos = [single_inputs]
     input_combos = _extend_with_matched_combos(single_inputs, matched_multi_inputs)
     input_combos = _extend_with_multiplied_combos(input_combos, multiplied_multi_inputs)
 
@@ -2172,17 +2171,18 @@ def _split_inputs(kwargs, mode):
     """
     input_keys = filter(lambda a: a.endswith('|input'), kwargs)
     single_inputs = {}
-    multi_inputs = {}
+    matched_multi_inputs = {}
+    multiplied_multi_inputs = {}
     for input_key in input_keys:
         input_val = kwargs[input_key]
         if isinstance(input_val, list):
-            multi_inputs[input_key] = input_val
+            input_base = input_key[:-len("|input")]
+            mode_key = "%s|multi_mode" % input_base
+            mode = kwargs.get(mode_key, "matched")
+            if mode == "matched":
+                matched_multi_inputs[input_key] = input_val
+            else:
+                multiplied_multi_inputs[input_key] = input_val
         else:
             single_inputs[input_key] = input_val
-    matched_multi_inputs = {}
-    multiplied_multi_inputs = {}
-    if mode == "product":
-        multiplied_multi_inputs = multi_inputs
-    else:
-        matched_multi_inputs = multi_inputs
     return (single_inputs, matched_multi_inputs, multiplied_multi_inputs)
