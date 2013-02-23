@@ -1,5 +1,11 @@
 <%inherit file="/base.mako"/>
 
+<style>
+/* TODO: Move this block into base.less? base.css? Someone more familiar with GUI should move this. */
+.icon-button.link {background:url(../images/silk/link.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
+.icon-button.link-broken {background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
+</style>
+
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "libs/jquery/jquery.autocomplete" )}
@@ -33,12 +39,12 @@
                     } else {
                         select.val($('option:last', select).val());
                     }
-                    select.siblings('img').hide();
+                    select.closest('.form-row').children('label').children('span.mode-icon').hide();
                     select.removeAttr('multiple').removeAttr('size');
                     placeholder = 'type to filter';
                 } else {
                     $('.multiinput', select.closest('.form-row')).removeClass('disabled');
-                    select.siblings('img').show();
+                    select.closest('.form-row').children('label').children('span.mode-icon').show();
                     select.attr('multiple', 'multiple').attr('size', 8);
                     placeholder = 'type to filter, [enter] to select all';
                 }
@@ -129,30 +135,25 @@
 
             // Augment hidden fields with icons.
             // http://stackoverflow.com/a/2088430
-            var imgOn='${h.url_for("/static/images/silk/link.png")}';
-            var imgOff='${h.url_for("/static/images/silk/link_break.png")}';
             $(function(){
                 $(".multi-mode").each(function(){
                     if($(this).val() == "matched") { 
-                        $(this).before($(document.createElement("img"))
-                            .attr({src:imgOn,title:'Checkbox', id:$(this).attr("id")})
-                            .css("display", $(this).css("display"))
-                            .addClass("chkBoxImg"));
+                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link mode-icon"></span>')
+                            .attr({id:$(this).attr("id")})
+                            .css("display", $(this).css("display")));
                     } else {
-                        $(this).before($(document.createElement("img"))
-                        .attr({src:imgOff, title:'Checkbox',id:$(this).attr("id")})
-                        .css("display", $(this).css("display"))
-                        .addClass("chkBoxImg"));
+                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link-broken mode-icon"></span>')
+                            .attr({id:$(this).attr("id")})
+                            .css("display", $(this).css("display"))); 
                     }
                 });
-                $("img.chkBoxImg").click(function(){
-                    i= $(this).siblings("input[type=hidden]");
-                    s=$(this).attr("src");
-                    if(s==imgOn) {
-                        $(this).attr("src",imgOff);
+                $("span.mode-icon").click(function(){
+                    i= $(this).closest('.form-row').find("input[type=hidden]");
+                    if($(this).hasClass("link")) {
+                        $(this).removeClass("link").addClass("link-broken");
                         $(i).val("product");
                     } else {
-                        $(this).attr("src",imgOn);
+                        $(this).removeClass("link-broken").addClass("link");
                         $(i).val("matched");
                     }
                 });
