@@ -17,6 +17,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.template import fill_template
 from galaxy import util, jobs, model
 from galaxy.jobs import ParallelismInfo
+from copy import deepcopy
 from elementtree import ElementTree
 from parameters import *
 from parameters.grouping import *
@@ -520,7 +521,7 @@ class ToolBox( object ):
     def load_tool( self, config_file, guid=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
-        tree = util.parse_xml( config_file )
+        tree = self._load_and_preprocess_tool_xml( config_file )
         root = tree.getroot()
         # Allow specifying a different tool subclass to instantiate
         if root.find( "type" ) is not None:
@@ -704,7 +705,86 @@ class ToolBox( object ):
             rval = tools
 
         return rval
-    
+
+    def _load_and_preprocess_tool_xml(self, config_file):
+        tree = util.parse_xml(config_file)
+        root = tree.getroot()
+        macros_el = root.find('macros')
+        if not macros_el:
+            return tree
+        tool_dir = os.path.dirname(config_file)
+        macros = self._load_macros(macros_el, tool_dir)
+        # HACK for elementtree, newer implementations (etree/lxml) won't
+        # require this parent_map data structure but elementtree does not
+        # track parents or recongnize .find('..').
+        parent_map = dict((c, p) for p in tree.getiterator() for c in p)
+        for expand_el in root.findall('.//expand'):
+            macro_name = expand_el.get('macro')
+            macro_def = macros[macro_name]
+            self._xml_replace(expand_el, macro_def, parent_map)
+        return tree
+
+    def _load_macros(self, macros_el, tool_dir):
+        macros = {}
+        # Import macros from external files.
+        macros.update(self._load_imported_macros(macros_el, tool_dir))
+        # Load all directly defined macros.
+        macros.update(self._load_embedded_macros(macros_el, tool_dir))
+        return macros
+
+    def _load_embedded_macros(self, macros_el, tool_dir):
+        macros = {}
+
+        macro_els = []
+        if macros_el:
+            macro_els = macros_el.findall("macro")
+        for macro in macro_els:
+            macro_name = macro.get("name")
+            macros[macro_name] = self._load_macro_def(macro)
+
+        return macros
+
+    def _load_imported_macros(self, macros_el, tool_dir):
+        macros = {}
+
+        macro_import_els = []
+        if macros_el:
+            macro_import_els = macros_el.findall("import")
+        for macro_import_el in macro_import_els:
+            raw_import_path = macro_import_el.text
+            tool_relative_import_path = \
+                os.path.basename(raw_import_path)  # Sanitize this
+            import_path = \
+                os.path.join(tool_dir, tool_relative_import_path)
+            file_macros = self._load_macro_file(import_path, tool_dir)
+            macros.update(file_macros)
+
+        return macros
+
+    def _load_macro_file(self, path, tool_dir):
+        tree = util.parse_xml(path)
+        root = tree.getroot()
+        return self._load_macros(root, tool_dir)
+
+    def _load_macro_def(self, macro):
+        return list(macro.getchildren())
+
+    def _xml_replace(self, query, targets, parent_map):
+        #parent_el = query.find('..') ## Something like this would be better with newer xml library
+        parent_el = parent_map[query]
+        matching_index = -1
+        #for index, el in enumerate(parent_el.iter('.')):  ## Something like this for newer implementation
+        for index, el in enumerate(parent_el.getchildren()):
+            if el == query:
+                matching_index = index
+                break
+        assert matching_index >= 0
+        current_index = matching_index
+        for target in targets:
+            current_index += 1
+            parent_el.insert(current_index, deepcopy(target))
+        parent_el.remove(query)
+
 class ToolSection( object ):
     """
     A group of tools with similar type/purpose that will be displayed as a
