@@ -726,7 +726,16 @@ class ToolBox( object ):
             parent_map = dict((c, p) for p in element.getiterator() for c in p)
             for expand_el in element.findall('.//expand'):
                 macro_name = expand_el.get('macro')
-                macro_def = macros[macro_name]
+                macro_def = deepcopy(macros[macro_name])  # deepcopy needed?
+
+                yield_els = [yield_el for macro_def_el in macro_def for yield_el in macro_def_el.findall('.//yield')]
+
+                expand_el_children = expand_el.getchildren()
+                macro_def_parent_map = \
+                    dict((c, p) for macro_def_el in macro_def for p in macro_def_el.getiterator() for c in p)
+
+                for yield_el in yield_els:
+                    self._xml_replace(yield_el, expand_el_children, macro_def_parent_map)
 
                 # Recursively expand contained macros.
                 self._expand_macros(macro_def, macros)
