@@ -69,6 +69,9 @@ class Data( object ):
     <class 'galaxy.datatypes.metadata.MetadataParameter'>
 
     """
+    # Data is not chunkable by default.
+    CHUNKABLE = False
+
     #: dictionary of metadata fields for this datatype::
     metadata_spec = None
 

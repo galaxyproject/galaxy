@@ -225,7 +225,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             exit_code = "Invalid dataset ID or you are not allowed to access this dataset"
         return exit_code 
     @web.expose
-    def report_error( self, trans, id, email='', message="" ):
+    def report_error( self, trans, id, email='', message="", **kwd ):
         smtp_server = trans.app.config.smtp_server
         if smtp_server is None:
             return trans.show_error_message( "Mail is not configured for this galaxy instance" )
@@ -599,7 +599,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns dataset's name and link. """
         dataset = self.get_dataset( trans, id, False, True )
-        return_dict = { "name" : dataset.name, "link" : url_for( action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ) ) }
+        return_dict = { "name" : dataset.name, "link" : url_for( controller='dataset', action="display_by_username_and_slug", username=dataset.history.user.username, slug=trans.security.encode_id( dataset.id ) ) }
         return return_dict
 
     @web.expose
@@ -642,6 +642,11 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             truncated, dataset_data = self.get_data( dataset, preview )
             dataset.annotation = self.get_item_annotation_str( trans.sa_session, dataset.history.user, dataset )
 
+            # If dataset is chunkable, get first chunk.
+            first_chunk = None
+            if dataset.datatype.CHUNKABLE:
+                first_chunk = dataset.datatype.get_chunk(trans, dataset, 0)
+
             # If data is binary or an image, stream without template; otherwise, use display template.
             # TODO: figure out a way to display images in display template.
             if isinstance(dataset.datatype, datatypes.binary.Binary) or isinstance(dataset.datatype, datatypes.images.Image)  or isinstance(dataset.datatype, datatypes.images.Html):
@@ -658,8 +663,10 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         user_item_rating = 0
                 ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, dataset )
 
-                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, truncated=truncated,
-                                                user_item_rating = user_item_rating, ave_item_rating=ave_item_rating, num_ratings=num_ratings )
+                return trans.fill_template_mako( "/dataset/display.mako", item=dataset, item_data=dataset_data, 
+                                                 truncated=truncated, user_item_rating = user_item_rating, 
+                                                 ave_item_rating=ave_item_rating, num_ratings=num_ratings,
+                                                 first_chunk=first_chunk )
         else:
             raise web.httpexceptions.HTTPNotFound()
 

@@ -30,7 +30,7 @@
     <script type="text/javascript" src="${h.url_for('/static/scripts/libs/jquery/jqtouch.js')}"></script>
     <script type="text/javascript" charset="utf-8">
         $(document).jQTouch( {
-            icon: "${h.url_for('static/images/galaxyIcon_noText.png')}",
+            icon: "${h.url_for('/static/images/galaxyIcon_noText.png')}",
             slideInSelector: 'ul li a, .row a, a.async'
         });
     </script>
@@ -41,10 +41,10 @@
     <div id="home" selected="true">
         <div class="toolbar">
             <h1><span class="logo">Galaxy</span></h1>
-            <a class="button async" href="${h.url_for( action='settings' )}">Settings</a>
+            <a class="button async" href="${h.url_for(controller='mobile', action='settings' )}">Settings</a>
         </div>
         <ul class="edgetoedge">
-            <li><a href="${h.url_for( action='history_list' )}">Histories</a></li>
+            <li><a href="${h.url_for(controller='mobile', action='history_list' )}">Histories</a></li>
         </ul>
     </div>
 

@@ -5,6 +5,35 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
+    ## If data is chunkable, use JavaScript for display.
+    %if item.datatype.CHUNKABLE:
+
+    <script type="text/javascript">
+        require.config({ 
+            baseUrl: "${h.url_for('/static/scripts')}",
+            shim: {
+                "libs/backbone/backbone": { exports: "Backbone" },
+                "libs/backbone/backbone-relational": ["libs/backbone/backbone"]
+            }
+        });
+
+        require(['mvc/data'], function(data) {
+            data.createTabularDatasetChunkedView(
+                // Dataset config. TODO: encode id.
+                _.extend( ${h.to_json_string( item.get_api_value() )}, 
+                        {
+                            chunk_url: "${h.url_for( controller='/dataset', action='display', 
+                                             dataset_id=trans.security.encode_id( item.id ))}",
+                            first_data_chunk: ${first_chunk}
+                        } 
+                ),
+                // Append view to body.
+                $('.page-body')
+            );
+        });
+    </script>
+
+    %endif
 </%def>
 
 <%def name="init()">
@@ -31,14 +60,19 @@
 </%def>
 
 <%def name="render_item( data, data_to_render )">
-    %if truncated:
-        <div class="warningmessagelarge">
-            This dataset is large and only the first megabyte is shown below. | 
-            <a href="${h.url_for( controller='dataset', action='display_by_username_and_slug', username=data.history.user.username, slug=trans.security.encode_id( data.id ), preview=False )}">Show all</a>
-        </div>    
+    ## Chunkable data is rendered in JavaScript above; render unchunkable data below.
+    %if not data.datatype.CHUNKABLE and data_to_render:
+        %if truncated:
+            <div class="warningmessagelarge">
+                 This dataset is large and only the first megabyte is shown below. | 
+                 <a href="${h.url_for( controller='dataset', action='display_by_username_and_slug', username=data.history.user.username, slug=trans.security.encode_id( data.id ), preview=False )}">Show all</a>
+            </div>
+        %endif
+        ## TODO: why is the default font size so small?
+        <pre style="font-size: 135%">${ data_to_render | h }</pre>
+    %else:
+        <p align='center'>Cannot show dataset content</p>
     %endif
-    ## TODO: why is the default font size so small?
-    <pre style="font-size: 135%">${ data_to_render | h }</pre>
 </%def>
 
 

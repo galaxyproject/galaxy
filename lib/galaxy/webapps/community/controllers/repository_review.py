@@ -50,7 +50,7 @@ class ComponentGrid( grids.Grid ):
     use_paging = True
 
 class RepositoriesWithReviewsGrid( RepositoryGrid ):
-    # This grid filters out repositories that have been marked as deprecated.
+    # This grid filters out repositories that have been marked as either deprecated or deleted.
     class WithReviewsRevisionColumn( grids.GridColumn ):
         def get_value( self, trans, grid, repository ):
             # Restrict to revisions that have been reviewed.
@@ -114,14 +114,15 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
     ]
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.deprecated == False ) \
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
                                .join( ( model.RepositoryReview.table, model.RepositoryReview.table.c.repository_id == model.Repository.table.c.id ) ) \
                                .join( ( model.User.table, model.User.table.c.id == model.Repository.table.c.user_id ) ) \
                                .outerjoin( ( model.ComponentReview.table, model.ComponentReview.table.c.repository_review_id == model.RepositoryReview.table.c.id ) ) \
                                .outerjoin( ( model.Component.table, model.Component.table.c.id == model.ComponentReview.table.c.component_id ) )
 
 class RepositoriesWithoutReviewsGrid( RepositoriesWithReviewsGrid ):
-    # This grid filters out repositories that have been marked as deprecated.
+    # This grid filters out repositories that have been marked as either deprecated or deleted.
     title = "Repositories with no reviews"
     columns = [
         RepositoriesWithReviewsGrid.NameColumn( "Repository name",
@@ -146,15 +147,17 @@ class RepositoriesWithoutReviewsGrid( RepositoriesWithReviewsGrid ):
                                         async_compatible=False ) ]
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
-                               .filter( and_( model.Repository.table.c.deprecated == False,
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False,
                                               model.Repository.reviews == None ) ) \
                                .join( model.User.table )
 
 class RepositoriesReviewedByMeGrid( RepositoriesWithReviewsGrid ):
-    # This grid filters out repositories that have been marked as deprecated.
+    # This grid filters out repositories that have been marked as either deprecated or deleted.
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
-                               .filter( model.Repository.table.c.deprecated == False ) \
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
                                .join( ( model.RepositoryReview.table, model.RepositoryReview.table.c.repository_id == model.Repository.table.c.id ) ) \
                                .filter( model.RepositoryReview.table.c.user_id == trans.user.id ) \
                                .join( ( model.User.table, model.User.table.c.id == model.RepositoryReview.table.c.user_id ) ) \
@@ -784,12 +787,10 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
         if trans.user_is_admin() or repository.user == trans.user:
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='manage_repository',
-                                                              cntrller='repository_review',
                                                               **kwd ) )
         else:
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='view_repository',
-                                                              cntrller='repository_review',
                                                               **kwd ) )
 
 # ----- Utility methods -----

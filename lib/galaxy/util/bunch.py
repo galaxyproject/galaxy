@@ -25,3 +25,6 @@ class Bunch( object ):
 
     def __setitem__(self, k, v):
         self.__dict__.__setitem__(k, v)
+
+    def __contains__(self, item):
+        return item in self.__dict__

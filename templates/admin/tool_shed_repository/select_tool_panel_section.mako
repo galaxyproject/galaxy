@@ -81,12 +81,12 @@
                 ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict )}
                 <div style="clear: both"></div>
             %endif
-            <div class="form-row">
-                <table class="colored" width="100%">
-                    <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
-                </table>
-            </div>
             %if shed_tool_conf_select_field:
+                <div class="form-row">
+                    <table class="colored" width="100%">
+                        <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
+                    </table>
+                </div>
                 <%
                     if len( shed_tool_conf_select_field.options ) == 1:
                         select_help = "Your Galaxy instance is configured with 1 shed-related tool configuration file, so repositories will be "

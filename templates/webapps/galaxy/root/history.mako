@@ -98,7 +98,7 @@ function annotation_handling(parent_elt) {
                             annotation_area.find(".tooltip").tooltip({ placement : 'bottom' });
                             async_save_text(
                                 annotation_elt.attr("id"), annotation_elt.attr("id"),
-                                "${h.url_for( controller='/dataset', action='annotate_async')}?" + href_parms,
+                                "${h.url_for( controller='dataset', action='annotate_async')}?" + href_parms,
                                 "new_annotation", 18, true, 4);
                             annotation_area.slideDown("fast");
                         }
@@ -594,7 +594,7 @@ div.form-row {
 
 <div id="top-links" class="historyLinks">
     
-    <a title="${_('refresh')}" class="icon-button arrow-circle tooltip" href="${h.url_for('history', show_deleted=show_deleted)}"></a>
+    <a title="${_('refresh')}" class="icon-button arrow-circle tooltip" href="${h.url_for(controller='history', show_deleted=show_deleted)}"></a>
     <a title='${_('collapse all')}' class='icon-button toggle tooltip' href='#' style="display: none"></a>
     
     %if trans.get_user():
@@ -609,13 +609,13 @@ div.form-row {
 
 %if show_deleted:
 <div class="historyLinks">
-    <a href="${h.url_for('history', show_deleted=False)}">${_('hide deleted')}</a>
+    <a href="${h.url_for(controller='history', show_deleted=False)}">${_('hide deleted')}</a>
 </div>
 %endif
 
 %if show_hidden:
 <div class="historyLinks">
-    <a href="${h.url_for('history', show_hidden=False)}">${_('hide hidden')}</a>
+    <a href="${h.url_for(controller='history', show_hidden=False)}">${_('hide hidden')}</a>
 </div>
 %endif
 

@@ -47,8 +47,24 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                                                     owner=common.test_user_1_name,
                                                     category_id=self.security.encode_id( category_0000.id ) )
         if self.repository_is_new( repository ):
-            self.upload_file( repository, 'filtering/filtering_1.1.0.tar', commit_message="Uploaded filtering 1.1.0" )
-            self.upload_file( repository, 'filtering/filtering_2.2.0.tar', commit_message="Uploaded filtering 2.2.0" )
+                self.upload_file( repository, 
+                                  filename='filtering/filtering_1.1.0.tar',
+                                  filepath=None,
+                                  valid_tools_only=True,
+                                  uncompress_file=True,
+                                  remove_repo_files_not_in_tar=False, 
+                                  commit_message='Uploaded filtering 1.1.0 tarball.',
+                                  strings_displayed=[], 
+                                  strings_not_displayed=[] )
+                self.upload_file( repository, 
+                                  filename='filtering/filtering_2.2.0.tar',
+                                  filepath=None,
+                                  valid_tools_only=True,
+                                  uncompress_file=True,
+                                  remove_repo_files_not_in_tar=False, 
+                                  commit_message='Uploaded filtering 2.2.0 tarball.',
+                                  strings_displayed=[], 
+                                  strings_not_displayed=[] )
         repository = self.get_or_create_repository( name='freebayes_0010', 
                                                     description="Galaxy's freebayes tool", 
                                                     long_description="Long description of Galaxy's freebayes tool", 
@@ -56,10 +72,42 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                                                     category_id=self.security.encode_id( category_0010.id ),
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
-            self.upload_file( repository, 'freebayes/freebayes.xml', valid_tools_only=False, commit_message='Uploaded.', strings_displayed=[] )
-            self.upload_file( repository, 'freebayes/tool_data_table_conf.xml.sample', valid_tools_only=False, commit_message='Uploaded.', strings_displayed=[] )
-            self.upload_file( repository, 'freebayes/sam_fa_indices.loc.sample', valid_tools_only=False, commit_message='Uploaded.', strings_displayed=[] )
-            self.upload_file( repository, 'freebayes/tool_dependencies.xml', commit_message='Uploaded.' )
+                self.upload_file( repository, 
+                                  filename='freebayes/freebayes.xml',
+                                  filepath=None,
+                                  valid_tools_only=False,
+                                  uncompress_file=True,
+                                  remove_repo_files_not_in_tar=False, 
+                                  commit_message='Uploaded freebayes.xml.',
+                                  strings_displayed=[], 
+                                  strings_not_displayed=[] )
+                self.upload_file( repository, 
+                                  filename='freebayes/tool_data_table_conf.xml.sample',
+                                  filepath=None,
+                                  valid_tools_only=False,
+                                  uncompress_file=True,
+                                  remove_repo_files_not_in_tar=False, 
+                                  commit_message='Uploaded tool_data_table_conf.xml.sample',
+                                  strings_displayed=[], 
+                                  strings_not_displayed=[] )
+                self.upload_file( repository, 
+                                  filename='freebayes/sam_fa_indices.loc.sample',
+                                  filepath=None,
+                                  valid_tools_only=False,
+                                  uncompress_file=True,
+                                  remove_repo_files_not_in_tar=False, 
+                                  commit_message='Uploaded sam_fa_indices.loc.sample',
+                                  strings_displayed=[], 
+                                  strings_not_displayed=[] )
+                self.upload_file( repository, 
+                                  filename='freebayes/tool_dependencies.xml',
+                                  filepath=None,
+                                  valid_tools_only=False,
+                                  uncompress_file=True,
+                                  remove_repo_files_not_in_tar=False, 
+                                  commit_message='Uploaded tool_dependencies.xml',
+                                  strings_displayed=[], 
+                                  strings_not_displayed=[] )
         repository = self.get_or_create_repository( name='emboss_datatypes_0020', 
                                                     description="Galaxy applicable data formats used by Emboss tools.", 
                                                     long_description="Galaxy applicable data formats used by Emboss tools. This repository contains no tools.", 
@@ -67,14 +115,30 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                                                     category_id=self.security.encode_id( category_0010.id ),
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
-            self.upload_file( repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
+            self.upload_file( repository, 
+                              filename='emboss/datatypes/datatypes_conf.xml',
+                              filepath=None,
+                              valid_tools_only=False,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded datatypes_conf.xml.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository = self.get_or_create_repository( name='emboss_0020', 
                                                  description='Galaxy wrappers for Emboss version 5.0.0 tools', 
                                                  long_description='Galaxy wrappers for Emboss version 5.0.0 tools', 
                                                  owner=common.test_user_1_name,
                                                  category_id=self.security.encode_id( category_0020.id ),
                                                  strings_displayed=[] )
-            self.upload_file( repository, 'emboss/emboss.tar', commit_message='Uploaded emboss_5.tar' )
+            self.upload_file( repository, 
+                              filename='emboss/emboss.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded emboss.tar',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
         datatypes_repository = self.get_or_create_repository( name='emboss_datatypes_0030', 
                                                               description=datatypes_repository_description, 
                                                               long_description=datatypes_repository_long_description, 
@@ -83,7 +147,15 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                                                               strings_displayed=[] )
         if self.repository_is_new( datatypes_repository ):
             running_standalone = True
-            self.upload_file( datatypes_repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
+            self.upload_file( datatypes_repository, 
+                              filename='emboss/datatypes/datatypes_conf.xml',
+                              filepath=None,
+                              valid_tools_only=False,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded datatypes_conf.xml.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository_datatypes_count = int( self.get_repository_datatypes_count( datatypes_repository ) )
             emboss_5_repository = self.get_or_create_repository( name='emboss_5_0030', 
                                                                  description=emboss_repository_description, 
@@ -91,48 +163,92 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                                                                  owner=common.test_user_1_name,
                                                                  category_id=self.security.encode_id( category_0030.id ), 
                                                                  strings_displayed=[] )
-            self.upload_file( emboss_5_repository, 'emboss/emboss.tar', commit_message='Uploaded emboss.tar' )
+            self.upload_file( emboss_5_repository, 
+                              filename='emboss/emboss.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded emboss.tar',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_0330', additional_paths=[ 'emboss', '5' ] )
-            self.generate_repository_dependency_xml( [ datatypes_repository ], 
+            self.generate_repository_dependency_xml( [ datatypes_repository ],
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
             self.upload_file( emboss_5_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded repository_dependencies.xml' )
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             emboss_6_repository = self.get_or_create_repository( name='emboss_6_0030', 
                                                                  description=emboss_repository_description, 
                                                                  long_description=emboss_repository_long_description, 
                                                                  owner=common.test_user_1_name,
                                                                  category_id=self.security.encode_id( category_0030.id ), 
                                                                  strings_displayed=[] )
-            self.upload_file( emboss_6_repository, 'emboss/emboss.tar', commit_message='Uploaded emboss.tar' )
+            self.upload_file( emboss_6_repository, 
+                              filename='emboss/emboss.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded emboss.tar',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_0330', additional_paths=[ 'emboss', '6' ] )
             self.generate_repository_dependency_xml( [ datatypes_repository ], 
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
             self.upload_file( emboss_6_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded repository_dependencies.xml' )
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             emboss_repository = self.get_or_create_repository( name='emboss_0030', 
                                                                description=emboss_repository_description, 
                                                                long_description=emboss_repository_long_description, 
                                                                owner=common.test_user_1_name,
                                                                category_id=self.security.encode_id( category_0030.id ), 
                                                                strings_displayed=[] )
-            self.upload_file( emboss_repository, 'emboss/emboss.tar', commit_message='Uploaded emboss.tar' )
+            self.upload_file( emboss_repository, 
+                              filename='emboss/emboss.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded emboss.tar',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_0330', additional_paths=[ 'emboss', '5' ] )
             self.generate_repository_dependency_xml( [ emboss_5_repository ], 
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
             self.upload_file( emboss_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded repository_dependencies.xml' )
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             self.generate_repository_dependency_xml( [ emboss_6_repository ], 
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
             self.upload_file( emboss_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded repository_dependencies.xml' )
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
         repository = self.get_or_create_repository( name='freebayes_0040', 
                                                     description="Galaxy's freebayes tool", 
                                                     long_description="Long description of Galaxy's freebayes tool", 
@@ -140,14 +256,30 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                                                     category_id=self.security.encode_id( category_0040.id ),
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
-            self.upload_file( repository, 'freebayes/freebayes.tar', commit_message='Uploaded freebayes.tar.' )
+            self.upload_file( repository, 
+                              filename='freebayes/freebayes.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded freebayes tarball.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository = self.get_or_create_repository( name='filtering_0040', 
                                                         description="Galaxy's filtering tool", 
                                                         long_description="Long description of Galaxy's filtering tool", 
                                                         owner=common.test_user_1_name,
                                                         category_id=self.security.encode_id( category_0040.id ),
                                                         strings_displayed=[] )
-            self.upload_file( repository, 'filtering/filtering_1.1.0.tar', commit_message='Uploaded filtering.tar.' )
+            self.upload_file( repository, 
+                              filename='filtering/filtering_1.1.0.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded filtering 1.1.0 tarball.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             freebayes_repository = test_db_util.get_repository_by_name_and_owner( 'freebayes_0040', common.test_user_1_name )
             filtering_repository = test_db_util.get_repository_by_name_and_owner( 'filtering_0040', common.test_user_1_name )
             repository_dependencies_path = self.generate_temp_path( 'test_0340', additional_paths=[ 'dependencies' ] )
@@ -155,16 +287,26 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                      dependency_description='Filtering 1.1.0 depends on the freebayes repository.' )
             self.upload_file( filtering_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded dependency on freebayes' )
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml specifying freebayes',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             self.generate_repository_dependency_xml( [ filtering_repository ], 
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                      dependency_description='Freebayes depends on the filtering repository.' )
             self.upload_file( freebayes_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded dependency on filtering' )
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml specifying filtering',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
         datatypes_repository = self.get_or_create_repository( name='emboss_datatypes_0050', 
                                                     description="Datatypes for emboss", 
                                                     long_description="Long description of Emboss' datatypes", 
@@ -190,41 +332,93 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
                                                                   owner=common.test_user_1_name,
                                                                   category_id=self.security.encode_id( category_0050.id ),
                                                                   strings_displayed=[] )
-            self.upload_file( datatypes_repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
-            self.upload_file( emboss_repository, 'emboss/emboss.tar', commit_message='Uploaded tool tarball.' )
-            self.upload_file( freebayes_repository, 'freebayes/freebayes.tar', commit_message='Uploaded freebayes.tar.' )
-            self.upload_file( filtering_repository, 'filtering/filtering_1.1.0.tar', commit_message='Uploaded filtering.tar.' )
+            self.upload_file( datatypes_repository, 
+                              filename='emboss/datatypes/datatypes_conf.xml',
+                              filepath=None,
+                              valid_tools_only=False,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded datatypes_conf.xml.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
+            self.upload_file( emboss_repository, 
+                              filename='emboss/emboss.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded emboss.tar',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
+            self.upload_file( freebayes_repository, 
+                              filename='freebayes/freebayes.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded freebayes tarball.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
+            self.upload_file( filtering_repository, 
+                              filename='filtering/filtering_1.1.0.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded filtering 1.1.0 tarball.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_0350', additional_paths=[ 'emboss' ] )
             self.generate_repository_dependency_xml( [ datatypes_repository ], 
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                      dependency_description='Emboss depends on the emboss_datatypes repository.' )
             self.upload_file( emboss_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded dependency on emboss_datatypes.' )
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_0350', additional_paths=[ 'filtering' ] )
             self.generate_repository_dependency_xml( [ emboss_repository ], 
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                      dependency_description='Filtering depends on the emboss repository.' )
             self.upload_file( filtering_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded dependency on emboss.' )
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_0350', additional_paths=[ 'freebayes' ] )
             self.generate_repository_dependency_xml( [ filtering_repository ], 
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                      dependency_description='Emboss depends on the filtering repository.' )
             self.upload_file( emboss_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded dependency on filtering.' )
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             self.generate_repository_dependency_xml( [ datatypes_repository, emboss_repository, filtering_repository, freebayes_repository ], 
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                      dependency_description='Freebayes depends on the filtering repository.' )
             self.upload_file( freebayes_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded dependency on filtering.' )
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
         workflow_repository = self.get_or_create_repository( name='filtering_0060', 
                                                              description="Galaxy's filtering tool", 
                                                              long_description="Long description of Galaxy's filtering tool", 
@@ -235,15 +429,27 @@ class TestResetInstalledRepositoryMetadata( ShedTwillTestCase ):
             workflow = file( self.get_filename( 'filtering_workflow/Workflow_for_0060_filter_workflow_repository.ga' ), 'r' ).read()
             workflow = workflow.replace(  '__TEST_TOOL_SHED_URL__', self.url.replace( 'http://', '' ) )
             workflow_filepath = self.generate_temp_path( 'test_0360', additional_paths=[ 'filtering_workflow' ] )
-            os.makedirs( workflow_filepath )
+            if not os.path.exists( workflow_filepath ):
+                os.makedirs( workflow_filepath )
             file( os.path.join( workflow_filepath, workflow_filename ), 'w+' ).write( workflow )
             self.upload_file( workflow_repository, 
-                              workflow_filename, 
+                              filename=workflow_filename, 
                               filepath=workflow_filepath, 
-                              commit_message='Uploaded filtering workflow.' )
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded filtering workflow.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             self.upload_file( workflow_repository, 
-                              'filtering/filtering_2.2.0.tar', 
-                              commit_message='Uploaded filtering tool.' )
+                              filename='filtering/filtering_2.2.0.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded filtering 2.2.0 tarball.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
     def test_0010_install_all_missing_repositories( self ):
         '''Call the install_repository method to ensure that all required repositories are installed.'''
         global repository_datatypes_count

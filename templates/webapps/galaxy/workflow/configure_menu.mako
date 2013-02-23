@@ -15,7 +15,7 @@
 </div>
 %endif
 
-<form action="${h.url_for()}" method="POST">
+<form action="${h.url_for(controller='workflow', action='configure_menu')}" method="POST">
 
 <table class="colored" border="0" cellspacing="0" cellpadding="0" width="100%">
     <tr class="header">

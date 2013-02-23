@@ -9,14 +9,20 @@ from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web.form_builder import *
+from galaxy.model.item_attrs import APIItem
 
 from galaxy import eggs
 eggs.require('mercurial')
 from mercurial import hg, ui
 
 log = logging.getLogger( __name__ )
-    
-class User( object ):
+
+class APIKeys( object ):
+    pass
+
+class User( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'email' )
+    api_element_visible_keys = ( 'id', 'email', 'username' )
     def __init__( self, email=None, password=None ):
         self.email = email
         self.password = password
@@ -47,12 +53,16 @@ class User( object ):
     def nice_total_disk_usage( self ):
         return 0
 
-class Group( object ):
+class Group( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'name' )
+    api_element_visible_keys = ( 'id', 'name' )
     def __init__( self, name = None ):
         self.name = name
         self.deleted = False
 
-class Role( object ):
+class Role( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'name' )
+    api_element_visible_keys = ( 'id', 'name', 'description', 'type' )
     private_id = None
     types = Bunch( 
         PRIVATE = 'private',
@@ -103,21 +113,49 @@ class GalaxySession( object ):
         self.is_valid = is_valid
         self.prev_session_id = prev_session_id
 
-class Repository( object ):
+class Repository( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'name', 'description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
+    api_element_visible_keys = ( 'id', 'name', 'description', 'long_description', 'user_id', 'private', 'deleted', 'times_downloaded', 'deprecated' )
     file_states = Bunch( NORMAL = 'n',
                          NEEDS_MERGING = 'm',
                          MARKED_FOR_REMOVAL = 'r',
                          MARKED_FOR_ADDITION = 'a',
                          NOT_TRACKED = '?' )
-    def __init__( self, name=None, description=None, long_description=None, user_id=None, private=False, email_alerts=None, times_downloaded=0, deprecated=False ):
+    def __init__( self, id=None, name=None, description=None, long_description=None, user_id=None, private=False, deleted=None, email_alerts=None,
+                  times_downloaded=0, deprecated=False ):
+        self.id = id
         self.name = name or "Unnamed repository"
         self.description = description
         self.long_description = long_description
         self.user_id = user_id
         self.private = private
+        self.deleted = deleted
         self.email_alerts = email_alerts
         self.times_downloaded = times_downloaded
         self.deprecated = deprecated
+    def as_dict( self, trans ):
+        value_mapper={ 'id' : trans.security.encode_id( self.id ),
+                       'user_id' : trans.security.encode_id( self.user_id ) }
+        repository_dict = self.get_api_value( view='element', value_mapper=value_mapper )
+        return repository_dict
+    def get_api_value( self, view='collection', value_mapper=None ):
+        if value_mapper is None:
+            value_mapper = {}
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[ key ] = self.__getattribute__( key )
+                if key in value_mapper:
+                    rval[ key ] = value_mapper.get( key, rval[ key ] )
+            except AttributeError:
+                rval[ key ] = None
+        if 'user_id' in rval:
+            rval[ 'owner' ] = self.user.username
+        return rval
     def repo_path( self, app ):
         return app.hgweb_config_manager.get_entry( os.path.join( "repos", self.user.username, self.name ) )
     def revision( self, app ):
@@ -155,16 +193,41 @@ class Repository( object ):
                 fp.write( line )
         fp.close()
 
-class RepositoryMetadata( object ):
-    def __init__( self, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False ):
+class RepositoryMetadata( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable' )
+    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable' )
+    def __init__( self, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
+                  tools_functionally_correct=False, do_not_test=False, time_last_tested=None, tool_test_errors=None ):
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
         self.metadata = metadata or dict()
         self.tool_versions = tool_versions or dict()
         self.malicious = malicious
         self.downloadable = downloadable
+        self.tools_functionally_correct = tools_functionally_correct
+        self.do_not_test = do_not_test
+        self.time_last_tested = time_last_tested
+        self.tool_test_errors = tool_test_errors
+    def get_api_value( self, view='collection', value_mapper=None ):
+        if value_mapper is None:
+            value_mapper = {}
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[ key ] = self.__getattribute__( key )
+                if key in value_mapper:
+                    rval[ key ] = value_mapper.get( key, rval[ key ] )
+            except AttributeError:
+                rval[ key ] = None
+        return rval
 
-class RepositoryReview( object ):
+class RepositoryReview( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating' )
+    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating' )
     approved_states = Bunch( NO='no', YES='yes' )
     def __init__( self, repository_id=None, changeset_revision=None, user_id=None, rating=None, deleted=False ):
         self.repository_id = repository_id
@@ -173,7 +236,9 @@ class RepositoryReview( object ):
         self.rating = rating
         self.deleted = deleted
 
-class ComponentReview( object ):
+class ComponentReview( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
+    api_element_visible_keys = ( 'id', 'repository_review_id', 'component_id', 'private', 'approved', 'rating', 'deleted' )
     approved_states = Bunch( NO='no', YES='yes', NA='not_applicable' )
     def __init__( self, repository_review_id=None, component_id=None, comment=None, private=False, approved=False, rating=None, deleted=False ):
         self.repository_review_id = repository_review_id
@@ -204,7 +269,9 @@ class RepositoryRatingAssociation( ItemRatingAssociation ):
     def set_item( self, repository ):
         self.repository = repository
 
-class Category( object ):
+class Category( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'name', 'description', 'deleted' )
+    api_element_visible_keys = ( 'id', 'name', 'description', 'deleted' )
     def __init__( self, name=None, description=None, deleted=False ):
         self.name = name
         self.description = description

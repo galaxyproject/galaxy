@@ -63,11 +63,22 @@ def app_factory( global_conf, **kwargs ):
     # Create the universe WSGI application
     webapp = CommunityWebApplication( app, session_cookie='galaxycommunitysession', name="community" )
     add_ui_controllers( webapp, app )
-    webapp.add_route( '/view/{owner}/', controller='repository', action='citable_owner' )
-    webapp.add_route( '/view/{owner}/{name}/', controller='repository', action='citable_repository' )
+    webapp.add_route( '/view/{owner}', controller='repository', action='sharable_owner' )
+    webapp.add_route( '/view/{owner}/{name}', controller='repository', action='sharable_repository' )
+    webapp.add_route( '/view/{owner}/{name}/{changeset_revision}', controller='repository', action='sharable_repository_revision' )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='repository', action='index' )
     webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
+    # Add the web API.
+    webapp.add_api_controllers( 'galaxy.webapps.community.api', app )
+    webapp.api_mapper.resource( 'content',
+                                'contents',
+                                controller='repository_contents',
+                                name_prefix='repository_',
+                                path_prefix='/api/repositories/:repository_id',
+                                parent_resources=dict( member_name='repository', collection_name='repositories' ) )
+    webapp.api_mapper.resource( 'repository', 'repositories', path_prefix='/api' )
+    webapp.api_mapper.resource( 'repository_revision', 'repository_revisions', path_prefix='/api' )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):

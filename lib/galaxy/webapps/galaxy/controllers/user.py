@@ -443,7 +443,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         if not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
                 create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
-                    web.url_for( action='create', cntrller='user' )
+                    web.url_for( controller='user', action='create', cntrller='user' )
                 if trans.webapp.name == 'galaxy':
                     header = require_login_template % ( "Galaxy instance", create_account_str )
                 else:
@@ -912,7 +912,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                         trans.sa_session.add( reset_user )
                         trans.sa_session.flush()
                         trans.log_event( "User reset password: %s" % email )
-                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( action='login' ) )
+                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( controller='user', action='login' ) )
                     except Exception, e:
                         message = 'Failed to reset password: %s' % str( e )
                         status = 'error'

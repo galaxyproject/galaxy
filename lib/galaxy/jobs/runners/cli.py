@@ -316,6 +316,7 @@ class ShellJobRunner( BaseJobRunner ):
                 if which_try == self.app.config.retry_job_output_collection:
                     stdout = ''
                     stderr = 'Job output not returned from cluster'
+                    exit_code = 0
                     log.debug( stderr )
                 else:
                     time.sleep(1)

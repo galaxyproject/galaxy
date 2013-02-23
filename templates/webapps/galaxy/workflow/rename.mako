@@ -17,7 +17,7 @@ else:
 <div class="toolForm">
     <div class="toolFormTitle">Rename workflow '${stored.name}'</div>
         <div class="toolFormBody">
-            <form action="${h.url_for( action='rename', id=trans.security.encode_id(stored.id) )}" method="POST">
+            <form action="${h.url_for(controller='workflow', action='rename', id=trans.security.encode_id(stored.id) )}" method="POST">
                 <div class="form-row">
                     <label>
                         New name

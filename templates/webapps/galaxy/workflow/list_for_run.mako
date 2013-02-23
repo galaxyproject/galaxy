@@ -19,7 +19,7 @@
 
 <ul class="manage-table-actions">
     <li>
-        <a class="action-button" href="${h.url_for( controller="workflow", action='index' )}" target="_parent">
+        <a class="action-button" href="${h.url_for( controller='workflow', action='index' )}" target="_parent">
             <span>Switch to workflow management view</span>
         </a>
     </li>
@@ -36,7 +36,7 @@
         %for i, workflow in enumerate( workflows ):
             <tr>
                 <td>
-                    <a href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">${h.to_unicode( workflow.name )}</a>
+                    <a href="${h.url_for(controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${h.to_unicode( workflow.name )}</a>
                     <a id="wf-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
                 <td>${len(workflow.latest_workflow.steps)}</td>
@@ -64,7 +64,7 @@
             <% workflow = association.stored_workflow %>
             <tr>
                 <td>
-                    <a href="${h.url_for( action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name}</a>
+                    <a href="${h.url_for( controller='workflow', action='run', id=trans.security.encode_id(workflow.id) )}">${workflow.name}</a>
                     <a id="shared-${i}-popup" class="popup-arrow" style="display: none;">&#9660;</a>
                 </td>
                 <td>${workflow.user.email}</td>

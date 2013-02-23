@@ -42,6 +42,11 @@ def activate_repository( trans, repository ):
                            shed_tool_conf,
                            tool_panel_dict,
                            new_install=False )
+        if repository.includes_data_managers:
+            tp, data_manager_relative_install_dir = repository.get_tool_relative_path( trans.app )
+            data_manager_relative_install_dir = os.path.join( data_manager_relative_install_dir, repository.name ) #hack to add repository.name here, which is actually the root of the installed repository
+            new_data_managers = install_data_managers( trans.app, trans.app.config.shed_data_manager_config_file, metadata, repository.get_shed_config_dict( trans.app ), data_manager_relative_install_dir,
+                                                        repository, repository_tools_tups )
     trans.sa_session.add( repository )
     trans.sa_session.flush()
     if repository.includes_datatypes:
@@ -120,12 +125,24 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
     be False when a tool shed repository is being installed.  Since installation is occurring after the datatypes registry
     has been initialized, the registry's contents cannot be overridden by conflicting data types.
     """
-    tree = util.parse_xml( datatypes_config )
+    try:
+        tree = util.parse_xml( datatypes_config )
+    except Exception, e:
+        log.debug( "Error parsing %s, exception: %s" % ( datatypes_config, str( e ) ) )
+        return None, None
     datatypes_config_root = tree.getroot()
-    # Path to datatype converters
-    converter_path = None
-    # Path to datatype display applications
-    display_path = None
+    registration = datatypes_config_root.find( 'registration' )
+    if registration is None:
+        # We have valid XML, but not a valid proprietary datatypes definition.
+        return None, None
+    sniffers = datatypes_config_root.find( 'sniffers' )
+    converter_path, display_path = get_converter_and_display_paths( registration, relative_install_dir )
+    if converter_path:
+         # Path to datatype converters
+        registration.attrib[ 'proprietary_converter_path' ] = converter_path
+    if display_path:
+        # Path to datatype display applications
+        registration.attrib[ 'proprietary_display_path' ] = display_path
     relative_path_to_datatype_file_name = None
     datatype_files = datatypes_config_root.find( 'datatype_files' )
     datatype_class_modules = []
@@ -148,12 +165,6 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
                                 break
                 break
         if datatype_class_modules:
-            registration = datatypes_config_root.find( 'registration' )
-            converter_path, display_path = get_converter_and_display_paths( registration, relative_install_dir )
-            if converter_path:
-                registration.attrib[ 'proprietary_converter_path' ] = converter_path
-            if display_path:
-                registration.attrib[ 'proprietary_display_path' ] = display_path
             for relative_path_to_datatype_file_name in datatype_class_modules:
                 datatype_file_name_path, datatype_file_name = os.path.split( relative_path_to_datatype_file_name )
                 for elem in registration.findall( 'datatype' ):
@@ -170,20 +181,16 @@ def alter_config_and_load_prorietary_datatypes( app, datatypes_config, relative_
                         # The value of proprietary_path must be an absolute path due to job_working_directory.
                         elem.attrib[ 'proprietary_path' ] = os.path.abspath( datatype_file_name_path )
                         elem.attrib[ 'proprietary_datatype_module' ] = proprietary_datatype_module
-            sniffers = datatypes_config_root.find( 'sniffers' )
-        else:
-            sniffers = None
-        fd, proprietary_datatypes_config = tempfile.mkstemp()
-        os.write( fd, '<?xml version="1.0"?>\n' )
-        os.write( fd, '<datatypes>\n' )
-        os.write( fd, '%s' % util.xml_to_string( registration ) )
-        if sniffers:
-            os.write( fd, '%s' % util.xml_to_string( sniffers ) )
-        os.write( fd, '</datatypes>\n' )
-        os.close( fd )
-        os.chmod( proprietary_datatypes_config, 0644 )
-    else:
-        proprietary_datatypes_config = datatypes_config
+    # Temporarily persist the proprietary datatypes configuration file so it can be loaded into the datatypes registry.
+    fd, proprietary_datatypes_config = tempfile.mkstemp()
+    os.write( fd, '<?xml version="1.0"?>\n' )
+    os.write( fd, '<datatypes>\n' )
+    os.write( fd, '%s' % util.xml_to_string( registration ) )
+    if sniffers:
+        os.write( fd, '%s' % util.xml_to_string( sniffers ) )
+    os.write( fd, '</datatypes>\n' )
+    os.close( fd )
+    os.chmod( proprietary_datatypes_config, 0644 )
     # Load proprietary datatypes
     app.datatypes_registry.load_datatypes( root_dir=app.config.root, config=proprietary_datatypes_config, deactivate=deactivate, override=override )
     if datatype_files:
@@ -451,7 +458,7 @@ def generate_tool_panel_elem_list( repository_name, repository_clone_url, change
     return elem_list
 def generate_tool_panel_dict_for_new_install( tool_dicts, tool_section=None ):
     """
-    When installing a repository that contains tools, all tools must curently be defined within the same tool section in the tool
+    When installing a repository that contains tools, all tools must currently be defined within the same tool section in the tool
     panel or outside of any sections.
     """
     tool_panel_dict = {}
@@ -464,13 +471,14 @@ def generate_tool_panel_dict_for_new_install( tool_dicts, tool_section=None ):
         section_name = ''
         section_version = ''
     for tool_dict in tool_dicts:
-        guid = tool_dict[ 'guid' ]
-        tool_config = tool_dict[ 'tool_config' ]
-        tool_section_dict = dict( tool_config=tool_config, id=section_id, name=section_name, version=section_version )
-        if guid in tool_panel_dict:
-            tool_panel_dict[ guid ].append( tool_section_dict )
-        else:
-            tool_panel_dict[ guid ] = [ tool_section_dict ]
+        if tool_dict.get( 'add_to_tool_panel', True ):
+            guid = tool_dict[ 'guid' ]
+            tool_config = tool_dict[ 'tool_config' ]
+            tool_section_dict = dict( tool_config=tool_config, id=section_id, name=section_name, version=section_version )
+            if guid in tool_panel_dict:
+                tool_panel_dict[ guid ].append( tool_section_dict )
+            else:
+                tool_panel_dict[ guid ] = [ tool_section_dict ]
     return tool_panel_dict
 def generate_tool_panel_dict_for_tool_config( guid, tool_config, tool_sections=None ):
     """
@@ -712,7 +720,11 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
             for rd_tup in rd_tups:
                 tool_shed, name, owner, changeset_revision = rd_tup
                 # Updates to installed repository revisions may have occurred, so make sure to locate the appropriate repository revision if one exists.
-                repository, current_changeset_revision = repository_was_previously_installed( trans, tool_shed, name, repo_info_tuple )
+                # We need to create a temporary repo_info_tuple that includes the correct repository owner which we get from the current rd_tup.  The current
+                # tuple looks like: ( description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td )
+                tmp_clone_url = suc.generate_clone_url_from_repo_info_tup( rd_tup )
+                tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
+                repository, current_changeset_revision = repository_was_previously_installed( trans, tool_shed, name, tmp_repo_info_tuple )
                 if repository:
                     new_rd_tup = [ tool_shed, name, owner, changeset_revision, repository.id, repository.status ]
                     if repository.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
@@ -939,6 +951,7 @@ def get_tool_version_association( app, parent_tool_version, tool_version ):
                      .first()
 def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     """Return the changeset revision hash to which the repository can be updated."""
+    changeset_revision_dict = {}
     tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
     url = suc.url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
         ( repository.name, repository.owner, repository.installed_changeset_revision ) )
@@ -947,18 +960,34 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
         encoded_update_dict = response.read()
         if encoded_update_dict:
             update_dict = encoding_util.tool_shed_decode( encoded_update_dict )
-            changeset_revision = update_dict[ 'changeset_revision' ]
-            ctx_rev = update_dict[ 'ctx_rev' ]
+            includes_data_managers = update_dict.get( 'includes_data_managers', False )
+            includes_datatypes = update_dict.get( 'includes_datatypes', False )
             includes_tools = update_dict.get( 'includes_tools', False )
+            includes_tool_dependencies = update_dict.get( 'includes_tool_dependencies', False )
+            includes_workflows = update_dict.get( 'includes_workflows', False )
             has_repository_dependencies = update_dict.get( 'has_repository_dependencies', False )
+            changeset_revision = update_dict.get( 'changeset_revision', None )
+            ctx_rev = update_dict.get( 'ctx_rev', None )
         response.close()
+        changeset_revision_dict[ 'includes_data_managers' ] = includes_data_managers
+        changeset_revision_dict[ 'includes_datatypes' ] = includes_datatypes
+        changeset_revision_dict[ 'includes_tools' ] = includes_tools
+        changeset_revision_dict[ 'includes_tool_dependencies' ] = includes_tool_dependencies
+        changeset_revision_dict[ 'includes_workflows' ] = includes_workflows
+        changeset_revision_dict[ 'has_repository_dependencies' ] = has_repository_dependencies
+        changeset_revision_dict[ 'changeset_revision' ] = changeset_revision
+        changeset_revision_dict[ 'ctx_rev' ] = ctx_rev
     except Exception, e:
         log.debug( "Error getting change set revision for update from the tool shed for repository '%s': %s" % ( repository.name, str( e ) ) )
-        includes_tools = False
-        has_repository_dependencies = False
-        changeset_revision = None
-        ctx_rev = None
-    return changeset_revision, ctx_rev, includes_tools, has_repository_dependencies
+        changeset_revision_dict[ 'includes_data_managers' ] = False
+        changeset_revision_dict[ 'includes_datatypes' ] = False
+        changeset_revision_dict[ 'includes_tools' ] = False
+        changeset_revision_dict[ 'includes_tool_dependencies' ] = False
+        changeset_revision_dict[ 'includes_workflows' ] = False
+        changeset_revision_dict[ 'has_repository_dependencies' ] = False
+        changeset_revision_dict[ 'changeset_revision' ] = None
+        changeset_revision_dict[ 'ctx_rev' ] = None
+    return changeset_revision_dict
 def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repository_tools_tups ):
     """
     Inspect each tool to see if any have input parameters that are dynamically generated select lists that require entries in the
@@ -1052,30 +1081,32 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
     tool_section = None
     tool_panel_section_key = None
     if 'tools' in metadata:
-        if 'tool_panel_section' in metadata:
-            tool_panel_dict = metadata[ 'tool_panel_section' ]
-            if not tool_panel_dict:
-                tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
-        else:
-            tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
         # This forces everything to be loaded into the same section (or no section) in the tool panel.
-        tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
-        tool_section_dict = tool_section_dicts[ 0 ]
-        original_section_id = tool_section_dict[ 'id' ]
-        original_section_name = tool_section_dict[ 'name' ]
         if no_changes_checked:
-            if original_section_id:
-                tool_panel_section_key = 'section_%s' % str( original_section_id )
-                if tool_panel_section_key in trans.app.toolbox.tool_panel:
-                    tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
-                else:
-                    # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
-                    elem = Element( 'section' )
-                    elem.attrib[ 'name' ] = original_section_name
-                    elem.attrib[ 'id' ] = original_section_id
-                    elem.attrib[ 'version' ] = ''
-                    tool_section = galaxy.tools.ToolSection( elem )
-                    trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
+            if 'tool_panel_section' in metadata:
+                tool_panel_dict = metadata[ 'tool_panel_section' ]
+                if not tool_panel_dict:
+                    tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
+            else:
+                tool_panel_dict = generate_tool_panel_dict_for_new_install( metadata[ 'tools' ] )
+            if tool_panel_dict:
+                #tool_panel_dict is empty when tools exist but are not installed into a tool panel
+                tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+                tool_section_dict = tool_section_dicts[ 0 ]
+                original_section_id = tool_section_dict[ 'id' ]
+                original_section_name = tool_section_dict[ 'name' ]
+                if original_section_id:
+                    tool_panel_section_key = 'section_%s' % str( original_section_id )
+                    if tool_panel_section_key in trans.app.toolbox.tool_panel:
+                        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+                    else:
+                        # The section in which the tool was originally loaded used to be in the tool panel, but no longer is.
+                        elem = Element( 'section' )
+                        elem.attrib[ 'name' ] = original_section_name
+                        elem.attrib[ 'id' ] = original_section_id
+                        elem.attrib[ 'version' ] = ''
+                        tool_section = galaxy.tools.ToolSection( elem )
+                        trans.app.toolbox.tool_panel[ tool_panel_section_key ] = tool_section
         else:
             # The user elected to change the tool panel section to contain the tools.
             if new_tool_panel_section:
@@ -1168,6 +1199,73 @@ def is_data_index_sample_file( file_path ):
         return False
     # Default to copying the file if none of the above are true.
     return True
+def install_data_managers( app, shed_data_manager_conf_filename, metadata_dict, shed_config_dict, relative_install_dir, repository, repository_tools_tups ):
+    rval = []
+    if 'data_manager' in metadata_dict:
+        repository_tools_by_guid = {}
+        for tool_tup in repository_tools_tups:
+            repository_tools_by_guid[ tool_tup[1] ] = dict( tool_config_filename=tool_tup[0], tool=tool_tup[2] )
+        config_elems = [ elem for elem in util.parse_xml( shed_data_manager_conf_filename ).getroot() ] #load existing data managers
+        
+        repo_data_manager_conf_filename = metadata_dict['data_manager'].get( 'config_filename', None )
+        if repo_data_manager_conf_filename is None:
+            log.debug( "No data_manager_conf.xml file has been defined." )
+            return rval
+        data_manager_config_has_changes = False
+        relative_repo_data_manager_dir = os.path.join( shed_config_dict.get( 'tool_path', '' ), relative_install_dir )
+        repo_data_manager_conf_filename = os.path.join( relative_repo_data_manager_dir, repo_data_manager_conf_filename )
+        tree = util.parse_xml( repo_data_manager_conf_filename )
+        root = tree.getroot()
+        for elem in root:
+            if elem.tag == 'data_manager':
+                data_manager_id = elem.get( 'id', None )
+                if data_manager_id is None:
+                    log.error( "A data manager was defined that does not have an id and will not be installed:\n%s" % ( util.xml_to_string( elem ) ) )
+                    continue
+                data_manager_dict = metadata_dict['data_manager'].get( 'data_managers', {} ).get( data_manager_id, None )
+                if data_manager_dict is None:
+                    log.error( "Data manager metadata is not defined properly for '%s'." % ( data_manager_id ) )
+                    continue
+                guid = data_manager_dict.get( 'guid', None )
+                if guid is None:
+                    log.error( "Data manager guid '%s' is not set in metadata for '%s'." % ( guid, data_manager_id ) )
+                    continue
+                elem.set( 'guid', guid )
+                tool_guid = data_manager_dict.get( 'tool_guid', None )
+                if tool_guid is None:
+                    log.error( "Data manager tool guid '%s' is not set in metadata for '%s'." % ( tool_guid, data_manager_id ) )
+                    continue
+                tool_dict = repository_tools_by_guid.get( tool_guid, None )
+                if tool_dict is None:
+                    log.error( "Data manager tool guid '%s' could not be found for '%s'. Perhaps the tool is invalid?" % ( tool_guid, data_manager_id ) )
+                    continue
+                tool = tool_dict.get( 'tool', None )
+                if tool is None:
+                    log.error( "Data manager tool with guid '%s' could not be found for '%s'. Perhaps the tool is invalid?" % ( tool_guid, data_manager_id ) )
+                    continue
+                tool_config_filename = tool_dict.get( 'tool_config_filename', None )
+                if tool_config_filename is None:
+                    log.error( "Data manager metadata is missing 'tool_config_file' for '%s'." % ( data_manager_id ) )
+                    continue
+                
+                elem.set( 'shed_conf_file', shed_config_dict['config_filename'] )
+                if elem.get( 'tool_file', None ) is not None:
+                    del elem.attrib[ 'tool_file' ] #remove old tool_file info
+                tool_elem = suc.generate_tool_elem( repository.tool_shed, repository.name, repository.installed_changeset_revision, 
+                                                    repository.owner, tool_config_filename, tool, None )
+                elem.insert( 0, tool_elem )
+                data_manager = app.data_managers.load_manager_from_elem( elem, tool_path=shed_config_dict.get( 'tool_path', '' ) )
+                if data_manager:
+                    rval.append( data_manager )
+            else:
+                log.warning( "Encountered unexpected element '%s':\n%s" % ( elem.tag, util.xml_to_string( elem ) ) )
+            config_elems.append( elem )
+            data_manager_config_has_changes = True
+        # Persist the altered shed_data_manager_config file.
+        if data_manager_config_has_changes:
+            suc.data_manager_config_elems_to_xml_file( app, config_elems, shed_data_manager_conf_filename  )
+    return rval
+    
 def is_in_repo_info_dicts( repo_info_dict, repo_info_dicts ):
     """Return True if the received repo_info_dict is contained in the list of received repo_info_dicts."""
     for name, repo_info_tuple in repo_info_dict.items():
@@ -1338,6 +1436,14 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         valid_tools = metadata.get( 'tools', None )
         # Handle workflows.
         workflows = metadata.get( 'workflows', None )
+        # Handle Data Managers
+        valid_data_managers = None
+        invalid_data_managers = None
+        data_managers_errors = None
+        if 'data_manager' in metadata:
+            valid_data_managers = metadata['data_manager'].get( 'data_managers', None )
+            invalid_data_managers = metadata['data_manager'].get( 'invalid_data_managers', None )
+            data_managers_errors = metadata['data_manager'].get( 'messages', None )
         containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
                                                                       repository=repository,
                                                                       datatypes=datatypes,
@@ -1349,6 +1455,9 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                                                                       tool_dependencies=installed_tool_dependencies,
                                                                       valid_tools=valid_tools,
                                                                       workflows=workflows,
+                                                                      valid_data_managers=valid_data_managers,
+                                                                      invalid_data_managers=invalid_data_managers,
+                                                                      data_managers_errors=data_managers_errors,
                                                                       new_install=False,
                                                                       reinstalling=reinstalling )
     else:
@@ -1381,6 +1490,9 @@ def populate_containers_dict_for_new_install( trans, tool_shed_url, tool_path, r
                                                                   tool_dependencies=installed_tool_dependencies,
                                                                   valid_tools=None,
                                                                   workflows=None,
+                                                                  valid_data_managers=None,
+                                                                  invalid_data_managers=None,
+                                                                  data_managers_errors=None,
                                                                   new_install=True,
                                                                   reinstalling=False )
     # Merge the missing_repository_dependencies container contents to the installed_repository_dependencies container.
@@ -1447,6 +1559,26 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
 def pull_repository( repo, repository_clone_url, ctx_rev ):
     """Pull changes from a remote repository to a local one."""
     commands.pull( suc.get_configured_ui(), repo, source=repository_clone_url, rev=[ ctx_rev ] )
+def remove_from_data_manager( app, repository ):
+    metadata_dict = repository.metadata
+    if metadata_dict and 'data_manager' in metadata_dict:
+        shed_data_manager_conf_filename = app.config.shed_data_manager_config_file
+        tree = util.parse_xml( shed_data_manager_conf_filename )
+        root = tree.getroot()
+        assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % ( shed_data_manager_conf_filename )
+        guids = [ data_manager_dict.get( 'guid' ) for data_manager_dict in metadata_dict.get( 'data_manager', {} ).get( 'data_managers', {} ).itervalues() if 'guid' in data_manager_dict ]
+        data_manager_config_has_changes = False
+        config_elems = []
+        for elem in root:
+            if elem.tag != 'data_manager' or elem.get( 'guid', None ) not in guids:
+                config_elems.append( elem )
+            else:
+                data_manager_config_has_changes = True
+        #remove data managers from in memory
+        app.data_managers.remove_manager( guids )
+        # Persist the altered shed_data_manager_config file.
+        if data_manager_config_has_changes:
+            suc.data_manager_config_elems_to_xml_file( app, config_elems, shed_data_manager_conf_filename  )
 def remove_from_shed_tool_config( trans, shed_tool_conf_dict, guids_to_remove ):
     # A tool shed repository is being uninstalled so change the shed_tool_conf file.  Parse the config file to generate the entire list
     # of config_elems instead of using the in-memory list since it will be a subset of the entire list if one or more repositories have

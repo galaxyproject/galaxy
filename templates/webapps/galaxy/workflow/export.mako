@@ -25,7 +25,7 @@
     <h3>Export to myExperiment</h3>
     
     <div class="toolForm"> 
-        <form action="${h.url_for( action='export_to_myexp', id=trans.security.encode_id( item.id ) )}" 
+        <form action="${h.url_for(controller='workflow', action='export_to_myexp', id=trans.security.encode_id( item.id ) )}" 
                 method="POST">
             <div class="form-row"> 
                 <label>myExperiment username:</label> 
@@ -49,7 +49,7 @@
     ## Add link to render as SVG image.
     <h3>Create Image</h3>
     
-    <a href="${h.url_for( action='gen_image', id=trans.security.encode_id( item.id ) )}">
+    <a href="${h.url_for(controller='workflow', action='gen_image', id=trans.security.encode_id( item.id ) )}">
         Create image of ${get_class_display_name( item.__class__ ).lower()} in SVG format
     </a>
 </%def>

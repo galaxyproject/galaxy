@@ -59,9 +59,14 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         if self.repository_is_new( repository ):
             running_standalone = True
             self.upload_file( repository, 
-                              'bwa/bwa_base.tar', 
+                              filename='bwa/bwa_base.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded BWA tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded bwa_base.tar.' )
+                              strings_not_displayed=[] )
     def test_0010_create_bwa_color_repository( self ):
         '''Create and populate bwa_color_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -75,9 +80,14 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         if self.repository_is_new( repository ):
             running_standalone = True
             self.upload_file( repository, 
-                              'bwa/bwa_color.tar', 
+                              filename='bwa/bwa_color.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded BWA color tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded bwa_color.tar.' )
+                              strings_not_displayed=[] )
     def test_0015_create_emboss_datatypes_repository( self ):
         '''Create and populate emboss_datatypes_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -91,9 +101,14 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         if self.repository_is_new( repository ):
             running_standalone = True
             self.upload_file( repository, 
-                              'emboss/datatypes/datatypes_conf.xml', 
+                              filename='emboss/datatypes/datatypes_conf.xml',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded datatypes_conf.xml.',
                               strings_displayed=[], 
-                              commit_message='Uploaded datatypes_conf.xml.' )
+                              strings_not_displayed=[] )
     def test_0020_create_emboss_repository( self ):
         '''Create and populate emboss_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -107,9 +122,14 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         if self.repository_is_new( repository ):
             running_standalone = True
             self.upload_file( repository, 
-                              'emboss/emboss.tar', 
+                              filename='emboss/emboss.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded emboss tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded tool tarball.' )
+                              strings_not_displayed=[] )
     def test_0025_create_filtering_repository( self ):
         '''Create and populate filtering_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -123,9 +143,14 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         if self.repository_is_new( repository ):
             running_standalone = True
             self.upload_file( repository, 
-                              'filtering/filtering_1.1.0.tar', 
+                              filename='filtering/filtering_1.1.0.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded filtering 1.1.0 tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded filtering.tar.' )
+                              strings_not_displayed=[] )
     def test_0030_create_freebayes_repository( self ):
         '''Create and populate freebayes_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -139,9 +164,14 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         if self.repository_is_new( repository ):
             running_standalone = True
             self.upload_file( repository, 
-                              'freebayes/freebayes.tar', 
+                              filename='freebayes/freebayes.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded freebayes tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded freebayes.tar.' )
+                              strings_not_displayed=[] )
     def test_0035_create_and_upload_dependency_definitions( self ):
         '''Create and upload repository dependency definitions.'''
         global running_standalone
@@ -183,12 +213,10 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                                  install_repository_dependencies=False, 
                                  new_tool_panel_section='freebayes_1090' )
         installed_repositories = [ ( freebayes_repository_name, common.test_user_1_name ) ]
-        uninstalled_repositories = [ ( filtering_repository_name, common.test_user_1_name ), 
-                                     ( emboss_repository_name, common.test_user_1_name ),
-                                     ( emboss_datatypes_repository_name, common.test_user_1_name ),
-                                     ( bwa_color_repository_name, common.test_user_1_name ),
-                                     ( bwa_base_repository_name, common.test_user_1_name ) ]
-        self.verify_installed_uninstalled_repositories( installed_repositories=installed_repositories, uninstalled_repositories=uninstalled_repositories )
+        strings_displayed = [ 'freebayes_0090' ]
+        strings_not_displayed = [ 'filtering_0090', 'emboss_0090', 'emboss_datatypes_0090', 'bwa_color_0090', 'bwa_base_0090' ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
+        self.verify_installed_repositories( installed_repositories )
     def test_0050_install_deactivate_filtering_repository( self ):
         '''Install and deactivate filtering.'''
         global running_standalone
@@ -205,13 +233,15 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                                  new_tool_panel_section='filtering_1090' )
         installed_repositories = [ ( filtering_repository_name, common.test_user_1_name ), 
                                    ( freebayes_repository_name, common.test_user_1_name ) ]
-        uninstalled_repositories = [ ( emboss_repository_name, common.test_user_1_name ),
-                                     ( emboss_datatypes_repository_name, common.test_user_1_name ),
-                                     ( bwa_color_repository_name, common.test_user_1_name ),
-                                     ( bwa_base_repository_name, common.test_user_1_name ) ]
-        self.verify_installed_uninstalled_repositories( installed_repositories=installed_repositories, uninstalled_repositories=uninstalled_repositories )
+        strings_displayed = [ 'filtering_0090', 'freebayes_0090' ]
+        strings_not_displayed = [ 'emboss_0090', 'emboss_datatypes_0090', 'bwa_color_0090', 'bwa_base_0090' ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
+        self.verify_installed_repositories( installed_repositories )
         filtering_repository = test_db_util.get_installed_repository_by_name_owner( filtering_repository_name, common.test_user_1_name )
         self.uninstall_repository( filtering_repository, remove_from_disk=False )
+        strings_displayed = [ 'freebayes_0090' ]
+        strings_not_displayed = [ 'filtering_0090', 'emboss_0090', 'emboss_datatypes_0090', 'bwa_color_0090', 'bwa_base_0090' ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
     def test_0055_install_uninstall_datatypes_repository( self ):
         '''Install and uninstall emboss_datatypes.'''
         # After this test, the repositories should be in the following states:
@@ -229,9 +259,15 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                                      ( filtering_repository_name, common.test_user_1_name ), 
                                      ( bwa_color_repository_name, common.test_user_1_name ),
                                      ( bwa_base_repository_name, common.test_user_1_name ) ]
-        self.verify_installed_uninstalled_repositories( installed_repositories=installed_repositories, uninstalled_repositories=uninstalled_repositories )
+        strings_displayed = [ 'emboss_datatypes_0090', 'freebayes_0090' ]
+        strings_not_displayed = [ 'filtering_0090', 'emboss_0090', 'bwa_color_0090', 'bwa_base_0090' ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
+        self.verify_installed_repositories( installed_repositories )
         datatypes_repository = test_db_util.get_installed_repository_by_name_owner( emboss_datatypes_repository_name, common.test_user_1_name )
         self.uninstall_repository( datatypes_repository, remove_from_disk=True )
+        strings_displayed = [ 'freebayes_0090' ]
+        strings_not_displayed = [ 'emboss_datatypes_0090', 'filtering_0090', 'emboss_0090', 'bwa_color_0090', 'bwa_base_0090' ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
     def test_0060_search_for_bwa_tools( self ):
         '''Search for and install the repositories with BWA tools, and verify that this reinstalls emboss_datatypes and reactivates filtering.'''
         bwa_color_repository = test_db_util.get_repository_by_name_and_owner( bwa_color_repository_name, common.test_user_1_name )
@@ -240,9 +276,9 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         bwa_color_revision = self.get_repository_tip( bwa_color_repository )
         self.search_for_valid_tools( search_fields={ 'tool_id': 'bwa' }, 
                                      exact_matches=False, from_galaxy=True, 
-                                     strings_displayed=[ bwa_color_repository_name, bwa_base_repository_name, bwa_base_revision, bwa_color_revision  ] )
-        strings_displayed=[ freebayes_repository_name, emboss_repository_name, filtering_repository_name ]
-        strings_displayed.extend( [ bwa_color_repository_name, bwa_base_repository_name, emboss_datatypes_repository_name ] )
+                                     strings_displayed=[ 'bwa_color_0090', 'bwa_base_0090', bwa_base_revision, bwa_color_revision  ] )
+        strings_displayed=[ 'freebayes_0090', 'emboss_0090', 'filtering_0090' ]
+        strings_displayed.extend( [ 'bwa_color_0090', 'bwa_base_0090', 'emboss_datatypes_0090' ] )
         strings_displayed.extend( [ 'bwa', 'Handle', 'tool dependencies' ] )
         repositories_to_install = [ bwa_color_repository, bwa_base_repository ]
         # BWA is a good candidate for testing the installation of tool dependencies, but it is a core requirement of functional 
@@ -262,5 +298,6 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                                    ( bwa_base_repository_name, common.test_user_1_name ),
                                    ( emboss_datatypes_repository_name, common.test_user_1_name ),
                                    ( freebayes_repository_name, common.test_user_1_name ) ]
-        uninstalled_repositories = []
-        self.verify_installed_uninstalled_repositories( installed_repositories=installed_repositories, uninstalled_repositories=uninstalled_repositories )
+        strings_displayed = [ 'emboss_datatypes_0090', 'filtering_0090', 'emboss_0090', 'bwa_color_0090', 'bwa_base_0090', 'freebayes_0090' ]
+        self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
+        self.verify_installed_repositories( installed_repositories )

@@ -61,17 +61,8 @@ var TabularDataset = Dataset.extend({
     initialize: function(options) {
         Dataset.prototype.initialize.call(this);
 
-        // If first data chunk is available, next
-        // chunk is 1.
-        chunk_index = (this.attributes.first_data_chunk ? 1 : 0);
-    },
-
-    /** 
-     * Set first data chunk; useful when initializing on the server side.
-     */
-    set_first_chunk: function(chunk) {
-        this.attributes.first_data_chunk = chunk;
-        this.attributes.chunk_index = 1;
+        // If first data chunk is available, next chunk is 1.
+        this.attributes.chunk_index = (this.attributes.first_data_chunk ? 1 : 0);
     },
 
     /**
@@ -111,7 +102,10 @@ var DatasetCollection = Backbone.Collection.extend({
 });
 
 /**
- * Provides table-based, dynamic view of a tabular dataset.
+ * Provides table-based, dynamic view of a tabular dataset. 
+ * NOTE: view's el must be in DOM already and provided when 
+ * createing the view so that scrolling event can be attached
+ * to the correct container.
  */
 var TabularDatasetChunkedView = Backbone.View.extend({
 
@@ -138,13 +132,31 @@ var TabularDatasetChunkedView = Backbone.View.extend({
             this._renderChunk(first_chunk);
         }
 
-        // Show new chunks during scrolling.
-        var self = this;
-        $(window).scroll(function() {
-            if ($(window).scrollTop() === $(document).height() - $(window).height()) {
+        // -- Show new chunks during scrolling. --
+        
+        var self = this,
+            // Element that does the scrolling.
+            scroll_elt = _.find(this.$el.parents(), function(p) {
+                return $(p).css('overflow') === 'auto';
+            }),
+            // Flag to ensure that only one chunk is loaded at a time.
+            loading_chunk = false;
+
+        // If no scrolling element found, use window.
+        if (!scroll_elt) { scroll_elt = window; }
+
+        // Wrap scrolling element for easy access.
+        scroll_elt = $(scroll_elt);
+
+        // Set up chunk loading when scrolling using the scrolling element.
+        scroll_elt.scroll(function() {
+            // If not already loading a chunk and have scrolled to the bottom of this element, get next chunk.
+            if ( !loading_chunk && (self.$el.height() - scroll_elt.scrollTop() - scroll_elt.height() <= 0) ) {
+                loading_chunk = true;
                 $.when(self.model.get_next_chunk()).then(function(result) {
                     if (result) {
                         self._renderChunk(result);
+                        loading_chunk = false;
                     }
                 });
             }
@@ -211,11 +223,47 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     }
 });
 
+// -- Utility functions. --
+
+/**
+ * Create a model, attach it to a view, render view, and attach it to a parent element.
+ */
+var createModelAndView = function(model, view, model_config, parent_elt) {
+    // Create model, view.
+    var a_view = new view({
+        model: new model(model_config)
+    });
+
+    // Render view and add to parent element.
+    a_view.render();
+    if (parent_elt) {
+        parent_elt.append(a_view.$el);
+    }
+
+    return a_view;
+};
+
+/**
+ * Create a tabular dataset chunked view (and requisite tabular dataset model)
+ * and appends to parent_elt.
+ */
+var createTabularDatasetChunkedView = function(dataset_config, parent_elt) {
+    // Create view element and add to parent.
+    var view_div = $('<div/>').appendTo(parent_elt);
+
+    // Create view with model, render, and return.
+    return new TabularDatasetChunkedView({
+        el: view_div,
+        model: new TabularDataset(dataset_config)
+    }).render();
+};
+
 return {
 	Dataset: Dataset,
     TabularDataset: TabularDataset,
 	DatasetCollection: DatasetCollection,
-    TabularDatasetChunkedView: TabularDatasetChunkedView
+    TabularDatasetChunkedView: TabularDatasetChunkedView,
+    createTabularDatasetChunkedView: createTabularDatasetChunkedView
 };
 
 });

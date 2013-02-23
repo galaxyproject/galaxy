@@ -383,29 +383,23 @@ class AdminToolshed( AdminGalaxy ):
                 if repository.uninstalled:
                     # Since we're reinstalling the repository we need to find the latest changeset revision to which it can be updated so that we
                     # can reset the metadata if necessary.  This will ensure that information about repository dependencies and tool dependencies
-                    # will be current.  Only allow selecting a different section in the tool panel if the repository was uninstalled.
-                    current_changeset_revision, current_ctx_rev, includes_tools, has_repository_dependencies = \
-                        shed_util.get_update_to_changeset_revision_and_ctx_rev( trans, repository )
-                    if current_ctx_rev == repository.ctx_rev:
-                        # The uninstalled repository is current.
-                        if repository.includes_tools or repository.has_repository_dependencies:
+                    # will be current.  Only allow selecting a different section in the tool panel if the repository was uninstalled.                        
+                    changeset_revision_dict = shed_util.get_update_to_changeset_revision_and_ctx_rev( trans, repository )
+                    current_changeset_revision = changeset_revision_dict.get( 'changeset_revision', None )
+                    current_ctx_rev = changeset_revision_dict.get( 'ctx_rev', None )
+                    if current_changeset_revision and current_ctx_rev:
+                        if current_ctx_rev == repository.ctx_rev:
+                            # The uninstalled repository is current.
                             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                               action='reselect_tool_panel_section',
                                                                               **kwd ) )
                         else:
-                            return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                                              action='reinstall_repository',
-                                                                              **kwd ) )
-                    else:
-                        # The uninstalled repository has updates available in the tool shed.
-                        updated_repo_info_dict = self.get_updated_repository_information( trans=trans,
-                                                                                          repository_id=trans.security.encode_id( repository.id ),
-                                                                                          repository_name=repository.name,
-                                                                                          repository_owner=repository.owner,
-                                                                                          changeset_revision=current_changeset_revision )
-                        has_repository_dependencies = updated_repo_info_dict.get( 'has_repository_dependencies', False )
-                        includes_tool_dependencies = updated_repo_info_dict.get( 'includes_tool_dependencies', False )
-                        if has_repository_dependencies or includes_tool_dependencies:
+                            # The uninstalled repository has updates available in the tool shed.
+                            updated_repo_info_dict = self.get_updated_repository_information( trans=trans,
+                                                                                              repository_id=trans.security.encode_id( repository.id ),
+                                                                                              repository_name=repository.name,
+                                                                                              repository_owner=repository.owner,
+                                                                                              changeset_revision=current_changeset_revision )
                             json_repo_info_dict = json.to_json_string( updated_repo_info_dict )
                             encoded_repo_info_dict = encoding_util.tool_shed_encode( json_repo_info_dict )
                             kwd[ 'latest_changeset_revision' ] = current_changeset_revision
@@ -414,10 +408,14 @@ class AdminToolshed( AdminGalaxy ):
                             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                               action='reselect_tool_panel_section',
                                                                               **kwd ) )
-                        else:
-                            return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
-                                                                              action='reinstall_repository',
-                                                                              **kwd ) )
+                    else:
+                        message = "Unable to get latest revision for repository <b>%s</b> from the tool shed, so repository " % str( repository.name )
+                        message += "reinstallation is not possible at this time."
+                        status = "error"
+                        return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
+                                                                          action='browse_repositories',
+                                                                          message=message,
+                                                                          status=status ) )
                 else:
                     return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                       action='activate_repository',
@@ -507,6 +505,8 @@ class AdminToolshed( AdminGalaxy ):
             if tool_shed_repository.includes_tools:
                 # Handle tool panel alterations.
                 shed_util.remove_from_tool_panel( trans, tool_shed_repository, shed_tool_conf, uninstall=remove_from_disk_checked )
+            if tool_shed_repository.includes_data_managers:
+                shed_util.remove_from_data_manager( trans.app, tool_shed_repository )
             if tool_shed_repository.includes_datatypes:
                 # Deactivate proprietary datatypes.
                 installed_repository_dict = shed_util.load_installed_datatypes( trans.app, tool_shed_repository, repository_install_dir, deactivate=True )
@@ -701,6 +701,9 @@ class AdminToolshed( AdminGalaxy ):
                                              shed_tool_conf=shed_tool_conf,
                                              tool_panel_dict=tool_panel_dict,
                                              new_install=True )
+        if 'data_manager' in metadata_dict:
+            new_data_managers = shed_util.install_data_managers( trans.app, trans.app.config.shed_data_manager_config_file, metadata_dict, shed_config_dict, relative_install_dir,
+                                                                 tool_shed_repository, repository_tools_tups )
         if 'datatypes' in metadata_dict:
             tool_shed_repository.status = trans.model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES
             if not tool_shed_repository.includes_datatypes:
@@ -740,8 +743,8 @@ class AdminToolshed( AdminGalaxy ):
         repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
         changeset_revision = repository.changeset_revision
         metadata = repository.metadata
-        workflows = metadata[ 'workflows' ]
-        tools_metadata = metadata[ 'tools' ]
+        workflows = metadata.get( 'workflows', [] )
+        tools_metadata = metadata.get( 'tools', [] )
         workflow_dict = None
         for workflow_data_tuple in workflows:
             # The value of workflow_data_tuple is ( relative_path_to_workflow_file, exported_workflow_dict ).
@@ -898,8 +901,9 @@ class AdminToolshed( AdminGalaxy ):
             if cloned_ok:
                 if reinstalling:
                     # Since we're reinstalling the repository we need to find the latest changeset revision to which is can be updated.
-                    current_changeset_revision, current_ctx_rev, includes_tools, has_repository_dependencies = \
-                        shed_util.get_update_to_changeset_revision_and_ctx_rev( trans, tool_shed_repository )
+                    changeset_revision_dict = shed_util.get_update_to_changeset_revision_and_ctx_rev( trans, tool_shed_repository )
+                    current_changeset_revision = changeset_revision_dict.get( 'changeset_revision', None )
+                    current_ctx_rev = changeset_revision_dict.get( 'ctx_rev', None )
                     if current_ctx_rev != ctx_rev:
                         repo = hg.repository( suc.get_configured_ui(), path=os.path.abspath( install_dir ) )
                         shed_util.pull_repository( repo, repository_clone_url, current_changeset_revision )
@@ -1362,7 +1366,7 @@ class AdminToolshed( AdminGalaxy ):
                 containers_dicts.append( containers_dict )
             # Merge all containers into a single container.
             containers_dict = shed_util.merge_containers_dicts_for_new_install( containers_dicts )
-        # Handle tool dependencies chack box.
+        # Handle tool dependencies check box.
         if trans.app.config.tool_dependency_dir is None:
             if includes_tool_dependencies:
                 message = "Tool dependencies defined in this repository can be automatically installed if you set the value of your <b>tool_dependency_dir</b> "
@@ -1561,6 +1565,7 @@ class AdminToolshed( AdminGalaxy ):
         Galaxy database will not be used since it is outdated.
         """
         message = ''
+        status = 'done'
         repository_id = kwd.get( 'id', None )
         latest_changeset_revision = kwd.get( 'latest_changeset_revision', None )
         latest_ctx_rev = kwd.get( 'latest_ctx_rev', None )
@@ -1575,19 +1580,36 @@ class AdminToolshed( AdminGalaxy ):
             encoded_updated_repo_info_dict = kwd.get( 'updated_repo_info_dict', None )
             updated_repo_info_dict = encoding_util.tool_shed_decode( encoded_updated_repo_info_dict )
             readme_files_dict = updated_repo_info_dict.get( 'readme_files_dict', None )
+            includes_data_managers = updated_repo_info_dict.get( 'includes_data_managers', False )
+            includes_datatypes = updated_repo_info_dict.get( 'includes_datatypes', False )
             includes_tools = updated_repo_info_dict.get( 'includes_tools', False )
+            includes_workflows = updated_repo_info_dict.get( 'includes_workflows', False )
             has_repository_dependencies = updated_repo_info_dict.get( 'has_repository_dependencies', False )
             includes_tool_dependencies = updated_repo_info_dict.get( 'includes_tool_dependencies', False )
             repo_info_dict = updated_repo_info_dict[ 'repo_info_dict' ]
         else:
             # There are no updates available from the tool shed for the repository, so use it's locally stored metadata.
+            has_repository_dependencies = False
+            includes_data_managers = False
+            includes_datatypes = False
+            includes_tool_dependencies = False
+            includes_tools = False
+            includes_workflows = False
+            readme_files_dict = None
+            tool_dependencies = None
             if metadata:
+                if 'data_manager' in metadata:
+                    includes_data_managers = True
+                if 'datatypes' in metadata:
+                    includes_datatypes = True
+                if 'tools' in metadata:
+                    includes_tools = True
+                if 'tool_dependencies' in metadata:
+                    includes_tool_dependencies = True
+                if 'workflows' in metadata:
+                    includes_workflows = True
                 readme_files_dict = suc.build_readme_files_dict( metadata )
                 tool_dependencies = metadata.get( 'tool_dependencies', None )
-            else:
-                readme_files_dict = None
-                tool_dependencies = None
-            includes_tool_dependencies = tool_shed_repository.includes_tool_dependencies
             repository_dependencies = self.get_repository_dependencies( trans=trans,
                                                                         repository_id=repository_id,
                                                                         repository_name=tool_shed_repository.name,
@@ -1610,33 +1632,39 @@ class AdminToolshed( AdminGalaxy ):
             has_repository_dependencies = True
         else:
             has_repository_dependencies = False
-        # Get the location in the tool panel in which the tool was originally loaded.
-        if 'tool_panel_section' in metadata:
-            tool_panel_dict = metadata[ 'tool_panel_section' ]
-            if tool_panel_dict:
-                if shed_util.panel_entry_per_tool( tool_panel_dict ):
-                    # The following forces everything to be loaded into 1 section (or no section) in the tool panel.
-                    tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
-                    tool_section_dict = tool_section_dicts[ 0 ]
-                    original_section_name = tool_section_dict[ 'name' ]
+        if includes_tools:
+            # Get the location in the tool panel in which the tools were originally loaded.
+            if 'tool_panel_section' in metadata:
+                tool_panel_dict = metadata[ 'tool_panel_section' ]
+                if tool_panel_dict:
+                    if shed_util.panel_entry_per_tool( tool_panel_dict ):
+                        # The following forces everything to be loaded into 1 section (or no section) in the tool panel.
+                        tool_section_dicts = tool_panel_dict[ tool_panel_dict.keys()[ 0 ] ]
+                        tool_section_dict = tool_section_dicts[ 0 ]
+                        original_section_name = tool_section_dict[ 'name' ]
+                    else:
+                        original_section_name = tool_panel_dict[ 'name' ]
                 else:
-                    original_section_name = tool_panel_dict[ 'name' ]
+                    original_section_name = ''
             else:
                 original_section_name = ''
+            tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
+            no_changes_check_box = CheckboxField( 'no_changes', checked=True )
+            if original_section_name:
+                message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " \
+                    % ( tool_shed_repository.name, original_section_name )
+                message += "Uncheck the <b>No changes</b> check box and select a different tool panel section to load the tools in a "
+                message += "different section in the tool panel.  "
+                status = 'warning'
+            else:
+                message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % tool_shed_repository.name
+                message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section.  "
+                status = 'warning'
         else:
+            no_changes_check_box = None
             original_section_name = ''
-        tool_panel_section_select_field = build_tool_panel_section_select_field( trans )
-        no_changes_check_box = CheckboxField( 'no_changes', checked=True )
-        if original_section_name:
-            message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel section <b>%s</b>.  " \
-                % ( tool_shed_repository.name, original_section_name )
-            message += "Uncheck the <b>No changes</b> check box and select a different tool panel section to load the tools in a "
-            message += "different section in the tool panel.  "
-            status = 'warning'
-        else:
-            message += "The tools contained in your <b>%s</b> repository were last loaded into the tool panel outside of any sections.  " % tool_shed_repository.name
-            message += "Uncheck the <b>No changes</b> check box and select a tool panel section to load the tools into that section.  "
-            status = 'warning'
+            tool_panel_section_select_field = None
+        shed_tool_conf_select_field = build_shed_tool_conf_select_field( trans )
         containers_dict = shed_util.populate_containers_dict_for_new_install( trans=trans,
                                                                               tool_shed_url=tool_shed_url,
                                                                               tool_path=tool_path,
@@ -1664,12 +1692,17 @@ class AdminToolshed( AdminGalaxy ):
                                     repository=tool_shed_repository,
                                     no_changes_check_box=no_changes_check_box,
                                     original_section_name=original_section_name,
+                                    includes_data_managers=includes_data_managers,
+                                    includes_datatypes=includes_datatypes,
+                                    includes_tools=includes_tools,
                                     includes_tool_dependencies=includes_tool_dependencies,
+                                    includes_workflows=includes_workflows,
                                     has_repository_dependencies=has_repository_dependencies,
                                     install_repository_dependencies_check_box=install_repository_dependencies_check_box,
                                     install_tool_dependencies_check_box=install_tool_dependencies_check_box,
                                     containers_dict=containers_dict,
                                     tool_panel_section_select_field=tool_panel_section_select_field,
+                                    shed_tool_conf_select_field=shed_tool_conf_select_field,
                                     encoded_repo_info_dict=encoding_util.tool_shed_encode( repo_info_dict ),
                                     repo_info_dict=repo_info_dict,
                                     message=message,

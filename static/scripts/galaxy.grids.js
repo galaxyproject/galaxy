@@ -4,18 +4,6 @@
 // not appended to the identifier of a nested array.
 jQuery.ajaxSettings.traditional = true;
 
-// Initialize grid objects on load.
-$(document).ready(function() {
-    init_grid_elements();
-    init_grid_controls();
-    
-    // Initialize text filters to select text on click and use normal font when user is typing.
-    $('input[type=text]').each(function() {
-        $(this).click(function() { $(this).select(); } )
-               .keyup(function () { $(this).css("font-style", "normal"); });
-    });
-});
-
 /**
  * A Galaxy grid.
  */
@@ -48,7 +36,7 @@ var Grid = Backbone.Model.extend({
         // Update URL arg with new condition.            
         if (append) {
             // Update or append value.
-            var cur_val = this.attributes.key,
+            var cur_val = this.attributes.filters[key],
                 new_val;
             if (cur_val === null || cur_val === undefined) {
                 new_val = value;

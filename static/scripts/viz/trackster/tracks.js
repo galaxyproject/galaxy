@@ -1427,11 +1427,12 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         
         // -- Drawing code --
         
-        // Calculate resolution in both pixels/base and bases/pixel; round bases/pixels for tile calculations.
-        // TODO: require minimum difference in new resolution to update?
+        // Calculate resolution in both pixels/base and bases/pixel.
+        // TODO: require minimum difference in new resolution to update? This 
+        // would help alleviate issues when window is being resized.
         this.resolution_b_px = (this.high - this.low) / this.viewport_container.width();
-        this.resolution_px_b = this.viewport_container.width() / (this.high - this.low);
-                    
+        this.resolution_px_b = 1 / this.resolution_b_px;
+        
         // Overview
         var left_px = ( this.low / (this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
         var width_px = ( (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
@@ -2221,6 +2222,14 @@ var Track = function(view, container, obj_dict) {
                          obj_dict.data_manager : 
                          new visualization.GenomeDataManager({
                              dataset: this.dataset,
+                             // HACK: simulate 'genome' attributes from view for now.
+                             // View should eventually use Genome object.
+                             genome: new visualization.Genome({
+                                key: view.dbkey,
+                                chroms_info: {
+                                    chrom_info: view.chrom_data
+                                }
+                             }),
                              data_mode_compatible: this.data_and_mode_compatible,
                              can_subset: this.can_subset
                          }));
@@ -2906,6 +2915,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             if ( is_deferred( seq_data ) ) {
                 can_draw_now = false;
             }
+            else {
+                // Sequence data is available, subset to get only data in region.
+                seq_data = view.reference_track.data_manager.subset_entry(seq_data, region);
+            }
         }
                 
         // If we can draw now, do so.
@@ -3431,7 +3444,8 @@ var ReferenceTrack = function (view) {
     this.data_url = reference_url + "/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
     this.data_manager = new visualization.ReferenceTrackDataManager({
-        data_url: this.data_url
+        data_url: this.data_url,
+        can_subset: this.can_subset
     });
     this.hide_contents();
 };
@@ -3447,41 +3461,37 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     can_draw: Drawable.prototype.can_draw,
 
     /**
-     * Only retrieves data and draws tile if reference data can be displayed.
+     * Retrieves data and draws tile if reference data can be displayed.
      */
     draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
         if (w_scale > this.view.canvas_manager.char_width_px) {
+             this.tiles_div.show();
             return TiledTrack.prototype.draw_helper.call(this, force, region, resolution, parent_element, w_scale, kwargs);
         }
         else {
-            this.hide_contents();
+             this.tiles_div.hide();
             return null;
         }
     },
 
+    can_subset: function(data) { return true; },
+
     /**
      * Draw ReferenceTrack tile.
      */
-    draw_tile: function(seq, ctx, mode, resolution, region, w_scale) {
-        var track = this;        
+    draw_tile: function(data, ctx, mode, resolution, region, w_scale) {
+        // Try to subset data.
+        var subset = this.data_manager.subset_entry(data, region),
+            seq_data = subset.data;
         
-        if (w_scale > this.view.canvas_manager.char_width_px) {
-            if (seq.data === null) {
-                this.hide_contents();
-                return;
-            }
-            var canvas = ctx.canvas;
-            ctx.font = ctx.canvas.manager.default_font;
-            ctx.textAlign = "center";
-            seq = seq.data;
-            for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                var c_start = Math.floor(c * w_scale);
-                ctx.fillText(seq[c], c_start, 10);
-            }
-            this.show_contents();
-            return new Tile(track, region, resolution, canvas, seq);
+        // Draw sequence data.
+        var canvas = ctx.canvas;
+        ctx.font = ctx.canvas.manager.default_font;
+        ctx.textAlign = "center";            
+        for (var c = 0, str_len = seq_data.length; c < str_len; c++) {
+            ctx.fillText(seq_data[c], Math.floor(c * w_scale), 10);
         }
-        this.hide_contents();
+        return new Tile(this, region, resolution, canvas, subset);
     }
 });
 

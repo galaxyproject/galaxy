@@ -34,10 +34,14 @@ class TestFreebayesRepository( ShedTwillTestCase ):
                                                     category_id=self.security.encode_id( category.id ), 
                                                     strings_displayed=[] )
         self.upload_file( repository, 
-                          'freebayes/freebayes.xml', 
+                          filename='freebayes/freebayes.xml', 
+                          filepath=None,
                           valid_tools_only=False,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded the tool xml.',
                           strings_displayed=[ 'Metadata may have been defined', 'This file requires an entry', 'tool_data_table_conf' ], 
-                          commit_message='Uploaded the tool xml.' )
+                          strings_not_displayed=[] )
         self.display_manage_repository_page( repository, strings_displayed=[ 'Invalid tools' ], strings_not_displayed=[ 'Valid tools' ] )
         tip = self.get_repository_tip( repository )
         self.check_repository_invalid_tools_for_changeset_revision( repository, 
@@ -47,10 +51,14 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         '''Upload the missing tool_data_table_conf.xml.sample file to the repository.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
-                          'freebayes/tool_data_table_conf.xml.sample', 
+                          filename='freebayes/tool_data_table_conf.xml.sample', 
+                          filepath=None,
                           valid_tools_only=False,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded the tool data table sample file.',
                           strings_displayed=[], 
-                          commit_message='Uploaded the tool data table sample file.' )
+                          strings_not_displayed=[] )
         self.display_manage_repository_page( repository, strings_displayed=[ 'Invalid tools' ], strings_not_displayed=[ 'Valid tools' ] )
         tip = self.get_repository_tip( repository )
         self.check_repository_invalid_tools_for_changeset_revision( repository, 
@@ -60,25 +68,53 @@ class TestFreebayesRepository( ShedTwillTestCase ):
         '''Upload the missing sam_fa_indices.loc.sample file to the repository.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
-                          'freebayes/sam_fa_indices.loc.sample', 
+                          filename='freebayes/sam_fa_indices.loc.sample', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded tool data table .loc file.',
                           strings_displayed=[], 
-                          commit_message='Uploaded tool data table .loc file.' )
-    def test_0025_upload_invalid_tool_dependency_xml( self ):
+                          strings_not_displayed=[] )
+    def test_0025_upload_malformed_tool_dependency_xml( self ):
+        '''Upload tool_dependencies.xml with bad characters in the readme tag.'''
+        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        self.upload_file( repository, 
+                          filename=os.path.join( 'freebayes', 'malformed_tool_dependencies', 'tool_dependencies.xml' ), 
+                          filepath=None,
+                          valid_tools_only=False,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded malformed tool dependency XML.',
+                          strings_displayed=[ 'Exception attempting to parse tool_dependencies.xml', 'not well-formed' ], 
+                          strings_not_displayed=[] )
+    def test_0030_upload_invalid_tool_dependency_xml( self ):
         '''Upload tool_dependencies.xml defining version 0.9.5 of the freebayes package.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
-                          os.path.join( 'freebayes', 'invalid_tool_dependencies', 'tool_dependencies.xml' ),
-                          strings_displayed=[ 'Name, version and type from a tool requirement tag does not match' ], 
-                          commit_message='Uploaded invalid tool dependency XML.' )
-    def test_0030_upload_valid_tool_dependency_xml( self ):
+                          filename=os.path.join( 'freebayes', 'invalid_tool_dependencies', 'tool_dependencies.xml' ), 
+                          filepath=None,
+                          valid_tools_only=False,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded invalid tool dependency XML.',
+                          strings_displayed=[ 'The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool configuration' ], 
+                          strings_not_displayed=[] )
+    def test_0035_upload_valid_tool_dependency_xml( self ):
         '''Upload tool_dependencies.xml defining version 0.9.4_9696d0ce8a962f7bb61c4791be5ce44312b81cf8 of the freebayes package.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.upload_file( repository, 
-                          os.path.join( 'freebayes', 'tool_dependencies.xml' ),
-                          commit_message='Uploaded valid tool dependency XML.' )
-    def test_0035_verify_tool_dependencies( self ):
+                          filename=os.path.join( 'freebayes', 'tool_dependencies.xml' ), 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded valid tool dependency XML.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
+    def test_0040_verify_tool_dependencies( self ):
         '''Verify that the uploaded tool_dependencies.xml specifies the correct package versions.'''
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
         self.display_manage_repository_page( repository, 
-                                             strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Valid tools' ],
+                                             strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Valid tools', 'package' ],
                                              strings_not_displayed=[ 'Invalid tools' ] )

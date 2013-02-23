@@ -196,7 +196,18 @@ def restore_text(text):
     return text
 
 def sanitize_text(text):
-    """Restricts the characters that are allowed in a text"""
+    """
+    Restricts the characters that are allowed in text; accepts both strings
+    and lists of strings.
+    """
+    if isinstance( text, basestring ):
+        return _sanitize_text_helper(text)
+    elif isinstance( text, list ):
+        return [ _sanitize_text_helper(t) for t in text ]
+
+def _sanitize_text_helper(text):
+    """Restricts the characters that are allowed in a string"""
+
     out = []
     for c in text:
         if c in valid_chars:
@@ -566,6 +577,22 @@ def relpath( path, start = None ):
     if not rel_list:
         return curdir
     return join( *rel_list )
+
+def relativize_symlinks( path, start=None, followlinks=False):
+    for root, dirs, files in os.walk( path, followlinks=followlinks ):
+        rel_start = None
+        for file_name in files:
+            symlink_file_name = os.path.join( root, file_name )
+            if os.path.islink( symlink_file_name ):
+                symlink_target = os.readlink( symlink_file_name )
+                if rel_start is None:
+                    if start is None:
+                        rel_start = root
+                    else:
+                        rel_start = start
+                rel_path = relpath( symlink_target, rel_start )
+                os.remove( symlink_file_name )
+                os.symlink( rel_path, symlink_file_name )
 
 def stringify_dictionary_keys( in_dict ):
     #returns a new dictionary

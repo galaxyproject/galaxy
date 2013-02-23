@@ -163,12 +163,12 @@
     </script>
 </%def>
 
-<%def name="render_sharable_str( repository )">
+<%def name="render_sharable_str( repository, changeset_revision=None )">
     <%
-        from galaxy.util.shed_util_common import generate_citable_link_for_repository_in_tool_shed
-        citable_str = generate_citable_link_for_repository_in_tool_shed( trans, repository )
+        from galaxy.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
+        sharable_link = generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=changeset_revision )
     %>
-    ${citable_str}
+    ${sharable_link}
 </%def>
 
 <%def name="render_clone_str( repository )">
@@ -224,6 +224,10 @@
                         folder_label = "%s<i> - installation of these additional repositories is required</i>" % folder_label
                     if trans.webapp.name == 'galaxy':
                         col_span_str = 'colspan="4"'
+                elif folder.label == 'Invalid repository dependencies':
+                    folder_label = "%s<i> - click the repository dependency to see why it is invalid</i>" % folder_label
+                elif folder.label == 'Invalid tool dependencies':
+                    folder_label = "%s<i> - click the tool dependency to see why it is invalid</i>" % folder_label
                 elif folder.label == 'Valid tools':
                     col_span_str = 'colspan="3"'
                     if folder.description:
@@ -244,6 +248,14 @@
                     else:
                         folder_label = "%s<i> - click the name to view an SVG image of the workflow</i>" % folder_label
                     col_span_str = 'colspan="4"'
+                elif folder.valid_data_managers:
+                    if folder.description:
+                        folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
+                    col_span_str = 'colspan="3"'
+                elif folder.invalid_data_managers:
+                    if folder.description:
+                        folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
+                    col_span_str = 'colspan="2"'
             %>
             <td ${col_span_str} style="padding-left: ${folder_pad}px;">
                 <span class="expandLink folder-${encoded_id}-click">
@@ -266,9 +278,15 @@
     %for readme in folder.readme_files:
         ${render_readme( readme, pad, my_row, row_counter )}
     %endfor
+    %for invalid_repository_dependency in folder.invalid_repository_dependencies:
+        ${render_invalid_repository_dependency( invalid_repository_dependency, pad, my_row, row_counter )}
+    %endfor
     %for index, repository_dependency in enumerate( folder.repository_dependencies ):
         <% row_is_header = index == 0 %>
         ${render_repository_dependency( repository_dependency, pad, my_row, row_counter, row_is_header )}
+    %endfor
+    %for invalid_tool_dependency in folder.invalid_tool_dependencies:
+        ${render_invalid_tool_dependency( invalid_tool_dependency, pad, my_row, row_counter )}
     %endfor
     %for index, tool_dependency in enumerate( folder.tool_dependencies ):
         <% row_is_header = index == 0 %>
@@ -295,6 +313,18 @@
             ${render_datatype( datatype, pad, my_row, row_counter, row_is_header )}
         %endfor
     %endif
+    %if folder.valid_data_managers:
+        %for index, data_manager in enumerate( folder.valid_data_managers ):
+            <% row_is_header = index == 0 %>
+            ${render_valid_data_manager( data_manager, pad, my_row, row_counter, row_is_header )}
+        %endfor
+    %endif
+    %if folder.invalid_data_managers:
+        %for index, data_manager in enumerate( folder.invalid_data_managers ):
+            <% row_is_header = index == 0 %>
+            ${render_invalid_data_manager( data_manager, pad, my_row, row_counter, row_is_header )}
+        %endfor
+    %endif
 </%def>
 
 <%def name="render_datatype( datatype, pad, parent, row_counter, row_is_header=False )">
@@ -314,6 +344,70 @@
         <${cell_type}>${datatype.type | h}</${cell_type}>
         <${cell_type}>${datatype.mimetype | h}</${cell_type}>
         <${cell_type}>${datatype.subclass | h}</${cell_type}>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_valid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( data_manager.id )
+        if row_is_header:
+            cell_type = 'th'
+        else:
+            cell_type = 'td'
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.name | h}</${cell_type}>
+        <${cell_type}>${data_manager.version | h}</${cell_type}>
+        <${cell_type}>${data_manager.data_tables | h}</${cell_type}>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_invalid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( data_manager.id )
+        if row_is_header:
+            cell_type = 'th'
+        else:
+            cell_type = 'td'
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.index | h}</${cell_type}>
+        <${cell_type}>${data_manager.error | h}</${cell_type}>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_invalid_repository_dependency( invalid_repository_dependency, pad, parent, row_counter )">
+    <%
+        encoded_id = trans.security.encode_id( invalid_repository_dependency.id )
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            ${ invalid_repository_dependency.error | h }
+        </td>
     </tr>
     <%
         my_row = row_counter.count
@@ -344,10 +438,9 @@
     %>
 </%def>
 
-<%def name="render_readme( readme, pad, parent, row_counter )">
+<%def name="render_invalid_tool_dependency( invalid_tool_dependency, pad, parent, row_counter )">
     <%
-        from galaxy.util.shed_util_common import to_safe_string
-        encoded_id = trans.security.encode_id( readme.id )
+        encoded_id = trans.security.encode_id( invalid_tool_dependency.id )
     %>
     <tr class="datasetRow"
         %if parent is not None:
@@ -355,7 +448,39 @@
         %endif
         id="libraryItem-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            ${ to_safe_string( readme.text, to_html=True ) }
+            ${ invalid_tool_dependency.error | h }
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_readme( readme, pad, parent, row_counter )">
+    <%
+        from galaxy.util.shed_util_common import to_safe_string
+        encoded_id = trans.security.encode_id( readme.id )
+    %>
+    <style type="text/css">
+        #readme_table{ table-layout:fixed;
+                       width:100%;
+                       overflow-wrap:normal;
+                       overflow:hidden;
+                       border:0px; 
+                       word-break:keep-all;
+                       word-wrap:break-word;
+                       line-break:strict; }
+    </style>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table id="readme_table">
+                <tr><td>${ to_safe_string( readme.text, to_html=True ) }</td></tr>
+            </table>
         </td>
     </tr>
     <%
@@ -515,13 +640,17 @@
             ${version_str | h}
         </${cell_type}>
         <${cell_type}>${tool_dependency.type | h}</${cell_type}>
-        %if trans.webapp.name == 'galaxy':
-            %if is_missing:
-                <${cell_type}>${tool_dependency.installation_status | h}</${cell_type}>
-            %elif tool_dependency.install_dir:
-                <${cell_type}>${tool_dependency.install_dir | h}</${cell_type}>
+        <${cell_type}>
+            %if trans.webapp.name == 'galaxy':
+                %if is_missing:
+                    ${tool_dependency.installation_status | h}
+                %elif tool_dependency.install_dir:
+                    ${tool_dependency.install_dir | h}
+                %endif
+            %else:
+                ${tool_dependency.is_orphan | h}
             %endif
-        %endif
+        </${cell_type}>
     </tr>
     <%
         my_row = row_counter.count
@@ -581,15 +710,26 @@
         
         datatypes_root_folder = containers_dict.get( 'datatypes', None )
         invalid_tools_root_folder = containers_dict.get( 'invalid_tools', None )
+        invalid_repository_dependencies_root_folder = containers_dict.get( 'invalid_repository_dependencies', None )
         readme_files_root_folder = containers_dict.get( 'readme_files', None )
         repository_dependencies_root_folder = containers_dict.get( 'repository_dependencies', None )
         missing_repository_dependencies_root_folder = containers_dict.get( 'missing_repository_dependencies', None )
+        invalid_tool_dependencies_root_folder = containers_dict.get( 'invalid_tool_dependencies', None )
         tool_dependencies_root_folder = containers_dict.get( 'tool_dependencies', None )
         missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
         valid_tools_root_folder = containers_dict.get( 'valid_tools', None )
         workflows_root_folder = containers_dict.get( 'workflows', None )
+        valid_data_managers_root_folder = containers_dict.get( 'valid_data_managers', None )
+        invalid_data_managers_root_folder = containers_dict.get( 'invalid_data_managers', None )
         
         has_contents = datatypes_root_folder or invalid_tools_root_folder or valid_tools_root_folder or workflows_root_folder
+        has_dependencies = \
+            invalid_repository_dependencies_root_folder or \
+            invalid_tool_dependencies_root_folder or \
+            missing_repository_dependencies_root_folder or \
+            repository_dependencies_root_folder or \
+            tool_dependencies_root_folder or \
+            missing_tool_dependencies_root_folder
 
         class RowCounter( object ):
             def __init__( self ):
@@ -611,10 +751,17 @@
             </div>
         </div>
     %endif
-    %if missing_repository_dependencies_root_folder or repository_dependencies_root_folder or tool_dependencies_root_folder or missing_tool_dependencies_root_folder:
+    %if has_dependencies:
         <div class="toolForm">
             <div class="toolFormTitle">Dependencies of this repository</div>
             <div class="toolFormBody">
+                %if invalid_repository_dependencies_root_folder:
+                    <p/>
+                    <% row_counter = RowCounter() %>
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_repository_dependencies">
+                        ${render_folder( invalid_repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    </table>
+                %endif
                 %if missing_repository_dependencies_root_folder:
                     <p/>
                     <% row_counter = RowCounter() %>
@@ -627,6 +774,13 @@
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="repository_dependencies">
                         ${render_folder( repository_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    </table>
+                %endif
+                %if invalid_tool_dependencies_root_folder:
+                    <p/>
+                    <% row_counter = RowCounter() %>
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tool_dependencies">
+                        ${render_folder( invalid_tool_dependencies_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
                 %if tool_dependencies_root_folder:
@@ -663,6 +817,20 @@
                     <% row_counter = RowCounter() %>
                     <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tools">
                         ${render_folder( invalid_tools_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    </table>
+                %endif
+                %if valid_data_managers_root_folder:
+                    <p/>
+                    <% row_counter = RowCounter() %>
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="valid_tools">
+                        ${render_folder( valid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    </table>
+                %endif
+                %if invalid_data_managers_root_folder:
+                    <p/>
+                    <% row_counter = RowCounter() %>
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="invalid_tools">
+                        ${render_folder( invalid_data_managers_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
                 %if workflows_root_folder:

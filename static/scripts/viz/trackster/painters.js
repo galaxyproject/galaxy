@@ -236,9 +236,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
     // Paint track.
     for (var i = 0, len = data.length; i < len; i++) {
         ctx.fillStyle = ctx.strokeStyle = this.prefs.color;
-        // -1 because LineTrack data uses 1-based coordinate system but painter 
-        // uses 0-based system.
-        x_scaled = Math.round((data[i][0] - view_start - 1) * w_scale);
+        x_scaled = Math.round((data[i][0] - view_start) * w_scale);
         y = data[i][1];
         var top_overflow = false, bot_overflow = false;
         if (y === null) {
@@ -493,8 +491,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
         var 
             feature_uid = feature[0],
             feature_start = feature[1],
-            // -1 because end is not included in feature; see FeaturePainter documentation for details.
-            feature_end = feature[2] - 1,
+            feature_end = feature[2],
             feature_name = feature[3],
             feature_strand = feature[4],
             f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
@@ -613,8 +610,7 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
                     var block = feature_blocks[k],
                         block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                        // -1 because end is not included in feature; see FeaturePainter documentation for details.
-                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - 1 - tile_low) * w_scale)) ),
+                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) ),
                         last_block_start, last_block_end;
 
                     // Skip drawing if block not on tile.    
@@ -759,8 +755,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 // Go left if it clips
                 base_offset -= cig_len;
             }
-            // -1 for feature start because data is using 1-based offset but display is 0-based.
-            var seq_start = (feature_start - 1) + base_offset,
+            var seq_start = feature_start + base_offset,
                 s_start = Math.floor( Math.max(0, (seq_start - tile_low) * w_scale) ),
                 s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low) * w_scale) );
             
@@ -782,8 +777,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 case "=": // Equals.
                     if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
                         // Draw.
-                        // -1 b/c sequence data is 1-based but painter is 0-based.
-                        var seq = ref_seq.slice(seq_offset - 1, seq_offset + cig_len);
+                        var seq = ref_seq.slice(seq_offset, seq_offset + cig_len);
                         if (gap > 0) {
                             ctx.fillStyle = block_color;
                             ctx.fillRect(s_start - gap, y_center + 1, s_end - s_start, 9);
@@ -809,6 +803,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                 }
                             }
                         } else {
+                            // Not enough detail to draw sequence data.
                             ctx.fillStyle = block_color;
                             // TODO: This is a pretty hack-ish way to fill rectangle based on mode.
                             ctx.fillRect(s_start, y_center + 4, s_end - s_start, SQUISH_FEATURE_HEIGHT);
@@ -839,8 +834,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     var insert_x_coord = s_start - gap;
                     
                     if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
-                        // -1 b/c sequence data is 1-based but painter is 0-based.
-                        var seq = ref_seq.slice(seq_offset - 1, seq_offset + cig_len);
+                        var seq = ref_seq.slice(seq_offset, seq_offset + cig_len);
                         // Insertion point is between the sequence start and the previous base: (-gap) moves
                         // back from sequence start to insertion point.
                         if (this.prefs.show_insertions) {

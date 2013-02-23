@@ -20,7 +20,7 @@
             </div>
             %if dataset.state == "ok":
                 <div class="row">
-                    <a href="${h.url_for( action='dataset_peek', id=dataset.id )}">Peek</a>
+                    <a href="${h.url_for(controller='mobile', action='dataset_peek', id=dataset.id )}">Peek</a>
                 </div>
             %endif
         </fieldset>

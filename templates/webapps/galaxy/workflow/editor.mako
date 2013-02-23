@@ -93,12 +93,12 @@
                         $(".toolSectionWrapper").find(".toolTitle").hide();
                         if ( data.length != 0 ) {
                             // Map tool ids to element ids and join them.
-                            var s = $.map( data, function( n, i ) { return "#link-" + n; } ).join( ", " );
+                            var s = $.map( data, function( n, i ) { return "link-" + n; } );
                             // First pass to show matching tools and their parents.
-                            $(s).each( function() {
+                            $(s).each( function(index,id) {
                                 // Add class to denote match.
-                                $(this).parent().addClass("search_match");
-                                $(this).parent().show().parent().parent().show().parent().show();
+                                $("[id='"+id+"']").parent().addClass("search_match");
+                                $("[id='"+id+"']").parent().show().parent().parent().show().parent().show();
                             });
                             // Hide labels that have no visible children.
                             $(".toolPanelLabel").each( function() {
@@ -135,14 +135,14 @@
         reset();
         // Load the datatype info
         $.ajax( {
-            url: "${h.url_for( action='get_datatypes' )}",
+            url: "${h.url_for( controller='workflow', action='get_datatypes' )}",
             dataType: "json",
             cache: false,
             success: function( data ) {
                 populate_datatype_info( data );
                 // Load workflow definition
                 $.ajax( {
-                    url: "${h.url_for( action='load_workflow' )}",
+                    url: "${h.url_for( controller='workflow', action='load_workflow' )}",
                     data: { id: "${trans.security.encode_id( stored.id )}", "_": "true" },
                     dataType: 'json',
                     cache: false,
@@ -333,7 +333,7 @@
         });
 
         // Rename async.
-        async_save_text("workflow-name", "workflow-name", "${h.url_for( action='rename_async', id=trans.security.encode_id(stored.id) )}", "new_name");
+        async_save_text("workflow-name", "workflow-name", "${h.url_for( controller='workflow', action='rename_async', id=trans.security.encode_id(stored.id) )}", "new_name");
 
         // Tag async. Simply have the workflow edit element generate a click on the tag element to activate tagging.
         $('#workflow-tag').click( function() {
@@ -341,7 +341,7 @@
             return false;
         });
         // Annotate async.
-        async_save_text("workflow-annotation", "workflow-annotation", "${h.url_for( action='annotate_async', id=trans.security.encode_id(stored.id) )}", "new_annotation", 25, true, 4);
+        async_save_text("workflow-annotation", "workflow-annotation", "${h.url_for( controller='workflow', action='annotate_async', id=trans.security.encode_id(stored.id) )}", "new_annotation", 25, true, 4);
     });
 
     // Global state for the whole workflow
@@ -377,7 +377,7 @@
         canvas_manager.draw_overview();
         workflow.activate_node( node );
         $.ajax( {
-            url: "${h.url_for( action='get_new_module_info' )}",
+            url: "${h.url_for(controller='workflow', action='get_new_module_info' )}",
             data: { type: "tool", tool_id: id, "_": "true" },
             global: false,
             dataType: "json",
@@ -401,7 +401,7 @@
         canvas_manager.draw_overview();
         workflow.activate_node( node );
         $.ajax( {
-            url: "${h.url_for( action='get_new_module_info' )}",
+            url: "${h.url_for(controller='workflow', action='get_new_module_info' )}",
             data: { type: type, "_": "true" },
             dataType: "json",
             success: function( data ) {
@@ -624,7 +624,7 @@
         workflow.rectify_workflow_outputs();
         var savefn = function(callback) {
             $.ajax( {
-                url: "${h.url_for( action='save_workflow' )}",
+                url: "${h.url_for(controller='workflow', action='save_workflow' )}",
                 type: "POST",
                 data: {
                     id: "${trans.security.encode_id( stored.id )}",

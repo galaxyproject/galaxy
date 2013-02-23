@@ -75,6 +75,9 @@ class RemoteUser( object ):
         elif path_info.startswith( '/api/' ):
             # The API handles its own authentication via keys
             return self.app( environ, start_response )
+        elif path_info.startswith( '/user/api_keys' ):
+            # api_keys can be managed when remote_user is in use.
+            pass
         else:
             title = "Access to this Galaxy tool shed is denied"
             message = """

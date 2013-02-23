@@ -94,7 +94,7 @@ from galaxy.util.expressions import ExpressionContext
     </div>
 </%def>
 
-<form method="post" action="${h.url_for( action='editor_form_post' )}">
+<form method="post" action="${h.url_for(controller='workflow', action='editor_form_post' )}">
 
     <div class="toolForm">
         <div class="toolFormTitle">Tool: ${tool.name}</div>

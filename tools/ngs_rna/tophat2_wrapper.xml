@@ -37,8 +37,8 @@
             -r $singlePaired.mate_inner_distance
             --mate-std-dev=$singlePaired.mate_std_dev
             
-            #if str($singlePaired.report_discordant_pairs) == "Yes":
-                --report-discordant-pair-alignments
+            #if str($singlePaired.report_discordant_pairs) == "No":
+                --no-discordant
             #end if
         #end if
 
@@ -138,8 +138,8 @@
                 <param name="mate_std_dev" type="integer" value="20" label="Std. Dev for Distance between Mate Pairs"  help="The standard deviation for the distribution on inner distances between mate pairs."/>
                 <!-- Discordant pairs. -->
                 <param name="report_discordant_pairs" type="select" label="Report discordant pair alignments?">
-                    <option selected="true" value="No">No</option>
-                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                    <option selected="True" value="Yes">Yes</option>
                 </param>
             </when>
         </conditional>

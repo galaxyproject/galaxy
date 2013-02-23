@@ -95,11 +95,11 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
 
     url_dict = {
         ##TODO: into their own MVs
-        'rename'        : h.url_for( controller="/history", action="rename_async",
+        'rename'        : h.url_for( controller="history", action="rename_async",
                             id=encoded_id_template ),
         'tag'           : h.url_for( controller='tag', action='get_tagging_elt_async',
                             item_class=history_class_name, item_id=encoded_id_template ),
-        'annotate'      : h.url_for( controller="/history", action="annotate_async",
+        'annotate'      : h.url_for( controller="history", action="annotate_async",
                             id=encoded_id_template )
     }
 %>
@@ -148,9 +148,9 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
         'delete' : h.url_for( controller='dataset', action='delete_async', dataset_id=encoded_id_template ),
 
         # ................................................................ download links (and associated meta files),
-        'download' : h.url_for( controller='/dataset', action='display',
+        'download' : h.url_for( controller='dataset', action='display',
             dataset_id=encoded_id_template, to_ext=hda_ext_template ),
-        'meta_download' : h.url_for( controller='/dataset', action='get_metadata_file',
+        'meta_download' : h.url_for( controller='dataset', action='get_metadata_file',
             hda_id=encoded_id_template, metadata_name=meta_type_template ),
 
         # ................................................................ primary actions (errors, params, rerun),
@@ -160,7 +160,7 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
             dataset_id=encoded_id_template ),
         'rerun' : h.url_for( controller='tool_runner', action='rerun',
             id=encoded_id_template ),
-        'visualization' : h.url_for( controller='visualization' ),
+        'visualization' : h.url_for( controller='visualization', action='index' ),
 
         # ................................................................ secondary actions (tagging, annotation),
         'tags' : {

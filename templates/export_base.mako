@@ -37,6 +37,7 @@
     self.item_class_name_lc = self.item_class_name.lower()
     self.item_class_plural_name = get_class_plural_display_name( item.__class__ )
     self.item_class_plural_name_lc = self.item_class_plural_name.lower()
+    self.controller = get_controller_name(item)
 %>
 </%def>
 
@@ -77,18 +78,18 @@
     %if item.importable:
         Use this URL to import the ${get_class_display_name( item.__class__ ).lower()} directly into another Galaxy server: 
         <div class="display-url">
-            ${h.url_for( action='for_direct_import', id=trans.security.encode_id( item.id ), qualified=True )}
+            ${h.url_for(controller=self.controller, action='for_direct_import', id=trans.security.encode_id( item.id ), qualified=True )}
         </div>
         (Copy this URL into the box titled 'Workflow URL' in the Import Workflow page.)
     %else:
-        <a href="${h.url_for( action='sharing', id=trans.security.encode_id( item.id ) )}">This  ${get_class_display_name( item.__class__ ).lower()} must be accessible before it can be imported into another Galaxy.</a>
+        <a href="${h.url_for(controller=self.controller, action='sharing', id=trans.security.encode_id( item.id ) )}">This  ${get_class_display_name( item.__class__ ).lower()} must be accessible before it can be imported into another Galaxy.</a>
     %endif
 </%def>
 
 <%def name="render_download_to_file(item)">
     <h3>Download to File</h3>
     
-    <a href="${h.url_for( action='export_to_file', id=trans.security.encode_id( item.id ) )}">
+    <a href="${h.url_for(controller=self.controller, action='export_to_file', id=trans.security.encode_id( item.id ) )}">
         Download ${get_class_display_name( item.__class__ ).lower()} to file so that it can be saved or imported into another Galaxy server.</a>
 </%def>
 
@@ -98,7 +99,7 @@
 
 <%def name="render_footer()">
     <p><br><br>
-    <a href="${h.url_for( action="list" )}">Back to ${self.item_class_plural_name} List</a>
+    <a href="${h.url_for(controller=self.controller, action="list" )}">Back to ${self.item_class_plural_name} List</a>
 </%def>
 
 <%def name="body()">

@@ -7,7 +7,7 @@
     <div class="toolFormBody">
         %if not can_change and not cannot_change and not no_change_needed:
             ## We are sharing histories that contain only public datasets
-            <form name='share' id='share' action="${h.url_for( action='share' )}" method="post" >
+            <form name='share' id='share' action="${h.url_for( controller='history', action='share' )}" method="post" >
                 <div class="form-title-row"><b>Histories to be shared:</b></div>
                 <div class="form-row" style="padding-left: 2em;">
                     <table width="100%">

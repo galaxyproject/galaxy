@@ -18,6 +18,10 @@ from galaxy.tools.imp_exp import load_history_imp_exp_tools
 from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
 from galaxy.openid.providers import OpenIDProviders
+from galaxy.tools.data_manager.manager import DataManagers
+
+import logging
+log = logging.getLogger( __name__ )
 
 class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
@@ -40,6 +44,8 @@ class UniverseApplication( object ):
             self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
         else:
             self.tool_shed_registry = None
+        log.debug( 'self.config.tool_sheds_config: %s, self.tool_shed_registry: %s',
+            self.config.tool_sheds_config, self.tool_shed_registry )
         # Initialize database / check for appropriate schema version.  # If this
         # is a new installation, we'll restrict the tool migration messaging.
         from galaxy.model.migrate.check import create_or_verify_database
@@ -86,6 +92,8 @@ class UniverseApplication( object ):
         self.tool_data_tables.load_from_config_file( config_filename=self.config.shed_tool_data_table_config,
                                                      tool_data_path=self.tool_data_tables.tool_data_path,
                                                      from_shed_config=True )
+        # Initialize the job management configuration
+        self.job_config = jobs.JobConfiguration(self)
         # Initialize the tools, making sure the list of tool configs includes the reserved migrated_tools_conf.xml file.
         tool_configs = self.config.tool_configs
         if self.config.migrated_tools_config not in tool_configs:
@@ -93,6 +101,8 @@ class UniverseApplication( object ):
         self.toolbox = tools.ToolBox( tool_configs, self.config.tool_path, self )
         # Search support for tools
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
+        # Load Data Manager
+        self.data_managers = DataManagers( self )
         # If enabled, poll respective tool sheds to see if updates are available for any installed tool shed repositories.
         if self.config.get_bool( 'enable_tool_shed_check', False ):
             from tool_shed import update_manager

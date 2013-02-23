@@ -2,12 +2,12 @@ from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 
 freebayes_repository_name = 'freebayes_0040'
-freebayes_repository_description = "Galaxy's freebayes tool"
-freebayes_repository_long_description = "Long description of Galaxy's freebayes tool"
+freebayes_repository_description = "Galaxy's freebayes tool for test 0040"
+freebayes_repository_long_description = "Long description of Galaxy's freebayes tool for test 0040"
 
 filtering_repository_name = 'filtering_0040'
-filtering_repository_description = "Galaxy's filtering tool"
-filtering_repository_long_description = "Long description of Galaxy's filtering tool"
+filtering_repository_description = "Galaxy's filtering tool for test 0040"
+filtering_repository_long_description = "Long description of Galaxy's filtering tool for test 0040"
 
 category_name = 'test_0040_repository_circular_dependencies'
 
@@ -42,9 +42,14 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         if self.repository_is_new( repository ):
             running_standalone = True
             self.upload_file( repository, 
-                              'freebayes/freebayes.tar', 
+                              filename='freebayes/freebayes.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded the tool tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded freebayes.tar.' )
+                              strings_not_displayed=[] )
     def test_0015_create_filtering_repository( self ):
         '''Create and populate filtering_0040.'''
         global running_standalone
@@ -60,9 +65,14 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         if self.repository_is_new( repository ):
             running_standalone = True
             self.upload_file( repository, 
-                              'filtering/filtering_1.1.0.tar', 
+                              filename='filtering/filtering_1.1.0.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded the tool tarball for filtering 1.1.0.',
                               strings_displayed=[], 
-                              commit_message='Uploaded filtering.tar.' )
+                              strings_not_displayed=[] )
     def test_0020_create_repository_dependencies( self ):
         '''Set up the filtering and freebayes repository dependencies.'''
         # The dependency structure should look like:
@@ -78,9 +88,14 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                      dependency_description='Filtering 1.1.0 depends on the freebayes repository.' )
             self.upload_file( filtering_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded dependency on freebayes' )
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded dependency on freebayes.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
             freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
             repository_dependencies_path = self.generate_temp_path( 'test_0040', additional_paths=[ 'freebayes' ] )
@@ -88,9 +103,14 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                      dependency_description='Freebayes depends on the filtering repository.' )
             self.upload_file( freebayes_repository, 
-                              'repository_dependencies.xml', 
+                              filename='repository_dependencies.xml', 
                               filepath=repository_dependencies_path, 
-                              commit_message='Uploaded dependency on filtering' )
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded dependency on filtering.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
     def test_0025_install_freebayes_repository( self ):
         '''Install freebayes with blank tool panel section, without tool dependencies but with repository dependencies.'''
         self.galaxy_logout()
@@ -109,7 +129,7 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         self.uninstall_repository( installed_freebayes_repository, remove_from_disk=True )
         test_db_util.ga_refresh( installed_freebayes_repository )
         self.check_galaxy_repository_tool_panel_section( installed_freebayes_repository, '' )
-        strings_displayed = [ 'Missing repository', 'freebayes' ]
+        strings_displayed = [ 'Missing repository', 'freebayes', 'filtering_0040', 'user1', "Galaxy's filtering tool for test 0040" ]
         self.display_installed_repository_manage_page( installed_filtering_repository, strings_displayed=strings_displayed )
         self.check_galaxy_repository_db_status( freebayes_repository_name, 
                                                 common.test_user_1_name, 
@@ -130,7 +150,7 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         self.uninstall_repository( installed_filtering_repository, remove_from_disk=True )
         test_db_util.ga_refresh( installed_filtering_repository )
         self.check_galaxy_repository_tool_panel_section( installed_filtering_repository, '' )
-        strings_displayed = [ 'Missing repository', 'filtering' ]
+        strings_displayed = [ 'Missing repository', 'filtering', 'freebayes_0040', 'user1', "Galaxy's freebayes tool for test 0040" ]
         self.display_installed_repository_manage_page( installed_freebayes_repository, strings_displayed=strings_displayed )
         self.check_galaxy_repository_db_status( filtering_repository_name, 
                                                 common.test_user_1_name, 
@@ -142,8 +162,8 @@ class TestInstallingCircularDependencies( ShedTwillTestCase ):
         self.uninstall_repository( installed_freebayes_repository, remove_from_disk=True )
         test_db_util.ga_refresh( installed_freebayes_repository )
         self.check_galaxy_repository_tool_panel_section( installed_freebayes_repository, 'freebayes' )
-        strings_displayed = [ 'Missing repository', 'freebayes' ]
+        strings_displayed = [ 'Missing repository', 'freebayes', 'filtering_0040', 'user1', "Galaxy's filtering tool for test 0040" ]
         self.display_installed_repository_manage_page( installed_filtering_repository, strings_displayed=strings_displayed )
-        self.check_galaxy_repository_db_status( freebayes_repository_name, 
-                                                common.test_user_1_name, 
+        self.check_galaxy_repository_db_status( 'freebayes_0040', 
+                                                'user1', 
                                                 'Uninstalled' )

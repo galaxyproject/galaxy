@@ -33,31 +33,7 @@
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
-    ${h.css( "jquery.rating" )}
-    <style type="text/css">
-    ul.fileBrowser,
-    ul.toolFile {
-        margin-left: 0;
-        padding-left: 0;
-        list-style: none;
-    }
-    ul.fileBrowser {
-        margin-left: 20px;
-    }
-    .fileBrowser li,
-    .toolFile li {
-        padding-left: 20px;
-        background-repeat: no-repeat;
-        background-position: 0;
-        min-height: 20px;
-    }
-    .toolFile li {
-        background-image: url( ${h.url_for( '/static/images/silk/page_white_compressed.png' )} );
-    }
-    .fileBrowser li {
-        background-image: url( ${h.url_for( '/static/images/silk/page_white.png' )} );
-    }
-    </style>
+    ${h.css('base','panel_layout','jquery.rating')}
 </%def>
 
 <%def name="javascripts()">

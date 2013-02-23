@@ -20,6 +20,9 @@ log = logging.getLogger(__name__)
 
 class Tabular( data.Text ):
     """Tab delimited data"""
+
+    # All tabular data is chunkable.
+    CHUNKABLE = True
     CHUNK_SIZE = 50000
 
     """Add metadata elements"""

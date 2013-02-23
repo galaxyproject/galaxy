@@ -156,7 +156,7 @@ class UploadController( BaseUIController ):
                         else:
                             source_type = "file"
                             source = uploaded_file_filename
-                        message = "The %s '%s' has been successfully%suploaded to the repository.  " % ( source_type, source, uncompress_str )
+                        message = "The %s <b>%s</b> has been successfully%suploaded to the repository.  " % ( source_type, source, uncompress_str )
                         if istar and ( undesirable_dirs_removed or undesirable_files_removed ):
                             items_removed = undesirable_dirs_removed + undesirable_files_removed
                             message += "  %d undesirable items (.hg .svn .git directories, .DS_Store, hgrc files, etc) were removed from the archive.  " % items_removed
@@ -167,18 +167,30 @@ class UploadController( BaseUIController ):
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
                         kwd[ 'message' ] = message
                         suc.set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
+                    if repository.metadata_revisions:
+                        # A repository's metadata revisions are order descending by update_time, so the zeroth revision will be the tip just after an upload.
+                        metadata_dict = repository.metadata_revisions[0].metadata
+                    else:
+                        metadata_dict = {}
                     # Provide a warning message if a tool_dependencies.xml file is provided, but tool dependencies weren't loaded due to a requirement tag mismatch
-                    # or some other problem.
-                    if suc.get_config_from_disk( 'tool_dependencies.xml', repo_dir ):
-                        if repository.metadata_revisions:
-                            # A repository's metadata revisions are order descending by update_time, so the zeroth revision will be the tip just after an upload.
-                            metadata_dict = repository.metadata_revisions[0].metadata
-                        else:
-                            metadata_dict = {}
-                        if suc.has_orphan_tool_dependencies_in_tool_shed( metadata_dict ):
-                            message += 'Name, version and type from a tool requirement tag does not match the information in the "tool_dependencies.xml file", '
-                            message += 'so one or more of the defined tool dependencies are considered orphans within this repository.'
-                            status = 'warning'
+                    # or some other problem.  Tool dependency definitions can define orphan tool dependencies (no relationship to any tools contained in the repository),
+                    # so warning messages are important because orphans are always valid.  The repository owner must be warned in case they did not intend to define an
+                    # orphan dependency, but simply provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
+                    # Handle messaging for orphan tool dependencies.
+                    orphan_message = suc.generate_message_for_orphan_tool_dependencies( metadata_dict )
+                    if orphan_message:
+                        message += orphan_message
+                        status = 'warning'
+                    # Handle messaging for invalid tool dependencies.
+                    invalid_tool_dependencies_message = suc.generate_message_for_invalid_tool_dependencies( metadata_dict )
+                    if invalid_tool_dependencies_message:
+                        message += invalid_tool_dependencies_message
+                        status = 'error'
+                    # Handle messaging for invalid repository dependencies.
+                    invalid_repository_dependencies_message = suc.generate_message_for_invalid_repository_dependencies( metadata_dict )
+                    if invalid_repository_dependencies_message:
+                        message += invalid_repository_dependencies_message
+                        status = 'error'
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                     suc.reset_tool_data_tables( trans.app )
                     trans.response.send_redirect( web.url_for( controller='repository',

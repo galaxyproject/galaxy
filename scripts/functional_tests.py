@@ -4,9 +4,11 @@ import os, sys, shutil, tempfile, re
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
-new_path = [ os.path.join( cwd, "lib" ) ]
+new_path = [ os.path.join( cwd, "lib" ), os.path.join( cwd, "test" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
+
+from base.util import parse_tool_panel_config
 
 from galaxy import eggs
 
@@ -40,6 +42,7 @@ import nose.config
 import nose.loader
 import nose.plugins.manager
 
+import pprint
 log = logging.getLogger( "functional_tests.py" )
 
 default_galaxy_test_host = "localhost"
@@ -83,74 +86,6 @@ def get_webapp_global_conf():
     if STATIC_ENABLED:
         global_conf.update( get_static_settings() )
     return global_conf
-
-
-def parse_tool_panel_config( config, shed_tools_dict ):
-    """
-    Parse a shed-related tool panel config to generate the shed_tools_dict. This only happens when testing tools installed from the tool shed.
-    """
-    last_galaxy_test_file_dir = None
-    last_tested_repository_name = None
-    last_tested_changeset_revision = None
-    tool_path = None
-    tree = util.parse_xml( config )
-    root = tree.getroot()
-    tool_path = root.get('tool_path')
-    for elem in root:
-        if elem.tag == 'tool':
-            galaxy_test_file_dir, \
-            last_tested_repository_name, \
-            last_tested_changeset_revision = get_installed_repository_info( elem,
-                                                                            last_galaxy_test_file_dir,
-                                                                            last_tested_repository_name,
-                                                                            last_tested_changeset_revision,
-                                                                            tool_path )
-            if galaxy_test_file_dir:
-                if galaxy_test_file_dir != last_galaxy_test_file_dir:
-                    if not os.path.isabs( galaxy_test_file_dir ):
-                        galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
-                guid = elem.get( 'guid' )
-                shed_tools_dict[ guid ] = galaxy_test_file_dir
-                last_galaxy_test_file_dir = galaxy_test_file_dir
-        elif elem.tag == 'section':
-            for section_elem in elem:
-                if section_elem.tag == 'tool':
-                    galaxy_test_file_dir, \
-                    last_tested_repository_name, \
-                    last_tested_changeset_revision = get_installed_repository_info( section_elem,
-                                                                                    last_galaxy_test_file_dir,
-                                                                                    last_tested_repository_name,
-                                                                                    last_tested_changeset_revision,
-                                                                                    tool_path )
-                    if galaxy_test_file_dir:
-                        if galaxy_test_file_dir != last_galaxy_test_file_dir:
-                            if not os.path.isabs( galaxy_test_file_dir ):
-                                galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
-                        guid = section_elem.get( 'guid' )
-                        shed_tools_dict[ guid ] = galaxy_test_file_dir
-                        last_galaxy_test_file_dir = galaxy_test_file_dir
-    return shed_tools_dict
-
-def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision, tool_path ):
-    """
-    Return the GALAXY_TEST_FILE_DIR, the containing repository name and the change set revision for the tool elem.
-    This only happens when testing tools installed from the tool shed.
-    """
-    tool_config_path = elem.get( 'file' )
-    installed_tool_path_items = tool_config_path.split( '/repos/' )
-    sans_shed = installed_tool_path_items[ 1 ]
-    path_items = sans_shed.split( '/' )
-    repository_owner = path_items[ 0 ]
-    repository_name = path_items[ 1 ]
-    changeset_revision = path_items[ 2 ]
-    if repository_name != last_tested_repository_name or changeset_revision != last_tested_changeset_revision:
-        # Locate the test-data directory.
-        installed_tool_path = os.path.join( installed_tool_path_items[ 0 ], 'repos', repository_owner, repository_name, changeset_revision )
-        for root, dirs, files in os.walk( os.path.join(tool_path, installed_tool_path )):
-            if 'test-data' in dirs:
-                return os.path.join( root, 'test-data' ), repository_name, changeset_revision
-        return None, repository_name, changeset_revision
-    return last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
@@ -277,7 +212,6 @@ def main():
                 os.makedirs( dir )
             except OSError:
                 pass
-    log.info( "Database connection:", database_connection )
 
     # ---- Build Application -------------------------------------------------- 
     app = None 
@@ -293,6 +227,7 @@ def main():
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
         # Build the Universe Application
+        print 'app.kwargs:\n%s' %( pprint.pformat( kwargs ) )
         app = UniverseApplication( job_queue_workers = 5,
                                    id_secret = 'changethisinproductiontoo',
                                    template_path = "templates",
@@ -320,6 +255,7 @@ def main():
                                    running_functional_tests=True,
                                    **kwargs )
         log.info( "Embedded Universe application started" )
+
     # ---- Run webserver ------------------------------------------------------
     server = None
     

@@ -105,6 +105,7 @@
                             menu_options.append( [ _('Logout'), app.config.remote_user_logout_href, "_top" ] )
                     else:
                         menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
+                        menu_options.append( [ _('API Keys'), h.url_for( controller='/user', action='api_keys', cntrller='user' ), "galaxy_main" ] )
                         logout_url = h.url_for( controller='/user', action='logout' )
                         menu_options.append( [ 'Logout', logout_url, "_top" ] )
                         menu_options.append( None )

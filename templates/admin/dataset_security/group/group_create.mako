@@ -55,7 +55,7 @@ $().ready(function() {
 <div class="toolForm">
     <div class="toolFormTitle">Create Group</div>
     <div class="toolFormBody">
-        <form name="associate_group_role_user" id="associate_group_role_user" action="${h.url_for( action='create_group' )}" method="post" >
+        <form name="associate_group_role_user" id="associate_group_role_user" action="${h.url_for(controller='admin', action='create_group' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <input  name="name" type="textfield" value="${name}" size=40"/>

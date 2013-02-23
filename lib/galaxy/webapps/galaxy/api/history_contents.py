@@ -113,11 +113,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         Returns a dictionary for an HDA that raised an exception when it's
         dictionary was being built.
-        {
-            'id'    : < the encoded dataset id >,
-            'type'  : < name of the dataset >,
-            'url'   : < api url to retrieve this datasets full data >,
-        }
         """
         return {
             'id'        : hda_id,

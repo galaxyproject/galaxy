@@ -28,6 +28,11 @@ class ToolDataTableManager( object ):
         return self.data_tables.__getitem__( key )
     def __contains__( self, key ):
         return self.data_tables.__contains__( key )
+    def get( self, name, default=None ):
+        try:
+            return self[ name ]
+        except KeyError:
+            return default
     def load_from_config_file( self, config_filename, tool_data_path, from_shed_config=False ):
         """
         This method is called under 3 conditions:
@@ -125,6 +130,8 @@ class ToolDataTable( object ):
     def __init__( self, config_element, tool_data_path ):
         self.name = config_element.get( 'name' )
         self.comment_char = config_element.get( 'comment_char' )
+        self.empty_field_value = config_element.get( 'empty_field_value', '' )
+        self.empty_field_values = {}
         for file_elem in config_element.findall( 'file' ):
             # There should only be one file_elem.
             if 'path' in file_elem.attrib:
@@ -134,6 +141,8 @@ class ToolDataTable( object ):
                 self.tool_data_file = None
         self.tool_data_path = tool_data_path
         self.missing_index_file = None
+    def get_empty_field_by_name( self, name ):
+        return self.empty_field_values.get( name, self.empty_field_value )
     
 class TabularToolDataTable( ToolDataTable ):
     """
@@ -153,6 +162,7 @@ class TabularToolDataTable( ToolDataTable ):
     def __init__( self, config_element, tool_data_path ):
         super( TabularToolDataTable, self ).__init__( config_element, tool_data_path )
         self.configure_and_load( config_element, tool_data_path )
+
     def configure_and_load( self, config_element, tool_data_path ):
         """
         Configure and load table from an XML element.
@@ -176,6 +186,7 @@ class TabularToolDataTable( ToolDataTable ):
             if os.path.exists( filename ):
                 found = True
                 all_rows.extend( self.parse_file_fields( open( filename ) ) )
+                self.filename = filename
             else:
                 # Since the path attribute can include a hard-coded path to a specific directory
                 # (e.g., <file path="tool-data/cg_crr_files.loc" />) which may not be the same value
@@ -187,15 +198,19 @@ class TabularToolDataTable( ToolDataTable ):
                     if os.path.exists( corrected_filename ):
                         found = True
                         all_rows.extend( self.parse_file_fields( open( corrected_filename ) ) )
+                        self.filename = corrected_filename
             if not found:
                 self.missing_index_file = filename
                 log.warn( "Cannot find index file '%s' for tool data table '%s'" % ( filename, self.name ) )
         self.data = all_rows
+
     def handle_found_index_file( self, filename ):
         self.missing_index_file = None
         self.data.extend( self.parse_file_fields( open( filename ) ) )
+
     def get_fields( self ):
         return self.data
+
     def parse_column_spec( self, config_element ):
         """
         Parse column definitions, which can either be a set of 'column' elements
@@ -222,17 +237,23 @@ class TabularToolDataTable( ToolDataTable ):
                 self.columns[name] = index
                 if index > self.largest_index:
                     self.largest_index = index
+                empty_field_value = column_elem.get( 'empty_field_value', None )
+                if empty_field_value is not None:
+                    self.empty_field_values[ name ] = empty_field_value
         assert 'value' in self.columns, "Required 'value' column missing from column def"
         if 'name' not in self.columns:
             self.columns['name'] = self.columns['value']
+
     def parse_file_fields( self, reader ):
         """
         Parse separated lines from file and return a list of tuples.
         
         TODO: Allow named access to fields using the column names.
         """
+        separator_char = (lambda c: '<TAB>' if c == '\t' else c)(self.separator)
+
         rval = []
-        for line in reader:
+        for i, line in enumerate( reader ):
             if line.lstrip().startswith( self.comment_char ):
                 continue
             line = line.rstrip( "\n\r" )
@@ -240,7 +261,42 @@ class TabularToolDataTable( ToolDataTable ):
                 fields = line.split( self.separator )
                 if self.largest_index < len( fields ):
                     rval.append( fields )
-        return rval        
+                else:
+                    log.warn( "Line %i in tool data table '%s' is invalid (HINT: "
+                              "'%s' characters must be used to separate fields):\n%s" 
+                              % ( ( i + 1 ), self.name, separator_char, line ) )
+        return rval
+    
+    def get_column_name_list( self ):
+        rval = []
+        for i in range( self.largest_index + 1 ):
+            found_column = False
+            for name, index in self.columns.iteritems():
+                if index == i:
+                    rval.append( name )
+                    found_column = True
+                    break
+            if not found_column:
+                rval.append( None )
+        return rval
+    
+    def get_entry( self, query_attr, query_val, return_attr, default=None ):
+        """
+        Returns table entry associated with a col/val pair.
+        """
+        query_col = self.columns.get( query_attr, None )
+        if query_col is None:
+            return default
+        return_col = self.columns.get( return_attr, None )
+        if return_col is None:
+            return default
+        rval = default
+        # Look for table entry.
+        for fields in self.data:
+            if fields[ query_col ] == query_val:
+                rval = fields[ return_col ]
+                break
+        return rval
 
 # Registry of tool data types by type_key
 tool_data_table_types = dict( [ ( cls.type_key, cls ) for cls in [ TabularToolDataTable ] ] )

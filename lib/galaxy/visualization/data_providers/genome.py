@@ -111,7 +111,10 @@ class FeatureLocationIndexDataProvider( BaseDataProvider ):
         return result
         
 class GenomeDataProvider( BaseDataProvider ):
-    """ Base class for genome data providers. """
+    """ 
+    Base class for genome data providers. All genome providers use BED coordinate 
+    format (0-based, half-open coordinates) for both queries and returned data.
+    """
 
     dataset_type = None
     
@@ -819,8 +822,8 @@ class SummaryTreeDataProvider( GenomeDataProvider ):
 
 class BamDataProvider( GenomeDataProvider, FilterableMixin ):
     """
-    Provides access to intervals from a sorted indexed BAM file. Position data
-    is reported in 1-based, closed format, i.e. SAM/BAM format.
+    Provides access to intervals from a sorted indexed BAM file. Coordinate 
+    data is reported in BED format: 0-based, half-open.
     """
 
     dataset_type = 'bai'
@@ -1041,7 +1044,9 @@ class BBIDataProvider( GenomeDataProvider ):
         return all_dat is not None
 
     def get_data( self, chrom, start, end, start_val=0, max_vals=None, num_samples=1000, **kwargs ):
-        start = int( start )
+        # Subtract 1 because start/end are in 0-based coordinate system but BBI
+        #  provider uses 1-based coordinate system.
+        start = int( start ) - 1
         end = int( end )
 
         # Helper function for getting summary data regardless of chromosome

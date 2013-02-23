@@ -39,6 +39,12 @@ dialect_to_egg = {
 # Return the current time in UTC without any timezone information
 now = datetime.datetime.utcnow
 
+APIKeys.table = Table( "api_keys", metadata,
+    Column( "id", Integer, primary_key=True ),
+    Column( "create_time", DateTime, default=now ),
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
+    Column( "key", TrimmedString( 32 ), index=True, unique=True ) )
+
 User.table = Table( "galaxy_user", metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -124,7 +130,11 @@ RepositoryMetadata.table = Table( "repository_metadata", metadata,
     Column( "metadata", JSONType, nullable=True ),
     Column( "tool_versions", JSONType, nullable=True ),
     Column( "malicious", Boolean, default=False ),
-    Column( "downloadable", Boolean, default=True ) )
+    Column( "downloadable", Boolean, default=True ),
+    Column( "tools_functionally_correct", Boolean, default=False, index=True ),
+    Column( "do_not_test", Boolean, default=False, index=True ),
+    Column( "time_last_tested", DateTime, default=None, nullable=True ),
+    Column( "tool_test_errors", JSONType, nullable=True ) )
 
 RepositoryReview.table = Table( "repository_review", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -186,7 +196,11 @@ Tag.table = Table( "tag", metadata,
 # With the tables defined we can define the mappers and setup the relationships between the model objects.
 assign_mapper( context, User, User.table, 
     properties=dict( active_repositories=relation( Repository, primaryjoin=( ( Repository.table.c.user_id == User.table.c.id ) & ( not_( Repository.table.c.deleted ) ) ), order_by=( Repository.table.c.name ) ),
-                     galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ) ) )
+                     galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
+                     api_keys=relation( APIKeys, backref="user", order_by=desc( APIKeys.table.c.create_time ) ) ) )
+
+assign_mapper( context, APIKeys, APIKeys.table, 
+    properties = {} )
 
 assign_mapper( context, Group, Group.table,
     properties=dict( users=relation( UserGroupAssociation ) ) )

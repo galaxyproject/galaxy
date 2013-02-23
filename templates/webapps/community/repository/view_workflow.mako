@@ -21,7 +21,6 @@
         browse_label = 'Browse or delete repository tip files'
     else:
         browse_label = 'Browse repository tip files'
-    has_readme = metadata and 'readme_files' in metadata
     
     # <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), changeset_revisions=changeset_revision )}">Install repository to Galaxy</a></li>
 %>
