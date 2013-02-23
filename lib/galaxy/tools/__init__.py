@@ -714,15 +714,23 @@ class ToolBox( object ):
             return tree
         tool_dir = os.path.dirname(config_file)
         macros = self._load_macros(macros_el, tool_dir)
-        # HACK for elementtree, newer implementations (etree/lxml) won't
-        # require this parent_map data structure but elementtree does not
-        # track parents or recongnize .find('..').
-        parent_map = dict((c, p) for p in tree.getiterator() for c in p)
-        for expand_el in root.findall('.//expand'):
-            macro_name = expand_el.get('macro')
-            macro_def = macros[macro_name]
-            self._xml_replace(expand_el, macro_def, parent_map)
+
+        self._expand_macros([root], macros)
         return tree
+
+    def _expand_macros(self, elements, macros):
+        for element in elements:
+            # HACK for elementtree, newer implementations (etree/lxml) won't
+            # require this parent_map data structure but elementtree does not
+            # track parents or recongnize .find('..').
+            parent_map = dict((c, p) for p in element.getiterator() for c in p)
+            for expand_el in element.findall('.//expand'):
+                macro_name = expand_el.get('macro')
+                macro_def = macros[macro_name]
+
+                # Recursively expand contained macros.
+                self._expand_macros(macro_def, macros)
+                self._xml_replace(expand_el, macro_def, parent_map)
 
     def _load_macros(self, macros_el, tool_dir):
         macros = {}
@@ -784,6 +792,7 @@ class ToolBox( object ):
             current_index += 1
             parent_el.insert(current_index, deepcopy(target))
         parent_el.remove(query)
+
 
 class ToolSection( object ):
     """
