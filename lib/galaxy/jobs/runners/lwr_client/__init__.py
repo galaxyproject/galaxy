@@ -5,14 +5,14 @@ lwr_client
 This module contains logic for interfacing with an external LWR server.
 
 """
-import mmap
 import os
 import re
 import time
 import urllib
-import urllib2
 
 import simplejson
+
+from transport import get_transport
 
 
 class JobInputs(object):
@@ -254,6 +254,18 @@ class FileStager(object):
         return self.job_inputs.rewritten_command_line
 
 
+class parseJson(object):
+
+    def __init__(self):
+        pass
+
+    def __call__(self, func):
+        def replacement(*args, **kwargs):
+            response = func(*args, **kwargs)
+            return simplejson.loads(response)
+        return replacement
+
+
 class Client(object):
     """
     Objects of this client class perform low-level communication with a remote LWR server.
@@ -283,9 +295,7 @@ class Client(object):
         self.remote_host = remote_host
         self.job_id = job_id
         self.private_key = private_key
-
-    def _url_open(self, request, data):
-        return urllib2.urlopen(request, data)
+        self.transport = get_transport()
 
     def __build_url(self, command, args):
         if self.private_key:
@@ -294,29 +304,20 @@ class Client(object):
         url = self.remote_host + command + "?" + data
         return url
 
-    def __raw_execute(self, command, args={}, data=None):
+    def __raw_execute(self, command, args={}, data=None, input_path=None, output_path=None):
         url = self.__build_url(command, args)
-        request = urllib2.Request(url=url, data=data)
-        response = self._url_open(request, data)
+        response = self.transport.execute(url, data=data, input_path=input_path, output_path=output_path)
         return response
 
-    def __raw_execute_and_parse(self, command, args={}, data=None):
-        response = self.__raw_execute(command, args, data)
-        return simplejson.loads(response.read())
-
+    @parseJson()
     def __upload_file(self, action, path, name=None, contents=None):
-        input = open(path, 'rb')
-        try:
-            mmapped_input = mmap.mmap(input.fileno(), 0, access=mmap.ACCESS_READ)
-            return self.__upload_contents(action, path, mmapped_input, name)
-        finally:
-            input.close()
-
-    def __upload_contents(self, action, path, contents, name=None):
         if not name:
             name = os.path.basename(path)
         args = {"job_id": self.job_id, "name": name}
-        return self.__raw_execute_and_parse(action, args, contents)
+        input_path = path
+        if contents:
+            input_path = None
+        return self.__raw_execute(action, args, contents, input_path)
 
     def upload_tool_file(self, path):
         """
@@ -364,7 +365,7 @@ class Client(object):
         contents : str
             Rewritten contents of the config file to upload.
         """
-        return self.__upload_contents("upload_config_file", path, contents)
+        return self.__upload_file("upload_config_file", path, contents=contents)
 
     def upload_working_directory_file(self, path):
         """
@@ -378,9 +379,10 @@ class Client(object):
         """
         return self.__upload_file("upload_working_directory_file", path)
 
+    @parseJson()
     def _get_output_type(self, name):
-        return self.__raw_execute_and_parse("get_output_type", {"name": name,
-                                                                "job_id": self.job_id})
+        return self.__raw_execute("get_output_type", {"name": name,
+                                                      "job_id": self.job_id})
 
     def download_work_dir_output(self, source, working_directory, output_path):
         """
@@ -414,25 +416,19 @@ class Client(object):
         name = os.path.basename(path)
         output_type = self._get_output_type(name)
         if output_type == "direct":
-            output = open(path, "wb")
+            output_path = path
         elif output_type == "task":
-            output = open(os.path.join(working_directory, name), "wb")
+            output_path = os.path.join(working_directory, name)
         else:
             raise Exception("No remote output found for dataset with path %s" % path)
-        self.__raw_download_output(name, self.job_id, output_type, output)
+        self.__raw_download_output(name, self.job_id, output_type, output_path)
 
-    def __raw_download_output(self, name, job_id, output_type, output_file):
-        response = self.__raw_execute("download_output", {"name": name,
-                                                          "job_id": self.job_id,
-                                                          "output_type": output_type})
-        try:
-            while True:
-                buffer = response.read(1024)
-                if buffer == "":
-                    break
-                output_file.write(buffer)
-        finally:
-            output_file.close()
+    def __raw_download_output(self, name, job_id, output_type, output_path):
+        self.__raw_execute("download_output",
+                           {"name": name,
+                            "job_id": self.job_id,
+                            "output_type": output_type},
+                           output_path=output_path)
 
     def launch(self, command_line):
         """
@@ -463,11 +459,12 @@ class Client(object):
                 return complete_response
             time.sleep(1)
 
+    @parseJson()
     def raw_check_complete(self):
         """
         Get check_complete response from the remote server.
         """
-        check_complete_response = self.__raw_execute_and_parse("check_complete", {"job_id": self.job_id})
+        check_complete_response = self.__raw_execute("check_complete", {"job_id": self.job_id})
         return check_complete_response
 
     def check_complete(self):
@@ -482,11 +479,12 @@ class Client(object):
         """
         self.__raw_execute("clean", {"job_id": self.job_id})
 
+    @parseJson()
     def setup(self):
         """
         Setup remote LWR server to run this job.
         """
-        return self.__raw_execute_and_parse("setup", {"job_id": self.job_id})
+        return self.__raw_execute("setup", {"job_id": self.job_id})
 
 
 def _read(path):
