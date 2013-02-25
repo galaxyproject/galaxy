@@ -3,6 +3,9 @@ Classes for implmenting search methods for various data models
 """
 
 import logging
+import parsley
+import re
+
 from galaxy.model.orm import *
 from galaxy.model import *
 
@@ -21,6 +24,7 @@ and presents the 'tag' field as a single concept that can be filtered against.
 
 
 """
+
 
 class SearchField(object):
 
@@ -52,7 +56,7 @@ class QueryBaseClass(object):
                 yield row
 
 
-class SearchBaseClass(object):
+class ViewBaseClass(object):
 
     def get_field(self, name):
         for f_obj in self.FIELDS:
@@ -99,7 +103,7 @@ class LibraryDatasetQuery(QueryBaseClass):
 
 
 
-class LibraryDatasetSearch(SearchBaseClass):
+class LibraryDatasetView(ViewBaseClass):
     FIELDS = [
         SearchField("name"),
         SearchField("id"),
@@ -129,7 +133,7 @@ class HistoryDatasetQuery(QueryBaseClass):
                 self.do_query = True
                 self.query= self.query.filter( HistoryDatasetAssociation.name.like(arg.other) )
 
-class HistoryDatasetSearch(SearchBaseClass):
+class HistoryDatasetView(ViewBaseClass):
     FIELDS = [
         SearchField("name")
     ]
@@ -185,7 +189,7 @@ class HistoryQuery(QueryBaseClass):
                 )
 
 
-class HistorySearch(SearchBaseClass):
+class HistoryView(ViewBaseClass):
     FIELDS = [
         SearchField("name"),
         SearchField("tag"),
@@ -227,7 +231,7 @@ class WorkflowQuery(QueryBaseClass):
                 self.query = self.query.filter( StoredWorkflowTagAssociation.user_value == tmp[1] )
 
         
-class WorkflowSearch(SearchBaseClass):
+class WorkflowView(ViewBaseClass):
 
     FIELDS = [
         SearchField("name"),
@@ -240,11 +244,89 @@ class WorkflowSearch(SearchBaseClass):
         return WorkflowQuery(query)
 
 
-search_mapping = {
-    'library_dataset' : LibraryDatasetSearch,
-    'history_dataset' : HistoryDatasetSearch,
-    'history' : HistorySearch,
-    'workflow' : WorkflowSearch
+view_mapping = {
+    'library_dataset' : LibraryDatasetView,
+    'ldda' : LibraryDatasetView,
+    'history_dataset' : HistoryDatasetView,
+    'hda' : HistoryDatasetView,
+    'history' : HistoryView,
+    'workflow' : WorkflowView
 }
 
+
+sqlGrammar = """
+expr = 'select' bs field_desc:f bs 'from' bs word:t ( 
+    bs 'where' bs conditional:c -> GalaxyQuery(f,t,c)
+    | -> GalaxyQuery(f, t, None) )
+bs = ' '+
+ws = ' '*
+field_desc = ( '*' -> ['*']
+    | field_list )
+field_list = word:x ( 
+    ws ',' ws field_list:y -> [x] + y 
+    | -> [x] )
+conditional = (
+    logic_statement:x -> x
+    | conditional:x 'and' conditional:y -> GalaxyQueryAnd(x,y) )
+logic_statement = word:left ws comparison:comp ws word:right -> [left, comp, right]
+quote_word = '"' word '"'
+word = alphanum+:x -> "".join(x) 
+comparison = ( '=' -> '='
+    | '>' -> '>'
+    | '<' -> '<'
+    | '>=' -> '>='
+    | '<=' -> '<='
+    )
+alphanum = anything:x ?(re.search(r'\w', x) is not None) -> x
+"""
+
+"""
+comparison = ( '=' -> '='
+    | '>' -> '>'
+    | '<' -> '<'
+    | '>=' -> '>='
+    | '<=' -> '<='
+    )
+"""
+
+
+class GalaxyQuery:
+    def __init__(self, field_list, table_name, conditional):
+        self.field_list = field_list
+        self.table_name = table_name
+        self.conditional = conditional
+
+class GalaxyQueryComparison:
+    def __init__(self, left, operator, right):
+        self.left = left
+        self.operator = operator
+        self.right = right
+
+class SearchProcess:
+    def __init__(self, view, query):
+        self.view = view
+        self.query = query
+    
+    def process(self, trans):
+        search = self.view.search(trans)
+        if self.query.conditional is not None:
+            search.filter( 
+                self.query.conditional.left, 
+                self.query.conditional.operator,
+                self.query.conditional.right )
+        return search.get_results(True)
+                            
+
+
+class GalaxySearchEngine:
+    def __init__(self):
+        self.parser = parsley.makeGrammar(sqlGrammar, { 're' : re, 'GalaxyQuery' : GalaxyQuery})
+
+    def query(self, query_text):
+        q = self.parser(query_text).expr()
+
+        if q.table_name in view_mapping:
+            view = view_mapping[q.table_name]()
+            return SearchProcess(view, q)
+        return None
 

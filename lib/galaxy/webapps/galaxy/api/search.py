@@ -61,27 +61,17 @@ class SearchController( BaseAPIController ):
         POST /api/search
         Do a search of the various elements of Galaxy.
         """
-        domains = payload.get("domain", [])
-        result_fields = payload.get("result_fields", [self.FIELD_EXTENDED_METADATA])
-        query = payload.get("query", {})
-        print payload
-        out = []
-        for domain in domains:
-            if domain in search_mapping:
-                search_base = search_mapping[domain]()
-                search_query = search_base.search(trans)
-                for field in query:
-                    search_field = search_base.get_field(field)
-                    if search_field is not None:
-                        if isinstance(query[field], dict) and '$like' in query[field]:
-                            search_query.filter( search_field.like(query[field]['$like']) )
-                        else:
-                            search_query.filter( search_field == query[field] )
-                out += list(search_query.get_results())
+        query_txt = payload.get("query", None)
+        if query_txt is not None:
+            se = GalaxySearchEngine()
+            query = se.query(query_txt)
+            out = []
+            if query is not None:
+                for row in query.process(trans):
+                    out.append(row)
+        return self._create_response(trans, out)
 
-        return self._create_response(trans, out, result_fields)
-
-    def _create_response(self, trans, rows, result_fields):
+    def _create_response(self, trans, rows):
         current_user_roles = trans.get_current_user_roles()
         out = []
         for row in rows:
