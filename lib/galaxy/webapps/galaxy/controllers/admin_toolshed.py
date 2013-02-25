@@ -1711,12 +1711,11 @@ class AdminToolshed( AdminGalaxy ):
     @web.require_admin
     def reset_metadata_on_selected_installed_repositories( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            kwd[ 'CONTROLLER' ] = suc.GALAXY_ADMIN_TOOL_SHED_CONTROLLER
             message, status = suc.reset_metadata_on_selected_repositories( trans, **kwd )
         else:
             message = util.restore_text( kwd.get( 'message', ''  ) )
             status = kwd.get( 'status', 'done' )
-        repositories_select_field = suc.build_repository_ids_select_field( trans, suc.GALAXY_ADMIN_TOOL_SHED_CONTROLLER )
+        repositories_select_field = suc.build_repository_ids_select_field( trans )
         return trans.fill_template( '/admin/tool_shed_repository/reset_metadata_on_selected_repositories.mako',
                                     repositories_select_field=repositories_select_field,
                                     message=message,

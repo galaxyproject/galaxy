@@ -34,8 +34,6 @@ INITIAL_CHANGELOG_HASH = '000000000000'
 REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = "data_manager_conf.xml"
 MAX_CONTENT_SIZE = 32768
 NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'repository_dependencies.xml', 'tool_dependencies.xml', REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
-GALAXY_ADMIN_TOOL_SHED_CONTROLLER = 'GALAXY_ADMIN_TOOL_SHED_CONTROLLER'
-TOOL_SHED_ADMIN_CONTROLLER = 'TOOL_SHED_ADMIN_CONTROLLER'
 TOOL_TYPES_NOT_IN_TOOL_PANEL = [ 'manage_data' ]
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
 
@@ -484,10 +482,11 @@ def build_repository_dependency_relationships( trans, repo_info_dicts, tool_shed
                                                                                           repository_dependency_id=repository_dependency.id )
                             trans.sa_session.add( rrda )
                             trans.sa_session.flush()
-def build_repository_ids_select_field( trans, cntrller, name='repository_ids', multiple=True, display='checkboxes' ):
+def build_repository_ids_select_field( trans, name='repository_ids', multiple=True, display='checkboxes' ):
     """Method called from both Galaxy and the Tool Shed to generate the current list of repositories for resetting metadata."""
     repositories_select_field = SelectField( name=name, multiple=multiple, display=display )
-    if cntrller == TOOL_SHED_ADMIN_CONTROLLER:
+    if trans.webapp.name == 'community':
+        # We're in the tool shed.
         for repository in trans.sa_session.query( trans.model.Repository ) \
                                           .filter( trans.model.Repository.table.c.deleted == False ) \
                                           .order_by( trans.model.Repository.table.c.name,
@@ -496,7 +495,8 @@ def build_repository_ids_select_field( trans, cntrller, name='repository_ids', m
             option_label = '%s (%s)' % ( repository.name, owner )
             option_value = '%s' % trans.security.encode_id( repository.id )
             repositories_select_field.add_option( option_label, option_value )
-    elif cntrller == GALAXY_ADMIN_TOOL_SHED_CONTROLLER:
+    else:
+        # We're in Galaxy.
         for repository in trans.sa_session.query( trans.model.ToolShedRepository ) \
                                           .filter( trans.model.ToolShedRepository.table.c.uninstalled == False ) \
                                           .order_by( trans.model.ToolShedRepository.table.c.name,
@@ -899,6 +899,7 @@ def copy_sample_file( app, filename, dest_path=None ):
     if not os.path.exists( os.path.join( dest_path, copied_file ) ):
         shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
 def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
+    """Create or update a repository_metadatqa record in the tool shed."""
     downloadable = is_downloadable( metadata_dict )
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
@@ -909,6 +910,11 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
                                                               changeset_revision=changeset_revision,
                                                               metadata=metadata_dict,
                                                               downloadable=downloadable )
+    # Always set the default values for the following columns.  When resetting all metadata on a repository, this will reset the values.
+    repository_metadata.tools_functionally_correct = False
+    repository_metadata.do_not_test = False
+    repository_metadata.time_last_tested = None
+    repository_metadata.tool_test_errors = None
     trans.sa_session.add( repository_metadata )
     trans.sa_session.flush()
     return repository_metadata
@@ -2949,7 +2955,7 @@ def is_circular_repository_dependency( repository_key, repository_dependency, al
             return True
     return False
 def is_downloadable( metadata_dict ):
-    # NOTE: although repository README files are considered Galaxy utilities, they have no effect on determining if a revision is instakllable.
+    # NOTE: although repository README files are considered Galaxy utilities, they have no effect on determining if a revision is installable.
     # See the comments in the compare_readme_files() method.
     if 'datatypes' in metadata_dict:
         # We have proprietary datatypes.
@@ -3503,7 +3509,8 @@ def reset_all_metadata_on_installed_repository( trans, id ):
 def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
     """Reset all metadata on a single repository in a tool shed."""
     def reset_all_tool_versions( trans, id, repo ):
-        changeset_revisions = []
+        """Reset tool version lineage for those changeset revisions that include valid tools."""
+        changeset_revisions_that_contain_tools = []
         for changeset in repo.changelog:
             changeset_revision = str( repo.changectx( changeset ) )
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -3511,10 +3518,10 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                 metadata = repository_metadata.metadata
                 if metadata:
                     if metadata.get( 'tools', None ):
-                        changeset_revisions.append( changeset_revision )
-        # The list of changeset_revisions is now filtered to contain only those that are downloadable and contain tools.
+                        changeset_revisions_that_contain_tools.append( changeset_revision )
+        # The list of changeset_revisions_that_contain_tools is now filtered to contain only those that are downloadable and contain tools.
         # If a repository includes tools, build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in each changeset revision.
-        for index, changeset_revision in enumerate( changeset_revisions ):
+        for index, changeset_revision in enumerate( changeset_revisions_that_contain_tools ):
             tool_versions_dict = {}
             repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
             metadata = repository_metadata.metadata
@@ -3531,7 +3538,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
                                                tool_dict[ 'id' ],
                                                tool_dict[ 'version' ],
                                                tool_dict[ 'guid' ],
-                                               changeset_revisions[ 0:index ] )
+                                               changeset_revisions_that_contain_tools[ 0:index ] )
                     tool_versions_dict[ tool_dict[ 'guid' ] ] = parent_id
             if tool_versions_dict:
                 repository_metadata.tool_versions = tool_versions_dict
@@ -3556,7 +3563,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
         work_dir = tempfile.mkdtemp()
         current_changeset_revision = str( repo.changectx( changeset ) )
         ctx = repo.changectx( changeset )
-        log.debug( "Cloning repository revision: %s", str( ctx.rev() ) )
+        log.debug( "Cloning repository changeset revision: %s", str( ctx.rev() ) )
         cloned_ok, error_message = clone_repository( repository_clone_url, work_dir, str( ctx.rev() ) )
         if cloned_ok:
             log.debug( "Generating metadata for changset revision: %s", str( ctx.rev() ) )
@@ -3626,9 +3633,11 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
     reset_tool_data_tables( trans.app )
     return invalid_file_tups, metadata_dict
 def reset_metadata_on_selected_repositories( trans, **kwd ):
-    # This method is called from both Galaxy and the Tool Shed, so the cntrller param is required.
+    """
+    Inspect the repository changelog to reset metadata for all appropriate changeset revisions.  This method is called from both Galaxy and the
+    Tool Shed.
+    """
     repository_ids = util.listify( kwd.get( 'repository_ids', None ) )
-    CONTROLLER = kwd[ 'CONTROLLER' ]
     message = ''
     status = 'done'
     if repository_ids:
@@ -3636,10 +3645,12 @@ def reset_metadata_on_selected_repositories( trans, **kwd ):
         unsuccessful_count = 0
         for repository_id in repository_ids:
             try:
-                if CONTROLLER == 'TOOL_SHED_ADMIN_CONTROLLER':
+                if trans.webapp.name == 'community':
+                    # We're in the tool shed.
                     repository = get_repository_in_tool_shed( trans, repository_id )
                     invalid_file_tups, metadata_dict = reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )
-                elif CONTROLLER == 'GALAXY_ADMIN_TOOL_SHED_CONTROLLER':
+                else:
+                    # We're in Galaxy.
                     repository = get_installed_tool_shed_repository( trans, repository_id )
                     invalid_file_tups, metadata_dict = reset_all_metadata_on_installed_repository( trans, repository_id )
                 if invalid_file_tups:
