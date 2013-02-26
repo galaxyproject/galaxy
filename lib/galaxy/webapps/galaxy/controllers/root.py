@@ -22,7 +22,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
         return trans.fill_template( "root/index.mako",
                                     tool_id=tool_id,
                                     workflow_id=workflow_id,
-                                    m_c=m_c, m_a=m_a )
+                                    m_c=m_c, m_a=m_a,
+                                    params=kwd )
         
     ## ---- Tool related -----------------------------------------------------
     
