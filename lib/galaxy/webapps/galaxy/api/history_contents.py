@@ -128,7 +128,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     @web.expose_api_raw
     def display( self, trans, history_content_id, history_id, preview=False, filename=None, to_ext=None, chunk=None, **kwd ):
         """
-        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}
+        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/display
         Displays history content (dataset).
         """
         hda_dict = {}
@@ -155,7 +155,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
     @web.expose_api
     def show( self, trans, id, history_id, **kwd ):
         """
-        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/display
+        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}
         Displays information about a history content (dataset).
         """
         hda_dict = {}
