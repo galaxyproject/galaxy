@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 import sys, os, atexit
 
 from galaxy import config, jobs, util, tools, web
@@ -151,10 +152,10 @@ class UniverseApplication( object ):
                 self.memdump = memdump.Memdump()
         # Transfer manager client
         if self.config.get_bool( 'enable_beta_job_managers', False ):
-            from jobs import transfer_manager
+            from galaxy.jobs import transfer_manager
             self.transfer_manager = transfer_manager.TransferManager( self )
         # Start the job manager
-        from jobs import manager
+        from galaxy.jobs import manager
         self.job_manager = manager.JobManager( self )
         # FIXME: These are exposed directly for backward compatibility
         self.job_queue = self.job_manager.job_queue
