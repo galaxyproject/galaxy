@@ -1,4 +1,4 @@
-<%inherit file="/webapps/community/base_panels.mako"/>
+<%inherit file="/webapps/tool_shed/base_panels.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
 <%def name="stylesheets()">   

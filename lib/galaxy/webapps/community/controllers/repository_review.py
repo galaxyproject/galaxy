@@ -27,7 +27,7 @@ class ComponentGrid( grids.Grid ):
             return component.description
     title = "Repository review components"
     model_class = model.Component
-    template='/webapps/community/repository_review/grid.mako'
+    template='/webapps/tool_shed/repository_review/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -89,7 +89,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
             return rval
     title = "All reviewed repositories"
     model_class = model.Repository
-    template='/webapps/community/repository_review/grid.mako'
+    template='/webapps/tool_shed/repository_review/grid.mako'
     default_sort_key = "Repository.name"
     columns = [
         RepositoryGrid.NameColumn( "Repository name",
@@ -196,7 +196,7 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
             return ''
     title = "Reviews by user"
     model_class = model.RepositoryReview
-    template='/webapps/community/repository_review/grid.mako'
+    template='/webapps/tool_shed/repository_review/grid.mako'
     default_sort_key = 'repository_id'
     columns = [
         RepositoryNameColumn( "Repository Name",
@@ -316,7 +316,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
         repository = review.repository
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, review.changeset_revision )
-        return trans.fill_template( '/webapps/community/repository_review/browse_review.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository_review/browse_review.mako',
                                     repository=repository,
                                     changeset_revision_label=changeset_revision_label,
                                     review=review,
@@ -361,7 +361,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                            action='manage_components',
                                                            message=message,
                                                            status=status ) )
-        return trans.fill_template( '/webapps/community/repository_review/create_component.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository_review/create_component.mako',
                                     name=name,
                                     description=description,
                                     message=message,
@@ -456,7 +456,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                                   action='manage_components',
                                                                   message=message,
                                                                   status=status ) )
-        return trans.fill_template( '/webapps/community/repository_review/edit_component.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository_review/edit_component.mako',
                                     component=component,
                                     message=message,
                                     status=status )
@@ -576,7 +576,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                                       selected_value=selected_value,
                                                                       for_component=False )
         rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, review.changeset_revision )
-        return trans.fill_template( '/webapps/community/repository_review/edit_review.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository_review/edit_review.mako',
                                     repository=repository,
                                     review=review,
                                     changeset_revision_label=changeset_revision_label,
@@ -688,7 +688,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                           installable=installable,
                                           can_add_review=can_add_review )
                     reviews_dict[ changeset_revision ] = revision_dict
-        return trans.fill_template( '/webapps/community/repository_review/reviews_of_repository.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository_review/reviews_of_repository.mako',
                                     repository=repository,
                                     reviews_dict=reviews_dict,
                                     mine=mine,
@@ -709,7 +709,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
         installable = changeset_revision in [ metadata_revision.changeset_revision for metadata_revision in repository.metadata_revisions ]
         rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, changeset_revision )
         reviews = suc.get_reviews_by_repository_id_changeset_revision( trans, repository_id, changeset_revision )
-        return trans.fill_template( '/webapps/community/repository_review/reviews_of_changeset_revision.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository_review/reviews_of_changeset_revision.mako',
                                     repository=repository,
                                     changeset_revision=changeset_revision,
                                     changeset_revision_label=changeset_revision_label,
@@ -773,7 +773,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         previous_reviews_dict = suc.get_previous_repository_reviews( trans, repository, changeset_revision )
         rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, changeset_revision )
-        return trans.fill_template( '/webapps/community/repository_review/select_previous_review.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository_review/select_previous_review.mako',
                                     repository=repository,
                                     changeset_revision=changeset_revision,
                                     changeset_revision_label=changeset_revision_label,

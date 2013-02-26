@@ -46,7 +46,7 @@ class CategoryGrid( grids.Grid ):
             return 0
     title = "Categories"
     model_class = model.Category
-    template='/webapps/community/category/grid.mako'
+    template='/webapps/tool_shed/category/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -82,7 +82,7 @@ class ValidCategoryGrid( CategoryGrid ):
             return 0
     title = "Categories of valid repositories"
     model_class = model.Category
-    template='/webapps/community/category/valid_grid.mako'
+    template='/webapps/tool_shed/category/valid_grid.mako'
     default_sort_key = "name"
     columns = [
         CategoryGrid.NameColumn( "Name",
@@ -172,7 +172,7 @@ class RepositoryGrid( grids.Grid ):
     # Grid definition
     title = "Repositories"
     model_class = model.Repository
-    template='/webapps/community/repository/grid.mako'
+    template='/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "name"
     columns = [
         NameColumn( "Name",
@@ -503,7 +503,7 @@ class MatchedRepositoryGrid( grids.Grid ):
     # Grid definition
     title = "Matching repositories"
     model_class = model.RepositoryMetadata
-    template='/webapps/community/repository/grid.mako'
+    template='/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "Repository.name"
     columns = [
         NameColumn( "Repository name",
@@ -571,7 +571,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         # The request came from the tool shed.
         if 'f-free-text-search' in kwd:
             # Trick to enable searching repository name, description from the CategoryGrid.  What we've done is rendered the search box for the
-            # RepositoryGrid on the grid.mako template for the CategoryGrid.  See ~/templates/webapps/community/category/grid.mako.  Since we
+            # RepositoryGrid on the grid.mako template for the CategoryGrid.  See ~/templates/webapps/tool_shed/category/grid.mako.  Since we
             # are searching repositories and not categories, redirect to browse_repositories().
             if 'id' in kwd and 'f-free-text-search' in kwd and kwd[ 'id' ] == kwd[ 'f-free-text-search' ]:
                 # The value of 'id' has been set to the search string, which is a repository name.  We'll try to get the desired encoded repository
@@ -629,7 +629,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                           repository.name,
                                                                           repository.user.username,
                                                                           downloadable_revision.changeset_revision )
-        return trans.fill_template( '/webapps/community/repository/browse_invalid_tools.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository/browse_invalid_tools.mako',
                                     cntrller=cntrller,
                                     invalid_tools_dict=invalid_tools_dict,
                                     message=message,
@@ -747,7 +747,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         suc.update_repository( repo )
         is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
-        return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repository=repository,
                                     metadata=metadata,
                                     commit_message=commit_message,
@@ -937,7 +937,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository = suc.get_repository_in_tool_shed( trans, id )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         if trans.user and trans.user.email:
-            return trans.fill_template( "/webapps/community/repository/contact_owner.mako",
+            return trans.fill_template( "/webapps/tool_shed/repository/contact_owner.mako",
                                         repository=repository,
                                         metadata=metadata,
                                         message=message,
@@ -1032,7 +1032,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                            action='view_repository',
                                                            message=message,
                                                            id=trans.security.encode_id( repository.id ) ) )
-        return trans.fill_template( '/webapps/community/repository/create_repository.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository/create_repository.mako',
                                     name=name,
                                     description=description,
                                     long_description=long_description,
@@ -1073,7 +1073,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         is_malicious = suc.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, repository_id, changeset_revision )
         try:
-            return trans.fill_template( "/webapps/community/repository/tool_form.mako",
+            return trans.fill_template( "/webapps/tool_shed/repository/tool_form.mako",
                                         repository=repository,
                                         metadata=metadata,
                                         changeset_revision=changeset_revision,
@@ -1197,7 +1197,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 message = "No search performed - each field must contain the same number of comma-separated items."
                 status = "error"
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
-        return trans.fill_template( '/webapps/community/repository/find_tools.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository/find_tools.mako',
                                     tool_id=self.__stringify( tool_ids ),
                                     tool_name=self.__stringify( tool_names ),
                                     tool_version=self.__stringify( tool_versions ),
@@ -1286,7 +1286,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             exact_matches_checked = False
             workflow_names = []
         exact_matches_check_box = CheckboxField( 'exact_matches', checked=exact_matches_checked )
-        return trans.fill_template( '/webapps/community/repository/find_workflows.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository/find_workflows.mako',
                                     workflow_name=self.__stringify( workflow_names ),
                                     exact_matches_check_box=exact_matches_check_box,
                                     message=message,
@@ -1690,7 +1690,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        return trans.fill_template( '/webapps/community/repository/help.mako', message=message, status=status, **kwd )
+        return trans.fill_template( '/webapps/tool_shed/repository/help.mako', message=message, status=status, **kwd )
     def __in_tool_dict( self, tool_dict, exact_matches_checked, tool_id=None, tool_name=None, tool_version=None ):
         found = False
         if tool_id and not tool_name and not tool_version:
@@ -1762,7 +1762,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         user_id = params.get( 'user_id', None )
         repository_id = params.get( 'repository_id', None )
         changeset_revision = params.get( 'changeset_revision', None )
-        return trans.fill_template( '/webapps/community/index.mako',
+        return trans.fill_template( '/webapps/tool_shed/index.mako',
                                     repository_metadata=repository_metadata,
                                     has_reviewed_repositories=has_reviewed_repositories,
                                     has_deprecated_repositories=has_deprecated_repositories,
@@ -1813,7 +1813,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         elif error_message:
             message = error_message
         try:
-            return trans.fill_template( "/webapps/community/repository/tool_form.mako",
+            return trans.fill_template( "/webapps/tool_shed/repository/tool_form.mako",
                                         repository=repository,
                                         changeset_revision=changeset_revision,
                                         tool=tool,
@@ -1872,7 +1872,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                           .order_by( trans.model.Repository.table.c.name ):
             if user.email in repository.email_alerts:
                 email_alert_repositories.append( repository )
-        return trans.fill_template( "/webapps/community/user/manage_email_alerts.mako",
+        return trans.fill_template( "/webapps/tool_shed/user/manage_email_alerts.mako",
                                     new_repo_alert_check_box=new_repo_alert_check_box,
                                     email_alert_repositories=email_alert_repositories,
                                     message=message,
@@ -2056,7 +2056,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             review_id = None
         can_browse_repository_reviews = suc.can_browse_repository_reviews( trans, repository )
         containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
-        return trans.fill_template( '/webapps/community/repository/manage_repository.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository/manage_repository.mako',
                                     repo_name=repo_name,
                                     description=description,
                                     long_description=long_description,
@@ -2163,7 +2163,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                  add_id_to_name=False,
                                                                                  downloadable=False )
         containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
-        return trans.fill_template( '/webapps/community/repository/preview_tools_in_changeset.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
                                     containers_dict=containers_dict,
                                     repository_metadata_id=repository_metadata_id,
@@ -2230,7 +2230,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
         is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
-        return trans.fill_template( '/webapps/community/repository/rate_repository.mako', 
+        return trans.fill_template( '/webapps/tool_shed/repository/rate_repository.mako', 
                                     repository=repository,
                                     metadata=metadata,
                                     avg_rating=avg_rating,
@@ -2242,7 +2242,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     status=status )
     @web.expose
     def reset_all_metadata( self, trans, id, **kwd ):
-        # This method is called only from the ~/templates/webapps/community/repository/manage_repository.mako template.
+        # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
         # It resets all metadata on the complete changelog for a single repository in the tool shed.
         invalid_file_tups, metadata_dict = suc.reset_all_metadata_on_repository_in_tool_shed( trans, id, **kwd )
         if invalid_file_tups:
@@ -2405,7 +2405,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
         is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
-        return trans.fill_template( '/webapps/community/repository/browse_repository.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     commit_message=commit_message,
@@ -2672,7 +2672,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             changesets.insert( 0, change_dict )
         is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
-        return trans.fill_template( '/webapps/community/repository/view_changelog.mako', 
+        return trans.fill_template( '/webapps/tool_shed/repository/view_changelog.mako', 
                                     repository=repository,
                                     metadata=metadata,
                                     changesets=changesets,
@@ -2703,7 +2703,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             diffs.append( suc.to_safe_string( diff, to_html=True ) )
         is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, ctx_str )
-        return trans.fill_template( '/webapps/community/repository/view_changeset.mako', 
+        return trans.fill_template( '/webapps/tool_shed/repository/view_changeset.mako', 
                                     repository=repository,
                                     metadata=metadata,
                                     ctx=ctx,
@@ -2810,7 +2810,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             review_id = None
         containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         can_browse_repository_reviews = suc.can_browse_repository_reviews( trans, repository )
-        return trans.fill_template( '/webapps/community/repository/view_repository.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
@@ -2893,7 +2893,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
-        return trans.fill_template( "/webapps/community/repository/view_tool_metadata.mako",
+        return trans.fill_template( "/webapps/tool_shed/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     metadata=metadata,
                                     tool=tool,
@@ -2919,7 +2919,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository = suc.get_repository_in_tool_shed( trans, trans.security.encode_id( repository_metadata.repository_id ) )
         changeset_revision = repository_metadata.changeset_revision
         metadata = repository_metadata.metadata
-        return trans.fill_template( "/webapps/community/repository/view_workflow.mako",
+        return trans.fill_template( "/webapps/tool_shed/repository/view_workflow.mako",
                                     repository=repository,
                                     changeset_revision=changeset_revision,
                                     repository_metadata_id=repository_metadata_id,

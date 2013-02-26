@@ -1,5 +1,5 @@
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/webapps/community/repository/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
 
 <%
     is_admin = trans.user_is_admin()
@@ -14,7 +14,7 @@
 <%!
    def inherit(context):
        if context.get('use_panels'):
-           return '/webapps/community/base_panels.mako'
+           return '/webapps/tool_shed/base_panels.mako'
        else:
            return '/base.mako'
 %>

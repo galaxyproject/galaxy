@@ -454,7 +454,7 @@ class CommunityRatingColumn( GridColumn, UsesItemRatings ):
     """ Column that displays community ratings for an item. """
     def get_value( self, trans, grid, item ):
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, item, webapp_model=trans.model )
-        return trans.fill_template( "community_rating.mako",
+        return trans.fill_template( "tool_shed_rating.mako",
                                     ave_item_rating=ave_item_rating,
                                     num_ratings=num_ratings,
                                     item_id=trans.security.encode_id( item.id ) )

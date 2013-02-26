@@ -403,7 +403,7 @@ class RepositoryMetadataGrid( grids.Grid ):
     # Grid definition
     title = "Repository Metadata"
     model_class = model.RepositoryMetadata
-    template='/webapps/community/repository/grid.mako'
+    template='/webapps/tool_shed/repository/grid.mako'
     default_sort_key = "name"
     columns = [
         IdColumn( "Id",
@@ -567,7 +567,7 @@ class AdminController( BaseUIController, Admin ):
                                                            action='manage_categories',
                                                            message=message,
                                                            status=status ) )
-        return trans.fill_template( '/webapps/community/category/create_category.mako',
+        return trans.fill_template( '/webapps/tool_shed/category/create_category.mako',
                                     name=name,
                                     description=description,
                                     message=message,
@@ -667,7 +667,7 @@ class AdminController( BaseUIController, Admin ):
                                                                       action='manage_categories',
                                                                       message=message,
                                                                       status=status ) )
-        return trans.fill_template( '/webapps/community/category/edit_category.mako',
+        return trans.fill_template( '/webapps/tool_shed/category/edit_category.mako',
                                     category=category,
                                     message=message,
                                     status=status )
@@ -677,7 +677,7 @@ class AdminController( BaseUIController, Admin ):
         if 'f-free-text-search' in kwd:
             # Trick to enable searching repository name, description from the CategoryGrid.
             # What we've done is rendered the search box for the RepositoryGrid on the grid.mako
-            # template for the CategoryGrid.  See ~/templates/webapps/community/category/grid.mako.
+            # template for the CategoryGrid.  See ~/templates/webapps/tool_shed/category/grid.mako.
             # Since we are searching repositories and not categories, redirect to browse_repositories().
             return trans.response.send_redirect( web.url_for( controller='admin',
                                                               action='browse_repositories',
@@ -714,7 +714,7 @@ class AdminController( BaseUIController, Admin ):
         if 'regenerate_statistics_button' in kwd:
             trans.app.shed_counter.generate_statistics()
             message = "Successfully regenerated statistics"
-        return trans.fill_template( '/webapps/community/admin/statistics.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/statistics.mako',
                                     message=message,
                                     status=status )
     @web.expose
@@ -726,7 +726,7 @@ class AdminController( BaseUIController, Admin ):
             message = util.restore_text( kwd.get( 'message', ''  ) )
             status = kwd.get( 'status', 'done' )
         repositories_select_field = suc.build_repository_ids_select_field( trans )
-        return trans.fill_template( '/webapps/community/admin/reset_metadata_on_selected_repositories.mako',
+        return trans.fill_template( '/webapps/tool_shed/admin/reset_metadata_on_selected_repositories.mako',
                                     repositories_select_field=repositories_select_field,
                                     message=message,
                                     status=status )

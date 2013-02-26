@@ -735,7 +735,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                         message=message,
                                         status=status )
         else:
-            return trans.fill_template( '/webapps/community/user/manage_info.mako',
+            return trans.fill_template( '/webapps/tool_shed/user/manage_info.mako',
                                         cntrller=cntrller,
                                         user=user,
                                         email=email,

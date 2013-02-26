@@ -204,7 +204,7 @@ class UploadController( BaseUIController ):
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
                 suc.reset_tool_data_tables( trans.app )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
-        return trans.fill_template( '/webapps/community/repository/upload.mako',
+        return trans.fill_template( '/webapps/tool_shed/repository/upload.mako',
                                     repository=repository,
                                     url=url,
                                     commit_message=commit_message,

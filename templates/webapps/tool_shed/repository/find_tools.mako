@@ -4,7 +4,7 @@
 <%!
    def inherit(context):
        if context.get('use_panels'):
-           return '/webapps/community/base_panels.mako'
+           return '/webapps/tool_shed/base_panels.mako'
        else:
            return '/base.mako'
 %>

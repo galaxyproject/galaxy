@@ -733,7 +733,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         status = util.restore_text( kwd.get( 'status', 'done' ) )
         migration_stages_dict = odict()
         migration_modules = []
-        migration_scripts_dir = os.path.abspath( os.path.join( trans.app.config.root, 'lib', 'galaxy', 'tool_shed', 'migrate', 'versions' ) )
+        migration_scripts_dir = os.path.abspath( os.path.join( trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions' ) )
         migration_scripts_dir_contents = os.listdir( migration_scripts_dir )
         for item in migration_scripts_dir_contents:
             if os.path.isfile( os.path.join( migration_scripts_dir, item ) ) and item.endswith( '.py' ):

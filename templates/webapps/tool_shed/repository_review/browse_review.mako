@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/webapps/community/common/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 
 <%
     from galaxy.web.form_builder import CheckboxField

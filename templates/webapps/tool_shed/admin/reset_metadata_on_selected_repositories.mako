@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/webapps/community/common/common.mako" import="common_misc_javascripts" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="common_misc_javascripts" />
 
 <%def name="javascripts()">
     ${parent.javascripts()}
