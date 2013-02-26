@@ -1809,6 +1809,8 @@ class Tool( object ):
             if "runtool_btn" not in incoming and "URL" not in incoming:
                 if not self.display_interface:
                     return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
+                if len(incoming):
+                    self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
                 return "tool_form.mako", dict( errors={}, tool_state=state, param_values={}, incoming={} )
         # Process incoming data
         if not( self.check_values ):
