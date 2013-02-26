@@ -1,7 +1,7 @@
 import sys, os, subprocess, tempfile, urllib2
 import common_util
 import fabric_util
-from galaxy.tool_shed import encoding_util
+from tool_shed.util import encoding_util
 from galaxy.model.orm import and_
 from galaxy.web import url_for
 

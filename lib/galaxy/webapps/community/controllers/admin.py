@@ -5,7 +5,7 @@ from galaxy.webapps.community import model
 from galaxy.model.orm import and_
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util import inflector
-import galaxy.util.shed_util_common as suc
+import tool_shed.util.shed_util_common as suc
 from repository import RepositoryGrid, CategoryGrid
 
 from galaxy import eggs

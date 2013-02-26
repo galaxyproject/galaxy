@@ -6,9 +6,8 @@ from galaxy.tools.data import *
 import galaxy.model.mapping
 import galaxy.tools.search
 from galaxy.objectstore import build_object_store_from_config
-from galaxy.tool_shed.common_util import *
-import galaxy.tool_shed.tool_shed_registry
-from galaxy.tool_shed import install_manager
+import tool_shed.tool_shed_registry
+from tool_shed.galaxy_install import install_manager
 
 class MigrateToolsApplication( object ):
     """Encapsulates the state of a basic Galaxy Universe application in order to initiate the Install Manager"""
@@ -58,7 +57,7 @@ class MigrateToolsApplication( object ):
         self.toolbox_search = galaxy.tools.search.ToolBoxSearch( self.toolbox )
         # Set up the tool sheds registry.
         if os.path.isfile( self.config.tool_sheds_config ):
-            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
         else:
             self.tool_shed_registry = None
         # Get the latest tool migration script number to send to the Install manager.

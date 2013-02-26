@@ -2,8 +2,8 @@
 Classes encapsulating the management of repositories installed from Galaxy tool sheds.
 """
 import os
-import galaxy.util.shed_util
-import galaxy.util.shed_util_common
+import tool_shed.util.shed_util
+import tool_shed.util.shed_util_common
 from galaxy.model.orm import and_
 
 from galaxy import eggs

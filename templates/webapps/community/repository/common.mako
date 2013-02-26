@@ -165,7 +165,7 @@
 
 <%def name="render_sharable_str( repository, changeset_revision=None )">
     <%
-        from galaxy.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
+        from tool_shed.util.shed_util_common import generate_sharable_link_for_repository_in_tool_shed
         sharable_link = generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=changeset_revision )
     %>
     ${sharable_link}
@@ -173,7 +173,7 @@
 
 <%def name="render_clone_str( repository )">
     <%
-        from galaxy.util.shed_util_common import generate_clone_url_for_repository_in_tool_shed
+        from tool_shed.util.shed_util_common import generate_clone_url_for_repository_in_tool_shed
         clone_str = generate_clone_url_for_repository_in_tool_shed( trans, repository )
     %>
     hg clone <a href="${clone_str}">${clone_str}</a>
@@ -459,7 +459,7 @@
 
 <%def name="render_readme( readme, pad, parent, row_counter )">
     <%
-        from galaxy.util.shed_util_common import to_safe_string
+        from tool_shed.util.shed_util_common import to_safe_string
         encoded_id = trans.security.encode_id( readme.id )
     %>
     <style type="text/css">
@@ -660,7 +660,7 @@
 
 <%def name="render_workflow( workflow, pad, parent, row_counter, row_is_header=False )">
     <%
-        from galaxy.tool_shed.encoding_util import tool_shed_encode
+        from tool_shed.util.encoding_util import tool_shed_encode
         encoded_id = trans.security.encode_id( workflow.id )
         encoded_workflow_name = tool_shed_encode( workflow.workflow_name )
         if trans.webapp.name == 'community':
@@ -702,7 +702,7 @@
 
 <%def name="render_repository_items( metadata, containers_dict, can_set_metadata=False )">
     <%
-        from galaxy.tool_shed.encoding_util import tool_shed_encode
+        from tool_shed.util.encoding_util import tool_shed_encode
 
         has_datatypes = metadata and 'datatypes' in metadata
         has_readme_files = metadata and 'readme_files' in metadata

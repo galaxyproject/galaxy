@@ -5,7 +5,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    from galaxy.util.shed_util_common import to_safe_string
+    from tool_shed.util.shed_util_common import to_safe_string
 
     if metadata:
         has_readme = 'readme' in metadata

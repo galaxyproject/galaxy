@@ -9,7 +9,7 @@ from sqlalchemy.sql.expression import func
 from galaxy.webapps.community.util import common_util
 from galaxy.webapps.community.util.container_util import STRSEP
 from repository import RepositoryGrid
-import galaxy.util.shed_util_common as suc
+import tool_shed.util.shed_util_common as suc
 from galaxy.util.odict import odict
 
 from galaxy import eggs

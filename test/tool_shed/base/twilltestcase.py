@@ -3,7 +3,7 @@ import galaxy.model as galaxy_model
 import common, string, os, re, test_db_util, simplejson, logging, time
 import galaxy.util as util
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
-from galaxy.tool_shed.encoding_util import tool_shed_encode, tool_shed_decode
+from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
 
 from galaxy import eggs
 eggs.require('mercurial')

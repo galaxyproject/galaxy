@@ -5,7 +5,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    from galaxy.tool_shed.encoding_util import tool_shed_encode
+    from tool_shed.util.encoding_util import tool_shed_encode
 
     is_admin = trans.user_is_admin()
     is_new = repository.is_new( trans.app )

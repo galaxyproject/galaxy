@@ -35,7 +35,6 @@ def _is_valid_slug( slug ):
     VALID_SLUG_RE = re.compile( "^[a-z0-9\-]+$" )
     return VALID_SLUG_RE.match( slug )
 
-
 class BaseController( object ):
     """
     Base class for Galaxy web application controllers.
@@ -79,6 +78,8 @@ class BaseController( object ):
             item_class = self.app.model.LibraryDatasetDatasetAssociation
         elif class_name == 'LibraryDataset':
             item_class = self.app.model.LibraryDataset
+        elif class_name == 'ToolShedRepository':
+            item_class = self.app.model.ToolShedRepository
         else:
             item_class = None
         return item_class

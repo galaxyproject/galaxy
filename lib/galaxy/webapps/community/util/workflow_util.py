@@ -5,8 +5,8 @@ pkg_resources.require( "SVGFig" )
 
 import logging, svgfig
 from galaxy.util import json
-import galaxy.util.shed_util_common as suc
-from galaxy.tool_shed import encoding_util
+import tool_shed.util.shed_util_common as suc
+from tool_shed.util import encoding_util
 from galaxy.workflow.modules import InputDataModule, ToolModule, WorkflowModuleFactory
 import galaxy.webapps.galaxy.controllers.workflow
 import galaxy.tools

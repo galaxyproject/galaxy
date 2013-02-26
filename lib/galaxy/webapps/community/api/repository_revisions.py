@@ -1,6 +1,6 @@
 import datetime
 from galaxy.web.framework.helpers import time_ago
-import galaxy.util.shed_util_common as suc
+import tool_shed.util.shed_util_common as suc
 from galaxy import web, util
 from galaxy.model.orm import and_, or_
 from galaxy.web.base.controller import BaseAPIController

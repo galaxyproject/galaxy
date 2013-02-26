@@ -6,10 +6,10 @@ import os, urllib2, tempfile
 from galaxy import util
 from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
-import galaxy.util.shed_util as shed_util
-import galaxy.util.shed_util_common as suc
+import tool_shed.util.shed_util as shed_util
+import tool_shed.util.shed_util_common as suc
 from galaxy.util.odict import odict
-from galaxy.tool_shed import common_util
+from tool_shed.util import common_util
 
 class InstallManager( object ):
     def __init__( self, app, latest_migration_script_number, tool_shed_install_config, migrated_tools_config, install_dependencies ):

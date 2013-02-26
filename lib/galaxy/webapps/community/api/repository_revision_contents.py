@@ -1,6 +1,6 @@
 import logging
 from galaxy.web.framework.helpers import time_ago
-import galaxy.util.shed_util_common as suc
+import tool_shed.util.shed_util_common as suc
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController
 

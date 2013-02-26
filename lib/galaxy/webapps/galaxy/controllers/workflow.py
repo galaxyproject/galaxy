@@ -14,7 +14,7 @@ from galaxy.datatypes.data import Data
 from galaxy.util.odict import odict
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.topsort import topsort, topsort_levels, CycleError
-from galaxy.tool_shed import encoding_util
+from tool_shed.util import encoding_util
 from galaxy.workflow.modules import *
 from galaxy import model
 from galaxy import util

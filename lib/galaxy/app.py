@@ -3,8 +3,8 @@ import sys, os, atexit
 from galaxy import config, jobs, util, tools, web
 import galaxy.tools.search
 import galaxy.tools.data
-import galaxy.tool_shed
-import galaxy.tool_shed.tool_shed_registry
+import tool_shed.galaxy_install
+import tool_shed.tool_shed_registry
 from galaxy.web import security
 import galaxy.model
 import galaxy.datatypes.registry
@@ -41,7 +41,7 @@ class UniverseApplication( object ):
             db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
         # Set up the tool sheds registry
         if os.path.isfile( self.config.tool_sheds_config ):
-            self.tool_shed_registry = galaxy.tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
+            self.tool_shed_registry = tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
         else:
             self.tool_shed_registry = None
         log.debug( 'self.config.tool_sheds_config: %s, self.tool_shed_registry: %s',
@@ -51,7 +51,7 @@ class UniverseApplication( object ):
         from galaxy.model.migrate.check import create_or_verify_database
         create_or_verify_database( db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options, app=self )
         # Alert the Galaxy admin to tools that have been moved from the distribution to the tool shed.
-        from galaxy.tool_shed.migrate.check import verify_tools
+        from tool_shed.galaxy_install.migrate.check import verify_tools
         verify_tools( self, db_url, kwargs.get( 'global_conf', {} ).get( '__file__', None ), self.config.database_engine_options )
         # Object store manager
         self.object_store = build_object_store_from_config(self.config)
@@ -64,7 +64,7 @@ class UniverseApplication( object ):
                                    object_store = self.object_store,
                                    trace_logger=self.trace_logger )
         # Manage installed tool shed repositories.
-        self.installed_repository_manager = galaxy.tool_shed.InstalledRepositoryManager( self )
+        self.installed_repository_manager = tool_shed.galaxy_install.InstalledRepositoryManager( self )
         # Create an empty datatypes registry.
         self.datatypes_registry = galaxy.datatypes.registry.Registry()
         # Load proprietary datatypes defined in datatypes_conf.xml files in all installed tool shed repositories.  We
@@ -105,7 +105,7 @@ class UniverseApplication( object ):
         self.data_managers = DataManagers( self )
         # If enabled, poll respective tool sheds to see if updates are available for any installed tool shed repositories.
         if self.config.get_bool( 'enable_tool_shed_check', False ):
-            from tool_shed import update_manager
+            from tool_shed.galaxy_install import update_manager
             self.update_manager = update_manager.UpdateManager( self )
         # Load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_converters_and_display_applications()

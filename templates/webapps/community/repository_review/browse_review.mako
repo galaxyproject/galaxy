@@ -5,7 +5,7 @@
 <%
     from galaxy.web.form_builder import CheckboxField
     from galaxy.webapps.community.util.container_util import STRSEP
-    from galaxy.util.shed_util_common import to_safe_string
+    from tool_shed.util.shed_util_common import to_safe_string
     can_manage_repository = is_admin or repository.user == trans.user
 %>
 

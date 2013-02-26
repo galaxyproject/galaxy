@@ -12,7 +12,7 @@ from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 import sqlalchemy.orm.exc
 from galaxy.tools.parameters import dynamic_options
-from galaxy.tool_shed import encoding_util
+from tool_shed.util import encoding_util
 from galaxy.tools.data_manager.manager import DataManager
 
 from galaxy import eggs

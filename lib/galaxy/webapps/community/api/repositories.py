@@ -1,4 +1,4 @@
-import galaxy.util.shed_util_common as suc
+import tool_shed.util.shed_util_common as suc
 from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController
 from galaxy.web.framework.helpers import is_true

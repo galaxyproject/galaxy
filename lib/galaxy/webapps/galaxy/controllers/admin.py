@@ -10,7 +10,7 @@ from galaxy.actions.admin import AdminActions
 from galaxy.web.params import QuotaParamParser
 from galaxy.exceptions import *
 from galaxy.util.odict import *
-from galaxy.tool_shed import encoding_util
+from tool_shed.util import encoding_util
 import galaxy.datatypes.registry
 import logging, imp, subprocess, urllib2
 

@@ -35,7 +35,7 @@ from galaxy.datatypes import sniff
 from cgi import FieldStorage
 from galaxy.util.hash_util import *
 from galaxy.util import listify
-import galaxy.util.shed_util_common
+import tool_shed.util.shed_util_common
 from galaxy.web import url_for
 
 from paste import httpexceptions

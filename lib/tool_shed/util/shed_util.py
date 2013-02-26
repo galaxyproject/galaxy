@@ -7,8 +7,8 @@ from galaxy.webapps.community.util import container_util
 import shed_util_common as suc
 import galaxy.tools
 from galaxy.tools.search import ToolBoxSearch
-from galaxy.tool_shed.tool_dependencies.install_util import create_or_update_tool_dependency, install_package, set_environment
-from galaxy.tool_shed import encoding_util
+from tool_shed.galaxy_install.tool_dependencies.install_util import create_or_update_tool_dependency, install_package, set_environment
+from tool_shed.util import encoding_util
 from galaxy.model.orm import and_
 
 from galaxy import eggs
