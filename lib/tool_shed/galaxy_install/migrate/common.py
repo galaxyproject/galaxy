@@ -14,6 +14,7 @@ class MigrateToolsApplication( object ):
     def __init__( self, tools_migration_config ):
         install_dependencies = 'install_dependencies' in sys.argv
         galaxy_config_file = 'universe_wsgi.ini'
+        self.name = 'galaxy'
         if '-c' in sys.argv:
             pos = sys.argv.index( '-c' )
             sys.argv.pop( pos )
