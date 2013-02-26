@@ -1,6 +1,7 @@
 """
 LWR HTTP Client layer based on Python Standard Library (urllib2)
 """
+from __future__ import with_statement
 import mmap
 import urllib2
 
