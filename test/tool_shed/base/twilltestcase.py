@@ -1,4 +1,4 @@
-import galaxy.webapps.community.util.hgweb_config
+import galaxy.webapps.tool_shed.util.hgweb_config
 import galaxy.model as galaxy_model
 import common, string, os, re, test_db_util, simplejson, logging, time
 import galaxy.util as util
@@ -17,7 +17,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.security = security.SecurityHelper( id_secret='changethisinproductiontoo' )
         self.history_id = None
         self.hgweb_config_dir = os.environ.get( 'TEST_HG_WEB_CONFIG_DIR' )
-        self.hgweb_config_manager = galaxy.webapps.community.util.hgweb_config.HgWebConfigManager()
+        self.hgweb_config_manager = galaxy.webapps.tool_shed.util.hgweb_config.HgWebConfigManager()
         self.hgweb_config_manager.hgweb_config_dir = self.hgweb_config_dir
         self.tool_shed_test_tmp_dir = os.environ.get( 'TOOL_SHED_TEST_TMP_DIR', None)
         self.host = os.environ.get( 'TOOL_SHED_TEST_HOST' )

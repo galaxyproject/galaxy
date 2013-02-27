@@ -4,8 +4,8 @@
 
 <%
     from galaxy.web.form_builder import CheckboxField
-    from galaxy.webapps.community.controllers.repository_review import build_approved_select_field
-    from galaxy.webapps.community.util.container_util import STRSEP
+    from galaxy.webapps.tool_shed.controllers.repository_review import build_approved_select_field
+    from galaxy.webapps.tool_shed.util.container_util import STRSEP
     can_manage_repository = is_admin or repository.user == trans.user
 %>
 

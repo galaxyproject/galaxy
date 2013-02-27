@@ -15,14 +15,14 @@
     is_new = repository.is_new( trans.app )
     is_deprecated = repository.deprecated
 
-    can_browse_contents = trans.webapp.name == 'community' and not is_new
+    can_browse_contents = trans.webapp.name == 'tool_shed' and not is_new
     can_contact_owner = trans.user and trans.user != repository.user
     can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
     can_push = not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository )
     can_rate = not is_deprecated and not is_new and trans.user and repository.user != trans.user
     can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
     can_upload = can_push
-    can_view_change_log = trans.webapp.name == 'community' and not is_new
+    can_view_change_log = trans.webapp.name == 'tool_shed' and not is_new
     changeset_revision_is_repository_tip = changeset_revision == repository.tip( trans.app )
 
     if can_push:
@@ -62,7 +62,7 @@
 
 <br/><br/>
 <ul class="manage-table-actions">
-    %if trans.webapp.name == 'community':
+    %if trans.webapp.name == 'tool_shed':
         %if is_new:
             %if can_upload:
                 <li><a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a></li>
@@ -210,7 +210,7 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=False )}
         </div>
     </div>
 %endif
-%if trans.webapp.name == 'community' and trans.user and trans.app.config.smtp_server:
+%if trans.webapp.name == 'tool_shed' and trans.user and trans.app.config.smtp_server:
     <p/>
     <div class="toolForm">
         <div class="toolFormTitle">Notification on update</div>

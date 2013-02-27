@@ -8,7 +8,7 @@ from galaxy.model.orm import or_
 import tool_shed.util.shed_util as shed_util
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import encoding_util
-from galaxy.webapps.community.util import container_util, workflow_util
+from galaxy.webapps.tool_shed.util import container_util, workflow_util
 from galaxy import eggs, tools
 import pkg_resources
 

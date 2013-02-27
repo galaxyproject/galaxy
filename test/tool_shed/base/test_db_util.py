@@ -1,7 +1,7 @@
 import galaxy.model, logging
-import galaxy.webapps.community.model as model
+import galaxy.webapps.tool_shed.model as model
 from galaxy.model.orm import *
-from galaxy.webapps.community.model.mapping import context as sa_session
+from galaxy.webapps.tool_shed.model.mapping import context as sa_session
 from galaxy.model.mapping import context as ga_session
 
 log = logging.getLogger( 'test.tool_shed.test_db_util' )

@@ -423,7 +423,7 @@
         %endif
         id="libraryItem-${encoded_id}">
         <td style="padding-left: ${pad+20}px;">
-            %if trans.webapp.name == 'community' and invalid_tool.repository_id and invalid_tool.tool_config and invalid_tool.changeset_revision:
+            %if trans.webapp.name == 'tool_shed' and invalid_tool.repository_id and invalid_tool.tool_config and invalid_tool.changeset_revision:
                 <a class="view-info" href="${h.url_for( controller='repository', action='load_invalid_tool', repository_id=trans.security.encode_id( invalid_tool.repository_id ), tool_config=invalid_tool.tool_config, changeset_revision=invalid_tool.changeset_revision )}">
                     ${invalid_tool.tool_config | h}
                 </a>
@@ -568,7 +568,7 @@
         %else:
             <td style="padding-left: ${pad+20}px;">
                 %if tool.repository_id:
-                    %if trans.webapp.name == 'community':
+                    %if trans.webapp.name == 'tool_shed':
                         <div style="float:left;" class="menubutton split popup" id="tool-${encoded_id}-popup">
                             <a class="view-info" href="${h.url_for( controller='repository', action='display_tool', repository_id=trans.security.encode_id( tool.repository_id ), tool_config=tool.tool_config, changeset_revision=tool.changeset_revision )}">${tool.name | h}</a>
                         </div>
@@ -663,7 +663,7 @@
         from tool_shed.util.encoding_util import tool_shed_encode
         encoded_id = trans.security.encode_id( workflow.id )
         encoded_workflow_name = tool_shed_encode( workflow.workflow_name )
-        if trans.webapp.name == 'community':
+        if trans.webapp.name == 'tool_shed':
             encoded_repository_metadata_id = trans.security.encode_id( workflow.repository_metadata_id )
             encoded_repository_id = None
         else:
@@ -682,7 +682,7 @@
         <${cell_type} style="padding-left: ${pad+20}px;">
             %if row_is_header:
                 ${workflow.workflow_name | h}
-            %elif trans.webapp.name == 'community' and encoded_repository_metadata_id:
+            %elif trans.webapp.name == 'tool_shed' and encoded_repository_metadata_id:
                 <a href="${h.url_for( controller='repository', action='view_workflow', workflow_name=encoded_workflow_name, repository_metadata_id=encoded_repository_metadata_id )}">${workflow.workflow_name | h}</a>
             %elif trans.webapp.name == 'galaxy' and encoded_repository_id:
                 <a href="${h.url_for( controller='admin_toolshed', action='view_workflow', workflow_name=encoded_workflow_name, repository_id=encoded_repository_id )}">${workflow.workflow_name | h}</a>

@@ -32,7 +32,7 @@ import pkg_resources
 pkg_resources.require( "psycopg2" )
 import psycopg2
 
-import galaxy.webapps.community.app
+import galaxy.webapps.tool_shed.app
 from mercurial import hg, ui, httprepo, commands
 from time import strftime
 
@@ -286,7 +286,7 @@ def main():
     configuration = {}
     for key, value in conf_parser.items( "app:main" ):
         configuration[key] = value
-    app = galaxy.webapps.community.app.UniverseApplication( global_conf=dict( __file__=ini_file ), **configuration )
+    app = galaxy.webapps.tool_shed.app.UniverseApplication( global_conf=dict( __file__=ini_file ), **configuration )
     sa_session = app.model.context
     # Remove the hgweb.config file if it exists
     hgweb_config = "%s/hgweb.config" %  os.getcwd()

@@ -521,7 +521,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
             tool_dependency_id += 1
             if dependency_key in [ 'set_environment' ]:
                 for set_environment_dict in requirements_dict:
-                    if trans.webapp.name == 'community':
+                    if trans.webapp.name == 'tool_shed':
                         is_orphan = set_environment_dict.get( 'is_orphan', False )
                     else:
                         # TODO: handle this is Galaxy
@@ -548,7 +548,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
                                                       is_orphan=is_orphan )
                     folder.tool_dependencies.append( tool_dependency )
             else:
-                if trans.webapp.name == 'community':
+                if trans.webapp.name == 'tool_shed':
                     is_orphan = requirements_dict.get( 'is_orphan', False )
                 else:
                     # TODO: handle this is Galaxy

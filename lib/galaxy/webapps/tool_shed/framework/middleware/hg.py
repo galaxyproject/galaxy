@@ -6,7 +6,7 @@ import sqlalchemy
 from paste.auth.basic import AuthBasicAuthenticator
 from paste.httpheaders import REMOTE_USER, AUTH_TYPE
 
-from galaxy.webapps.community import model
+from galaxy.webapps.tool_shed import model
 from galaxy.util.hash_util import new_secure_hash
 import mercurial.__version__
 

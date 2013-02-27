@@ -599,7 +599,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # remote user authenticates, we'll look for this information, and if missing, create it.
             if not self.app.security_agent.get_private_user_role( user ):
                 self.app.security_agent.create_private_user_role( user )
-            if 'webapp' not in self.environ or self.environ['webapp'] != 'community':
+            if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
                 if not user.default_permissions:
                     self.app.security_agent.user_set_default_permissions( user )
                     self.app.security_agent.user_set_default_permissions( user, history=True, dataset=True )
@@ -623,7 +623,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             self.sa_session.flush()
             self.app.security_agent.create_private_user_role( user )
             # We set default user permissions, before we log in and set the default history permissions
-            if 'webapp' not in self.environ or self.environ['webapp'] != 'community':
+            if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
                 self.app.security_agent.user_set_default_permissions( user )
             #self.log_event( "Automatically created account '%s'", user.email )
         return user

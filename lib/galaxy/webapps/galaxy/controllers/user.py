@@ -553,7 +553,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                                       cntrller,
                                                                       subscribe_checked,
                                                                       **kwd )
-                    if trans.webapp.name == 'community':
+                    if trans.webapp.name == 'tool_shed':
                         redirect_url = url_for( '/' )
                     if success and not is_admin:
                         # The handle_user_login() method has a call to the history_set_default_permissions() method
@@ -929,8 +929,8 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     message=message,
                                     status=status )
     def __validate( self, trans, params, email, password, confirm, username ):
-        # If coming from the community webapp, we'll require a public user name
-        if trans.webapp.name == 'community':
+        # If coming from the tool shed webapp, we'll require a public user name
+        if trans.webapp.name == 'tool_shed':
             if not username:
                 return "A public user name is required in the tool shed."
             if username in [ 'repos' ]:

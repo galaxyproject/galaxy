@@ -18,7 +18,7 @@ threadpool_workers = 10
 [app:main]
 
 # Specifies the factory for the universe WSGI application
-paste.app_factory = galaxy.webapps.community.buildapp:app_factory
+paste.app_factory = galaxy.webapps.tool_shed.buildapp:app_factory
 log_level = DEBUG
 
 # Database connection

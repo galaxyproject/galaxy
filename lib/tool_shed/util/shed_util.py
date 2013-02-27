@@ -3,7 +3,7 @@ from galaxy.datatypes import checkers
 from galaxy.web import url_for
 from galaxy import util
 from galaxy.util import json
-from galaxy.webapps.community.util import container_util
+from galaxy.webapps.tool_shed.util import container_util
 import shed_util_common as suc
 import galaxy.tools
 from galaxy.tools.search import ToolBoxSearch

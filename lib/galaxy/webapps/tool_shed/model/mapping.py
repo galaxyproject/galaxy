@@ -8,14 +8,14 @@ log = logging.getLogger( __name__ )
 import sys
 import datetime
 
-from galaxy.webapps.community.model import *
+from galaxy.webapps.tool_shed.model import *
 from galaxy.model.orm import *
 from galaxy.model.orm.ext.assignmapper import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
-import galaxy.webapps.community.util.shed_statistics as shed_statistics
-import galaxy.webapps.community.util.hgweb_config
-from galaxy.webapps.community.security import CommunityRBACAgent
+import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
+import galaxy.webapps.tool_shed.util.hgweb_config
+from galaxy.webapps.tool_shed.security import CommunityRBACAgent
 
 metadata = MetaData()
 context = Session = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
@@ -333,5 +333,5 @@ def init( file_path, url, engine_options={}, create_tables=False ):
     # Load local tool shed security policy
     result.security_agent = CommunityRBACAgent( result )
     result.shed_counter = shed_statistics.ShedCounter( result )
-    result.hgweb_config_manager = galaxy.webapps.community.util.hgweb_config.HgWebConfigManager()
+    result.hgweb_config_manager = galaxy.webapps.tool_shed.util.hgweb_config.HgWebConfigManager()
     return result

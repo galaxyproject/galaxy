@@ -1,7 +1,7 @@
 from galaxy.web.base.controller import BaseUIController
 from galaxy import web, util
 from galaxy.web.base.controllers.admin import Admin
-from galaxy.webapps.community import model
+from galaxy.webapps.tool_shed import model
 from galaxy.model.orm import and_
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util import inflector

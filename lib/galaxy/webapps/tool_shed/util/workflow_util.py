@@ -50,7 +50,7 @@ class RepoToolModule( ToolModule ):
         self.errors = None
         for tool_dict in tools_metadata:
             if self.tool_id in [ tool_dict[ 'id' ], tool_dict[ 'guid' ] ]:
-                if trans.webapp.name == 'community':
+                if trans.webapp.name == 'tool_shed':
                     # We're in the tool shed.
                     repository, self.tool, message = suc.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
                     if message and self.tool is None:
@@ -150,7 +150,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
     will be None.  When called from Galaxy, repository_metadata_id will be None and repository_id will have a value.
     """
     workflow_name = encoding_util.tool_shed_decode( workflow_name )
-    if trans.webapp.name == 'community':
+    if trans.webapp.name == 'tool_shed':
         # We're in the tool shed.
         repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
         repository_id = trans.security.encode_id( repository_metadata.repository_id )
@@ -241,7 +241,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
         width = widths[ step_dict[ 'id' ] ]
         x, y = step_dict[ 'position' ][ 'left' ], step_dict[ 'position' ][ 'top' ]
         # Only highlight missing tools if displaying in the tool shed.
-        if trans.webapp.name == 'community' and tool_unavailable:
+        if trans.webapp.name == 'tool_shed' and tool_unavailable:
             fill = "#EBBCB2"
         else:
             fill = "#EBD9B2"    

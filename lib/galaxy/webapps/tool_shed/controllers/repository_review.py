@@ -2,12 +2,12 @@ import os, logging
 from galaxy import web, util
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import SelectField, CheckboxField
-from galaxy.webapps.community import model
+from galaxy.webapps.tool_shed import model
 from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_
 from sqlalchemy.sql.expression import func
-from galaxy.webapps.community.util import common_util
-from galaxy.webapps.community.util.container_util import STRSEP
+from galaxy.webapps.tool_shed.util import common_util
+from galaxy.webapps.tool_shed.util.container_util import STRSEP
 from repository import RepositoryGrid
 import tool_shed.util.shed_util_common as suc
 from galaxy.util.odict import odict

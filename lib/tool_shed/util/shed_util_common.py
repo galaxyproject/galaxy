@@ -7,7 +7,7 @@ from galaxy.util import inflector, json
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
-from galaxy.webapps.community.util import container_util
+from galaxy.webapps.tool_shed.util import container_util
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 import sqlalchemy.orm.exc
@@ -376,7 +376,7 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
             if metadata:
                 if 'tool_dependencies' in metadata:
                     tool_dependencies = metadata[ 'tool_dependencies' ]
-                    if trans.webapp.name == 'community':
+                    if trans.webapp.name == 'tool_shed':
                         if 'orphan_tool_dependencies' in metadata:
                             orphan_tool_dependencies = metadata[ 'orphan_tool_dependencies' ]
                             tool_dependencies = add_orphan_settings_to_tool_dependencies( tool_dependencies, orphan_tool_dependencies )
@@ -485,7 +485,7 @@ def build_repository_dependency_relationships( trans, repo_info_dicts, tool_shed
 def build_repository_ids_select_field( trans, name='repository_ids', multiple=True, display='checkboxes' ):
     """Method called from both Galaxy and the Tool Shed to generate the current list of repositories for resetting metadata."""
     repositories_select_field = SelectField( name=name, multiple=multiple, display=display )
-    if trans.webapp.name == 'community':
+    if trans.webapp.name == 'tool_shed':
         # We're in the tool shed.
         for repository in trans.sa_session.query( trans.model.Repository ) \
                                           .filter( trans.model.Repository.table.c.deleted == False ) \
@@ -991,7 +991,7 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
     """
     repo_info_dict = {}
     repository = get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
-    if trans.webapp.name == 'community':
+    if trans.webapp.name == 'tool_shed':
         # We're in the tool shed.
         repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )
         if repository_metadata:
@@ -3645,7 +3645,7 @@ def reset_metadata_on_selected_repositories( trans, **kwd ):
         unsuccessful_count = 0
         for repository_id in repository_ids:
             try:
-                if trans.webapp.name == 'community':
+                if trans.webapp.name == 'tool_shed':
                     # We're in the tool shed.
                     repository = get_repository_in_tool_shed( trans, repository_id )
                     invalid_file_tups, metadata_dict = reset_all_metadata_on_repository_in_tool_shed( trans, repository_id )

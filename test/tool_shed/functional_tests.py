@@ -34,9 +34,9 @@ import sys, threading, random
 import httplib, socket
 from paste import httpserver
 # This is for the tool shed application.
-import galaxy.webapps.community.app
-from galaxy.webapps.community.app import UniverseApplication as ToolshedUniverseApplication
-from galaxy.webapps.community import buildapp as toolshedbuildapp
+import galaxy.webapps.tool_shed.app
+from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
+from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 # This is for the galaxy application.
 import galaxy.app
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication

@@ -5,15 +5,15 @@ from galaxy import util, web
 from galaxy.util.odict import odict
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import CheckboxField, SelectField, build_select_field
-from galaxy.webapps.community import model
-from galaxy.webapps.community.model import directory_hash_id
+from galaxy.webapps.tool_shed import model
+from galaxy.webapps.tool_shed.model import directory_hash_id
 from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_, or_
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import encoding_util
-from galaxy.webapps.community.util import workflow_util
-from galaxy.webapps.community.util import common_util
+from galaxy.webapps.tool_shed.util import workflow_util
+from galaxy.webapps.tool_shed.util import common_util
 import galaxy.tools
 
 from galaxy import eggs
@@ -1138,7 +1138,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     repository = suc.get_repository_in_tool_shed( trans, repository_id )
                     kwd[ 'id' ] = repository_id
                     kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
-                    if trans.webapp.name == 'community' and ( is_admin or repository.user == trans.user ):
+                    if trans.webapp.name == 'tool_shed' and ( is_admin or repository.user == trans.user ):
                         a = 'manage_repository'
                     else:
                         a = 'view_repository'
@@ -1224,7 +1224,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     repository = suc.get_repository_in_tool_shed( trans, repository_id )
                     kwd[ 'id' ] = repository_id
                     kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
-                    if trans.webapp.name == 'community' and ( is_admin or repository.user == trans.user ):
+                    if trans.webapp.name == 'tool_shed' and ( is_admin or repository.user == trans.user ):
                         a = 'manage_repository'
                     else:
                         a = 'view_repository'

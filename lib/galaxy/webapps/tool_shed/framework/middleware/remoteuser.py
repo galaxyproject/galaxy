@@ -42,7 +42,7 @@ class RemoteUser( object ):
         self.display_servers = display_servers or []
         self.admin_users = admin_users or []
     def __call__( self, environ, start_response ):
-        environ[ 'webapp' ] = 'community'
+        environ[ 'webapp' ] = 'tool_shed'
         # Allow display servers
         if self.display_servers and environ.has_key( 'REMOTE_ADDR' ):
             try:

@@ -13,10 +13,10 @@ from galaxy.util import asbool
 
 import pkg_resources
 
-import galaxy.webapps.community.model
-import galaxy.webapps.community.model.mapping
+import galaxy.webapps.tool_shed.model
+import galaxy.webapps.tool_shed.model.mapping
 import galaxy.web.framework
-from galaxy.webapps.community.framework.middleware import hg
+from galaxy.webapps.tool_shed.framework.middleware import hg
 from galaxy import util
 
 log = logging.getLogger( __name__ )
@@ -31,12 +31,12 @@ def add_ui_controllers( webapp, app ):
     """
     from galaxy.web.base.controller import BaseUIController
     from galaxy.web.base.controller import ControllerUnavailable
-    import galaxy.webapps.community.controllers
-    controller_dir = galaxy.webapps.community.controllers.__path__[0]
+    import galaxy.webapps.tool_shed.controllers
+    controller_dir = galaxy.webapps.tool_shed.controllers.__path__[0]
     for fname in os.listdir( controller_dir ):
         if not fname.startswith( "_" ) and fname.endswith( ".py" ):
             name = fname[:-3]
-            module_name = "galaxy.webapps.community.controllers." + name
+            module_name = "galaxy.webapps.tool_shed.controllers." + name
             module = __import__( module_name )
             for comp in module_name.split( "." )[1:]:
                 module = getattr( module, comp )
@@ -53,7 +53,7 @@ def app_factory( global_conf, **kwargs ):
         app = kwargs.pop( 'app' )
     else:
         try:
-            from galaxy.webapps.community.app import UniverseApplication
+            from galaxy.webapps.tool_shed.app import UniverseApplication
             app = UniverseApplication( global_conf=global_conf, **kwargs )
         except:
             import traceback, sys
@@ -61,7 +61,7 @@ def app_factory( global_conf, **kwargs ):
             sys.exit( 1 )
     atexit.register( app.shutdown )
     # Create the universe WSGI application
-    webapp = CommunityWebApplication( app, session_cookie='galaxycommunitysession', name="community" )
+    webapp = CommunityWebApplication( app, session_cookie='galaxycommunitysession', name="tool_shed" )
     add_ui_controllers( webapp, app )
     webapp.add_route( '/view/{owner}', controller='repository', action='sharable_owner' )
     webapp.add_route( '/view/{owner}/{name}', controller='repository', action='sharable_repository' )
@@ -70,7 +70,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/:action', controller='repository', action='index' )
     webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
     # Add the web API.
-    webapp.add_api_controllers( 'galaxy.webapps.community.api', app )
+    webapp.add_api_controllers( 'galaxy.webapps.tool_shed.api', app )
     webapp.api_mapper.resource( 'content',
                                 'contents',
                                 controller='repository_contents',
@@ -93,7 +93,7 @@ def app_factory( global_conf, **kwargs ):
         webapp = wrap_in_static( webapp, global_conf, **kwargs )
     # Close any pooled database connections before forking
     try:
-        galaxy.webapps.community.model.mapping.metadata.engine.connection_provider._pool.dispose()
+        galaxy.webapps.tool_shed.model.mapping.metadata.engine.connection_provider._pool.dispose()
     except:
         pass
     # Return
@@ -114,7 +114,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
     # protects Galaxy from improperly configured authentication in the
     # upstream server
     if asbool(conf.get( 'use_remote_user', False )):
-        from galaxy.webapps.community.framework.middleware.remoteuser import RemoteUser
+        from galaxy.webapps.tool_shed.framework.middleware.remoteuser import RemoteUser
         app = RemoteUser( app, maildomain = conf.get( 'remote_user_maildomain', None ),
                                display_servers = util.listify( conf.get( 'display_servers', '' ) ),
                                admin_users = conf.get( 'admin_users', '' ).split( ',' ) )

@@ -3,7 +3,7 @@ from galaxy import tools
 import galaxy.tools.data
 import galaxy.quota
 import galaxy.datatypes.registry
-import galaxy.webapps.community.model
+import galaxy.webapps.tool_shed.model
 from galaxy.openid.providers import OpenIDProviders
 from galaxy.web import security
 from galaxy.tags.tag_handler import CommunityTagHandler
@@ -12,7 +12,7 @@ class UniverseApplication( object ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, **kwargs ):
         print >> sys.stderr, "python path is: " + ", ".join( sys.path )
-        self.name = "community"
+        self.name = "tool_shed"
         # Read config file and check for errors
         self.config = config.Configuration( **kwargs )
         self.config.check()
@@ -26,10 +26,10 @@ class UniverseApplication( object ):
         else:
             db_url = "sqlite:///%s?isolation_level=IMMEDIATE" % self.config.database
         # Initialize database / check for appropriate schema version
-        from galaxy.webapps.community.model.migrate.check import create_or_verify_database
+        from galaxy.webapps.tool_shed.model.migrate.check import create_or_verify_database
         create_or_verify_database( db_url, self.config.database_engine_options )
         # Setup the database engine and ORM
-        from galaxy.webapps.community.model import mapping
+        from galaxy.webapps.tool_shed.model import mapping
         self.model = mapping.init( self.config.file_path,
                                    db_url,
                                    self.config.database_engine_options )

@@ -16,7 +16,7 @@ class Action( object ):
         self.model = model
 
 class RBACAgent:
-    """Class that handles galaxy community space security"""
+    """Handle Galaxy Tool Shed security"""
     permitted_actions = Bunch()
     def associate_components( self, **kwd ):
         raise 'No valid method of associating provided components: %s' % kwd
