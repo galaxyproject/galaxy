@@ -21,7 +21,7 @@ class TestEnvironment( object ):
     ENV_HISTORY_ID  = 'GALAXY_TEST_HISTORY_ID'
     ENV_FILE_DIR    = 'GALAXY_TEST_FILE_DIR'
     ENV_TOOL_SHED_TEST_FILE = 'GALAXY_TOOL_SHED_TEST_FILE'
-    ENV_SAVED_FILES_DIR = 'GALAXY_TEST_SAVE'
+    ENV_SAVED_FILES_DIR = 'GALAXY_TEST_SAVE' # AKA: twilltestcase.keepOutdir
 
     DEFAULT_PROTOCOL = 'http'
     DEFAULT_HOST    = 'localhost'
@@ -54,7 +54,8 @@ class TestEnvironment( object ):
             'tool_shed_test_file', self.ENV_TOOL_SHED_TEST_FILE, default=None )
         self.shed_tools_dict = self._get_shed_tools_dict()
 
-        self.keepOutdir = self._get_setting_from_config_or_env( 'keepOutdir', self.ENV_SAVED_FILES_DIR, default=None )
+        self.keepOutdir = self._get_setting_from_config_or_env(
+            'saved_output_dir', self.ENV_SAVED_FILES_DIR, default=None )
         self._init_saved_files_dir()
 
     def _get_setting_from_config_or_env( self, config_name, env_name, default=False ):
@@ -81,13 +82,15 @@ class TestEnvironment( object ):
             return {}
 
     def _init_saved_files_dir( self ):
-        """Set up the desired directory to save test output
+        """Set up the desired directory to save test output.
         """
-        if self.keepOutdir > '':
+        if self.saved_output_dir > '':
             try:
-                os.makedirs( self.keepOutdir )
-            except:
-                log.debug( 'unable to create saved files directory: %s' %( self.keepOutDir ) )
+                os.makedirs( self.saved_output_dir )
+            except Exception, exc:
+                log.error( 'unable to create saved files directory "%s": %s',
+                    self.saved_output_dir, exc, exc_info=True )
+                self.saved_output_dir = None
 
     @property
     def url( self ):
