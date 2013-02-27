@@ -28,7 +28,7 @@ class InstalledRepositoryManager( object ):
             ElementInclude.include( root )
             tool_path = root.get( 'tool_path', None )
             if tool_path:
-                tool_shed = galaxy.util.shed_util_common.clean_tool_shed_url( tool_shed_repository.tool_shed )
+                tool_shed = tool_shed.util.shed_util_common.clean_tool_shed_url( tool_shed_repository.tool_shed )
                 relative_path = os.path.join( tool_path,
                                               tool_shed,
                                               'repos',
