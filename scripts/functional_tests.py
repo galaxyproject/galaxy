@@ -314,6 +314,7 @@ def main():
         log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
+        tool_configs = app.config.tool_configs
         # What requires these? Handy for (eg) functional tests to save outputs?        
         if galaxy_test_save:
             os.environ[ 'GALAXY_TEST_SAVE' ] = galaxy_test_save
@@ -337,7 +338,6 @@ def main():
                 # Eliminate the migrated_tool_panel_config from the app's tool_configs, append the list of installed_tool_panel_configs,
                 # and reload the app's toolbox.
                 relative_migrated_tool_panel_config = os.path.join( app.config.root, migrated_tool_panel_config )
-                tool_configs = app.config.tool_configs
                 if relative_migrated_tool_panel_config in tool_configs:
                     tool_configs.remove( relative_migrated_tool_panel_config )
                 for installed_tool_panel_config in installed_tool_panel_configs:
