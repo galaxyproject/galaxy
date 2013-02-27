@@ -191,8 +191,7 @@ class Repository( object, APIItem ):
         fp.close()
 
 class RepositoryMetadata( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct',
-                                    'do_not_test', 'time_last_tested', 'tool_test_errors' )
+    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable' )
     api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct',
                                  'do_not_test', 'time_last_tested', 'tool_test_errors' )
     def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
