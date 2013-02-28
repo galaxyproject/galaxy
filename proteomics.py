@@ -7,8 +7,33 @@ from galaxy.datatypes.data import *
 from galaxy.datatypes.xml import *
 from galaxy.datatypes.sniff import *
 from galaxy.datatypes.binary import *
+from galaxy.datatypes.interval import *
 
 log = logging.getLogger(__name__)
+
+class ProtGff( Gff ):
+    """Tab delimited data in Gff format"""
+    file_ext = "prot_gff"
+    def set_peek( self, dataset, is_multi_byte=False ):
+        """Set the peek and blurb text"""
+        if not dataset.dataset.purged:
+            dataset.peek = data.get_file_peek( dataset.file_name, is_multi_byte=is_multi_byte )
+            dataset.blurb = 'Proteogenomics GFF'
+        else:
+            dataset.peek = 'file does not exist'
+            dataset.blurb = 'file purged from disk'
+
+    def sniff( self, filename ):
+        handle = open(filename)
+        xmlns_re = re.compile("^##gff-version")
+        for i in range(3):
+            line = handle.readline()
+            if xmlns_re.match(line.strip()):
+                handle.close()
+                return True
+
+        handle.close()
+        return False
 
 
 class Xls( Binary ):
