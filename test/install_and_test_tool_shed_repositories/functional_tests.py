@@ -37,6 +37,9 @@ eggs.require( "simplejson" )
 # This should not be required, but it is under certain conditions, thanks to this bug: http://code.google.com/p/python-nose/issues/detail?id=284
 eggs.require( "pysqlite" )
 
+import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
+import functional.test_toolbox as test_toolbox
+
 import atexit, logging, os, os.path, sys, tempfile, simplejson
 import twill, unittest, time
 import sys, threading, random
@@ -151,7 +154,11 @@ def get_repositories_to_install( location, source='file', format='json' ):
         listing = file( location, 'r' ).read()
     elif source == 'url':
         assert tool_shed_api_key is not None, 'Cannot proceed without tool shed API key.'
-        params = urllib.urlencode( dict( tools_functionally_correct='false', do_not_test='false', downloadable='true', malicious='false' ) )
+        params = urllib.urlencode( dict( tools_functionally_correct='false', 
+                                         do_not_test='false', 
+                                         downloadable='true', 
+                                         malicious='false',
+                                         must_include_tools='true' ) )
         api_url = get_api_url( base=location, parts=[ 'repository_revisions' ], params=params )
         if format == 'json':
             return json_from_url( api_url )
@@ -177,11 +184,11 @@ def json_from_url( url ):
 
 def register_test_failure( url, metadata_id, test_errors ):
     params = dict( tools_functionally_correct='false', do_not_test='true', tool_test_errors=test_errors )
-    return update( tool_shed_api_key, '%s' % ( url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params )
+    return update( tool_shed_api_key, '%s' % ( url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params, return_formatted=False )
 
 def register_test_success( url, metadata_id ):
     params = dict( tools_functionally_correct='true', do_not_test='false' )
-    return update( tool_shed_api_key, '%s' % ( url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params )
+    return update( tool_shed_api_key, '%s' % ( url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params, return_formatted=False )
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
@@ -354,9 +361,6 @@ def main():
     else:
         raise Exception( "Test HTTP server did not return '200 OK' after 10 tries" )
     log.info( "Embedded galaxy web server started" )
-    # ---- Load the modules to generate installation, testing, and uninstallation methods -------------------
-    import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
-    import functional.test_toolbox as test_toolbox
     if galaxy_test_proxy_port:
         log.info( "The embedded Galaxy application is running on %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
     else:
@@ -365,7 +369,7 @@ def main():
     success = False
     repository_status = {}
     try:
-        # Iterate through a list of repository info dicts
+        # Iterate through a list of repository info dicts.
         log.info( "Retrieving repositories to install from the URL:\n%s\n" % str( galaxy_tool_shed_url ) )
         repositories_to_install = get_repositories_to_install( galaxy_tool_shed_url, source='url' )
         log.info( "Retrieved %d repositories to install..." % len( repositories_to_install ) )
@@ -381,15 +385,15 @@ def main():
             """
             repository_id = repository_to_install_dict.get( 'repository_id', None )
             changeset_revision = repository_to_install_dict.get( 'changeset_revision', None )
-            metadata_revision_id = repository_to_install_dict[ 'id' ]
+            metadata_revision_id = repository_to_install_dict.get( 'id', None )
             repository_to_install_dict[ 'tool_shed_url' ] = galaxy_tool_shed_url
-            repository_info = get_repository_info_from_api( galaxy_tool_shed_url, repository_to_install_dict )
+            repository_info_dict = get_repository_info_from_api( galaxy_tool_shed_url, repository_to_install_dict )
             # If a repository is deleted or malicious, we don't need to test it.
-            if repository_info[ 'deleted' ] or repository_info[ 'deprecated' ]:
+            if repository_info_dict[ 'deleted' ] or repository_info_dict[ 'deprecated' ]:
                 log.info( "Skipping revision %s of repository id %s since it is either deleted or deprecated..." % ( str( changeset_revision ), str( repository_id ) ) )
                 continue
             log.info( "Installing and testing revision %s of repository id %s..." % ( str( changeset_revision ), str( repository_id ) ) )
-            repository_dict = dict( repository_info.items() + repository_to_install_dict.items() )
+            repository_dict = dict( repository_info_dict.items() + repository_to_install_dict.items() )
             """
             Each repository_dict looks something like:
             {'repository_id': '175812cd7caaf439', 
@@ -412,12 +416,11 @@ def main():
             # If the installation succeeds, set up and run functional tests for this repository. This is equivalent to 
             # sh run_functional_tests.sh -installed
             if success:
-                log.debug( 'Installation of %s succeeded, running any defined functional tests.' % repository_dict[ 'name' ] )
+                log.debug( 'Installation of %s succeeded, running all defined functional tests.' % repository_dict[ 'name' ] )
                 # Parse the tool panel config to get the test-data path for this repository.
                 if not os.path.exists( galaxy_shed_tools_dict ):
                     file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( dict() ) )
                 shed_tools_dict = parse_tool_panel_config( galaxy_shed_tool_conf_file, from_json_string( file( galaxy_shed_tools_dict, 'r' ).read() ) )
-                log.debug( shed_tools_dict )
                 # Write this to a file, so the functional test framework can find it.
                 file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( shed_tools_dict ) )
                 # Set up the environment so that test.functional.test_toolbox can find the Galaxy server we configured in this framework.
@@ -444,7 +447,7 @@ def main():
                 else:
                     # If the functional tests fail, log the output and submit it to the tool shed whence the repository was installed.
                     for failure in result.failures:
-                        label = str( failure[0] )
+                        test_status = dict( test=str( failure[0] ) )
                         log_output = failure[1].replace( '\\n', '\n' )
                         log_output = re.sub( r'control \d+:.+', r'', log_output )
                         log_output = re.sub( r'\n+', r'\n', log_output )
@@ -454,6 +457,8 @@ def main():
                         for line in log_output.split( '\n' ):
                             if line.startswith( 'Traceback' ):
                                 appending_to = 'traceback'
+                            elif '>> end captured' in line:
+                                continue
                             elif 'request returned None from get_history' in line:
                                 continue
                             elif '>> begin captured logging <<' in line:
@@ -468,9 +473,10 @@ def main():
                             if appending_to not in tmp_output:
                                 tmp_output[ appending_to ] = []
                             tmp_output[ appending_to ].append( line )
-                        for output_type in tmp_output:
-                            output[ output_type ] = '\n'.join( tmp_output[ output_type ] )
-                        test_errors.append( dict( test=label, output=output ) )
+                        for output_type in [ 'stderr', 'stdout', 'traceback' ]:
+                            if output_type in tmp_output:
+                                test_status[ output_type ] = '\n'.join( tmp_output[ output_type ] )
+                        test_errors.append( test_status )
                     if test_errors:
                         repository_status[ 'test_environment' ] = get_test_environment()
                         repository_status[ 'test_errors' ] = test_errors
