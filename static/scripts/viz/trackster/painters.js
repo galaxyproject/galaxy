@@ -739,7 +739,8 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             seq_offset = 0,
             gap = Math.round(w_scale/2),
             char_width_px = ctx.canvas.manager.char_width_px,
-            block_color = (strand === "+" ? this.prefs.block_color : this.prefs.reverse_strand_color);
+            block_color = (strand === "+" ? this.prefs.block_color : this.prefs.reverse_strand_color),
+            pack_mode = (mode === 'Pack');
             
         // Keep list of items that need to be drawn on top of initial drawing layer.
         var draw_last = [];
@@ -783,9 +784,9 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                         // Draw read base as rectangle.
                         ctx.fillStyle = block_color;
                         ctx.fillRect(s_start - gap, 
-                                     y_center + (mode === 'Pack' ? 1 : 4 ), 
+                                     y_center + (pack_mode ? 1 : 4 ), 
                                      s_end - s_start, 
-                                     (mode === 'Pack' ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
+                                     (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
 
                         // Draw sequence and/or variants.
                         var seq = read_seq.slice(seq_offset, seq_offset + cig_len),
@@ -815,14 +816,14 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                     // Draw base.
                                     var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
                                     ctx.fillStyle = this.base_color_fn(seq[c]);
-                                    if (mode === 'Pack') {
+                                    if (pack_mode && gap > 0) {
                                         ctx.fillText(seq[c], c_start, y_center + 9);
                                     }
                                     else {
                                         ctx.fillRect(c_start - gap, 
-                                                     y_center + 4, 
+                                                     y_center + (pack_mode ? 1 : 4), 
                                                      Math.floor( Math.max(1, w_scale) ),
-                                                     SQUISH_FEATURE_HEIGHT);
+                                                     (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
                                     }
                                 }
 

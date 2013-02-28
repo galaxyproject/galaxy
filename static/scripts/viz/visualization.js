@@ -615,7 +615,7 @@ var GenomeDataManager = Cache.extend({
     }
 });
 
-var ReferenceTrackDataManager = GenomeDataManager.extend({
+var GenomeReferenceDataManager = GenomeDataManager.extend({
     initialize: function(options) {
         // Use generic object in place of dataset and set urlRoot to fetch data.
         var dataset_placeholder = new Backbone.Model();
@@ -624,12 +624,10 @@ var ReferenceTrackDataManager = GenomeDataManager.extend({
     },
 
     load_data: function(region, mode, resolution, extra_params) {
-        if (resolution > 1) {
-            // Now that data is pre-fetched before draw, we don't load reference tracks
-            // unless it's at the bottom level.
-            return { data: null };
-        }
-        return GenomeDataManager.prototype.load_data.call(this, region, mode, resolution, extra_params);
+        // Fetch data if region is not too large.
+        return ( region.length() <= 100000 ? 
+                 GenomeDataManager.prototype.load_data.call(this, region, mode, resolution, extra_params) :
+                 { data: null, region: region } );
     }
 });
  
@@ -999,7 +997,7 @@ return {
     GenomeRegion: GenomeRegion,
     GenomeRegionCollection: GenomeRegionCollection,
     GenomeVisualization: GenomeVisualization,
-    ReferenceTrackDataManager: ReferenceTrackDataManager,
+    GenomeReferenceDataManager: GenomeReferenceDataManager,
     TrackBrowserRouter: TrackBrowserRouter,
     TrackConfig: TrackConfig,
     Visualization: Visualization,

@@ -2928,9 +2928,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             can_draw_now = false;
         }
         
-        // Get seq data if needed, maybe a deferred
+        // Get reference data if needed, maybe a deferred
         var seq_data;
-        if ( view.reference_track && w_scale > view.canvas_manager.char_width_px ) {
+        if ( view.reference_track ) {
             seq_data = view.reference_track.data_manager.get_data(region, track.mode, resolution, view.reference_track.data_url_extra_params);
             if ( is_deferred( seq_data ) ) {
                 can_draw_now = false;
@@ -3463,7 +3463,7 @@ var ReferenceTrack = function (view) {
     this.content_div.css("border", "none");
     this.data_url = reference_url + "/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
-    this.data_manager = new visualization.ReferenceTrackDataManager({
+    this.data_manager = new visualization.GenomeReferenceDataManager({
         data_url: this.data_url,
         can_subset: this.can_subset
     });
