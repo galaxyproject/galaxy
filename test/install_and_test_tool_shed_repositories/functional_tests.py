@@ -363,17 +363,42 @@ def main():
         log.info( "The embedded Galaxy application is running on %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     log.info( "Repositories will be installed from the tool shed at %s" % galaxy_tool_shed_url )
     success = False
+    repository_status = {}
     try:
-        repository_status = {}
-        # Iterate through a list of repository info dicts.
-        for repository_dict in get_repositories_to_install( galaxy_tool_shed_url, source='url' ):
-            metadata_revision_id = repository_dict[ 'id' ]
-            repository_dict[ 'tool_shed_url' ] = galaxy_tool_shed_url
-            repository_info = get_repository_info_from_api( galaxy_tool_shed_url, repository_dict )
+        # Iterate through a list of repository info dicts
+        log.info( "Retrieving repositories to install from the URL:\n%s\n" % str( galaxy_tool_shed_url ) )
+        repositories_to_install = get_repositories_to_install( galaxy_tool_shed_url, source='url' )
+        log.info( "Retrieved %d repositories to install..." % len( repositories_to_install ) )
+        for repository_to_install_dict in repositories_to_install:
+            """
+            Each repository_to_install_dict looks something like:
+            {'repository_id': '175812cd7caaf439', 
+             'url': '/api/repository_revisions/175812cd7caaf439', 
+             'malicious': False, 
+             'downloadable': True, 
+             'changeset_revision': '2388033730f3', 
+             'id': '175812cd7caaf439'}
+            """
+            repository_id = repository_to_install_dict.get( 'repository_id', None )
+            changeset_revision = repository_to_install_dict.get( 'changeset_revision', None )
+            metadata_revision_id = repository_to_install_dict[ 'id' ]
+            repository_to_install_dict[ 'tool_shed_url' ] = galaxy_tool_shed_url
+            repository_info = get_repository_info_from_api( galaxy_tool_shed_url, repository_to_install_dict )
             # If a repository is deleted or malicious, we don't need to test it.
             if repository_info[ 'deleted' ] or repository_info[ 'deprecated' ]:
+                log.info( "Skipping revision %s of repository id %s since it is either deleted or deprecated..." % ( str( changeset_revision ), str( repository_id ) ) )
                 continue
-            repository_dict = dict( repository_info.items() + repository_dict.items() )
+            log.info( "Installing and testing revision %s of repository id %s..." % ( str( changeset_revision ), str( repository_id ) ) )
+            repository_dict = dict( repository_info.items() + repository_to_install_dict.items() )
+            """
+            Each repository_dict looks something like:
+            {'repository_id': '175812cd7caaf439', 
+             'url': '/api/repository_revisions/175812cd7caaf439', 
+             'malicious': False, 
+             'downloadable': True, 
+             'changeset_revision': '2388033730f3', 
+             'id': '175812cd7caaf439'}
+            """
             # Generate the method that will install this repository into the running Galaxy instance.
             test_install_repositories.generate_install_method( repository_dict )
             os.environ[ 'GALAXY_INSTALL_TEST_HOST' ] = galaxy_test_host
@@ -410,8 +435,9 @@ def main():
                 # Run the configured tests.
                 result = run_tests( test_config )
                 success = result.wasSuccessful()
+                repository_dict[ 'test_environment' ] = get_test_environment()
                 repository_dict[ 'functional_tests_passed' ] = success
-                repository_status = dict( environment=get_test_environment(), tests=[] )
+                test_errors = []
                 if success:
                     register_test_success( galaxy_tool_shed_url, metadata_revision_id )
                     log.debug( 'Repository %s installed and passed functional tests.' % repository_dict[ 'name' ] ) 
@@ -444,7 +470,10 @@ def main():
                             tmp_output[ appending_to ].append( line )
                         for output_type in tmp_output:
                             output[ output_type ] = '\n'.join( tmp_output[ output_type ] )
-                        repository_status[ 'tests' ].append( dict( test=label, output=output ) )
+                        test_errors.append( dict( test=label, output=output ) )
+                    if test_errors:
+                        repository_status[ 'test_environment' ] = get_test_environment()
+                        repository_status[ 'test_errors' ] = test_errors
                     register_test_failure( galaxy_tool_shed_url, metadata_revision_id, repository_status )
                     log.debug( 'Repository %s installed, but did not pass functional tests.' % repository_dict[ 'name' ] )
                 # Delete the completed tool functional tests from the test_toolbox.__dict__, otherwise nose will find them and try to re-run the
