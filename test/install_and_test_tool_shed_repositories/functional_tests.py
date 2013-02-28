@@ -4,7 +4,7 @@
 #       order to run functional tests on repository tools after installation. The install_and_test_tool_shed_repositories.sh
 #       will execute this script with the appropriate parameters.
 
-import os, sys, shutil, tempfile, re, string, urllib
+import os, sys, shutil, tempfile, re, string, urllib, platform
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
@@ -49,6 +49,8 @@ from galaxy.app import UniverseApplication
 from galaxy.web import buildapp
 from galaxy.util import parse_xml
 from galaxy.util.json import from_json_string, to_json_string
+
+from tool_shed.util.shed_util_common import url_join
 
 import nose.core
 import nose.config
@@ -115,7 +117,7 @@ def get_api_url( base, parts=[], params=None, key=None ):
         parts.insert( 0, 'api' )
     elif 'api' not in parts: 
         parts.insert( 0, 'api' )
-    url = '%s/%s' % ( base, '/'.join( parts ) )
+    url = url_join( base, *parts )
     if key:
         url += '?%s' % urllib.urlencode( dict( key=key ) )
     else:
@@ -149,7 +151,7 @@ def get_repositories_to_install( location, source='file', format='json' ):
         listing = file( location, 'r' ).read()
     elif source == 'url':
         assert tool_shed_api_key is not None, 'Cannot proceed without tool shed API key.'
-        params = urllib.urlencode( dict( downloadable='true' ) )
+        params = urllib.urlencode( dict( deprecated='false', deleted='false', downloadable='true', tools_functionally_correct='false', do_not_test='false' ) )
         api_url = get_api_url( base=location, parts=[ 'repository_revisions' ], params=params )
         if format == 'json':
             return json_from_url( api_url )
@@ -160,6 +162,14 @@ def get_repositories_to_install( location, source='file', format='json' ):
     else:
         raise AssertonError( 'Unknown format %s.' % format )
 
+def get_test_environment():
+    rval = {}
+    rval[ 'python_version' ] = platform.python_version()
+    rval[ 'architecture' ] = platform.machine()
+    os, hostname, os_version, uname, arch, processor = platform.uname()
+    rval[ 'system' ] = '%s %s' % ( os, os_version )
+    return rval
+
 def json_from_url( url ):
     url_handle = urllib.urlopen( url )
     url_contents = url_handle.read()
@@ -167,11 +177,11 @@ def json_from_url( url ):
 
 def register_test_failure( url, metadata_id, test_errors ):
     params = dict( tools_functionally_correct='false', do_not_test='true', tool_test_errors=test_errors )
-    return update( tool_shed_api_key, '%s/api/%s' % ( galaxy_tool_shed_url, '/'.join( [ 'repository_revisions', metadata_id ] ) ), params )
+    return update( tool_shed_api_key, '%s' % ( url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params )
 
 def register_test_success( url, metadata_id ):
     params = dict( tools_functionally_correct='true', do_not_test='false' )
-    return update( tool_shed_api_key, '%s/api/%s' % ( galaxy_tool_shed_url, '/'.join( [ 'repository_revisions', metadata_id ] ) ), params )
+    return update( tool_shed_api_key, '%s' % ( url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params )
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
@@ -348,12 +358,13 @@ def main():
     import install_and_test_tool_shed_repositories.functional.test_install_repositories as test_install_repositories
     import functional.test_toolbox as test_toolbox
     if galaxy_test_proxy_port:
-        log.info( "Tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
+        log.info( "The embedded Galaxy application is running on %s:%s" % ( galaxy_test_host, galaxy_test_proxy_port ) )
     else:
-        log.info( "Tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
+        log.info( "The embedded Galaxy application is running on %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
+    log.info( "Repositories will be installed from the tool shed at %s" % galaxy_tool_shed_url )
     success = False
     try:
-        repository_status = []
+        repository_status = {}
         # Iterate through a list of repository info dicts.
         for repository_dict in get_repositories_to_install( galaxy_tool_shed_url, source='url' ):
             metadata_revision_id = repository_dict[ 'id' ]
@@ -397,12 +408,12 @@ def main():
                 result = run_tests( test_config )
                 success = result.wasSuccessful()
                 repository_dict[ 'functional_tests_passed' ] = success
+                repository_status = dict( environment=get_test_environment(), tests=[] )
                 if success:
                     register_test_success( galaxy_tool_shed_url, metadata_revision_id )
                     log.debug( 'Repository %s installed and passed functional tests.' % repository_dict[ 'name' ] ) 
                 else:
                     # If the functional tests fail, log the output and submit it to the tool shed whence the repository was installed.
-                    repository_dict[ 'tool_test_errors' ] = []
                     for failure in result.failures:
                         label = str( failure[0] )
                         log_output = failure[1].replace( '\\n', '\n' )
@@ -430,10 +441,9 @@ def main():
                             tmp_output[ appending_to ].append( line )
                         for output_type in tmp_output:
                             output[ output_type ] = '\n'.join( tmp_output[ output_type ] )
-                        repository_dict[ 'tool_test_errors' ].append( dict( test=label, output=output ) )
-                    register_test_failure( galaxy_tool_shed_url, metadata_revision_id, repository_dict[ 'tool_test_errors' ] )
+                        repository_status[ 'tests' ].append( dict( test=label, output=output ) )
+                    register_test_failure( galaxy_tool_shed_url, metadata_revision_id, repository_status )
                     log.debug( 'Repository %s installed, but did not pass functional tests.' % repository_dict[ 'name' ] )
-                repository_status.append( repository_dict )
                 # Delete the completed tool functional tests from the test_toolbox.__dict__, otherwise nose will find them and try to re-run the
                 # tests after uninstalling the repository.
                 tests_to_delete = []
