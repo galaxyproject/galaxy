@@ -35,6 +35,10 @@ class RepositoryRevisionsController( BaseAPIController ):
         downloadable =  kwd.get( 'downloadable', None )
         if downloadable is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.downloadable == util.string_as_bool( downloadable ) )
+        # Filter by malicious if received.
+        malicious =  kwd.get( 'malicious', None )
+        if malicious is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.malicious == util.string_as_bool( malicious ) )
         # Filter by tools_functionally_correct if received.
         tools_functionally_correct = kwd.get( 'tools_functionally_correct', None )
         if tools_functionally_correct is not None:
