@@ -880,6 +880,21 @@ var TracksterView = Backbone.View.extend({
         this.render();
         this.canvas_manager = new visualization.CanvasManager( this.container.get(0).ownerDocument );
         this.reset();
+
+        // Define track configuration
+        this.config = new DrawableConfig( {
+            track: this,
+            params: [
+                { key: 'a_color', label: 'A Color', type: 'color', default_value: "FF0000" },
+                { key: 'c_color', label: 'C Color', type: 'color', default_value: "00FF00" },
+                { key: 'g_color', label: 'G Color', type: 'color', default_value: "0000FF" },
+                { key: 't_color', label: 'T Color', type: 'color', default_value: "FF00FF" }
+            ], 
+            saved_values: obj_dict.prefs,
+            onchange: function() {
+                track.request_redraw(false, true);
+            }
+        });
     },
 
     render: function() {
@@ -1102,7 +1117,12 @@ var TracksterView = Backbone.View.extend({
         
         this.reset();
         $(window).trigger("resize");
+    },
+
+    get_base_color: function(base) {
+        return this.config.values[ base.toLowerCase() + '_color' ];
     }
+
 });
 
 // FIXME: need to use this approach to enable inheritance of DrawableCollection functions.
@@ -1983,7 +2003,7 @@ extend(DrawableConfig.prototype, {
                 if ( param.type === 'float' ) {
                     value = parseFloat( value );
                 } else if ( param.type === 'int' ) {
-                    value = parseInt( value );
+                    value = parseInt( value, 10 );
                 } else if ( param.type === 'bool' ) {
                     value = container.find( '#' + id ).is( ':checked' );
                 }
@@ -3487,8 +3507,9 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // Draw sequence data.
         var canvas = ctx.canvas;
         ctx.font = ctx.canvas.manager.default_font;
-        ctx.textAlign = "center";            
+        ctx.textAlign = "center";
         for (var c = 0, str_len = seq_data.length; c < str_len; c++) {
+            ctx.fillStyle = this.view.get_base_color(seq_data[c]);
             ctx.fillText(seq_data[c], Math.floor(c * w_scale), 10);
         }
         return new Tile(this, region, resolution, canvas, subset);
@@ -4053,10 +4074,13 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }        
         
         // Create painter.
-        var filter_alpha_scaler = (this.filters_manager.alpha_filter ? new FilterScaler(this.filters_manager.alpha_filter) : null);
-        var filter_height_scaler = (this.filters_manager.height_filter ? new FilterScaler(this.filters_manager.height_filter) : null);
-        // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
-        var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, ref_seq);
+        var filter_alpha_scaler = (this.filters_manager.alpha_filter ? new FilterScaler(this.filters_manager.alpha_filter) : null),
+            filter_height_scaler = (this.filters_manager.height_filter ? new FilterScaler(this.filters_manager.height_filter) : null),
+            painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, 
+                                         // HACK: ref_seq only be defined for ReadTracks, and only the ReadPainter accepts that argument
+                                         ref_seq,
+                                         // Only the ReadPainer will use this function
+                                         function(b) { return track.view.get_base_color(b); });
         var feature_mapper = null;
 
         ctx.fillStyle = this.prefs.block_color;
