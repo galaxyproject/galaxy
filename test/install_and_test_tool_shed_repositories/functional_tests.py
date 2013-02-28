@@ -151,7 +151,7 @@ def get_repositories_to_install( location, source='file', format='json' ):
         listing = file( location, 'r' ).read()
     elif source == 'url':
         assert tool_shed_api_key is not None, 'Cannot proceed without tool shed API key.'
-        params = urllib.urlencode( dict( deprecated='false', deleted='false', downloadable='true', tools_functionally_correct='false', do_not_test='false' ) )
+        params = urllib.urlencode( dict( tools_functionally_correct='false', do_not_test='false', downloadable='true', malicious='false' ) )
         api_url = get_api_url( base=location, parts=[ 'repository_revisions' ], params=params )
         if format == 'json':
             return json_from_url( api_url )
@@ -370,6 +370,9 @@ def main():
             metadata_revision_id = repository_dict[ 'id' ]
             repository_dict[ 'tool_shed_url' ] = galaxy_tool_shed_url
             repository_info = get_repository_info_from_api( galaxy_tool_shed_url, repository_dict )
+            # If a repository is deleted or malicious, we don't need to test it.
+            if repository_info[ 'deleted' ] or repository_info[ 'deprecated' ]:
+                continue
             repository_dict = dict( repository_info.items() + repository_dict.items() )
             # Generate the method that will install this repository into the running Galaxy instance.
             test_install_repositories.generate_install_method( repository_dict )
