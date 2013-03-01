@@ -65,7 +65,6 @@ def upgrade():
         log.debug( "Adding time_last_tested column to the repository_metadata table failed: %s" % str( e ) )
     c = Column( "tool_test_errors", JSONType, nullable=True )
     try:
-        pass
         # Create tool_test_errors column
         c.create( RepositoryMetadata_table )
         assert c is RepositoryMetadata_table.c.tool_test_errors
