@@ -29,6 +29,9 @@ class TestEnvironment( object ):
 
     @classmethod
     def instance( cls, config=None ):
+        """Returns the singleton of TestEnvironment, instantiating it first if it
+        does not yet exist.
+        """
         # singleton pattern
         if( ( not cls._instance )
         or  ( config ) ):
@@ -36,25 +39,26 @@ class TestEnvironment( object ):
             cls._instance = cls( config )
         return cls._instance
 
-    @classmethod
-    def get_server_url( cls ):
-        return cls.instance().url
-
     def __init__( self, env_config_dict=None ):
         self.config = env_config_dict or {}
 
-        self.protocol = self._get_setting_from_config_or_env( 'protocol', self.ENV_PROTOCOL, self.DEFAULT_PROTOCOL )
-        self.host = self._get_setting_from_config_or_env( 'host', self.ENV_HOST, self.DEFAULT_HOST )
-        self.port = self._get_setting_from_config_or_env( 'port', self.ENV_PORT, self.DEFAULT_PORT )
+        self.protocol = self._get_setting_from_config_or_env(
+            'protocol', self.ENV_PROTOCOL, self.DEFAULT_PROTOCOL )
+        self.host = self._get_setting_from_config_or_env(
+            'host', self.ENV_HOST, self.DEFAULT_HOST )
+        self.port = self._get_setting_from_config_or_env(
+            'port', self.ENV_PORT, self.DEFAULT_PORT )
 
-        self.history_id = self._get_setting_from_config_or_env( 'history_id', self.ENV_HISTORY_ID, default=None )
-        self.file_dir = self._get_setting_from_config_or_env( 'file_dir', self.ENV_FILE_DIR, default=None )
+        self.history_id = self._get_setting_from_config_or_env(
+            'history_id', self.ENV_HISTORY_ID, default=None )
+        self.file_dir = self._get_setting_from_config_or_env(
+            'file_dir', self.ENV_FILE_DIR, default=None )
 
         self.tool_shed_test_file = self._get_setting_from_config_or_env(
             'tool_shed_test_file', self.ENV_TOOL_SHED_TEST_FILE, default=None )
         self.shed_tools_dict = self._get_shed_tools_dict()
 
-        self.keepOutdir = self._get_setting_from_config_or_env(
+        self.saved_output_dir = self._get_setting_from_config_or_env(
             'saved_output_dir', self.ENV_SAVED_FILES_DIR, default=None )
         self._init_saved_files_dir()
 
@@ -62,6 +66,7 @@ class TestEnvironment( object ):
         """Try to get a setting from (in order):
         TestEnvironment.config, the os env, or some default (if not False).
         """
+        #TODO: if falsy value needed, use None - not ideal
         config = self.config.get( config_name, None )
         env = os.environ.get( env_name, None )
         if( ( not ( config or env ) )
@@ -94,6 +99,8 @@ class TestEnvironment( object ):
 
     @property
     def url( self ):
+        """Builds and returns the url of the test server.
+        """
         url = '%s://%s' %( self.protocol, self.host )
         if self.port and self.port != 80:
             url += ':%s' %( str( self.port ) )

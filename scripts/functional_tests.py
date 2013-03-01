@@ -42,7 +42,6 @@ import nose.config
 import nose.loader
 import nose.plugins.manager
 
-import pprint
 log = logging.getLogger( "functional_tests.py" )
 
 default_galaxy_test_host = "localhost"
@@ -227,7 +226,6 @@ def main():
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
         # Build the Universe Application
-        print 'app.kwargs:\n%s' %( pprint.pformat( kwargs ) )
         app = UniverseApplication( job_queue_workers = 5,
                                    id_secret = 'changethisinproductiontoo',
                                    template_path = "templates",

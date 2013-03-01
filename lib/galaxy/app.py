@@ -45,8 +45,6 @@ class UniverseApplication( object ):
             self.tool_shed_registry = tool_shed.tool_shed_registry.Registry( self.config.root, self.config.tool_sheds_config )
         else:
             self.tool_shed_registry = None
-        log.debug( 'self.config.tool_sheds_config: %s, self.tool_shed_registry: %s',
-            self.config.tool_sheds_config, self.tool_shed_registry )
         # Initialize database / check for appropriate schema version.  # If this
         # is a new installation, we'll restrict the tool migration messaging.
         from galaxy.model.migrate.check import create_or_verify_database
