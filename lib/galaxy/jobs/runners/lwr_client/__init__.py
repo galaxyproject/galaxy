@@ -132,7 +132,7 @@ class FileStager(object):
 
     """
 
-    def __init__(self, client, command_line, config_files, input_files, output_files, tool_dir, working_directory):
+    def __init__(self, client, tool, command_line, config_files, input_files, output_files, working_directory):
         """
         """
         self.client = client
@@ -140,7 +140,9 @@ class FileStager(object):
         self.config_files = config_files
         self.input_files = input_files
         self.output_files = output_files
-        self.tool_dir = os.path.abspath(tool_dir)
+        self.tool_id = tool.id
+        self.tool_version = tool.version
+        self.tool_dir = os.path.abspath(tool.tool_dir)
         self.working_directory = working_directory
 
         # Setup job inputs, these will need to be rewritten before
@@ -161,7 +163,7 @@ class FileStager(object):
         self.__upload_rewritten_config_files()
 
     def __handle_setup(self):
-        job_config = self.client.setup()
+        job_config = self.client.setup(self.tool_id, self.tool_version)
 
         self.new_working_directory = job_config['working_directory']
         self.new_outputs_directory = job_config['outputs_directory']
@@ -480,11 +482,16 @@ class Client(object):
         self.__raw_execute("clean", {"job_id": self.job_id})
 
     @parseJson()
-    def setup(self):
+    def setup(self, tool_id=None, tool_version=None):
         """
         Setup remote LWR server to run this job.
         """
-        return self.__raw_execute("setup", {"job_id": self.job_id})
+        setup_args = {"job_id": self.job_id}
+        if tool_id:
+            setup_args["tool_id"] = tool_id
+        if tool_version:
+            setup_args["tool_version"] = tool_version
+        return self.__raw_execute("setup", setup_args)
 
 
 def _read(path):
