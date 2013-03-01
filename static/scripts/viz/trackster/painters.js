@@ -6,6 +6,7 @@ var extend = _.extend;
  * Compute the type of overlap between two regions. They are assumed to be on the same chrom/contig.
  * The overlap is computed relative to the second region; hence, OVERLAP_START indicates that the first
  * region overlaps the start (but not the end) of the second region.
+ * NOTE: Coordinates are assumed to be in BED format: half open (start is closed, end is open).
  */
 var BEFORE = 1001, CONTAINS = 1002, OVERLAP_START = 1003, OVERLAP_END = 1004, CONTAINED_BY = 1005, AFTER = 1006;
 var compute_overlap = function(first_region, second_region) {
@@ -14,7 +15,7 @@ var compute_overlap = function(first_region, second_region) {
         second_start = second_region[0], second_end = second_region[1],
         overlap;
     if (first_start < second_start) {
-        if (first_end < second_start) {
+        if (first_end <= second_start) {
             overlap = BEFORE;
         }
         else if (first_end <= second_end) {
@@ -763,7 +764,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             }
             var seq_start = feature_start + base_offset,
                 // -0.5 to offset sequence between bases.
-                s_start = Math.floor( Math.max(0, (seq_start - tile_low - 0.5) * w_scale) ),
+                s_start = Math.floor( Math.max(-0.5 * w_scale, (seq_start - tile_low - 0.5) * w_scale) ),
                 s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low - 0.5) * w_scale) );
             
             // Make sure that read is drawn even if it too small to be rendered officially; in this case,
@@ -858,7 +859,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     var insert_x_coord = s_start - gap;
                     
                     if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
-                        var seq = ref_seq.slice(seq_offset, seq_offset + cig_len);
+                        var seq = read_seq.slice(seq_offset, seq_offset + cig_len);
                         // Insertion point is between the sequence start and the previous base: (-gap) moves
                         // back from sequence start to insertion point.
                         if (this.prefs.show_insertions) {
@@ -869,7 +870,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                             // Draw sequence.
                             // X center is offset + start - <half_sequence_length>
                             var x_center = s_start - (s_end - s_start)/2;
-                            if ( (mode === "Pack" || this.mode === "Auto") && ref_seq !== undefined && w_scale > char_width_px) {
+                            if ( (mode === "Pack" || this.mode === "Auto") && read_seq !== undefined && w_scale > char_width_px) {
                                 // Draw sequence container.
                                 ctx.fillStyle = "yellow";
                                 ctx.fillRect(x_center - gap, y_center - 9, s_end - s_start, 9);
@@ -905,7 +906,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                             }
                         }
                         else {
-                            if ( (mode === "Pack" || this.mode === "Auto") && ref_seq !== undefined && w_scale > char_width_px) {
+                            if ( (mode === "Pack" || this.mode === "Auto") && read_seq !== undefined && w_scale > char_width_px) {
                                 // Show insertions with a single number at the insertion point.
                                 draw_last.push( { type: "text", data: [seq.length, insert_x_coord, y_center + 9] } );
                             }
@@ -955,7 +956,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             feature_end = feature[2],
             feature_name = feature[3],
             // -0.5 to put element between bases.
-            f_start = Math.floor( Math.max(0, (feature_start - tile_low - 0.5) * w_scale) ),
+            f_start = Math.floor( Math.max(-0.5 * w_scale, (feature_start - tile_low - 0.5) * w_scale) ),
             f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low - 0.5) * w_scale)) ),
             y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
             label_color = this.prefs.label_color;
@@ -997,12 +998,10 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             // Read is single.
             this.draw_read(ctx, mode, w_scale, y_center, tile_low, tile_high, feature_start, feature[4], feature[5], feature[6]);
         }
-        if (mode === "Pack" && feature_start > tile_low && feature_name !== ".") {
+        if (mode === "Pack" && feature_start >= tile_low && feature_name !== ".") {
             // Draw label.
             ctx.fillStyle = this.prefs.label_color;
-            // FIXME: eliminate tile_index
-            var tile_index = 1;
-            if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
+            if (tile_low === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                 ctx.textAlign = "left";
                 ctx.fillText(feature_name, f_end + LABEL_SPACING, y_center + 8);
             } else {
