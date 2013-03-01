@@ -197,8 +197,7 @@ var LinePainter = function(data, view_start, view_end, prefs, mode) {
 LinePainter.prototype.default_prefs = { min_value: undefined, max_value: undefined, mode: "Histogram", color: "#000", overflow_color: "#F66" };
 
 LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
-    var 
-        in_path = false,
+    var in_path = false,
         min_value = this.prefs.min_value,
         max_value = this.prefs.max_value,
         vertical_range = max_value - min_value,
@@ -222,13 +221,13 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
     var x_scaled, y, delta_x_px;
     if (data.length > 1) {
         delta_x_px = Math.ceil((data[1][0] - data[0][0]) * w_scale);
-    } else {
+    } 
+    else {
         delta_x_px = 10;
     }
     
     // Extract RGB from preference color.
-    var
-        pref_color = parseInt( this.prefs.color.slice(1), 16 ),
+    var pref_color = parseInt( this.prefs.color.slice(1), 16 ),
         pref_r = (pref_color & 0xff0000) >> 16,
         pref_g = (pref_color & 0x00ff00) >> 8,
         pref_b = pref_color & 0x0000ff;
@@ -236,7 +235,8 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
     // Paint track.
     for (var i = 0, len = data.length; i < len; i++) {
         ctx.fillStyle = ctx.strokeStyle = this.prefs.color;
-        x_scaled = Math.round((data[i][0] - view_start) * w_scale);
+        // -0.5 to offset drawing between bases.
+        x_scaled = Math.round((data[i][0] - view_start - 0.5) * w_scale);
         y = data[i][1];
         var top_overflow = false, bot_overflow = false;
         if (y === null) {
@@ -494,14 +494,14 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
      * Draw a feature. Returns an array with feature's start and end X coordinates.
      */
     draw_element: function(ctx, mode, feature, slot, tile_low, tile_high, w_scale, y_scale, width) {
-        var 
-            feature_uid = feature[0],
+        var feature_uid = feature[0],
             feature_start = feature[1],
             feature_end = feature[2],
             feature_name = feature[3],
             feature_strand = feature[4],
-            f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
-            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
+            // -0.5 to offset region between bases.
+            f_start = Math.floor( Math.max(0, (feature_start - tile_low - 0.5) * w_scale) ),
+            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low - 0.5) * w_scale)) ),
             draw_start = f_start,
             draw_end = f_end,
             y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale + this.get_top_padding(width),
@@ -615,8 +615,9 @@ extend(LinkedFeaturePainter.prototype, FeaturePainter.prototype, {
                 var start_and_height;
                 for (var k = 0, k_len = feature_blocks.length; k < k_len; k++) {
                     var block = feature_blocks[k],
-                        block_start = Math.floor( Math.max(0, (block[0] - tile_low) * w_scale) ),
-                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low) * w_scale)) ),
+                        // -0.5 to offset block between bases.
+                        block_start = Math.floor( Math.max(0, (block[0] - tile_low - 0.5) * w_scale) ),
+                        block_end = Math.ceil( Math.min(width, Math.max((block[1] - tile_low - 0.5) * w_scale)) ),
                         last_block_start, last_block_end;
 
                     // Skip drawing if block not on tile.    
@@ -761,8 +762,9 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                 base_offset -= cig_len;
             }
             var seq_start = feature_start + base_offset,
-                s_start = Math.floor( Math.max(0, (seq_start - tile_low) * w_scale) ),
-                s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low) * w_scale) );
+                // -0.5 to offset sequence between bases.
+                s_start = Math.floor( Math.max(0, (seq_start - tile_low - 0.5) * w_scale) ),
+                s_end = Math.floor( Math.max(0, (seq_start + cig_len - tile_low - 0.5) * w_scale) );
             
             // Make sure that read is drawn even if it too small to be rendered officially; in this case,
             // read is drawn at 1px.
@@ -783,7 +785,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     if (is_overlap([seq_start, seq_start + cig_len], tile_region)) {
                         // Draw read base as rectangle.
                         ctx.fillStyle = block_color;
-                        ctx.fillRect(s_start - gap, 
+                        ctx.fillRect(s_start, 
                                      y_center + (pack_mode ? 1 : 4 ), 
                                      s_end - s_start, 
                                      (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
@@ -816,13 +818,14 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                     // Draw base.
                                     var c_start = Math.floor( Math.max(0, (seq_start + c - tile_low) * w_scale) );
                                     ctx.fillStyle = this.base_color_fn(seq[c]);
-                                    if (pack_mode && gap > 0) {
+                                    if (pack_mode && w_scale > char_width_px) {
                                         ctx.fillText(seq[c], c_start, y_center + 9);
                                     }
-                                    else {
-                                        ctx.fillRect(c_start - gap, 
+                                    // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
+                                    else if (w_scale > 0.05) {
+                                        ctx.fillRect(c_start, 
                                                      y_center + (pack_mode ? 1 : 4), 
-                                                     Math.floor( Math.max(1, w_scale) ),
+                                                     Math.max( 1, Math.round(w_scale) ),
                                                      (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
                                     }
                                 }
@@ -835,14 +838,14 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     break;
                 case "N": // Skipped bases.
                     ctx.fillStyle = CONNECTOR_COLOR;
-                    ctx.fillRect(s_start - gap, y_center + 5, s_end - s_start, 1);
+                    ctx.fillRect(s_start, y_center + 5, s_end - s_start, 1);
                     //ctx.dashedLine(s_start + this.left_offset, y_center + 5, this.left_offset + s_end, y_center + 5);
                     // No change in seq_offset because sequence not used when skipping.
                     base_offset += cig_len;
                     break;
                 case "D": // Deletion.
                     ctx.fillStyle = "red";
-                    ctx.fillRect(s_start - gap, y_center + 4, s_end - s_start, 3);
+                    ctx.fillRect(s_start, y_center + 4, s_end - s_start, 3);
                     // TODO: is this true? No change in seq_offset because sequence not used when skipping.
                     base_offset += cig_len;
                     break;
@@ -951,17 +954,11 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             feature_start = feature[1],
             feature_end = feature[2],
             feature_name = feature[3],
-            f_start = Math.floor( Math.max(0, (feature_start - tile_low) * w_scale) ),
-            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low) * w_scale)) ),
+            // -0.5 to put element between bases.
+            f_start = Math.floor( Math.max(0, (feature_start - tile_low - 0.5) * w_scale) ),
+            f_end   = Math.ceil( Math.min(width, Math.max(0, (feature_end - tile_low - 0.5) * w_scale)) ),
             y_center = (mode === "Dense" ? 0 : (0 + slot)) * y_scale,
-            label_color = this.prefs.label_color,
-            // Left-gap for label text since we align chrom text to the position tick.
-            gap = 0;
-
-        // TODO: fix gap usage; also see note on gap in draw_read.
-        if ((mode === "Pack" || this.mode === "Auto") && w_scale > ctx.canvas.manager.char_width_px) {
-            var gap = Math.round(w_scale/2);
-        }
+            label_color = this.prefs.label_color;
         
         // Draw read.
         if (feature[5] instanceof Array) {
@@ -994,7 +991,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             // make it possible to put together more easily.
             if (connector && b2_start > b1_end) {
                 ctx.fillStyle = CONNECTOR_COLOR;
-                dashedLine(ctx, b1_end - gap, y_center + 5, b2_start - gap, y_center + 5);
+                dashedLine(ctx, b1_end, y_center + 5, b2_start, y_center + 5);
             }
         } else {
             // Read is single.
@@ -1007,10 +1004,10 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
             var tile_index = 1;
             if (tile_index === 0 && f_start - ctx.measureText(feature_name).width < 0) {
                 ctx.textAlign = "left";
-                ctx.fillText(feature_name, f_end + LABEL_SPACING - gap, y_center + 8);
+                ctx.fillText(feature_name, f_end + LABEL_SPACING, y_center + 8);
             } else {
                 ctx.textAlign = "right";
-                ctx.fillText(feature_name, f_start - LABEL_SPACING - gap, y_center + 8);
+                ctx.fillText(feature_name, f_start - LABEL_SPACING, y_center + 8);
             }
         }
         
