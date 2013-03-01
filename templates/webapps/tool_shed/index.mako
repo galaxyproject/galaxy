@@ -67,6 +67,22 @@
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>
                             </div>
                         </div>
+                        <div class="toolSectionPad"></div>
+                        <div class="toolSectionTitle">
+                            Valid Galaxy Utilities
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_tools' )}">Tools</a>
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_datatypes' )}">Custom datatypes</a>
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repository_dependencies' )}">Repository dependency definitions</a>
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_tool_dependencies' )}">Tool dependency definitions</a>
+                        </div>
                     %endif
                     <div class="toolSectionPad"></div>
                     <div class="toolSectionTitle">

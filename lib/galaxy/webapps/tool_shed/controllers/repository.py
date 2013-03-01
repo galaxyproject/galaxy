@@ -646,13 +646,15 @@ class RepositoryMetadataGrid( grids.Grid ):
     class RepositoryNameColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            return escape_html( repository_metadata.repository.name )
+            repository = repository_metadata.repository
+            return escape_html( repository.name )
 
 
     class RepositoryOwnerColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            return escape_html( repository_metadata.user.username )
+            repository = repository_metadata.repository
+            return escape_html( repository.user.username )
 
 
     class ChangesetRevisionColumn( grids.TextColumn ):
@@ -763,18 +765,53 @@ class RepositoryMetadataGrid( grids.Grid ):
 
 
 class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
-    
-    title = "Repository dependencies available in this Tool Shed"
+
+
+    class RequiredRepositoryColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository_metadata ):
+            rd_str = ''
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    rd_dict = metadata.get( 'repository_dependencies', {} )
+                    if rd_dict:
+                        rd_tups = rd_dict[ 'repository_dependencies' ]
+                        # "repository_dependencies": [["http://localhost:9009", "bwa059", "test", "a07baa797d53"]]
+                        # Sort rd_tups by by required repository name.
+                        sorted_rd_tups = sorted( rd_tups, key=lambda rd_tup: rd_tup[ 1 ] )
+                        num_tups = len( sorted_rd_tups )
+                        for index, rd_tup in enumerate( sorted_rd_tups ):
+                            name = rd_tup[ 1 ]
+                            owner = rd_tup[ 2 ]
+                            required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+                            if required_repository:
+                                required_repository_id = trans.security.encode_id( required_repository.id )
+                                rd_str += '<a href="browse_repository_dependencies?operation=browse_repository&id=%s">' % required_repository_id
+                            rd_str += '<b>name:</b> %s | <b>owner:</b> %s | <b>revision:</b> %s' % ( escape_html( rd_tup[ 1 ] ), escape_html( rd_tup[ 2 ] ), escape_html( rd_tup[ 3 ] ) )
+                            if required_repository:
+                                rd_str += '</a>'
+                            if index < num_tups - 1:
+                                rd_str += '<br/>'
+            return rd_str
+
+    title = "Repository dependency definitions in this tool shed"
     columns = [
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
-                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
-                                                     attach_popup=False ),
+                                                     model_class=model.Repository,
+                                                     link=( lambda item: dict( operation="browse_repository", id=item.repository.id ) ),
+                                                     attach_popup=False,
+                                                     key="Repository.name" ),
         RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
                                                       model_class=model.User,
                                                       attach_popup=False,
-                                                      key="User.username" )
+                                                      key="User.username" ),
+        RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
+                                                        attach_popup=False ),
+        RequiredRepositoryColumn( "Repository dependency",
+                                   attach_popup=False )
     ]
-    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+    columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
                                                 cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
@@ -790,9 +827,190 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                .order_by( model.Repository.name )
 
 
+class ToolDependenciesGrid( RepositoryMetadataGrid ):
+
+
+    class ToolDependencyColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository_metadata ):
+            td_str = ''
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    tds_dict = metadata.get( 'tool_dependencies', {} )
+                    if tds_dict:
+                        # Example: {"bwa/0.5.9": {"name": "bwa", "type": "package", "version": "0.5.9"}}
+                        sorted_keys = sorted( [ k for k in tds_dict.keys() ] )
+                        num_keys = len( sorted_keys )
+                        # Handle environment settings first.
+                        if 'set_environment' in sorted_keys:
+                            # Example: "set_environment": [{"name": "JAVA_JAR_FILE", "type": "set_environment"}]
+                            env_dicts = tds_dict[ 'set_environment' ]
+                            num_env_dicts = len( env_dicts )
+                            td_str += '<b>environment:</b> '
+                            for index, env_dict in enumerate( env_dicts ):
+                                td_str += '%s' % escape_html( env_dict[ 'name' ] )
+                                if index < num_env_dicts - 1:
+                                    td_str += ', '
+                            td_str += '<br/>'
+                        for index, key in enumerate( sorted_keys ):
+                            if key == 'set_environment':
+                                continue
+                            td_dict = tds_dict[ key ]
+                            # Example: {"name": "bwa", "type": "package", "version": "0.5.9"}
+                            name = td_dict[ 'name' ]
+                            type = td_dict[ 'type' ]
+                            version = td_dict[ 'version' ]
+                            td_str += '<b>%s</b> version <b>%s</b>' % ( escape_html( name ), escape_html( version ) )
+                            if index < num_keys - 1:
+                                td_str += '<br/>'
+            return td_str
+
+    title = "Tool dependency definitions in this tool shed"
+    columns = [
+        RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
+                                                     model_class=model.Repository,
+                                                     link=( lambda item: dict( operation="browse_repository", id=item.repository.id ) ),
+                                                     attach_popup=False,
+                                                     key="Repository.name" ),
+        RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
+                                                      model_class=model.User,
+                                                      attach_popup=False,
+                                                      key="User.username" ),
+        RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
+                                                        attach_popup=False ),
+        ToolDependencyColumn( "Tool dependency",
+                              attach_popup=False )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( model.RepositoryMetadata ) \
+                               .join( model.Repository ) \
+                               .filter( and_( model.RepositoryMetadata.table.c.includes_tool_dependencies == True,
+                                              model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
+                               .join( model.User.table ) \
+                               .order_by( model.Repository.name )
+
+
+class ToolsGrid( RepositoryMetadataGrid ):
+
+
+    class ToolsColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository_metadata ):
+            tool_str = ''
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    tool_dicts = metadata.get( 'tools', [] )
+                    if tool_dicts:
+                        num_tool_dicts = len( tool_dicts )
+                        for index, tool_dict in enumerate( tool_dicts ):
+                            tool_id = tool_dict[ 'id' ]
+                            name = tool_dict[ 'name' ]
+                            version = tool_dict[ 'version' ]
+                            tool_str += '<b>%s</b> | %s | %s' % ( escape_html( tool_id ), escape_html( name ), escape_html( version ) )
+                            if index < num_tool_dicts - 1:
+                                tool_str += '<br/>'
+            return tool_str
+
+    title = "Valid tools in this tool shed"
+    columns = [
+        RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
+                                                     model_class=model.Repository,
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id ) ),
+                                                     attach_popup=False,
+                                                     key="Repository.name" ),
+        RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
+                                                      model_class=model.User,
+                                                      attach_popup=False,
+                                                      key="User.username" ),
+        RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
+                                                        attach_popup=False ),
+        ToolsColumn( "Tool id | name | version",
+                      attach_popup=False )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( model.RepositoryMetadata ) \
+                               .join( model.Repository ) \
+                               .filter( and_( model.RepositoryMetadata.table.c.includes_tools == True,
+                                              model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
+                               .join( model.User.table ) \
+                               .order_by( model.Repository.name )
+
+
+class DatatypesGrid( RepositoryMetadataGrid ):
+
+
+    class DatatypesColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository_metadata ):
+            datatype_str = ''
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    datatype_dicts = metadata.get( 'datatypes', [] )
+                    if datatype_dicts:
+                        num_datatype_dicts = len( datatype_dicts )
+                        for index, datatype_dict in enumerate( datatype_dicts ):
+                            # Example: {"display_in_upload": "true", "dtype": "galaxy.datatypes.blast:BlastXml", "extension": "blastxml", "mimetype": "application/xml"}
+                            extension = datatype_dict[ 'extension' ]
+                            dtype = datatype_dict[ 'dtype' ]
+                            mimetype = datatype_dict[ 'mimetype' ]
+                            display_in_upload = datatype_dict.get( 'display_in_upload', False )
+                            datatype_str += '<b>%s</b> | %s | %s' % ( escape_html( extension ), escape_html( dtype ), escape_html( mimetype ) )
+                            if index < num_datatype_dicts - 1:
+                                datatype_str += '<br/>'
+            return datatype_str
+
+    title = "Custom datatypes in this tool shed"
+    columns = [
+        RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
+                                                     model_class=model.Repository,
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id ) ),
+                                                     attach_popup=False,
+                                                     key="Repository.name" ),
+        RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
+                                                      model_class=model.User,
+                                                      attach_popup=False,
+                                                      key="User.username" ),
+        RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
+                                                        attach_popup=False ),
+        DatatypesColumn( "Datatype extension | Type | Mimetype",
+                         attach_popup=False )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( model.RepositoryMetadata ) \
+                               .join( model.Repository ) \
+                               .filter( and_( model.RepositoryMetadata.table.c.includes_datatypes == True,
+                                              model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
+                               .join( model.User.table ) \
+                               .order_by( model.Repository.name )
+
 class RepositoryController( BaseUIController, common_util.ItemRatings ):
 
     category_grid = CategoryGrid()
+    datatypes_grid = DatatypesGrid()
     deprecated_repositories_i_own_grid = DeprecatedRepositoriesIOwnGrid()
     email_alerts_repository_grid = EmailAlertsRepositoryGrid()
     install_matched_repository_grid = InstallMatchedRepositoryGrid()
@@ -800,9 +1018,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     my_writable_repositories_grid = MyWritableRepositoriesGrid()
     repositories_by_user_grid = RepositoriesByUserGrid()
     repositories_i_own_grid = RepositoriesIOwnGrid()
+    repository_dependencies_grid = RepositoryDependenciesGrid()
     repository_grid = RepositoryGrid()
     # The repository_metadata_grid is not currently displayed, but is sub-classed by several grids.
     repository_metadata_grid = RepositoryMetadataGrid()
+    tool_dependencies_grid = ToolDependenciesGrid()
+    tools_grid = ToolsGrid()
     valid_category_grid = ValidCategoryGrid()
     valid_repository_grid = ValidRepositoryGrid()
 
@@ -824,7 +1045,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     pass
             return self.browse_repositories( trans, **kwd )
         if 'operation' in kwd:
-            operation = kwd['operation'].lower()
+            operation = kwd[ 'operation' ].lower()
             if operation in [ "repositories_by_category", "repositories_by_user" ]:
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
@@ -834,6 +1055,16 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                   action='browse_repositories',
                                                                   **kwd ) )
         return self.category_grid( trans, **kwd )
+
+    @web.expose
+    def browse_datatypes( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+        return self.datatypes_grid( trans, **kwd )
 
     @web.expose
     def browse_invalid_tools( self, trans, **kwd ):
@@ -881,7 +1112,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         # We add params to the keyword dict in this method in order to rename the param with an "f-" prefix, simulating filtering by clicking a search
         # link.  We have to take this approach because the "-" character is illegal in HTTP requests.
         if 'operation' in kwd:
-            operation = kwd['operation'].lower()
+            operation = kwd[ 'operation' ].lower()
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_or_manage_repository',
@@ -1000,6 +1231,40 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     status=status )
 
     @web.expose
+    def browse_repository_dependencies( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "browse_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repository',
+                                                                  **kwd ) )
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+        return self.repository_dependencies_grid( trans, **kwd )
+
+    @web.expose
+    def browse_tools( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+        return self.tools_grid( trans, **kwd )
+
+    @web.expose
+    def browse_tool_dependencies( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "browse_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repository',
+                                                                  **kwd ) )
+        return self.tool_dependencies_grid( trans, **kwd )
+
+    @web.expose
     def browse_valid_categories( self, trans, **kwd ):
         # The request came from Galaxy, so restrict category links to display only valid repository changeset revisions.
         galaxy_url = kwd.get( 'galaxy_url', None )
@@ -1022,7 +1287,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     pass
             return self.browse_valid_repositories( trans, **kwd )
         if 'operation' in kwd:
-            operation = kwd['operation'].lower()
+            operation = kwd[ 'operation' ].lower()
             if operation in [ "valid_repositories_by_category", "valid_repositories_by_user" ]:
                 # Eliminate the current filters if any exist.
                 for k, v in kwd.items():
@@ -2420,7 +2685,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         if 'operation' in kwd:
-            operation = kwd['operation'].lower()
+            operation = kwd[ 'operation' ].lower()
             if operation == "receive email alerts":
                 if trans.user:
                     if kwd[ 'id' ]:
