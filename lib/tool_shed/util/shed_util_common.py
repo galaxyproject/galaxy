@@ -900,16 +900,42 @@ def copy_sample_file( app, filename, dest_path=None ):
         shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
 def create_or_update_repository_metadata( trans, id, repository, changeset_revision, metadata_dict ):
     """Create or update a repository_metadatqa record in the tool shed."""
-    downloadable = is_downloadable( metadata_dict )
+    has_repository_dependencies = False
+    includes_datatypes = False
+    includes_tools = False
+    includes_tool_dependencies = False
+    includes_workflows = False
+    if metadata_dict:
+        if 'repository_dependencies' in metadata_dict:
+            has_repository_dependencies = True
+        if 'datatypes' in metadata_dict:
+            includes_datatypes = True
+        if 'tools' in metadata_dict:
+            includes_tools = True
+        if 'tool_dependencies' in metadata_dict:
+            includes_tool_dependencies = True
+        if 'workflows' in metadata_dict:
+            includes_workflows = True
+    downloadable = has_repository_dependencies or includes_datatypes or includes_tools or includes_tool_dependencies or includes_workflows
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
     if repository_metadata:
         repository_metadata.metadata = metadata_dict
         repository_metadata.downloadable = downloadable
+        repository_metadata.has_repository_dependencies = has_repository_dependencies
+        repository_metadata.includes_datatypes = includes_datatypes
+        repository_metadata.includes_tools = includes_tools
+        repository_metadata.includes_tool_dependencies = includes_tool_dependencies
+        repository_metadata.includes_workflows = includes_workflows
     else:
         repository_metadata = trans.model.RepositoryMetadata( repository_id=repository.id,
                                                               changeset_revision=changeset_revision,
                                                               metadata=metadata_dict,
-                                                              downloadable=downloadable )
+                                                              downloadable=downloadable,
+                                                              has_repository_dependencies=has_repository_dependencies,
+                                                              includes_datatypes=includes_datatypes,
+                                                              includes_tools=includes_tools,
+                                                              includes_tool_dependencies=includes_tool_dependencies,
+                                                              includes_workflows=includes_workflows )
     # Always set the default values for the following columns.  When resetting all metadata on a repository, this will reset the values.
     repository_metadata.tools_functionally_correct = False
     repository_metadata.do_not_test = False

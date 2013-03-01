@@ -191,11 +191,14 @@ class Repository( object, APIItem ):
         fp.close()
 
 class RepositoryMetadata( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable' )
+    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'has_repository_dependencies', 'includes_datatypes',
+                                    'includes_tools', 'includes_tool_dependencies', 'includes_workflows' )
     api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct',
-                                 'do_not_test', 'time_last_tested', 'tool_test_errors' )
+                                 'do_not_test', 'time_last_tested', 'tool_test_errors', 'has_repository_dependencies', 'includes_datatypes', 'includes_tools',
+                                 'includes_tool_dependencies', 'includes_workflows' )
     def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
-                  tools_functionally_correct=False, do_not_test=False, time_last_tested=None, tool_test_errors=None ):
+                  tools_functionally_correct=False, do_not_test=False, time_last_tested=None, tool_test_errors=None, has_repository_dependencies=False,
+                  includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False, includes_workflows=False ):
         self.id = id
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
@@ -207,6 +210,11 @@ class RepositoryMetadata( object, APIItem ):
         self.do_not_test = do_not_test
         self.time_last_tested = time_last_tested
         self.tool_test_errors = tool_test_errors
+        self.has_repository_dependencies = has_repository_dependencies
+        self.includes_datatypes = includes_datatypes
+        self.includes_tools = includes_tools
+        self.includes_tool_dependencies = includes_tool_dependencies
+        self.includes_workflows = includes_workflows
     def as_dict( self, value_mapper=None ):
         return self.get_api_value( view='element', value_mapper=value_mapper )
     def get_api_value( self, view='collection', value_mapper=None ):
@@ -227,8 +235,8 @@ class RepositoryMetadata( object, APIItem ):
         return rval
 
 class RepositoryReview( object, APIItem ):
-    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating' )
-    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating' )
+    api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
+    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'user_id', 'rating', 'deleted' )
     approved_states = Bunch( NO='no', YES='yes' )
     def __init__( self, repository_id=None, changeset_revision=None, user_id=None, rating=None, deleted=False ):
         self.repository_id = repository_id

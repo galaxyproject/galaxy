@@ -134,7 +134,12 @@ RepositoryMetadata.table = Table( "repository_metadata", metadata,
     Column( "tools_functionally_correct", Boolean, default=False, index=True ),
     Column( "do_not_test", Boolean, default=False, index=True ),
     Column( "time_last_tested", DateTime, default=None, nullable=True ),
-    Column( "tool_test_errors", JSONType, nullable=True ) )
+    Column( "tool_test_errors", JSONType, nullable=True ),
+    Column( "has_repository_dependencies", Boolean, default=False, index=True ),
+    Column( "includes_datatypes", Boolean, default=False, index=True ),
+    Column( "includes_tools", Boolean, default=False, index=True ),
+    Column( "includes_tool_dependencies", Boolean, default=False, index=True ),
+    Column( "includes_workflows", Boolean, default=False, index=True ) )
 
 RepositoryReview.table = Table( "repository_review", metadata,
     Column( "id", Integer, primary_key=True ),

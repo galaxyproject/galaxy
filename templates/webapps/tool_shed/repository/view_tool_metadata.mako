@@ -22,6 +22,8 @@
     can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
     can_upload = can_push
     can_view_change_log = trans.webapp.name == 'tool_shed' and not is_new
+    # TODO: fix the following when the install and test buildbot is functional.
+    #can_view_tool_test_errors = tool_test_errors is not None
 
     if can_push:
         browse_label = 'Browse or delete repository tip files'
@@ -265,11 +267,26 @@
                     ${tool.force_history_refresh | h}
                     <div style="clear: both"></div>
                 </div>
-                <div class="form-row">
-                    <label>Parallelism:</label>
-                    ${tool.parallelism | h}
-                    <div style="clear: both"></div>
-                </div>
+                <% parallelism_info = tool.parallelism %>
+                %if parallelism_info:
+                    <div class="form-row">
+                        <table width="100%">
+                            <tr bgcolor="#D8D8D8" width="100%"><td><b>Parallelism</td></tr>
+                        </table>
+                    </div>
+                    <div class="form-row">
+                        <label>Method:</label>
+                        ${parallelism_info.method | h}
+                        <div style="clear: both"></div>
+                    </div>
+                    %for key, val in parallelism_info.attributes.items():
+                        <div class="form-row">
+                            <label>${key}:</label>
+                            ${val | h}
+                            <div style="clear: both"></div>
+                        </div>
+                    %endfor
+                %endif
             %endif
             <div class="form-row">
                 <table width="100%">

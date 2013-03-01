@@ -33,6 +33,7 @@ class CategoryGrid( grids.Grid ):
 
 
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, category ):
             return category.name
 
@@ -43,6 +44,7 @@ class CategoryGrid( grids.Grid ):
 
 
     class RepositoriesColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, category ):
             if category.repositories:
                 viewable_repositories = 0
@@ -82,6 +84,7 @@ class ValidCategoryGrid( CategoryGrid ):
 
 
     class RepositoriesColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, category ):
             if category.repositories:
                 viewable_repositories = 0
@@ -123,6 +126,7 @@ class RepositoryGrid( grids.Grid ):
 
 
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, repository ):
             return escape_html( repository.name )
 
@@ -468,6 +472,7 @@ class ValidRepositoryGrid( RepositoryGrid ):
 
 
     class CategoryColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, repository ):
             rval = '<ul>'
             if repository.categories:
@@ -481,6 +486,7 @@ class ValidRepositoryGrid( RepositoryGrid ):
 
 
     class RepositoryCategoryColumn( grids.GridColumn ):
+
         def filter( self, trans, user, query, column_filter ):
             """Modify query to filter by category."""
             if column_filter == "All":
@@ -501,6 +507,7 @@ class ValidRepositoryGrid( RepositoryGrid ):
             elif len( select_field.options ) == 1:
                 return select_field.options[ 0 ][ 0 ]
             return ''
+
     title = "Valid repositories"
     columns = [
         RepositoryGrid.NameColumn( "Name",
@@ -633,19 +640,171 @@ class InstallMatchedRepositoryGrid( MatchedRepositoryGrid ):
                                                      attach_popup=False )
 
 
+class RepositoryMetadataGrid( grids.Grid ):
+
+
+    class RepositoryNameColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository_metadata ):
+            return escape_html( repository_metadata.repository.name )
+
+
+    class RepositoryOwnerColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository_metadata ):
+            return escape_html( repository_metadata.user.username )
+
+
+    class ChangesetRevisionColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository_metadata ):
+            return escape_html( repository_metadata.changeset_revision )
+
+
+    class MaliciousColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.malicious:
+                return 'yes'
+            return ''
+
+
+    class DownloadableColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.downloadable:
+                return 'yes'
+            return ''
+
+
+    class ToolsFunctionallyCorrectColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.tools_functionally_correct:
+                return 'yes'
+            return ''
+
+
+    class DoNotTestColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.do_not_test:
+                return 'yes'
+            return ''
+
+
+    class TimeLastTestedColumn( grids.DateTimeColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            return repository_metadata.time_last_tested
+
+
+    class HasRepositoryDependenciesColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.has_repository_dependencies:
+                return 'yes'
+            return ''
+
+
+    class IncludesDatatypesColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.includes_datatypes:
+                return 'yes'
+            return ''
+
+
+    class IncludesToolsColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.includes_tools:
+                return 'yes'
+            return ''
+
+
+    class IncludesToolDependenciesColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.includes_tool_dependencies:
+                return 'yes'
+            return ''
+
+
+    class IncludesWorkflowsColumn( grids.BooleanColumn ):
+        def get_value( self, trans, grid, repository_metadata ):
+            if repository_metadata.includes_workflows:
+                return 'yes'
+            return ''
+
+    title = "Repository metadata"
+    model_class = model.RepositoryMetadata
+    template='/webapps/tool_shed/repository/grid.mako'
+    default_sort_key = "Repository.name"
+    columns = [
+        RepositoryNameColumn( "Repository name",
+                              link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                              attach_popup=False ),
+        RepositoryOwnerColumn( "Owner",
+                               model_class=model.User,
+                               attach_popup=False,
+                               key="User.username" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = []
+    standard_filters = []
+    default_filter = dict( malicious="False" )
+    num_rows_per_page = 50
+    preserve_state = False
+    use_paging = True
+
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( model.RepositoryMetadata ) \
+                               .join( model.Repository ) \
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
+                               .join( model.User.table ) \
+                               .order_by( model.Repository.name )
+
+
+class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
+    
+    title = "Repository dependencies available in this Tool Shed"
+    columns = [
+        RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                                     attach_popup=False ),
+        RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
+                                                      model_class=model.User,
+                                                      attach_popup=False,
+                                                      key="User.username" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+
+    def build_initial_query( self, trans, **kwd ):
+        return trans.sa_session.query( model.RepositoryMetadata ) \
+                               .join( model.Repository ) \
+                               .filter( and_( model.RepositoryMetadata.table.c.has_repository_dependencies == True,
+                                              model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
+                               .join( model.User.table ) \
+                               .order_by( model.Repository.name )
+
+
 class RepositoryController( BaseUIController, common_util.ItemRatings ):
 
+    category_grid = CategoryGrid()
+    deprecated_repositories_i_own_grid = DeprecatedRepositoriesIOwnGrid()
+    email_alerts_repository_grid = EmailAlertsRepositoryGrid()
     install_matched_repository_grid = InstallMatchedRepositoryGrid()
     matched_repository_grid = MatchedRepositoryGrid()
-    valid_repository_grid = ValidRepositoryGrid()
-    repository_grid = RepositoryGrid()
-    email_alerts_repository_grid = EmailAlertsRepositoryGrid()
-    category_grid = CategoryGrid()
-    valid_category_grid = ValidCategoryGrid()
     my_writable_repositories_grid = MyWritableRepositoriesGrid()
-    repositories_i_own_grid = RepositoriesIOwnGrid()
-    deprecated_repositories_i_own_grid = DeprecatedRepositoriesIOwnGrid()
     repositories_by_user_grid = RepositoriesByUserGrid()
+    repositories_i_own_grid = RepositoriesIOwnGrid()
+    repository_grid = RepositoryGrid()
+    # The repository_metadata_grid is not currently displayed, but is sub-classed by several grids.
+    repository_metadata_grid = RepositoryMetadataGrid()
+    valid_category_grid = ValidCategoryGrid()
+    valid_repository_grid = ValidRepositoryGrid()
 
     @web.expose
     def browse_categories( self, trans, **kwd ):
@@ -3036,7 +3195,11 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id )
-            tool_test_errors = json.from_json_string( repository_metadata.tool_test_errors )
+            # TODO: Fix this when the install and test framework is completed.
+            # if repository_metadata.tool_test_errors:
+            #    tool_test_errors = json.from_json_string( repository_metadata.tool_test_errors )
+            # else:
+            #    tool_test_errors = None
             metadata = repository_metadata.metadata
             if metadata:
                 if 'tools' in metadata:
@@ -3070,7 +3233,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         else:
             repository_metadata_id = None
             metadata = None
-            tool_test_errors = None
+            #tool_test_errors = None
         is_malicious = suc.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
@@ -3094,7 +3257,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     tool=tool,
                                     tool_metadata_dict=tool_metadata_dict,
                                     tool_lineage=tool_lineage,
-                                    tool_test_errors=tool_test_errors,
+                                    #tool_test_errors=tool_test_errors,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
