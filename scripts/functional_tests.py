@@ -321,10 +321,10 @@ def main():
         if testing_migrated_tools or testing_installed_tools:
             shed_tools_dict = {}
             if testing_migrated_tools:
-                shed_tools_dict = parse_tool_panel_config( migrated_tool_panel_config, shed_tools_dict )
+                has_test_data, shed_tools_dict = parse_tool_panel_config( migrated_tool_panel_config, shed_tools_dict )
             elif testing_installed_tools:
                 for shed_tool_config in installed_tool_panel_configs:
-                    shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
+                    has_test_data, shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
             # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
             shed_tools_file = open( galaxy_tool_shed_test_file, 'w' )
             shed_tools_file.write( to_json_string( shed_tools_dict ) )

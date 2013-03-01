@@ -1,4 +1,6 @@
-import os, sys
+import os, sys, logging
+
+log = logging.getLogger(__name__)
 
 cwd = os.getcwd()
 if cwd not in sys.path:
@@ -27,6 +29,8 @@ def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_
         # Locate the test-data directory.
         installed_tool_path = os.path.join( installed_tool_path_items[ 0 ], 'repos', repository_owner, repository_name, changeset_revision )
         for root, dirs, files in os.walk( os.path.join(tool_path, installed_tool_path )):
+            if '.hg' in dirs:
+                dirs.remove( '.hg' )
             if 'test-data' in dirs:
                 return os.path.join( root, 'test-data' ), repository_name, changeset_revision
         return None, repository_name, changeset_revision
@@ -40,6 +44,7 @@ def parse_tool_panel_config( config, shed_tools_dict ):
     last_tested_repository_name = None
     last_tested_changeset_revision = None
     tool_path = None
+    has_test_data = False
     tree = parse_xml( config )
     root = tree.getroot()
     tool_path = root.get('tool_path')
@@ -53,6 +58,8 @@ def parse_tool_panel_config( config, shed_tools_dict ):
                                                                             last_tested_changeset_revision,
                                                                             tool_path )
             if galaxy_test_file_dir:
+                if not has_test_data:
+                    has_test_data = True
                 if galaxy_test_file_dir != last_galaxy_test_file_dir:
                     if not os.path.isabs( galaxy_test_file_dir ):
                         galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
@@ -70,11 +77,13 @@ def parse_tool_panel_config( config, shed_tools_dict ):
                                                                                     last_tested_changeset_revision,
                                                                                     tool_path )
                     if galaxy_test_file_dir:
+                        if not has_test_data:
+                            has_test_data = True
                         if galaxy_test_file_dir != last_galaxy_test_file_dir:
                             if not os.path.isabs( galaxy_test_file_dir ):
                                 galaxy_test_file_dir = os.path.join( os.getcwd(), galaxy_test_file_dir )
                         guid = section_elem.get( 'guid' )
                         shed_tools_dict[ guid ] = galaxy_test_file_dir
                         last_galaxy_test_file_dir = galaxy_test_file_dir
-    return shed_tools_dict
+    return has_test_data, shed_tools_dict
 
