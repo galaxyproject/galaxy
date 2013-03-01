@@ -69,7 +69,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
             output_files = self.get_output_files(job_wrapper)
             input_files = job_wrapper.get_input_fnames()
             working_directory = job_wrapper.working_directory
-            file_stager = FileStager(client, command_line, job_wrapper.extra_filenames, input_files, output_files, job_wrapper.tool.tool_dir, working_directory)
+            tool = job_wrapper.tool
+            file_stager = FileStager(client, tool, command_line, job_wrapper.extra_filenames, input_files, output_files, working_directory)
             rebuilt_command_line = file_stager.get_rewritten_command_line()
             job_id = file_stager.job_id
             client.launch( rebuilt_command_line )
