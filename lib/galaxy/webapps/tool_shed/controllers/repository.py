@@ -1137,6 +1137,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     @web.require_login( "deprecate repository" )
     def deprecate( self, trans, **kwd ):
+        """Mark a repository in the tool shed as deprecated or not deprecated."""
+        # Marking a repository in the tool shed as deprecated has no effect on any downloadable changeset revisions that may be associated with the 
+        # repository.  Revisions are not marked as not downlaodable because those that have installed the repository must be allowed to get updates.
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -1188,6 +1191,43 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                               status='error' ) )
         return trans.response.send_redirect( web.url_for( controller='repository',
                                                           action='browse_repositories',
+                                                          operation='view_or_manage_repository',
+                                                          id=repository_id,
+                                                          changeset_revision=changeset_revision,
+                                                          message=message,
+                                                          status='error' ) )
+
+    @web.expose
+    def display_tool_functional_test_errors( self, trans, repository_id, repository_metadata_id, **kwd ):
+        params = util.Params( kwd )
+        message = util.restore_text( params.get( 'message', ''  ) )
+        status = params.get( 'status', 'done' )
+        repository = suc.get_repository_by_id( trans.app, repository_id )
+        if repository:
+            repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+            changeset_revision = repository_metadata.changeset_revision
+            if repository_metadata:
+                metadata = repository_metadata.metadata
+                if metadata:
+                    return trans.fill_template( '/webapps/tool_shed/repository/display_tool_functional_test_errors.mako',
+                                                repository=repository,
+                                                repository_metadata=repository_metadata,
+                                                message=message,
+                                                status=status )
+                else:
+                    message = 'Missing metadata for revision <b>%s</b> of repository <b>%s</b> owned by <b>%s</b>.' % \
+                        ( str( changeset_revision ), str( repository.name ), str( repository.user.username ) )
+            else:
+                message = 'Invalid repository_metadata_id <b>%s</b> received for displaying functional test errors for repository <b>%s</b>.' % \
+                    ( str( repository_metadata_id ), str( repository.name ) )
+        else:
+            message = 'Invalid repository_id received for displaying functional test errors.<b>%s</b>.' % str( repository_id )
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_repositories',
+                                                              message=message,
+                                                              status='error' ) )
+        return trans.response.send_redirect( web.url_for( controller='repository',
+                                                          action='browse_repository',
                                                           operation='view_or_manage_repository',
                                                           id=repository_id,
                                                           changeset_revision=changeset_revision,
@@ -2995,6 +3035,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         revision_label = suc.get_revision_label( trans, repository, changeset_revision )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
+            repository_metadata_id = trans.security.encode_id( repository_metadata.id )
+            tool_test_errors = json.from_json_string( repository_metadata.tool_test_errors )
             metadata = repository_metadata.metadata
             if metadata:
                 if 'tools' in metadata:
@@ -3026,7 +3068,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     if guid:
                         tool_lineage = self.get_versions_of_tool( trans, repository, repository_metadata, guid )
         else:
+            repository_metadata_id = None
             metadata = None
+            tool_test_errors = None
         is_malicious = suc.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         changeset_revision_select_field = build_changeset_revision_select_field( trans,
                                                                                  repository,
@@ -3045,10 +3089,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             review_id = None
         return trans.fill_template( "/webapps/tool_shed/repository/view_tool_metadata.mako",
                                     repository=repository,
+                                    repository_metadata_id=repository_metadata_id,
                                     metadata=metadata,
                                     tool=tool,
                                     tool_metadata_dict=tool_metadata_dict,
                                     tool_lineage=tool_lineage,
+                                    tool_test_errors=tool_test_errors,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
