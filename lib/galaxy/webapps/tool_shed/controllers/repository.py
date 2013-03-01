@@ -967,9 +967,9 @@ class DatatypesGrid( RepositoryMetadataGrid ):
                         num_datatype_dicts = len( datatype_dicts )
                         for index, datatype_dict in enumerate( datatype_dicts ):
                             # Example: {"display_in_upload": "true", "dtype": "galaxy.datatypes.blast:BlastXml", "extension": "blastxml", "mimetype": "application/xml"}
-                            extension = datatype_dict[ 'extension' ]
-                            dtype = datatype_dict[ 'dtype' ]
-                            mimetype = datatype_dict[ 'mimetype' ]
+                            extension = datatype_dict.get( 'extension', '' )
+                            dtype = datatype_dict.get( 'dtype', '' )
+                            mimetype = datatype_dict.get( 'mimetype', '' )
                             display_in_upload = datatype_dict.get( 'display_in_upload', False )
                             datatype_str += '<b>%s</b> | %s | %s' % ( escape_html( extension ), escape_html( dtype ), escape_html( mimetype ) )
                             if index < num_datatype_dicts - 1:
