@@ -643,7 +643,10 @@ class RepositoryMetadataGrid( grids.Grid ):
     class ChangesetRevisionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository_metadata ):
-            return escape_html( repository_metadata.changeset_revision )
+            repository = repository_metadata.repository
+            changeset_revision = repository_metadata.changeset_revision
+            changeset_revision_label = suc.get_revision_label( trans, repository, changeset_revision )
+            return escape_html( changeset_revision_label )
 
 
     class MaliciousColumn( grids.BooleanColumn ):
@@ -719,6 +722,7 @@ class RepositoryMetadataGrid( grids.Grid ):
     default_sort_key = "Repository.name"
     columns = [
         RepositoryNameColumn( "Repository name",
+                              key="Repository.name",
                               link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                               attach_popup=False ),
         RepositoryOwnerColumn( "Owner",
@@ -743,8 +747,7 @@ class RepositoryMetadataGrid( grids.Grid ):
                                .join( model.Repository ) \
                                .filter( and_( model.Repository.table.c.deleted == False,
                                               model.Repository.table.c.deprecated == False ) ) \
-                               .join( model.User.table ) \
-                               .order_by( model.Repository.name )
+                               .join( model.User.table )
 
 
 class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
@@ -767,22 +770,24 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                         for index, rd_tup in enumerate( sorted_rd_tups ):
                             name = rd_tup[ 1 ]
                             owner = rd_tup[ 2 ]
+                            changeset_revision = rd_tup[ 3 ]
                             required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
                             if required_repository:
                                 required_repository_id = trans.security.encode_id( required_repository.id )
-                                rd_str += '<a href="browse_repository_dependencies?operation=browse_repository&id=%s">' % required_repository_id
-                            rd_str += '<b>name:</b> %s | <b>owner:</b> %s | <b>revision:</b> %s' % ( escape_html( rd_tup[ 1 ] ), escape_html( rd_tup[ 2 ] ), escape_html( rd_tup[ 3 ] ) )
+                                rd_str += '<a href="browse_repository_dependencies?operation=view_or_manage_repository&id=%s&changeset_revision=%s">' % ( required_repository_id, changeset_revision )
+                            rd_str += 'Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>' % ( escape_html( rd_tup[ 1 ] ), escape_html( rd_tup[ 3 ] ), escape_html( rd_tup[ 2 ] ) )
                             if required_repository:
                                 rd_str += '</a>'
                             if index < num_tups - 1:
                                 rd_str += '<br/>'
             return rd_str
 
-    title = "Repository dependency definitions in this tool shed"
+    title = "Valid repository dependency definitions in this tool shed"
+    default_sort_key = "Repository.name"
     columns = [
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
-                                                     link=( lambda item: dict( operation="browse_repository", id=item.repository.id ) ),
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id, changeset_revision=item.changeset_revision ) ),
                                                      attach_popup=False,
                                                      key="Repository.name" ),
         RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
@@ -806,8 +811,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                .filter( and_( model.RepositoryMetadata.table.c.has_repository_dependencies == True,
                                               model.Repository.table.c.deleted == False,
                                               model.Repository.table.c.deprecated == False ) ) \
-                               .join( model.User.table ) \
-                               .order_by( model.Repository.name )
+                               .join( model.User.table )
 
 
 class ToolDependenciesGrid( RepositoryMetadataGrid ):
@@ -850,10 +854,11 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
             return td_str
 
     title = "Tool dependency definitions in this tool shed"
+    default_sort_key = "Repository.name"
     columns = [
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
-                                                     link=( lambda item: dict( operation="browse_repository", id=item.repository.id ) ),
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id, changeset_revision=item.changeset_revision ) ),
                                                      attach_popup=False,
                                                      key="Repository.name" ),
         RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
@@ -877,8 +882,7 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
                                .filter( and_( model.RepositoryMetadata.table.c.includes_tool_dependencies == True,
                                               model.Repository.table.c.deleted == False,
                                               model.Repository.table.c.deprecated == False ) ) \
-                               .join( model.User.table ) \
-                               .order_by( model.Repository.name )
+                               .join( model.User.table )
 
 
 class ToolsGrid( RepositoryMetadataGrid ):
@@ -893,21 +897,30 @@ class ToolsGrid( RepositoryMetadataGrid ):
                 if metadata:
                     tool_dicts = metadata.get( 'tools', [] )
                     if tool_dicts:
-                        num_tool_dicts = len( tool_dicts )
-                        for index, tool_dict in enumerate( tool_dicts ):
-                            tool_id = tool_dict[ 'id' ]
-                            name = tool_dict[ 'name' ]
-                            version = tool_dict[ 'version' ]
-                            tool_str += '<b>%s</b> | %s | %s' % ( escape_html( tool_id ), escape_html( name ), escape_html( version ) )
-                            if index < num_tool_dicts - 1:
+                        # Create tuples of the attributes we want so we can sort them by extension.
+                        tool_tups = []
+                        for tool_dict in tool_dicts:
+                            tool_id = tool_dict.get( 'id', '' )
+                            version = tool_dict.get( 'version', '' )
+                            # For now we'll just display tool id and version.
+                            if tool_id and version:
+                                tool_tups.append( ( tool_id, version ) )
+                        sorted_tool_tups = sorted( tool_tups, key=lambda tool_tup: tool_tup[ 0 ] )
+                        num_tool_tups = len( sorted_tool_tups )
+                        for index, tool_tup in enumerate( sorted_tool_tups ):
+                            tool_id = tool_tup[ 0 ]
+                            version = tool_tup[ 1 ]
+                            tool_str += '<b>%s:</b> %s' % ( escape_html( tool_id ), escape_html( version ) )
+                            if index < num_tool_tups - 1:
                                 tool_str += '<br/>'
             return tool_str
 
     title = "Valid tools in this tool shed"
+    default_sort_key = "Repository.name"
     columns = [
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
-                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id ) ),
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id, changeset_revision=item.changeset_revision ) ),
                                                      attach_popup=False,
                                                      key="Repository.name" ),
         RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
@@ -916,7 +929,7 @@ class ToolsGrid( RepositoryMetadataGrid ):
                                                       key="User.username" ),
         RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
                                                         attach_popup=False ),
-        ToolsColumn( "Tool id | name | version",
+        ToolsColumn( "Tool id and version",
                       attach_popup=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
@@ -931,8 +944,7 @@ class ToolsGrid( RepositoryMetadataGrid ):
                                .filter( and_( model.RepositoryMetadata.table.c.includes_tools == True,
                                               model.Repository.table.c.deleted == False,
                                               model.Repository.table.c.deprecated == False ) ) \
-                               .join( model.User.table ) \
-                               .order_by( model.Repository.name )
+                               .join( model.User.table )
 
 
 class DatatypesGrid( RepositoryMetadataGrid ):
@@ -947,23 +959,33 @@ class DatatypesGrid( RepositoryMetadataGrid ):
                 if metadata:
                     datatype_dicts = metadata.get( 'datatypes', [] )
                     if datatype_dicts:
-                        num_datatype_dicts = len( datatype_dicts )
-                        for index, datatype_dict in enumerate( datatype_dicts ):
+                        # Create tuples of the attributes we want so we can sort them by extension.
+                        datatype_tups = []
+                        for datatype_dict in datatype_dicts:
                             # Example: {"display_in_upload": "true", "dtype": "galaxy.datatypes.blast:BlastXml", "extension": "blastxml", "mimetype": "application/xml"}
                             extension = datatype_dict.get( 'extension', '' )
                             dtype = datatype_dict.get( 'dtype', '' )
                             mimetype = datatype_dict.get( 'mimetype', '' )
                             display_in_upload = datatype_dict.get( 'display_in_upload', False )
-                            datatype_str += '<b>%s</b> | %s | %s' % ( escape_html( extension ), escape_html( dtype ), escape_html( mimetype ) )
-                            if index < num_datatype_dicts - 1:
+                            # For now we'll just display extension and dtype.
+                            if extension and dtype:
+                                datatype_tups.append( ( extension, dtype ) )
+                        sorted_datatype_tups = sorted( datatype_tups, key=lambda datatype_tup: datatype_tup[ 0 ] )
+                        num_datatype_tups = len( sorted_datatype_tups )
+                        for index, datatype_tup in enumerate( sorted_datatype_tups ):
+                            extension = datatype_tup[ 0 ]
+                            dtype = datatype_tup[ 1 ]
+                            datatype_str += '<b>%s:</b> %s' % ( escape_html( extension ), escape_html( dtype ) )
+                            if index < num_datatype_tups - 1:
                                 datatype_str += '<br/>'
             return datatype_str
 
     title = "Custom datatypes in this tool shed"
+    default_sort_key = "Repository.name"
     columns = [
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
-                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id ) ),
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id, changeset_revision=item.changeset_revision ) ),
                                                      attach_popup=False,
                                                      key="Repository.name" ),
         RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
@@ -972,7 +994,7 @@ class DatatypesGrid( RepositoryMetadataGrid ):
                                                       key="User.username" ),
         RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
                                                         attach_popup=False ),
-        DatatypesColumn( "Datatype extension | Type | Mimetype",
+        DatatypesColumn( "Datatype extension and class",
                          attach_popup=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
@@ -987,5 +1009,4 @@ class DatatypesGrid( RepositoryMetadataGrid ):
                                .filter( and_( model.RepositoryMetadata.table.c.includes_datatypes == True,
                                               model.Repository.table.c.deleted == False,
                                               model.Repository.table.c.deprecated == False ) ) \
-                               .join( model.User.table ) \
-                               .order_by( model.Repository.name )
+                               .join( model.User.table )

@@ -280,9 +280,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def browse_tool_dependencies( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
-            if operation == "browse_repository":
+            if operation == "view_or_manage_repository":
                 return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='browse_repository',
+                                                                  action='view_or_manage_repository',
                                                                   **kwd ) )
         return self.tool_dependencies_grid( trans, **kwd )
 
