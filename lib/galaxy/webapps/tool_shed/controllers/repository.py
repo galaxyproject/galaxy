@@ -82,10 +82,17 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def browse_datatypes( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
+            # The received id is a RepositoryMetadata id.
+            repository_metadata_id = kwd[ 'id' ]
+            repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+            repository_id = trans.security.encode_id( repository_metadata.repository_id )
+            changeset_revision = repository_metadata.changeset_revision
+            new_kwd = dict( id=repository_id,
+                            changeset_revision=changeset_revision )
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_or_manage_repository',
-                                                                  **kwd ) )
+                                                                  **new_kwd ) )
         return self.datatypes_grid( trans, **kwd )
 
     @web.expose
@@ -256,34 +263,55 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def browse_repository_dependencies( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
+            # The received id is a RepositoryMetadata id.
+            repository_metadata_id = kwd[ 'id' ]
+            repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+            repository_id = trans.security.encode_id( repository_metadata.repository_id )
+            changeset_revision = repository_metadata.changeset_revision
+            new_kwd = dict( id=repository_id,
+                            changeset_revision=changeset_revision )
             if operation == "browse_repository":
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_repository',
-                                                                  **kwd ) )
+                                                                  **new_kwd ) )
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_or_manage_repository',
-                                                                  **kwd ) )
+                                                                  **new_kwd ) )
         return self.repository_dependencies_grid( trans, **kwd )
 
     @web.expose
     def browse_tools( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
+            # The received id is a RepositoryMetadata id.
+            repository_metadata_id = kwd['id' ]
+            repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+            repository_id = trans.security.encode_id( repository_metadata.repository_id )
+            changeset_revision = repository_metadata.changeset_revision
+            new_kwd = dict( id=repository_id,
+                            changeset_revision=changeset_revision )
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_or_manage_repository',
-                                                                  **kwd ) )
+                                                                  **new_kwd ) )
         return self.tools_grid( trans, **kwd )
 
     @web.expose
     def browse_tool_dependencies( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
+            # The received id is a RepositoryMetadata id.
+            repository_metadata_id = kwd[ 'id' ]
+            repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+            repository_id = trans.security.encode_id( repository_metadata.repository_id )
+            changeset_revision = repository_metadata.changeset_revision
+            new_kwd = dict( id=repository_id,
+                            changeset_revision=changeset_revision )
             if operation == "view_or_manage_repository":
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_or_manage_repository',
-                                                                  **kwd ) )
+                                                                  **new_kwd ) )
         return self.tool_dependencies_grid( trans, **kwd )
 
     @web.expose

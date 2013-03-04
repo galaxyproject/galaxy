@@ -787,7 +787,7 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
     columns = [
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
-                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id, changeset_revision=item.changeset_revision ) ),
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                                      attach_popup=False,
                                                      key="Repository.name" ),
         RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
@@ -858,7 +858,7 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
     columns = [
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
-                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id, changeset_revision=item.changeset_revision ) ),
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                                      attach_popup=False,
                                                      key="Repository.name" ),
         RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
@@ -920,7 +920,7 @@ class ToolsGrid( RepositoryMetadataGrid ):
     columns = [
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
-                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id, changeset_revision=item.changeset_revision ) ),
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                                      attach_popup=False,
                                                      key="Repository.name" ),
         RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
@@ -985,7 +985,7 @@ class DatatypesGrid( RepositoryMetadataGrid ):
     columns = [
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
-                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.repository.id, changeset_revision=item.changeset_revision ) ),
+                                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                                      attach_popup=False,
                                                      key="Repository.name" ),
         RepositoryMetadataGrid.RepositoryOwnerColumn( "Owner",
