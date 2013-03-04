@@ -2715,7 +2715,10 @@ class Tool( object ):
             if code:
                 return code( *args, **kwargs )
         except Exception, e:
-            e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, e.args[0] ), )
+            original_message = ''
+            if len( e.args ):
+                original_message = e.args[0]
+            e.args = ( "Error in '%s' hook '%s', original message: %s" % ( self.name, hook_name, original_message ), )
             raise
     def exec_before_job( self, app, inp_data, out_data, param_dict={} ):
         pass
