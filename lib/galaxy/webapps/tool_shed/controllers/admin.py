@@ -6,7 +6,7 @@ from galaxy.model.orm import and_
 from galaxy.web.framework.helpers import time_ago, grids
 from galaxy.util import inflector
 import tool_shed.util.shed_util_common as suc
-from repository import RepositoryGrid, CategoryGrid
+from tool_shed.grids.repository_grids import RepositoryGrid, CategoryGrid
 
 from galaxy import eggs
 eggs.require( 'mercurial' )

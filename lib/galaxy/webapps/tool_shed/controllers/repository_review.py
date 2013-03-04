@@ -8,7 +8,7 @@ from galaxy.model.orm import and_
 from sqlalchemy.sql.expression import func
 from galaxy.webapps.tool_shed.util import common_util
 from galaxy.webapps.tool_shed.util.container_util import STRSEP
-from repository import RepositoryGrid
+from tool_shed.grids.repository_grids import RepositoryGrid
 import tool_shed.util.shed_util_common as suc
 from galaxy.util.odict import odict
 

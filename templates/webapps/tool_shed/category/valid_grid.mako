@@ -48,7 +48,7 @@
 
 <%def name="grid_body( grid )">
     <%
-        from galaxy.webapps.tool_shed.controllers.repository import ValidRepositoryGrid
+        from tool_shed.grids.repository_grids import ValidRepositoryGrid
         repo_grid = ValidRepositoryGrid()
     %>
     ${self.make_grid( grid, repo_grid )}
