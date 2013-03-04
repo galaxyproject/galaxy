@@ -203,14 +203,7 @@ def get_hda_dict( trans, history, hda, for_editing ):
         hda_dict[ 'file_name' ] = hda.file_name
 
     if not hda_dict[ 'deleted' ]:
-        # Problem: Method url_for cannot use the dataset controller
-        # Get the environment from DefaultWebTransaction
-        #   and use default webapp mapper instead of webapp API mapper
-        web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
-        # http://routes.groovie.org/generating.html
-        # url_for is being phased out, so new applications should use url
-        hda_dict[ 'download_url' ] = web_url_for( controller='dataset', action='display',
-            dataset_id=trans.security.encode_id( hda.id ), to_ext=hda.ext )
+        hda_dict[ 'download_url' ] = url_for( 'history_contents_display', history_id = trans.security.encode_id( history.id ), history_content_id = trans.security.encode_id( hda.id ) )
 
     can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
     hda_dict[ 'accessible' ] = ( trans.user_is_admin() or can_access_hda )

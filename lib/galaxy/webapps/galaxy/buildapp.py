@@ -83,6 +83,11 @@ def app_factory( global_conf, **kwargs ):
                                 name_prefix='history_',
                                 path_prefix='/api/histories/:history_id', 
                                 parent_resources=dict( member_name='history', collection_name='histories' ) )
+    webapp.api_mapper.connect("history_contents_display",
+                              "/api/histories/:history_id/contents/:history_content_id/display",
+                              controller="datasets",
+                              action="display",
+                              conditions=dict(method=["GET"]))
     webapp.api_mapper.resource( 'permission',
                                 'permissions',
                                 path_prefix='/api/libraries/:library_id',

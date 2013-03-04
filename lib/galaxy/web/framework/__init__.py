@@ -99,7 +99,14 @@ def require_login( verb="perform this action", use_panels=False, webapp='galaxy'
         return decorator
     return argcatcher
 
-def expose_api( func ):
+def expose_api_raw( func ):
+    """
+    Expose this function via the API but don't dump the results
+    to JSON.
+    """
+    return expose_api( func, to_json=False )
+
+def expose_api( func, to_json=True ):
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
         def error( environ, start_response ):
@@ -183,10 +190,12 @@ def expose_api( func ):
                 trans.response.status = 400
                 return "That user does not exist."
         try:
-            if trans.debug:
-                return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
-            else:
-                return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+            rval = func( self, trans, *args, **kwargs)
+            if to_json and trans.debug:
+                rval = simplejson.dumps( rval, indent=4, sort_keys=True )
+            elif to_json:
+                rval = simplejson.dumps( rval )
+            return rval
         except paste.httpexceptions.HTTPException:
             raise # handled
         except:
