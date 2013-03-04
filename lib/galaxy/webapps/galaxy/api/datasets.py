@@ -4,12 +4,12 @@ API operations on the contents of a dataset.
 import logging, os, string, shutil, urllib, re, socket
 from galaxy import util, datatypes, jobs, web, util
 from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider
-from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin
+from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.web.framework.helpers import is_true
 
 log = logging.getLogger( __name__ )
 
-class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
+class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin ):
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -191,3 +191,31 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin ):
         data = data_provider.get_data( **kwargs )
 
         return data
+
+    @web.expose_api_raw
+    def display( self, trans, history_content_id, history_id, preview=False, filename=None, to_ext=None, chunk=None, **kwd ):
+        """
+        GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/display
+        Displays history content (dataset).
+        """
+        # Huge amount of code overlap with lib/galaxy/webapps/galaxy/api/history_content:show here.
+        hda_dict = {}
+        try:
+            # for anon users:
+            #TODO: check login_required?
+            #TODO: this isn't actually most_recently_used (as defined in histories)
+            if( ( trans.user == None )
+            and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
+                history = trans.history
+                #TODO: dataset/hda by id (from history) OR check_ownership for anon user
+                hda = self.get_history_dataset_association( trans, history, history_content_id,
+                    check_ownership=False, check_accessible=True )
+
+            else:
+                history = self.get_history( trans, history_id,
+                    check_ownership=True, check_accessible=True, deleted=False )
+                hda = self.get_history_dataset_association( trans, history, history_content_id,
+                    check_ownership=True, check_accessible=True )
+        except:
+            raise
+        return hda.datatype.display_data(trans, hda, preview, filename, to_ext, chunk, **kwd)

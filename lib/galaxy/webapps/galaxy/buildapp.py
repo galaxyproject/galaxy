@@ -85,7 +85,7 @@ def app_factory( global_conf, **kwargs ):
                                 parent_resources=dict( member_name='history', collection_name='histories' ) )
     webapp.api_mapper.connect("history_contents_display",
                               "/api/histories/:history_id/contents/:history_content_id/display",
-                              controller="history_contents",
+                              controller="datasets",
                               action="display",
                               conditions=dict(method=["GET"]))
     webapp.api_mapper.resource( 'permission',
