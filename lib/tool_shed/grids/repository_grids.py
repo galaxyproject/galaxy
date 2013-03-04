@@ -10,6 +10,8 @@ from galaxy import eggs
 eggs.require('markupsafe')
 from markupsafe import escape as escape_html
 
+log = logging.getLogger( __name__ )
+
 class CategoryGrid( grids.Grid ):
 
 
