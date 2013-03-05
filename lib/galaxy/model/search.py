@@ -80,9 +80,8 @@ class ViewBaseClass(object):
 class LibraryDatasetQuery(QueryBaseClass):
     DOMAIN = "library_dataset"
     OUTPUT_COLUMNS = [ 'extended_metadata', 'name', 'id' ]
-    def filter(self, arg):
-        print "Library", arg
-        if arg.name == 'extended_metadata':
+    def filter(self, left, operator, right):
+        if left == 'extended_metadata':
             self.do_query = True
             self.query = self.query.join( ExtendedMetadata )
             ex_meta = arg.other
@@ -125,7 +124,7 @@ class HistoryDatasetQuery(QueryBaseClass):
     DOMAIN = "history_dataset"
     OUTPUT_COLUMNS = ['name', 'id']
 
-    def filter(self, arg):
+    def filter(self, left, operator, right):
         if arg.name == 'name':
             if arg.mode == "==":
                 self.do_query = True
@@ -153,16 +152,16 @@ class HistoryQuery(QueryBaseClass):
     DOMAIN = "history"
     OUTPUT_COLUMNS = ['name', 'id']
 
-    def filter(self, arg):
-        if arg.name == 'name':
-            if arg.mode == "==":
+    def filter(self, left, operator, right):
+        if left == 'name':
+            if operator == "==":
                 self.do_query = True
-                self.query = self.query.filter( History.name == arg.other )
-            if arg.mode == "like":
+                self.query = self.query.filter( History.name == right )
+            if operator == "like":
                 self.do_query = True
-                self.query = self.query.filter( History.name.like(arg.other) )
+                self.query = self.query.filter( History.name.like(right) )
 
-        if arg.name == 'tag':
+        if left == 'tag':
             self.do_query = True
             self.query = self.query.filter(
                History.id == HistoryTagAssociation.history_id
@@ -172,20 +171,20 @@ class HistoryQuery(QueryBaseClass):
             if len(tmp) > 1:
                 self.query = self.query.filter( HistoryTagAssociation.user_value == tmp[1] )
 
-        if arg.name == 'annotation':
-            if arg.mode == "==":
+        if left == 'annotation':
+            if operator == "==":
                 self.do_query = True
                 self.query = self.query.filter( and_(
                     HistoryAnnotationAssociation.history_id == History.id,
-                    HistoryAnnotationAssociation.annotation == arg.other
+                    HistoryAnnotationAssociation.annotation == right
                     )
                 )
 
-            if arg.mode == "like":
+            if operator == "like":
                 self.do_query = True
                 self.query = self.query.filter( and_(
                     HistoryAnnotationAssociation.history_id == History.id,
-                    HistoryAnnotationAssociation.annotation.like( arg.other )
+                    HistoryAnnotationAssociation.annotation.like( right )
                     )
                 )
 
@@ -212,7 +211,7 @@ class WorkflowQuery(QueryBaseClass):
     DOMAIN = "workflow"
     OUTPUT_COLUMNS = ['name', 'id']
 
-    def filter(self, arg):
+    def filter(self, left, operator, right):
         if arg.name == 'name':
             self.do_query = True
             self.query = self.query.filter( StoredWorkflow.name == arg.other )
@@ -269,8 +268,9 @@ field_list = word:x (
 conditional = (
     logic_statement:x -> x
     | conditional:x 'and' conditional:y -> GalaxyQueryAnd(x,y) )
-logic_statement = word:left ws comparison:comp ws word:right -> [left, comp, right]
-quote_word = '"' word '"'
+logic_statement = word:left ws comparison:comp ws word:right -> GalaxyQueryComparison(left, comp, right)
+quote_word = ( '"' word '"'
+    | '\'' word '\'' )
 word = alphanum+:x -> "".join(x) 
 comparison = ( '=' -> '='
     | '>' -> '>'
@@ -331,7 +331,11 @@ class SearchProcess:
 
 class GalaxySearchEngine:
     def __init__(self):
-        self.parser = parsley.makeGrammar(gqlGrammar, { 're' : re, 'GalaxyQuery' : GalaxyQuery})
+        self.parser = parsley.makeGrammar(gqlGrammar, { 
+            're' : re, 
+            'GalaxyQuery' : GalaxyQuery, 
+            'GalaxyQueryComparison' : GalaxyQueryComparison
+        })
 
     def query(self, query_text):
         q = self.parser(query_text).expr()
