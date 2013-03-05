@@ -9,6 +9,8 @@ import tool_shed.grids.util as grids_util
 from galaxy import eggs
 eggs.require('markupsafe')
 from markupsafe import escape as escape_html
+eggs.require('mercurial')
+from mercurial import hg, ui, patch, commands
 
 log = logging.getLogger( __name__ )
 
@@ -774,7 +776,14 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                             required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
                             if required_repository:
                                 required_repository_id = trans.security.encode_id( required_repository.id )
-                                rd_str += '<a href="browse_repository_dependencies?operation=view_or_manage_repository&id=%s&changeset_revision=%s">' % ( required_repository_id, changeset_revision )
+                                required_repository_metadata = suc.get_repository_metadata_by_repository_id_changeset_revision( trans, required_repository_id, changeset_revision )
+                                if not required_repository_metadata:
+                                    repo_dir = required_repository.repo_path( trans.app )
+                                    repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                                    updated_changeset_revision = suc.get_next_downloadable_changeset_revision( required_repository, repo, changeset_revision )
+                                    required_repository_metadata = suc.get_repository_metadata_by_repository_id_changeset_revision( trans, required_repository_id, updated_changeset_revision )
+                                required_repository_metadata_id = trans.security.encode_id( required_repository_metadata.id )
+                                rd_str += '<a href="browse_repository_dependencies?operation=view_or_manage_repository&id=%s">' % ( required_repository_metadata_id )
                             rd_str += 'Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>' % ( escape_html( rd_tup[ 1 ] ), escape_html( rd_tup[ 3 ] ), escape_html( rd_tup[ 2 ] ) )
                             if required_repository:
                                 rd_str += '</a>'
@@ -785,6 +794,8 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
     title = "Valid repository dependency definitions in this tool shed"
     default_sort_key = "Repository.name"
     columns = [
+        RequiredRepositoryColumn( "Repository dependency",
+                                   attach_popup=False ),
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
                                                      link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
@@ -795,12 +806,10 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                                                       attach_popup=False,
                                                       key="User.username" ),
         RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
-                                                        attach_popup=False ),
-        RequiredRepositoryColumn( "Repository dependency",
-                                   attach_popup=False )
+                                                        attach_popup=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
-                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                cols_to_filter=[ columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -848,7 +857,9 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
                             name = td_dict[ 'name' ]
                             type = td_dict[ 'type' ]
                             version = td_dict[ 'version' ]
+                            td_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
                             td_str += '<b>%s</b> version <b>%s</b>' % ( escape_html( name ), escape_html( version ) )
+                            td_str += '</a>'
                             if index < num_keys - 1:
                                 td_str += '<br/>'
             return td_str
@@ -856,6 +867,8 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
     title = "Tool dependency definitions in this tool shed"
     default_sort_key = "Repository.name"
     columns = [
+        ToolDependencyColumn( "Tool dependency",
+                              attach_popup=False ),
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
                                                      link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
@@ -866,12 +879,10 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
                                                       attach_popup=False,
                                                       key="User.username" ),
         RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
-                                                        attach_popup=False ),
-        ToolDependencyColumn( "Tool dependency",
-                              attach_popup=False )
+                                                        attach_popup=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
-                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                cols_to_filter=[ columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -910,7 +921,9 @@ class ToolsGrid( RepositoryMetadataGrid ):
                         for index, tool_tup in enumerate( sorted_tool_tups ):
                             tool_id = tool_tup[ 0 ]
                             version = tool_tup[ 1 ]
+                            tool_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
                             tool_str += '<b>%s:</b> %s' % ( escape_html( tool_id ), escape_html( version ) )
+                            tool_str += '</a>'
                             if index < num_tool_tups - 1:
                                 tool_str += '<br/>'
             return tool_str
@@ -918,6 +931,8 @@ class ToolsGrid( RepositoryMetadataGrid ):
     title = "Valid tools in this tool shed"
     default_sort_key = "Repository.name"
     columns = [
+        ToolsColumn( "Tool id and version",
+                      attach_popup=False ),
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
                                                      link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
@@ -928,12 +943,10 @@ class ToolsGrid( RepositoryMetadataGrid ):
                                                       attach_popup=False,
                                                       key="User.username" ),
         RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
-                                                        attach_popup=False ),
-        ToolsColumn( "Tool id and version",
-                      attach_popup=False )
+                                                        attach_popup=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
-                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                cols_to_filter=[ columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -975,7 +988,9 @@ class DatatypesGrid( RepositoryMetadataGrid ):
                         for index, datatype_tup in enumerate( sorted_datatype_tups ):
                             extension = datatype_tup[ 0 ]
                             dtype = datatype_tup[ 1 ]
+                            datatype_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
                             datatype_str += '<b>%s:</b> %s' % ( escape_html( extension ), escape_html( dtype ) )
+                            datatype_str += '</a>'
                             if index < num_datatype_tups - 1:
                                 datatype_str += '<br/>'
             return datatype_str
@@ -983,6 +998,8 @@ class DatatypesGrid( RepositoryMetadataGrid ):
     title = "Custom datatypes in this tool shed"
     default_sort_key = "Repository.name"
     columns = [
+        DatatypesColumn( "Datatype extension and class",
+                         attach_popup=False ),
         RepositoryMetadataGrid.RepositoryNameColumn( "Repository name",
                                                      model_class=model.Repository,
                                                      link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
@@ -993,12 +1010,10 @@ class DatatypesGrid( RepositoryMetadataGrid ):
                                                       attach_popup=False,
                                                       key="User.username" ),
         RepositoryMetadataGrid.ChangesetRevisionColumn( "Revision",
-                                                        attach_popup=False ),
-        DatatypesColumn( "Datatype extension and class",
-                         attach_popup=False )
+                                                        attach_popup=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, owner", 
-                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                cols_to_filter=[ columns[1], columns[2] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
