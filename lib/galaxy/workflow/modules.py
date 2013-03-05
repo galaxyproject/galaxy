@@ -1,13 +1,20 @@
+"""
+Modules used in building workflows
+"""
+
+import logging
 import re
+
 from elementtree.ElementTree import Element
-from galaxy import web
-from galaxy.tools.parameters import DataToolParameter, DummyDataset, RuntimeValue, check_param, visit_input_values
+
 import galaxy.tools
-from galaxy.util.bunch import Bunch
-from galaxy.util.json import from_json_string, to_json_string
+from galaxy import web
 from galaxy.jobs.actions.post import ActionBox
 from galaxy.model import PostJobAction
-import logging
+from galaxy.tools.parameters import check_param, DataToolParameter, DummyDataset, RuntimeValue, visit_input_values
+from galaxy.util.bunch import Bunch
+from galaxy.util.json import from_json_string, to_json_string
+
 
 log = logging.getLogger( __name__ )
 
