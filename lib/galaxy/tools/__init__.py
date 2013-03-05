@@ -2833,8 +2833,7 @@ class Tool( object ):
                     if outdata == dataset: continue
                     # Create new child dataset
                     child_data = child_dataset.copy( parent_id = dataset.id )
-                    #DBTODO should this be child_data, and not child_dataset here?
-                    self.sa_session.add( child_dataset )
+                    self.sa_session.add( child_data )
                     self.sa_session.flush()
         return children
     def collect_primary_datasets( self, output, job_working_directory ):
