@@ -27,31 +27,20 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
             se = GalaxySearchEngine()
             query = se.query(query_txt)
             if query is not None:
-                for row in query.process(trans):
-                    out.append(row)
-        return self._create_response(trans, out)
-
-    def _create_response(self, trans, rows):
-        current_user_roles = trans.get_current_user_roles()
-        out = []
-        for row in rows:
-            append = False
-            if trans.user_is_admin(): 
-                append = True
-
-            if not append:
-                if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
-                    if (trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ) ):
+                current_user_roles = trans.get_current_user_roles()
+                for item in query.process(trans):
+                    append = False
+                    if trans.user_is_admin(): 
                         append = True
-
-            if not append:
-                if hasattr(row, 'dataset'):
-                    if trans.app.security_agent.can_access_dataset( current_user_roles, row.dataset ):
-                        r = self.encode_all_ids( trans, row.get_api_value( view='element' ) )
-                        out.append(r)
-
-
-            if append:
-                r = self.encode_all_ids( trans, row.get_api_value( view='element' ) )
-                out.append(r)
-        return out        
+                    if not append:
+                        if type( item ) in ( trans.app.model.LibraryFolder, trans.app.model.LibraryDatasetDatasetAssociation, trans.app.model.LibraryDataset ):
+                            if (trans.app.security_agent.can_access_library_item( trans.get_current_user_roles(), item, trans.user ) ):
+                                append = True
+                    if not append:
+                        if hasattr(row, 'dataset'):
+                            if trans.app.security_agent.can_access_dataset( current_user_roles, row.dataset ):
+                                append = True
+                    if append:
+                        row = query.item_to_api_value(item)
+                        out.append( self.encode_all_ids( trans, row) )
+        return out

@@ -255,7 +255,7 @@ view_mapping = {
 }
 
 
-sqlGrammar = """
+gqlGrammar = """
 expr = 'select' bs field_desc:f bs 'from' bs word:t ( 
     bs 'where' bs conditional:c -> GalaxyQuery(f,t,c)
     | -> GalaxyQuery(f, t, None) )
@@ -316,12 +316,22 @@ class SearchProcess:
                 self.query.conditional.operator,
                 self.query.conditional.right )
         return search.get_results(True)
+
+    def item_to_api_value(self, item):
+        r = item.get_api_value( view='element' )
+        if self.query.field_list.count("*"):
+            return r
+        o = {}
+        for a in r:
+            if a in self.query.field_list:
+                o[a] = r[a]
+        return o
                             
 
 
 class GalaxySearchEngine:
     def __init__(self):
-        self.parser = parsley.makeGrammar(sqlGrammar, { 're' : re, 'GalaxyQuery' : GalaxyQuery})
+        self.parser = parsley.makeGrammar(gqlGrammar, { 're' : re, 'GalaxyQuery' : GalaxyQuery})
 
     def query(self, query_text):
         q = self.parser(query_text).expr()
