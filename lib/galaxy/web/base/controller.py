@@ -683,10 +683,6 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
                     step.upgrade_messages = "Unknown Tool ID"
                     step.module = None
                     step.state = None
-                # Error dict
-                if step.tool_errors:
-                    #DBTODO BUG: errors doesn't exist in this scope, intent?
-                    errors[step.id] = step.tool_errors
             else:
                 ## Non-tool specific stuff?
                 step.module = module_factory.from_workflow_step( trans, step )
