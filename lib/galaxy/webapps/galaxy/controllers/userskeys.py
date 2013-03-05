@@ -64,7 +64,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
     @web.expose
     @web.require_login()
     @web.require_admin
-    def api_keys( self, trans, cntrller, uid, **kwd ):
+    def admin_api_keys( self, trans, cntrller, uid, **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )

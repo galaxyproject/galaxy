@@ -17,7 +17,7 @@
                         <td>${user['email']}</td>
                         <td>${user['key']}</td>
                         <td>
-                          <form action="${h.url_for( controller='userskeys', action='api_keys', cntrller=cntrller )}" method="POST">
+                          <form action="${h.url_for( controller='userskeys', action='admin_api_keys', cntrller=cntrller )}" method="POST">
                           <input type="hidden" name="uid" value=${user['uid']} />
                           <input type="submit" name="new_api_key_button" value="Generate a new key now" />
                           </form>
