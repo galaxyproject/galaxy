@@ -180,7 +180,7 @@ def get_repositories_to_install( location, source='file', format='json' ):
                                          do_not_test='false', 
                                          downloadable='true', 
                                          malicious='false',
-                                         must_include_tools='true' ) )
+                                         includes_tools='true' ) )
         api_url = get_api_url( base=location, parts=[ 'repository_revisions' ], params=params )
         if format == 'json':
             return json_from_url( api_url )
@@ -394,7 +394,7 @@ def main():
         log.info( "The embedded Galaxy application is running on %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     log.info( "Repositories will be installed from the tool shed at %s" % galaxy_tool_shed_url )
     success = False
-    repository_status = {}
+    repository_status = dict()
     try:
         # Iterate through a list of repository info dicts.
         log.info( "Retrieving repositories to install from the URL:\n%s\n" % str( galaxy_tool_shed_url ) )
