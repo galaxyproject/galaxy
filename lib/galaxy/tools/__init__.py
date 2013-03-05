@@ -1,47 +1,59 @@
 """
 Classes encapsulating galaxy tools and tool configuration.
 """
-import pkg_resources
 
-pkg_resources.require( "simplejson" )
-pkg_resources.require( "MarkupSafe" ) #MarkupSafe must load before mako
-pkg_resources.require( "Mako" )
-
-import logging, os, string, sys, tempfile, glob, shutil, types, urllib, subprocess, random, math, traceback, re, pipes
-import simplejson
 import binascii
-from mako.template import Template
-from UserDict import DictMixin
-from galaxy.util.odict import odict
-from galaxy.util.bunch import Bunch
-from galaxy.util.template import fill_template
-from galaxy import util, jobs, model
-from galaxy.jobs import ParallelismInfo
-from copy import deepcopy
+import glob
+import logging
+import os
+import pipes
+import re
+import shutil
+import sys
+import tempfile
+import traceback
+import types
+import urllib
+
+from galaxy import eggs
+eggs.require( "simplejson" )
+eggs.require( "MarkupSafe" ) #MarkupSafe must load before mako
+eggs.require( "Mako" )
+
+import simplejson
+from cgi import FieldStorage
 from elementtree import ElementTree
-from parameters import *
-from parameters.grouping import *
-from parameters.output import ToolOutputActionGroup
-from parameters.validation import LateValidationError
-from parameters.input_translation import ToolInputTranslator
-from galaxy.util.expressions import ExpressionContext
-from galaxy.tools.test import ToolTestBuilder
+from mako.template import Template
+from paste import httpexceptions
+from sqlalchemy import and_
+from copy import deepcopy
+
+from galaxy import jobs, model
+from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
+from galaxy.jobs import ParallelismInfo
 from galaxy.tools.actions import DefaultToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import DependencyManager
-from galaxy.model import directory_hash_id
-from galaxy.model.orm import *
+from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
+from galaxy.tools.parameters.basic import (BaseURLToolParameter,
+                                           DataToolParameter, HiddenToolParameter, LibraryDatasetToolParameter,
+                                           SelectToolParameter, ToolParameter, UnvalidatedValue,
+                                           IntegerToolParameter, FloatToolParameter)
+from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repeat, UploadDataset
+from galaxy.tools.parameters.input_translation import ToolInputTranslator
+from galaxy.tools.parameters.output import ToolOutputActionGroup
+from galaxy.tools.parameters.validation import LateValidationError
+from galaxy.tools.test import ToolTestBuilder
+from galaxy.util import isinf, listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
+from galaxy.util.bunch import Bunch
+from galaxy.util.expressions import ExpressionContext
+from galaxy.util.hash_util import hmac_new
 from galaxy.util.none_like import NoneDataset
-from galaxy.datatypes import sniff
-from cgi import FieldStorage
-from galaxy.util.hash_util import *
-from galaxy.util import listify
-import tool_shed.util.shed_util_common
-from galaxy.web import url_for
-
-from paste import httpexceptions
-
+from galaxy.util.odict import odict
+from galaxy.util.template import fill_template
 from galaxy.visualization.genome.visual_analytics import TracksterConfig
+from galaxy.web import url_for
+from tool_shed.util import shed_util_common
 
 log = logging.getLogger( __name__ )
 
@@ -147,7 +159,7 @@ class ToolBox( object ):
             self.sa_session.query( self.app.model.ToolTagAssociation ).delete()
             self.sa_session.flush()
         log.info( "Parsing the tool configuration %s" % config_filename )
-        tree = util.parse_xml( config_filename )
+        tree = parse_xml( config_filename )
         root = tree.getroot()
         tool_path = root.get( 'tool_path' )
         if tool_path:
@@ -234,7 +246,7 @@ class ToolBox( object ):
             elif key.startswith( 'label_' ):
                 self.tool_panel[ key ] = val
             elif key.startswith( 'section_' ):
-                elem = Element( 'section' )
+                elem = ElementTree.Element( 'section' )
                 elem.attrib[ 'id' ] = val.id or ''
                 elem.attrib[ 'name' ] = val.name or ''
                 elem.attrib[ 'version' ] = val.version or ''
@@ -262,7 +274,7 @@ class ToolBox( object ):
         be reset when the various tool panel config files are parsed, at which time the tools and workflows are
         loaded.
         """
-        tree = util.parse_xml( self.integrated_tool_panel_config )
+        tree = parse_xml( self.integrated_tool_panel_config )
         root = tree.getroot()
         for elem in root:
             if elem.tag == 'tool':
@@ -291,7 +303,7 @@ class ToolBox( object ):
     def write_integrated_tool_panel_config_file( self ):
         """
         Write the current in-memory version of the integrated_tool_panel.xml file to disk.  Since Galaxy administrators 
-        use this file to manage the tool panel, we'll not use util.xml_to_string() since it doesn't write XML quite right.
+        use this file to manage the tool panel, we'll not use xml_to_string() since it doesn't write XML quite right.
         """
         fd, filename = tempfile.mkstemp()
         os.write( fd, '<?xml version="1.0"?>\n' )
@@ -457,7 +469,7 @@ class ToolBox( object ):
                 # the tool if it's it was not found in self.tools_by_id, but performing that check did not enable this scenario.
                 self.tools_by_id[ tool.id ] = tool
                 if load_panel_dict:
-                    self.__add_tool_to_tool_panel( tool.id, panel_dict, section=isinstance( panel_dict, galaxy.tools.ToolSection ) )
+                    self.__add_tool_to_tool_panel( tool.id, panel_dict, section=isinstance( panel_dict, ToolSection ) )
             # Always load the tool into the integrated_panel_dict, or it will not be included in the integrated_tool_panel.xml file.
             if key in integrated_panel_dict or index is None:
                 integrated_panel_dict[ key ] = tool
@@ -707,7 +719,7 @@ class ToolBox( object ):
         return rval
 
     def _load_and_preprocess_tool_xml(self, config_file):
-        tree = util.parse_xml(config_file)
+        tree = parse_xml(config_file)
         root = tree.getroot()
         macros_el = root.find('macros')
         if not macros_el:
@@ -779,7 +791,7 @@ class ToolBox( object ):
         return macros
 
     def _load_macro_file(self, path, tool_dir):
-        tree = util.parse_xml(path)
+        tree = parse_xml(path)
         root = tree.getroot()
         return self._load_macros(root, tool_dir)
 
@@ -848,7 +860,7 @@ class DefaultToolState( object ):
     """
     Keeps track of the state of a users interaction with a tool between 
     requests. The default tool state keeps track of the current page (for 
-    multipage "wizard" tools) and the values of all parameters.
+    multipage "wizard" tools) and the values of all 
     """
     def __init__( self ):
         self.page = 0
@@ -968,7 +980,7 @@ class Tool( object ):
         self.input_required = False
         self.display_interface = True
         self.require_login = False
-        # Define a place to keep track of all input parameters.  These
+        # Define a place to keep track of all input   These
         # differ from the inputs dictionary in that inputs can be page
         # elements like conditionals, but input_params are basic form
         # parameters like SelectField objects.  This enables us to more
@@ -1018,7 +1030,7 @@ class Tool( object ):
     def tool_shed_repository( self ):
         # If this tool is included in an installed tool shed repository, return it.
         if self.tool_shed:
-            return tool_shed.util.shed_util_common.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
+            return shed_util_common.get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( self.app,
                                                                                                                           self.tool_shed,
                                                                                                                           self.repository_name,
                                                                                                                           self.repository_owner,
@@ -1094,13 +1106,13 @@ class Tool( object ):
             # For backward compatibility, some tools may not have versions yet.
             self.version = "1.0.0"
         # Support multi-byte tools
-        self.is_multi_byte = util.string_as_bool( root.get( "is_multi_byte", False ) )
+        self.is_multi_byte = string_as_bool( root.get( "is_multi_byte", False ) )
         # Force history to fully refresh after job execution for this tool. 
         # Useful i.e. when an indeterminate number of outputs are created by 
         # a tool.
-        self.force_history_refresh = util.string_as_bool( root.get( 'force_history_refresh', 'False' ) )
-        self.display_interface = util.string_as_bool( root.get( 'display_interface', str( self.display_interface ) ) )
-        self.require_login = util.string_as_bool( root.get( 'require_login', str( self.require_login ) ) )
+        self.force_history_refresh = string_as_bool( root.get( 'force_history_refresh', 'False' ) )
+        self.display_interface = string_as_bool( root.get( 'display_interface', str( self.display_interface ) ) )
+        self.require_login = string_as_bool( root.get( 'require_login', str( self.require_login ) ) )
         # Load input translator, used by datasource tools to change names/values of incoming parameters
         self.input_translator = root.find( "request_param_translation" )
         if self.input_translator:
@@ -1125,7 +1137,7 @@ class Tool( object ):
         else:
             self.redirect_url_params = ''
         # Short description of the tool
-        self.description = util.xml_text(root, "description")
+        self.description = xml_text(root, "description")
         # Versioning for tools        
         self.version_string_cmd = None
         version_cmd = root.find("version_command")
@@ -1155,8 +1167,8 @@ class Tool( object ):
         if 'job_config' in dir(self.app):
             self.job_tool_configurations = self.app.job_config.get_job_tool_configurations(self_ids)
         # Is this a 'hidden' tool (hidden in tool menu)
-        self.hidden = util.xml_text(root, "hidden")
-        if self.hidden: self.hidden = util.string_as_bool(self.hidden)
+        self.hidden = xml_text(root, "hidden")
+        if self.hidden: self.hidden = string_as_bool(self.hidden)
         # Load any tool specific code (optional) Edit: INS 5/29/2007,
         # allow code files to have access to the individual tool's
         # "module" if it has one.  Allows us to reuse code files, etc.
@@ -1175,7 +1187,7 @@ class Tool( object ):
         for option_elem in root.findall("options"):
             for option, value in self.options.copy().items():
                 if isinstance(value, type(False)):
-                    self.options[option] = util.string_as_bool(option_elem.get(option, str(value)))
+                    self.options[option] = string_as_bool(option_elem.get(option, str(value)))
                 else:
                     self.options[option] = option_elem.get(option, str(value))
         self.options = Bunch(** self.options)
@@ -1243,8 +1255,8 @@ class Tool( object ):
         enctypes = set()
         if input_elem:
             # Handle properties of the input form
-            self.check_values = util.string_as_bool( input_elem.get("check_values", self.check_values ) )
-            self.nginx_upload = util.string_as_bool( input_elem.get( "nginx_upload", self.nginx_upload ) )
+            self.check_values = string_as_bool( input_elem.get("check_values", self.check_values ) )
+            self.nginx_upload = string_as_bool( input_elem.get( "nginx_upload", self.nginx_upload ) )
             self.action = input_elem.get( 'action', self.action )
             # If we have an nginx upload, save the action as a tuple instead of
             # a string. The actual action needs to get url_for run to add any
@@ -1283,7 +1295,7 @@ class Tool( object ):
         else:
             raise Exception, "Conflicting required enctypes: %s" % str( enctypes )
         # Check if the tool either has no parameters or only hidden (and
-        # thus hardcoded) parameters. FIXME: hidden parameters aren't
+        # thus hardcoded)  FIXME: hidden parameters aren't
         # parameters at all really, and should be passed in a different
         # way, making this check easier.
         for param in self.inputs.values():
@@ -1305,7 +1317,7 @@ class Tool( object ):
             help_pages = self.help.findall( "page" )
             help_header = self.help.text
             try:
-                self.help = Template( util.rst_to_html(self.help.text), input_encoding='utf-8',
+                self.help = Template( rst_to_html(self.help.text), input_encoding='utf-8',
                                       output_encoding='utf-8', default_filters=[ 'decode.utf8' ],
                                       encoding_errors='replace' )
             except:
@@ -1317,7 +1329,7 @@ class Tool( object ):
                     help_footer = help_footer + help_page.tail
         # Each page has to rendered all-together because of backreferences allowed by rst
         try:
-            self.help_by_page = [ Template( util.rst_to_html( help_header + x + help_footer, 
+            self.help_by_page = [ Template( rst_to_html( help_header + x + help_footer, 
                                             input_encoding='utf-8', output_encoding='utf-8', 
                                             default_filters=[ 'decode.utf8' ],
                                             encoding_errors='replace' ) )
@@ -1342,11 +1354,11 @@ class Tool( object ):
             output.format_source = data_elem.get("format_source", None)
             output.metadata_source = data_elem.get("metadata_source", "")
             output.parent = data_elem.get("parent", None)
-            output.label = util.xml_text( data_elem, "label" )
+            output.label = xml_text( data_elem, "label" )
             output.count = int( data_elem.get("count", 1) )
             output.filters = data_elem.findall( 'filter' )
             output.from_work_dir = data_elem.get("from_work_dir", None)
-            output.hidden = util.string_as_bool( data_elem.get("hidden", "") )
+            output.hidden = string_as_bool( data_elem.get("hidden", "") )
             output.tool = self
             output.actions = ToolOutputActionGroup( output, data_elem.find( 'actions' ) )
             self.outputs[ output.name ] = output
@@ -1370,7 +1382,7 @@ class Tool( object ):
             for stdio_elem in ( root.findall( 'stdio' ) ):
                 self.parse_stdio_exit_codes( stdio_elem )
                 self.parse_stdio_regexes( stdio_elem )
-        except Exception, e:
+        except Exception:
             log.error( "Exception in parse_stdio! " + str(sys.exc_info()) )
 
     def parse_stdio_exit_codes( self, stdio_elem ):
@@ -1397,7 +1409,7 @@ class Tool( object ):
                     self.parse_error_level( exit_code_elem.get( "level" )))
                 code_range = exit_code_elem.get( "range", "" )
                 if None == code_range:
-                    code_range = code_elem.get( "value", "" )
+                    code_range = exit_code_elem.get( "value", "" )
                 if None == code_range:
                     log.warning( "Tool stdio exit codes must have "
                                + "a range or value" )
@@ -1441,12 +1453,12 @@ class Tool( object ):
                 # isn't bogus. If we have two infinite values, then 
                 # the start must be -inf and the end must be +inf. 
                 # So at least warn about this situation:
-                if ( util.isinf( exit_code.range_start ) and 
-                     util.isinf( exit_code.range_end ) ):
+                if ( isinf( exit_code.range_start ) and 
+                     isinf( exit_code.range_end ) ):
                     log.warning( "Tool exit_code range %s will match on "
                                + "all exit codes" % code_range )
                 self.stdio_exit_codes.append( exit_code )
-        except Exception, e: 
+        except Exception:
             log.error( "Exception in parse_stdio_exit_codes! " 
                      + str(sys.exc_info()) )
             trace = sys.exc_info()[2]
@@ -1514,7 +1526,7 @@ class Tool( object ):
                         regex.stdout_match = True
                         regex.stderr_match = True
                 self.stdio_regexes.append( regex )
-        except Exception, e:
+        except Exception:
             log.error( "Exception in parse_stdio_exit_codes! " 
                      + str(sys.exc_info()) )
             trace = sys.exc_info()[2]
@@ -1539,7 +1551,7 @@ class Tool( object ):
                     return_level = StdioErrorLevel.FATAL
                 else:
                     log.debug( "Error level %s did not match warning/fatal" % err_level )
-        except Exception, e:
+        except Exception:
             log.error( "Exception in parse_error_level " 
                      + str(sys.exc_info() ) )
             trace = sys.exc_info()[2]
@@ -1636,7 +1648,7 @@ class Tool( object ):
                     attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) ) 
                     # Allow a file size to vary if sim_size compare
                     attributes['delta'] = int( attrib.pop( 'delta', '10000' ) ) 
-                    attributes['sort'] = util.string_as_bool( attrib.pop( 'sort', False ) )
+                    attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
                     attributes['extra_files'] = []
                     attributes['assert_list'] = assert_list
                     if 'ftype' in attrib:
@@ -1654,7 +1666,7 @@ class Tool( object ):
                         extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower() 
                         extra_attributes['delta'] = extra.get( 'delta', '0' ) 
                         extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) ) 
-                        extra_attributes['sort'] = util.string_as_bool( extra.get( 'sort', False ) )
+                        extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
                         attributes['extra_files'].append( ( extra_type, extra_value, extra_name, extra_attributes ) )
                     test.add_output( name, file, attributes )
             except Exception, e:
@@ -1671,7 +1683,7 @@ class Tool( object ):
         # Display
         display_elem = input_elem.find("display")
         if display_elem is not None:
-            display = util.xml_to_string(display_elem)
+            display = xml_to_string(display_elem)
         else:
             display = None
         return display, inputs
@@ -1704,7 +1716,7 @@ class Tool( object ):
                 group = Conditional()
                 group.name = elem.get( "name" )
                 group.value_ref = elem.get( 'value_ref', None )
-                group.value_ref_in_group = util.string_as_bool( elem.get( 'value_ref_in_group', 'True' ) )
+                group.value_ref_in_group = string_as_bool( elem.get( 'value_ref_in_group', 'True' ) )
                 value_from = elem.get( "value_from" )
                 if value_from:
                     value_from = value_from.split( ':' )
@@ -1789,7 +1801,7 @@ class Tool( object ):
         self.requirements
         """
         for requirement_elem in requirements_elem.findall( 'requirement' ):
-            name = util.xml_text( requirement_elem )
+            name = xml_text( requirement_elem )
             type = requirement_elem.get( "type", "package" )
             version = requirement_elem.get( "version", None )
             requirement = ToolRequirement( name=name, type=type, version=version )
@@ -1807,7 +1819,7 @@ class Tool( object ):
         # right now
         if self.tool_type.startswith( 'data_source' ):
             return False
-        if not util.string_as_bool( root.get( "workflow_compatible", "True" ) ):
+        if not string_as_bool( root.get( "workflow_compatible", "True" ) ):
             return False
         # TODO: Anyway to capture tools that dynamically change their own
         #       outputs?
@@ -1873,7 +1885,7 @@ class Tool( object ):
         """
         Call the function `callback` on each parameter of this tool. Visits
         grouping parameters recursively and constructs unique prefixes for
-        each nested set of parameters. The callback method is then called as:
+        each nested set of  The callback method is then called as:
         
         `callback( level_prefix, parameter, parameter_value )`
         """
@@ -1894,7 +1906,7 @@ class Tool( object ):
         """
         # Get the state or create if not found
         if "tool_state" in incoming:
-            encoded_state = util.string_to_object( incoming["tool_state"] )
+            encoded_state = string_to_object( incoming["tool_state"] )
             state = DefaultToolState()
             state.decode( encoded_state, self, trans.app )
         else:
@@ -1911,7 +1923,7 @@ class Tool( object ):
         # Process incoming data
         if not( self.check_values ):
             # If `self.check_values` is false we don't do any checking or
-            # processing on input parameters. This is used to pass raw values
+            # processing on input  This is used to pass raw values
             # through to/from external sites. FIXME: This should be handled
             # more cleanly, there is no reason why external sites need to
             # post back to the same URL that the tool interface uses.
@@ -2225,7 +2237,7 @@ class Tool( object ):
         """
         params = []
         for input_param in self.input_params:
-            if isinstance( input_param, basic.SelectToolParameter ) and input_param.is_dynamic:
+            if isinstance( input_param, SelectToolParameter ) and input_param.is_dynamic:
                 options = input_param.options
                 if options and options.missing_tool_data_table_name and input_param not in params:
                     params.append( input_param )
@@ -2238,7 +2250,7 @@ class Tool( object ):
         """
         params = []
         for input_param in self.input_params:
-            if isinstance( input_param, basic.SelectToolParameter ) and input_param.is_dynamic:
+            if isinstance( input_param, SelectToolParameter ) and input_param.is_dynamic:
                 options = input_param.options
                 if options and options.missing_index_file and input_param not in params:
                     params.append( input_param )
@@ -2324,12 +2336,12 @@ class Tool( object ):
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
-                        check_param = True
+                        ck_param = True
                         if allow_workflow_parameters and isinstance( values[ input.name ], basestring ):
                             if WORKFLOW_PARAMETER_REGULAR_EXPRESSION.search( values[ input.name ] ):
-                                check_param = False
+                                ck_param = False
                         #this will fail when a parameter's type has changed to a non-compatible one: e.g. conditional group changed to dataset input
-                        if check_param:
+                        if ck_param:
                             input.value_from_basic( input.value_to_basic( values[ input.name ], trans.app ), trans.app, ignore_errors=False )
                     except:
                         messages[ input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, input.label )
@@ -2381,7 +2393,6 @@ class Tool( object ):
                     except Exception, e:
                         # Wrap an re-raise any generated error so we can
                         # generate a more informative message
-                        v = input.value_to_display_text( value, self.app )
                         message = "Failed runtime validation of %s%s (%s)" \
                             % ( prefix, input.label, e )
                         raise LateValidationError( message )
@@ -2619,7 +2630,7 @@ class Tool( object ):
             command_line = fill_template( self.command, context=param_dict )
             # Remove newlines from command line, and any leading/trailing white space
             command_line = command_line.replace( "\n", " " ).replace( "\r", " " ).strip()
-        except Exception, e:
+        except Exception:
             # Modify exception message to be more clear
             #e.args = ( 'Error substituting into command line. Params: %r, Command: %s' % ( param_dict, self.command ), )
             raise
@@ -2822,6 +2833,7 @@ class Tool( object ):
                     if outdata == dataset: continue
                     # Create new child dataset
                     child_data = child_dataset.copy( parent_id = dataset.id )
+                    #DBTODO should this be child_data, and not child_dataset here?
                     self.sa_session.add( child_dataset )
                     self.sa_session.flush()
         return children
@@ -2837,7 +2849,7 @@ class Tool( object ):
                 line = simplejson.loads( line )
                 if line.get( 'type' ) == 'new_primary_dataset':
                     new_primary_datasets[ os.path.split( line.get( 'filename' ) )[-1] ] = line
-        except Exception, e:
+        except Exception:
             # This should not be considered an error or warning condition, this file is optional
             pass
         # Loop through output file names, looking for generated primary 
@@ -3117,7 +3129,7 @@ class SetMetadataTool( Tool ):
     tool_type = 'set_metadata'
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None ):
         for name, dataset in inp_data.iteritems():
-            external_metadata = galaxy.datatypes.metadata.JobExternalOutputMetadataWrapper( job )
+            external_metadata = JobExternalOutputMetadataWrapper( job )
             if external_metadata.external_metadata_set_successfully( dataset, app.model.context ):
                 dataset.metadata.from_JSON_dict( external_metadata.get_output_filenames_by_dataset( dataset, app.model.context ).filename_out )    
             else:
