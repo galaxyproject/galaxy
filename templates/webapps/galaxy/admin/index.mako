@@ -45,6 +45,7 @@
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='users' )}" target="galaxy_main">Manage users</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='groups' )}" target="galaxy_main">Manage groups</a></div>
                         <div class="toolTitle"><a href="${h.url_for( controller='admin', action='roles' )}" target="galaxy_main">Manage roles</a></div>
+			<div class="toolTitle"><a href="${h.url_for( controller='userskeys', action='all_users' )}" target="galaxy_main">Manage users API keys</a></div>
                         %if trans.app.config.allow_user_impersonation:
                             <div class="toolTitle"><a href="${h.url_for( controller='admin', action='impersonate' )}" target="galaxy_main">Impersonate a user</a></div>
                         %endif
