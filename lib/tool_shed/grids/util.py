@@ -2,8 +2,18 @@ import os, logging
 import tool_shed.util.shed_util_common as suc
 from galaxy.web.form_builder import SelectField
 
-def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True,
-                                           downloadable=False, reviewed=False, not_reviewed=False ):
+def build_approved_select_field( trans, name, selected_value=None, for_component=True ):
+    options = [ ( 'No', trans.model.ComponentReview.approved_states.NO ),
+                ( 'Yes', trans.model.ComponentReview.approved_states.YES ) ]
+    if for_component:
+        options.append( ( 'Not applicable', trans.model.ComponentReview.approved_states.NA ) )
+    select_field = SelectField( name=name )
+    for option_tup in options:
+        selected = selected_value and option_tup[ 1 ] == selected_value
+        select_field.add_option( option_tup[ 0 ], option_tup[ 1 ], selected=selected )
+    return select_field
+
+def build_changeset_revision_select_field( trans, repository, selected_value=None, add_id_to_name=True, downloadable=False, reviewed=False, not_reviewed=False ):
     """Build a SelectField whose options are the changeset_rev strings of certain revisions of the received repository."""
     options = []
     changeset_tups = []
@@ -40,7 +50,7 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
     # the changeset revisions may not be sorted correctly because setting metadata over time will reset update_time.
     for changeset_tup in sorted( changeset_tups ):
         # Display the latest revision first.
-        options.insert( 0, ( changeset_tup[1], changeset_tup[2] ) )
+        options.insert( 0, ( changeset_tup[ 1 ], changeset_tup[ 2 ] ) )
     if add_id_to_name:
         name = 'changeset_revision_%d' % repository.id
     else:
@@ -49,6 +59,6 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
                                 refresh_on_change=True,
                                 refresh_on_change_values=refresh_on_change_values )
     for option_tup in options:
-        selected = selected_value and option_tup[1] == selected_value
-        select_field.add_option( option_tup[0], option_tup[1], selected=selected )
+        selected = selected_value and option_tup[ 1 ] == selected_value
+        select_field.add_option( option_tup[ 0 ], option_tup[ 1 ], selected=selected )
     return select_field

@@ -8,6 +8,7 @@ from galaxy.webapps.tool_shed.util.container_util import STRSEP
 import tool_shed.util.shed_util_common as suc
 from galaxy.util.odict import odict
 import tool_shed.grids.repository_review_grids as repository_review_grids
+import tool_shed.grids.util as grids_util
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -48,7 +49,8 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                           id=repository_id,
                                                           changeset_revision=changeset_revision,
                                                           message=message,
-                                                          status=status ) ) 
+                                                          status=status ) )
+
     @web.expose
     @web.require_login( "browse components" )
     def browse_components( self, trans, **kwd ):
@@ -59,6 +61,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                                   action='create_component',
                                                                   **kwd ) )
         return self.component_grid( trans, **kwd )
+
     @web.expose
     @web.require_login( "browse review" )
     def browse_review( self, trans, **kwd ):
@@ -75,6 +78,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                     review=review,
                                     message=message,
                                     status=status )
+
     def copy_review( self, trans, review_to_copy, review ):
         for component_review in review_to_copy.component_reviews:
             copied_component_review = trans.model.ComponentReview( repository_review_id=review.id,
@@ -89,6 +93,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
         review.rating = review_to_copy.rating
         trans.sa_session.add( review )
         trans.sa_session.flush()
+
     @web.expose
     @web.require_login( "create component" )
     def create_component( self, trans, **kwd ):
@@ -119,6 +124,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                     description=description,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_login( "create review" )
     def create_review( self, trans, **kwd ):
@@ -183,6 +189,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
         return trans.response.send_redirect( web.url_for( controller='repository_review',
                                                           action='view_or_manage_repository',
                                                           **kwd ) )
+
     @web.expose
     @web.require_login( "edit component" )
     def edit_component( self, trans, **kwd ):
@@ -213,6 +220,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                     component=component,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_login( "edit review" )
     def edit_review( self, trans, **kwd ):
@@ -324,10 +332,10 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
             selected_value = review.approved
         else:
             selected_value = trans.model.ComponentReview.approved_states.NO
-        revision_approved_select_field = build_approved_select_field( trans,
-                                                                      name='revision_approved',
-                                                                      selected_value=selected_value,
-                                                                      for_component=False )
+        revision_approved_select_field = grids_util.build_approved_select_field( trans,
+                                                                                 name='revision_approved',
+                                                                                 selected_value=selected_value,
+                                                                                 for_component=False )
         rev, changeset_revision_label = suc.get_rev_label_from_changeset_revision( repo, review.changeset_revision )
         return trans.fill_template( '/webapps/tool_shed/repository_review/edit_review.mako',
                                     repository=repository,
@@ -337,6 +345,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                     components_dict=components_dict,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_login( "manage components" )
     def manage_components( self, trans, **kwd ):
@@ -357,6 +366,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
             kwd[ 'message' ] = message
             kwd[ 'status' ] = status
         return self.component_grid( trans, **kwd )
+
     @web.expose
     @web.require_login( "manage repositories reviewed by me" )
     def manage_repositories_reviewed_by_me( self, trans, **kwd ):
@@ -371,6 +381,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                               **kwd ) )
         self.repositories_reviewed_by_me_grid.title = 'Repositories reviewed by me'
         return self.repositories_reviewed_by_me_grid( trans, **kwd )
+
     @web.expose
     @web.require_login( "manage repositories with reviews" )
     def manage_repositories_with_reviews( self, trans, **kwd ):
@@ -386,6 +397,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                                   action='view_or_manage_repository',
                                                                   **kwd ) )
         return self.repositories_with_reviews_grid( trans, **kwd )
+
     @web.expose
     @web.require_login( "manage repositories without reviews" )
     def manage_repositories_without_reviews( self, trans, **kwd ):
@@ -400,6 +412,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                                   action='view_or_manage_repository',
                                                                   **kwd ) )
         return self.repositories_without_reviews_grid( trans, **kwd )
+
     @web.expose
     @web.require_login( "manage repository reviews" )
     def manage_repository_reviews( self, trans, mine=False, **kwd ):
@@ -447,6 +460,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                     mine=mine,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_login( "manage repository reviews of revision" )
     def manage_repository_reviews_of_revision( self, trans, **kwd ):
@@ -470,6 +484,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                     installable=installable,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_login( "repository reviews by user" )
     def repository_reviews_by_user( self, trans, **kwd ):
@@ -496,6 +511,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
         user = suc.get_user( trans, kwd[ 'id' ] )
         self.repository_reviews_by_user_grid.title = "All repository revision reviews for user '%s'" % user.username
         return self.repository_reviews_by_user_grid( trans, **kwd )
+
     @web.expose
     @web.require_login( "reviewed repositories i own" )
     def reviewed_repositories_i_own( self, trans, **kwd ):
@@ -514,6 +530,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                                   action='view_or_manage_repository',
                                                                   **kwd ) )
         return self.reviewed_repositories_i_own_grid( trans, **kwd )
+
     @web.expose
     @web.require_login( "select previous review" )
     def select_previous_review( self, trans, **kwd ):
@@ -533,6 +550,7 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                     previous_reviews_dict=previous_reviews_dict,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_login( "view or manage repository" )
     def view_or_manage_repository( self, trans, **kwd ):
@@ -545,16 +563,3 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
             return trans.response.send_redirect( web.url_for( controller='repository',
                                                               action='view_repository',
                                                               **kwd ) )
-
-# ----- Utility methods -----
-
-def build_approved_select_field( trans, name, selected_value=None, for_component=True ):
-    options = [ ( 'No', trans.model.ComponentReview.approved_states.NO ),
-                ( 'Yes', trans.model.ComponentReview.approved_states.YES ) ]
-    if for_component:
-        options.append( ( 'Not applicable', trans.model.ComponentReview.approved_states.NA ) )
-    select_field = SelectField( name=name )
-    for option_tup in options:
-        selected = selected_value and option_tup[1] == selected_value
-        select_field.add_option( option_tup[0], option_tup[1], selected=selected )
-    return select_field

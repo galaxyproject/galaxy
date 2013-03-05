@@ -93,6 +93,7 @@ class AdminController( BaseUIController, Admin ):
                                                                       changeset_revision=v ) )
         # Render the list view
         return self.repository_grid( trans, **kwd )
+
     @web.expose
     @web.require_admin
     def browse_repository_metadata( self, trans, **kwd ):
@@ -113,6 +114,7 @@ class AdminController( BaseUIController, Admin ):
                                                                   action='browse_repositories',
                                                                   **kwd ) )
         return self.repository_metadata_grid( trans, **kwd )
+
     @web.expose
     @web.require_admin
     def create_category( self, trans, **kwd ):
@@ -144,6 +146,7 @@ class AdminController( BaseUIController, Admin ):
                                     description=description,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def delete_repository( self, trans, **kwd ):
@@ -180,6 +183,7 @@ class AdminController( BaseUIController, Admin ):
                                                    action='browse_repositories',
                                                    message=util.sanitize_text( message ),
                                                    status=status ) )
+
     @web.expose
     @web.require_admin
     def delete_repository_metadata( self, trans, **kwd ):
@@ -204,6 +208,7 @@ class AdminController( BaseUIController, Admin ):
                                                    action='browse_repository_metadata',
                                                    message=util.sanitize_text( message ),
                                                    status=status ) )
+
     @web.expose
     @web.require_admin
     def edit_category( self, trans, **kwd ):
@@ -243,6 +248,7 @@ class AdminController( BaseUIController, Admin ):
                                     category=category,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def manage_categories( self, trans, **kwd ):
@@ -277,6 +283,7 @@ class AdminController( BaseUIController, Admin ):
                                                                   action='edit_category',
                                                                   **kwd ) )
         return self.manage_category_grid( trans, **kwd )
+
     @web.expose
     @web.require_admin
     def regenerate_statistics( self, trans, **kwd ):
@@ -289,6 +296,7 @@ class AdminController( BaseUIController, Admin ):
         return trans.fill_template( '/webapps/tool_shed/admin/statistics.mako',
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def reset_metadata_on_selected_repositories_in_tool_shed( self, trans, **kwd ):
@@ -302,6 +310,7 @@ class AdminController( BaseUIController, Admin ):
                                     repositories_select_field=repositories_select_field,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def undelete_repository( self, trans, **kwd ):
@@ -341,6 +350,7 @@ class AdminController( BaseUIController, Admin ):
                                                    action='browse_repositories',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
     @web.expose
     @web.require_admin
     def mark_category_deleted( self, trans, **kwd ):
@@ -367,6 +377,7 @@ class AdminController( BaseUIController, Admin ):
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
     @web.expose
     @web.require_admin
     def purge_category( self, trans, **kwd ):
@@ -398,6 +409,7 @@ class AdminController( BaseUIController, Admin ):
                                                    action='manage_categories',
                                                    message=util.sanitize_text( message ),
                                                    status='done' ) )
+
     @web.expose
     @web.require_admin
     def undelete_category( self, trans, **kwd ):

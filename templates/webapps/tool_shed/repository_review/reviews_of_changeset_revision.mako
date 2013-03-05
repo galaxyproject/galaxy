@@ -4,7 +4,7 @@
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
 
 <%
-    from galaxy.webapps.tool_shed.controllers.repository_review import build_approved_select_field
+    from tool_shed.grids.util import build_approved_select_field
     from galaxy.webapps.tool_shed.util.container_util import STRSEP
     is_admin = trans.user_is_admin()
     is_new = repository.is_new( trans.app )
