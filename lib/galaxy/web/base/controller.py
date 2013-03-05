@@ -101,8 +101,7 @@ class BaseController( object ):
             log.exception( "Invalid %s id ( %s ) specified" % ( class_name, id ) )
             raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
         if check_ownership or check_accessible:
-            #DBTODO bug: encoded_id is id
-            self.security_check( trans, item, check_ownership, check_accessible, encoded_id )
+            self.security_check( trans, item, check_ownership, check_accessible, id )
         if deleted == True and not item.deleted:
             raise ItemDeletionException( '%s "%s" is not deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
         elif deleted == False and item.deleted:
