@@ -672,20 +672,32 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                           status='error' ) )
 
     @web.expose
-    def display_tool_functional_test_errors( self, trans, repository_id, repository_metadata_id, **kwd ):
+    def display_tool_functional_test_results( self, trans, repository_id, repository_metadata_id, **kwd ):
+        """
+        The test framework in ~/test/install_and_test_tool_shed_repositories can be executed on a regularly defined schedule (e.g., via cron) to install appropriate
+        repositories from a tool shed into a Galaxy instance and run defined functional tests for the tools included in the repository.  This process affects the values
+        if these columns in the repository_metadata table: tools_functionally_correct, do_not_test, time_last_tested and tool_test_errors.  The tool_test_errors is
+        slightly mis-named (it should have been named tool_test_results) it will contain a dictionary that includes information about the test environment even if all
+        tests passed and the tools_functionally_correct column is set to True.
+        The value of the tool_test_errors column will be a dictionary with the key / value pairs: 
+        "test_environment", {"architecture": "i386", "python_version": "2.5.4", "system": "Darwin 10.8.0"}
+        "test_errors" [ { "test_id":<some test id>, "stdout":<stdout of running the test>, "stderr":<stderr of running the test>, "traceback":<traceback of running the test>]
+        """
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        repository = suc.get_repository_by_id( trans.app, repository_id )
+        repository = suc.get_repository_by_id( trans, repository_id )
         if repository:
             repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
             changeset_revision = repository_metadata.changeset_revision
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
-                    return trans.fill_template( '/webapps/tool_shed/repository/display_tool_functional_test_errors.mako',
+                    revision_label = suc.get_revision_label( trans, repository, repository_metadata.changeset_revision )
+                    return trans.fill_template( '/webapps/tool_shed/repository/display_tool_functional_test_results.mako',
                                                 repository=repository,
                                                 repository_metadata=repository_metadata,
+                                                revision_label=revision_label,
                                                 message=message,
                                                 status=status )
                 else:
@@ -1636,7 +1648,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                             downloadable=False )
         revision_label = suc.get_revision_label( trans, repository, repository.tip( trans.app ) )
         repository_metadata = None
-        repository_metadata_id = None
         metadata = None
         is_malicious = False
         repository_dependencies = None
@@ -1644,7 +1655,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
             if repository_metadata:
                 revision_label = suc.get_revision_label( trans, repository, changeset_revision )
-                repository_metadata_id = trans.security.encode_id( repository_metadata.id )
                 metadata = repository_metadata.metadata
                 is_malicious = repository_metadata.malicious
             else:
@@ -1654,7 +1664,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, previous_changeset_revision )
                     if repository_metadata:
                         revision_label = suc.get_revision_label( trans, repository, previous_changeset_revision )
-                        repository_metadata_id = trans.security.encode_id( repository_metadata.id )
                         metadata = repository_metadata.metadata
                         is_malicious = repository_metadata.malicious
             if repository_metadata:
@@ -1702,7 +1711,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     repo=repo,
                                     repository=repository,
                                     containers_dict=containers_dict,
-                                    repository_metadata_id=repository_metadata_id,
+                                    repository_metadata=repository_metadata,
                                     changeset_revision=changeset_revision,
                                     reviewed_by_user=reviewed_by_user,
                                     review_id=review_id,

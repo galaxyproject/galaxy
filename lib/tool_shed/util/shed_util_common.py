@@ -2134,13 +2134,12 @@ def get_repo_info_tuple_contents( repo_info_tuple ):
     elif len( repo_info_tuple ) == 7:
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = repo_info_tuple
     return description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies
-def get_repository_by_id( app, id ):
+def get_repository_by_id( trans, id ):
     """Get a repository from the database via id."""
-    sa_session = app.model.context.current
-    if app.name == 'galaxy':
-        return sa_session.query( app.model.ToolShedRepository ).get( id )
+    if trans.webapp.name == 'galaxy':
+        return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
     else:
-        return sa_session.query( app.model.Repository ).get( id )
+        return trans.sa_session.query( trans.model.Repository ).get( trans.security.decode_id( id ) )
 def get_repository_by_name( app, name ):
     """Get a repository from the database via name."""
     sa_session = app.model.context.current

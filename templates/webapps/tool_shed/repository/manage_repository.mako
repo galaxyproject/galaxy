@@ -26,6 +26,13 @@
     can_undeprecate = trans.user and ( is_admin or repository.user == trans.user ) and is_deprecated
     can_upload = can_push
     can_view_change_log = not is_new
+    if repository_metadata:
+        if repository_metadata.includes_tools and repository_metadata.tool_test_errors is not None:
+            can_display_tool_functional_test_results = True
+        else:
+            can_display_tool_functional_test_results = False
+    else:
+        can_display_tool_functional_test_results = False
 
     if can_push:
         browse_label = 'Browse or delete repository tip files'
@@ -104,6 +111,9 @@
             %endif
             %if can_undeprecate:
                 <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=False )}">Mark repository as not deprecated</a>
+            %endif
+            %if can_display_tool_functional_test_results:
+                <a class="action-button" href="${h.url_for( controller='repository', action='display_tool_functional_test_results', repository_id=trans.security.encode_id( repository.id ), repository_metadata_id=trans.security.encode_id( repository_metadata.id ) )}">View tool functional test results</a>
             %endif
             %if can_download:
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
