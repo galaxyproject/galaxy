@@ -843,12 +843,14 @@ class ToolDependenciesGrid( RepositoryMetadataGrid ):
                             # Example: "set_environment": [{"name": "JAVA_JAR_FILE", "type": "set_environment"}]
                             env_dicts = tds_dict[ 'set_environment' ]
                             num_env_dicts = len( env_dicts )
-                            td_str += '<b>environment:</b> '
-                            for index, env_dict in enumerate( env_dicts ):
-                                td_str += '%s' % escape_html( env_dict[ 'name' ] )
-                                if index < num_env_dicts - 1:
-                                    td_str += ', '
-                            td_str += '<br/>'
+                            if num_env_dicts > 0:
+                                td_str += '<a href="browse_datatypes?operation=view_or_manage_repository&id=%s">' % trans.security.encode_id( repository_metadata.id )
+                                td_str += '<b>environment:</b> '
+                                for index, env_dict in enumerate( env_dicts ):
+                                    td_str += '%s' % escape_html( env_dict[ 'name' ] )
+                                    if index < num_env_dicts - 1:
+                                        td_str += ', '
+                                td_str += '</a><br/>'
                         for index, key in enumerate( sorted_keys ):
                             if key == 'set_environment':
                                 continue
