@@ -1,28 +1,29 @@
 """
 Contains functionality needed in every web interface
 """
-import os, time, logging, re, string, sys, glob, shutil, tempfile, subprocess, operator
-from datetime import date, datetime, timedelta
-from time import strftime
-from galaxy import config, tools, web, util
-from galaxy.util import inflector
-from galaxy.util.hash_util import *
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import error, form, url_for
-from galaxy.model.orm import *
-from galaxy.workflow.modules import *
-from galaxy.web.framework import simplejson
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
-from galaxy.web.form_builder import WorkflowField, WorkflowMappingField, HistoryField, PasswordField, build_select_field
-from galaxy.visualization.genome.visual_analytics import get_tool_def
-from galaxy.security.validate_user_input import validate_publicname
-from paste.httpexceptions import *
-from galaxy.exceptions import *
-from galaxy.model import NoConverterException, ConverterDependencyException
+import logging
+import operator
+import os
+import re
+import pkg_resources
+pkg_resources.require("SQLAlchemy >= 0.4")
+
+from sqlalchemy import func, and_, select
+from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError, HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
+
+from galaxy import util, web
 from galaxy.datatypes.interval import ChromatinInteractions
+from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException, MessageException
+from galaxy.security.validate_user_input import validate_publicname
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.visualization.genome.visual_analytics import get_tool_def
+from galaxy.web import error, url_for
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField
+from galaxy.web.form_builder import build_select_field, HistoryField, PasswordField, WorkflowField, WorkflowMappingField
+from galaxy.workflow.modules import module_factory
+from galaxy.model.orm import eagerload, eagerload_all
 from galaxy.datatypes.data import Text
 
-from Cheetah.Template import Template
 
 log = logging.getLogger( __name__ )
 
@@ -100,6 +101,7 @@ class BaseController( object ):
             log.exception( "Invalid %s id ( %s ) specified" % ( class_name, id ) )
             raise MessageException( "Invalid %s id ( %s ) specified" % ( class_name, id ), type="error" )
         if check_ownership or check_accessible:
+            #DBTODO bug: encoded_id is id
             self.security_check( trans, item, check_ownership, check_accessible, encoded_id )
         if deleted == True and not item.deleted:
             raise ItemDeletionException( '%s "%s" is not deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
@@ -134,7 +136,7 @@ class BaseUIController( BaseController ):
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         try:
             return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
-        except MessageException, e:
+        except MessageException:
             raise       # handled in the caller
         except:
             log.exception( "Execption in get_object check for %s %s:" % ( class_name, str( id ) ) )
@@ -228,7 +230,7 @@ class UsesHistoryDatasetAssociationMixin:
             # encoded id?
             dataset_id = trans.security.decode_id( dataset_id )
 
-        except ( AttributeError, TypeError ), err:
+        except ( AttributeError, TypeError ):
             # unencoded id
             dataset_id = int( dataset_id )
 
@@ -684,6 +686,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
                     step.state = None
                 # Error dict
                 if step.tool_errors:
+                    #DBTODO BUG: errors doesn't exist in this scope, intent?
                     errors[step.id] = step.tool_errors
             else:
                 ## Non-tool specific stuff?
@@ -943,9 +946,7 @@ class UsesFormDefinitionsMixin:
     def edit_template( self, trans, cntrller, item_type, form_type, **kwd ):
         # Edit the template itself, keeping existing field contents, if any.
         params = util.Params( kwd )
-        form_id = params.get( 'form_id', 'none' )
         message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
         edited = util.string_as_bool( params.get( 'edited', False ) )
         action = ''
         # form_type must be one of: RUN_DETAILS_TEMPLATE, LIBRARY_INFO_TEMPLATE
@@ -995,8 +996,6 @@ class UsesFormDefinitionsMixin:
             rtra = item.run_details
             info_association = rtra.run
         template = info_association.template
-        info = info_association.info
-        form_values = trans.sa_session.query( trans.app.model.FormValues ).get( info.id )
         if edited:
             # The form on which the template is based has been edited, so we need to update the
             # info_association with the current form
@@ -1052,7 +1051,6 @@ class UsesFormDefinitionsMixin:
             sample_id = params.get( 'sample_id', None )
             sample = trans.sa_session.query( trans.model.Sample ).get( trans.security.decode_id( sample_id ) )
         message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
         try:
             if in_library:
                 item, item_desc, action, id = self.get_item_and_stuff( trans,
@@ -1250,7 +1248,6 @@ class UsesFormDefinitionsMixin:
             sample_id = params.get( 'sample_id', None )
         #id = params.get( 'id', None )
         message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
         try:
             if in_library:
                 item, item_desc, action, id = self.get_item_and_stuff( trans,
@@ -1282,7 +1279,6 @@ class UsesFormDefinitionsMixin:
             info_association = item.run_details
         if not info_association:
             message = "There is no template for this %s" % item_type
-            status = 'error'
         else:
             if in_library:
                 info_association.deleted = True
@@ -1292,7 +1288,6 @@ class UsesFormDefinitionsMixin:
                 trans.sa_session.delete( info_association )
                 trans.sa_session.flush()
             message = 'The template for this %s has been deleted.' % item_type
-            status = 'done'
         new_kwd = dict( action=action,
                         cntrller=cntrller,
                         id=id,
@@ -1449,9 +1444,6 @@ class UsesFormDefinitionsMixin:
     def get_item_and_stuff( self, trans, item_type, **kwd ):
         # Return an item, description, action and an id based on the item_type.  Valid item_types are
         # library, folder, ldda, request_type, sample.
-        is_admin = kwd.get( 'is_admin', False )
-        #message = None
-        current_user_roles = trans.get_current_user_roles()
         if item_type == 'library':
             library_id = kwd.get( 'library_id', None )
             id = library_id
