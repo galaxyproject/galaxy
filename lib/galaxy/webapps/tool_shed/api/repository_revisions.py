@@ -47,27 +47,20 @@ class RepositoryRevisionsController( BaseAPIController ):
         do_not_test = kwd.get( 'do_not_test', None )
         if do_not_test is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.do_not_test == util.string_as_bool( do_not_test ) )
-        # Filter by must_include_tools if received.
-        must_include_tools = kwd.get( 'must_include_tools', False )
+        # Filter by includes_tools if received.
+        includes_tools = kwd.get( 'includes_tools', None )
+        if includes_tools is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.includes_tools == util.string_as_bool( includes_tools ) )
         try:
             query = trans.sa_session.query( trans.app.model.RepositoryMetadata ) \
                                     .filter( and_( *clause_list ) ) \
                                     .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
                                     .all()
             for repository_metadata in query:
-                if must_include_tools:
-                    metadata = repository_metadata.metadata
-                    if 'tools' in metadata:
-                        ok_to_return = True
-                    else:
-                        ok_to_return = False
-                else:
-                    ok_to_return = True
-                if ok_to_return:
-                    item = repository_metadata.get_api_value( view='collection',
-                                                              value_mapper=default_value_mapper( trans, repository_metadata ) )
-                    item[ 'url' ] = web.url_for( 'repository_revision', id=trans.security.encode_id( repository_metadata.id ) )
-                    rval.append( item )
+                item = repository_metadata.get_api_value( view='collection',
+                                                          value_mapper=default_value_mapper( trans, repository_metadata ) )
+                item[ 'url' ] = web.url_for( 'repository_revision', id=trans.security.encode_id( repository_metadata.id ) )
+                rval.append( item )
         except Exception, e:
             rval = "Error in the Tool Shed repository_revisions API in index: " + str( e )
             log.error( rval + ": %s" % str( e ) )
