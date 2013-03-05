@@ -6,8 +6,9 @@ import logging
 import parsley
 import re
 
-from galaxy.model.orm import *
-from galaxy.model import *
+#from galaxy.model.orm import *
+from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, History
+from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow
 
 from sqlalchemy import or_, and_
 

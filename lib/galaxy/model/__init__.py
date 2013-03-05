@@ -693,6 +693,7 @@ class History( object, UsesAnnotations ):
                     rval[key] = value_mapper.get( key )( rval[key] )
             except AttributeError:
                 rval[key] = None
+        rval['model_class'] = self.__class__.__name__
         return rval
     @property
     def get_disk_size_bytes( self ):
@@ -2092,8 +2093,8 @@ class UCI( object ):
         self.user = None
 
 class StoredWorkflow( object, APIItem):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name' )
+    api_collection_visible_keys = ( 'id', 'name', 'published' )
+    api_element_visible_keys = ( 'id', 'name', 'published' )
     def __init__( self ):
         self.id = None
         self.user = None
@@ -2108,6 +2109,7 @@ class StoredWorkflow( object, APIItem):
             new_swta = src_swta.copy()
             new_swta.user = target_user
             self.tags.append(new_swta)
+
 
 class Workflow( object ):
     def __init__( self ):
