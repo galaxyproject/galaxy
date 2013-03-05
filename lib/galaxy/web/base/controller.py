@@ -36,17 +36,21 @@ def _is_valid_slug( slug ):
     VALID_SLUG_RE = re.compile( "^[a-z0-9\-]+$" )
     return VALID_SLUG_RE.match( slug )
 
+
 class BaseController( object ):
     """
     Base class for Galaxy web application controllers.
     """
+
     def __init__( self, app ):
         """Initialize an interface for application 'app'"""
         self.app = app
         self.sa_session = app.model.context
+
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox
+
     def get_class( self, class_name ):
         """ Returns the class object that a string denotes. Without this method, we'd have to do eval(<class_name>). """
         if class_name == 'History':
@@ -84,6 +88,7 @@ class BaseController( object ):
         else:
             item_class = None
         return item_class
+
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         """
         Convenience method to get a model object with the specified checks.
@@ -107,12 +112,16 @@ class BaseController( object ):
         elif deleted == False and item.deleted:
             raise ItemDeletionException( '%s "%s" is deleted' % ( class_name, getattr( item, 'name', id ) ), type="warning" )
         return item
+
     def get_user( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'User', check_ownership=False, check_accessible=False, deleted=deleted )
+
     def get_group( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'Group', check_ownership=False, check_accessible=False, deleted=deleted )
+
     def get_role( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'Role', check_ownership=False, check_accessible=False, deleted=deleted )
+
     def encode_all_ids( self, trans, rval ):
         """
         Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
@@ -131,7 +140,9 @@ class BaseController( object ):
 
 Root = BaseController
 
+
 class BaseUIController( BaseController ):
+
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         try:
             return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
@@ -141,7 +152,9 @@ class BaseUIController( BaseController ):
             log.exception( "Execption in get_object check for %s %s:" % ( class_name, str( id ) ) )
             raise Exception( 'Server error retrieving %s id ( %s ).' % ( class_name, str( id ) ) )
 
+
 class BaseAPIController( BaseController ):
+
     def get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None ):
         try:
             return BaseController.get_object( self, trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None )
@@ -152,6 +165,7 @@ class BaseAPIController( BaseController ):
         except Exception, e:
             log.exception( "Execption in get_object check for %s %s:" % ( class_name, str( id ) ) )
             raise HTTPInternalServerError( comment=str( e ) )
+
     def validate_in_users_and_groups( self, trans, payload ):
         """
         For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
@@ -182,11 +196,14 @@ class BaseAPIController( BaseController ):
             raise Exception( msg )
         payload['in_users'] = map( str, new_in_users )
         payload['in_groups'] = map( str, new_in_groups )
+
     def not_implemented( self, trans, **kwd ):
         raise HTTPNotImplemented()
 
+
 class Datatype( object ):
     """Used for storing in-memory list of datatypes currently in the datatypes registry."""
+
     def __init__( self, extension, dtype, type_extension, mimetype, display_in_upload ):
         self.extension = extension
         self.dtype = dtype
@@ -198,8 +215,10 @@ class Datatype( object ):
 # -- Mixins for working with Galaxy objects. --
 #
 
+
 class SharableItemSecurityMixin:
     """ Mixin for handling security for sharable items. """
+
     def security_check( self, trans, item, check_ownership=False, check_accessible=False ):
         """ Security checks for an item: checks if (a) user owns item or (b) item is accessible to user. """
         if check_ownership:
@@ -305,19 +324,25 @@ class UsesHistoryDatasetAssociationMixin:
 
 
 class UsesLibraryMixin:
+
     def get_library( self, trans, id, check_ownership=False, check_accessible=True ):
         l = self.get_object( trans, id, 'Library' )
         if check_accessible and not ( trans.user_is_admin() or trans.app.security_agent.can_access_library( trans.get_current_user_roles(), l ) ):
             error( "LibraryFolder is not accessible to the current user" )
         return l
 
+
 class UsesLibraryMixinItems( SharableItemSecurityMixin ):
+
     def get_library_folder( self, trans, id, check_ownership=False, check_accessible=True ):
         return self.get_object( trans, id, 'LibraryFolder', check_ownership=False, check_accessible=check_accessible )
+
     def get_library_dataset_dataset_association( self, trans, id, check_ownership=False, check_accessible=True ):
         return self.get_object( trans, id, 'LibraryDatasetDatasetAssociation', check_ownership=False, check_accessible=check_accessible )
+
     def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
         return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
+
 
 class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                               UsesLibraryMixinItems ):
@@ -430,7 +455,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
 
     def get_visualization_config( self, trans, visualization ):
         """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
-
         config = None
         if visualization.type in [ 'trackster', 'genome' ]:
             # Unpack Trackster config.
@@ -455,7 +479,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                 track_data_provider = trans.app.data_provider_registry.get_data_provider( trans,
                                                                                           original_dataset=dataset,
                                                                                           source='data' )
-
                 return {
                     "track_type": track_type,
                     "name": track_dict['name'],
@@ -649,9 +672,9 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         return return_message
 
 
-
 class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use StoredWorkflow objects. """
+
     def get_stored_workflow( self, trans, id, check_ownership=True, check_accessible=False ):
         """ Get a StoredWorkflow from the database by id, verifying ownership. """
         # Load workflow from database
@@ -663,6 +686,7 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
             error( "Workflow not found" )
         else:
             return self.security_check( trans, workflow, check_ownership, check_accessible )
+
     def get_stored_workflow_steps( self, trans, stored_workflow ):
         """ Restores states for a stored workflow's steps. """
         for step in stored_workflow.latest_workflow.steps:
@@ -690,8 +714,10 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
             # Connections by input name
             step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
 
+
 class UsesHistoryMixin( SharableItemSecurityMixin ):
     """ Mixin for controllers that use History objects. """
+
     def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
         """Get a History from the database by id, verifying ownership."""
         history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
@@ -748,8 +774,10 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
         return state_count_dict
 
+
 class UsesFormDefinitionsMixin:
     """Mixin for controllers that use Galaxy form objects."""
+
     def get_all_forms( self, trans, all_versions=False, filter=None, form_type='All' ):
         """
         Return all the latest forms from the form_definition_current table
@@ -766,6 +794,7 @@ class UsesFormDefinitionsMixin:
             return [ fdc.latest_form for fdc in fdc_list ]
         else:
             return [ fdc.latest_form for fdc in fdc_list if fdc.latest_form.type == form_type ]
+
     def get_all_forms_by_type( self, trans, cntrller, form_type ):
         forms = self.get_all_forms( trans,
                                     filter=dict( deleted=False ),
@@ -779,6 +808,7 @@ class UsesFormDefinitionsMixin:
                                                               status='done',
                                                               form_type=form_type ) )
         return forms
+
     @web.expose
     def add_template( self, trans, cntrller, item_type, form_type, **kwd ):
         params = util.Params( kwd )
@@ -937,6 +967,7 @@ class UsesFormDefinitionsMixin:
                                   show_deleted=show_deleted ) )
         return trans.fill_template( '/common/select_template.mako',
                                     **new_kwd )
+
     @web.expose
     def edit_template( self, trans, cntrller, item_type, form_type, **kwd ):
         # Edit the template itself, keeping existing field contents, if any.
@@ -1026,6 +1057,7 @@ class UsesFormDefinitionsMixin:
                                                     edited=True,
                                                     **kwd ) )
         return trans.response.send_redirect( web.url_for( controller='forms', action='edit_form_definition', **vars ) )
+
     @web.expose
     def edit_template_info( self, trans, cntrller, item_type, form_type, **kwd ):
         # Edit the contents of the template fields without altering the template itself.
@@ -1224,6 +1256,7 @@ class UsesFormDefinitionsMixin:
                                   id=trans.security.encode_id( sample.id ),
                                   sample_id=sample_id ) )
         return trans.response.send_redirect( web.url_for( **new_kwd ) )
+
     @web.expose
     def delete_template( self, trans, cntrller, item_type, form_type, **kwd ):
         params = util.Params( kwd )
@@ -1300,6 +1333,7 @@ class UsesFormDefinitionsMixin:
                                   request_type_id=request_type_id,
                                   sample_id=sample_id ) )
             return trans.response.send_redirect( web.url_for( **new_kwd ) )
+
     def widget_fields_have_contents( self, widgets ):
         # Return True if any of the fields in widgets contain contents, widgets is a list of dictionaries that looks something like:
         # [{'widget': <galaxy.web.form_builder.TextField object at 0x10867aa10>, 'helptext': 'Field 0 help (Optional)', 'label': 'Field 0'}]
@@ -1321,6 +1355,7 @@ class UsesFormDefinitionsMixin:
             if isinstance( field[ 'widget' ], AddressField ) and str( field[ 'widget' ].value ).lower() not in [ 'none' ]:
                 return True
         return False
+
     def clean_field_contents( self, widgets, **kwd ):
         field_contents = {}
         for index, widget_dict in enumerate( widgets ):
@@ -1334,6 +1369,7 @@ class UsesFormDefinitionsMixin:
                 value = widget.value
             field_contents[ widget.name ] = util.restore_text( value )
         return field_contents
+
     def field_param_values_ok( self, widget_name, widget_type, **kwd ):
         # Make sure required fields have contents, etc
         params = util.Params( kwd )
@@ -1348,6 +1384,7 @@ class UsesFormDefinitionsMixin:
                 or not util.restore_text( params.get( '%s_country' % widget_name, '' ) ):
                 return False
         return True
+
     def save_widget_field( self, trans, field_obj, widget_name, **kwd ):
         # Save a form_builder field object
         params = util.Params( kwd )
@@ -1363,6 +1400,7 @@ class UsesFormDefinitionsMixin:
             field_obj.phone = util.restore_text( params.get( '%s_phone' % widget_name, '' ) )
             trans.sa_session.add( field_obj )
             trans.sa_session.flush()
+
     def get_form_values( self, trans, user, form_definition, **kwd ):
         '''
         Returns the name:value dictionary containing all the form values
@@ -1393,6 +1431,7 @@ class UsesFormDefinitionsMixin:
                 field_value = util.restore_text( input_value )
             values[ field_name ] = field_value
         return values
+
     def populate_widgets_from_kwd( self, trans, widgets, **kwd ):
         # A form submitted via refresh_on_change requires us to populate the widgets with the contents of
         # the form fields the user may have entered so that when the form refreshes the contents are retained.
@@ -1436,6 +1475,7 @@ class UsesFormDefinitionsMixin:
                     widget_dict[ 'widget' ] = widget
             populated_widgets.append( widget_dict )
         return populated_widgets
+
     def get_item_and_stuff( self, trans, item_type, **kwd ):
         # Return an item, description, action and an id based on the item_type.  Valid item_types are
         # library, folder, ldda, request_type, sample.
@@ -1491,6 +1531,7 @@ class UsesFormDefinitionsMixin:
             action = None
             id = None
         return item, item_desc, action, id
+
     def build_form_id_select_field( self, trans, forms, selected_value='none' ):
         return build_select_field( trans,
                                    objs=forms,
@@ -1498,6 +1539,7 @@ class UsesFormDefinitionsMixin:
                                    select_field_name='form_id',
                                    selected_value=selected_value,
                                    refresh_on_change=True )
+
 
 class SharableMixin:
     """ Mixin for a controller that manages an item that can be shared. """
@@ -1612,9 +1654,12 @@ class SharableMixin:
         """ Return item based on id. """
         raise "Unimplemented Method"
 
+
 class UsesQuotaMixin( object ):
+
     def get_quota( self, trans, id, check_ownership=False, check_accessible=False, deleted=None ):
         return self.get_object( trans, id, 'Quota', check_ownership=False, check_accessible=False, deleted=deleted )
+
 
 class UsesTagsMixin( object ):
 
