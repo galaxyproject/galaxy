@@ -194,7 +194,7 @@ class Datatype( object ):
         self.mimetype = mimetype
         self.display_in_upload = display_in_upload
 
-#        
+#
 # -- Mixins for working with Galaxy objects. --
 #
 
@@ -221,7 +221,7 @@ class SharableItemSecurityMixin:
 
 class UsesHistoryDatasetAssociationMixin:
     """ Mixin for controllers that use HistoryDatasetAssociation objects. """
-    
+
     def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
         """ Get an HDA object by id. """
         # DEPRECATION: We still support unencoded ids for backward compatibility
@@ -256,13 +256,13 @@ class UsesHistoryDatasetAssociationMixin:
                     return trans.show_error_message( "Please wait until this dataset finishes uploading "
                                                    + "before attempting to view it." )
         return data
-        
+
     def get_history_dataset_association( self, trans, history, dataset_id,
                                          check_ownership=True, check_accessible=False, check_state=False ):
         """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
         self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
         hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
-        
+
         if check_accessible:
             if not trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset ):
                 error( "You are not allowed to access this dataset" )
@@ -270,7 +270,7 @@ class UsesHistoryDatasetAssociationMixin:
                 if check_state and hda.state == trans.model.Dataset.states.UPLOAD:
                     error( "Please wait until this dataset finishes uploading before attempting to view it." )
         return hda
-        
+
     def get_data( self, dataset, preview=True ):
         """ Gets a dataset's data. """
 
@@ -290,7 +290,7 @@ class UsesHistoryDatasetAssociationMixin:
                 # For now, cannot get data from non-text datasets.
                 dataset_data = None
         return truncated, dataset_data
-        
+
     def check_dataset_state( self, trans, dataset ):
         """
         Returns a message if dataset is not ready to be used in visualization.
@@ -302,7 +302,7 @@ class UsesHistoryDatasetAssociationMixin:
         if dataset.state != trans.app.model.Job.states.OK:
             return dataset.conversion_messages.PENDING
         return None
-    
+
 
 class UsesLibraryMixin:
     def get_library( self, trans, id, check_ownership=False, check_accessible=True ):
@@ -319,10 +319,10 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
     def get_library_dataset( self, trans, id, check_ownership=False, check_accessible=True ):
         return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
 
-class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, 
+class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                               UsesLibraryMixinItems ):
     """ Mixin for controllers that use Visualization objects. """
-    
+
     viz_types = [ "trackster" ]
 
     def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None, dbkey=None, annotation=None, config={}, save=True ):
@@ -339,26 +339,26 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             session.flush()
 
         return visualization
-        
+
     def save_visualization( self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None ):
         session = trans.sa_session
-        
-        # Create/get visualization. 
+
+        # Create/get visualization.
         if not id:
             # Create new visualization.
             vis = self._create_visualization( trans, title, type, dbkey, slug, annotation )
         else:
             decoded_id = trans.security.decode_id( id )
             vis = session.query( trans.model.Visualization ).get( decoded_id )
-            
+
         # Create new VisualizationRevision that will be attached to the viz
         vis_rev = trans.model.VisualizationRevision()
         vis_rev.visualization = vis
         vis_rev.title = vis.title
         vis_rev.dbkey = dbkey
-        
+
         # -- Validate config. --
-        
+
         if vis.type == 'trackster':
             def unpack_track( track_json ):
                 """ Unpack a track from its json. """
@@ -436,12 +436,12 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             # Unpack Trackster config.
             latest_revision = visualization.latest_revision
             bookmarks = latest_revision.config.get( 'bookmarks', [] )
-            
+
             def pack_track( track_dict ):
                 dataset_id = track_dict['dataset_id']
                 hda_ldda = track_dict.get('hda_ldda', 'hda')
                 if hda_ldda == 'ldda':
-                    # HACK: need to encode library dataset ID because get_hda_or_ldda 
+                    # HACK: need to encode library dataset ID because get_hda_or_ldda
                     # only works for encoded datasets.
                     dataset_id = trans.security.encode_id( dataset_id )
                 dataset = self.get_hda_or_ldda( trans, hda_ldda, dataset_id )
@@ -452,10 +452,10 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                     prefs = {}
 
                 track_type, _ = dataset.datatype.get_track_type()
-                track_data_provider = trans.app.data_provider_registry.get_data_provider( trans, 
-                                                                                          original_dataset=dataset, 
+                track_data_provider = trans.app.data_provider_registry.get_data_provider( trans,
+                                                                                          original_dataset=dataset,
                                                                                           source='data' )
-                
+
                 return {
                     "track_type": track_type,
                     "name": track_dict['name'],
@@ -467,7 +467,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                     "tool": get_tool_def( trans, dataset ),
                     "tool_state": track_dict.get( 'tool_state', {} )
                 }
-            
+
             def pack_collection( collection_dict ):
                 drawables = []
                 for drawable_dict in collection_dict[ 'drawables' ]:
@@ -482,10 +482,10 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                     'prefs': collection_dict.get( 'prefs', [] ),
                     'filters': collection_dict.get( 'filters', {} )
                 }
-                
+
             def encode_dbkey( dbkey ):
-                """ 
-                Encodes dbkey as needed. For now, prepends user's public name 
+                """
+                Encodes dbkey as needed. For now, prepends user's public name
                 to custom dbkey keys.
                 """
                 encoded_dbkey = dbkey
@@ -493,7 +493,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                 if 'dbkeys' in user.preferences and dbkey in user.preferences[ 'dbkeys' ]:
                     encoded_dbkey = "%s:%s" % ( user.username, dbkey )
                 return encoded_dbkey
-                    
+
             # Set tracks.
             tracks = []
             if 'tracks' in latest_revision.config:
@@ -506,12 +506,12 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                         tracks.append( pack_track( drawable_dict ) )
                     else:
                         tracks.append( pack_collection( drawable_dict ) )
-                
-            config = {  "title": visualization.title, 
+
+            config = {  "title": visualization.title,
                         "vis_id": trans.security.encode_id( visualization.id ),
-                        "tracks": tracks, 
-                        "bookmarks": bookmarks, 
-                        "chrom": "", 
+                        "tracks": tracks,
+                        "bookmarks": bookmarks,
+                        "chrom": "",
                         "dbkey": encode_dbkey( visualization.dbkey ) }
 
             if 'viewport' in latest_revision.config:
@@ -522,7 +522,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             config = latest_revision.config
 
         return config
-        
+
     def get_new_track_config( self, trans, dataset ):
         """
         Returns track configuration dict for a dataset.
@@ -530,13 +530,13 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         # Get data provider.
         track_type, _ = dataset.datatype.get_track_type()
         track_data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset=dataset )
- 
-        
+
+
         if isinstance( dataset, trans.app.model.HistoryDatasetAssociation ):
             hda_ldda = "hda"
         elif isinstance( dataset, trans.app.model.LibraryDatasetDatasetAssociation ):
             hda_ldda = "ldda"
-        
+
         # Get track definition.
         return {
             "track_type": track_type,
@@ -548,16 +548,16 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             "tool": get_tool_def( trans, dataset ),
             "tool_state": {}
         }
-        
+
     def get_hda_or_ldda( self, trans, hda_ldda, dataset_id ):
         """ Returns either HDA or LDDA for hda/ldda and id combination. """
         if hda_ldda == "hda":
             return self.get_dataset( trans, dataset_id, check_ownership=False, check_accessible=True )
         else:
             return self.get_library_dataset_dataset_association( trans, dataset_id )
-        
+
     # -- Helper functions --
-        
+
     def _create_visualization( self, trans, title, type, dbkey=None, slug=None, annotation=None, save=True ):
         """ Create visualization but not first revision. Returns Visualization object. """
         user = trans.get_user()
@@ -573,7 +573,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
 
         if title_err or slug_err:
             return { 'title_err': title_err, 'slug_err': slug_err }
-            
+
 
         # Create visualization
         visualization = trans.model.Visualization( user=user, title=title, dbkey=dbkey, type=type )
@@ -616,13 +616,13 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             if isinstance( dataset.datatype, ChromatinInteractions ):
                 source = 'data'
 
-            data_provider = trans.app.data_provider_registry.get_data_provider( trans, 
-                                                                                original_dataset=dataset, 
+            data_provider = trans.app.data_provider_registry.get_data_provider( trans,
+                                                                                original_dataset=dataset,
                                                                                 source=source )
-            # HACK: pass in additional params which are used for only some 
-            # types of data providers; level, cutoffs used for summary tree, 
+            # HACK: pass in additional params which are used for only some
+            # types of data providers; level, cutoffs used for summary tree,
             # num_samples for BBI, and interchromosomal used for chromatin interactions.
-            rval = data_provider.get_genome_data( chroms_info, 
+            rval = data_provider.get_genome_data( chroms_info,
                                                   level=4, detail_cutoff=0, draw_cutoff=0,
                                                   num_samples=150,
                                                   interchromosomal=True )
@@ -635,7 +635,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         Returns highest priority message from a list of messages.
         """
         return_message = None
-        
+
         # For now, priority is: job error (dict), no converter, pending.
         for message in message_list:
             if message is not None:
@@ -714,14 +714,14 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
     def get_hda_state_counts( self, trans, history, include_deleted=False, include_hidden=False ):
         """
-        Returns a dictionary with state counts for history's HDAs. Key is a 
+        Returns a dictionary with state counts for history's HDAs. Key is a
         dataset state, value is the number of states in that count.
         """
 
         # Build query to get (state, count) pairs.
-        cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ] 
+        cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ]
         from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
-        
+
         conditions = [ trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id ]
         if not include_deleted:
             # Only count datasets that have not been deleted.
@@ -729,7 +729,7 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         if not include_hidden:
             # Only count datasets that are visible.
             conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.visible == True )
-        
+
         group_by = trans.app.model.Dataset.table.c.state
         query = select( columns=cols_to_select,
                         from_obj=from_obj,
@@ -740,7 +740,7 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         state_count_dict = {}
         for k, state in trans.app.model.Dataset.states.items():
             state_count_dict[ state ] = 0
-                        
+
         # Process query results, adding to count dict.
         for row in trans.sa_session.execute( query ):
             state, count = row
@@ -1501,13 +1501,13 @@ class UsesFormDefinitionsMixin:
 
 class SharableMixin:
     """ Mixin for a controller that manages an item that can be shared. """
-    
+
     # -- Implemented methods. --
 
     def _is_valid_slug( self, slug ):
         """ Returns true if slug is valid. """
         return _is_valid_slug( slug )
-    
+
     @web.expose
     @web.require_login( "share Galaxy items" )
     def set_public_username( self, trans, id, username, **kwargs ):
@@ -1526,7 +1526,7 @@ class SharableMixin:
         item = self.get_item( trans, id )
         if item:
             # Only update slug if slug is not already in use.
-            if trans.sa_session.query( item.__class__ ).filter_by( user=item.user, slug=new_slug, importable=True ).count() == 0: 
+            if trans.sa_session.query( item.__class__ ).filter_by( user=item.user, slug=new_slug, importable=True ).count() == 0:
                 item.slug = new_slug
                 trans.sa_session.flush()
 
@@ -1534,15 +1534,15 @@ class SharableMixin:
 
     def _make_item_accessible( self, sa_session, item ):
         """ Makes item accessible--viewable and importable--and sets item's slug.
-            Does not flush/commit changes, however. Item must have name, user, 
+            Does not flush/commit changes, however. Item must have name, user,
             importable, and slug attributes. """
         item.importable = True
         self.create_item_slug( sa_session, item )
-    
+
     def create_item_slug( self, sa_session, item ):
-        """ Create/set item slug. Slug is unique among user's importable items 
-            for item's class. Returns true if item's slug was set/changed; false 
-            otherwise. 
+        """ Create/set item slug. Slug is unique among user's importable items
+            for item's class. Returns true if item's slug was set/changed; false
+            otherwise.
         """
         cur_slug = item.slug
 
@@ -1563,7 +1563,7 @@ class SharableMixin:
         else:
             slug_base = cur_slug
 
-        # Using slug base, find a slug that is not taken. If slug is taken, 
+        # Using slug base, find a slug that is not taken. If slug is taken,
         # add integer to end.
         new_slug = slug_base
         count = 1
@@ -1572,13 +1572,13 @@ class SharableMixin:
             # handle numerous items with the same name gracefully.
             new_slug = '%s-%i' % ( slug_base, count )
             count += 1
-        
+
         # Set slug and return.
         item.slug = new_slug
         return item.slug == cur_slug
-        
-    # -- Abstract methods. -- 
-    
+
+    # -- Abstract methods. --
+
     @web.expose
     @web.require_login( "share Galaxy items" )
     def sharing( self, trans, id, **kwargs ):
@@ -1595,19 +1595,19 @@ class SharableMixin:
     def display_by_username_and_slug( self, trans, username, slug ):
         """ Display item by username and slug. """
         raise "Unimplemented Method"
-        
+
     @web.json
     @web.require_login( "get item name and link" )
     def get_name_and_link_async( self, trans, id=None ):
         """ Returns item's name and link. """
         raise "Unimplemented Method"
-        
+
     @web.expose
     @web.require_login("get item content asynchronously")
     def get_item_content_async( self, trans, id ):
         """ Returns item content in HTML format. """
         raise "Unimplemented Method"
-    
+
     def get_item( self, trans, id ):
         """ Return item based on id. """
         raise "Unimplemented Method"
