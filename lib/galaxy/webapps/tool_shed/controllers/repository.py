@@ -2452,7 +2452,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         revision_label = suc.get_revision_label( trans, repository, changeset_revision )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
         if repository_metadata:
-            repository_metadata_id = trans.security.encode_id( repository_metadata.id )
             metadata = repository_metadata.metadata
             # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
             repository_dependencies = suc.get_repository_dependencies_for_changeset_revision( trans=trans,
@@ -2468,7 +2467,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 message += orphan_message
                 status = 'warning'
         else:
-            repository_metadata_id = None
             metadata = None
         is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         if is_malicious:
@@ -2492,7 +2490,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
-                                    repository_metadata_id=repository_metadata_id,
+                                    repository_metadata=repository_metadata,
                                     metadata=metadata,
                                     containers_dict=containers_dict,
                                     avg_rating=avg_rating,

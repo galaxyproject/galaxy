@@ -5,6 +5,7 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
+    from tool_shed.util.shed_util_common import to_safe_string
 
     changeset_revision = repository_metadata.changeset_revision
     has_metadata = repository.metadata_revisions
@@ -157,23 +158,61 @@
             <div class="form-row">
                 <table class="grid">
                     %for test_results_dict in test_errors:
+                        <%
+                            test_id = test_results_dict.get( 'test_id', 'unknown' )
+                            if test_id != 'unknown':
+                                # The test_id looks something like:
+                                # test_tool_000003 (functional.test_toolbox.TestForTool_localhost:9009/repos/test/bwa_mappers/bwa_color_wrapper/1.0.2)
+                                # Highlight the tool id and version.
+                                test_id_items = test_id.split( '/' )
+                                tool_id = test_id_items[ -2 ]
+                                tool_id = '<b>%s</b>' % tool_id
+                                test_id_items[ -2 ] = tool_id
+                                tool_version = test_id_items[ -1 ]
+                                tool_version = '<b>%s</b>' % ( tool_version.rstrip( ')' ) )
+                                tool_version = '%s)' % tool_version
+                                test_id_items[ -1 ] = tool_version
+                                test_id = '/'.join( test_id_items )
+                                test_id_items = test_id.split( ' ' )
+                                test_num = test_id_items[ 0 ]
+                                test_num = '<b>%s</b>' % test_num
+                                test_id_items[ 0 ] = test_num
+                                test_id = ' '.join( test_id_items )
+
+                                test_status = '<font color="green">Test passed</font>'
+                                stdout = test_results_dict.get( 'stdout', '' )
+                                if stdout:
+                                    stdout = to_safe_string( stdout, to_html=True )
+                                stderr = test_results_dict.get( 'stderr', '' )
+                                if stderr:
+                                    stderr = to_safe_string( stderr, to_html=True )
+                                    test_status = '<font color="red">Test failed</font>'
+                                traceback = test_results_dict.get( 'traceback', '' )
+                                if traceback:
+                                    traceback = to_safe_string( traceback, to_html=True )
+                                    test_status = '<font color="red">Test failed</font>'
+                        %>
                         <tr>
                             <td bgcolor="#FFFFCC"><b>Test id</b></td>
-                            <td bgcolor="#FFFFCC">${test_results_dict.get( 'test_id', 'unknown' )}</td>
+                            <td bgcolor="#FFFFCC">${test_id}</td>
+                        </tr>
+                        <tr>
+                            <td><b>Status</b></td>
+                            <td>${test_status}</td>
                         </tr>
                         %if repository_metadata.tools_functionally_correct:
                             <tr>
                                 <td><b>Stdout</b></td>
-                                <td>${test_results_dict.get( 'stdout', '' )}</td>
+                                <td>${stdout}</td>
                             </tr>
                         %else:
                             <tr>
                                 <td><b>Stderr</b></td>
-                                <td>${test_results_dict.get( 'stderr', '' )}</td>
+                                <td>${stderr}</td>
                             </tr>
                             <tr>
                                 <td><b>Traceback</b></td>
-                                <td>${test_results_dict.get( 'traceback', '' )}</td>
+                                <td>${traceback}</td>
                             </tr>
                         %endif
                     %endfor

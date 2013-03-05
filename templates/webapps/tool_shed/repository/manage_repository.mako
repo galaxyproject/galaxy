@@ -88,6 +88,9 @@
             %if can_browse_repository_reviews:
                 <a class="action-button" href="${h.url_for( controller='repository_review', action='manage_repository_reviews', id=trans.app.security.encode_id( repository.id ) )}">Browse reviews of this repository</a>
             %endif
+            %if can_display_tool_functional_test_results:
+                <a class="action-button" href="${h.url_for( controller='repository', action='display_tool_functional_test_results', repository_id=trans.security.encode_id( repository.id ), repository_metadata_id=trans.security.encode_id( repository_metadata.id ) )}">View tool functional test results</a>
+            %endif
             %if can_upload:
                 <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
             %endif
@@ -111,9 +114,6 @@
             %endif
             %if can_undeprecate:
                 <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=False )}">Mark repository as not deprecated</a>
-            %endif
-            %if can_display_tool_functional_test_results:
-                <a class="action-button" href="${h.url_for( controller='repository', action='display_tool_functional_test_results', repository_id=trans.security.encode_id( repository.id ), repository_metadata_id=trans.security.encode_id( repository_metadata.id ) )}">View tool functional test results</a>
             %endif
             %if can_download:
                 <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision, file_type='gz' )}">Download as a .tar.gz file</a>
