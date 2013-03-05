@@ -61,7 +61,7 @@ WORKFLOW_PARAMETER_REGULAR_EXPRESSION =  re.compile( '''\$\{.+?\}''' )
 
 # These determine stdio-based error levels from matching on regular expressions
 # and exit codes. They are meant to be used comparatively, such as showing
-# that warning < fatal. This is really meant to just be an enum. 
+# that warning < fatal. This is really meant to just be an enum.
 class StdioErrorLevel( object ):
     NO_ERROR = 0
     LOG  = 1
@@ -69,9 +69,9 @@ class StdioErrorLevel( object ):
     FATAL = 3
     MAX = 3
     descs = {
-        NO_ERROR : 'No error', 
-        LOG: 'Log', 
-        WARNING : 'Warning', 
+        NO_ERROR : 'No error',
+        LOG: 'Log',
+        WARNING : 'Warning',
         FATAL : 'Fatal error'
     }
     @staticmethod
@@ -163,10 +163,10 @@ class ToolBox( object ):
         root = tree.getroot()
         tool_path = root.get( 'tool_path' )
         if tool_path:
-            # We're parsing a shed_tool_conf file since we have a tool_path attribute.  
+            # We're parsing a shed_tool_conf file since we have a tool_path attribute.
             parsing_shed_tool_conf = True
             # Keep an in-memory list of xml elements to enable persistence of the changing tool config.
-            config_elems = [] 
+            config_elems = []
         else:
             parsing_shed_tool_conf = False
             # Default to backward compatible config setting.
@@ -302,7 +302,7 @@ class ToolBox( object ):
                 self.integrated_tool_panel[ key ] = None
     def write_integrated_tool_panel_config_file( self ):
         """
-        Write the current in-memory version of the integrated_tool_panel.xml file to disk.  Since Galaxy administrators 
+        Write the current in-memory version of the integrated_tool_panel.xml file to disk.  Since Galaxy administrators
         use this file to manage the tool panel, we'll not use xml_to_string() since it doesn't write XML quite right.
         """
         fd, filename = tempfile.mkstemp()
@@ -370,7 +370,7 @@ class ToolBox( object ):
                         if tool.version == tool_version:
                             return tool
                 #No tool matches by version, simply return the first available tool found
-                return rval[0] 
+                return rval[0]
         return None
     def get_loaded_tools_by_lineage( self, tool_id ):
         """Get all loaded tools associated by lineage to the tool whose id is tool_id."""
@@ -614,7 +614,7 @@ class ToolBox( object ):
         return message, status
     def load_workflow( self, workflow_id ):
         """
-        Return an instance of 'Workflow' identified by `id`, 
+        Return an instance of 'Workflow' identified by `id`,
         which is encoded in the tool panel.
         """
         id = self.app.security.decode_id( workflow_id )
@@ -631,9 +631,9 @@ class ToolBox( object ):
         Returns a SQLAlchemy session
         """
         return self.app.model.context
-        
+
     def to_dict( self, trans, in_panel=True, trackster=False ):
-        
+
         def filter_for_panel( item, filters ):
             """
             Filters tool panel elements so that only those that are compatible
@@ -648,12 +648,12 @@ class ToolBox( object ):
                 if _apply_filter( item, filters[ 'tool' ] ):
                     return item
             elif isinstance( item, ToolSectionLabel ):
-                if _apply_filter( item, filters[ 'label' ] ): 
+                if _apply_filter( item, filters[ 'label' ] ):
                     return item
             elif isinstance( item, ToolSection ):
-                # Filter section item-by-item. Only show a label if there are 
+                # Filter section item-by-item. Only show a label if there are
                 # non-filtered tools below it.
-                
+
                 if _apply_filter( item, filters[ 'section' ] ):
                     cur_label_key = None
                     tools_under_label = False
@@ -666,35 +666,35 @@ class ToolBox( object ):
                             else:
                                 del filtered_elems[ key ]
                         elif isinstance( section_item, ToolSectionLabel ):
-                            # If there is a label and it does not have tools, 
+                            # If there is a label and it does not have tools,
                             # remove it.
                             if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
                                 del filtered_elems[ cur_label_key ]
-                            
+
                             # Reset attributes for new label.
                             cur_label_key = key
                             tools_under_label = False
-                            
-                    
+
+
                     # Handle last label.
                     if cur_label_key and not tools_under_label:
                         del filtered_elems[ cur_label_key ]
-                            
+
                     # Only return section if there are elements.
                     if len( filtered_elems ) != 0:
                         copy = item.copy()
                         copy.elems = filtered_elems
                         return copy
-                    
+
             return None
-        
-        #    
+
+        #
         # Dictify toolbox.
-        # 
-        
+        #
+
         if in_panel:
             panel_elts = [ val for val in self.tool_panel.itervalues() ]
-            
+
             # Filter if necessary.
             filters = dict( tool=[ lambda x: not x._is_hidden_for_user( trans.user ) ], section=[], label=[] ) #hidden tools filter
             if trackster:
@@ -705,7 +705,7 @@ class ToolBox( object ):
                 if elt:
                     filtered_panel_elts.append( elt )
             panel_elts = filtered_panel_elts
-            
+
             # Produce panel.
             rval = []
             for elt in panel_elts:
@@ -826,7 +826,7 @@ class ToolSection( object ):
         self.id = f( elem, 'id' )
         self.version = f( elem, 'version' )
         self.elems = odict()
-        
+
     def copy( self ):
         copy = ToolSection()
         copy.name = self.name
@@ -834,7 +834,7 @@ class ToolSection( object ):
         copy.version = self.version
         copy.elems = self.elems.copy()
         return copy
-        
+
     def to_dict( self, trans, for_link=False ):
         """ Return a dict that includes section's attributes. """
         section_elts = []
@@ -851,16 +851,16 @@ class ToolSectionLabel( object ):
         self.text = elem.get( "text" )
         self.id = elem.get( "id" )
         self.version = elem.get( "version" ) or ''
-        
+
     def to_dict( self, trans, **kwargs ):
         """ Return a dict that includes label's attributes. """
         return { 'type': 'label', 'id': self.id, 'name': self.text, 'version': self.version }
 
 class DefaultToolState( object ):
     """
-    Keeps track of the state of a users interaction with a tool between 
-    requests. The default tool state keeps track of the current page (for 
-    multipage "wizard" tools) and the values of all 
+    Keeps track of the state of a users interaction with a tool between
+    requests. The default tool state keeps track of the current page (for
+    multipage "wizard" tools) and the values of all
     """
     def __init__( self ):
         self.page = 0
@@ -901,10 +901,10 @@ class ToolOutput( object ):
     Represents an output datasets produced by a tool. For backward
     compatibility this behaves as if it were the tuple::
 
-      (format, metadata_source, parent)  
+      (format, metadata_source, parent)
     """
 
-    def __init__( self, name, format=None, format_source=None, metadata_source=None, 
+    def __init__( self, name, format=None, format_source=None, metadata_source=None,
                   parent=None, label=None, filters = None, actions = None, hidden=False ):
         self.name = name
         self.format = format
@@ -918,11 +918,11 @@ class ToolOutput( object ):
 
     # Tuple emulation
 
-    def __len__( self ): 
+    def __len__( self ):
         return 3
 
     def __getitem__( self, index ):
-        if index == 0: 
+        if index == 0:
             return self.format
         elif index == 1:
             return self.metadata_source
@@ -933,7 +933,7 @@ class ToolOutput( object ):
 
     def __iter__( self ):
         return iter( ( self.format, self.metadata_source, self.parent ) )
-        
+
     def to_dict( self ):
         return {
             'name': self.name,
@@ -954,12 +954,12 @@ class ToolRequirement( object ):
 
 class Tool( object ):
     """
-    Represents a computational tool that can be executed through Galaxy. 
+    Represents a computational tool that can be executed through Galaxy.
     """
-    
+
     tool_type = 'default'
     default_tool_action = DefaultToolAction
-    
+
     def __init__( self, config_file, root, app, guid=None ):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
@@ -1091,15 +1091,15 @@ class Tool( object ):
         """
         # Get the (user visible) name of the tool
         self.name = root.get( "name" )
-        if not self.name: 
+        if not self.name:
             raise Exception, "Missing tool 'name'"
-        # Get the UNIQUE id for the tool 
+        # Get the UNIQUE id for the tool
         self.old_id = root.get( "id" )
         if guid is None:
             self.id = self.old_id
         else:
             self.id = guid
-        if not self.id: 
+        if not self.id:
             raise Exception, "Missing tool 'id'"
         self.version = root.get( "version" )
         if not self.version:
@@ -1107,8 +1107,8 @@ class Tool( object ):
             self.version = "1.0.0"
         # Support multi-byte tools
         self.is_multi_byte = string_as_bool( root.get( "is_multi_byte", False ) )
-        # Force history to fully refresh after job execution for this tool. 
-        # Useful i.e. when an indeterminate number of outputs are created by 
+        # Force history to fully refresh after job execution for this tool.
+        # Useful i.e. when an indeterminate number of outputs are created by
         # a tool.
         self.force_history_refresh = string_as_bool( root.get( 'force_history_refresh', 'False' ) )
         self.display_interface = string_as_bool( root.get( 'display_interface', str( self.display_interface ) ) )
@@ -1117,7 +1117,7 @@ class Tool( object ):
         self.input_translator = root.find( "request_param_translation" )
         if self.input_translator:
             self.input_translator = ToolInputTranslator.from_element( self.input_translator )
-        # Command line (template). Optional for tools that do not invoke a local program  
+        # Command line (template). Optional for tools that do not invoke a local program
         command = root.find("command")
         if command is not None and command.text is not None:
             self.command = command.text.lstrip() # get rid of leading whitespace
@@ -1138,7 +1138,7 @@ class Tool( object ):
             self.redirect_url_params = ''
         # Short description of the tool
         self.description = xml_text(root, "description")
-        # Versioning for tools        
+        # Versioning for tools
         self.version_string_cmd = None
         version_cmd = root.find("version_command")
         if version_cmd is not None:
@@ -1304,8 +1304,8 @@ class Tool( object ):
                 break
     def parse_help( self, root ):
         """
-        Parse the help text for the tool. Formatted in reStructuredText, but 
-        stored as Mako to allow for dynamic image paths. 
+        Parse the help text for the tool. Formatted in reStructuredText, but
+        stored as Mako to allow for dynamic image paths.
         This implementation supports multiple pages.
         """
         # TODO: Allow raw HTML or an external link.
@@ -1329,15 +1329,15 @@ class Tool( object ):
                     help_footer = help_footer + help_page.tail
         # Each page has to rendered all-together because of backreferences allowed by rst
         try:
-            self.help_by_page = [ Template( rst_to_html( help_header + x + help_footer, 
-                                            input_encoding='utf-8', output_encoding='utf-8', 
+            self.help_by_page = [ Template( rst_to_html( help_header + x + help_footer,
+                                            input_encoding='utf-8', output_encoding='utf-8',
                                             default_filters=[ 'decode.utf8' ],
                                             encoding_errors='replace' ) )
                                   for x in self.help_by_page ]
         except:
             log.exception( "error in multi-page help for tool %s" % self.name )
         # Pad out help pages to match npages ... could this be done better?
-        while len( self.help_by_page ) < self.npages: 
+        while len( self.help_by_page ) < self.npages:
             self.help_by_page.append( self.help )
     def parse_outputs( self, root ):
         """
@@ -1366,18 +1366,18 @@ class Tool( object ):
     # TODO: Include the tool's name in any parsing warnings.
     def parse_stdio( self, root ):
         """
-        Parse <stdio> element(s) and fill in self.return_codes, 
-        self.stderr_rules, and self.stdout_rules. Return codes have a range 
-        and an error type (fault or warning).  Stderr and stdout rules have 
+        Parse <stdio> element(s) and fill in self.return_codes,
+        self.stderr_rules, and self.stdout_rules. Return codes have a range
+        and an error type (fault or warning).  Stderr and stdout rules have
         a regular expression and an error level (fault or warning).
         """
         try:
             self.stdio_exit_codes = list()
             self.stdio_regexes = list()
 
-            # We should have a single <stdio> element, but handle the case for 
-            # multiples. 
-            # For every stdio element, add all of the exit_code and regex 
+            # We should have a single <stdio> element, but handle the case for
+            # multiples.
+            # For every stdio element, add all of the exit_code and regex
             # subelements that we find:
             for stdio_elem in ( root.findall( 'stdio' ) ):
                 self.parse_stdio_exit_codes( stdio_elem )
@@ -1388,12 +1388,12 @@ class Tool( object ):
     def parse_stdio_exit_codes( self, stdio_elem ):
         """
         Parse the tool's <stdio> element's <exit_code> subelements.
-        This will add all of those elements, if any, to self.stdio_exit_codes. 
+        This will add all of those elements, if any, to self.stdio_exit_codes.
         """
         try:
-            # Look for all <exit_code> elements. Each exit_code element must 
+            # Look for all <exit_code> elements. Each exit_code element must
             # have a range/value.
-            # Exit-code ranges have precedence over a single exit code. 
+            # Exit-code ranges have precedence over a single exit code.
             # So if there are value and range attributes, we use the range
             # attribute. If there is neither a range nor a value, then print
             # a warning and skip to the next.
@@ -1404,7 +1404,7 @@ class Tool( object ):
                 exit_code.desc = exit_code_elem.get( "desc" )
                 if None == exit_code.desc:
                     exit_code.desc = exit_code_elem.get( "description" )
-                # Parse the error level: 
+                # Parse the error level:
                 exit_code.error_level = (
                     self.parse_error_level( exit_code_elem.get( "level" )))
                 code_range = exit_code_elem.get( "range", "" )
@@ -1417,20 +1417,20 @@ class Tool( object ):
                 # Parse the range. We look for:
                 #   :Y
                 #  X:
-                #  X:Y   - Split on the colon. We do not allow a colon 
-                #          without a beginning or end, though we could. 
+                #  X:Y   - Split on the colon. We do not allow a colon
+                #          without a beginning or end, though we could.
                 # Also note that whitespace is eliminated.
-                # TODO: Turn this into a single match - it should be 
+                # TODO: Turn this into a single match - it should be
                 # more efficient.
                 code_range = re.sub( "\s", "", code_range )
                 code_ranges = re.split( ":", code_range )
                 if ( len( code_ranges ) == 2 ):
                     if ( None == code_ranges[0] or '' == code_ranges[0] ):
-                        exit_code.range_start = float( "-inf" ) 
+                        exit_code.range_start = float( "-inf" )
                     else:
                         exit_code.range_start = int( code_ranges[0] )
                     if ( None == code_ranges[1] or '' == code_ranges[1] ):
-                        exit_code.range_end = float( "inf" ) 
+                        exit_code.range_end = float( "inf" )
                     else:
                         exit_code.range_end = int( code_ranges[1] )
                 # If we got more than one colon, then ignore the exit code.
@@ -1448,48 +1448,48 @@ class Tool( object ):
                         log.warning( "Invalid range start for tool's exit_code %s: exit_code ignored" % code_range )
                         continue
                     exit_code.range_end = exit_code.range_start
-                # TODO: Check if we got ">", ">=", "<", or "<=": 
-                # Check that the range, regardless of how we got it, 
-                # isn't bogus. If we have two infinite values, then 
-                # the start must be -inf and the end must be +inf. 
+                # TODO: Check if we got ">", ">=", "<", or "<=":
+                # Check that the range, regardless of how we got it,
+                # isn't bogus. If we have two infinite values, then
+                # the start must be -inf and the end must be +inf.
                 # So at least warn about this situation:
-                if ( isinf( exit_code.range_start ) and 
+                if ( isinf( exit_code.range_start ) and
                      isinf( exit_code.range_end ) ):
                     log.warning( "Tool exit_code range %s will match on "
                                + "all exit codes" % code_range )
                 self.stdio_exit_codes.append( exit_code )
         except Exception:
-            log.error( "Exception in parse_stdio_exit_codes! " 
+            log.error( "Exception in parse_stdio_exit_codes! "
                      + str(sys.exc_info()) )
             trace = sys.exc_info()[2]
             if ( None != trace ):
                 trace_msg = repr( traceback.format_tb( trace ) )
-                log.error( "Traceback: %s" % trace_msg ) 
+                log.error( "Traceback: %s" % trace_msg )
 
     def parse_stdio_regexes( self, stdio_elem ):
-        """ 
+        """
         Look in the tool's <stdio> elem for all <regex> subelements
-        that define how to look for warnings and fatal errors in 
+        that define how to look for warnings and fatal errors in
         stdout and stderr. This will add all such regex elements
         to the Tols's stdio_regexes list.
         """
         try:
             # Look for every <regex> subelement. The regular expression
-            # will have "match" and "source" (or "src") attributes. 
+            # will have "match" and "source" (or "src") attributes.
             for regex_elem in ( stdio_elem.findall( "regex" ) ):
                 # TODO: Fill in ToolStdioRegex
-                regex = ToolStdioRegex() 
+                regex = ToolStdioRegex()
                 # Each regex has an optional description that can be
                 # part of the "desc" or "description" attributes:
                 regex.desc = regex_elem.get( "desc" )
                 if None == regex.desc:
                     regex.desc = regex_elem.get( "description" )
-                # Parse the error level 
-                regex.error_level = ( 
+                # Parse the error level
+                regex.error_level = (
                     self.parse_error_level( regex_elem.get( "level" ) ) )
                 regex.match = regex_elem.get( "match", "" )
                 if None == regex.match:
-                    # TODO: Convert the offending XML element to a string 
+                    # TODO: Convert the offending XML element to a string
                     log.warning( "Ignoring tool's stdio regex element %s - "
                                  "the 'match' attribute must exist" )
                     continue
@@ -1506,7 +1506,7 @@ class Tool( object ):
                 if None == output_srcs:
                     output_srcs = "output,error"
                 output_srcs = re.sub( "\s", "", output_srcs )
-                src_list = re.split( ",", output_srcs ) 
+                src_list = re.split( ",", output_srcs )
                 # Just put together anything to do with "out", including
                 # "stdout", "output", etc. Repeat for "stderr", "error",
                 # and anything to do with "err". If neither stdout nor
@@ -1527,12 +1527,12 @@ class Tool( object ):
                         regex.stderr_match = True
                 self.stdio_regexes.append( regex )
         except Exception:
-            log.error( "Exception in parse_stdio_exit_codes! " 
+            log.error( "Exception in parse_stdio_exit_codes! "
                      + str(sys.exc_info()) )
             trace = sys.exc_info()[2]
             if ( None != trace ):
                 trace_msg = repr( traceback.format_tb( trace ) )
-                log.error( "Traceback: %s" % trace_msg ) 
+                log.error( "Traceback: %s" % trace_msg )
 
     # TODO: This method doesn't have to be part of the Tool class.
     def parse_error_level( self, err_level ):
@@ -1540,24 +1540,24 @@ class Tool( object ):
         Parses error level and returns error level enumeration. If
         unparsable, returns 'fatal'
         """
-        return_level = StdioErrorLevel.FATAL 
+        return_level = StdioErrorLevel.FATAL
         try:
             if err_level:
                 if ( re.search( "log", err_level, re.IGNORECASE ) ):
                     return_level = StdioErrorLevel.LOG
                 elif ( re.search( "warning", err_level, re.IGNORECASE ) ):
-                    return_level = StdioErrorLevel.WARNING 
+                    return_level = StdioErrorLevel.WARNING
                 elif ( re.search( "fatal", err_level, re.IGNORECASE ) ):
                     return_level = StdioErrorLevel.FATAL
                 else:
                     log.debug( "Error level %s did not match warning/fatal" % err_level )
         except Exception:
-            log.error( "Exception in parse_error_level " 
+            log.error( "Exception in parse_error_level "
                      + str(sys.exc_info() ) )
             trace = sys.exc_info()[2]
             if ( None != trace ):
                 trace_msg = repr( traceback.format_tb( trace ) )
-                log.error( "Traceback: %s" % trace_msg ) 
+                log.error( "Traceback: %s" % trace_msg )
         return return_level
 
     def parse_tests( self, tests_elem ):
@@ -1566,9 +1566,9 @@ class Tool( object ):
         store in `self.tests`.
         """
         self.tests = []
-        # Composite datasets need a unique name: each test occurs in a fresh 
+        # Composite datasets need a unique name: each test occurs in a fresh
         # history, but we'll keep it unique per set of tests
-        composite_data_names_counter = 0 
+        composite_data_names_counter = 0
         for i, test_elem in enumerate( tests_elem.findall( 'test' ) ):
             name = test_elem.get( 'name', 'Test-%d' % (i+1) )
             maxseconds = int( test_elem.get( 'maxseconds', '120' ) )
@@ -1584,20 +1584,20 @@ class Tool( object ):
                         value = None
                     attrib['children'] = list( param_elem.getchildren() )
                     if attrib['children']:
-                        # At this time, we can assume having children only 
-                        # occurs on DataToolParameter test items but this could 
-                        # change and would cause the below parsing to change 
+                        # At this time, we can assume having children only
+                        # occurs on DataToolParameter test items but this could
+                        # change and would cause the below parsing to change
                         # based upon differences in children items
                         attrib['metadata'] = []
                         attrib['composite_data'] = []
                         attrib['edit_attributes'] = []
                         # Composite datasets need to be renamed uniquely
-                        composite_data_name = None 
+                        composite_data_name = None
                         for child in attrib['children']:
                             if child.tag == 'composite_data':
                                 attrib['composite_data'].append( child )
                                 if composite_data_name is None:
-                                    # Generate a unique name; each test uses a 
+                                    # Generate a unique name; each test uses a
                                     # fresh history
                                     composite_data_name = '_COMPOSITE_RENAMED_%i_' \
                                         % ( composite_data_names_counter )
@@ -1609,10 +1609,10 @@ class Tool( object ):
                             elif child.tag == 'edit_attributes':
                                 attrib['edit_attributes'].append( child )
                         if composite_data_name:
-                            # Composite datasets need implicit renaming; 
-                            # inserted at front of list so explicit declarations 
+                            # Composite datasets need implicit renaming;
+                            # inserted at front of list so explicit declarations
                             # take precedence
-                            attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } ) 
+                            attrib['edit_attributes'].insert( 0, { 'type': 'name', 'value': composite_data_name } )
                     test.add_param( attrib.pop( 'name' ), value, attrib )
                 for output_elem in test_elem.findall( "output" ):
                     attrib = dict( output_elem.attrib )
@@ -1621,8 +1621,8 @@ class Tool( object ):
                         raise Exception( "Test output does not have a 'name'" )
                     assert_elem = output_elem.find("assert_contents")
                     assert_list = None
-                    # Trying to keep testing patch as localized as                                              
-                    # possible, this function should be relocated                                               
+                    # Trying to keep testing patch as localized as
+                    # possible, this function should be relocated
                     # somewhere more conventional.
                     def convert_elem(elem):
                         """ Converts and XML element to a dictionary format, used by assertion checking code. """
@@ -1638,34 +1638,34 @@ class Tool( object ):
                         for assert_child in list(assert_elem):
                             assert_list.append(convert_elem(assert_child))
                     file = attrib.pop( 'file', None )
-                    # File no longer required if an list of assertions was present.                             
+                    # File no longer required if an list of assertions was present.
                     if assert_list is None and file is None:
                         raise Exception( "Test output does not have a 'file'")
                     attributes = {}
                     # Method of comparison
-                    attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower() 
-                    # Number of lines to allow to vary in logs (for dates, etc) 
-                    attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) ) 
+                    attributes['compare'] = attrib.pop( 'compare', 'diff' ).lower()
+                    # Number of lines to allow to vary in logs (for dates, etc)
+                    attributes['lines_diff'] = int( attrib.pop( 'lines_diff', '0' ) )
                     # Allow a file size to vary if sim_size compare
-                    attributes['delta'] = int( attrib.pop( 'delta', '10000' ) ) 
+                    attributes['delta'] = int( attrib.pop( 'delta', '10000' ) )
                     attributes['sort'] = string_as_bool( attrib.pop( 'sort', False ) )
                     attributes['extra_files'] = []
                     attributes['assert_list'] = assert_list
                     if 'ftype' in attrib:
                         attributes['ftype'] = attrib['ftype']
                     for extra in output_elem.findall( 'extra_files' ):
-                        # File or directory, when directory, compare basename 
+                        # File or directory, when directory, compare basename
                         # by basename
-                        extra_type = extra.get( 'type', 'file' ) 
+                        extra_type = extra.get( 'type', 'file' )
                         extra_name = extra.get( 'name', None )
                         assert extra_type == 'directory' or extra_name is not None, \
                             'extra_files type (%s) requires a name attribute' % extra_type
                         extra_value = extra.get( 'value', None )
                         assert extra_value is not None, 'extra_files requires a value attribute'
                         extra_attributes = {}
-                        extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower() 
-                        extra_attributes['delta'] = extra.get( 'delta', '0' ) 
-                        extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) ) 
+                        extra_attributes['compare'] = extra.get( 'compare', 'diff' ).lower()
+                        extra_attributes['delta'] = extra.get( 'delta', '0' )
+                        extra_attributes['lines_diff'] = int( extra.get( 'lines_diff', '0' ) )
                         extra_attributes['sort'] = string_as_bool( extra.get( 'sort', False ) )
                         attributes['extra_files'].append( ( extra_type, extra_value, extra_name, extra_attributes ) )
                     test.add_output( name, file, attributes )
@@ -1689,7 +1689,7 @@ class Tool( object ):
         return display, inputs
     def parse_input_elem( self, parent_elem, enctypes, context=None ):
         """
-        Parse a parent element whose children are inputs -- these could be 
+        Parse a parent element whose children are inputs -- these could be
         groups (repeat, conditional) or param elements. Groups will be parsed
         recursively.
         """
@@ -1706,11 +1706,11 @@ class Tool( object ):
                 group.default = int( elem.get( "default", 0 ) )
                 group.min = int( elem.get( "min", 0 ) )
                 # Use float instead of int so that 'inf' can be used for no max
-                group.max = float( elem.get( "max", "inf" ) ) 
+                group.max = float( elem.get( "max", "inf" ) )
                 assert group.min <= group.max, \
                     ValueError( "Min repeat count must be less-than-or-equal to the max." )
                 # Force default to be within min-max range
-                group.default = min( max( group.default, group.min ), group.max ) 
+                group.default = min( max( group.default, group.min ), group.max )
                 rval[group.name] = group
             elif elem.tag == "conditional":
                 group = Conditional()
@@ -1729,7 +1729,7 @@ class Tool( object ):
                         case = ConditionalWhen()
                         case.value = case_value
                         if case_inputs:
-                            case.inputs = self.parse_input_elem( 
+                            case.inputs = self.parse_input_elem(
                                 ElementTree.XML( "<when>%s</when>" % case_inputs ), enctypes, context )
                         else:
                             case.inputs = odict()
@@ -1751,10 +1751,10 @@ class Tool( object ):
                         try:
                             possible_cases.remove( case.value )
                         except:
-                            log.warning( "Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." % 
+                            log.warning( "Tool %s: a when tag has been defined for '%s (%s) --> %s', but does not appear to be selectable." %
                                          ( self.id, group.name, group.test_param.name, case.value ) )
                     for unspecified_case in possible_cases:
-                        log.warning( "Tool %s: a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." % 
+                        log.warning( "Tool %s: a when tag has not been defined for '%s (%s) --> %s', assuming empty inputs." %
                                      ( self.id, group.name, group.test_param.name, unspecified_case ) )
                         case = ConditionalWhen()
                         case.value = unspecified_case
@@ -1764,7 +1764,7 @@ class Tool( object ):
             elif elem.tag == "upload_dataset":
                 group = UploadDataset()
                 group.name = elem.get( "name" )
-                group.title = elem.get( "title" ) 
+                group.title = elem.get( "title" )
                 group.file_type_name = elem.get( 'file_type_name', group.file_type_name )
                 group.default_file_type = elem.get( 'default_file_type', group.default_file_type )
                 group.metadata_ref = elem.get( 'metadata_ref', group.metadata_ref )
@@ -1782,7 +1782,7 @@ class Tool( object ):
         return rval
     def parse_param_elem( self, input_elem, enctypes, context ):
         """
-        Parse a single "<param>" element and return a ToolParameter instance. 
+        Parse a single "<param>" element and return a ToolParameter instance.
         Also, if the parameter has a 'required_enctype' add it to the set
         enctypes.
         """
@@ -1827,8 +1827,8 @@ class Tool( object ):
     def new_state( self, trans, all_pages=False ):
         """
         Create a new `DefaultToolState` for this tool. It will be initialized
-        with default values for inputs. 
-        
+        with default values for inputs.
+
         Only inputs on the first page will be initialized unless `all_pages` is
         True, in which case all inputs regardless of page are initialized.
         """
@@ -1843,17 +1843,17 @@ class Tool( object ):
     def fill_in_new_state( self, trans, inputs, state, context=None ):
         """
         Fill in a tool state dictionary with default values for all parameters
-        in the dictionary `inputs`. Grouping elements are filled in recursively. 
+        in the dictionary `inputs`. Grouping elements are filled in recursively.
         """
         context = ExpressionContext( state, context )
         for input in inputs.itervalues():
             state[ input.name ] = input.get_initial_value( trans, context )
     def get_param_html_map( self, trans, page=0, other_values={} ):
         """
-        Return a dictionary containing the HTML representation of each 
-        parameter. This is used for rendering display elements. It is 
+        Return a dictionary containing the HTML representation of each
+        parameter. This is used for rendering display elements. It is
         currently not compatible with grouping constructs.
-        
+
         NOTE: This should be considered deprecated, it is only used for tools
               with `display` elements. These should be eliminated.
         """
@@ -1865,7 +1865,7 @@ class Tool( object ):
         return rval
     def get_param( self, key ):
         """
-        Returns the parameter named `key` or None if there is no such 
+        Returns the parameter named `key` or None if there is no such
         parameter.
         """
         return self.inputs.get( key, None )
@@ -1886,7 +1886,7 @@ class Tool( object ):
         Call the function `callback` on each parameter of this tool. Visits
         grouping parameters recursively and constructs unique prefixes for
         each nested set of  The callback method is then called as:
-        
+
         `callback( level_prefix, parameter, parameter_value )`
         """
         # HACK: Yet another hack around check_values -- WHY HERE?
@@ -1915,7 +1915,7 @@ class Tool( object ):
             # of inputs even when there is no state in the incoming dictionary
             # by providing either 'runtool_btn' (the name of the submit button
             # on the standard run form) or "URL" (a parameter provided by
-            # external data source tools). 
+            # external data source tools).
             if "runtool_btn" not in incoming and "URL" not in incoming:
                 if not self.display_interface:
                     return 'message.mako', dict( status='info', message="The interface for this tool cannot be displayed", refresh_frames=['everything'] )
@@ -1933,7 +1933,7 @@ class Tool( object ):
             # Update state for all inputs on the current page taking new
             # values from `incoming`.
             errors = self.update_state( trans, self.inputs_by_page[state.page], state.inputs, incoming, old_errors=old_errors or {} )
-            # If the tool provides a `validate_input` hook, call it. 
+            # If the tool provides a `validate_input` hook, call it.
             validate_input = self.get_hook( 'validate_input' )
             if validate_input:
                 validate_input( trans, errors, state.inputs, self.inputs_by_page[state.page] )
@@ -1941,10 +1941,10 @@ class Tool( object ):
         # Did the user actually click next / execute or is this just
         # a refresh?
         if 'runtool_btn' in incoming or 'URL' in incoming or 'ajax_upload' in incoming:
-            # If there were errors, we stay on the same page and display 
+            # If there were errors, we stay on the same page and display
             # error messages
             if errors:
-                error_message = "One or more errors were found in the input you provided. The specific errors are marked below."    
+                error_message = "One or more errors were found in the input you provided. The specific errors are marked below."
                 return "tool_form.mako", dict( errors=errors, tool_state=state, incoming=incoming, error_message=error_message )
             # If we've completed the last page we can execute the tool
             elif state.page == self.last_page:
@@ -2010,10 +2010,10 @@ class Tool( object ):
                     log.exception( 'Unable to load precreated dataset (%s) sent in upload form' % id )
                     continue
                 if trans.user is None and trans.galaxy_session.current_history != data.history:
-                    log.error( 'Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)' 
-                        % ( data.id, trans.galaxy_session.id ) ) 
+                    log.error( 'Got a precreated dataset (%s) but it does not belong to anonymous user\'s current session (%s)'
+                        % ( data.id, trans.galaxy_session.id ) )
                 elif data.history.user != trans.user:
-                    log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)' 
+                    log.error( 'Got a precreated dataset (%s) but it does not belong to current user (%s)'
                         % ( data.id, trans.user.id ) )
                 else:
                     data.state = data.states.ERROR
@@ -2021,22 +2021,22 @@ class Tool( object ):
                     self.sa_session.add( data )
                     self.sa_session.flush()
         # It's unlikely the user will ever see this.
-        return 'message.mako', dict( status='error', 
-            message='Your upload was interrupted. If this was uninentional, please retry it.', 
+        return 'message.mako', dict( status='error',
+            message='Your upload was interrupted. If this was uninentional, please retry it.',
             refresh_frames=[], cont=None )
     def update_state( self, trans, inputs, state, incoming, prefix="", context=None,
                       update_only=False, old_errors={}, item_callback=None ):
         """
-        Update the tool state in `state` using the user input in `incoming`. 
+        Update the tool state in `state` using the user input in `incoming`.
         This is designed to be called recursively: `inputs` contains the
         set of inputs being processed, and `prefix` specifies a prefix to
         add to the name of each input to extract it's value from `incoming`.
-        
+
         If `update_only` is True, values that are not in `incoming` will
         not be modified. In this case `old_errors` can be provided, and any
         errors for parameters which were *not* updated will be preserved.
         """
-        errors = dict()     
+        errors = dict()
         # Push this level onto the context stack
         context = ExpressionContext( state, context )
         # Iterate inputs and update (recursively)
@@ -2045,7 +2045,7 @@ class Tool( object ):
             if isinstance( input, Repeat ):
                 group_state = state[input.name]
                 # Create list of empty errors for each previously existing state
-                group_errors = [ {} for i in range( len( group_state ) ) ] 
+                group_errors = [ {} for i in range( len( group_state ) ) ]
                 group_old_errors = old_errors.get( input.name, None )
                 any_group_errors = False
                 # Check any removals before updating state -- only one
@@ -2062,7 +2062,7 @@ class Tool( object ):
                         else:
                             group_errors[i] = { '__index__': 'Cannot remove repeat (min size=%i).' % input.min }
                             any_group_errors = True
-                            # Only need to find one that can't be removed due to size, since only 
+                            # Only need to find one that can't be removed due to size, since only
                             # one removal is processed at # a time anyway
                             break
                     elif group_old_errors and group_old_errors[i]:
@@ -2079,9 +2079,9 @@ class Tool( object ):
                     else:
                         rep_old_errors = {}
                     rep_errors = self.update_state( trans,
-                                                    input.inputs, 
-                                                    rep_state, 
-                                                    incoming, 
+                                                    input.inputs,
+                                                    rep_state,
+                                                    incoming,
                                                     prefix=rep_prefix,
                                                     context=context,
                                                     update_only=update_only,
@@ -2110,8 +2110,8 @@ class Tool( object ):
                 old_current_case = group_state['__current_case__']
                 group_prefix = "%s|" % ( key )
                 # Deal with the 'test' element and see if it's value changed
-                if input.value_ref and not input.value_ref_in_group: 
-                    # We are referencing an existent parameter, which is not 
+                if input.value_ref and not input.value_ref_in_group:
+                    # We are referencing an existent parameter, which is not
                     # part of this group
                     test_param_key = prefix + input.test_param.name
                 else:
@@ -2141,10 +2141,10 @@ class Tool( object ):
                     group_old_errors = dict()
                 else:
                     # Current case has not changed, update children
-                    group_errors = self.update_state( trans, 
-                                                      input.cases[current_case].inputs, 
+                    group_errors = self.update_state( trans,
+                                                      input.cases[current_case].inputs,
                                                       group_state,
-                                                      incoming, 
+                                                      incoming,
                                                       prefix=group_prefix,
                                                       context=context,
                                                       update_only=update_only,
@@ -2183,9 +2183,9 @@ class Tool( object ):
                     else:
                         rep_old_errors = {}
                     rep_errors = self.update_state( trans,
-                                                    input.inputs, 
-                                                    rep_state, 
-                                                    incoming, 
+                                                    input.inputs,
+                                                    rep_state,
+                                                    incoming,
                                                     prefix=rep_prefix,
                                                     context=context,
                                                     update_only=update_only,
@@ -2224,7 +2224,7 @@ class Tool( object ):
                     # If a callback was provided, allow it to process the value
                     if item_callback:
                         old_value = state.get( input.name, None )
-                        value, error = item_callback( trans, key, input, value, error, old_value, context )                                          
+                        value, error = item_callback( trans, key, input, value, error, old_value, context )
                     if error:
                         errors[ input.name ] = error
                     state[ input.name ] = value
@@ -2245,7 +2245,7 @@ class Tool( object ):
     @property
     def params_with_missing_index_file( self ):
         """
-        Return all parameters that are dynamically generated 
+        Return all parameters that are dynamically generated
         select lists whose options refer to a  missing .loc file.
         """
         params = []
@@ -2257,7 +2257,7 @@ class Tool( object ):
         return params
     def get_static_param_values( self, trans ):
         """
-        Returns a map of parameter names and values if the tool does not 
+        Returns a map of parameter names and values if the tool does not
         require any user input. Will raise an exception if any parameter
         does require input.
         """
@@ -2273,8 +2273,8 @@ class Tool( object ):
     def execute( self, trans, incoming={}, set_output_hid=True, history=None, **kwargs ):
         """
         Execute the tool using parameter values in `incoming`. This just
-        dispatches to the `ToolAction` instance specified by 
-        `self.tool_action`. In general this will create a `Job` that 
+        dispatches to the `ToolAction` instance specified by
+        `self.tool_action`. In general this will create a `Job` that
         when run will build the tool's outputs, e.g. `DefaultToolAction`.
         """
         return self.tool_action.execute( self, trans, incoming=incoming, set_output_hid=set_output_hid, history=history, **kwargs )
@@ -2286,7 +2286,7 @@ class Tool( object ):
         """
         Check that all parameters have values, and fill in with default
         values where necessary. This could be called after loading values
-        from a database in case new parameters have been added. 
+        from a database in case new parameters have been added.
         """
         messages = {}
         self.check_and_update_param_values_helper( self.inputs, values, trans, messages, update_values=update_values, allow_workflow_parameters=allow_workflow_parameters )
@@ -2329,9 +2329,9 @@ class Tool( object ):
                         messages[ input.test_param.name ] = "No value found for '%s%s', used default" % ( prefix, input.test_param.label )
                         current_case = group_values['__current_case__']
                         for child_input in input.cases[current_case].inputs.itervalues():
-                            messages[ child_input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, child_input.label )                    
+                            messages[ child_input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, child_input.label )
                     else:
-                        current = group_values["__current_case__"]                    
+                        current = group_values["__current_case__"]
                         self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix )
                 else:
                     # Regular tool parameter, no recursion needed
@@ -2350,7 +2350,7 @@ class Tool( object ):
     def handle_unvalidated_param_values( self, input_values, app ):
         """
         Find any instances of `UnvalidatedValue` within input_values and
-        validate them (by calling `ToolParameter.from_html` and 
+        validate them (by calling `ToolParameter.from_html` and
         `ToolParameter.validate`).
         """
         # No validation is done when check_values is False
@@ -2363,7 +2363,7 @@ class Tool( object ):
         """
         context = ExpressionContext( input_values, context )
         for input in inputs.itervalues():
-            if isinstance( input, Repeat ):  
+            if isinstance( input, Repeat ):
                 for i, d in enumerate( input_values[ input.name ] ):
                     rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
                     self.handle_unvalidated_param_values_helper( input.inputs, d, app, context, rep_prefix )
@@ -2412,8 +2412,8 @@ class Tool( object ):
         """
         Build the dictionary of parameters for substituting into the command
         line. Each value is wrapped in a `InputValueWrapper`, which allows
-        all the attributes of the value to be used in the template, *but* 
-        when the __str__ method is called it actually calls the 
+        all the attributes of the value to be used in the template, *but*
+        when the __str__ method is called it actually calls the
         `to_param_dict_string` method of the associated input.
         """
         param_dict = dict()
@@ -2426,7 +2426,7 @@ class Tool( object ):
             Wraps parameters as neccesary.
             """
             for input in inputs.itervalues():
-                if isinstance( input, Repeat ):  
+                if isinstance( input, Repeat ):
                     for d in input_values[ input.name ]:
                         wrap_values( input.inputs, d )
                 elif isinstance( input, Conditional ):
@@ -2438,37 +2438,37 @@ class Tool( object ):
                         DatasetListWrapper( input_values[ input.name ],
                                             datatypes_registry = self.app.datatypes_registry,
                                             tool = self,
-                                            name = input.name )                    
+                                            name = input.name )
                 elif isinstance( input, DataToolParameter ):
-                    ## FIXME: We're populating param_dict with conversions when 
-                    ##        wrapping values, this should happen as a separate 
-                    ##        step before wrapping (or call this wrapping step 
-                    ##        something more generic) (but iterating this same 
+                    ## FIXME: We're populating param_dict with conversions when
+                    ##        wrapping values, this should happen as a separate
+                    ##        step before wrapping (or call this wrapping step
+                    ##        something more generic) (but iterating this same
                     ##        list twice would be wasteful)
                     # Add explicit conversions by name to current parent
                     for conversion_name, conversion_extensions, conversion_datatypes in input.conversions:
-                        # If we are at building cmdline step, then converters 
+                        # If we are at building cmdline step, then converters
                         # have already executed
                         conv_ext, converted_dataset = input_values[ input.name ].find_conversion_destination( conversion_datatypes )
-                        # When dealing with optional inputs, we'll provide a 
+                        # When dealing with optional inputs, we'll provide a
                         # valid extension to be used for None converted dataset
                         if not conv_ext:
                             conv_ext = conversion_extensions[0]
-                        # input_values[ input.name ] is None when optional 
-                        # dataset, 'conversion' of optional dataset should 
+                        # input_values[ input.name ] is None when optional
+                        # dataset, 'conversion' of optional dataset should
                         # create wrapper around NoneDataset for converter output
-                        if input_values[ input.name ] and not converted_dataset: 
-                            # Input that converter is based from has a value, 
+                        if input_values[ input.name ] and not converted_dataset:
+                            # Input that converter is based from has a value,
                             # but converted dataset does not exist
-                            raise Exception( 'A path for explicit datatype conversion has not been found: %s --/--> %s' 
+                            raise Exception( 'A path for explicit datatype conversion has not been found: %s --/--> %s'
                                 % ( input_values[ input.name ].extension, conversion_extensions ) )
                         else:
-                            # Trick wrapper into using target conv ext (when 
+                            # Trick wrapper into using target conv ext (when
                             # None) without actually being a tool parameter
                             input_values[ conversion_name ] = \
                                 DatasetFilenameWrapper( converted_dataset,
                                                         datatypes_registry = self.app.datatypes_registry,
-                                                        tool = Bunch( conversion_name = Bunch( extensions = conv_ext ) ), 
+                                                        tool = Bunch( conversion_name = Bunch( extensions = conv_ext ) ),
                                                         name = conversion_name )
                     # Wrap actual input dataset
                     input_values[ input.name ] = \
@@ -2477,15 +2477,15 @@ class Tool( object ):
                                                 tool = self,
                                                 name = input.name )
                 elif isinstance( input, SelectToolParameter ):
-                    input_values[ input.name ] = SelectToolParameterWrapper( 
+                    input_values[ input.name ] = SelectToolParameterWrapper(
                         input, input_values[ input.name ], self.app, other_values = param_dict )
-                        
+
                 elif isinstance( input, LibraryDatasetToolParameter ):
-                    input_values[ input.name ] = LibraryDatasetValueWrapper( 
+                    input_values[ input.name ] = LibraryDatasetValueWrapper(
                         input, input_values[ input.name ], param_dict )
-                        
+
                 else:
-                    input_values[ input.name ] = InputValueWrapper( 
+                    input_values[ input.name ] = InputValueWrapper(
                         input, input_values[ input.name ], param_dict )
 
         # HACK: only wrap if check_values is not false, this deals with external
@@ -2494,15 +2494,15 @@ class Tool( object ):
         if self.check_values:
             wrap_values( self.inputs, param_dict )
 
-        ## FIXME: when self.check_values==True, input datasets are being wrapped 
-        ##        twice (above and below, creating 2 separate 
-        ##        DatasetFilenameWrapper objects - first is overwritten by 
-        ##        second), is this necessary? - if we get rid of this way to 
-        ##        access children, can we stop this redundancy, or is there 
+        ## FIXME: when self.check_values==True, input datasets are being wrapped
+        ##        twice (above and below, creating 2 separate
+        ##        DatasetFilenameWrapper objects - first is overwritten by
+        ##        second), is this necessary? - if we get rid of this way to
+        ##        access children, can we stop this redundancy, or is there
         ##        another reason for this?
-        ## - Only necessary when self.check_values is False (==external dataset 
-        ##   tool?: can this be abstracted out as part of being a datasouce tool?) 
-        ## - But we still want (ALWAYS) to wrap input datasets (this should be 
+        ## - Only necessary when self.check_values is False (==external dataset
+        ##   tool?: can this be abstracted out as part of being a datasouce tool?)
+        ## - But we still want (ALWAYS) to wrap input datasets (this should be
         ##   checked to prevent overhead of creating a new object?)
         # Additionally, datasets go in the param dict. We wrap them such that
         # if the bare variable name is used it returns the filename (for
@@ -2523,7 +2523,7 @@ class Tool( object ):
                 for child in data.children:
                     param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         for name, hda in output_datasets.items():
-            # Write outputs to the working directory (for security purposes) 
+            # Write outputs to the working directory (for security purposes)
             # if desired.
             if self.app.config.outputs_to_working_directory:
                 try:
@@ -2542,8 +2542,8 @@ class Tool( object ):
                 param_dict[ "_CHILD___%s___%s" % ( name, child.designation ) ] = DatasetFilenameWrapper( child )
         for out_name, output in self.outputs.iteritems():
             if out_name not in param_dict and output.filters:
-                # Assume the reason we lack this output is because a filter 
-                # failed to pass; for tool writing convienence, provide a 
+                # Assume the reason we lack this output is because a filter
+                # failed to pass; for tool writing convienence, provide a
                 # NoneDataset
                 param_dict[ out_name ] = NoneDataset( datatypes_registry = self.app.datatypes_registry, ext = output.format )
 
@@ -2557,20 +2557,20 @@ class Tool( object ):
 
             if table_name in self.app.tool_data_tables:
                 return self.app.tool_data_tables[ table_name ].get_entry( query_attr, query_val, return_attr )
-                
+
         param_dict['__get_data_table_entry__'] = get_data_table_entry
 
         # We add access to app here, this allows access to app.config, etc
         param_dict['__app__'] = RawObjectWrapper( self.app )
-        # More convienent access to app.config.new_file_path; we don't need to 
-        # wrap a string, but this method of generating additional datasets 
+        # More convienent access to app.config.new_file_path; we don't need to
+        # wrap a string, but this method of generating additional datasets
         # should be considered DEPRECATED
         # TODO: path munging for cluster/dataset server relocatability
         param_dict['__new_file_path__'] = os.path.abspath(self.app.config.new_file_path)
-        # The following points to location (xxx.loc) files which are pointers 
+        # The following points to location (xxx.loc) files which are pointers
         # to locally cached data
         param_dict['__tool_data_path__'] = param_dict['GALAXY_DATA_INDEX_DIR'] = self.app.config.tool_data_path
-        # For the upload tool, we need to know the root directory and the 
+        # For the upload tool, we need to know the root directory and the
         # datatypes conf path, so we can load the datatypes registry
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
         param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
@@ -2590,7 +2590,7 @@ class Tool( object ):
                 if type(value) != type([]):
                     value = [ value ]
                 for elem in value:
-                    f.write( '%s=%s\n' % (key, elem) ) 
+                    f.write( '%s=%s\n' % (key, elem) )
             f.close()
             param_dict['param_file'] = param_filename
             return param_filename
@@ -2625,7 +2625,7 @@ class Tool( object ):
         command_line = None
         if not self.command:
             return
-        try:                
+        try:
             # Substituting parameters into the command
             command_line = fill_template( self.command, context=param_dict )
             # Remove newlines from command line, and any leading/trailing white space
@@ -2671,7 +2671,7 @@ class Tool( object ):
         """
         if not self.redirect_url_params:
             return
-        redirect_url_params = None            
+        redirect_url_params = None
         # Substituting parameter values into the url params
         redirect_url_params = fill_template( self.redirect_url_params, context=param_dict )
         # Remove newlines
@@ -2679,21 +2679,21 @@ class Tool( object ):
         return redirect_url_params
     def parse_redirect_url( self, data, param_dict ):
         """
-        Parse the REDIRECT_URL tool param. Tools that send data to an external 
+        Parse the REDIRECT_URL tool param. Tools that send data to an external
         application via a redirect must include the following 3 tool params:
-        
+
         1) REDIRECT_URL - the url to which the data is being sent
-        
-        2) DATA_URL - the url to which the receiving application will send an 
+
+        2) DATA_URL - the url to which the receiving application will send an
            http post to retrieve the Galaxy data
-        
+
         3) GALAXY_URL - the url to which the external application may post
            data as a response
         """
         redirect_url = param_dict.get( 'REDIRECT_URL' )
         redirect_url_params = self.build_redirect_url_params( param_dict )
-        # Add the parameters to the redirect url.  We're splitting the param 
-        # string on '**^**' because the self.parse() method replaced white 
+        # Add the parameters to the redirect url.  We're splitting the param
+        # string on '**^**' because the self.parse() method replaced white
         # space with that separator.
         params = redirect_url_params.split( '**^**' )
         rup_dict = {}
@@ -2762,8 +2762,8 @@ class Tool( object ):
                             file_name = os.path.join(root, f),
                             create = True,
                             preserve_symlinks = True )
-                # Clean up after being handled by object store. 
-                # FIXME: If the object (e.g., S3) becomes async, this will 
+                # Clean up after being handled by object store.
+                # FIXME: If the object (e.g., S3) becomes async, this will
                 # cause issues so add it to the object store functionality?
                 if extra_dir is not None:
                     # there was an extra_files_path dir, attempt to remove it
@@ -2776,7 +2776,7 @@ class Tool( object ):
         Look for child dataset files, create HDA and attach to parent.
         """
         children = {}
-        # Loop through output file names, looking for generated children in 
+        # Loop through output file names, looking for generated children in
         # form of 'child_parentId_designation_visibility_extension'
         for name, outdata in output.items():
             filenames = []
@@ -2825,11 +2825,11 @@ class Tool( object ):
                 child_dataset.state = outdata.state
                 self.sa_session.add( child_dataset )
                 self.sa_session.flush()
-                # Add child to return dict 
+                # Add child to return dict
                 children[name][designation] = child_dataset
-                # Need to update all associated output hdas, i.e. history was 
+                # Need to update all associated output hdas, i.e. history was
                 # shared with job running
-                for dataset in outdata.dataset.history_associations: 
+                for dataset in outdata.dataset.history_associations:
                     if outdata == dataset: continue
                     # Create new child dataset
                     child_data = child_dataset.copy( parent_id = dataset.id )
@@ -2838,7 +2838,7 @@ class Tool( object ):
         return children
     def collect_primary_datasets( self, output, job_working_directory ):
         """
-        Find any additional datasets generated by a tool and attach (for 
+        Find any additional datasets generated by a tool and attach (for
         cases where number of outputs is not known in advance).
         """
         new_primary_datasets = {}
@@ -2851,7 +2851,7 @@ class Tool( object ):
         except Exception:
             # This should not be considered an error or warning condition, this file is optional
             pass
-        # Loop through output file names, looking for generated primary 
+        # Loop through output file names, looking for generated primary
         # datasets in form of:
         #     'primary_associatedWithDatasetID_designation_visibility_extension(_DBKEY)'
         primary_datasets = {}
@@ -2909,48 +2909,48 @@ class Tool( object ):
                     dataset_att_by_name = dict( ext='extension' )
                     for att_set in [ 'name', 'info', 'ext', 'dbkey' ]:
                         dataset_att_name = dataset_att_by_name.get( att_set, att_set )
-                        setattr( primary_data, dataset_att_name, new_primary_datasets_attributes.get( att_set, getattr( primary_data, dataset_att_name ) ) )           
+                        setattr( primary_data, dataset_att_name, new_primary_datasets_attributes.get( att_set, getattr( primary_data, dataset_att_name ) ) )
                 primary_data.set_meta()
                 primary_data.set_peek()
                 self.sa_session.add( primary_data )
                 self.sa_session.flush()
                 outdata.history.add_dataset( primary_data )
-                # Add dataset to return dict 
+                # Add dataset to return dict
                 primary_datasets[name][designation] = primary_data
-                # Need to update all associated output hdas, i.e. history was 
+                # Need to update all associated output hdas, i.e. history was
                 # shared with job running
-                for dataset in outdata.dataset.history_associations: 
+                for dataset in outdata.dataset.history_associations:
                     if outdata == dataset: continue
                     new_data = primary_data.copy()
                     dataset.history.add( new_data )
                     self.sa_session.add( new_data )
                     self.sa_session.flush()
         return primary_datasets
-        
+
     def _is_hidden_for_user( self, user ):
         if self.hidden or ( not user and self.require_login ):
             return True
         return False
-        
+
     def to_dict( self, trans, for_link=False, for_display=False ):
         """ Returns dict of tool. """
-        
+
         # Basic information
         tool_dict = { 'id': self.id, 'name': self.name,
                       'version': self.version, 'description': self.description }
-        
+
         if for_link:
             # Create tool link.
             if not self.tool_type.startswith( 'data_source' ):
                 link = url_for( '/tool_runner', tool_id=self.id )
             else:
                 link = url_for( self.action, **self.get_static_param_values( trans ) )
-            
+
             # Basic information
-            tool_dict.update( { 'type': 'tool', 'link': link, 
+            tool_dict.update( { 'type': 'tool', 'link': link,
                                 'min_width': self.uihints.get( 'minwidth', -1 ),
                                 'target': self.target } )
-                                
+
         if for_display:
             # Dictify inputs.
             inputs = []
@@ -2968,7 +2968,7 @@ class Tool( object ):
                             value = option[1]
 
                     # Pack input.
-                    param_dict.update( { 'type' : 'select', 
+                    param_dict.update( { 'type' : 'select',
                                          'html' : urllib.quote( input.get_html( trans ) ),
                                          'options': options,
                                          'value': value
@@ -2987,12 +2987,12 @@ class Tool( object ):
                     param_dict.update( { 'type' : '??', 'init_value' : input.value, \
                                          'html' : urllib.quote( input.get_html( trans ) ) } )
                 inputs.append( param_dict )
-                
+
             tool_dict[ 'inputs' ] = inputs
-                        
+
             # Dictify outputs.
             pass
-        
+
         return tool_dict
 
     def get_default_history_by_trans( self, trans, create=False ):
@@ -3001,7 +3001,7 @@ class Tool( object ):
 
 class OutputParameterJSONTool( Tool ):
     """
-    Alternate implementation of Tool that provides parameters and other values 
+    Alternate implementation of Tool that provides parameters and other values
     JSONified within the contents of an output dataset
     """
     tool_type = 'output_parameter_json'
@@ -3027,14 +3027,14 @@ class OutputParameterJSONTool( Tool ):
         return rval
     def exec_before_job( self, app, inp_data, out_data, param_dict=None ):
         if param_dict is None:
-            param_dict = {}        
+            param_dict = {}
         json_params = {}
         json_params[ 'param_dict' ] = self._prepare_json_param_dict( param_dict ) #it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
         json_params[ 'output_data' ] = []
         json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
         json_filename = None
         for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
-            #use wrapped dataset to access certain values 
+            #use wrapped dataset to access certain values
             wrapped_data = param_dict.get( out_name )
             #allow multiple files to be created
             file_name = str( wrapped_data )
@@ -3054,11 +3054,11 @@ class OutputParameterJSONTool( Tool ):
 
 class DataSourceTool( OutputParameterJSONTool ):
     """
-    Alternate implementation of Tool for data_source tools -- those that 
+    Alternate implementation of Tool for data_source tools -- those that
     allow the user to query and extract data from another web site.
     """
     tool_type = 'data_source'
-    
+
     def _build_GALAXY_URL_parameter( self ):
         return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id ) )
     def parse_inputs( self, root ):
@@ -3073,17 +3073,17 @@ class DataSourceTool( OutputParameterJSONTool ):
         info = param_dict.get( 'info' )
         data_type = param_dict.get( 'data_type' )
         name = param_dict.get( 'name' )
-        
+
         json_params = {}
         json_params[ 'param_dict' ] = self._prepare_json_param_dict( param_dict ) #it would probably be better to store the original incoming parameters here, instead of the Galaxy modified ones?
         json_params[ 'output_data' ] = []
         json_params[ 'job_config' ] = dict( GALAXY_DATATYPES_CONF_FILE=param_dict.get( 'GALAXY_DATATYPES_CONF_FILE' ), GALAXY_ROOT_DIR=param_dict.get( 'GALAXY_ROOT_DIR' ), TOOL_PROVIDED_JOB_METADATA_FILE=jobs.TOOL_PROVIDED_JOB_METADATA_FILE )
         json_filename = None
         for i, ( out_name, data ) in enumerate( out_data.iteritems() ):
-            #use wrapped dataset to access certain values 
+            #use wrapped dataset to access certain values
             wrapped_data = param_dict.get( out_name )
             #allow multiple files to be created
-            cur_base_param_name = 'GALAXY|%s|' % out_name 
+            cur_base_param_name = 'GALAXY|%s|' % out_name
             cur_name = param_dict.get( cur_base_param_name + 'name', name )
             cur_dbkey = param_dict.get( cur_base_param_name + 'dkey', dbkey )
             cur_info = param_dict.get( cur_base_param_name + 'info', info )
@@ -3113,7 +3113,7 @@ class DataSourceTool( OutputParameterJSONTool ):
 
 class AsyncDataSourceTool( DataSourceTool ):
     tool_type = 'data_source_async'
-    
+
     def _build_GALAXY_URL_parameter( self ):
         return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/async/%s" />' % self.id ) )
 
@@ -3130,23 +3130,23 @@ class SetMetadataTool( Tool ):
         for name, dataset in inp_data.iteritems():
             external_metadata = JobExternalOutputMetadataWrapper( job )
             if external_metadata.external_metadata_set_successfully( dataset, app.model.context ):
-                dataset.metadata.from_JSON_dict( external_metadata.get_output_filenames_by_dataset( dataset, app.model.context ).filename_out )    
+                dataset.metadata.from_JSON_dict( external_metadata.get_output_filenames_by_dataset( dataset, app.model.context ).filename_out )
             else:
                 dataset._state = model.Dataset.states.FAILED_METADATA
                 self.sa_session.add( dataset )
                 self.sa_session.flush()
                 return
-            # If setting external metadata has failed, how can we inform the 
-            # user? For now, we'll leave the default metadata and set the state 
+            # If setting external metadata has failed, how can we inform the
+            # user? For now, we'll leave the default metadata and set the state
             # back to its original.
             dataset.datatype.after_setting_metadata( dataset )
             if job and job.tool_id == '1.0.0':
                 dataset.state = param_dict.get( '__ORIGINAL_DATASET_STATE__' )
             else:
                 # Revert dataset.state to fall back to dataset.dataset.state
-                dataset._state = None 
+                dataset._state = None
             # Need to reset the peek, which may rely on metadata
-            dataset.set_peek() 
+            dataset.set_peek()
             self.sa_session.add( dataset )
             self.sa_session.flush()
     def job_failed( self, job_wrapper, message, exception = False ):
@@ -3156,10 +3156,10 @@ class SetMetadataTool( Tool ):
             for dataset_assoc in job.input_datasets:
                 inp_data[dataset_assoc.name] = dataset_assoc.dataset
             return self.exec_after_process( job_wrapper.app, inp_data, {}, job_wrapper.get_param_dict(), job = job )
-            
+
 class ExportHistoryTool( Tool ):
     tool_type = 'export_history'
-    
+
 class ImportHistoryTool( Tool ):
     tool_type = 'import_history'
 
@@ -3169,13 +3169,13 @@ class GenomeIndexTool( Tool ):
 class DataManagerTool( OutputParameterJSONTool ):
     tool_type = 'manage_data'
     default_tool_action = DataManagerToolAction
-    
+
     def __init__( self, config_file, root, app, guid=None, data_manager_id=None, **kwds ):
         self.data_manager_id = data_manager_id
         super( DataManagerTool, self ).__init__( config_file, root, app, guid=guid, **kwds )
         if self.data_manager_id is None:
             self.data_manager_id = self.id
-    
+
     def exec_after_process( self, app, inp_data, out_data, param_dict, job = None, **kwds ):
         #run original exec_after_process
         super( DataManagerTool, self ).exec_after_process( app, inp_data, out_data, param_dict, job = job, **kwds )
@@ -3186,7 +3186,7 @@ class DataManagerTool( OutputParameterJSONTool ):
         data_manager = self.app.data_managers.get_manager( data_manager_id, None )
         assert data_manager is not None, "Invalid data manager (%s) requested. It may have been removed before the job completed." % ( data_manager_id )
         data_manager.process_result( out_data )
-        
+
     def get_default_history_by_trans( self, trans, create=False ):
         def _create_data_manager_history( user ):
             history = trans.app.model.History( name='Data Manager History (automatically created)', user=user )
@@ -3222,7 +3222,7 @@ for tool_class in [ Tool, DataDestinationTool, SetMetadataTool, DataSourceTool, 
     tool_types[ tool_class.tool_type ] = tool_class
 
 # ---- Utility classes to be factored out -----------------------------------
-        
+
 class BadValue( object ):
     def __init__( self, value ):
         self.value = value
@@ -3239,7 +3239,7 @@ class ToolStdioRegex( object ):
         self.stdout_match = False
         self.stderr_match = False
         # TODO: Define a common class or constant for error level:
-        self.error_level = "fatal" 
+        self.error_level = "fatal"
         self.desc = ""
 
 class ToolStdioExitCode( object ):
@@ -3294,7 +3294,7 @@ class LibraryDatasetValueWrapper( ToolParameterValueWrapper ):
         return self.value[self.counter-1]
     def __getattr__( self, key ):
         return getattr( self.value, key )
-        
+
 class InputValueWrapper( ToolParameterValueWrapper ):
     """
     Wraps an input so that __str__ gives the "param_dict" representation.
@@ -3313,7 +3313,7 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
     Wraps a SelectTooParameter so that __str__ returns the selected value, but all other
     attributes are accessible.
     """
-    
+
     class SelectToolParameterFieldWrapper:
         """
         Provide access to any field by name or index for this particular value.
@@ -3328,7 +3328,7 @@ class SelectToolParameterWrapper( ToolParameterValueWrapper ):
             if name not in self._fields:
                 self._fields[ name ] = self._input.options.get_field_by_name_for_value( name, self._value, None, self._other_values )
             return self._input.separator.join( map( str, self._fields[ name ] ) )
-    
+
     def __init__( self, input, value, app, other_values={} ):
         self.input = input
         self.value = value
@@ -3345,11 +3345,11 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
     Wraps a dataset so that __str__ returns the filename, but all other
     attributes are accessible.
     """
-    
+
     class MetadataWrapper:
         """
-        Wraps a Metadata Collection to return MetadataParameters wrapped 
-        according to the metadata spec. Methods implemented to match behavior 
+        Wraps a Metadata Collection to return MetadataParameters wrapped
+        according to the metadata spec. Methods implemented to match behavior
         of a Metadata Collection.
         """
         def __init__( self, metadata ):
@@ -3360,9 +3360,9 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
                 if rval is None:
                     rval = self.metadata.spec[name].no_value
                 rval = self.metadata.spec[name].param.to_string( rval )
-                # Store this value, so we don't need to recalculate if needed 
+                # Store this value, so we don't need to recalculate if needed
                 # again
-                setattr( self, name, rval ) 
+                setattr( self, name, rval )
             return rval
         def __nonzero__( self ):
             return self.metadata.__nonzero__()
@@ -3375,7 +3375,7 @@ class DatasetFilenameWrapper( ToolParameterValueWrapper ):
                 return default
         def items( self ):
             return iter( [ ( k, self.get( k ) ) for k, v in self.metadata.items() ] )
-    
+
     def __init__( self, dataset, datatypes_registry = None, tool = None, name = None, false_path = None ):
         if not dataset:
             try:
@@ -3420,7 +3420,7 @@ def json_fix( val ):
         return val.encode( "utf8" )
     else:
         return val
-    
+
 def get_incoming_value( incoming, key, default ):
     if "__" + key + "__is_composite" in incoming:
         composite_keys = incoming["__" + key + "__keys"].split()
