@@ -36,6 +36,7 @@ var email = spaceghost.user.getRandomEmail(),
 if( spaceghost.fixtureData.testUser ){
     email = spaceghost.fixtureData.testUser.email;
     password = spaceghost.fixtureData.testUser.password;
+    spaceghost.info( 'Will use fixtureData.testUser: ' + email );
 }
 
 var galaxyCookieName = 'galaxysession',
@@ -171,6 +172,17 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
             this.test.assert( uploadInfo.hdaElement.attributes.id === hdaInfo.attributes.id,
                 "After logging in - found a matching hda by hda view id: " + hdaInfo.attributes.id );
         }
+    });
+});
+
+spaceghost.user.logout();
+spaceghost.thenOpen( spaceghost.baseUrl, function(){
+    this.test.comment( 'logging out should create a new, anonymous history' );
+
+    this.withFrame( this.selectors.frames.history, function(){
+        this.test.assertSelectorHasText( nameSelector, unnamedName, 'History name is ' + unnamedName );
+        this.test.assertSelectorHasText( emptyMsgSelector, emptyMsgStr,
+            'Message contains "' + emptyMsgStr + '"' );
     });
 });
 

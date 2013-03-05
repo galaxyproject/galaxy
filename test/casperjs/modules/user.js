@@ -68,7 +68,7 @@ User.prototype._submitRegistration = function _submitRegistration( email, passwo
  *  @param {String} email       the users email address
  *  @param {String} password    the users password
  */
-User.prototype._submitLogin = function logoutUser( email, password ){
+User.prototype._submitLogin = function _submitLogin( email, password ){
     var spaceghost = this.spaceghost,
         loginInfo = {
         //NOTE: keys are used as name selectors in the fill fn - must match the names of the inputs
@@ -166,7 +166,7 @@ User.prototype.loggedInAs = function loggedInAs(){
 /** Log out the current user
  *  @returns {SpaceGhost} the spaceghost instance (for chaining)
  */
-User.prototype.logout = function logoutUser(){
+User.prototype.logout = function logout(){
     var spaceghost = this.spaceghost;
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
         //TODO: handle already logged out
@@ -205,5 +205,3 @@ User.prototype.getRandomEmail = function getRandomEmail( username, domain ){
     domain = domain || 'test.test';
     return username + Date.now() + '@' + domain;
 };
-
-

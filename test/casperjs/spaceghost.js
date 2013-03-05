@@ -2,6 +2,8 @@
     Use in test command
 
     bug: assertStepsRaise raise errors (all the way) when used in 'casperjs test .'
+    normalize names of fns that use withFrame or then to 'then<action>'
+    make any callbacks optional (that can be)
 
     Does it run:
         casperjs usertests.js --url='http://localhost:8080'
@@ -174,6 +176,8 @@ SpaceGhost.prototype._saveScreenOnErrorHandler = function _saveScreenOnErrorHand
 /** Set up any SG specific options passed in on the cli.
  */
 SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
+    //this.debug( 'cli: ' + this.jsonStr( this.cli ) );
+
     //TODO: init these programmitically
     var CLI_OPTIONS = {
         returnJsonOnly  : { defaultsTo: false, flag: 'return-json',    help: 'send output to stderr, json to stdout' },
@@ -248,7 +252,7 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
 
     // get any fixture data passed in as JSON in args
     //  (NOTE: currently the 2nd arg (with the url being 1st?)
-    this.fixtureData = ( this.cli.has( 1 ) )?( JSON.parse( this.cli.get( 1 ) ) ):( {} );
+    this.fixtureData = ( this.cli.has( 0 ) )?( JSON.parse( this.cli.get( 0 ) ) ):( {} );
     this.debug( 'fixtureData:' + this.jsonStr( this.fixtureData ) );
 
 };
@@ -329,6 +333,14 @@ SpaceGhost.prototype._pageErrorHandler = function _pageErrorHandler( msg, backtr
     }
 };
 
+/** Event handler for step/casper timeouts - throws PageError
+ */
+SpaceGhost.prototype._timeoutHandler = function _timeoutHandler(){
+    console.debug( 'timeout' );
+    //msg = msg.replace( 'PageError: ', '' );
+    throw new PageError( 'Timeout occurred' );
+};
+
 /** Event handler for console messages from the page.
  */
 SpaceGhost.prototype._pageConsoleHandler = function _pageConsoleHandler(){
@@ -372,6 +384,9 @@ SpaceGhost.prototype._setUpEventHandlers = function _setUpEventHandlers(){
     // ........................ page errors
     this.on( 'page.error',  this._pageErrorHandler );
     //this.on( 'load.failed', this._loadFailedHandler );
+    this.on( 'timeout',  this._timeoutHandler );
+    this.on( 'step.timeout',  this._timeoutHandler );
+    this.on( 'waitFor.timeout',  this._timeoutHandler );
 
     // ........................ page info/debugging
     // these are already displayed at the casper info level
@@ -391,6 +406,7 @@ SpaceGhost.prototype._loadModules = function _loadModules(){
     this.user  = require( this.options.scriptDir + 'modules/user'  ).create( this );
     this.tools = require( this.options.scriptDir + 'modules/tools' ).create( this );
     this.historypanel = require( this.options.scriptDir + 'modules/historypanel' ).create( this );
+    this.historyoptions = require( this.options.scriptDir + 'modules/historyoptions' ).create( this );
 };
 
 // =================================================================== PAGE CONTROL
@@ -527,6 +543,32 @@ SpaceGhost.prototype.assertStepsRaise = function assertStepsRaise( msgContains, 
     this.tryStepsCatch( stepsFn, testTheError );
 };
 
+/** Assert that a function causes a navigation request with (at least partially) the given url.
+ *      NOTE: _should_ play well with steps (e.g. then, thenOpen, etc.)
+ *  @param {String} url                 some portion of the expected url for the nav request
+ *  @param {String} message             the assertion message
+ *  @param {Function} fnThatRequests    a function that causes a navigation request (e.g. click a link)
+ */
+SpaceGhost.prototype.assertNavigationRequested = function assertNavigationRequested( expectedUrl, message,
+                                                                                     fnThatRequests ){
+    var requested = false;
+    function captureNavReq( url, navigationType, navigationLocked, isMainFrame ){
+        this.debug( 'Checking navigation.requested for url: ' + expectedUrl );
+        // use || here to handle multiple requests, if any one url works -> test will pass
+        requested = requested || ( url.indexOf( expectedUrl ) !== -1 );
+    }
+    this.then( function(){
+        this.on( 'navigation.requested', captureNavReq );
+    });
+    this.then( function(){
+        fnThatRequests.call( this );
+    });
+    this.then( function(){
+        this.removeListener( 'navigation.requested', captureNavReq );
+        this.test.assert( requested, message );
+    });
+};
+
 // =================================================================== CONVENIENCE
 /** Wraps casper.getElementInfo in try, returning null if element not found instead of erroring.
  *  @param {String} selector    css or xpath selector for the element to find
@@ -603,6 +645,12 @@ SpaceGhost.prototype.out = function( msg, namespace ){
  */
 SpaceGhost.prototype.jsonStr = function( obj ){
     return JSON.stringify( obj, null, 2 );
+};
+
+/** output to debug the JSON of the selector (or null if not found)
+ */
+SpaceGhost.prototype.debugElement = function debugElement( selector ){
+    this.debug( this.jsonStr( this.elementInfoOrNull( selector ) ) );
 };
 
 /** Debug SG itself
@@ -720,6 +768,13 @@ SpaceGhost.prototype.loadJSONFile = function loadJSONFile( filepath ){
     return JSON.parse( require( 'fs' ).read( filepath ) );
 };
 
+SpaceGhost.prototype.writeJSONFile = function writeJSONFile( filepath, object, mode ){
+    mode = mode || 'w';
+    //precondition: filepath is relative to script dir
+    filepath = this.options.scriptDir + filepath;
+    return require( 'fs' ).write( filepath, this.jsonStr( object ), mode );
+};
+
 // =================================================================== EXPORTS
 /**
  */
@@ -733,4 +788,3 @@ exports.create = function create(options) {
     "use strict";
     return new SpaceGhost(options);
 };
-

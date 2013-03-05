@@ -9,7 +9,7 @@ Tests can be run in any of the following ways:
 * sh run_functional_tests.sh test/casperjs/test_runner
 * sh run_functional_tests.sh
 
-Note: that you can enable (lots) of debugging info using cli options:
+Note: that you can enable (lots of) debugging info using cli options:
 * casperjs usertests.js --url='http://localhost:8080' --verbose=true --logLevel=debug
 
 (see casperjs.org for more information)
@@ -94,11 +94,12 @@ class CasperJSTestCase( unittest.TestCase ):
             while process.poll() == None:
                 stderr_msg = process.stderr.readline()
                 stderr_msg = self.strip_escape_codes( stderr_msg.strip() )
-                log.debug( '(%s): %s', rel_script_path, stderr_msg )
-                # HACK: this is the last string displayed using the debug settings - afterwards it hangs
-                #   so: bail on this string
-                if stderr_msg.startswith( self.casper_done_str ):
-                    break
+                if stderr_msg:
+                    log.debug( '(%s): %s', rel_script_path, stderr_msg )
+                    # HACK: this is the last string displayed using the debug settings - afterwards it hangs
+                    #   so: bail on this string
+                    if stderr_msg.startswith( self.casper_done_str ):
+                        break
 
             # stdout is assumed to have the json test data/results
             ( stdout_output, stderr_output ) = process.communicate()
@@ -301,8 +302,12 @@ class Test_01_User( CasperJSTestCase ):
         """User registration tests: register new user, logout, attempt bad registrations.
         """
         # all keywords will be compiled into a single JSON obj and passed to the server
-        self.run_js_script( 'registration-tests.js',
-            testuser=test_user )
+        #self.run_js_script( 'registration-tests.js',
+        #    # this causes a time out in history-panel-tests: why?
+        #    # also: I can't seem to bump the timeout to an error (using a handler) - causes script to hang
+        #    #   removing for the sake of bbot
+        #    testUser=test_user )
+        self.run_js_script( 'registration-tests.js' )
 
         #TODO:?? could theoretically do db cleanup, checks here with SQLALX
         #TODO: have run_js_script return other persistant fixture data (uploaded files, etc.)
@@ -310,8 +315,7 @@ class Test_01_User( CasperJSTestCase ):
     def test_20_login( self ):
         """User log in tests.
         """
-        self.run_js_script( 'login-tests.js',
-            testuser=test_user )
+        self.run_js_script( 'login-tests.js' )
 
 
 class Test_02_Tools( CasperJSTestCase ):
@@ -321,8 +325,7 @@ class Test_02_Tools( CasperJSTestCase ):
     def test_10_upload( self ):
         """Tests uploading files
         """
-        self.run_js_script( 'upload-tests.js',
-            testuser=test_user )
+        self.run_js_script( 'upload-tests.js' )
 
 
 class Test_03_HistoryPanel( CasperJSTestCase ):
@@ -332,14 +335,12 @@ class Test_03_HistoryPanel( CasperJSTestCase ):
     def test_00_history_panel( self ):
         """Test history panel basics (controls, structure, refresh, history options menu, etc.).
         """
-        self.run_js_script( 'history-panel-tests.js',
-            testuser=test_user )
+        self.run_js_script( 'history-panel-tests.js' )
 
     def test_10_anonymous_histories( self ):
         """Test history panel basics with an anonymous user.
         """
-        self.run_js_script( 'anon-history-tests.js',
-            testuser=test_user )
+        self.run_js_script( 'anon-history-tests.js' )
 
 
 
