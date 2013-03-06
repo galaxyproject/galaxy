@@ -739,6 +739,10 @@ class Text( Data ):
         f.close()
     split = classmethod(split)
 
+class GenericAsn1( Text ):
+    """Class for generic ASN.1 text format"""
+    file_ext = 'asn1'
+
 class LineCount( Text ):
     """
     Dataset contains a single line with a single integer that denotes the
