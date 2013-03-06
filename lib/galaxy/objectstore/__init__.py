@@ -9,7 +9,6 @@ import sys
 import time
 import random
 import shutil
-import statvfs
 import logging
 import threading
 import subprocess
