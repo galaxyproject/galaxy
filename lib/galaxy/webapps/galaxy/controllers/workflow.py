@@ -1,28 +1,41 @@
-from galaxy.web.base.controller import *
-
 import pkg_resources
 pkg_resources.require( "simplejson" )
 pkg_resources.require( "SVGFig" )
-import simplejson
-import base64, httplib, urllib2, sgmllib, svgfig, urllib, urllib2
+
+import base64
+import httplib
 import math
-from galaxy.web.framework.helpers import time_ago, grids
-from galaxy.tools.parameters import *
-from galaxy.tools import DefaultToolState
-from galaxy.tools.parameters.grouping import Repeat, Conditional
-from galaxy.datatypes.data import Data
-from galaxy.util.odict import odict
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util.topsort import topsort, topsort_levels, CycleError
+import os
+import sgmllib
+import simplejson
+import svgfig
+import urllib2
+
+from sqlalchemy import and_
 from tool_shed.util import encoding_util
-from galaxy.workflow.modules import *
+
 from galaxy import model
 from galaxy import util
-from galaxy.model.mapping import desc
-from galaxy.model.orm import *
-from galaxy.model.item_attrs import *
-from galaxy.web.framework.helpers import to_unicode
+from galaxy import web
+from galaxy.datatypes.data import Data
 from galaxy.jobs.actions.post import ActionBox
+from galaxy.model.mapping import desc
+from galaxy.tools.parameters import RuntimeValue, visit_input_values
+from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
+from galaxy.tools.parameters.grouping import Conditional, Repeat
+from galaxy.util.json import from_json_string
+from galaxy.util.odict import odict
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.topsort import CycleError, topsort, topsort_levels
+from galaxy.web import error, url_for
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.web.framework import form
+from galaxy.web.framework.helpers import grids, time_ago
+from galaxy.web.framework.helpers import to_unicode
+from galaxy.workflow.modules import module_factory, ToolModule
+
+
 
 class StoredWorkflowListGrid( grids.Grid ):
     class StepsColumn( grids.GridColumn ):
@@ -1813,7 +1826,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Unpack and add post-job actions.
             post_job_actions = step_dict.get( 'post_job_actions', {} )
             for name, pja_dict in post_job_actions.items():
-                pja = PostJobAction( pja_dict[ 'action_type' ],
+                pja = model.PostJobAction( pja_dict[ 'action_type' ],
                                      step, pja_dict[ 'output_name' ],
                                      pja_dict[ 'action_arguments' ] )
         # Second pass to deal with connections between steps
