@@ -19,6 +19,9 @@ from galaxy import eggs
 eggs.require( "simplejson" )
 eggs.require( "MarkupSafe" ) #MarkupSafe must load before mako
 eggs.require( "Mako" )
+eggs.require( "elementtree" )
+eggs.require( "Paste" )
+eggs.require( "SQLAlchemy >= 0.4" )
 
 import simplejson
 from cgi import FieldStorage
