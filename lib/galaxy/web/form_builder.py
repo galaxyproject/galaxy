@@ -396,9 +396,9 @@ class DrillDownField( BaseField ):
     >>> print t.get_html()
     <div class="form-row drilldown-container" id="drilldown--666f6f">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
     <input type="checkbox" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="foo" value="option1" >Option 1
     </div>
@@ -406,9 +406,9 @@ class DrillDownField( BaseField ):
     <input type="checkbox" name="foo" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
     <input type="checkbox" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="foo" value="option3" >Option 3
     </div>
@@ -427,9 +427,9 @@ class DrillDownField( BaseField ):
     >>> print t.get_html()
     <div class="form-row drilldown-container" id="drilldown--666f6f">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-click"></span>
     <input type="radio" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="foo" value="option1" >Option 1
     </div>
@@ -437,9 +437,9 @@ class DrillDownField( BaseField ):
     <input type="radio" name="foo" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--666f6f-68656164696e6731-68656164696e6731-click"></span>
     <input type="radio" name="foo" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--666f6f-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="foo" value="option3" >Option 3
     </div>
@@ -501,10 +501,10 @@ class DrillDownField( BaseField ):
                 html.append( '<div class="form-row-input">')
                 drilldown_group_id = "%s-%s" % ( base_id, hexlify( option['value'] ) )
                 if option['options']:
-                    html.append( '<span class="%s" id="%s-click"></span>' % ( span_class, drilldown_group_id ) )
+                    html.append( '<div><span class="%s" id="%s-click"></span>' % ( span_class, drilldown_group_id ) )
                 html.append( '<input type="%s" name="%s%s" value="%s" %s>%s' % ( self.display, prefix, self.name, escaped_option_value, selected, option['name']) )
                 if option['options']:
-                    html.append( '<div class="form-row" id="%s-container" style="float: left; margin-left: 1em;">' % ( drilldown_group_id )  )
+                    html.append( '</div><div class="form-row" id="%s-container" style="float: left; margin-left: 1em;">' % ( drilldown_group_id )  )
                     recurse_options( html, option['options'], drilldown_group_id, expanded_options )
                     html.append( '</div>')
                 html.append( '</div>')
