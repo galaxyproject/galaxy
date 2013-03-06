@@ -1072,9 +1072,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     >>> print p.get_html()
     <div class="form-row drilldown-container" id="drilldown--736f6d655f6e616d65">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
     <input type="checkbox" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="some_name" value="option1" >Option 1
     </div>
@@ -1082,9 +1082,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     <input type="checkbox" name="some_name" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
     <input type="checkbox" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="some_name" value="option3" >Option 3
     </div>
@@ -1118,9 +1118,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     >>> print p.get_html()
     <div class="form-row drilldown-container" id="drilldown--736f6d655f6e616d65">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
     <input type="radio" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="some_name" value="option1" >Option 1
     </div>
@@ -1128,9 +1128,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     <input type="radio" name="some_name" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
     <input type="radio" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="some_name" value="option3" >Option 3
     </div>
