@@ -319,12 +319,13 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      */
     //TODO: curr. pre-formatted into table on the server side - may not be ideal/flexible
     _render_peek : function(){
-        if( !this.model.get( 'peek' ) ){ return null; }
+        var peek = this.model.get( 'peek' );
+        if( !peek ){ return null; }
         return $( '<div/>' ).append(
             $( '<pre/>' )
                 .attr( 'id', 'peek' + this.model.get( 'id' ) )
                 .addClass( 'peek' )
-                .append( this.model.get( 'peek' ) )
+                .append( peek )
         );
     },
     

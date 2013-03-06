@@ -221,7 +221,8 @@ def get_hda_dict( trans, history, hda, for_editing ):
     hda_dict[ 'display_types' ] = get_old_display_applications( trans, hda )
 
     hda_dict[ 'visualizations' ] = hda.get_visualizations()
-    hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
+    if hda.peek and hda.peek != 'no peek':
+        hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
 
     if hda.creating_job and hda.creating_job.tool_id:
         tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
