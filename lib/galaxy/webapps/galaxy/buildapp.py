@@ -153,6 +153,8 @@ def app_factory( global_conf, **kwargs ):
     # Defines a named route "import_workflow".
     webapp.api_mapper.connect("import_workflow", "/api/workflows/upload", controller="workflows", action="import_new_workflow", conditions=dict(method=["POST"]))
     webapp.api_mapper.connect("workflow_dict", '/api/workflows/{workflow_id}/download', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
+    # Preserve the following download route for now for dependent applications  -- deprecate at some point
+    webapp.api_mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
 
     # Connect logger from app
     if app.trace_logger:
