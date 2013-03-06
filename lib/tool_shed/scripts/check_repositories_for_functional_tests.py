@@ -12,9 +12,9 @@ log.addHandler( logging.StreamHandler( sys.stdout ) )
 
 from galaxy import eggs
 import pkg_resources  
-pkg_resources.require( "SQLAlchemy >= 0.4" )
-pkg_resources.require( 'mercurial' )
-from mercurial import hg, ui, commands
+eggs.require( "SQLAlchemy >= 0.4" )
+eggs.require( 'mercurial' )
+from mercurial import hg, ui, commands, __version__
 
 import time, ConfigParser, shutil
 from datetime import datetime, timedelta
@@ -24,12 +24,13 @@ from optparse import OptionParser
 import galaxy.webapps.tool_shed.config as tool_shed_config
 import galaxy.webapps.tool_shed.model.mapping
 import sqlalchemy as sa
-from galaxy.model.orm import and_, not_, distinct
+from galaxy.model.orm import and_, not_
 from galaxy.util.json import from_json_string, to_json_string
 from galaxy.web import url_for
+from galaxy.tools import parameters
 from tool_shed.util.shed_util_common import clone_repository, get_configured_ui
 
-from base.util import get_test_environment
+from base.util import get_test_environment, get_database_version, get_repository_current_revision
 
 assert sys.version_info[:2] >= ( 2, 4 )
 
@@ -50,6 +51,7 @@ def main():
     now = strftime( "%Y-%m-%d %H:%M:%S" )
     print "#############################################################################"
     print "# %s - Checking repositories for tools with functional tests." % now
+    print "# This tool shed is configured to listen on %s:%s." % ( config_parser.get( 'server:main', 'host' ), config_parser.get( 'server:main', 'port' ) )
     app = FlagRepositoriesApplication( config )
     
     if options.info_only:
@@ -113,7 +115,7 @@ def check_and_flag_repositories( app, info_only=False, verbose=False ):
     }
     '''
     start = time.time()
-    repository_ids_to_check = []
+    checked_repository_ids = []
     tool_count = 0
     has_tests = 0
     no_tests = 0
@@ -121,25 +123,31 @@ def check_and_flag_repositories( app, info_only=False, verbose=False ):
     # Get the list of metadata records to check for functional tests and test data. Limit this to records that have not been flagged do_not_test
     # or tools_functionally_correct. Also filter out changeset revisions that are not downloadable, because it's redundant to test a revision that
     # a user can't install.
+    # Initialize the repository_status dict with the test environment, but leave the test_errors empty. 
+    repository_status = {}
+    repository_status[ 'test_environment' ] = get_test_environment()
+    repository_status[ 'test_environment' ][ 'tool_shed_database_version' ] = get_database_version( app )
+    repository_status[ 'test_environment' ][ 'tool_shed_mercurial_version' ] = __version__.version
+    repository_status[ 'test_environment' ][ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
+    repository_status[ 'test_errors' ] = []
     metadata_records_to_check = app.sa_session.query( app.model.RepositoryMetadata ) \
                                               .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
                                                              app.model.RepositoryMetadata.table.c.do_not_test == False,
                                                              app.model.RepositoryMetadata.table.c.tools_functionally_correct == False ) ) \
                                               .all()
     for metadata_record in metadata_records_to_check:
+        repository_status[ 'test_errors' ] = []
         name = metadata_record.repository.name
         owner = metadata_record.repository.user.username
         changeset_revision = str( metadata_record.changeset_revision )
-        repository_status = {}
+        if metadata_record.repository.id not in checked_repository_ids:
+            checked_repository_ids.append( metadata_record.repository.id )
         # If this changeset revision has no tools, we don't need to do anything here, the install and test script has a filter for returning
         # only repositories that contain tools.
         if 'tools' not in metadata_record.metadata:
             no_tools += 1
             continue
         else:
-            # Initialize the repository_status dict with the test environment, but leave the test_errors empty. 
-            repository_status[ 'test_environment' ] = get_test_environment()
-            repository_status[ 'test_errors' ] = []
             # Loop through all the tools in this metadata record, checking each one for defined functional tests.
             for tool_metadata in metadata_record.metadata[ 'tools' ]:
                 tool_count += 1
@@ -153,12 +161,9 @@ def check_and_flag_repositories( app, info_only=False, verbose=False ):
                 if 'tests' not in tool_metadata or not tool_metadata[ 'tests' ]:
                     if verbose:
                         print '# No functional tests defined for %s.' % tool_id
-                    if 'test_errors' not in repository_status:
-                        repository_status[ 'test_errors' ] = []
-                    test_id = 'Functional tests for %s' % tool_id
                     # The repository_metadata.tool_test_errors attribute should always have the following structure:
                     # {
-                    #     "environment":
+                    #     "test_environment":
                     #         {
                     #              "python_version": "2.7.2",
                     #              "architecture": "x86_64",
@@ -168,15 +173,16 @@ def check_and_flag_repositories( app, info_only=False, verbose=False ):
                     #         [
                     #             {
                     #                 "test_id": "Something that will easily identify what the problem is",
-                    #                 "stdout": "The output of the test, or a more detailed description of what was tested and why it failed."
+                    #                 "stderr": "The output of the test, or a more detailed description of what was tested and why it failed."
                     #             },
                     #         ]
                     # }
-                    # Optionally, "stderr" and "traceback" may be included in a test_errors dict, if they are relevant.
-                    test_errors = dict( test_id=test_id, 
-                                        stdout='No functional tests defined in changeset revision %s of repository %s owned by %s.' % \
-                                            ( changeset_revision, name, owner ) )
+                    # Optionally, "stdout" and "traceback" may be included in a test_errors dict, if they are relevant.
+                    test_id = 'Functional tests for %s' % tool_id
+                    test_errors = dict( stderr='No functional tests defined for tool %s in changeset revision %s of repository %s owned by %s.' % \
+                                            ( tool_id, changeset_revision, name, owner ) )
                     repository_status[ 'test_errors' ].append( test_errors )
+                    repository_status[ 'status' ] = 'failed'
                     no_tests += 1
                 else:
                     has_tests += 1
@@ -201,14 +207,12 @@ def check_and_flag_repositories( app, info_only=False, verbose=False ):
                     if 'test-data' in dirs:
                         has_test_data = True
                         break
-            # Remove the cloned path.
+            # Remove the cloned repository path.
             if os.path.exists( work_dir ):
                 shutil.rmtree( work_dir )
             if not has_test_data:
                 if verbose:
                     print '# Test data missing in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
-                repository_status[ 'test_environment' ] = get_test_environment()
-                test_id = 'Find functional test data for %s' % metadata_record.repository.name
                 # The repository_metadata.tool_test_errors attribute should always have the following structure:
                 # {
                 #     "test_environment":
@@ -221,28 +225,40 @@ def check_and_flag_repositories( app, info_only=False, verbose=False ):
                 #         [
                 #             {
                 #                 "test_id": "Something that will easily identify what the problem is",
-                #                 "stdout": "The output of the test, or a more detailed description of what was tested and why it failed."
+                #                 "stderr": "The output of the test, or a more detailed description of what was tested and why it failed."
                 #             },
                 #         ]
                 # }
-                # Optionally, "stderr" and "traceback" may be included in a test_errors dict, if they are relevant.
-                test_errors = dict( test_id=test_id, 
-                                    stdout='No test data found for changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
+                # Optionally, "stdout" and "traceback" may be included in a test_errors dict, if they are relevant.
+                test_id = 'Find functional test data for %s' % metadata_record.repository.name
+                test_errors = dict( stderr='No test data found for changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner ) )
                 repository_status[ 'test_errors' ].append( test_errors )
+                repository_status[ 'status' ] = 'failed'
             else:
                 if verbose:
                     print '# Test data found in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
             if not info_only:
+                # If repository_status[ 'test_errors' ] is empty, no issues were found, and we can just update time_last_tested with the platform
+                # on which this script was run.
                 if repository_status[ 'test_errors' ]:
-                    metadata_record.do_not_test = True
+                    # If functional test definitions or test data are missing, set do_not_test = True if and only if:
+                    # a) There are multiple downloadable revisions, and the revision being tested is not the most recent downloadable revision. In this case,
+                    #    the revision will never be updated with correct data, and re-testing it would be redundant.
+                    # b) There are one or more downloadable revisions, and the revision being tested is the most recent downloadable revision. In this case, if 
+                    #    the repository is updated with test data or functional tests, the downloadable changeset revision that was tested will be replaced
+                    #    with the new changeset revision, which will be automatically tested.
+                    if should_set_do_not_test_flag( app, metadata_record.repository, changeset_revision ):
+                        metadata_record.do_not_test = True
                     metadata_record.tools_functionally_correct = False
-                metadata_record.tool_test_errors = to_json_string( repository_status )
+                else:
+                    repository_status[ 'status' ] = 'passed'
+                metadata_record.tool_test_errors = repository_status
                 metadata_record.time_last_tested = datetime.utcnow()
                 app.sa_session.add( metadata_record )
                 app.sa_session.flush()
     stop = time.time()
-    print '# Checked %d tools in %d changeset revisions.' % ( tool_count, len( metadata_records_to_check ) )
-    print '# Found %d changeset revisions without tools.' % no_tools
+    print '# Checked %d repositories with %d tools in %d changeset revisions.' % ( len( checked_repository_ids ), tool_count, len( metadata_records_to_check ) )
+    print '# Skipped %d changeset revisions without tools.' % no_tools
     print '# Found %d tools without functional tests.' % no_tests
     print '# Found %d tools with functional tests.' % has_tests
     if info_only:
@@ -250,6 +266,52 @@ def check_and_flag_repositories( app, info_only=False, verbose=False ):
     print "# Elapsed time: ", stop - start
     print "#############################################################################" 
 
+def get_repo_changelog_tuples( repo_path ):
+    repo = hg.repository( ui.ui(), repo_path )
+    changelog_tuples = []
+    for changeset in repo.changelog:
+        ctx = repo.changectx( changeset )
+        changelog_tuples.append( ( ctx.rev(), str( ctx ) ) )
+    return changelog_tuples
+
+def is_most_recent_downloadable_revision( app, repository, changeset_revision, downloadable_revisions ):
+    # Get a list of ( numeric revision, changeset hash ) tuples from the changelog.
+    changelog = get_repo_changelog_tuples( repository.repo_path( app ) )
+    latest_downloadable_revision = None
+    for ctx_rev, changeset_hash in changelog:
+        if changeset_hash in downloadable_revisions:
+            # The last changeset hash in the changelog that is present in the list of downloadable revisions will always be the most
+            # recent downloadable revision, since the changelog tuples are ordered from earliest to most recent.
+            latest_downloadable_revision = changeset_hash
+    if latest_downloadable_revision == changeset_revision:
+        return True
+    return False
+
+def should_set_do_not_test_flag( app, repository, changeset_revision ):
+    '''
+    Returns True if:
+    a) There are multiple downloadable revisions, and the provided changeset revision is not the most recent downloadable revision. In this case,
+       the revision will never be updated with correct data, and re-testing it would be redundant.
+    b) There are one or more downloadable revisions, and the provided changeset revision is the most recent downloadable revision. In this case, if 
+       the repository is updated with test data or functional tests, the downloadable changeset revision that was tested will be replaced
+       with the new changeset revision, which will be automatically tested.
+    '''
+    metadata_records = app.sa_session.query( app.model.RepositoryMetadata ) \
+                                     .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
+                                                    app.model.RepositoryMetadata.table.c.repository_id == repository.id ) ) \
+                                     .all()
+    downloadable_revisions = [ metadata_record.changeset_revision for metadata_record in metadata_records ]
+    is_latest_revision = is_most_recent_downloadable_revision( app, repository, changeset_revision, downloadable_revisions )
+    if len( downloadable_revisions ) == 1:
+        return True
+    elif len( downloadable_revisions ) > 1 and is_latest_revision:
+        return True
+    elif len( downloadable_revisions ) > 1 and not is_latest_revision:
+        return True
+    else:
+        return False
+    
+    
 class FlagRepositoriesApplication( object ):
     """Encapsulates the state of a Universe application"""
     def __init__( self, config ):
