@@ -161,7 +161,7 @@ HistoryPanel.prototype.deleteHda = function deleteHda( hdaSelector, whenDeletedF
         //precondition: historyItemWrapper's (hda dom elements) should have an id
         // we could use the selector directly, but better if it errors before an attempted delete
         var hdaId = spaceghost.getElementInfo( hdaSelector ).attributes.id;
-        spaceghost.debug( 'hda id: ' + spaceghost.jsonStr( hdaId ) );
+        spaceghost.debug( 'hda id: ' + hdaId );
 
         // get the delete icon and click it
         //TODO: handle disabled delete icon?
