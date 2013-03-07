@@ -73,8 +73,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                             # don't fail entire list if hda err's, record and move on
                             # (making sure http recvr knows it's err'd)
                             trans.response.status = 500
-                            log.error( "Error in history API at listing contents " +
-                                "with history %s, hda %s: %s", history_id, encoded_hda_id, str( exc ) )
+                            log.error( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
+                                history_id, encoded_hda_id, type( exc ), str( exc ) )
                             rval.append( self._exception_as_hda_dict( trans, encoded_hda_id, exc ) )
 
             else:
