@@ -40,12 +40,12 @@
                         select.val($('option:last', select).val());
                     }
                     select.closest('.form-row').children('label').children('span.mode-icon').hide();
-                    select.removeAttr('multiple').select2().removeAttr('size');
+                    select.removeAttr('multiple').refresh_select2().removeAttr('size');
                     placeholder = 'type to filter';
                 } else {
                     $('.multiinput', select.closest('.form-row')).removeClass('disabled');
                     select.closest('.form-row').children('label').children('span.mode-icon').show();
-                    select.attr('multiple', 'multiple').select2().attr('size', 8);
+                    select.attr('multiple', 'multiple').refresh_select2().attr('size', 8);
                     placeholder = 'type to filter, [enter] to select all';
                 }
                 $('input.multiinput-filter', select.parent()).attr(
@@ -79,7 +79,7 @@
             $("#new_history_cbx").click(function(){
                 $("#new_history_input").toggle(this.checked);
             });
-            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').select2().each(function(i, s) {
+            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').refresh_select2().each(function(i, s) {
                 var select = $(s);
                 var new_width = Math.max(200, select.width()) + 20;
                 // Find the label for this element.
