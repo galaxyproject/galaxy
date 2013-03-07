@@ -731,7 +731,8 @@ class S3ObjectStore(ObjectStore):
         if self.exists(obj, **kwargs):
             return bool(self.size(obj, **kwargs) > 0)
         else:
-            raise ObjectNotFound()
+            raise ObjectNotFound( 'objectstore.empty, object does not exist: %s, kwargs: %s'
+                %( str( obj ), str( kwargs ) ) )
 
     def size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
@@ -816,7 +817,8 @@ class S3ObjectStore(ObjectStore):
         # even if it does not exist.
         # if dir_only:
         #     return cache_path
-        raise ObjectNotFound()
+        raise ObjectNotFound( 'objectstore.get_filename, no cache_path: %s, kwargs: %s'
+            %( str( obj ), str( kwargs ) ) )
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
     def update_from_file(self, obj, file_name=None, create=False, **kwargs):
@@ -841,7 +843,8 @@ class S3ObjectStore(ObjectStore):
             # Update the file on S3
             self._push_to_os(rel_path, source_file)
         else:
-            raise ObjectNotFound()
+            raise ObjectNotFound( 'objectstore.update_from_file, object does not exist: %s, kwargs: %s'
+                %( str( obj ), str( kwargs ) ) )
 
     def get_object_url(self, obj, **kwargs):
         if self.exists(obj, **kwargs):
@@ -947,7 +950,8 @@ class DistributedObjectStore(ObjectStore):
                 try:
                     obj.object_store_id = random.choice(self.weighted_backend_ids)
                 except IndexError:
-                    raise ObjectInvalid()
+                    raise ObjectInvalid( 'objectstore.create, could not generate obj.object_store_id: %s, kwargs: %s'
+                        %( str( obj ), str( kwargs ) ) )
                 object_session( obj ).add( obj )
                 object_session( obj ).flush()
                 log.debug("Selected backend '%s' for creation of %s %s" % (obj.object_store_id, obj.__class__.__name__, obj.id))
@@ -984,7 +988,8 @@ class DistributedObjectStore(ObjectStore):
         if object_store_id is not None:
             return self.backends[object_store_id].__getattribute__(method)(obj, **kwargs)
         if default_is_exception:
-            raise default()
+            raise default( 'objectstore, __call_method failed: %s on %s, kwargs: %s'
+                %( method, str( obj ), str( kwargs ) ) )
         else:
             return default
 
@@ -1073,4 +1078,3 @@ def get_OS_connection(config):
                             calling_format=calling_format,
                             path=config.os_conn_path)
         return s3_conn
-
