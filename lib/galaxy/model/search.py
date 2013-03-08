@@ -1,5 +1,27 @@
 """
-Classes for implmenting search methods for various data models
+The GQL (Galaxy Query Language) search engine parsers a simple 'SQL-Like' query 
+syntax to obtain items from the Galaxy installations.
+Rather then allow/force the user to do queries on the Galaxy schema, it uses 
+a small set of 'Views' which are simple table representations of complex galaxy ideas.
+So while a history and it's tags may exist in seperate tables in the real schema, in 
+GQL they exist in the same view
+
+Example Queries:
+
+select name, id, file_size from hda
+
+select name from hda
+
+select name, model_class from ldda
+
+select * from history
+
+select * from workflow
+
+select id, name from history where name='Unnamed history'
+
+select * from history where name='Unnamed history'
+
 """
 
 import logging
@@ -15,41 +37,48 @@ from sqlalchemy import or_, and_
 log = logging.getLogger( __name__ )
 
 
-"""
-
-The search model is a simplified view of the SQL schema. A search domain 
-typicaly covers a base data table, but it's fields can be constructs of multiple 
-tables that are joined togeather. For example, a History dataset may have tags associated with it.
-The Search class simplifies the joining process between the history dataset and the tags table, 
-and presents the 'tag' field as a single concept that can be filtered against.
-
-
-"""
-
-
-class SearchField(object):
-
-    def __init__(self, name):
+class ViewField(object):
+    """
+    A ViewField defines a field in a view that filter operations can be applied to
+    These filter operations are either handled with standard sqlalchemy filter calls,
+    or passed to specialized handlers (such as when a table join would be needed to 
+    do the filtering)
+    """
+    def __init__(self, name, sqlalchemy_field=None, handler=None):
         self.name = name
-        self.other = None
-        self.mode = None
+        self.sqlalchemy_field = sqlalchemy_field
+        self.handler = handler
+        
 
-    def __eq__(self, other ):
-        self.other = other
-        self.mode = "=="
-        return self
+class ViewQueryBaseClass(object):
+    FIELDS = {}
+    VIEW_NAME = "undefined"
 
-    def like(self, other):
-        self.other = other
-        self.mode = "like"
-        return self
-
-class QueryBaseClass(object):
-    OUTPUT_COLUMNS = []
-
-    def __init__(self, base_query):
-        self.query = base_query
+    def __init__(self):
+        self.query = None
         self.do_query = False
+
+    def filter(self, left, operator, right):
+        if left in self.FIELDS:
+            self.do_query = True
+            field = self.FIELDS[left]
+            if field.sqlalchemy_field is not None:
+                if operator == "=":
+                    self.query = self.query.filter( field.sqlalchemy_field == right )
+                elif operator == "like":
+                    self.query = self.query.filter( field.sqlalchemy_field.like(right) )
+                else:
+                    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+            elif field.handler is not None:
+                field.handler(self, left, operator, right)
+            else:
+                raise GalaxyParseError("Unable to filter on field: %s" % (left))
+
+        else:
+            raise GalaxyParseError("Unknown field: %s" % (left))
+
+    def search(trans):
+        raise GalaxyParseError("Unable to search view: %s" % (self.VIEW_NAME))
 
     def get_results(self, force_query=False):
         if self.query is not None and (force_query or self.do_query):
@@ -57,90 +86,51 @@ class QueryBaseClass(object):
                 yield row
 
 
-class ViewBaseClass(object):
-
-    def get_field(self, name):
-        for f_obj in self.FIELDS:
-            if isinstance(f_obj, SearchField):
-                if f_obj.name == name:
-                    return f_obj
-            else:
-                print "Not SearchField", f_obj
-        return None
-
-    @staticmethod
-    def search(trans):
-        return None
-
-
 ##################
 #Library Searching
 ##################
 
-class LibraryDatasetQuery(QueryBaseClass):
-    DOMAIN = "library_dataset"
-    OUTPUT_COLUMNS = [ 'extended_metadata', 'name', 'id' ]
-    def filter(self, left, operator, right):
-        if left == 'extended_metadata':
-            self.do_query = True
-            self.query = self.query.join( ExtendedMetadata )
-            ex_meta = arg.other
-            for f in ex_meta:
-                alias = aliased( ExtendedMetadataIndex )
-                self.query = self.query.filter( 
-                    and_( 
-                        ExtendedMetadata.id == alias.extended_metadata_id, 
-                        alias.path == "/" + f,
-                        alias.value == str(ex_meta[f]) 
-                    )
-                )
-        if arg.name == "name":
-            self.do_query = True
-            if arg.mode == "==":
-                self.query = self.query.filter( LibraryDatasetDatasetAssociation.name == arg.other )
-            if arg.mode == "like":
-                self.query = self.query.filter( LibraryDatasetDatasetAssociation.name.like(arg.other) )
+def library_extended_metadata_filter(view, left, operator, right):
+    view.do_query = True
+    view.query = view.query.join( ExtendedMetadata )
+    ex_meta = arg.other
+    for f in ex_meta:
+        alias = aliased( ExtendedMetadataIndex )
+        view.query = view.query.filter( 
+            and_( 
+                ExtendedMetadata.id == alias.extended_metadata_id, 
+                alias.path == "/" + f,
+                alias.value == str(ex_meta[f]) 
+            )
+        )
 
 
+class LibraryDatasetView(ViewQueryBaseClass):
+    VIEW_NAME = "library_dataset"
+    FIELDS = { 
+        'extended_metadata' : ViewField('extended_metadata', handler=library_extended_metadata_filter), 
+        'name' : ViewField('name', sqlalchemy_field=LibraryDatasetDatasetAssociation.name ),
+        'id' : ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id) 
+    }
 
-class LibraryDatasetView(ViewBaseClass):
-    FIELDS = [
-        SearchField("name"),
-        SearchField("id"),
-        SearchField("extended_metadata")
-    ]
-
-    @staticmethod
-    def search(trans):
-        query = trans.sa_session.query( LibraryDatasetDatasetAssociation )
-        return LibraryDatasetQuery(query)
+    def search(self, trans):
+        self.query = trans.sa_session.query( LibraryDatasetDatasetAssociation )
+       
 
 ##################
 #History Dataset Searching
 ##################
 
 
-class HistoryDatasetQuery(QueryBaseClass):
+class HistoryDatasetView(ViewQueryBaseClass):
     DOMAIN = "history_dataset"
-    OUTPUT_COLUMNS = ['name', 'id']
+    FIELDS = {
+        'name' : ViewField('name', sqlalchemy_field=HistoryDatasetAssociation.name),
+        'id' : ViewField('id',sqlalchemy_field=HistoryDatasetAssociation.id )
+    }
 
-    def filter(self, left, operator, right):
-        if arg.name == 'name':
-            if arg.mode == "==":
-                self.do_query = True
-                self.query= self.query.filter( HistoryDatasetAssociation.name == arg.other )
-            if arg.mode == "like":
-                self.do_query = True
-                self.query= self.query.filter( HistoryDatasetAssociation.name.like(arg.other) )
-
-class HistoryDatasetView(ViewBaseClass):
-    FIELDS = [
-        SearchField("name")
-    ]
-    @staticmethod
-    def search(trans):
-        query = trans.sa_session.query( HistoryDatasetAssociation )
-        return HistoryDatasetQuery(query)
+    def search(self, trans):
+        self.query = trans.sa_session.query( HistoryDatasetAssociation )
 
 
 ##################
@@ -148,58 +138,47 @@ class HistoryDatasetView(ViewBaseClass):
 ##################
 
 
-class HistoryQuery(QueryBaseClass):
-    DOMAIN = "history"
-    OUTPUT_COLUMNS = ['name', 'id']
+def history_handle_tag(view, left, operator, right):
+    view.do_query = True
+    view.query = view.query.filter(
+       History.id == HistoryTagAssociation.history_id
+    )
+    tmp = arg.other.split(":")
+    view.query = view.query.filter( HistoryTagAssociation.user_tname == tmp[0] )
+    if len(tmp) > 1:
+        view.query = view.query.filter( HistoryTagAssociation.user_value == tmp[1] )
 
-    def filter(self, left, operator, right):
-        if left == 'name':
-            if operator == "==":
-                self.do_query = True
-                self.query = self.query.filter( History.name == right )
-            if operator == "like":
-                self.do_query = True
-                self.query = self.query.filter( History.name.like(right) )
 
-        if left == 'tag':
-            self.do_query = True
-            self.query = self.query.filter(
-               History.id == HistoryTagAssociation.history_id
+def history_handle_annotation(view, left, operator, right):
+    if operator == "==":
+        view.do_query = True
+        view.query = view.query.filter( and_(
+            HistoryAnnotationAssociation.history_id == History.id,
+            HistoryAnnotationAssociation.annotation == right
             )
-            tmp = arg.other.split(":")
-            self.query = self.query.filter( HistoryTagAssociation.user_tname == tmp[0] )
-            if len(tmp) > 1:
-                self.query = self.query.filter( HistoryTagAssociation.user_value == tmp[1] )
+        )
 
-        if left == 'annotation':
-            if operator == "==":
-                self.do_query = True
-                self.query = self.query.filter( and_(
-                    HistoryAnnotationAssociation.history_id == History.id,
-                    HistoryAnnotationAssociation.annotation == right
-                    )
-                )
-
-            if operator == "like":
-                self.do_query = True
-                self.query = self.query.filter( and_(
-                    HistoryAnnotationAssociation.history_id == History.id,
-                    HistoryAnnotationAssociation.annotation.like( right )
-                    )
-                )
+    if operator == "like":
+        view.do_query = True
+        view.query = view.query.filter( and_(
+            HistoryAnnotationAssociation.history_id == History.id,
+            HistoryAnnotationAssociation.annotation.like( right )
+            )
+        )
 
 
-class HistoryView(ViewBaseClass):
-    FIELDS = [
-        SearchField("name"),
-        SearchField("tag"),
-        SearchField("annotation")
-    ]
+class HistoryView(ViewQueryBaseClass):
+    DOMAIN = "history"
+    FIELDS = {
+        'name' : ViewField('name', sqlalchemy_field=History.name),
+        'id' : ViewField('id', sqlalchemy_field=History.id),
+        'tag' : ViewField("tag", handler=history_handle_tag),
+        'annotation' : ViewField("annotation", handler=history_handle_annotation)
+    }
 
-    @staticmethod
-    def search(trans):
-        query = trans.sa_session.query( History )
-        return HistoryQuery(query)
+    def search(self, trans):
+        self.query = trans.sa_session.query( History )
+
 
 ##################
 #Workflow Searching
@@ -207,43 +186,37 @@ class HistoryView(ViewBaseClass):
 
 
 
-class WorkflowQuery(QueryBaseClass):
+def workflow_tag_handler(view, left, operator, right):
+    view.do_query = True
+    view.query = view.query.filter( and_(
+        Tag.name == arg.other, 
+        Tag.id == StoredWorkflowTagAssociation.tag_id, 
+        StoredWorkflowTagAssociation.stored_workflow_id == StoredWorkflow.id )
+    )
+    view.query = view.query.filter(
+       Workflow.id == StoredWorkflowTagAssociation.workflow_id
+    )
+    tmp = arg.other.split(":")
+    view.query = view.query.filter( StoredWorkflowTagAssociation.user_tname == tmp[0] )
+    if len(tmp) > 1:
+        view.query = view.query.filter( StoredWorkflowTagAssociation.user_value == tmp[1] )
+
+
+class WorkflowView(ViewQueryBaseClass):
     DOMAIN = "workflow"
-    OUTPUT_COLUMNS = ['name', 'id']
+    FIELDS = {
+        'name' : ViewField('name', sqlalchemy_field=StoredWorkflow.name),
+        'id' : ViewField('id', sqlalchemy_field=StoredWorkflow.id),
+        'tag' : ViewField('tag', handler=workflow_tag_handler)
+    }
 
-    def filter(self, left, operator, right):
-        if arg.name == 'name':
-            self.do_query = True
-            self.query = self.query.filter( StoredWorkflow.name == arg.other )
-        if arg.name == 'tag':
-            self.do_query = True
-            self.query = self.query.filter( and_(
-                Tag.name == arg.other, 
-                Tag.id == StoredWorkflowTagAssociation.tag_id, 
-                StoredWorkflowTagAssociation.stored_workflow_id == StoredWorkflow.id )
-            )
-            self.query = self.query.filter(
-               Workflow.id == StoredWorkflowTagAssociation.workflow_id
-            )
-            tmp = arg.other.split(":")
-            self.query = self.query.filter( StoredWorkflowTagAssociation.user_tname == tmp[0] )
-            if len(tmp) > 1:
-                self.query = self.query.filter( StoredWorkflowTagAssociation.user_value == tmp[1] )
+    def search(self, trans):
+        self.query = trans.sa_session.query( StoredWorkflow )
 
-        
-class WorkflowView(ViewBaseClass):
-
-    FIELDS = [
-        SearchField("name"),
-        SearchField("tag")
-    ]
-
-    @staticmethod
-    def search(trans):
-        query = trans.sa_session.query( StoredWorkflow )
-        return WorkflowQuery(query)
-
-
+"""
+The view mapping takes a user's name for a table and maps it to a View class that will 
+handle queries
+"""
 view_mapping = {
     'library_dataset' : LibraryDatasetView,
     'ldda' : LibraryDatasetView,
@@ -253,6 +226,9 @@ view_mapping = {
     'workflow' : WorkflowView
 }
 
+"""
+The GQL gramar is defined in Parsley syntax ( http://parsley.readthedocs.org/en/latest/ )
+"""
 
 gqlGrammar = """
 expr = 'select' bs field_desc:f bs 'from' bs word:t ( 
@@ -268,40 +244,42 @@ field_list = word:x (
 conditional = (
     logic_statement:x -> x
     | conditional:x 'and' conditional:y -> GalaxyQueryAnd(x,y) )
-logic_statement = word:left ws comparison:comp ws word:right -> GalaxyQueryComparison(left, comp, right)
-quote_word = ( '"' word '"'
-    | '\'' word '\'' )
 word = alphanum+:x -> "".join(x) 
-comparison = ( '=' -> '='
-    | '>' -> '>'
-    | '<' -> '<'
-    | '>=' -> '>='
-    | '<=' -> '<='
-    )
 alphanum = anything:x ?(re.search(r'\w', x) is not None) -> x
-"""
-
-"""
+logic_statement = word:left ws comparison:comp ws quotable_word:right -> GalaxyQueryComparison(left, comp, right)
+quotable_word = ( word | quote_word )
 comparison = ( '=' -> '='
     | '>' -> '>'
     | '<' -> '<'
     | '>=' -> '>='
     | '<=' -> '<='
     )
+quote_word = "'" not_quote+:x "'" -> "".join(x)
+not_quote = anything:x ?(x != "'") -> x
+not_dquote = anything:x ?(x != '"') -> x
 """
-
 
 class GalaxyQuery:
+    """
+    This class represents a data structure of a compiled GQL query
+    """
     def __init__(self, field_list, table_name, conditional):
         self.field_list = field_list
         self.table_name = table_name
         self.conditional = conditional
 
 class GalaxyQueryComparison:
+    """
+    This class represents the data structure of the comparison arguments of a 
+    compiled GQL query (ie where name='Untitled History')
+    """
     def __init__(self, left, operator, right):
         self.left = left
         self.operator = operator
         self.right = right
+
+class GalaxyParseError(Exception):
+    pass
 
 class SearchProcess:
     def __init__(self, view, query):
@@ -309,13 +287,13 @@ class SearchProcess:
         self.query = query
     
     def process(self, trans):
-        search = self.view.search(trans)
+        self.view.search(trans)
         if self.query.conditional is not None:
-            search.filter( 
+            self.view.filter( 
                 self.query.conditional.left, 
                 self.query.conditional.operator,
                 self.query.conditional.right )
-        return search.get_results(True)
+        return self.view.get_results(True)
 
     def item_to_api_value(self, item):
         r = item.get_api_value( view='element' )
@@ -330,6 +308,9 @@ class SearchProcess:
 
 
 class GalaxySearchEngine:
+    """
+    Primary class for searching. Parses GQL (Galaxy Query Language) queries and returns a 'SearchProcess' class
+    """
     def __init__(self):
         self.parser = parsley.makeGrammar(gqlGrammar, { 
             're' : re, 
