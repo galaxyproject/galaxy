@@ -1,49 +1,59 @@
 """
-Sorts tabular data on one or more columns.
-
-usage: %prog [options]
-   -i, --input=i: Tabular file to be sorted
-   -o, --out_file1=o: Sorted output file
-   -c, --column=c: First column to sort on
-   -s, --style=s: Sort style (numerical or alphabetical)
-   -r, --order=r: Order (ASC or DESC)
-
-usage: %prog input out_file1 column style order [column style ...]
+    Sorts tabular data on one or more columns. All comments of the file are collected
+    and placed at the beginning of the sorted output file.
+    
+    usage: sorter.py [options]
+    -i, --input: Tabular file to be sorted
+    -o, --output: Sorted output file
+    -k, --key: Key (see manual for bash/sort)
+    
+    usage: sorter.py input output [key ...]
 """
+# 03/05/2013 guerler
 
+# imports
 import os, re, string, sys
-from galaxy import eggs
-import pkg_resources; pkg_resources.require( "bx-python" )
-from bx.cookbook import doc_optparse
+from optparse import OptionParser
 
+# error
 def stop_err( msg ):
     sys.stderr.write( "%s\n" % msg )
     sys.exit()
 
+# main
 def main():
-    #Parse Command Line
-    options, args = doc_optparse.parse( __doc__ )
-    try:
-        inputfile = options.input
-        outputfile = '-o %s' % options.out_file1
-        columns = [options.column]
-        styles = [('','n')[options.style == 'num']]
-        orders = [('','r')[options.order == 'DESC']]
-        col_style_orders = sys.argv[6:]
-        if len(col_style_orders) > 1:
-            columns.extend([col_style_orders[i] for i in range(0,len(col_style_orders),3)])
-            styles.extend([('','n')[col_style_orders[i] == 'num'] for i in range(1,len(col_style_orders),3)])
-            orders.extend([('','r')[col_style_orders[i] == 'DESC'] for i in range(2,len(col_style_orders),3)])
-        cols = [ '-k%s,%s%s%s'%(columns[i], columns[i], styles[i], orders[i]) for i in range(len(columns)) ]
-    except Exception, ex:
-        stop_err('Error parsing input parameters\n' + str(ex))
+    # define options
+    parser = OptionParser()
+    parser.add_option("-i", "--input")
+    parser.add_option("-o", "--output")
+    parser.add_option("-k", "--key", action="append")
 
-    # Launch sort.
-    cmd = "sort -f -t '	' %s %s %s" % (' '.join(cols), outputfile, inputfile)
+    # parse
+    options, args = parser.parse_args()
+    
     try:
-        os.system(cmd)
+        # retrieve options
+        input   = options.input
+        output  = options.output
+        key     = ["-k" + k for k in options.key]
+        
+        # grep comments
+        grep_comments = "(grep '^#' %s) > %s" % (input, output)
+        print grep_comments
+        
+        # grep and sort columns
+        sort_columns  = "(grep '^[^#]' %s | sort -f -t '\t' %s) >> %s" % (input, ' '.join(key), output)
+        print sort_columns
+        
+        # execute
+        os.system(grep_comments)
+        os.system(sort_columns)
+    
     except Exception, ex:
-        stop_err('Error running sort command\n' + str(ex))
+        stop_err('Error running sorter.py\n' + str(ex))
+
+    # exit
+    sys.exit(0)
 
 if __name__ == "__main__":
     main()
