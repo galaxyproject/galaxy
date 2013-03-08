@@ -120,7 +120,7 @@ else:
 class ReportResults( Plugin ):
     '''Simple Nose plugin to record the IDs of all tests run, regardless of success.'''
     name = "reportresults"
-    passed = []
+    passed = dict()
     
     def options( self, parser, env=os.environ ):
         super( ReportResults, self ).options( parser, env=env )
@@ -137,10 +137,18 @@ class ReportResults( Plugin ):
             # Rearrange the test ID to match the format that is produced in test_results.failures
             test_id_parts = test_id.split( '.' )
             fixed_test_id = '%s (%s)' % ( test_id_parts[ -1 ], '.'.join( test_id_parts[ :-1 ] ) )
-            self.passed.append( fixed_test_id )
+            test_parts = fixed_test_id.split( '/' )
+            owner = test_parts[ -4 ]
+            name = test_parts[ -3 ]
+            test_identifier = '%s/%s' % ( owner, name )
+            if test_identifier not in self.passed:
+                self.passed[ test_identifier ] = []
+            self.passed[ test_identifier ].append( fixed_test_id )
 
-    def getTestStatus( self ):
-        return self.passed
+    def getTestStatus( self, test_identifier ):
+        tests_passed = self.passed[ test_identifier ]
+        del self.passed[ test_identifier ]
+        return tests_passed
 
 def execute_uninstall_method( repository_dict ):
     # Delete any configured tool functional tests from the test_toolbox.__dict__, otherwise nose will find them 
@@ -615,7 +623,8 @@ def main():
                     repository_dict[ 'test_environment' ] = test_environment
                     for plugin in test_plugins:
                         if hasattr( plugin, 'getTestStatus' ):
-                            tests_passed = plugin.getTestStatus()
+                            test_identifier = '%s/%s' % ( owner, name )
+                            tests_passed = plugin.getTestStatus( test_identifier )
                             break
                     repository_status[ 'tests_passed' ] = []
                     for test_id in tests_passed:
@@ -670,7 +679,6 @@ def main():
                                 if output_type in tmp_output:
                                     test_status[ output_type ] = '\n'.join( tmp_output[ output_type ] )
                             repository_status[ 'test_errors' ].append( test_status )
-                            log.debug( to_json_string( repository_status, indent=2, sort_keys=True ) )
                         # Call the register_test_result method, which executes a PUT request to the repository_revisions API controller with the outcome 
                         # of the tests, and updates tool_test_errors with the relevant log data.
                         # This also sets the do_not_test and tools_functionally correct flags to the appropriate values, and updates the time_last_tested
@@ -720,13 +728,29 @@ def main():
     print "# Repository revisions tested: %d" % repositories_tested
     if repositories_tested > 0:
         if repositories_passed:
-            print "# Repositories passed:"
+            passed_repositories_by_owner = dict()
             for repository in repositories_passed:
-                print "# %s owned by %s, changeset revision %s" % ( repository[ 'name' ], repository[ 'owner' ], repository[ 'changeset_revision' ] )
+                if repository[ 'owner' ] not in passed_repositories_by_owner:
+                    passed_repositories_by_owner[ repository[ 'owner' ] ] = []
+                passed_repositories_by_owner[ repository[ 'owner' ] ].append( repository )
+            print "# "
+            print "# Repositories passed:"
+            for owner in passed_repositories_by_owner:
+                print "# "
+                for repository in passed_repositories_by_owner[ owner ]:
+                    print "# %s owned by %s, changeset revision %s" % ( repository[ 'name' ], repository[ 'owner' ], repository[ 'changeset_revision' ] )
         if repositories_failed:
-            print "# Repositories failed:"
+            failed_repositories_by_owner = dict()
             for repository in repositories_failed:
-                print "# %s owned by %s, changeset revision %s" % ( repository[ 'name' ], repository[ 'owner' ], repository[ 'changeset_revision' ] )
+                if repository[ 'owner' ] not in failed_repositories_by_owner:
+                    failed_repositories_by_owner[ repository[ 'owner' ] ] = []
+                failed_repositories_by_owner[ repository[ 'owner' ] ].append( repository )
+            print "# "
+            print "# Repositories failed:"
+            for owner in failed_repositories_by_owner:
+                print "# "
+                for repository in failed_repositories_by_owner[ owner ]:
+                    print "# %s owned by %s, changeset revision %s" % ( repository[ 'name' ], repository[ 'owner' ], repository[ 'changeset_revision' ] )
     print "####################################################################################"
     
     if success:
