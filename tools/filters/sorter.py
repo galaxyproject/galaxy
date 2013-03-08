@@ -35,15 +35,15 @@ def main():
         # retrieve options
         input   = options.input
         output  = options.output
-        key     = ["-k" + k for k in options.key]
+        key     = [" -k" + k for k in options.key]
         
         # grep comments
         grep_comments = "(grep '^#' %s) > %s" % (input, output)
-        print grep_comments
+        #print grep_comments
         
         # grep and sort columns
         sort_columns  = "(grep '^[^#]' %s | sort -f -t '\t' %s) >> %s" % (input, ' '.join(key), output)
-        print sort_columns
+        #print sort_columns
         
         # execute
         os.system(grep_comments)
