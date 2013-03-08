@@ -1774,6 +1774,10 @@ class LibraryDataset( object ):
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb,
                      template_data = template_data )
+        if ldda.dataset.uuid is None:
+            rval['uuid'] = None
+        else:
+            rval['uuid'] = str(ldda.dataset.uuid)
         for name, spec in ldda.metadata.spec.items():
             val = ldda.metadata.get( name )
             if isinstance( val, MetadataFile ):

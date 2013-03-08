@@ -100,6 +100,13 @@
             ${ldda.get_size( nice_size=True )}
             <div style="clear: both"></div>
         </div>
+        %if ldda.dataset.uuid:
+        <div class="form-row">
+            <label>UUID:</label>
+            ${ldda.dataset.uuid}
+            <div style="clear: both"></div>
+        </div>
+        %endif
         %if ldda.tool_version:
             <div class="form-row">
                 <label>Tool version:</label>

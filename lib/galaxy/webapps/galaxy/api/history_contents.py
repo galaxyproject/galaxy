@@ -220,6 +220,11 @@ def get_hda_dict( trans, history, hda, for_editing ):
     hda_dict[ 'display_apps' ] = get_display_apps( trans, hda )
     hda_dict[ 'display_types' ] = get_old_display_applications( trans, hda )
 
+    if hda.dataset.uuid is None:
+        hda_dict['uuid'] = None
+    else:
+        hda_dict['uuid'] = str(hda.dataset.uuid)
+
     hda_dict[ 'visualizations' ] = hda.get_visualizations()
     if hda.peek and hda.peek != 'no peek':
         hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
