@@ -38,6 +38,12 @@ def main():
     '''Script that checks repositories to see if the tools contained within them have functional tests defined.'''
     parser = OptionParser()
     parser.add_option( "-i", "--info_only", action="store_true", dest="info_only", help="info about the requested action", default=False )
+    parser.add_option( "-s", 
+                       "--section", 
+                       action="store", 
+                       dest="section", 
+                       default='server:main',
+                       help="which .ini file section to extract the host and port from" )
     parser.add_option(
         "-v", "--verbose",
         action="count", dest="verbosity",
@@ -57,10 +63,11 @@ def main():
         config_dict[key] = value
     config = tool_shed_config.Configuration( **config_dict )
     
+    config_section = options.section
     now = strftime( "%Y-%m-%d %H:%M:%S" )
     print "#############################################################################"
     print "# %s - Checking repositories for tools with functional tests." % now
-    print "# This tool shed is configured to listen on %s:%s." % ( config_parser.get( 'server:main', 'host' ), config_parser.get( 'server:main', 'port' ) )
+    print "# This tool shed is configured to listen on %s:%s." % ( config_parser.get( config_section, 'host' ), config_parser.get( config_section, 'port' ) )
     app = FlagRepositoriesApplication( config )
     
     if options.info_only:
