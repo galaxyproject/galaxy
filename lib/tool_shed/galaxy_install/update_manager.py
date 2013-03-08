@@ -18,7 +18,7 @@ class UpdateManager( object ):
         self.sleeper = Sleeper()
         self.restarter = threading.Thread( target=self.__restarter )
         self.restarter.start()
-        self.seconds_to_sleep = app.config.hours_between_check * 3600
+        self.seconds_to_sleep = int( app.config.hours_between_check * 3600 )
     def __restarter( self ):
         log.info( 'Update manager restarter starting up...' )
         while self.running:
