@@ -74,8 +74,8 @@ def get_installed_repository_info( elem, last_galaxy_test_file_dir, last_tested_
         return None, repository_name, changeset_revision
     return last_galaxy_test_file_dir, last_tested_repository_name, last_tested_changeset_revision
 
-def get_test_environment():
-    rval = {}
+def get_test_environment( current_environment={} ):
+    rval = current_environment
     rval[ 'python_version' ] = platform.python_version()
     rval[ 'architecture' ] = platform.machine()
     os, hostname, os_version, uname, arch, processor = platform.uname()
