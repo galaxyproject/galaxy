@@ -575,8 +575,8 @@ class UserGroupAssociation( object ):
         self.group = group
 
 class History( object, UsesAnnotations ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name' )
+    api_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
+    api_element_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
         self.name = name or "Unnamed history"
@@ -693,6 +693,13 @@ class History( object, UsesAnnotations ):
                     rval[key] = value_mapper.get( key )( rval[key] )
             except AttributeError:
                 rval[key] = None
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        rval['tags'] = tags_str_list
         rval['model_class'] = self.__class__.__name__
         return rval
     @property
@@ -2109,6 +2116,17 @@ class StoredWorkflow( object, APIItem):
             new_swta = src_swta.copy()
             new_swta.user = target_user
             self.tags.append(new_swta)
+
+    def get_api_value( self, view='collection' ):
+        rval = APIItem.get_api_value(self, view=view )
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        rval['tags'] = tags_str_list
+        return rval
 
 
 class Workflow( object ):

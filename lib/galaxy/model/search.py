@@ -28,9 +28,8 @@ import logging
 import parsley
 import re
 
-#from galaxy.model.orm import *
 from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, History
-from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow
+from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation
 
 from sqlalchemy import or_, and_
 
@@ -139,32 +138,36 @@ class HistoryDatasetView(ViewQueryBaseClass):
 
 
 def history_handle_tag(view, left, operator, right):
-    view.do_query = True
-    view.query = view.query.filter(
-       History.id == HistoryTagAssociation.history_id
-    )
-    tmp = arg.other.split(":")
-    view.query = view.query.filter( HistoryTagAssociation.user_tname == tmp[0] )
-    if len(tmp) > 1:
-        view.query = view.query.filter( HistoryTagAssociation.user_value == tmp[1] )
+    if operator == "=":
+        view.do_query = True
+        view.query = view.query.filter(
+           History.id == HistoryTagAssociation.history_id
+        )
+        tmp = right.split(":")
+        view.query = view.query.filter( HistoryTagAssociation.user_tname == tmp[0] )
+        if len(tmp) > 1:
+            view.query = view.query.filter( HistoryTagAssociation.user_value == tmp[1] )
+    else:
+        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
 
 def history_handle_annotation(view, left, operator, right):
-    if operator == "==":
+    if operator == "=":
         view.do_query = True
         view.query = view.query.filter( and_(
             HistoryAnnotationAssociation.history_id == History.id,
             HistoryAnnotationAssociation.annotation == right
             )
         )
-
-    if operator == "like":
+    elif operator == "like":
         view.do_query = True
         view.query = view.query.filter( and_(
             HistoryAnnotationAssociation.history_id == History.id,
             HistoryAnnotationAssociation.annotation.like( right )
             )
         )
+    else:
+        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
 
 class HistoryView(ViewQueryBaseClass):
@@ -185,21 +188,18 @@ class HistoryView(ViewQueryBaseClass):
 ##################
 
 
-
 def workflow_tag_handler(view, left, operator, right):
-    view.do_query = True
-    view.query = view.query.filter( and_(
-        Tag.name == arg.other, 
-        Tag.id == StoredWorkflowTagAssociation.tag_id, 
-        StoredWorkflowTagAssociation.stored_workflow_id == StoredWorkflow.id )
-    )
-    view.query = view.query.filter(
-       Workflow.id == StoredWorkflowTagAssociation.workflow_id
-    )
-    tmp = arg.other.split(":")
-    view.query = view.query.filter( StoredWorkflowTagAssociation.user_tname == tmp[0] )
-    if len(tmp) > 1:
-        view.query = view.query.filter( StoredWorkflowTagAssociation.user_value == tmp[1] )
+    if operator == "=":
+        view.do_query = True
+        view.query = view.query.filter(
+           StoredWorkflow.id == StoredWorkflowTagAssociation.stored_workflow_id
+        )
+        tmp = right.split(":")
+        view.query = view.query.filter( StoredWorkflowTagAssociation.user_tname == tmp[0] )
+        if len(tmp) > 1:
+            view.query = view.query.filter( StoredWorkflowTagAssociation.user_value == tmp[1] )
+    else:
+        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
 
 class WorkflowView(ViewQueryBaseClass):
@@ -253,6 +253,7 @@ comparison = ( '=' -> '='
     | '<' -> '<'
     | '>=' -> '>='
     | '<=' -> '<='
+    | 'like' -> 'like'
     )
 quote_word = "'" not_quote+:x "'" -> "".join(x)
 not_quote = anything:x ?(x != "'") -> x
