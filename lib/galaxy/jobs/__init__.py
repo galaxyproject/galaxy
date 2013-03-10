@@ -126,7 +126,12 @@ class JobConfiguration( object ):
             for plugin in self.__findall_with_required(plugins, 'plugin', ('id', 'type', 'load')):
                 if plugin.get('type') == 'runner':
                     workers = plugin.get('workers', plugins.get('workers', JobConfiguration.DEFAULT_NWORKERS))
-                    self.runner_plugins.append(dict(id=plugin.get('id'), load=plugin.get('load'), workers=int(workers)))
+                    runner_kwds = self.__get_params(plugin)
+                    runner_info = dict(id=plugin.get('id'),
+                                       load=plugin.get('load'),
+                                       workers=int(workers),
+                                       kwds=runner_kwds)
+                    self.runner_plugins.append(runner_info)
                 else:
                     log.error('Unknown plugin type: %s' % plugin.get('type'))
         # Load tasks if configured
@@ -480,7 +485,7 @@ class JobConfiguration( object ):
                     log.warning("Job runner classes must be subclassed from BaseJobRunner, %s has bases: %s" % (id, runner_class.__bases__))
                     continue
                 try:
-                    rval[id] = runner_class( self.app, runner['workers'] )
+                    rval[id] = runner_class( self.app, runner['workers'], **runner['kwds'] )
                 except TypeError:
                     log.warning( "Job runner '%s:%s' has not been converted to a new-style runner" % ( module_name, class_name ) )
                     rval[id] = runner_class( self.app )
