@@ -20,11 +20,12 @@ class LwrJobRunner( AsynchronousJobRunner ):
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app, nworkers ):
+    def __init__( self, app, nworkers, transport=None ):
         """Start the job runner """
         super( LwrJobRunner, self ).__init__( app, nworkers )
         self._init_monitor_thread()
         self._init_worker_threads()
+        self.transport_type = transport
 
     def url_to_destination( self, url ):
         """Convert a legacy URL to a job destination"""
@@ -111,7 +112,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         return self.get_client( job_destination_params, job_id )
 
     def get_client( self, job_destination_params, job_id ):
-        return Client( job_destination_params, job_id )
+        return Client( job_destination_params, job_id, transport_type=self.transport_type )
 
     def finish_job( self, job_state ):
         stderr = stdout = command_line = ''
