@@ -28,11 +28,15 @@
         # about the test environment even if all tests passed and the repository_metadata.tools_functionally_correct column is set to True.
         tool_test_errors = repository_metadata.tool_test_errors
         test_environment_dict = tool_test_errors.get( 'test_environment', None )
+        invalid_tests = tool_test_errors.get( 'invalid_tests', [] )
         test_errors = tool_test_errors.get( 'test_errors', [] )
+        tests_passed = tool_test_errors.get( 'tests_passed', [] )
     else:
         tool_test_errors = None
         test_environment_dict = {}
+        invalid_tests = []
         test_errors = []
+        tests_passed = []
 
     if can_push:
         browse_label = 'Browse or delete repository tip files'
@@ -121,7 +125,7 @@
     <b>Repository name:</b><br/>
     ${repository.name}
 %endif
-%if tool_test_errors:
+%if invalid_tests or tool_test_errors or tests_passed:
     <p/>
     <div class="toolForm">
         <div class="toolFormTitle">Tool functional test results</div>
@@ -151,61 +155,48 @@
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <table width="100%">
-                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Test results</td></tr>
-                </table>
+                <label>Galaxy version:</label>
+                ${test_environment_dict.get( 'galaxy_revision', 'unknown' ) | h}
+                <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <table class="grid">
-                    %for test_results_dict in test_errors:
-                        <%
-                            test_id = test_results_dict.get( 'test_id', 'unknown' )
-                            if test_id != 'unknown':
-                                # The test_id looks something like:
-                                # test_tool_000003 (functional.test_toolbox.TestForTool_localhost:9009/repos/test/bwa_mappers/bwa_color_wrapper/1.0.2)
-                                # Highlight the tool id and version.
-                                test_id_items = test_id.split( '/' )
-                                tool_id = test_id_items[ -2 ]
-                                tool_id = '<b>%s</b>' % tool_id
-                                test_id_items[ -2 ] = tool_id
-                                tool_version = test_id_items[ -1 ]
-                                tool_version = '<b>%s</b>' % ( tool_version.rstrip( ')' ) )
-                                tool_version = '%s)' % tool_version
-                                test_id_items[ -1 ] = tool_version
-                                test_id = '/'.join( test_id_items )
-                                test_id_items = test_id.split( ' ' )
-                                test_num = test_id_items[ 0 ]
-                                test_num = '<b>%s</b>' % test_num
-                                test_id_items[ 0 ] = test_num
-                                test_id = ' '.join( test_id_items )
-
-                                test_status = '<font color="green">Test passed</font>'
-                                stdout = test_results_dict.get( 'stdout', '' )
-                                if stdout:
-                                    stdout = to_safe_string( stdout, to_html=True )
+                <label>Galaxy database version:</label>
+                ${test_environment_dict.get( 'galaxy_database_version', 'unknown' ) | h}
+                <div style="clear: both"></div>
+            </div>
+            %if test_errors:
+                <div class="form-row">
+                    <table width="100%">
+                        <tr bgcolor="#D8D8D8" width="100%"><td><b>Tests that failed</td></tr>
+                    </table>
+                </div>
+                <div class="form-row">
+                    <table class="grid">
+                        %for test_results_dict in test_errors:
+                            <%
+                                test_id = test_results_dict.get( 'test_id', 'unknown' )
+                                tool_id = test_results_dict.get( 'tool_id', 'unknown' )
+                                tool_version = test_results_dict.get( 'tool_version', 'unknown' )
+                                test_status = '<font color="red">Test failed</font>'
+    
                                 stderr = test_results_dict.get( 'stderr', '' )
                                 if stderr:
                                     stderr = to_safe_string( stderr, to_html=True )
-                                    test_status = '<font color="red">Test failed</font>'
                                 traceback = test_results_dict.get( 'traceback', '' )
                                 if traceback:
                                     traceback = to_safe_string( traceback, to_html=True )
-                                    test_status = '<font color="red">Test failed</font>'
-                        %>
-                        <tr>
-                            <td bgcolor="#FFFFCC"><b>Test id</b></td>
-                            <td bgcolor="#FFFFCC">${test_id}</td>
-                        </tr>
-                        <tr>
-                            <td><b>Status</b></td>
-                            <td>${test_status}</td>
-                        </tr>
-                        %if repository_metadata.tools_functionally_correct:
+                            %>
                             <tr>
-                                <td><b>Stdout</b></td>
-                                <td>${stdout}</td>
+                                <td colspan="2" bgcolor="#FFFFCC">Tool id: <b>${tool_id}</b> version: <b>${tool_version}</b></td>
                             </tr>
-                        %else:
+                            <tr>
+                                <td><b>Test id</b></td>
+                                <td>${test_id}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Status</b></td>
+                                <td>${test_status}</td>
+                            </tr>
                             <tr>
                                 <td><b>Stderr</b></td>
                                 <td>${stderr}</td>
@@ -214,11 +205,71 @@
                                 <td><b>Traceback</b></td>
                                 <td>${traceback}</td>
                             </tr>
-                        %endif
-                    %endfor
-                </table>
-                <div style="clear: both"></div>
-            </div>
+                        %endfor
+                    </table>
+                    <div style="clear: both"></div>
+                </div>
+            %endif
+            %if tests_passed:
+                <div class="form-row">
+                    <table width="100%">
+                        <tr bgcolor="#D8D8D8" width="100%"><td><b>Tests that passed successfully</td></tr>
+                    </table>
+                </div>
+                <div class="form-row">
+                    <table class="grid">
+                        %for test_results_dict in tests_passed:
+                            <%
+                                test_id = test_results_dict.get( 'test_id', 'unknown' )
+                                tool_id = test_results_dict.get( 'tool_id', 'unknown' )
+                                tool_version = test_results_dict.get( 'tool_version', 'unknown' )
+                                test_status = '<font color="green">Test passed</font>'
+                            %>
+                            <tr>
+                                <td colspan="2" bgcolor="#FFFFCC">Tool id: <b>${tool_id}</b> version: <b>${tool_version}</b></td>
+                            </tr>
+                            <tr>
+                                <td><b>Test id</b></td>
+                                <td>${test_id}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Status</b></td>
+                                <td>${test_status}</td>
+                            </tr>
+                        %endfor
+                    </table>
+                </div>
+            %endif
+            %if invalid_tests:
+                <div class="form-row">
+                    <table width="100%">
+                        <tr bgcolor="#D8D8D8" width="100%"><td><b>Invalid tests</td></tr>
+                    </table>
+                </div>
+                <div class="form-row">
+                    <table class="grid">
+                        %for test_results_dict in invalid_tests:
+                            <%
+                                guid = test_results_dict.get( 'tool_guid', None )
+                                tool_id = test_results_dict.get( 'tool_id', None )
+                                tool_version = test_results_dict.get( 'tool_version', None )
+                                reason_test_is_invalid = test_results_dict.get( 'reason_test_is_invalid', 'unknown' )
+                                if reason_test_is_invalid:
+                                    reason_test_is_invalid = to_safe_string( reason_test_is_invalid, to_html=True )
+                            %>
+                            %if tool_id or tool_version:
+                                <tr>
+                                    <td colspan="2" bgcolor="#FFFFCC">Tool id: <b>${tool_id}</b> version: <b>${tool_version}</b></td>
+                                </tr>
+                            %endif
+                            <tr>
+                                <td><b>Reason test is invalid</b></td>
+                                <td>${reason_test_is_invalid}</td>
+                            </tr>
+                        %endfor
+                    </table>
+                </div>
+            %endif
         </div>
     </div>
 %endif
