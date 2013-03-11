@@ -253,7 +253,7 @@
                                 guid = test_results_dict.get( 'tool_guid', None )
                                 tool_id = test_results_dict.get( 'tool_id', None )
                                 tool_version = test_results_dict.get( 'tool_version', None )
-                                reason_test_is_invalid = test_results_dict.get( 'reason_test_is_invalid', 'unknown' )
+                                reason_test_is_invalid = test_results_dict.get( 'reason_test_is_invalid', None )
                                 if reason_test_is_invalid:
                                     reason_test_is_invalid = to_safe_string( reason_test_is_invalid, to_html=True )
                             %>
@@ -262,10 +262,12 @@
                                     <td colspan="2" bgcolor="#FFFFCC">Tool id: <b>${tool_id}</b> version: <b>${tool_version}</b></td>
                                 </tr>
                             %endif
-                            <tr>
-                                <td><b>Reason test is invalid</b></td>
-                                <td>${reason_test_is_invalid}</td>
-                            </tr>
+                            %if reason_test_is_invalid:
+                                <tr>
+                                    <td><b>Reason test is invalid</b></td>
+                                    <td>${reason_test_is_invalid}</td>
+                                </tr>
+                            %endif
                         %endfor
                     </table>
                 </div>
