@@ -34,7 +34,6 @@ INITIAL_CHANGELOG_HASH = '000000000000'
 REPOSITORY_DATA_MANAGER_CONFIG_FILENAME = "data_manager_conf.xml"
 MAX_CONTENT_SIZE = 32768
 NOT_TOOL_CONFIGS = [ 'datatypes_conf.xml', 'repository_dependencies.xml', 'tool_dependencies.xml', REPOSITORY_DATA_MANAGER_CONFIG_FILENAME ]
-TOOL_TYPES_NOT_IN_TOOL_PANEL = [ 'manage_data' ]
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
 
 new_repo_email_alert_template = """
@@ -1106,27 +1105,31 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
         return metadata_dict
     repo_path = repository.repo_path( app )
     try:
-        #Galaxy Side
+        # Galaxy Side.
         repo_files_directory = repository.repo_files_directory( app )
         repo_dir = repo_files_directory
         repository_clone_url = generate_clone_url_for_installed_repository( app, repository )
     except AttributeError:
-        #Tool Shed side
+        # Tool Shed side.
         repo_files_directory = repo_path
         repository_clone_url = generate_clone_url_for_repository_in_tool_shed( None, repository )
     relative_data_manager_dir = util.relpath( os.path.split( data_manager_config_filename )[0], repo_dir )
     rel_data_manager_config_filename = os.path.join( relative_data_manager_dir, os.path.split( data_manager_config_filename )[1] )
     data_managers = {}
     invalid_data_managers = []
-    data_manager_metadata = { 'config_filename': rel_data_manager_config_filename, 'data_managers': data_managers, 'invalid_data_managers': invalid_data_managers, 'error_messages': [] }#'tool_config_files': tool_files }
+    data_manager_metadata = { 'config_filename': rel_data_manager_config_filename,
+                              'data_managers': data_managers, 
+                              'invalid_data_managers': invalid_data_managers, 
+                              'error_messages': [] }
     metadata_dict[ 'data_manager' ] = data_manager_metadata
     try:
         tree = util.parse_xml( data_manager_config_filename )
     except Exception, e:
+        # We are not able to load any data managers.
         error_message = 'There was an error parsing your Data Manager config file "%s": %s' % ( data_manager_config_filename, e )
         log.error( error_message )
         data_manager_metadata['error_messages'].append( error_message )
-        return metadata_dict #we are not able to load any data managers
+        return metadata_dict
     tool_path = None
     if shed_config_dict:
         tool_path = shed_config_dict.get( 'tool_path', None )
@@ -1147,7 +1150,8 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
             log.error( 'Data Manager entry is missing id attribute in "%s".' % ( data_manager_config_filename ) )
             invalid_data_managers.append( { 'index': i, 'error_message': 'Data Manager entry is missing id attribute' } )
             continue
-        data_manager_name = data_manager_elem.get( 'name', data_manager_id ) #fix me, default behavior is to fall back to tool.name
+        # FIXME: default behavior is to fall back to tool.name.
+        data_manager_name = data_manager_elem.get( 'name', data_manager_id )
         version = data_manager_elem.get( 'version', DataManager.DEFAULT_VERSION )
         guid = generate_guid_for_object( repository_clone_url, DataManager.GUID_TYPE, data_manager_id, version )
         data_tables = []
@@ -1175,10 +1179,16 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
             log.error( "Unable to determine tools metadata for '%s'." % ( data_manager_metadata_tool_file ) )
             invalid_data_managers.append( { 'index': i, 'error_message': 'Unable to determine tools metadata' } )
             continue
-        data_managers[ data_manager_id ] = { 'id': data_manager_id, 'name': data_manager_name, 'guid': guid, 'version': version, 'tool_config_file': data_manager_metadata_tool_file, 'data_tables': data_tables, 'tool_guid': tool['guid'] }
+        data_managers[ data_manager_id ] = { 'id': data_manager_id, 
+                                             'name': data_manager_name, 
+                                             'guid': guid, 
+                                             'version': version, 
+                                             'tool_config_file': data_manager_metadata_tool_file, 
+                                             'data_tables': data_tables, 
+                                             'tool_guid': tool[ 'guid' ] }
         log.debug( 'Loaded Data Manager tool_files: %s' % ( tool_file ) )
     return metadata_dict
-def generate_datatypes_metadata( datatypes_config, metadata_dict ):
+def generate_datatypes_metadata( app, repository_clone_url, repository_files_dir, datatypes_config, metadata_dict ):
     """Update the received metadata_dict with information from the parsed datatypes_config."""
     tree = ElementTree.parse( datatypes_config )
     root = tree.getroot()
@@ -1194,7 +1204,10 @@ def generate_datatypes_metadata( datatypes_config, metadata_dict ):
     registration = root.find( 'registration' )
     if registration:
         for elem in registration.findall( 'datatype' ):
+            converters = []
+            display_app_containers = []
             datatypes_dict = {}
+            # Handle defined datatype attributes.
             display_in_upload = elem.get( 'display_in_upload', None )
             if display_in_upload:
                 datatypes_dict[ 'display_in_upload' ] = display_in_upload
@@ -1213,6 +1226,34 @@ def generate_datatypes_metadata( datatypes_config, metadata_dict ):
             subclass = elem.get( 'subclass', None )
             if subclass:
                 datatypes_dict[ 'subclass' ] = subclass
+            # Handle defined datatype converters and display applications.
+            for sub_elem in elem:
+                if sub_elem.tag == 'converter':
+                    # <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
+                    tool_config = sub_elem.attrib[ 'file' ]
+                    target_datatype = sub_elem.attrib[ 'target_datatype' ]
+                    # Parse the tool_config to get the guid.
+                    tool_config_path = get_config_from_disk( tool_config, repository_files_dir )
+                    full_path = os.path.abspath( tool_config_path )
+                    tool, valid, error_message = load_tool_from_config( app, full_path )
+                    if tool is None:
+                        guid = None
+                    else:
+                        guid = generate_tool_guid( repository_clone_url, tool )
+                    converter_dict = dict( tool_config=tool_config,
+                                           guid=guid,
+                                           target_datatype=target_datatype )
+                    converters.append( converter_dict )
+                elif sub_elem.tag == 'display':
+                    # <display file="ucsc/bigwig.xml" />
+                    # Should we store more than this?
+                    display_file = sub_elem.attrib[ 'file' ]
+                    display_app_dict = dict( display_file=display_file )
+                    display_app_containers.append( display_app_dict )
+            if converters:
+                datatypes_dict[ 'converters' ] = converters
+            if display_app_containers:
+                datatypes_dict[ 'display_app_containers' ] = display_app_containers
             if datatypes_dict:
                 datatypes.append( datatypes_dict )
         if datatypes:
@@ -1386,13 +1427,13 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
         # All other files are on disk in the repository's repo_path, which is the value of relative_install_dir.
         files_dir = relative_install_dir
         if shed_config_dict.get( 'tool_path' ):
-            files_dir = os.path.join( shed_config_dict['tool_path'], files_dir )
+            files_dir = os.path.join( shed_config_dict[ 'tool_path' ], files_dir )
         app.config.tool_data_path = work_dir
         app.config.tool_data_table_config_path = work_dir
     # Handle proprietary datatypes, if any.
     datatypes_config = get_config_from_disk( 'datatypes_conf.xml', files_dir )
     if datatypes_config:
-        metadata_dict = generate_datatypes_metadata( datatypes_config, metadata_dict )
+        metadata_dict = generate_datatypes_metadata( app, repository_clone_url, files_dir, datatypes_config, metadata_dict )
     # Get the relative path to all sample files included in the repository for storage in the repository's metadata.
     sample_file_metadata_paths, sample_file_copy_paths = get_sample_files_from_disk( repository_files_dir=files_dir,
                                                                                      tool_path=shed_config_dict.get( 'tool_path' ),
@@ -1687,7 +1728,7 @@ def generate_tool_guid( repository_clone_url, tool ):
     return '%s/%s/%s' % ( tmp_url, tool.id, tool.version )
 def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_dict ):
     """Update the received metadata_dict with changes that have been applied to the received tool."""
-    # Generate the guid
+    # Generate the guid.
     guid = generate_tool_guid( repository_clone_url, tool )
     # Handle tool.requirements.
     tool_requirements = []
@@ -1717,6 +1758,10 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
                               inputs=inputs,
                               outputs=outputs )
             tool_tests.append( test_dict )
+    # Determine if the tool should be loaded into the tool panel.  Examples of valid tools that should not be displayed in the tool panel are
+    # datatypes converters and DataManager tools (which are of type 'manage_data').
+    datatypes = metadata_dict.get( 'datatypes', None )
+    add_to_tool_panel_attribute = set_add_to_tool_panel_attribute_for_tool( tool=tool, guid=guid, datatypes=datatypes )
     tool_dict = dict( id=tool.id,
                       guid=guid,
                       name=tool.name,
@@ -1727,7 +1772,7 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
                       tool_type=tool.tool_type,
                       requirements=tool_requirements,
                       tests=tool_tests,
-                      add_to_tool_panel=tool.tool_type not in TOOL_TYPES_NOT_IN_TOOL_PANEL )
+                      add_to_tool_panel=add_to_tool_panel_attribute )
     if 'tools' in metadata_dict:
         metadata_dict[ 'tools' ].append( tool_dict )
     else:
@@ -3724,6 +3769,33 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
     return reversed_changelog
 def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
+def set_add_to_tool_panel_attribute_for_tool( tool, guid, datatypes ):
+    """
+    Determine if a tool should be loaded into the Galaxy tool panel.  Examples of valid tools that should not be displayed in the tool panel are datatypes
+    converters and DataManager tools.
+    """
+    if hasattr( tool, 'tool_type' ):
+        if tool.tool_type in [ 'manage_data' ]:
+            # We have a DataManager tool.
+            return False
+    if datatypes:
+        for datatype_dict in datatypes:
+            converters = datatype_dict.get( 'converters', None )
+            # [{"converters": 
+            #    [{"target_datatype": "gff", 
+            #      "tool_config": "bed_to_gff_converter.xml", 
+            #      "guid": "localhost:9009/repos/test/bed_to_gff_converter/CONVERTER_bed_to_gff_0/2.0.0"}], 
+            #   "display_in_upload": "true", 
+            #   "dtype": "galaxy.datatypes.interval:Bed", 
+            #   "extension": "bed"}]
+            if converters:
+                for converter_dict in converters:
+                    converter_guid = converter_dict.get( 'guid', None )
+                    if converter_guid:
+                        if converter_guid == guid:
+                            # We have a datatypes converter.
+                            return False
+    return True
 def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
     """
     Set metadata using the repository's current disk files, returning specific error messages (if any) to alert the repository owner that the changeset

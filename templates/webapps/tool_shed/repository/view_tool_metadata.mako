@@ -176,6 +176,13 @@
                     <div style="clear: both"></div>
                 </div>
             %endif
+            %if 'add_to_tool_panel' in tool_metadata_dict:
+                <div class="form-row">
+                    <label>Display in tool panel:</label>
+                    ${tool_metadata_dict[ 'add_to_tool_panel' ] | h}
+                    <div style="clear: both"></div>
+                </div>
+            %endif
             <div class="form-row">
                 <table width="100%">
                     <tr bgcolor="#D8D8D8" width="100%"><td><b>Version lineage of this tool (guids ordered most recent to oldest)</td></tr>
