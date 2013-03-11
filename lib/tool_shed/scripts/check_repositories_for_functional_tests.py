@@ -55,7 +55,11 @@ def main():
         type="int", help="Control the amount of detail in the log output. --verbosity=1 is "
         "the same as -v")
     ( options, args ) = parser.parse_args()
-    ini_file = args[0]
+    try:
+        ini_file = args[0]
+    except IndexError:
+        print "Usage: python %s <tool shed .ini file> [options]" % sys.argv[ 0 ]
+        exit( 127 )
     config_parser = ConfigParser.ConfigParser( {'here':os.getcwd()} )
     config_parser.read( ini_file )
     config_dict = {}
@@ -161,6 +165,8 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     has_tests = 0
     no_tests = 0
     no_tools = 0
+    valid_revisions = 0
+    invalid_revisions = 0
     # Get the list of metadata records to check for functional tests and test data. Limit this to records that have not been flagged do_not_test
     # or tools_functionally_correct. Also filter out changeset revisions that are not downloadable, because it's redundant to test a revision that
     # a user can't install.
@@ -173,6 +179,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     repository_status[ 'invalid_tests' ] = []
     metadata_records_to_check = app.sa_session.query( app.model.RepositoryMetadata ) \
                                               .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
+                                                             app.model.RepositoryMetadata.table.c.includes_tools == True,
                                                              app.model.RepositoryMetadata.table.c.do_not_test == False,
                                                              app.model.RepositoryMetadata.table.c.tools_functionally_correct == False ) ) \
                                               .all()
@@ -185,87 +192,14 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
         repository_status[ 'invalid_tests' ] = []
         if metadata_record.repository.id not in checked_repository_ids:
             checked_repository_ids.append( metadata_record.repository.id )
-            if verbosity >= 1:
-                print '# Checking for functional tests in changeset revision %s of %s, owned by %s.' % \
-                    ( changeset_revision,  name, owner ) 
+        if verbosity >= 1:
+            print '# -------------------------------------------------------------------------------------------'
+            print '# Now checking revision %s of %s, owned by %s.' % ( changeset_revision,  name, owner ) 
         # If this changeset revision has no tools, we don't need to do anything here, the install and test script has a filter for returning
         # only repositories that contain tools.
         if 'tools' not in metadata_record.metadata:
-            no_tools += 1
             continue
         else:
-            # Loop through all the tools in this metadata record, checking each one for defined functional tests.
-            for tool_metadata in metadata_record.metadata[ 'tools' ]:
-                tool_count += 1
-                tool_id = tool_metadata[ 'id' ]
-                tool_version = tool_metadata[ 'version' ]
-                tool_guid = tool_metadata[ 'guid' ]
-                if verbosity >= 2:
-                    print "# Checking tool ID '%s' in changeset revision %s of %s." % \
-                        ( tool_id, changeset_revision, name ) 
-                # If there are no tests, this tool should not be tested, since the tool functional tests only report failure if the test itself fails,
-                # not if it's missing or undefined. Filtering out those repositories at this step will reduce the number of "false negatives" the
-                # automated functional test framework produces.
-                if 'tests' not in tool_metadata or not tool_metadata[ 'tests' ]:
-                    if verbosity >= 2:
-                        print '# No functional tests defined for %s.' % tool_id
-                    # The repository_metadata.tool_test_errors attribute should always have the following structure:
-                    # {
-                    #     "test_environment":
-                    #         {
-                    #              "galaxy_revision": "9001:abcd1234",
-                    #              "galaxy_database_version": "114",
-                    #              "tool_shed_revision": "9001:abcd1234",
-                    #              "tool_shed_mercurial_version": "2.3.1",
-                    #              "tool_shed_database_version": "17",
-                    #              "python_version": "2.7.2",
-                    #              "architecture": "x86_64",
-                    #              "system": "Darwin 12.2.0"
-                    #         },
-                    #     "test_errors":
-                    #         [
-                    #             {
-                    #                 "test_id": "The test ID, generated by twill",
-                    #                 "tool_id": "The tool ID that was tested",
-                    #                 "tool_version": "The tool version that was tested",
-                    #                 "stderr": "The output of the test, or a more detailed description of what was tested and what the outcome was."
-                    #                 "traceback": "The captured traceback."
-                    #             },
-                    #         ]
-                    #      "passed_tests":
-                    #         [
-                    #             {
-                    #                 "test_id": "The test ID, generated by twill",
-                    #                 "tool_id": "The tool ID that was tested",
-                    #                 "tool_version": "The tool version that was tested",
-                    #                 "stderr": "The output of the test, or a more detailed description of what was tested and what the outcome was."
-                    #             },
-                    #         ]
-                    #      "invalid_tests":
-                    #         [
-                    #             {
-                    #                 "tool_id": "The tool ID that does not have functional tests defined.",
-                    #                 "tool_version": "The version of the tool."
-                    #                 "tool_guid": "The guid of the tool."
-                    #                 "reason_test_is_invalid": "A short explanation of what is invalid.
-                    #             },
-                    #         ]
-                    # }
-                    # Optionally, "traceback" may be included in a test_errors dict, if it is relevant. No script should overwrite anything other
-                    # than the list relevant to what it is testing.
-                    test_errors = dict( tool_id=tool_id, tool_version=tool_version, tool_guid=tool_guid )
-                    repository_status[ 'invalid_tests' ].append( test_errors )
-                    no_tests += 1
-                else:
-                    if verbosity >= 2:
-                        print "# Tool ID '%s' in changeset revision %s of %s has one or more valid functional tests defined." % \
-                            ( tool_id, changeset_revision, name ) 
-                    has_tests += 1
-            if verbosity >= 1:
-                if not repository_status[ 'invalid_tests' ]:
-                    print '# All tools have functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
-                else:
-                    print '# Some tools missing functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
             has_test_data = False
             # Clone the repository up to the changeset revision we're checking.
             repo_dir = metadata_record.repository.repo_path( app )
@@ -285,9 +219,47 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
             # Remove the cloned repository path.
             if os.path.exists( work_dir ):
                 shutil.rmtree( work_dir )
-            if not has_test_data:
-                if verbosity >= 1:
+            if verbosity >= 1:
+                if not has_test_data:
                     print '# Test data missing in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+                else:
+                    print '# Test data found in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+                print '# Checking for functional tests in changeset revision %s of %s, owned by %s.' % \
+                    ( changeset_revision,  name, owner ) 
+            # Loop through all the tools in this metadata record, checking each one for defined functional tests.
+            for tool_metadata in metadata_record.metadata[ 'tools' ]:
+                tool_count += 1
+                tool_id = tool_metadata[ 'id' ]
+                tool_version = tool_metadata[ 'version' ]
+                tool_guid = tool_metadata[ 'guid' ]
+                if verbosity >= 2:
+                    print "# Checking tool ID '%s' in changeset revision %s of %s." % \
+                        ( tool_id, changeset_revision, name ) 
+                # If there are no tests, this tool should not be tested, since the tool functional tests only report failure if the test itself fails,
+                # not if it's missing or undefined. Filtering out those repositories at this step will reduce the number of "false negatives" the
+                # automated functional test framework produces.
+                tool_has_tests = True
+                if 'tests' not in tool_metadata or not tool_metadata[ 'tests' ]:
+                    tool_has_tests = False
+                    if verbosity >= 2:
+                        print '# No functional tests defined for %s.' % tool_id
+                    no_tests += 1
+                else:
+                    tool_has_tests = True
+                    if verbosity >= 2:
+                        print "# Tool ID '%s' in changeset revision %s of %s has one or more valid functional tests defined." % \
+                            ( tool_id, changeset_revision, name ) 
+                    has_tests += 1
+                failure_reason = ''
+                problem_found = False
+                if not has_test_data:
+                    failure_reason += 'Repository does not have a test-data directory. '
+                    problem_found = True
+                if not tool_has_tests:
+                    failure_reason += 'Functional test definitions missing for %s. ' % tool_id
+                    problem_found = True
+                test_errors = dict( tool_id=tool_id, tool_version=tool_version, tool_guid=tool_guid,
+                                    reason_test_is_invalid=failure_reason )
                 # The repository_metadata.tool_test_errors attribute should always have the following structure:
                 # {
                 #     "test_environment":
@@ -323,21 +295,28 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 #      "invalid_tests":
                 #         [
                 #             {
-                #                 "tool_id": "The tool ID that does not have functional tests defined.",
+                #                 "tool_id": "The ID of the tool that does not have valid tests.",
                 #                 "tool_version": "The version of the tool."
                 #                 "tool_guid": "The guid of the tool."
-                #                 "reason_test_is_invalid": "A short explanation of what is invalid.
+                #                 "reason_test_is_invalid": "A short explanation of what is invalid."
                 #             },
                 #         ]
                 # }
+                # 
                 # Optionally, "traceback" may be included in a test_errors dict, if it is relevant. No script should overwrite anything other
                 # than the list relevant to what it is testing.
-                test_errors = dict( tool_id=None, tool_version=None, tool_guid=None,
-                                    reason_test_is_invalid="Repository %s is missing a test-data directory." % name )
-                repository_status[ 'invalid_tests' ].append( test_errors )
-            else:
+                # Only append this error dict if it hasn't already been added.
+                if problem_found:
+                    if test_errors not in repository_status[ 'invalid_tests' ]:
+                        repository_status[ 'invalid_tests' ].append( test_errors )
+            if not repository_status[ 'invalid_tests' ]:
+                valid_revisions += 1
                 if verbosity >= 1:
-                    print '# Test data found in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+                    print '# All tools have functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
+            else:
+                invalid_revisions += 1
+                if verbosity >= 1:
+                    print '# Some tools missing functional tests in changeset revision %s of repository %s owned by %s.' % ( changeset_revision, name, owner )
             if not info_only:
                 # If repository_status[ 'test_errors' ] is empty, no issues were found, and we can just update time_last_tested with the platform
                 # on which this script was run.
@@ -356,8 +335,10 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                 app.sa_session.add( metadata_record )
                 app.sa_session.flush()
     stop = time.time()
+    print '# -------------------------------------------------------------------------------------------'
     print '# Checked %d repositories with %d tools in %d changeset revisions.' % ( len( checked_repository_ids ), tool_count, len( metadata_records_to_check ) )
-    print '# Skipped %d changeset revisions without tools.' % no_tools
+    print '# %d revisions found with functional tests and test data for all tools.' % valid_revisions
+    print '# %d revisions found with one or more tools missing functional tests and/or test data.' % invalid_revisions
     print '# Found %d tools without functional tests.' % no_tests
     print '# Found %d tools with functional tests.' % has_tests
     if info_only:

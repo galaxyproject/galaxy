@@ -104,11 +104,20 @@ tool_data_table_conf_xml_template = '''<?xml version="1.0"?>
 </tables>
 '''
 
-# Define a default location to find the list of repositories to check.
-galaxy_repository_list = os.environ.get( 'GALAXY_INSTALL_TEST_REPOSITORY_LIST_LOCATIOM', 'repository_list.json' )
-galaxy_tool_shed_url = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHED_URL', 'http://localhost:9009' )
+# The tool shed url and api key must be set for this script to work correctly. Additionally, if the tool shed url does not
+# point to one of the defaults, the GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF needs to point to a tool sheds configuration file
+# that contains a definition for that tool shed.
+
+galaxy_tool_shed_url = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHED_URL', None )
 tool_shed_api_key = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_SHED_API_KEY', None )
-assert tool_shed_api_key is not None, 'Unable to proceed without API key.'
+
+if tool_shed_api_key is None:
+    print "This script requires the GALAXY_INSTALL_TEST_TOOL_SHED_API_KEY environment variable to be set and non-empty."
+    exit( 1 )
+    
+if galaxy_tool_shed_url is None:
+    print "This script requires the GALAXY_INSTALL_TEST_TOOL_SHED_URL environment variable to be set and non-empty."
+    exit( 1 )
 
 if 'GALAXY_INSTALL_TEST_SECRET' not in os.environ:
     galaxy_encode_secret = 'changethisinproductiontoo'
@@ -462,8 +471,7 @@ def main():
         # Get a list of repositories to test from the tool shed specified in the GALAXY_INSTALL_TEST_TOOL_SHED_URL environment variable.
         log.info( "Retrieving repositories to install from the URL:\n%s\n" % str( galaxy_tool_shed_url ) )
         repositories_to_install = get_repositories_to_install( galaxy_tool_shed_url, source='url' )
-        log.info( "Retrieved %d repositories to install..." % len( repositories_to_install ) )
-        repositories_tested = len( repositories_to_install )
+        log.info( "Retrieved %d repositories from the API." % len( repositories_to_install ) )
         for repository_to_install_dict in repositories_to_install:
             # We need to get some details from the tool shed API, such as repository name and owner, to pass on to the
             # module that will generate the install methods.
@@ -473,13 +481,15 @@ def main():
             # and therefore do not need to be checked. If they are undeleted, this script will then test them the next time it runs.
             if repository_info_dict[ 'deleted' ]:
                 log.info( "Skipping revision %s of repository id %s (%s/%s) since the repository is deleted..." % \
-                          ( repository_info_dict[ 'changeset_revision' ], 
-                            repository_info_dict[ 'repository_id' ], 
+                          ( repository_to_install_dict[ 'changeset_revision' ], 
+                            repository_to_install_dict[ 'repository_id' ], 
                             repository_info_dict[ 'owner' ], 
                             repository_info_dict[ 'name' ] ) )
                 continue
             # Now merge the dict returned from /api/repository_revisions with the detailed dict we just retrieved.
             detailed_repository_list.append( dict( repository_info_dict.items() + repository_to_install_dict.items() ) )
+        repositories_tested = len( detailed_repository_list )
+        log.info( 'After removing deleted repositories from the list, %d remain to be tested.' % repositories_tested )
         if '-list_repositories' in sys.argv:
             log.info( "The API returned the following repositories, not counting deleted:" )
             for repository_info_dict in detailed_repository_list:
@@ -741,15 +751,15 @@ def main():
     print "# Repository revisions tested: %d" % repositories_tested
     if repositories_tested > 0:
         if repositories_passed:
-            print "# "
+            print '# ----------------------------------------------------------------------------------'
             print "# Repositories passed:"
             show_summary_output( repositories_passed )
         if repositories_failed:
-            print "# "
+            print '# ----------------------------------------------------------------------------------'
             print "# Repositories failed:"
             show_summary_output( repositories_failed )
         if repositories_failed_install:
-            print "# "
+            print '# ----------------------------------------------------------------------------------'
             print "# Repositories not installed correctly:"
             show_summary_output( repositories_failed_install )
     print "####################################################################################"
