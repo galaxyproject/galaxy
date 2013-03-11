@@ -155,9 +155,11 @@ class ReportResults( Plugin ):
             self.passed[ test_identifier ].append( fixed_test_id )
 
     def getTestStatus( self, test_identifier ):
-        tests_passed = self.passed[ test_identifier ]
-        del self.passed[ test_identifier ]
-        return tests_passed
+        if test_identifier in self.passed:
+            tests_passed = self.passed[ test_identifier ]
+            del self.passed[ test_identifier ]
+            return tests_passed
+        return []
 
 def execute_uninstall_method( repository_dict ):
     # Delete any configured tool functional tests from the test_toolbox.__dict__, otherwise nose will find them 
