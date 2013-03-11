@@ -21,22 +21,38 @@ from elementtree.ElementTree import Element
 
 log = logging.getLogger( __name__ )
 
+
 class InstalledRepositoryGrid( grids.Grid ):
+
+
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             if tool_shed_repository.update_available:
                 return '<div class="count-box state-color-running">%s</div>' % tool_shed_repository.name
             return tool_shed_repository.name
+
+
     class DescriptionColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.description
+
+
     class OwnerColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.owner
+
+
     class RevisionColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.changeset_revision
+
+
     class StatusColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             status_label = tool_shed_repository.status
             if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING,
@@ -65,10 +81,16 @@ class InstalledRepositoryGrid( grids.Grid ):
                 bgcolor = trans.model.ToolShedRepository.states.ERROR
             rval = '<div class="count-box state-color-%s">%s</div>' % ( bgcolor, status_label )
             return rval
+
+
     class ToolShedColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.tool_shed
+
+
     class DeletedColumn( grids.DeletedColumn ):
+
             def get_accepted_filters( self ):
                 """ Returns a list of accepted filters for this column. """
                 accepted_filter_labels_and_vals = { "Active" : "False", "Deactivated or uninstalled" : "True", "All": "All" }
@@ -139,23 +161,40 @@ class InstalledRepositoryGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( self.model_class )
 
+
 class RepositoryInstallationGrid( grids.Grid ):
+
+
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.name
+
+
     class DescriptionColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.description
+
+
     class OwnerColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.owner
+
+
     class RevisionColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             return tool_shed_repository.changeset_revision
+
+
     class StatusColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_shed_repository ):
             status_label = tool_shed_repository.status
             if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING,
@@ -217,6 +256,7 @@ class RepositoryInstallationGrid( grids.Grid ):
                       label_id_prefix="RepositoryStatus-" )
     ]
     operations = []
+
     def build_initial_query( self, trans, **kwd ):
         clause_list = []
         tool_shed_repository_ids = util.listify( kwd.get( 'tool_shed_repository_ids', None ) )
@@ -239,23 +279,37 @@ class RepositoryInstallationGrid( grids.Grid ):
                            .filter( or_( *clause_list ) )
         return trans.sa_session.query( self.model_class ) \
                                .filter( self.model_class.table.c.status == trans.model.ToolShedRepository.installation_status.NEW )
+
     def apply_query_filter( self, trans, query, **kwd ):
         tool_shed_repository_id = kwd.get( 'tool_shed_repository_id', None )
         if tool_shed_repository_id:
             return query.filter_by( tool_shed_repository_id=trans.security.decode_id( tool_shed_repository_id ) )
         return query
 
+
 class ToolDependencyGrid( grids.Grid ):
+
+
     class NameColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_dependency ):
             return tool_dependency.name
+
+
     class VersionColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_dependency ):
             return tool_dependency.version
+
+
     class TypeColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_dependency ):
             return tool_dependency.type
+
+
     class StatusColumn( grids.TextColumn ):
+
         def get_value( self, trans, grid, tool_dependency ):
             if tool_dependency.status in [ trans.model.ToolDependency.installation_status.INSTALLING ]:
                 bgcolor = trans.model.ToolDependency.states.INSTALLING
@@ -303,6 +357,7 @@ class ToolDependencyGrid( grids.Grid ):
                              condition=( lambda item: item.status in [ model.ToolDependency.installation_status.INSTALLED,
                                                                        model.ToolDependency.installation_status.ERROR ] ) )
     ]
+
     def build_initial_query( self, trans, **kwd ):
         tool_dependency_ids = shed_util.get_tool_dependency_ids( as_string=False, **kwd )
         if tool_dependency_ids:
@@ -312,11 +367,13 @@ class ToolDependencyGrid( grids.Grid ):
             return trans.sa_session.query( self.model_class ) \
                                    .filter( or_( *clause_list ) )
         return trans.sa_session.query( self.model_class )
+
     def apply_query_filter( self, trans, query, **kwd ):
         tool_dependency_id = kwd.get( 'tool_dependency_id', None )
         if tool_dependency_id:
             return query.filter_by( tool_dependency_id=trans.security.decode_id( tool_dependency_id ) )
         return query
+
 
 class AdminToolshed( AdminGalaxy ):
 
@@ -349,6 +406,7 @@ class AdminToolshed( AdminGalaxy ):
                                                           action='browse_repositories',
                                                           message=message,
                                                           status=status ) )
+
     @web.expose
     @web.require_admin
     def browse_repository( self, trans, **kwd ):
@@ -360,6 +418,7 @@ class AdminToolshed( AdminGalaxy ):
                                     repository=repository,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def browse_repositories( self, trans, **kwd ):
@@ -427,6 +486,7 @@ class AdminToolshed( AdminGalaxy ):
         if 'message' not in kwd or not kwd[ 'message' ]:
             kwd[ 'message' ] = 'Names of repositories for which updates are available are highlighted in yellow.'
         return self.installed_repository_grid( trans, **kwd )
+
     @web.expose
     @web.require_admin
     def browse_tool_dependency( self, trans, **kwd ):
@@ -450,6 +510,7 @@ class AdminToolshed( AdminGalaxy ):
                                     tool_dependency=tool_dependency,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def browse_tool_shed( self, trans, **kwd ):
@@ -457,6 +518,7 @@ class AdminToolshed( AdminGalaxy ):
         galaxy_url = web.url_for( '/', qualified=True )
         url = suc.url_join( tool_shed_url, 'repository/browse_valid_categories?galaxy_url=%s' % ( galaxy_url ) )
         return trans.response.send_redirect( url )
+
     @web.expose
     @web.require_admin
     def browse_tool_sheds( self, trans, **kwd ):
@@ -466,6 +528,7 @@ class AdminToolshed( AdminGalaxy ):
         return trans.fill_template( '/webapps/galaxy/admin/tool_sheds.mako',
                                     message=message,
                                     status='error' )
+
     @web.expose
     @web.require_admin
     def check_for_updates( self, trans, **kwd ):
@@ -478,6 +541,7 @@ class AdminToolshed( AdminGalaxy ):
                             'repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
                             ( web.url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision ) )
         return trans.response.send_redirect( url )
+
     @web.expose
     @web.require_admin
     def deactivate_or_uninstall_repository( self, trans, **kwd ):
@@ -562,6 +626,7 @@ class AdminToolshed( AdminGalaxy ):
                                     remove_from_disk_check_box=remove_from_disk_check_box,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def find_tools_in_tool_shed( self, trans, **kwd ):
@@ -569,6 +634,7 @@ class AdminToolshed( AdminGalaxy ):
         galaxy_url = web.url_for( '/', qualified=True )
         url = suc.url_join( tool_shed_url, 'repository/find_tools?galaxy_url=%s' % galaxy_url )
         return trans.response.send_redirect( url )
+
     @web.expose
     @web.require_admin
     def find_workflows_in_tool_shed( self, trans, **kwd ):
@@ -576,11 +642,13 @@ class AdminToolshed( AdminGalaxy ):
         galaxy_url = web.url_for( '/', qualified=True )
         url = suc.url_join( tool_shed_url, 'repository/find_workflows?galaxy_url=%s' % galaxy_url )
         return trans.response.send_redirect( url )
+
     @web.expose
     @web.require_admin
     def generate_workflow_image( self, trans, workflow_name, repository_id=None ):
         """Return an svg image representation of a workflow dictionary created when the workflow was exported."""
         return workflow_util.generate_workflow_image( trans, workflow_name, repository_metadata_id=None, repository_id=repository_id )
+
     @web.json
     @web.require_admin
     def get_file_contents( self, trans, file_path ):
@@ -588,6 +656,7 @@ class AdminToolshed( AdminGalaxy ):
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
         return suc.get_repository_file_contents( file_path )
+
     @web.expose
     @web.require_admin
     def get_repository_dependencies( self, trans, repository_id, repository_name, repository_owner, changeset_revision ):
@@ -610,6 +679,7 @@ class AdminToolshed( AdminGalaxy ):
         else:
             text = ''
         return text
+
     @web.expose
     @web.require_admin
     def get_tool_dependencies( self, trans, repository_id, repository_name, repository_owner, changeset_revision ):
@@ -632,6 +702,7 @@ class AdminToolshed( AdminGalaxy ):
         else:
             text = ''
         return text
+
     @web.expose
     @web.require_admin
     def get_updated_repository_information( self, trans, repository_id, repository_name, repository_owner, changeset_revision ):
@@ -649,9 +720,11 @@ class AdminToolshed( AdminGalaxy ):
         response.close()
         repo_information_dict = json.from_json_string( raw_text )
         return repo_information_dict
+
     def get_versions_of_tool( self, app, guid ):
         tool_version = shed_util.get_tool_version( app, guid )
         return tool_version.get_version_ids( app, reverse=True )
+
     def handle_repository_contents( self, trans, tool_shed_repository, tool_path, repository_clone_url, relative_install_dir, tool_shed=None,
                                     tool_section=None, shed_tool_conf=None, reinstalling=False ):
         """
@@ -731,6 +804,7 @@ class AdminToolshed( AdminGalaxy ):
             if display_path:
                 # Load proprietary datatype display applications
                 trans.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
+
     @web.expose
     @web.require_admin
     def import_workflow( self, trans, workflow_name, repository_id, **kwd ):
@@ -800,6 +874,7 @@ class AdminToolshed( AdminGalaxy ):
                                                           repository_id=repository_id,
                                                           message=message,
                                                           status=status ) )
+
     @web.expose
     @web.require_admin
     def initiate_tool_dependency_installation( self, trans, tool_dependencies ):
@@ -828,6 +903,7 @@ class AdminToolshed( AdminGalaxy ):
                                                           tool_dependency_ids=td_ids,
                                                           message=message,
                                                           status=status ) )
+
     @web.expose
     @web.require_admin
     def install_tool_dependencies( self, trans, **kwd ):
@@ -869,6 +945,7 @@ class AdminToolshed( AdminGalaxy ):
                                     tool_dependencies=tool_dependencies,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def install_tool_shed_repositories( self, trans, tool_shed_repositories, reinstalling=False, **kwd  ):
@@ -969,6 +1046,7 @@ class AdminToolshed( AdminGalaxy ):
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='monitor_repository_installation',
                                                           tool_shed_repository_ids=tsr_ids_for_monitoring ) )
+
     @web.expose
     @web.require_admin
     def manage_repository( self, trans, **kwd ):
@@ -1025,6 +1103,7 @@ class AdminToolshed( AdminGalaxy ):
                                     containers_dict=containers_dict,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def manage_repositories( self, trans, **kwd ):
@@ -1090,6 +1169,7 @@ class AdminToolshed( AdminGalaxy ):
                     kwd[ 'message' ] = 'All selected tool shed repositories are already installed.'
                     kwd[ 'status' ] = 'error'
         return self.repository_installation_grid( trans, **kwd )
+
     @web.expose
     @web.require_admin
     def manage_tool_dependencies( self, trans, **kwd ):
@@ -1169,6 +1249,7 @@ class AdminToolshed( AdminGalaxy ):
                         kwd[ 'message' ] = message
                         kwd[ 'status' ] = 'error'  
         return self.tool_dependency_grid( trans, **kwd )
+
     @web.expose
     @web.require_admin
     def monitor_repository_installation( self, trans, **kwd ):
@@ -1183,6 +1264,7 @@ class AdminToolshed( AdminGalaxy ):
             tsridslist = get_ids_of_tool_shed_repositories_being_installed( trans, as_string=False )
         kwd[ 'tool_shed_repository_ids' ] = tsridslist
         return self.repository_installation_grid( trans, **kwd )
+
     @web.json
     @web.require_admin
     def open_folder( self, trans, folder_path ):
@@ -1190,6 +1272,7 @@ class AdminToolshed( AdminGalaxy ):
         trans.response.headers['Pragma'] = 'no-cache'
         trans.response.headers['Expires'] = '0'
         return suc.open_repository_files_folder( trans, folder_path )
+
     @web.expose
     @web.require_admin
     def prepare_for_install( self, trans, **kwd ):
@@ -1395,7 +1478,7 @@ class AdminToolshed( AdminGalaxy ):
                                         message=message,
                                         status=status )
         else:
-            # If installing repositories that includes no tools and has not repository dependencies, display a page allowing the Galaxy administrator to
+            # If installing repositories that includes no tools and has no repository dependencies, display a page allowing the Galaxy administrator to
             # select a shed-related tool panel configuration file whose tool_path setting will be the location the repositories will be installed.
             return trans.fill_template( '/admin/tool_shed_repository/select_shed_tool_panel_config.mako',
                                         encoded_repo_info_dicts=encoded_repo_info_dicts,
@@ -1411,7 +1494,8 @@ class AdminToolshed( AdminGalaxy ):
                                         tool_panel_section_select_field=tool_panel_section_select_field,
                                         tool_shed_url=kwd[ 'tool_shed_url' ],
                                         message=message,
-                                        status=status ) 
+                                        status=status )
+
     @web.expose
     @web.require_admin
     def reinstall_repository( self, trans, **kwd ):
@@ -1535,6 +1619,7 @@ class AdminToolshed( AdminGalaxy ):
                                     tool_shed_repositories=tool_shed_repositories,
                                     initiate_repository_installation_ids=encoded_repository_ids,
                                     reinstalling=True )
+
     @web.json
     def repository_installation_status_updates( self, trans, ids=None, status_list=None ):
         # Avoid caching
@@ -1555,6 +1640,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                  repository=repository ),
                                                                                  'utf-8' ) ) )
         return rval
+
     @web.expose
     @web.require_admin
     def reselect_tool_panel_section( self, trans, **kwd ):
@@ -1707,6 +1793,7 @@ class AdminToolshed( AdminGalaxy ):
                                     repo_info_dict=repo_info_dict,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def reset_metadata_on_selected_installed_repositories( self, trans, **kwd ):
@@ -1720,6 +1807,7 @@ class AdminToolshed( AdminGalaxy ):
                                     repositories_select_field=repositories_select_field,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def reset_repository_metadata( self, trans, id ):
@@ -1758,6 +1846,7 @@ class AdminToolshed( AdminGalaxy ):
                                                           id=id,
                                                           message=message,
                                                           status=status ) )
+
     @web.expose
     @web.require_admin
     def reset_to_install( self, trans, **kwd ):
@@ -1780,6 +1869,7 @@ class AdminToolshed( AdminGalaxy ):
         return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                           action='manage_repository',
                                                           **kwd ) )
+
     def set_repository_attributes( self, trans, repository, status, error_message, deleted, uninstalled, remove_from_disk=False ):
         if remove_from_disk:
             relative_install_dir = repository.repo_path( trans.app )
@@ -1793,6 +1883,7 @@ class AdminToolshed( AdminGalaxy ):
         repository.uninstalled = uninstalled
         trans.sa_session.add( repository )
         trans.sa_session.flush()
+
     @web.expose
     @web.require_admin
     def set_tool_versions( self, trans, **kwd ):
@@ -1833,6 +1924,7 @@ class AdminToolshed( AdminGalaxy ):
                                     containers_dict=containers_dict,
                                     message=message,
                                     status=status )
+
     @web.json
     def tool_dependency_status_updates( self, trans, ids=None, status_list=None ):
         # Avoid caching
@@ -1853,6 +1945,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                                  tool_dependency=tool_dependency ),
                                                                                  'utf-8' ) ) )
         return rval
+
     @web.expose
     @web.require_admin
     def uninstall_tool_dependencies( self, trans, **kwd ):
@@ -1896,6 +1989,7 @@ class AdminToolshed( AdminGalaxy ):
                                     tool_dependencies=tool_dependencies,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def update_to_changeset_revision( self, trans, **kwd ):
@@ -1976,6 +2070,7 @@ class AdminToolshed( AdminGalaxy ):
                                                           id=trans.security.encode_id( repository.id ),
                                                           message=message,
                                                           status=status ) )
+
     @web.expose
     @web.require_admin
     def view_tool_metadata( self, trans, repository_id, tool_id, **kwd ):
@@ -2007,6 +2102,7 @@ class AdminToolshed( AdminGalaxy ):
                                     tool_lineage=tool_lineage,
                                     message=message,
                                     status=status )
+
     @web.expose
     @web.require_admin
     def view_workflow( self, trans, workflow_name=None, repository_id=None, **kwd ):
@@ -2027,6 +2123,7 @@ class AdminToolshed( AdminGalaxy ):
                                     metadata=metadata,
                                     message=message,
                                     status=status )
+
 ## ---- Utility methods -------------------------------------------------------
 
 def build_shed_tool_conf_select_field( trans ):
@@ -2044,6 +2141,7 @@ def build_shed_tool_conf_select_field( trans ):
     for option_tup in options:
         select_field.add_option( option_tup[0], option_tup[1] )
     return select_field
+
 def build_tool_panel_section_select_field( trans ):
     """Build a SelectField whose options are the sections of the current in-memory toolbox."""
     options = []
@@ -2054,9 +2152,14 @@ def build_tool_panel_section_select_field( trans ):
     for option_tup in options:
         select_field.add_option( option_tup[0], option_tup[1] )
     return select_field
+
+def can_select_tool_panel_section():
+    pass
+
 def get_tool_dependency( trans, id ):
     """Get a tool_dependency from the database via id"""
     return trans.sa_session.query( trans.model.ToolDependency ).get( trans.security.decode_id( id ) )
+
 def have_shed_tool_conf_for_install( trans ):
     if not trans.app.toolbox.shed_tool_confs:
         return False
