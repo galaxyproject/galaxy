@@ -254,7 +254,9 @@ class Configuration( object ):
             amqp_config = {}
         for k, v in amqp_config:
             self.amqp[k] = v
-        self.biostar = kwargs.get( 'biostar', None )
+        self.biostar_url = kwargs.get( 'biostar_url', None )
+        self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
+        self.biostar_key = kwargs.get( 'biostar_key', None )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         # Experimental: This will not be enabled by default and will hide 
         # nonproduction code.

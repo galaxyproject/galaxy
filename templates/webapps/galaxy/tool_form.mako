@@ -308,10 +308,10 @@
         %else:
             <div class="toolFormTitle">${tool.name} ${tool_version_select_field.get_html()}
         %endif
-        %if trans.app.config.biostar:
+
+        %if trans.app.config.biostar_url:
             <!-- BioStar links -->
-            <a href="${trans.app.config.biostar}/new/post/tagged/${low_tool_name}" target="galaxy_main" class="icon-button general-question tooltip close-side-panels" data-original-title="Ask a tool related question"></a>
-            <a href="${trans.app.config.biostar}/show/tag/${low_tool_name}/" target="galaxy_main" class="icon-button tag-question tooltip close-side-panels" data-original-title="See tool related posts" ></a>
+            <span class="pull-right"><a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}" target="galaxy_main" class="fa-icon-question-sign tooltip" data-original-title="Ask a question about this tool"></a></span>
             <!-- End of BioStar links -->
         %endif
         </div>

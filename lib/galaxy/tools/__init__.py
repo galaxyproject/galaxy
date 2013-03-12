@@ -402,6 +402,30 @@ class ToolBox( object ):
                                              self.app.model.ToolShedRepository.table.c.owner == owner,
                                              self.app.model.ToolShedRepository.table.c.installed_changeset_revision == installed_changeset_revision ) ) \
                               .first()
+
+    def get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
+        """
+        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling selection of a different version, the list of the tool's
+        loaded versions, and the specified tool.
+        """
+        toolbox = self
+        tool_version_select_field = None
+        tools = []
+        tool = None
+        # Backwards compatibility for datasource tools that have default tool_id configured, but which are now using only GALAXY_URL.
+        tool_ids = listify( tool_id )
+        for tool_id in tool_ids:
+            if get_loaded_tools_by_lineage:
+                tools = toolbox.get_loaded_tools_by_lineage( tool_id )
+            else:
+                tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
+            if tools:
+                tool = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=False )
+                if len( tools ) > 1:
+                    tool_version_select_field = self.build_tool_version_select_field( tools, tool.id, set_selected )
+                break
+        return tool_version_select_field, tools, tool
+
     def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
         try:
             path = elem.get( "file" )

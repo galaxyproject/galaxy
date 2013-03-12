@@ -12,6 +12,7 @@ from galaxy.tools.parameters import params_to_incoming, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter, UnvalidatedValue
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
+from galaxy.util import biostar
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import SelectField
@@ -42,28 +43,10 @@ class ToolRunner( BaseUIController ):
     def default(self, trans, tool_id=None, **kwd):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
+
     def __get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
-        """
-        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling selection of a different version, the list of the tool's
-        loaded versions, and the specified tool.
-        """
-        toolbox = self.get_toolbox()
-        tool_version_select_field = None
-        tools = []
-        tool = None
-        # Backwards compatibility for datasource tools that have default tool_id configured, but which are now using only GALAXY_URL.
-        tool_ids = galaxy.util.listify( tool_id )
-        for tool_id in tool_ids:
-            if get_loaded_tools_by_lineage:
-                tools = toolbox.get_loaded_tools_by_lineage( tool_id )
-            else:
-                tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
-            if tools:
-                tool = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=False )
-                if len( tools ) > 1:
-                    tool_version_select_field = self.build_tool_version_select_field( tools, tool.id, set_selected )
-                break
-        return tool_version_select_field, tools, tool
+        return self.get_toolbox().get_tool_components( tool_id, tool_version, get_loaded_tools_by_lineage, set_selected )
+
     @web.expose
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         # No tool id passed, redirect to main page
