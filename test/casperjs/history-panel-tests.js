@@ -24,7 +24,6 @@ try {
     phantom.exit( 1 );
 }
 
-
 // ===================================================================
 /* TODO:
     possibly break this file up
@@ -38,41 +37,36 @@ if( spaceghost.fixtureData.testUser ){
     spaceghost.info( 'Will use fixtureData.testUser: ' + email );
 }
 
-var nameSelector     = 'div#history-name',
-    unnamedName      = 'Unnamed history',
-    subtitleSelector = 'div#history-subtitle-area',
-    initialSizeStr   = '0 bytes',
-    tagIconSelector  = '#history-tag.icon-button',
-    annoIconSelector = '#history-annotate.icon-button',
-    emptyMsgSelector = '.infomessagesmall',
-    emptyMsgStr      = "Your history is empty. Click 'Get Data' on the left pane to start",
+// selectors and labels
+var nameSelector     = spaceghost.historypanel.data.selectors.history.name,
+    subtitleSelector = spaceghost.historypanel.data.selectors.history.subtitle,
+    unnamedName      = spaceghost.historypanel.data.text.history.newName,
+    initialSizeStr   = spaceghost.historypanel.data.text.history.newSize,
+    tagIconSelector  = spaceghost.historypanel.data.selectors.history.tagIcon,
+    annoIconSelector = spaceghost.historypanel.data.selectors.history.annoIcon,
+    emptyMsgSelector = spaceghost.historypanel.data.selectors.history.emptyMsg,
+    emptyMsgStr      = spaceghost.historypanel.data.text.history.emptyMsg,
+    wrapperOkClassName  = spaceghost.historypanel.data.selectors.hda.wrapper.stateClasses.ok,
+    tagAreaSelector     = spaceghost.historypanel.data.selectors.history.tagArea,
+    annoAreaSelector    = spaceghost.historypanel.data.selectors.history.annoArea,
+    nameTooltip      = spaceghost.historypanel.data.text.history.tooltips.name,
 
     tooltipSelector  = '.bs-tooltip',
-    nameTooltip      = 'Click to rename history',
 
     editableTextClass = 'editable-text',
     editableTextInputSelector = 'input#renaming-active',
 
-    wrapperOkClassName = 'historyItem-ok',
-
-    tagAreaSelector = '#history-tag-area',
-    annoAreaSelector = '#history-annotation-area',
     refreshButtonSelector = 'a#history-refresh-button',
     refreshButtonIconSelector = 'span.fa-icon-refresh',
     refreshButtonHref = '/history',
 
-    //historyOptionsButtonSelector = '#history-options-button',
-    //historyOptionsButtonIconSelector = 'span.fa-icon-cog',
     includeDeletedOptionsLabel = spaceghost.historyoptions.data.labels.options.includeDeleted;
 
-function historyOptionXpathByLabel( label ){
-    return xpath( '//ul[@id="history-options-button-menu"]/li/a[text()[contains(.,"' + label + '")]]' );
-}
-
+// local
 var newHistoryName = "Test History",
     filepathToUpload = '../../test-data/1.txt',
     historyFrameInfo = {},
-    testUploadInfo = {};
+    uploadInfo = {};
 
 
 // =================================================================== TESTS
@@ -184,7 +178,7 @@ spaceghost.then( function(){
 // ------------------------------------------------------------------- check structure of NON empty history
 // upload file: 1.txt
 spaceghost.then( function upload(){
-    this.test.comment( 'should be able to upload files' );
+    this.test.comment( 'uploaded file should appear in history' );
     spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
         this.debug( 'uploaded HDA info: ' + this.jsonStr( _uploadInfo ) );
         var hasHda = _uploadInfo.hdaElement,
@@ -224,27 +218,21 @@ spaceghost.then( function checkPanelStructure(){
 
 // ------------------------------------------------------------------- tags
 // keeping this light here - better for it's own test file
+//TODO: check tooltips
 spaceghost.then( function openTags(){
     this.test.comment( 'tag area should open when the history panel tag icon is clicked' );
     this.withFrame( this.selectors.frames.history, function(){
+        this.capture( 'tag-area.png' );
         this.mouseEvent( 'click', tagIconSelector );
         this.wait( 1000, function(){
             this.test.assertVisible( tagAreaSelector, 'Tag area is now displayed' );
         });
     });
 });
-spaceghost.then( function closeTags(){
-    this.test.comment( 'tag area should close when the history panel tag icon is clicked again' );
-    this.withFrame( this.selectors.frames.history, function(){
-        this.mouseEvent( 'click', tagIconSelector );
-        this.wait( 1000, function(){
-            this.test.assertNotVisible( tagAreaSelector, 'Tag area is now hidden' );
-        });
-    });
-});
 
 // ------------------------------------------------------------------- annotation
 // keeping this light here - better for it's own test file
+//TODO: check tooltips
 spaceghost.then( function openAnnotation(){
     this.test.comment( 'annotation area should open when the history panel annotation icon is clicked' );
     this.withFrame( this.selectors.frames.history, function(){
@@ -346,7 +334,8 @@ spaceghost.then( function(){
     this.withFrame( this.selectors.frames.history, function(){
         this.waitForSelector( nameSelector, function(){
             //TODO: to conv. fn
-            this.click( '#' + uploadInfo.hdaElement.attributes.id + ' .historyItemUndelete' );
+            this.click( '#' + uploadInfo.hdaElement.attributes.id
+                + ' ' + this.historypanel.data.selectors.history.undeleteLink );
         });
     });
 });

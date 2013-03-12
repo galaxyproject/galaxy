@@ -31,7 +31,6 @@ HistoryPanel.prototype.toString = function toString(){
 
 */
 // =================================================================== INTERNAL
-
 // =================================================================== API (external)
 /** Find the casper element info of the hda wrapper given the hda title and hid.
  *      NOTE: if more than one is found, will return the first found.
@@ -46,6 +45,7 @@ HistoryPanel.prototype.hdaElementInfoByTitle = function hdaElementInfoByTitle( t
         wrapperInfo = null;
 
     //NOTE: depends on jquery
+    //TODO: move to xpath
     wrapperInfo = spaceghost.evaluate( function( titleContains ){
         // find the title, then the wrapper (2 containers up)
         var $title = $( '.historyItemTitle:contains(' + titleContains + ')' );
@@ -198,4 +198,55 @@ HistoryPanel.prototype.expandHda = function expandHda( hdaSelector ){
             historyFrameInfo.x + titleInfo.x + 1, historyFrameInfo.y + titleInfo.y - 5 );
     });
     return spaceghost;
+};
+
+
+// =================================================================== SELECTORS
+//TODO: data is not a very good name
+HistoryPanel.prototype.data = {
+    selectors : {
+        history : {
+            name        : 'div#history-name',
+            subtitle    : 'div#history-subtitle-area',
+            tagIcon     : '#history-tag.icon-button',
+            tagArea     : '#history-tag-area',
+            annoIcon    : '#history-annotate.icon-button',
+            annoArea    : '#history-annotation-area',
+            emptyMsg    : '.infomessagesmall',
+            undeleteLink : '.historyItemUndelete'
+        },
+        hda : {
+            wrapper : {
+                stateClasses : {
+                    prefix  : 'historyItem-',
+                    ok      : 'historyItem-ok'
+                }
+            }
+        }
+    },
+    labels : {
+        history : {
+        },
+        hda : {
+        }
+    },
+    text : {
+        anonymous : {
+            tooltips : {
+                name    : 'You must be logged in to edit your history name'
+            }
+        },
+        history : {
+            tooltips : {
+                name     : 'Click to rename history',
+                tagIcon  : 'Edit history tags',
+                annoIcon : 'Edit history annotation'
+            },
+            newName  : 'Unnamed history',
+            newSize  : '0 bytes',
+            emptyMsg : "Your history is empty. Click 'Get Data' on the left pane to start"
+        },
+        hda : {
+        }
+    }
 };

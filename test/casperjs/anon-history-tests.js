@@ -39,23 +39,22 @@ if( spaceghost.fixtureData.testUser ){
     spaceghost.info( 'Will use fixtureData.testUser: ' + email );
 }
 
-var galaxyCookieName = 'galaxysession',
-
-    nameSelector     = 'div#history-name',
-    unnamedName      = 'Unnamed history',
-    subtitleSelector = 'div#history-subtitle-area',
-    initialSizeStr   = '0 bytes',
-    tagIconSelector  = '#history-tag.icon-button',
-    annoIconSelector = '#history-annotate.icon-button',
-    //emptyMsgSelector = '#emptyHistoryMessage';
-    emptyMsgSelector = '.infomessagesmall',
-    emptyMsgStr      = "Your history is empty. Click 'Get Data' on the left pane to start",
-
-    tooltipSelector  = '.bs-tooltip',
-    anonNameTooltip  = 'You must be logged in to edit your history name',
+var tooltipSelector  = '.bs-tooltip',
 
     editableTextClass = 'editable-text',
-    editableTextInputSelector = 'input#renaming-active';
+    editableTextInputSelector = 'input#renaming-active',
+
+    galaxyCookieName = 'galaxysession';
+
+    unnamedName         = spaceghost.historypanel.data.text.history.newName,
+    nameSelector        = spaceghost.historypanel.data.selectors.history.name,
+    subtitleSelector    = spaceghost.historypanel.data.selectors.history.subtitle,
+    initialSizeStr      = spaceghost.historypanel.data.text.history.newSize,
+    tagIconSelector     = spaceghost.historypanel.data.selectors.history.tagIcon,
+    annoIconSelector    = spaceghost.historypanel.data.selectors.history.annoIcon,
+    emptyMsgSelector    = spaceghost.historypanel.data.selectors.history.emptyMsg,
+    emptyMsgStr         = spaceghost.historypanel.data.text.history.emptyMsg,
+    anonNameTooltip     = spaceghost.historypanel.data.text.anonymous.tooltips.name;
 
 var historyFrameInfo = {},
     testUploadInfo = {};
@@ -111,8 +110,8 @@ spaceghost.thenOpen( spaceghost.baseUrl, function testPanelStructure(){
         this.test.assertDoesntExist( tagIconSelector,  'Tag icon button not found' );
         this.test.assertDoesntExist( annoIconSelector, 'Annotation icon button not found' );
 
-        this.test.comment( "A message about the current history being empty should be displayed" );
         this.test.assertExists( emptyMsgSelector, emptyMsgSelector + ' exists' );
+        this.test.comment( "A message about the current history being empty should be displayed" );
         this.test.assertVisible( emptyMsgSelector, 'Empty history message is visible' );
         this.test.assertSelectorHasText( emptyMsgSelector, emptyMsgStr,
             'Message contains "' + emptyMsgStr + '"' );

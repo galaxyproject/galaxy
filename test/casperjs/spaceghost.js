@@ -120,7 +120,7 @@ SpaceGhost.prototype.init = function init( options ){
 
     // save errors for later output (needs to go before process CLI)
     this.errors = [];
-    this.on( 'error', function( msg, backtrace ){
+    this.on( 'error', function pushErrorToStack( msg, backtrace ){
         //this.debug( 'adding error to stack: ' + msg + ', trace:' + JSON.stringify( backtrace, null, 2 ) );
         this.errors.push({ msg: msg, backtrace: backtrace });
     });
@@ -187,6 +187,8 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
         //screenOnError   : { defaultsTo: false, flag: 'error-screen',   help: 'capture a screenshot on a page error' },
         //textOnError     : { defaultsTo: false, flag: 'error-text',     help: 'output page text on a page error' },
         //htmlOnError     : { defaultsTo: false, flag: 'error-html',   help: 'output page html on a page error' }
+        //htmlOnFail      : { defaultsTo: false, flag: 'fail-html',   help: 'output page html on a test failure' },
+        //screenOnFail    : { defaultsTo: false, flag: 'fail-screen',   help: 'capture a screenshot on a test failure' }
     };
 
     // --url parameter required (the url of the server to test with)
@@ -196,17 +198,16 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
     }
     this.baseUrl = this.cli.get( 'url' );
 
+    //TODO: move these handlers into _setUpEventHandlers
     // --return-json: supress all output except for JSON logs, test results, and errors at finish
     //  this switch allows a testing suite to send JSON data back via stdout (w/o logs, echos interferring)
     this.options.returnJsonOnly = CLI_OPTIONS.returnJsonOnly.defaultsTo;
     if( this.cli.has( CLI_OPTIONS.returnJsonOnly.flag ) ){
         this.options.returnJsonOnly = true;
 
-        //this._suppressOutput();
         this._redirectOutputToStderr();
-
         // output json on fail-first error
-        this.on( 'error', function( msg, backtrace ){
+        this.on( 'error', function outputJSONOnError( msg, backtrace ){
             //console.debug( 'return-json caught error' );
             if( spaceghost.options.exitOnError ){
                 this.outputStateAsJson();
@@ -216,6 +217,7 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
         // non-error finshes/json-output are handled in run() for now
     }
 
+    //TODO: remove boilerplate
     // --error-on-alert=false: don't throw an error if the page calls alert (default: true)
     this.options.raisePageError = CLI_OPTIONS.raisePageError.defaultsTo;
     if( this.cli.has( CLI_OPTIONS.raisePageError.flag ) ){
@@ -244,10 +246,13 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
         this.on( 'page.error', this._saveHtmlOnErrorHandler );
     }
 
-    // --error-screen: print the casper.debugPage (the page's text) output on an error
+    // --error-screen: capture the casper browser screen on an error
     if( this.cli.has( 'error-screen' ) ){
         this.on( 'page.error', this._saveScreenOnErrorHandler );
     }
+
+    // --fail-html: print the casper.debugHTML (the page's html) output on an test failure
+    // --fail-screen: print the casper browser screen output on an test failure
     */
 
     // get any fixture data passed in as JSON in args
@@ -457,16 +462,18 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
     //TODO:  *  @param {Boolean} removeOtherListeners option to remove other listeners while this fires
     // create three steps: 1) set up new error handler, 2) try the fn, 3) check for errors and rem. handler
     var originalExitOnError,
+        originalErrorHandlers = [],
         errorMsg = '', errorTrace = [],
         recordError = function( msg, trace ){
             errorMsg = msg; errorTrace = trace;
         };
 
-    // dont bail on the error (but preserve option), install hndlr to simply record msg, trace
-    //NOTE: haven't had to remove other listeners yet
+    // dont bail on the error (but preserve option), uninstall other handlers,
+    //  and install hndlr to simply record msg, trace
     this.then( function(){
         originalExitOnError = this.options.exitOnError;
         this.options.exitOnError = false;
+        originalErrorHandlers = this.popAllListeners( 'error' );
         this.on( 'error', recordError );
     });
 
@@ -478,12 +485,24 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
         if( errorMsg ){
             catchFn.call( this, errorMsg, errorTrace );
         }
-        // remove that listener either way and restore the bail option
+        // remove that listener either way, restore original handlers, and restore the bail option
         this.removeListener( 'error', recordError );
+        this.addListeners( 'error', originalErrorHandlers );
         this.options.exitOnError = originalExitOnError;
     });
 };
 
+/** Override capture to save to environ: GALAXY_TEST_SAVE (or passed in from CLI)
+ *  @param {String} filename    the image filename
+ */
+SpaceGhost.prototype.capture = function capture( filename, clipRect_or_selector ){
+    //TODO: override with saved output dir
+    if( clipRect_or_selector && ( !utils.isClipRect( clipRect_or_selector ) ) ){
+        this.debug( "USING CAPTURE SELECTOR" );
+        return this.captureSelector( filename, clipRect_or_selector );
+    }
+    return Casper.prototype.capture.apply( this, arguments );
+};
 
 // =================================================================== TESTING
 //TODO: form fill doesn't work as casperjs would want it - often a button -> controller url
@@ -600,6 +619,25 @@ SpaceGhost.prototype.tryClick = function tryClick( selector ){
 
 // =================================================================== GALAXY CONVENIENCE
 // =================================================================== MISCELAIN
+/** Pop all handlers for eventName from casper and return them in order.
+ *  @param {String} eventName   the name of the event from which to remove handlers
+ */
+SpaceGhost.prototype.popAllListeners = function popAllListeners( eventName ){
+    var returnedListeners = this.listeners( eventName );
+    this.removeAllListeners( eventName );
+    return returnedListeners;
+};
+
+/** Add the given list of handler functions to the listener for eventName in order.
+ *  @param {String} eventName   the name of the event to which to add handlers
+ *  @param {Array} handlerArray an array of event handler functions to add
+ */
+SpaceGhost.prototype.addListeners = function addListeners( eventName, handlerArray ){
+    for( var i=0; i<handlerArray.length; i++ ){
+        this.addListener( eventName, handlerArray[i] );
+    }
+};
+
 /** Send message to stderr
  */
 SpaceGhost.prototype.stderr = function( msg ){

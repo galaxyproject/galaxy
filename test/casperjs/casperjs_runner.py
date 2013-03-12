@@ -344,6 +344,15 @@ class Test_03_HistoryPanel( CasperJSTestCase ):
         self.run_js_script( 'anon-history-tests.js' )
 
 
+class Test_04_HDAs( CasperJSTestCase ):
+    """(Minimal) casperjs tests for tools.
+    """
+    def test_00_HDA_states( self ):
+        """Test structure rendering of HDAs in all the possible HDA states
+        """
+        self.run_js_script( 'hda-state-tests.js' )
+
+
 
 # ==================================================================== MAIN
 if __name__ == '__main__':
