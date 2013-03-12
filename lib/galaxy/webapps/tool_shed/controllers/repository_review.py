@@ -20,11 +20,13 @@ log = logging.getLogger( __name__ )
 class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
     
     component_grid = repository_review_grids.ComponentGrid()
+    repositories_ready_for_review_grid = repository_review_grids.RepositoriesReadyForReviewGrid()
     repositories_reviewed_by_me_grid = repository_review_grids.RepositoriesReviewedByMeGrid()
     repositories_with_reviews_grid = repository_review_grids.RepositoriesWithReviewsGrid()
     repositories_without_reviews_grid = repository_review_grids.RepositoriesWithoutReviewsGrid()
     repository_reviews_by_user_grid = repository_review_grids.RepositoryReviewsByUserGrid()
     reviewed_repositories_i_own_grid = repository_review_grids.ReviewedRepositoriesIOwnGrid()
+    repositories_with_invalid_tests_grid = repository_review_grids.RepositoriesWithInvalidTestsGrid()
 
     @web.expose
     @web.require_login( "approve repository review" )
@@ -368,6 +370,31 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
         return self.component_grid( trans, **kwd )
 
     @web.expose
+    @web.require_login( "manage repositories ready for review" )
+    def manage_repositories_ready_for_review( self, trans, **kwd ):
+        """
+        A repository is ready to be reviewed if one of the following conditions is met:
+        1) It contains no tools
+        2) It contains tools the tools_functionally_correct flag is set to True.  This implies that the repository metadata revision was installed and tested
+           by the Tool Shed's install and test framework.
+        """
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "inspect repository revisions":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='create_review',
+                                                                  **kwd ) )
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+        message = 'Any of these repositories that contain tools have been installed into Galaxy and proven to be functionally correct by executing the tests defined '
+        message += 'for each tool.  Repositories that do not contain tools have not been installed into Galaxy. '
+        kwd[ 'message' ] = message
+        kwd[ 'status' ] = 'warning'
+        return self.repositories_ready_for_review_grid( trans, **kwd )
+
+    @web.expose
     @web.require_login( "manage repositories reviewed by me" )
     def manage_repositories_reviewed_by_me( self, trans, **kwd ):
         # The value of the received id is the encoded repository id.
@@ -381,6 +408,25 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                               **kwd ) )
         self.repositories_reviewed_by_me_grid.title = 'Repositories reviewed by me'
         return self.repositories_reviewed_by_me_grid( trans, **kwd )
+
+    @web.expose
+    @web.require_login( "manage repositories with invalid tests" )
+    def manage_repositories_with_invalid_tests( self, trans, **kwd ):
+        """Display a list of repositories that contain tools, have not yet been reviewed, and have invalid functional tests."""
+        if 'operation' in kwd:
+            operation = kwd['operation'].lower()
+            if operation == "inspect repository revisions":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='create_review',
+                                                                  **kwd ) )
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository_review',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+        message = 'These repositories contain tools with invalid functional tests (they have not yet been reviewed).  '
+        kwd[ 'message' ] = message
+        kwd[ 'status' ] = 'warning'
+        return self.repositories_with_invalid_tests_grid( trans, **kwd )
 
     @web.expose
     @web.require_login( "manage repositories with reviews" )
