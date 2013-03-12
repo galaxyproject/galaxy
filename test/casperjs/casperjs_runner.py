@@ -47,6 +47,7 @@ _PATH_TO_HEADLESS = 'casperjs'
 _TODO = """
     get data back from js scripts (uploaded files, etc.)
     use returned json to output list of failed assertions if code == 2
+    better way to turn debugging on from the environment
 """
 
 # ====================================================================
@@ -72,7 +73,7 @@ class CasperJSTestCase( unittest.TestCase ):
     debug = False
     # bit of a hack - this is the beginning of the last string when capserjs --verbose=true --logLevel=debug
     #   use this to get subprocess to stop waiting for output
-    casper_done_str = '[info] [phantom] Done'
+    casper_done_str = '# Tests complete'
 
     # convert js test results to unittest.TestResults
     results_adapter = None #CasperJsonToUnittestResultsConverter()
@@ -140,8 +141,11 @@ class CasperJSTestCase( unittest.TestCase ):
         command_line_list.append( '--return-json' )
 
         # check flag to output (very) verbose debugging messages from casperjs and tests
-        if self.debug:
+        #NOTE: this can be set in the class or by using the debug_these_tests flag in server_env
+        if( ( self.debug )
+        or  ( rel_script_path in self.env.debug_these_tests ) ):
             command_line_list.extend([ '--verbose=true', '--logLevel=debug' ])
+            #TODO: add capture, html output flags
 
         #TODO: allow casperjs cli options ('--includes='), ?in args, kwargs?
         command_line_list.extend( args )
@@ -297,16 +301,15 @@ test_user = {
 class Test_01_User( CasperJSTestCase ):
     """TestCase that uses javascript and a headless browser to test dynamic pages.
     """
-    #debug = True
     def test_10_registration( self ):
         """User registration tests: register new user, logout, attempt bad registrations.
         """
         # all keywords will be compiled into a single JSON obj and passed to the server
         #self.run_js_script( 'registration-tests.js',
+        #    testUser=test_user )
         #    # this causes a time out in history-panel-tests: why?
         #    # also: I can't seem to bump the timeout to an error (using a handler) - causes script to hang
         #    #   removing for the sake of bbot
-        #    testUser=test_user )
         self.run_js_script( 'registration-tests.js' )
 
         #TODO:?? could theoretically do db cleanup, checks here with SQLALX
@@ -321,7 +324,6 @@ class Test_01_User( CasperJSTestCase ):
 class Test_02_Tools( CasperJSTestCase ):
     """(Minimal) casperjs tests for tools.
     """
-    #debug = True
     def test_10_upload( self ):
         """Tests uploading files
         """
@@ -331,7 +333,6 @@ class Test_02_Tools( CasperJSTestCase ):
 class Test_03_HistoryPanel( CasperJSTestCase ):
     """(Minimal) casperjs tests for tools.
     """
-    #debug = True
     def test_00_history_panel( self ):
         """Test history panel basics (controls, structure, refresh, history options menu, etc.).
         """
@@ -347,6 +348,8 @@ class Test_03_HistoryPanel( CasperJSTestCase ):
 # ==================================================================== MAIN
 if __name__ == '__main__':
     log.setLevel( logging.DEBUG )
+    from server_env import log as server_env_log
+    server_env_log.setLevel( logging.DEBUG )
     setup_module()
     #TODO: server_env config doesn't work with unittest's lame main fn
     unittest.main()

@@ -432,7 +432,10 @@ SpaceGhost.prototype.run = function run( onComplete, time ){
             var returnCode = ( this.test.testResults.failed )?( 2 ):( 0 );
 
             // if --return-json is used: output json and exit
+            //NOTE: used by the test runner to gather JSON test info from stdout
             if( this.options.returnJsonOnly ){
+                // echo a string to indicate that tests are complete (used in casperjs_runner.py to stop process)
+                this.echo( '# Tests complete' );
                 this.outputStateAsJson();
                 this.exit( returnCode );
 
