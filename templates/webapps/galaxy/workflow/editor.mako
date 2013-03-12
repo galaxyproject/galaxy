@@ -909,7 +909,7 @@
                     <div class="toolSectionWrapper">
                     %if key.startswith( 'tool' ):
                         ${render_tool( val, False )}
-                    %elif key.startswith( 'section' ):
+                    %elif key.startswith( 'section' ) and val.elems:
                     <% section = val %>
                         <div class="toolSectionTitle" id="title_${section.id}">
                             <span>${section.name}</span>
