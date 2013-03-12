@@ -82,6 +82,7 @@ class Configuration( object ):
         self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://wiki.g2.bx.psu.edu/FrontPage' )
         self.blog_url = kwargs.get( 'blog_url', None )
+        self.biostar_url = kwargs.get( 'biostar_url', None )
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.log_events = False
         self.cloud_controller_instance = False
