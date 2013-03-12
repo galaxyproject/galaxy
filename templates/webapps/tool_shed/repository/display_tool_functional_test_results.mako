@@ -136,23 +136,28 @@
             </div>
             <div class="form-row">
                 <table width="100%">
-                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Test environment</td></tr>
+                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Tool Shed environment</td></tr>
                 </table>
             </div>
             <div class="form-row">
-                <label>Architecture:</label>
-                ${test_environment_dict.get( 'architecture', 'unknown' ) | h}
+                <label>Tool shed version:</label>
+                ${test_environment_dict.get( 'tool_shed_revision', 'unknown' ) | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Python version:</label>
-                ${test_environment_dict.get( 'python_version', 'unknown' ) | h}
+                <label>Tool shed database version:</label>
+                ${test_environment_dict.get( 'tool_shed_database_version', 'unknown' ) | h}
                 <div style="clear: both"></div>
             </div>
             <div class="form-row">
-                <label>Operating system:</label>
-                ${test_environment_dict.get( 'system', 'unknown' ) | h}
+                <label>Mercurial version:</label>
+                ${test_environment_dict.get( 'tool_shed_mercurial_version', 'unknown' ) | h}
                 <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <table width="100%">
+                    <tr bgcolor="#D8D8D8" width="100%"><td><b>Galaxy environment</td></tr>
+                </table>
             </div>
             <div class="form-row">
                 <label>Galaxy version:</label>
@@ -162,6 +167,21 @@
             <div class="form-row">
                 <label>Galaxy database version:</label>
                 ${test_environment_dict.get( 'galaxy_database_version', 'unknown' ) | h}
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <label>Architecture:</label>
+                ${test_environment_dict.get( 'architecture', 'unknown' ) | h}
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <label>Operating system:</label>
+                ${test_environment_dict.get( 'system', 'unknown' ) | h}
+                <div style="clear: both"></div>
+            </div>
+            <div class="form-row">
+                <label>Python version:</label>
+                ${test_environment_dict.get( 'python_version', 'unknown' ) | h}
                 <div style="clear: both"></div>
             </div>
             %if test_errors:
