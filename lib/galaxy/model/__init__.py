@@ -1902,6 +1902,8 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb )
+        if ldda.extended_metadata is not None:
+            rval['extended_metadata'] = ldda.extended_metadata.data
         for name, spec in ldda.metadata.spec.items():
             val = ldda.metadata.get( name )
             if isinstance( val, MetadataFile ):

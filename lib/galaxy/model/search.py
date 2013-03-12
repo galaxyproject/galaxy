@@ -29,9 +29,10 @@ import parsley
 import re
 
 from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, History
-from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation
+from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation, ExtendedMetadata, ExtendedMetadataIndex
 
 from sqlalchemy import or_, and_
+from sqlalchemy.orm import aliased
 
 log = logging.getLogger( __name__ )
 
@@ -56,25 +57,31 @@ class ViewQueryBaseClass(object):
     def __init__(self):
         self.query = None
         self.do_query = False
+        self.state = {}
 
     def filter(self, left, operator, right):
-        if left in self.FIELDS:
-            self.do_query = True
-            field = self.FIELDS[left]
-            if field.sqlalchemy_field is not None:
-                if operator == "=":
-                    self.query = self.query.filter( field.sqlalchemy_field == right )
-                elif operator == "like":
-                    self.query = self.query.filter( field.sqlalchemy_field.like(right) )
-                else:
-                    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
-            elif field.handler is not None:
-                field.handler(self, left, operator, right)
-            else:
-                raise GalaxyParseError("Unable to filter on field: %s" % (left))
-
+        if operator == 'and':
+            self.filter(left.left, left.operator, left.right)
+            self.filter(right.left, right.operator, right.right)
         else:
-            raise GalaxyParseError("Unknown field: %s" % (left))
+            left_base = left.split('.')[0]
+            if left_base in self.FIELDS:
+                self.do_query = True
+                field = self.FIELDS[left_base]
+                if field.sqlalchemy_field is not None:
+                    if operator == "=":
+                        self.query = self.query.filter( field.sqlalchemy_field == right )
+                    elif operator == "like":
+                        self.query = self.query.filter( field.sqlalchemy_field.like(right) )
+                    else:
+                        raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+                elif field.handler is not None:
+                    field.handler(self, left, operator, right)
+                else:
+                    raise GalaxyParseError("Unable to filter on field: %s" % (left))
+
+            else:
+                raise GalaxyParseError("Unknown field: %s" % (left))
 
     def search(trans):
         raise GalaxyParseError("Unable to search view: %s" % (self.VIEW_NAME))
@@ -91,17 +98,19 @@ class ViewQueryBaseClass(object):
 
 def library_extended_metadata_filter(view, left, operator, right):
     view.do_query = True
-    view.query = view.query.join( ExtendedMetadata )
-    ex_meta = arg.other
-    for f in ex_meta:
-        alias = aliased( ExtendedMetadataIndex )
-        view.query = view.query.filter( 
-            and_( 
-                ExtendedMetadata.id == alias.extended_metadata_id, 
-                alias.path == "/" + f,
-                alias.value == str(ex_meta[f]) 
-            )
+    if 'extended_metadata_joined' not in view.state:
+        view.query = view.query.join( ExtendedMetadata )
+        view.state['extended_metadata_joined'] = True
+    alias = aliased( ExtendedMetadataIndex )
+    field = "/%s" % ("/".join(left.split(".")[1:]))
+    print "FIELD", field
+    view.query = view.query.filter( 
+        and_( 
+            ExtendedMetadata.id == alias.extended_metadata_id, 
+            alias.path == field,
+            alias.value == str(right) 
         )
+    )
 
 
 class LibraryDatasetView(ViewQueryBaseClass):
@@ -232,21 +241,27 @@ The GQL gramar is defined in Parsley syntax ( http://parsley.readthedocs.org/en/
 
 gqlGrammar = """
 expr = 'select' bs field_desc:f bs 'from' bs word:t ( 
-    bs 'where' bs conditional:c -> GalaxyQuery(f,t,c)
-    | -> GalaxyQuery(f, t, None) )
+    bs 'where' bs conditional:c ws -> GalaxyQuery(f,t,c)
+    | ws -> GalaxyQuery(f, t, None) )
 bs = ' '+
 ws = ' '*
 field_desc = ( '*' -> ['*']
     | field_list )
-field_list = word:x ( 
+field_list = field_name:x ( 
     ws ',' ws field_list:y -> [x] + y 
-    | -> [x] )
-conditional = (
-    logic_statement:x -> x
-    | conditional:x 'and' conditional:y -> GalaxyQueryAnd(x,y) )
+    | -> [x] 
+    )
+conditional = logic_statement:x (
+    bs 'and' bs conditional:y -> GalaxyQueryAnd(x,y) 
+    | -> x 
+    )
 word = alphanum+:x -> "".join(x) 
+field_name = word:x (
+    '.' quote_word:y  -> x + "." + y 
+    |-> x
+    ) 
 alphanum = anything:x ?(re.search(r'\w', x) is not None) -> x
-logic_statement = word:left ws comparison:comp ws quotable_word:right -> GalaxyQueryComparison(left, comp, right)
+logic_statement = field_name:left ws comparison:comp ws quotable_word:right -> GalaxyQueryComparison(left, comp, right)
 quotable_word = ( word | quote_word )
 comparison = ( '=' -> '='
     | '>' -> '>'
@@ -278,6 +293,17 @@ class GalaxyQueryComparison:
         self.left = left
         self.operator = operator
         self.right = right
+
+class GalaxyQueryAnd:
+    """
+    This class represents the data structure of the comparison arguments of a 
+    compiled GQL query (ie where name='Untitled History')
+    """
+    def __init__(self, left, right):
+        self.left = left
+        self.operator = 'and'
+        self.right = right
+
 
 class GalaxyParseError(Exception):
     pass
@@ -316,7 +342,8 @@ class GalaxySearchEngine:
         self.parser = parsley.makeGrammar(gqlGrammar, { 
             're' : re, 
             'GalaxyQuery' : GalaxyQuery, 
-            'GalaxyQueryComparison' : GalaxyQueryComparison
+            'GalaxyQueryComparison' : GalaxyQueryComparison,
+            'GalaxyQueryAnd' : GalaxyQueryAnd
         })
 
     def query(self, query_text):
