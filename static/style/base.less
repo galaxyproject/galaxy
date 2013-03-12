@@ -1650,6 +1650,15 @@ div.historyItem-paused {
     }
 }
 
+div.historyItem-new {
+    .state-icon {
+        .fa-icon();
+        &:before {
+            content: "\f071";
+        }
+    }
+}
+
 // Special case for showing the spinner but not changing the background
 div.historyItemTitleBar.spinner .state-icon {
     background: url(data_running.gif) 0 1px no-repeat !important;

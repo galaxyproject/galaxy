@@ -358,6 +358,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         //TODO: not a fan of this dispatch
         switch( this.model.get( 'state' ) ){
             case HistoryDatasetAssociation.STATES.NEW :
+                this._render_body_new( body );
                 break;
             case HistoryDatasetAssociation.STATES.NOT_VIEWABLE :
                 this._render_body_not_viewable( body );
@@ -400,12 +401,21 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         this._setUpBehaviors( body );
     },
 
+    /** Render a new dataset - this should be a transient state that's never shown
+     *      in case it does tho, we'll make sure there's some information here
+     *  @param {jQuery} parent DOM to which to append this body
+     */
+    _render_body_new : function( parent ){
+        var newMsg = 'This is a new dataset and not all of its data are available yet';
+        parent.append( $( '<div>' + _l( newMsg ) + '</div>' ) );
+    },
+
     /** Render inaccessible, not-owned by curr user.
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_not_viewable : function( parent ){
         //TODO: revisit - still showing display, edit, delete (as common) - that CAN'T be right
-        parent.append( $( '<div>' + _l( 'You do not have permission to view dataset' ) + '.</div>' ) );
+        parent.append( $( '<div>' + _l( 'You do not have permission to view dataset' ) + '</div>' ) );
     },
     
     /** Render an HDA still being uploaded.
@@ -419,7 +429,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_queued : function( parent ){
-        parent.append( $( '<div>' + _l( 'Job is waiting to run' ) + '.</div>' ) );
+        parent.append( $( '<div>' + _l( 'Job is waiting to run' ) + '</div>' ) );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
     },
 
@@ -427,7 +437,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_paused: function( parent ){
-        parent.append( $( '<div>' + _l( 'Job is paused.  Use the history menu to resume' ) + '.</div>' ) );
+        parent.append( $( '<div>' + _l( 'Job is paused.  Use the history menu to resume' ) + '</div>' ) );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
     },
         
@@ -435,7 +445,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_running : function( parent ){
-        parent.append( '<div>' + _l( 'Job is currently running' ) + '.</div>' );
+        parent.append( '<div>' + _l( 'Job is currently running' ) + '</div>' );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));
     },
         
