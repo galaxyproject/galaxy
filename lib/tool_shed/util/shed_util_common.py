@@ -1190,7 +1190,11 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
     return metadata_dict
 def generate_datatypes_metadata( app, repository_clone_url, repository_files_dir, datatypes_config, metadata_dict ):
     """Update the received metadata_dict with information from the parsed datatypes_config."""
-    tree = ElementTree.parse( datatypes_config )
+    try:
+        tree = ElementTree.parse( datatypes_config )
+    except Exception, e:
+        log.debug( "Exception attempting to parse %s: %s" % ( str( datatypes_config ), str( e ) ) )
+        return metadata_dict
     root = tree.getroot()
     ElementInclude.include( root )
     repository_datatype_code_files = []
