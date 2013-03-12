@@ -25,7 +25,10 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
         out = []
         if query_txt is not None:
             se = GalaxySearchEngine()
-            query = se.query(query_txt)
+            try:
+                query = se.query(query_txt)
+            except Exception, e:
+                return {'error' : str(e)}
             if query is not None:
                 current_user_roles = trans.get_current_user_roles()
                 for item in query.process(trans):
@@ -43,4 +46,4 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                     if append:
                         row = query.item_to_api_value(item)
                         out.append( self.encode_all_ids( trans, row) )
-        return out
+        return { 'results' : out }
