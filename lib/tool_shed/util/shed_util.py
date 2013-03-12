@@ -1054,7 +1054,11 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     """
     installed_tool_dependencies = []
     # Parse the tool_dependencies.xml config.
-    tree = ElementTree.parse( tool_dependencies_config )
+    try:
+        tree = ElementTree.parse( tool_dependencies_config )
+    except Exception, e:
+        log.debug( "Exception attempting to parse %s: %s" % ( str( tool_dependencies_config ), str( e ) ) )
+        return installed_tool_dependencies
     root = tree.getroot()
     ElementInclude.include( root )
     fabric_version_checked = False

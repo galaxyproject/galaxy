@@ -1,7 +1,7 @@
 """
 Classes encapsulating the management of repositories installed from Galaxy tool sheds.
 """
-import os
+import os, logging
 import tool_shed.util.shed_util
 import tool_shed.util.shed_util_common
 from galaxy.model.orm import and_
@@ -11,6 +11,8 @@ import pkg_resources
 
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
+
+log = logging.getLogger( __name__ )
 
 class InstalledRepositoryManager( object ):
     def __init__( self, app ):
@@ -23,7 +25,11 @@ class InstalledRepositoryManager( object ):
         self.installed_repository_dicts = []
     def get_repository_install_dir( self, tool_shed_repository ):
         for tool_config in self.tool_configs:
-            tree = ElementTree.parse( tool_config )
+            try:
+                tree = ElementTree.parse( tool_config )
+            except Exception, e:
+                log.debug( "Exception attempting to parse %s: %s" % ( str( tool_config ), str( e ) ) )
+                return None
             root = tree.getroot()
             ElementInclude.include( root )
             tool_path = root.get( 'tool_path', None )

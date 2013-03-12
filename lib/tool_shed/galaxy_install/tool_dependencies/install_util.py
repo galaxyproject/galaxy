@@ -15,6 +15,7 @@ from elementtree.ElementTree import Element, SubElement
 def clean_tool_shed_url( base_url ):
     protocol, base = base_url.split( '://' )
     return base.rstrip( '/' )
+
 def create_or_update_tool_dependency( app, tool_shed_repository, name, version, type, status, set_status=True ):
     # Called from Galaxy (never the tool shed) when a new repository is being installed or when an uninstalled repository is being reinstalled.
     sa_session = app.model.context.current
@@ -32,6 +33,7 @@ def create_or_update_tool_dependency( app, tool_shed_repository, name, version, 
     sa_session.add( tool_dependency )
     sa_session.flush()
     return tool_dependency
+
 def create_temporary_tool_dependencies_config( tool_shed_url, name, owner, changeset_revision ):
     """Make a call to the tool shed to get the required repository's tool_dependencies.xml file."""
     url = url_join( tool_shed_url,
@@ -54,6 +56,7 @@ def create_temporary_tool_dependencies_config( tool_shed_url, name, owner, chang
         message += "%s of installed repository %s owned by %s." % ( str( changeset_revision ), str( name ), str( owner ) )
         raise Exception( message )
         return None
+
 def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
     """Return the absolute path to a specified disk file contained in a repository."""
     stripped_file_name = strip_path( file_name )
@@ -64,6 +67,7 @@ def get_absolute_path_to_file_in_repository( repo_files_dir, file_name ):
                 if name == stripped_file_name:
                     return os.path.abspath( os.path.join( root, name ) )
     return file_path
+
 def get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app, tool_shed_url, name, owner, changeset_revision ):
     sa_session = app.model.context.current
     tool_shed = clean_tool_shed_url( tool_shed_url )
@@ -90,6 +94,7 @@ def get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app, to
             if tool_shed_repository:
                 return tool_shed_repository
     return None
+
 def get_tool_dependency_by_name_type_repository( app, repository, name, type ):
     sa_session = app.model.context.current
     return sa_session.query( app.model.ToolDependency ) \
@@ -97,6 +102,7 @@ def get_tool_dependency_by_name_type_repository( app, repository, name, type ):
                                     app.model.ToolDependency.table.c.name == name,
                                     app.model.ToolDependency.table.c.type == type ) ) \
                      .first()
+
 def get_tool_dependency_by_name_version_type_repository( app, repository, name, version, type ):
     sa_session = app.model.context.current
     return sa_session.query( app.model.ToolDependency ) \
@@ -105,6 +111,7 @@ def get_tool_dependency_by_name_version_type_repository( app, repository, name, 
                                     app.model.ToolDependency.table.c.version == version,
                                     app.model.ToolDependency.table.c.type == type ) ) \
                      .first()
+
 def get_tool_dependency_install_dir( app, repository_name, repository_owner, repository_changeset_revision, tool_dependency_type, tool_dependency_name,
                                      tool_dependency_version ):
     if tool_dependency_type == 'package':
@@ -121,8 +128,10 @@ def get_tool_dependency_install_dir( app, repository_name, repository_owner, rep
                                               repository_owner,
                                               repository_name,
                                               repository_changeset_revision ) )
+
 def get_tool_shed_repository_install_dir( app, tool_shed_repository ):
     return os.path.abspath( tool_shed_repository.repo_files_directory( app ) )
+
 def get_updated_changeset_revisions_from_tool_shed( tool_shed_url, name, owner, changeset_revision ):
     """Get all appropriate newer changeset revisions for the repository defined by the received tool_shed_url / name / owner combination."""
     url = url_join( tool_shed_url,
@@ -131,6 +140,7 @@ def get_updated_changeset_revisions_from_tool_shed( tool_shed_url, name, owner, 
     text = response.read()
     response.close()
     return text
+
 def handle_set_environment_entry_for_package( app, install_dir, tool_shed_repository, package_name, package_version, elem ):
     action_dict = {}
     actions = []
@@ -168,6 +178,7 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                                 actions.append( ( action_type, action_dict ) )
                             return tool_dependency, actions
     return None, actions
+
 def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
     sa_session = app.model.context.current
     try:
@@ -182,6 +193,7 @@ def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
         tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
         sa_session.add( tool_dependency )
         sa_session.flush()
+
 def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
     # The value of tool_dependencies is a partial or full list of ToolDependency records associated with the tool_shed_repository.
     sa_session = app.model.context.current
@@ -317,6 +329,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                 sa_session.add( tool_dependency )
                 sa_session.flush()
     return tool_dependency
+
 def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package_name=None, proprietary_fabfile_path=None, **kwd ):
     """Parse a tool_dependency.xml file's <actions> tag set to gather information for the installation via fabric."""
     sa_session = app.model.context.current
@@ -389,6 +402,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
         raise Exception( 'Tool dependency installation using proprietary fabric scripts is not yet supported.' )
     else:
         install_and_build_package_via_fabric( app, tool_dependency, actions_dict )
+
 def listify( item ):
     """
     Make a single item a single item list, or return a list if passed a
@@ -402,6 +416,7 @@ def listify( item ):
         return item.split( ',' )
     else:
         return [ item ]
+
 def populate_actions_dict( app, dependent_install_dir, required_install_dir, tool_shed_repository, package_name, package_version, tool_dependencies_config ):
     """
     Populate an actions dictionary that can be sent to fabric_util.install_and_build_package.  This method handles the scenario where a tool_dependencies.xml
@@ -420,24 +435,26 @@ def populate_actions_dict( app, dependent_install_dir, required_install_dir, too
     action_dict = {}
     if tool_dependencies_config:
         required_td_tree = parse_xml( tool_dependencies_config )
-        required_td_root = required_td_tree.getroot()
-        for required_td_elem in required_td_root:
-            # Find the appropriate package name and version.
-            if required_td_elem.tag == 'package':
-                # <package name="bwa" version="0.5.9">
-                required_td_package_name = required_td_elem.get( 'name', None )
-                required_td_package_version = required_td_elem.get( 'version', None )
-                if required_td_package_name==package_name and required_td_package_version==package_version:
-                    tool_dependency, actions = handle_set_environment_entry_for_package( app=app,
-                                                                                         install_dir=required_install_dir,
-                                                                                         tool_shed_repository=tool_shed_repository,
-                                                                                         package_name=package_name,
-                                                                                         package_version=package_version,
-                                                                                         elem=required_td_elem )
-                    if actions:
-                        actions_dict[ 'actions' ] = actions
-                    break
+        if required_td_tree:
+            required_td_root = required_td_tree.getroot()
+            for required_td_elem in required_td_root:
+                # Find the appropriate package name and version.
+                if required_td_elem.tag == 'package':
+                    # <package name="bwa" version="0.5.9">
+                    required_td_package_name = required_td_elem.get( 'name', None )
+                    required_td_package_version = required_td_elem.get( 'version', None )
+                    if required_td_package_name==package_name and required_td_package_version==package_version:
+                        tool_dependency, actions = handle_set_environment_entry_for_package( app=app,
+                                                                                             install_dir=required_install_dir,
+                                                                                             tool_shed_repository=tool_shed_repository,
+                                                                                             package_name=package_name,
+                                                                                             package_version=package_version,
+                                                                                             elem=required_td_elem )
+                        if actions:
+                            actions_dict[ 'actions' ] = actions
+                        break
     return tool_dependency, actions_dict
+
 def run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_dir, package_name=None, **kwd ):
     """
     TODO: Handle this using the fabric api.
@@ -474,6 +491,7 @@ def run_proprietary_fabric_method( app, elem, proprietary_fabfile_path, install_
     if returncode:
         return message    
     handle_environment_settings( app, tool_dependency, install_dir, cmd )
+
 def run_subprocess( app, cmd ):
     env = os.environ
     PYTHONPATH = env.get( 'PYTHONPATH', '' )
@@ -496,6 +514,7 @@ def run_subprocess( app, cmd ):
     except:
         pass
     return returncode, message
+
 def set_environment( app, elem, tool_shed_repository ):
     """
     Create a ToolDependency to set an environment variable.  This is different from the process used to set an environment variable that is associated
@@ -548,6 +567,7 @@ def set_environment( app, elem, tool_shed_repository ):
                         sa_session.add( tool_dependency )
                         sa_session.flush()
                         print 'Environment variable ', env_var_name, 'set in', install_dir
+
 def strip_path( fpath ):
     if not fpath:
         return fpath
@@ -556,12 +576,18 @@ def strip_path( fpath ):
     except:
         file_name = fpath
     return file_name
+
 def parse_xml( file_name ):
     """Returns a parsed xml tree."""
-    tree = ElementTree.parse( file_name )
+    try:
+        tree = ElementTree.parse( file_name )
+    except Exception, e:
+        print "Exception attempting to parse ", file_name, ": ", str( e )
+        return None
     root = tree.getroot()
     ElementInclude.include( root )
     return tree
+
 def url_join( *args ):
     parts = []
     for arg in args:
