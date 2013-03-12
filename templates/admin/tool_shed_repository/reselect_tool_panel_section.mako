@@ -66,7 +66,7 @@
             %else:
                 <input type="hidden" name="shed_tool_conf" value="${shed_tool_conf}"/>
             %endif
-            %if includes_tools:
+            %if includes_tools_for_display_in_tool_panel:
                 <div style="clear: both"></div>
                 <div class="form-row">
                     ${no_changes_check_box.get_html()}

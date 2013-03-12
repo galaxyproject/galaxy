@@ -28,7 +28,7 @@ def activate_repository( trans, repository ):
     shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
     repository.deleted = False
     repository.status = trans.model.ToolShedRepository.installation_status.INSTALLED
-    if repository.includes_tools:
+    if repository.includes_tools_for_display_in_tool_panel:
         metadata = repository.metadata
         repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata )
         # Reload tools into the appropriate tool panel section.
@@ -963,6 +963,7 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
             includes_data_managers = update_dict.get( 'includes_data_managers', False )
             includes_datatypes = update_dict.get( 'includes_datatypes', False )
             includes_tools = update_dict.get( 'includes_tools', False )
+            includes_tools_for_display_in_tool_panel = update_dict.get( 'includes_tools_for_display_in_tool_panel', False )
             includes_tool_dependencies = update_dict.get( 'includes_tool_dependencies', False )
             includes_workflows = update_dict.get( 'includes_workflows', False )
             has_repository_dependencies = update_dict.get( 'has_repository_dependencies', False )
@@ -972,6 +973,7 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
         changeset_revision_dict[ 'includes_data_managers' ] = includes_data_managers
         changeset_revision_dict[ 'includes_datatypes' ] = includes_datatypes
         changeset_revision_dict[ 'includes_tools' ] = includes_tools
+        changeset_revision_dict[ 'includes_tools_for_display_in_tool_panel' ] = includes_tools_for_display_in_tool_panel
         changeset_revision_dict[ 'includes_tool_dependencies' ] = includes_tool_dependencies
         changeset_revision_dict[ 'includes_workflows' ] = includes_workflows
         changeset_revision_dict[ 'has_repository_dependencies' ] = has_repository_dependencies
@@ -982,6 +984,7 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
         changeset_revision_dict[ 'includes_data_managers' ] = False
         changeset_revision_dict[ 'includes_datatypes' ] = False
         changeset_revision_dict[ 'includes_tools' ] = False
+        changeset_revision_dict[ 'includes_tools_for_display_in_tool_panel' ] = False
         changeset_revision_dict[ 'includes_tool_dependencies' ] = False
         changeset_revision_dict[ 'includes_workflows' ] = False
         changeset_revision_dict[ 'has_repository_dependencies' ] = False

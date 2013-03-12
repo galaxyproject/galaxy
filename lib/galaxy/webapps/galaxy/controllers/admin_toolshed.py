@@ -89,7 +89,8 @@ class AdminToolshed( AdminGalaxy ):
                 if repository.uninstalled:
                     # Since we're reinstalling the repository we need to find the latest changeset revision to which it can be updated so that we
                     # can reset the metadata if necessary.  This will ensure that information about repository dependencies and tool dependencies
-                    # will be current.  Only allow selecting a different section in the tool panel if the repository was uninstalled.                        
+                    # will be current.  Only allow selecting a different section in the tool panel if the repository was uninstalled and it contained
+                    # tools that should be displayed in the tool panel.                        
                     changeset_revision_dict = shed_util.get_update_to_changeset_revision_and_ctx_rev( trans, repository )
                     current_changeset_revision = changeset_revision_dict.get( 'changeset_revision', None )
                     current_ctx_rev = changeset_revision_dict.get( 'ctx_rev', None )
@@ -213,7 +214,7 @@ class AdminToolshed( AdminGalaxy ):
             repository_install_dir = None
         errors = ''
         if params.get( 'deactivate_or_uninstall_repository_button', False ):
-            if tool_shed_repository.includes_tools:
+            if tool_shed_repository.includes_tools_for_display_in_tool_panel:
                 # Handle tool panel alterations.
                 shed_util.remove_from_tool_panel( trans, tool_shed_repository, shed_tool_conf, uninstall=remove_from_disk_checked )
             if tool_shed_repository.includes_data_managers:
@@ -944,6 +945,8 @@ class AdminToolshed( AdminGalaxy ):
         tool_panel_section_keys = []
         # One or more repositories may include tools, but not necessarily all of them.
         includes_tools = util.string_as_bool( kwd.get( 'includes_tools', False ) )
+        # Some tools should not be displayed in the tool panel (e.g., DataManager tools and datatype converters).
+        includes_tools_for_display_in_tool_panel = util.string_as_bool( kwd.get( 'includes_tools_for_display_in_tool_panel', False ) )
         includes_tool_dependencies = util.string_as_bool( kwd.get( 'includes_tool_dependencies', False ) )
         install_tool_dependencies = kwd.get( 'install_tool_dependencies', '' )
         encoded_repo_info_dicts = util.listify( kwd.get( 'encoded_repo_info_dicts', None ) )
@@ -960,12 +963,13 @@ class AdminToolshed( AdminGalaxy ):
             response.close()
             repo_information_dict = json.from_json_string( raw_text )
             includes_tools = util.string_as_bool( repo_information_dict.get( 'includes_tools', False ) )
+            includes_tools_for_display_in_tool_panel = util.string_as_bool( repo_information_dict.get( 'includes_tools_for_display_in_tool_panel', False ) )
             has_repository_dependencies = util.string_as_bool( repo_information_dict.get( 'has_repository_dependencies', False ) )
             includes_tool_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_tool_dependencies', False ) )
             encoded_repo_info_dicts = util.listify( repo_information_dict.get( 'repo_info_dicts', [] ) )
         repo_info_dicts = [ encoding_util.tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
-        if ( ( not includes_tools and not has_repository_dependencies ) and kwd.get( 'select_shed_tool_panel_config_button', False ) ) or \
-            ( ( includes_tools or has_repository_dependencies ) and kwd.get( 'select_tool_panel_section_button', False ) ):
+        if ( ( not includes_tools_for_display_in_tool_panel and not has_repository_dependencies ) and kwd.get( 'select_shed_tool_panel_config_button', False ) ) or \
+            ( ( includes_tools_for_display_in_tool_panel or has_repository_dependencies ) and kwd.get( 'select_tool_panel_section_button', False ) ):
             install_repository_dependencies = CheckboxField.is_checked( install_repository_dependencies )
             if includes_tool_dependencies:
                 install_tool_dependencies = CheckboxField.is_checked( install_tool_dependencies )
@@ -992,7 +996,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                   status='error' ) )
             if created_or_updated_tool_shed_repositories:
                 # Handle contained tools.
-                if includes_tools and ( new_tool_panel_section or tool_panel_section ):
+                if includes_tools_for_display_in_tool_panel and ( new_tool_panel_section or tool_panel_section ):
                     if new_tool_panel_section:
                         section_id = new_tool_panel_section.lower().replace( ' ', '_' )
                         tool_panel_section_key = 'section_%s' % str( section_id )
@@ -1021,6 +1025,7 @@ class AdminToolshed( AdminGalaxy ):
                 for tsr in created_or_updated_tool_shed_repositories:
                     tool_panel_section_keys.append( tool_panel_section_key )
                 new_kwd = dict( includes_tools=includes_tools,
+                                includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                                 has_repository_dependencies=has_repository_dependencies,
                                 install_repository_dependencies=install_repository_dependencies,
                                 includes_tool_dependencies=includes_tool_dependencies,
@@ -1108,10 +1113,11 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
-        if includes_tools or has_repository_dependencies:
+        if includes_tools_for_display_in_tool_panel or has_repository_dependencies:
             return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
                                         encoded_repo_info_dicts=encoded_repo_info_dicts,
                                         includes_tools=includes_tools,
+                                        includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                                         includes_tool_dependencies=includes_tool_dependencies,
                                         install_tool_dependencies_check_box=install_tool_dependencies_check_box,
                                         has_repository_dependencies=has_repository_dependencies,
@@ -1130,6 +1136,7 @@ class AdminToolshed( AdminGalaxy ):
             return trans.fill_template( '/admin/tool_shed_repository/select_shed_tool_panel_config.mako',
                                         encoded_repo_info_dicts=encoded_repo_info_dicts,
                                         includes_tools=includes_tools,
+                                        includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                                         includes_tool_dependencies=includes_tool_dependencies,
                                         install_tool_dependencies_check_box=install_tool_dependencies_check_box,
                                         has_repository_dependencies=has_repository_dependencies,
@@ -1169,7 +1176,7 @@ class AdminToolshed( AdminGalaxy ):
         metadata = tool_shed_repository.metadata
         # Keep track of tool dependencies defined for the current repository or those defined for any of it's repository dependencies.
         includes_tool_dependencies = tool_shed_repository.includes_tool_dependencies
-        if tool_shed_repository.includes_tools:
+        if tool_shed_repository.includes_tools_for_display_in_tool_panel:
             # Handle the selected tool panel location for loading tools included in the tool shed repository.
             tool_section, new_tool_panel_section, tool_panel_section_key = \
                 shed_util.handle_tool_panel_selection( trans=trans,
@@ -1239,6 +1246,7 @@ class AdminToolshed( AdminGalaxy ):
         encoded_repository_ids = [ trans.security.encode_id( r.id ) for r in created_or_updated_tool_shed_repositories ]
         new_kwd = dict( includes_tool_dependencies=includes_tool_dependencies,
                         includes_tools=tool_shed_repository.includes_tools,
+                        includes_tools_for_display_in_tool_panel=tool_shed_repository.includes_tools_for_display_in_tool_panel,
                         install_tool_dependencies=install_tool_dependencies,
                         repo_info_dicts=filtered_repo_info_dicts,
                         message=message,
@@ -1316,6 +1324,7 @@ class AdminToolshed( AdminGalaxy ):
             includes_data_managers = updated_repo_info_dict.get( 'includes_data_managers', False )
             includes_datatypes = updated_repo_info_dict.get( 'includes_datatypes', False )
             includes_tools = updated_repo_info_dict.get( 'includes_tools', False )
+            includes_tools_for_display_in_tool_panel = updated_repo_info_dict.get( 'includes_tools_for_display_in_tool_panel', False )
             includes_workflows = updated_repo_info_dict.get( 'includes_workflows', False )
             has_repository_dependencies = updated_repo_info_dict.get( 'has_repository_dependencies', False )
             includes_tool_dependencies = updated_repo_info_dict.get( 'includes_tool_dependencies', False )
@@ -1327,6 +1336,7 @@ class AdminToolshed( AdminGalaxy ):
             includes_datatypes = False
             includes_tool_dependencies = False
             includes_tools = False
+            includes_tools_for_display_in_tool_panel = False
             includes_workflows = False
             readme_files_dict = None
             tool_dependencies = None
@@ -1337,6 +1347,12 @@ class AdminToolshed( AdminGalaxy ):
                     includes_datatypes = True
                 if 'tools' in metadata:
                     includes_tools = True
+                    # Handle includes_tools_for_display_in_tool_panel.
+                    tool_dicts = metadata[ 'tools' ]
+                    for tool_dict in tool_dicts:
+                        if tool_dict.get( 'add_to_tool_panel', True ):
+                            includes_tools_for_display_in_tool_panel = True
+                            break
                 if 'tool_dependencies' in metadata:
                     includes_tool_dependencies = True
                 if 'workflows' in metadata:
@@ -1365,7 +1381,7 @@ class AdminToolshed( AdminGalaxy ):
             has_repository_dependencies = True
         else:
             has_repository_dependencies = False
-        if includes_tools:
+        if includes_tools_for_display_in_tool_panel:
             # Get the location in the tool panel in which the tools were originally loaded.
             if 'tool_panel_section' in metadata:
                 tool_panel_dict = metadata[ 'tool_panel_section' ]
@@ -1428,6 +1444,7 @@ class AdminToolshed( AdminGalaxy ):
                                     includes_data_managers=includes_data_managers,
                                     includes_datatypes=includes_datatypes,
                                     includes_tools=includes_tools,
+                                    includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                                     includes_tool_dependencies=includes_tool_dependencies,
                                     includes_workflows=includes_workflows,
                                     has_repository_dependencies=has_repository_dependencies,

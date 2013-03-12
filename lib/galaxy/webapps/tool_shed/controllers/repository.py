@@ -928,10 +928,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             includes_data_managers = False
             includes_datatypes = False
             includes_tools = False
+            includes_tools_for_display_in_tool_panel = False
             has_repository_dependencies = False
             includes_tool_dependencies = False
             includes_workflows = False
             if repository_metadata:
+                includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
                 metadata = repository_metadata.metadata
                 if metadata:
                     if 'data_manager' in metadata:
@@ -946,7 +948,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                         has_repository_dependencies = True
                     if 'workflows' in metadata:
                         includes_workflows = True
-            return includes_data_managers, includes_datatypes, includes_tools, includes_tool_dependencies, has_repository_dependencies, includes_workflows
+            return includes_data_managers, includes_datatypes, includes_tools, includes_tools_for_display_in_tool_panel, includes_tool_dependencies, has_repository_dependencies, includes_workflows
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
@@ -958,7 +960,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, 
                                                                                  trans.security.encode_id( repository.id ),
                                                                                  changeset_revision )
-        includes_data_managers, includes_datatypes, includes_tools, includes_tool_dependencies, has_repository_dependencies, includes_workflows = \
+        includes_data_managers, includes_datatypes, includes_tools, includes_tools_for_display_in_tool_panel, includes_tool_dependencies, has_repository_dependencies, includes_workflows = \
             has_galaxy_utilities( repository_metadata )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
@@ -971,6 +973,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                             includes_data_managers=includes_data_managers,
                             includes_datatypes=includes_datatypes,
                             includes_tools=includes_tools,
+                            includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                             includes_tool_dependencies=includes_tool_dependencies,
                             has_repository_dependencies=has_repository_dependencies,
                             includes_workflows=includes_workflows )
@@ -995,7 +998,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                                            trans.security.encode_id( repository.id ),
                                                                                                            changeset_hash )
                         if update_to_repository_metadata:
-                            includes_data_managers, includes_datatypes, includes_tools, includes_tool_dependencies, has_repository_dependencies, includes_workflows = \
+                            includes_data_managers, includes_datatypes, includes_tools, includes_tools_for_display_in_tool_panel, includes_tool_dependencies, has_repository_dependencies, includes_workflows = \
                                 has_galaxy_utilities( update_to_repository_metadata )
                             # We found a RepositoryMetadata record.
                             if changeset_hash == repository.tip( trans.app ):
@@ -1012,6 +1015,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 update_dict[ 'includes_data_managers' ] = includes_data_managers
                 update_dict[ 'includes_datatypes' ] = includes_datatypes
                 update_dict[ 'includes_tools' ] = includes_tools
+                update_dict[ 'includes_tools_for_display_in_tool_panel' ] = includes_tools_for_display_in_tool_panel
                 update_dict[ 'includes_tool_dependencies' ] = includes_tool_dependencies
                 update_dict[ 'includes_workflows' ] = includes_workflows
                 update_dict[ 'has_repository_dependencies' ] = has_repository_dependencies
@@ -1115,6 +1119,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         a local Galaxy instance.
         """
         includes_tools = False
+        includes_tools_for_display_in_tool_panel = False
         has_repository_dependencies = False
         includes_tool_dependencies = False
         repo_info_dicts = []
@@ -1127,6 +1132,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             if not includes_tools:
                 if 'tools' in metadata:
                     includes_tools = True
+            if not includes_tools_for_display_in_tool_panel:
+                includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
             if not has_repository_dependencies:
                 if 'repository_dependencies' in metadata:
                     has_repository_dependencies = True
@@ -1148,6 +1155,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                         repository_dependencies=None )
             repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
         return dict( includes_tools=includes_tools,
+                     includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                      has_repository_dependencies=has_repository_dependencies,
                      includes_tool_dependencies=includes_tool_dependencies,
                      repo_info_dicts=repo_info_dicts )
@@ -1261,6 +1269,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         includes_data_managers = False
         includes_datatypes = False
         includes_tools = False
+        includes_tools_for_display_in_tool_panel = False
         includes_workflows = False
         readme_files_dict = None
         metadata = repository_metadata.metadata
@@ -1271,6 +1280,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 includes_datatypes = True
             if 'tools' in metadata:
                 includes_tools = True
+                # Handle includes_tools_for_display_in_tool_panel.
+                tool_dicts = metadata[ 'tools' ]
+                for tool_dict in tool_dicts:
+                    if tool_dict.get( 'includes_tools_for_display_in_tool_panel', False ):
+                        includes_tools_for_display_in_tool_panel = True
+                        break
             if 'workflows' in metadata:
                 includes_workflows = True
             readme_files_dict = suc.build_readme_files_dict( metadata )
@@ -1289,6 +1304,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         return dict( includes_data_managers=includes_data_managers,
                      includes_datatypes=includes_datatypes,
                      includes_tools=includes_tools,
+                     includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
                      has_repository_dependencies=has_repository_dependencies,
                      includes_tool_dependencies=includes_tool_dependencies,
                      includes_workflows=includes_workflows,

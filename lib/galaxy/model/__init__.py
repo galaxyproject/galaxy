@@ -3217,6 +3217,14 @@ class ToolShedRepository( object ):
             return 'tools' in self.metadata
         return False
     @property
+    def includes_tools_for_display_in_tool_panel( self ):
+        if self.includes_tools:
+            tool_dicts = self.metadata[ 'tools' ]
+            for tool_dict in tool_dicts:
+                if tool_dict.get( 'add_to_tool_panel', True ):
+                    return True
+        return False
+    @property
     def includes_tool_dependencies( self ):
         if self.metadata:
             return 'tool_dependencies' in self.metadata

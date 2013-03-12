@@ -661,7 +661,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def install_repository( self, name, owner, category_name, install_tool_dependencies=False, 
                             install_repository_dependencies=True, changeset_revision=None, 
                             strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[], 
-                            post_submit_strings_displayed=[], new_tool_panel_section=None, includes_tools=True,
+                            post_submit_strings_displayed=[], new_tool_panel_section=None, includes_tools_for_display_in_tool_panel=True,
                             **kwd ):
         self.browse_tool_shed( url=self.url )
         self.browse_category( test_db_util.get_category_by_name( category_name ) )
@@ -692,7 +692,7 @@ class ShedTwillTestCase( TwillTestCase ):
             kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
         if new_tool_panel_section:
             kwd[ 'new_tool_panel_section' ] =  new_tool_panel_section
-        if includes_tools:
+        if includes_tools_for_display_in_tool_panel:
             self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
             self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         else:

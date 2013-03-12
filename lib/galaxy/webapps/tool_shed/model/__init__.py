@@ -215,6 +215,14 @@ class RepositoryMetadata( object, APIItem ):
         self.includes_tools = includes_tools
         self.includes_tool_dependencies = includes_tool_dependencies
         self.includes_workflows = includes_workflows
+    @property
+    def includes_tools_for_display_in_tool_panel( self ):
+        if self.metadata:
+            tool_dicts = self.metadata.get( 'tools', [] )
+            for tool_dict in tool_dicts:
+                if tool_dict.get( 'add_to_tool_panel', True ):
+                    return True
+        return False
     def as_dict( self, value_mapper=None ):
         return self.get_api_value( view='element', value_mapper=value_mapper )
     def get_api_value( self, view='collection', value_mapper=None ):
