@@ -12,7 +12,6 @@ from galaxy.tools.parameters import params_to_incoming, visit_input_values
 from galaxy.tools.parameters.basic import DataToolParameter, UnvalidatedValue
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
-from galaxy.util import biostar
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import SelectField
