@@ -3837,6 +3837,30 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                 repository_metadata.changeset_revision = repository.tip( trans.app )
                 repository_metadata.metadata = metadata_dict
                 repository_metadata.downloadable = downloadable
+                if 'datatypes' in metadata_dict:
+                    repository_metadata.includes_datatypes = True
+                else:
+                    repository_metadata.includes_datatypes = False
+                if 'repository_dependencies' in metadata_dict:
+                    repository_metadata.has_repository_dependencies = True
+                else:
+                    repository_metadata.has_repository_dependencies = False
+                if 'tool_dependencies' in metadata_dict:
+                    repository_metadata.includes_tool_dependencies = True
+                else:
+                    repository_metadata.includes_tool_dependencies = False
+                if 'tools' in metadata_dict:
+                    repository_metadata.includes_tools = True
+                else:
+                    repository_metadata.includes_tools = False
+                if 'workflows' in metadata_dict:
+                    repository_metadata.includes_workflows = True
+                else:
+                    repository_metadata.includes_workflows = False
+                repository_metadata.do_not_test = False
+                repository_metadata.time_last_tested = None
+                repository_metadata.tools_functionally_correct = False
+                repository_metadata.tool_test_errors = None
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
             else:
