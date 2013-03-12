@@ -201,6 +201,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         // don't show display if not viewable or not accessible
         // (do show if in error, running)
         if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NEW )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.displayButton = null;
             return null;

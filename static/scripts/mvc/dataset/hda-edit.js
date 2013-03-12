@@ -99,8 +99,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         // don't show edit while uploading, in-accessible
         // DO show if in error (ala previous history panel)
         //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
-        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD )
-        //||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.ERROR )
+        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NEW )
+        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.UPLOAD )
         ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.editButton = null;
@@ -136,7 +136,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
     _render_deleteButton : function(){
         // don't show delete if...
         //TODO??: not viewable/accessible are essentially the same (not viewable set from accessible)
-        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
+        if( ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NEW )
+        ||  ( this.model.get( 'state' ) === HistoryDatasetAssociation.STATES.NOT_VIEWABLE )
         ||  ( !this.model.get( 'accessible' ) ) ){
             this.deleteButton = null;
             return null;
