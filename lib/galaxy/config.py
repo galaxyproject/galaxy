@@ -70,7 +70,7 @@ class Configuration( object ):
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
         try:
             self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
-            if isinstance( hours_between_check, float ):
+            if isinstance( self.hours_between_check, float ):
                 # Float values are supported for functional tests.
                 if self.hours_between_check < 0.001 or self.hours_between_check > 24.0:
                     self.hours_between_check = 12.0
