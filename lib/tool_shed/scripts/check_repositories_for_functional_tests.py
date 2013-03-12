@@ -172,10 +172,6 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     # a user can't install.
     # Initialize the repository_status dict with the test environment, but leave the test_errors empty. 
     repository_status = {}
-    repository_status[ 'test_environment' ] = get_test_environment()
-    repository_status[ 'test_environment' ][ 'tool_shed_database_version' ] = get_database_version( app )
-    repository_status[ 'test_environment' ][ 'tool_shed_mercurial_version' ] = __version__.version
-    repository_status[ 'test_environment' ][ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
     repository_status[ 'invalid_tests' ] = []
     metadata_records_to_check = app.sa_session.query( app.model.RepositoryMetadata ) \
                                               .filter( and_( app.model.RepositoryMetadata.table.c.downloadable == True,
@@ -186,6 +182,13 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     for metadata_record in metadata_records_to_check:
         if metadata_record.tool_test_errors:
             repository_status = metadata_record.tool_test_errors
+        if 'test_environment' in repository_status:
+            repository_status[ 'test_environment' ] = get_test_environment( repository_status[ 'test_environment' ] )
+        else:
+            repository_status[ 'test_environment' ] = get_test_environment()
+        repository_status[ 'test_environment' ][ 'tool_shed_database_version' ] = get_database_version( app )
+        repository_status[ 'test_environment' ][ 'tool_shed_mercurial_version' ] = __version__.version
+        repository_status[ 'test_environment' ][ 'tool_shed_revision' ] = get_repository_current_revision( os.getcwd() )
         name = metadata_record.repository.name
         owner = metadata_record.repository.user.username
         changeset_revision = str( metadata_record.changeset_revision )
