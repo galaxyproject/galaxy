@@ -1683,6 +1683,9 @@ class AdminToolshed( AdminGalaxy ):
                     shed_util.pull_repository( repo, repository_clone_url, latest_ctx_rev )
                     suc.update_repository( repo, latest_ctx_rev )
                     tool_shed = suc.clean_tool_shed_url( tool_shed_url )
+                    # Remove old Data Manager entries
+                    if repository.includes_data_managers:
+                        shed_util.remove_from_data_manager( trans.app, repository )
                     # Update the repository metadata.
                     metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=trans.app,
                                                                                                      repository=repository,
@@ -1715,6 +1718,11 @@ class AdminToolshed( AdminGalaxy ):
                                                      shed_tool_conf=shed_tool_conf,
                                                      tool_panel_dict=tool_panel_dict,
                                                      new_install=False )
+                        # Add new Data Manager entries
+                        if 'data_manager' in metadata_dict:
+                            new_data_managers = shed_util.install_data_managers( trans.app, trans.app.config.shed_data_manager_config_file, metadata_dict, 
+                                                                                 repository.get_shed_config_dict( trans.app ), os.path.join( relative_install_dir, name ),
+                                                                                 repository, repository_tools_tups )
                     # Create tool_dependency records if necessary.
                     if 'tool_dependencies' in metadata_dict:
                         tool_dependencies = shed_util.create_tool_dependency_objects( trans.app, repository, relative_install_dir, set_status=False )
