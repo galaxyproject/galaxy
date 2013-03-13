@@ -40,7 +40,7 @@ if( spaceghost.fixtureData.testUser ){
     spaceghost.info( 'Will use fixtureData.testUser: ' + email );
 }
 
-var tooltipSelector  = '.bs-tooltip';
+var tooltipSelector = spaceghost.data.selectors.tooltipBalloon;
 
 var utils = require( 'utils' ),
     historyFrameInfo = {},
@@ -70,8 +70,7 @@ spaceghost.then( function upload(){
 });
 
 
-// =================================================================== TESTS
-// ------------------------------------------------------------------- helpers
+// =================================================================== TEST HELPERS
 //NOTE: to be called with fn.call( spaceghost, ... )
 
 function testTitle( hdaSelector, hid, name ){
@@ -238,19 +237,18 @@ function testExpandedBody( hdaSelector, expectedSummaryTextArray, expectedInfoTe
     testPeek.call( this, hdaSelector, peekShouldBeArray );
 }
 
+// =================================================================== TESTS
 // ------------------------------------------------------------------- ok state
 spaceghost.then( function checkOkState(){
     this.test.comment( 'HDAs in the "ok" state should be well formed' );
 
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
         this.test.assertVisible( uploadSelector, 'HDA is visible' );
 
         this.test.comment( 'should have the proper state class' );
-        var okStateClass = this.historypanel.data.selectors.hda.wrapper.stateClasses.ok,
-            uploadElement = this.getElementInfo( uploadSelector );
-        this.test.assert( uploadElement.attributes['class'].indexOf( okStateClass ) !== -1,
-            'HDA has "ok" state class' );
+        this.assertHasClass( uploadSelector, this.historypanel.data.selectors.hda.wrapper.stateClasses.ok,
+            'HDA has ok state class' );
 
         // since we're using css there's no great way to test state icon (.state-icon is empty)
 
@@ -273,11 +271,27 @@ spaceghost.then( function checkOkState(){
     });
 });
 
-/*
+// restore to collapsed
+spaceghost.then( function collapseOkState(){
+    this.test.comment( "Collapsing hda in 'ok' state should hide body again" );
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
+        var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id,
+            hdaTitle = uploadSelector + ' ' + this.historypanel.data.selectors.hda.title;
+            body = uploadSelector + ' ' + this.historypanel.data.selectors.hda.body;
+
+        this.click( hdaTitle );
+        this.wait( 500, function(){
+            this.test.assertNotVisible( body, 'body is not visible' );
+        });
+    });
+});
+
+
+// ------------------------------------------------------------------- new state
 spaceghost.then( function checkNewState(){
     this.test.comment( 'HDAs in the "new" state should be well formed' );
 
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         // set state directly through model
         //TODO: not ideal
         this.evaluate( function(){
@@ -291,37 +305,45 @@ spaceghost.then( function checkNewState(){
             // should have proper title and hid
             testTitle.call( spaceghost, uploadSelector, testUploadInfo.hid, testUploadInfo.name );
 
-            // should have the new state class
-            var newStateClass = this.historypanel.data.selectors.hda.wrapper.stateClasses['new'];
-                uploadElement = this.getElementInfo( uploadSelector );
-            this.test.assert( uploadElement.attributes['class'].indexOf( newStateClass ) !== -1,
+            this.test.comment( 'new HDA should have the new state class' );
+            this.assertHasClass( uploadSelector, this.historypanel.data.selectors.hda.wrapper.stateClasses['new'],
                 'HDA has new state class' );
 
-            // since we're using css there's no great way to test this
-            //var stateIconSelector = uploadSelector + ' .state-icon';
-            //this.test.assertVisible( stateIconSelector, 'HDA has proper hid' );
-
-            // should NOT have any of the three, main buttons
+            this.test.comment( 'new HDA should NOT have any of the three, main buttons' );
             var buttonSelector = uploadSelector + ' ' + this.historypanel.data.selectors.hda.titleButtons + ' a';
             this.test.assertDoesntExist( buttonSelector, 'No display, edit, or delete buttons' );
 
-            // expand and check the body
-            this.click( titleSelector );
+            this.test.comment( 'clicking the title of the new HDA will expand the body' );
+            var hdaTitle = uploadSelector + ' ' + this.historypanel.data.selectors.hda.title;
+            this.click( hdaTitle );
             this.wait( 500, function(){
                 var bodySelector = uploadSelector + ' ' + this.historypanel.data.selectors.hda.body;
                 this.test.assertVisible( bodySelector, 'HDA body is visible (after expanding)' );
 
                 var expectedBodyText = 'This is a new dataset';
+                this.test.comment( 'the body should have the text: ' + expectedBodyText );
                 this.test.assertSelectorHasText( bodySelector, expectedBodyText,
                     'HDA body has text: ' + expectedBodyText );
 
                 // restore to collapsed
-                this.click( titleSelector );
+                this.click( hdaTitle );
             });
         });
     });
 });
-*/
+// restore state, collapse
+spaceghost.then( function revertStateAndCollapse(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
+        this.evaluate( function(){
+            return Galaxy.currHistoryPanel.model.hdas.at( 0 ).set( 'state', 'ok' );
+        });
+        this.wait( 500, function(){
+            var hdaTitle = '#' + testUploadInfo.hdaElement.attributes.id
+                + ' ' + this.historypanel.data.selectors.hda.title;
+            this.click( hdaTitle );
+        });
+    });
+});
 
 
 // ===================================================================

@@ -43,19 +43,19 @@ User.prototype._submitRegistration = function _submitRegistration( email, passwo
 
     spaceghost.debug( 'registering user:\n' + spaceghost.jsonStr( userInfo ) );
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
-        spaceghost.clickLabel( spaceghost.labels.masthead.menus.user );
-        spaceghost.clickLabel( spaceghost.labels.masthead.userMenu.register );
+        spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
+        spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.register );
 
-        spaceghost.withFrame( spaceghost.selectors.frames.main, function mainBeforeRegister(){
+        spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainBeforeRegister(){
             spaceghost.debug( 'submitting registration... ' + spaceghost.getCurrentUrl() );
-            spaceghost.fill( spaceghost.selectors.registrationPage.form, userInfo, false );
+            spaceghost.fill( spaceghost.data.selectors.registrationPage.form, userInfo, false );
             // need manual submit (not a normal html form)
-            spaceghost.click( xpath( spaceghost.selectors.registrationPage.submit_xpath ) );
+            spaceghost.click( xpath( spaceghost.data.selectors.registrationPage.submit_xpath ) );
         });
 
         //// debugging
-        //spaceghost.withFrame( spaceghost.selectors.frames.main, function mainAfterRegister(){
-        //    var messageInfo = spaceghost.getElementInfo( spaceghost.selectors.messages.all );
+        //spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainAfterRegister(){
+        //    var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
         //    spaceghost.debug( 'post registration message:\n' + spaceghost.jsonStr( messageInfo ) );
         //});
     });
@@ -78,21 +78,21 @@ User.prototype._submitLogin = function _submitLogin( email, password ){
 
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
 
-        spaceghost.clickLabel( spaceghost.labels.masthead.menus.user );
-        spaceghost.clickLabel( spaceghost.labels.masthead.userMenu.login );
+        spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
+        spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.login );
 
-        spaceghost.withFrame( spaceghost.selectors.frames.main, function mainBeforeLogin(){
+        spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainBeforeLogin(){
             spaceghost.debug( '(' + spaceghost.getCurrentUrl() + ') logging in user:\n'
                 + spaceghost.jsonStr( loginInfo ) );
-            spaceghost.fill( spaceghost.selectors.loginPage.form, loginInfo, false );
-            spaceghost.click( xpath( spaceghost.selectors.loginPage.submit_xpath ) );
+            spaceghost.fill( spaceghost.data.selectors.loginPage.form, loginInfo, false );
+            spaceghost.click( xpath( spaceghost.data.selectors.loginPage.submit_xpath ) );
         });
 
         //// debugging
-        //spaceghost.withFrame( spaceghost.selectors.frames.main, function mainAfterLogin(){
+        //spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainAfterLogin(){
         //    //TODO: prob. could use a more generalized form of this for url breakdown/checking
-        //    if( spaceghost.getCurrentUrl().search( spaceghost.selectors.loginPage.url_regex ) != -1 ){
-        //        var messageInfo = spaceghost.getElementInfo( spaceghost.selectors.messages.all );
+        //    if( spaceghost.getCurrentUrl().search( spaceghost.data.selectors.loginPage.url_regex ) != -1 ){
+        //        var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
         //        spaceghost.debug( 'post login message:\n' + spaceghost.jsonStr( messageInfo ) );
         //    }
         //});
@@ -111,8 +111,8 @@ User.prototype.registerUser = function registerUser( email, password, username )
     var spaceghost = this.spaceghost;
     this._submitRegistration( email, password, username );
     spaceghost.then( function(){
-        spaceghost.withFrame( spaceghost.selectors.frames.main, function mainAfterRegister(){
-            var messageInfo = spaceghost.getElementInfo( spaceghost.selectors.messages.all );
+        spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainAfterRegister(){
+            var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
             spaceghost.debug( 'post registration message:\n' + this.jsonStr( messageInfo ) );
 
             if( messageInfo.attributes[ 'class' ] === 'errormessage' ){
@@ -132,9 +132,9 @@ User.prototype.login = function login( email, password ){
     var spaceghost = this.spaceghost;
     this._submitLogin( email, password );
     spaceghost.then( function(){
-        spaceghost.withFrame( spaceghost.selectors.frames.main, function mainAfterLogin(){
-            if( spaceghost.getCurrentUrl().search( spaceghost.selectors.loginPage.url_regex ) != -1 ){
-                var messageInfo = spaceghost.getElementInfo( spaceghost.selectors.messages.all );
+        spaceghost.withFrame( spaceghost.data.selectors.frames.main, function mainAfterLogin(){
+            if( spaceghost.getCurrentUrl().search( spaceghost.data.selectors.loginPage.url_regex ) != -1 ){
+                var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
                 if( messageInfo && messageInfo.attributes[ 'class' ] === 'errormessage' ){
                     throw new spaceghost.GalaxyError( 'LoginError: ' + messageInfo.html );
                 }
@@ -154,7 +154,8 @@ User.prototype.loggedInAs = function loggedInAs(){
     var spaceghost = this.spaceghost,
         userEmail = '';
     try {
-        var loggedInInfo = spaceghost.getElementInfo( xpath( spaceghost.selectors.masthead.userMenu.userEmail_xpath ) );
+        var loggedInInfo = spaceghost.getElementInfo(
+            xpath( spaceghost.data.selectors.masthead.userMenu.userEmail_xpath ) );
         userEmail = loggedInInfo.text;
     } catch( err ){
         spaceghost.error( err );
@@ -170,8 +171,8 @@ User.prototype.logout = function logout(){
     var spaceghost = this.spaceghost;
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
         //TODO: handle already logged out
-        spaceghost.clickLabel( spaceghost.labels.masthead.menus.user );
-        spaceghost.clickLabel( spaceghost.labels.masthead.userMenu.logout );
+        spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
+        spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.logout );
     });
     return spaceghost;
 };

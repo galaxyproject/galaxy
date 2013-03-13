@@ -22,7 +22,11 @@ Tools.prototype.toString = function toString(){
     return this.spaceghost + '.Tools';
 };
 
+// -------------------------------------------------------------------
+/* TODO:
+    move selectors from sg to here
 
+*/
 // =================================================================== INTERNAL
 /** Tests uploading a file.
  *      NOTE: this version does NOT throw an error on a bad upload.
@@ -35,51 +39,33 @@ Tools.prototype._uploadFile = function _uploadFile( filepath ){
         uploadInfo = {};
     //TODO: check file exists using phantom.fs
     //TODO: pull from test data
-    uploadInfo[ spaceghost.selectors.tools.upload.fileInput ] = filepath;
+    uploadInfo[ spaceghost.data.selectors.tools.upload.fileInput ] = filepath;
     spaceghost.debug( 'uploading file: ' + filepath );
 
     spaceghost.then( function(){
-        spaceghost.withFrame( spaceghost.selectors.frames.tools, function(){
-            spaceghost.clickLabel( spaceghost.labels.tools.upload.panelLabel );
+        spaceghost.withFrame( spaceghost.data.selectors.frames.tools, function(){
+            spaceghost.clickLabel( spaceghost.data.labels.tools.upload.panelLabel );
         });
     });
 
     spaceghost.then( function beginUpload(){
-        spaceghost.withFrame( spaceghost.selectors.frames.main, function(){
-            spaceghost.fill( spaceghost.selectors.tools.general.form, uploadInfo, false );
+        spaceghost.withFrame( spaceghost.data.selectors.frames.main, function(){
+            spaceghost.fill( spaceghost.data.selectors.tools.general.form, uploadInfo, false );
 
             // the following throws:
             //  [error] [remote] Failed dispatching clickmouse event on xpath selector: //input[@value="Execute"]:
             //  PageError: TypeError: 'undefined' is not a function (evaluating '$(spaceghost).formSerialize()')
             // ...and yet the upload still seems to work
-            spaceghost.click( xpath( spaceghost.selectors.tools.general.executeButton_xpath ) );
+            spaceghost.click( xpath( spaceghost.data.selectors.tools.general.executeButton_xpath ) );
         });
     });
 
     // debugging
-    spaceghost.withFrame( spaceghost.selectors.frames.main, function afterUpload(){
-        var messageInfo = spaceghost.elementInfoOrNull( spaceghost.selectors.messages.all );
+    spaceghost.withFrame( spaceghost.data.selectors.frames.main, function afterUpload(){
+        var messageInfo = spaceghost.elementInfoOrNull( spaceghost.data.selectors.messages.all );
         spaceghost.debug( 'post upload message:\n' + spaceghost.jsonStr( messageInfo ) );
     });
 };
-
-/** Uploads a file.
- *  @param {String} filepath     the local filesystem path of the file to upload (absolute (?))
- */
-//Tools.prototype.uploadFile = function uploadFile( filepath ){
-//    this._uploadFile( filepath );
-//    this.then( function(){
-//        this.withFrame( this.selectors.frames.main, function mainAfterUpload(){
-//            var messageInfo = this.elementInfoOrNull( this.selectors.messages.all );
-//            if( ( !messageInfo )
-//            ||  ( messageInfo.attributes[ 'class' ] !== 'donemessagelarge' )
-//            ||  ( messageInfo.text.indexOf( this.text.upload.success ) === -1 ) ){
-//                throw new GalaxyError( 'UploadError: ' + this.jsonStr( messageInfo ) );
-//            }
-//        });
-//    });
-//    return this;
-//};
 
 /** Parses the hid and name of a newly uploaded file from the tool execution donemessagelarge
  *  @param {String} doneMsgText     the text extracted from the donemessagelarge after a tool execution
@@ -159,9 +145,9 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
     // upload the file erroring if a done message is not displayed, aggregate info about upload
     spaceghost.info( 'uploading file: ' + filepath + ' (timeout after ' + timeoutAfterMs + ')' );
     this._uploadFile( filepath );
-    spaceghost.withFrame( spaceghost.selectors.frames.main, function toolExecuted(){
+    spaceghost.withFrame( spaceghost.data.selectors.frames.main, function toolExecuted(){
         spaceghost.debug( 'checking for done message' );
-        var doneElementInfo = spaceghost.elementInfoOrNull( spaceghost.selectors.messages.donelarge );
+        var doneElementInfo = spaceghost.elementInfoOrNull( spaceghost.data.selectors.messages.donelarge );
         if( !doneElementInfo ){
             throw new spaceghost.GalaxyError( 'Upload Error: no done message uploading "' + filepath + '"' );
         }
@@ -178,7 +164,7 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
     spaceghost.then( function getNewHda(){
         spaceghost.debug( 'beginning wait for upload file\'s ok state' );
         // get the hda view DOM element from the upload name and hid
-        spaceghost.withFrame( spaceghost.selectors.frames.history, function(){
+        spaceghost.withFrame( spaceghost.data.selectors.frames.history, function(){
             spaceghost.waitForSelector( '#history-name', function(){
                 var hdaInfo = spaceghost.historypanel.hdaElementInfoByTitle( uploadInfo.name, uploadInfo.hid );
                 if( hdaInfo === null ){

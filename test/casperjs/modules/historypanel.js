@@ -73,7 +73,7 @@ HistoryPanel.prototype.waitForHdaState = function waitForHdaState( hdaSelector, 
         finalStateClass = '.historyItem-' + finalState;
 
     spaceghost.then( function(){
-        spaceghost.withFrame( spaceghost.selectors.frames.history, function(){
+        spaceghost.withFrame( spaceghost.data.selectors.frames.history, function(){
 
             // save the old time out
             var oldWaitTimeout = spaceghost.options.waitTimeout,
@@ -157,7 +157,7 @@ HistoryPanel.prototype.deleteHda = function deleteHda( hdaSelector, whenDeletedF
     whenDeletedFn = whenDeletedFn || function(){};
     var spaceghost = this.spaceghost;
 
-    spaceghost.withFrame( spaceghost.selectors.frames.history, function deletingHda(){
+    spaceghost.withFrame( spaceghost.data.selectors.frames.history, function deletingHda(){
         //precondition: historyItemWrapper's (hda dom elements) should have an id
         // we could use the selector directly, but better if it errors before an attempted delete
         var hdaId = spaceghost.getElementInfo( hdaSelector ).attributes.id;
@@ -192,7 +192,7 @@ HistoryPanel.prototype.expandHda = function expandHda( hdaSelector ){
     var spaceghost = this.spaceghost,
         historyFrameInfo = spaceghost.getElementInfo( 'iframe[name="galaxy_history"]' );
 
-    spaceghost.withFrame( spaceghost.selectors.frames.history, function expandingHda(){
+    spaceghost.withFrame( spaceghost.data.selectors.frames.history, function expandingHda(){
         var titleInfo = spaceghost.getElementInfo( hdaSelector + ' .historyItemTitle' );
         spaceghost.page.sendEvent( 'mousedown',
             historyFrameInfo.x + titleInfo.x + 1, historyFrameInfo.y + titleInfo.y - 5 );
@@ -233,7 +233,7 @@ HistoryPanel.prototype.hoverOver = function hoverOver( selector, whenHovering, h
     if( !historyFrameInfo ){
         //TODO: move selector to data (use selectors.frames? )
         historyFrameInfo = spaceghost.getElementInfo( 'iframe[name="galaxy_history"]' );
-        spaceghost.withFrame( spaceghost.selectors.frames.history, function inHistoryPanel(){
+        spaceghost.withFrame( spaceghost.data.selectors.frames.history, function inHistoryPanel(){
             hoverAndCallback.call( spaceghost, historyFrameInfo, selector, whenHovering );
         });
 

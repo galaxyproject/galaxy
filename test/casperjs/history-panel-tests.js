@@ -38,7 +38,11 @@ if( spaceghost.fixtureData.testUser ){
 }
 
 // selectors and labels
-var nameSelector     = spaceghost.historypanel.data.selectors.history.name,
+var tooltipSelector     = spaceghost.data.selectors.tooltipBalloon,
+    editableTextClass   = spaceghost.data.selectors.editableText,
+    editableTextInput   = spaceghost.data.selectors.editableTextInput,
+
+    nameSelector     = spaceghost.historypanel.data.selectors.history.name,
     subtitleSelector = spaceghost.historypanel.data.selectors.history.subtitle,
     unnamedName      = spaceghost.historypanel.data.text.history.newName,
     initialSizeStr   = spaceghost.historypanel.data.text.history.newSize,
@@ -51,14 +55,9 @@ var nameSelector     = spaceghost.historypanel.data.selectors.history.name,
     annoAreaSelector    = spaceghost.historypanel.data.selectors.history.annoArea,
     nameTooltip      = spaceghost.historypanel.data.text.history.tooltips.name,
 
-    tooltipSelector  = '.bs-tooltip',
-
-    editableTextClass = 'editable-text',
-    editableTextInputSelector = 'input#renaming-active',
-
-    refreshButtonSelector = 'a#history-refresh-button',
-    refreshButtonIconSelector = 'span.fa-icon-refresh',
-    refreshButtonHref = '/history',
+    refreshButtonSelector       = 'a#history-refresh-button',
+    refreshButtonIconSelector   = 'span.fa-icon-refresh',
+    refreshButtonHref           = '/history',
 
     includeDeletedOptionsLabel = spaceghost.historyoptions.data.labels.options.includeDeleted;
 
@@ -66,7 +65,7 @@ var nameSelector     = spaceghost.historypanel.data.selectors.history.name,
 var newHistoryName = "Test History",
     filepathToUpload = '../../test-data/1.txt',
     historyFrameInfo = {},
-    uploadInfo = {};
+    testUploadInfo = {};
 
 
 // =================================================================== TESTS
@@ -88,7 +87,7 @@ spaceghost.then( function(){
 // ------------------------------------------------------------------- check structure of empty history
 spaceghost.thenOpen( spaceghost.baseUrl, function testPanelStructure(){
     this.test.comment( 'history panel, new history' );
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.test.comment( "frame should have proper url and title: 'History'" );
         this.test.assertMatch( this.getCurrentUrl(), /\/history/, 'Found history frame url' );
         this.test.assertTitle( this.getTitle(), 'History', 'Found history frame title' );
@@ -98,7 +97,7 @@ spaceghost.thenOpen( spaceghost.baseUrl, function testPanelStructure(){
         this.test.assertVisible( nameSelector, 'History name is visible' );
         this.test.assertSelectorHasText( nameSelector, unnamedName, 'History name is ' + unnamedName );
 
-        this.test.comment( "history subtitle should display size and size should be 0 bytes" );
+        this.test.comment( "history subtitle should display size and size should be: " + initialSizeStr );
         this.test.assertExists( subtitleSelector, 'Found ' + subtitleSelector );
         this.test.assertVisible( subtitleSelector, 'History subtitle is visible' );
         this.test.assertSelectorHasText( subtitleSelector, initialSizeStr,
@@ -119,50 +118,46 @@ spaceghost.thenOpen( spaceghost.baseUrl, function testPanelStructure(){
 // ------------------------------------------------------------------- name editing
 spaceghost.then( function(){
     this.test.comment( 'history panel, editing the history name' );
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.test.comment( 'name should have a tooltip with proper info on name editing' );
         var nameInfo = this.getElementInfo( nameSelector );
-        this.page.sendEvent( 'mousemove',
-            historyFrameInfo.x + nameInfo.x + 1, historyFrameInfo.y + nameInfo.y + 1 );
+        this.page.sendEvent( 'mousemove', historyFrameInfo.x + nameInfo.x + 1, historyFrameInfo.y + nameInfo.y + 1 );
         this.test.assertExists( tooltipSelector, "Found tooltip after name hover" );
         this.test.assertSelectorHasText( tooltipSelector, nameTooltip );
 
         this.test.comment( 'name should be create an input when clicked' );
-        this.test.assert( nameInfo.attributes[ 'class' ].indexOf( editableTextClass ) !== -1,
-            "Name field classed for editable text" );
+        this.assertHasClass( nameSelector, editableTextClass, "Name field classed for editable text" );
         this.click( nameSelector );
-        this.test.assertExists( editableTextInputSelector, "Clicking on name creates an input" );
+        this.test.assertExists( editableTextInput, "Clicking on name creates an input" );
 
         this.test.comment( 'name should be editable by entering keys and pressing enter' );
         //NOTE: casperjs.sendKeys adds a click before and a selector.blur after sending - won't work here
-        //TODO: to conv. fn
         this.page.sendEvent( 'keypress', newHistoryName );
         this.page.sendEvent( 'keypress', this.page.event.key.Enter );
         this.wait( 1000, function(){
             this.test.assertSelectorHasText( nameSelector, newHistoryName, 'History name is ' + newHistoryName );
-            this.test.assertDoesntExist( editableTextInputSelector, "Input disappears after pressing enter" );
+            this.test.assertDoesntExist( editableTextInput, "Input disappears after pressing enter" );
         });
     });
 });
 spaceghost.then( function(){
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.test.comment( 'name should revert if user clicks away while editing' );
         this.click( nameSelector );
         this.page.sendEvent( 'keypress', "Woodchipper metagenomics, Fargo, ND" );
 
         // click above the name input element
-        var inputInfo = this.getElementInfo( editableTextInputSelector );
-        this.page.sendEvent( 'mousedown',
-            historyFrameInfo.x + inputInfo.x + 1, historyFrameInfo.y + inputInfo.y - 5 );
+        var inputInfo = this.getElementInfo( editableTextInput );
+        this.page.sendEvent( 'mousedown', historyFrameInfo.x + inputInfo.x + 1, historyFrameInfo.y + inputInfo.y - 5 );
 
         this.wait( 1000, function(){
             this.test.assertSelectorHasText( nameSelector, newHistoryName, 'History name is STILL ' + newHistoryName );
-            this.test.assertDoesntExist( editableTextInputSelector, "Input disappears after clicking away" );
+            this.test.assertDoesntExist( editableTextInput, "Input disappears after clicking away" );
         });
     });
 });
 spaceghost.then( function(){
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.test.comment( 'name should revert if user hits ESC while editing' );
         this.click( nameSelector );
         this.page.sendEvent( 'keypress', "Arsenic Bacteria" );
@@ -170,7 +165,7 @@ spaceghost.then( function(){
         this.page.sendEvent( 'keypress', this.page.event.key.Escape );
         this.wait( 1000, function(){
             this.test.assertSelectorHasText( nameSelector, newHistoryName, 'History name is STILL ' + newHistoryName );
-            this.test.assertDoesntExist( editableTextInputSelector, "Input disappears after hitting ESC" );
+            this.test.assertDoesntExist( editableTextInput, "Input disappears after hitting ESC" );
         });
     });
 });
@@ -185,14 +180,14 @@ spaceghost.then( function upload(){
             hasClass = _uploadInfo.hdaElement.attributes[ 'class' ],
             hasOkClass = _uploadInfo.hdaElement.attributes[ 'class' ].indexOf( wrapperOkClassName ) !== -1;
         this.test.assert( ( hasHda && hasClass && hasOkClass ), "Uploaded file: " + _uploadInfo.name );
-        uploadInfo = _uploadInfo;
+        testUploadInfo = _uploadInfo;
     });
 });
 
 spaceghost.then( function checkPanelStructure(){
     this.test.comment( 'checking structure of non-empty panel' );
 
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.test.comment( "history name should exist, be visible, and have text " + unnamedName );
         this.test.assertExists( nameSelector, nameSelector + ' exists' );
         this.test.assertVisible( nameSelector, 'History name is visible' );
@@ -221,8 +216,7 @@ spaceghost.then( function checkPanelStructure(){
 //TODO: check tooltips
 spaceghost.then( function openTags(){
     this.test.comment( 'tag area should open when the history panel tag icon is clicked' );
-    this.withFrame( this.selectors.frames.history, function(){
-        this.capture( 'tag-area.png' );
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.mouseEvent( 'click', tagIconSelector );
         this.wait( 1000, function(){
             this.test.assertVisible( tagAreaSelector, 'Tag area is now displayed' );
@@ -235,7 +229,7 @@ spaceghost.then( function openTags(){
 //TODO: check tooltips
 spaceghost.then( function openAnnotation(){
     this.test.comment( 'annotation area should open when the history panel annotation icon is clicked' );
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.mouseEvent( 'click', annoIconSelector );
         this.wait( 1000, function(){
             this.test.assertVisible( annoAreaSelector, 'Annotation area is now displayed' );
@@ -244,7 +238,7 @@ spaceghost.then( function openAnnotation(){
 });
 spaceghost.then( function closeAnnotation(){
     this.test.comment( 'annotation area should close when the history panel tag icon is clicked again' );
-    this.withFrame( this.selectors.frames.history, function bler(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function bler(){
         this.mouseEvent( 'click', annoIconSelector );
         this.wait( 1000, function(){
             this.test.assertNotVisible( annoAreaSelector, 'Tag area is now hidden' );
@@ -296,8 +290,9 @@ spaceghost.then( function historyOptions(){
 spaceghost.then( function(){
     this.test.comment( 'deleted hdas shouldn\'t be in the history panel DOM' );
 
-    this.historypanel.deleteHda( '#' + uploadInfo.hdaElement.attributes.id, function(){
-        this.test.assertDoesntExist( '#' + uploadInfo.hdaElement.attributes.id, "Deleted HDA is not in the DOM" );
+    this.historypanel.deleteHda( '#' + testUploadInfo.hdaElement.attributes.id, function(){
+        this.test.assertDoesntExist( '#' + testUploadInfo.hdaElement.attributes.id,
+            "Deleted HDA is not in the DOM" );
     });
 });
 
@@ -306,11 +301,11 @@ spaceghost.then( function(){
     this.test.comment( 'History options->' + includeDeletedOptionsLabel + ' shows deleted datasets' );
 
     this.historyoptions.includeDeleted();
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.waitForSelector( nameSelector, function(){
-            this.test.assertExists( '#' + uploadInfo.hdaElement.attributes.id,
+            this.test.assertExists( '#' + testUploadInfo.hdaElement.attributes.id,
                 "Deleted HDA is in the DOM (using history options -> " + includeDeletedOptionsLabel + ")" );
-            this.test.assertVisible( '#' + uploadInfo.hdaElement.attributes.id,
+            this.test.assertVisible( '#' + testUploadInfo.hdaElement.attributes.id,
                 "Deleted HDA is visible again (using history options -> " + includeDeletedOptionsLabel + ")" );
         });
     });
@@ -320,9 +315,9 @@ spaceghost.then( function(){
     this.test.comment( 'History options->' + includeDeletedOptionsLabel + ' (again) re-hides deleted datasets' );
 
     this.historyoptions.includeDeleted();
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.waitForSelector( nameSelector, function(){
-            this.test.assertDoesntExist( '#' + uploadInfo.hdaElement.attributes.id,
+            this.test.assertDoesntExist( '#' + testUploadInfo.hdaElement.attributes.id,
                 "Deleted HDA is not in the DOM (using history options -> " + includeDeletedOptionsLabel + ")" );
         });
     });
@@ -331,10 +326,10 @@ spaceghost.then( function(){
 // undelete the uploaded file
 spaceghost.then( function(){
     this.historyoptions.includeDeleted();
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.waitForSelector( nameSelector, function(){
             //TODO: to conv. fn
-            this.click( '#' + uploadInfo.hdaElement.attributes.id
+            this.click( '#' + testUploadInfo.hdaElement.attributes.id
                 + ' ' + this.historypanel.data.selectors.history.undeleteLink );
         });
     });
@@ -348,16 +343,13 @@ spaceghost.then( function(){
 // broken in webkit w/ jq 1.7
 spaceghost.then( function(){
     this.test.comment( 'HDAs can be expanded by clicking on the name' );
-    var uploadedSelector = '#' + uploadInfo.hdaElement.attributes.id;
+    var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
 
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.click( uploadedSelector + ' .historyItemTitle' );
-        this.debug( 'title: ' + this.debugElement( uploadedSelector + ' .historyItemTitle' ) );
-        this.debug( 'wrapper: ' + this.debugElement( uploadedSelector ) );
-
         this.wait( 1000, function(){
-            this.test.assertExists( uploadedSelector + ' .historyItemBody', "Body for uploaded file is found" );
-            this.test.assertVisible( uploadedSelector + ' .hda-summary', "hda-summary is visible" );
+            this.test.assertVisible( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.body,
+                "Body for uploaded file is visible" );
         });
     });
 });
@@ -365,13 +357,13 @@ spaceghost.then( function(){
 // ------------------------------------------------------------------- expanded hdas are still expanded after a refresh
 spaceghost.then( function(){
     this.test.comment( 'Expanded hdas are still expanded after a refresh' );
-    var uploadedSelector = '#' + uploadInfo.hdaElement.attributes.id;
+    var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
 
     this.click( refreshButtonSelector );
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.waitForSelector( nameSelector, function(){
-            this.test.assertExists( uploadedSelector + ' .historyItemBody', "Body for uploaded file is found" );
-            this.test.assertVisible( uploadedSelector + ' .hda-summary', "hda-summary is visible" );
+            this.test.assertVisible( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.body,
+                "Body for uploaded file is visible" );
         });
     });
     // this will break: webkit + jq 1.7
@@ -380,26 +372,27 @@ spaceghost.then( function(){
 // ------------------------------------------------------------------- expanded hdas collapse by clicking name again
 spaceghost.then( function(){
     this.test.comment( 'Expanded hdas collapse by clicking name again' );
-    var uploadedSelector = '#' + uploadInfo.hdaElement.attributes.id;
+    var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
 
-    this.withFrame( this.selectors.frames.history, function(){
-        this.click( uploadedSelector + ' .historyItemTitle' );
-
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
+        this.click( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.title );
         this.wait( 500, function(){
-            this.test.assertNotVisible( uploadedSelector + ' .hda-summary', "hda-summary is not visible" );
+            this.test.assertNotVisible( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.body,
+                "Body for uploaded file is not visible" );
         });
     });
 });
 
-// ------------------------------------------------------------------- collapsed hdas are still collapsed after a refresh
+// ------------------------------------------------------------------- collapsed hdas still collapsed after a refresh
 spaceghost.then( function(){
-    this.test.comment( 'Expanded hdas are still expanded after a refresh' );
-    var uploadedSelector = '#' + uploadInfo.hdaElement.attributes.id;
+    this.test.comment( 'collapsed hdas still collapsed after a refresh' );
+    var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
 
     this.click( refreshButtonSelector );
-    this.withFrame( this.selectors.frames.history, function(){
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
         this.waitForSelector( nameSelector, function(){
-            this.test.assertNotVisible( uploadedSelector + ' .hda-summary', "hda-summary is not visible" );
+            this.test.assertNotVisible( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.body,
+                "Body for uploaded file is not visible" );
         });
     });
 });
@@ -407,19 +400,20 @@ spaceghost.then( function(){
 // ------------------------------------------------------------------- history options collapses all expanded hdas
 spaceghost.then( function(){
     // expand again
-    this.withFrame( this.selectors.frames.history, function(){
-        this.click( '#' + uploadInfo.hdaElement.attributes.id + ' .historyItemTitle' );
+    this.withFrame( spaceghost.data.selectors.frames.history, function(){
+        this.click( '#' + testUploadInfo.hdaElement.attributes.id + ' ' + this.historypanel.data.selectors.hda.title );
         this.wait( 500, function(){});
     });
 });
 spaceghost.then( function(){
     this.test.comment( 'History option collapses all expanded hdas' );
-    var uploadedSelector = '#' + uploadInfo.hdaElement.attributes.id;
+    var uploadedSelector = '#' + testUploadInfo.hdaElement.attributes.id;
 
     this.historyoptions.collapseExpanded();
     this.wait( 500, function(){
-        this.withFrame( this.selectors.frames.history, function(){
-            this.test.assertNotVisible( uploadedSelector + ' .hda-summary', "hda-summary is not visible" );
+        this.withFrame( spaceghost.data.selectors.frames.history, function(){
+            this.test.assertNotVisible( uploadedSelector + ' ' + this.historypanel.data.selectors.hda.body,
+                "Body for uploaded file is not visible" );
         });
     });
 });
