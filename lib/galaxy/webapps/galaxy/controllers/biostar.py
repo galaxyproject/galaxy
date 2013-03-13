@@ -5,7 +5,7 @@ Support for integration with the Biostar Q&A application
 from galaxy.web.base.controller import BaseUIController, url_for, error, web
 
 import base64
-import json
+from galaxy.util import json
 import hmac
 
 # Biostar requires all keys to be present, so we start with a template
