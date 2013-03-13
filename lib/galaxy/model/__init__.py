@@ -1563,7 +1563,7 @@ class HistoryDatasetAssociationSubset( object ):
 class Library( object, APIItem ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'name', 'description', 'synopsis' )
+    api_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis' )
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
         self.description = description
@@ -1630,7 +1630,7 @@ class Library( object, APIItem ):
         return name
 
 class LibraryFolder( object, APIItem ):
-    api_element_visible_keys = ( 'id', 'name', 'description', 'item_count', 'genome_build' )
+    api_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description

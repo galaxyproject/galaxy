@@ -28,7 +28,7 @@ import logging
 import parsley
 import re
 
-from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, History
+from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, History, Library, LibraryFolder, LibraryDataset
 from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation, ExtendedMetadata, ExtendedMetadataIndex
 
 from sqlalchemy import or_, and_
@@ -93,7 +93,7 @@ class ViewQueryBaseClass(object):
 
 
 ##################
-#Library Searching
+#Library Dataset Searching
 ##################
 
 def library_extended_metadata_filter(view, left, operator, right):
@@ -113,8 +113,8 @@ def library_extended_metadata_filter(view, left, operator, right):
     )
 
 
-class LibraryDatasetView(ViewQueryBaseClass):
-    VIEW_NAME = "library_dataset"
+class LibraryDatasetDatasetView(ViewQueryBaseClass):
+    VIEW_NAME = "library_dataset_dataset"
     FIELDS = { 
         'extended_metadata' : ViewField('extended_metadata', handler=library_extended_metadata_filter), 
         'name' : ViewField('name', sqlalchemy_field=LibraryDatasetDatasetAssociation.name ),
@@ -123,7 +123,53 @@ class LibraryDatasetView(ViewQueryBaseClass):
 
     def search(self, trans):
         self.query = trans.sa_session.query( LibraryDatasetDatasetAssociation )
-       
+
+
+##################
+#Library Searching
+##################
+
+class LibraryView(ViewQueryBaseClass):
+    VIEW_NAME = "library"
+    FIELDS = { 
+        'name' : ViewField('name', sqlalchemy_field=Library.name ),
+        'id' : ViewField('id', sqlalchemy_field=Library.id) 
+    }
+
+    def search(self, trans):
+        self.query = trans.sa_session.query( Library )
+
+
+
+##################
+#Library Folder Searching
+##################
+
+class LibraryFolderView(ViewQueryBaseClass):
+    VIEW_NAME = "library_folder"
+    FIELDS = { 
+        'name' : ViewField('name', sqlalchemy_field=LibraryFolder.name ),
+        'id' : ViewField('id', sqlalchemy_field=LibraryFolder.id) 
+    }
+
+    def search(self, trans):
+        self.query = trans.sa_session.query( LibraryFolder )
+
+
+
+##################
+#Library Dataset Searching
+##################
+
+class LibraryDatasetView(ViewQueryBaseClass):
+    VIEW_NAME = "library_dataset"
+    FIELDS = { 
+        'name' : ViewField('name', sqlalchemy_field=LibraryDataset.name ),
+        'id' : ViewField('id', sqlalchemy_field=LibraryDataset.id) 
+    }
+
+    def search(self, trans):
+        self.query = trans.sa_session.query( LibraryDataset )
 
 ##################
 #History Dataset Searching
@@ -227,8 +273,12 @@ The view mapping takes a user's name for a table and maps it to a View class tha
 handle queries
 """
 view_mapping = {
+    'library' : LibraryView,
+    'library_folder' : LibraryFolderView,
+    'library_dataset_dataset' : LibraryDatasetDatasetView,
     'library_dataset' : LibraryDatasetView,
-    'ldda' : LibraryDatasetView,
+    'lda' : LibraryDatasetView,
+    'ldda' : LibraryDatasetDatasetView,
     'history_dataset' : HistoryDatasetView,
     'hda' : HistoryDatasetView,
     'history' : HistoryView,
@@ -352,5 +402,5 @@ class GalaxySearchEngine:
         if q.table_name in view_mapping:
             view = view_mapping[q.table_name]()
             return SearchProcess(view, q)
-        return None
+        raise GalaxyParseError("No such table %s" % (q.table_name))
 
