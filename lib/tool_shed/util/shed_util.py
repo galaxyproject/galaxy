@@ -1574,15 +1574,33 @@ def remove_from_data_manager( app, repository ):
         root = tree.getroot()
         assert root.tag == 'data_managers', 'The file provided (%s) for removing data managers from is not a valid data manager xml file.' % ( shed_data_manager_conf_filename )
         guids = [ data_manager_dict.get( 'guid' ) for data_manager_dict in metadata_dict.get( 'data_manager', {} ).get( 'data_managers', {} ).itervalues() if 'guid' in data_manager_dict ]
+        load_old_data_managers_by_guid = {}
         data_manager_config_has_changes = False
         config_elems = []
         for elem in root:
-            if elem.tag != 'data_manager' or elem.get( 'guid', None ) not in guids:
-                config_elems.append( elem )
-            else:
+            # Match Data Manager elements by guid and installed_changeset_revision
+            elem_matches_removed_data_manager = False
+            if elem.tag == 'data_manager':
+                guid = elem.get( 'guid', None )
+                if guid in guids:
+                    tool_elem = elem.find( 'tool' )
+                    if tool_elem is not None:
+                        installed_changeset_revision_elem = tool_elem.find( 'installed_changeset_revision' )
+                        if installed_changeset_revision_elem is not None:
+                            if installed_changeset_revision_elem.text == repository.installed_changeset_revision:
+                                elem_matches_removed_data_manager = True
+                            else:
+                                # This is a different version, which had been previously overridden
+                                load_old_data_managers_by_guid[ guid ] = elem
+            if elem_matches_removed_data_manager:
                 data_manager_config_has_changes = True
-        #remove data managers from in memory
+            else:
+                config_elems.append( elem )
+        # Remove data managers from in memory
         app.data_managers.remove_manager( guids )
+        # Load other versions of any now uninstalled data managers, if any
+        for elem in load_old_data_managers_by_guid.itervalues():
+            app.data_managers.load_manager_from_elem( elem )
         # Persist the altered shed_data_manager_config file.
         if data_manager_config_has_changes:
             suc.data_manager_config_elems_to_xml_file( app, config_elems, shed_data_manager_conf_filename  )
