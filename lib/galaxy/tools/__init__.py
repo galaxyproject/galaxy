@@ -56,6 +56,7 @@ from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
 from galaxy.visualization.genome.visual_analytics import TracksterConfig
 from galaxy.web import url_for
+from galaxy.web.form_builder import SelectField
 from tool_shed.util import shed_util_common
 
 log = logging.getLogger( __name__ )
@@ -425,7 +426,23 @@ class ToolBox( object ):
                     tool_version_select_field = self.build_tool_version_select_field( tools, tool.id, set_selected )
                 break
         return tool_version_select_field, tools, tool
-
+    
+    def build_tool_version_select_field( self, tools, tool_id, set_selected ):
+        """Build a SelectField whose options are the ids for the received list of tools."""
+        options = []
+        refresh_on_change_values = []
+        for tool in tools:
+            options.insert( 0, ( tool.version, tool.id ) )
+            refresh_on_change_values.append( tool.id )
+        select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
+        for option_tup in options:
+            selected = set_selected and option_tup[1] == tool_id
+            if selected:
+                select_field.add_option( 'version %s' % option_tup[0], option_tup[1], selected=True )
+            else:
+                select_field.add_option( 'version %s' % option_tup[0], option_tup[1] )
+        return select_field
+    
     def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
         try:
             path = elem.get( "file" )

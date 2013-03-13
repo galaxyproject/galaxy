@@ -14,7 +14,6 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
 from galaxy.web import error, url_for
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.form_builder import SelectField
 
 log = logging.getLogger( __name__ )
 
@@ -219,21 +218,7 @@ class ToolRunner( BaseUIController ):
                                     add_frame=add_frame,
                                     tool_id_version_message=tool_id_version_message,
                                     **vars )
-    def build_tool_version_select_field( self, tools, tool_id, set_selected ):
-        """Build a SelectField whose options are the ids for the received list of tools."""
-        options = []
-        refresh_on_change_values = []
-        for tool in tools:
-            options.insert( 0, ( tool.version, tool.id ) )
-            refresh_on_change_values.append( tool.id )
-        select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
-        for option_tup in options:
-            selected = set_selected and option_tup[1] == tool_id
-            if selected:
-                select_field.add_option( 'version %s' % option_tup[0], option_tup[1], selected=True )
-            else:
-                select_field.add_option( 'version %s' % option_tup[0], option_tup[1] )
-        return select_field
+    
     @web.expose
     def redirect( self, trans, redirect_url=None, **kwd ):
         if not redirect_url:
