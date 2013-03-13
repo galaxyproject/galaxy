@@ -106,6 +106,8 @@ class UniverseApplication( object ):
         if self.config.get_bool( 'enable_tool_shed_check', False ):
             from tool_shed.galaxy_install import update_manager
             self.update_manager = update_manager.UpdateManager( self )
+        else:
+            self.update_manager = None
         # Load proprietary datatype converters and display applications.
         self.installed_repository_manager.load_proprietary_converters_and_display_applications()
         # Load datatype display applications defined in local datatypes_conf.xml
@@ -166,6 +168,8 @@ class UniverseApplication( object ):
         self.object_store.shutdown()
         if self.heartbeat:
             self.heartbeat.shutdown()
+        if self.update_manager:
+            self.update_manager.shutdown()
         try:
             # If the datatypes registry was persisted, attempt to
             # remove the temporary file in which it was written.
