@@ -3454,7 +3454,8 @@ class ToolDependency( object ):
                                  self.tool_shed_repository.name,
                                  self.tool_shed_repository.installed_changeset_revision )
 
-class ToolVersion( object ):
+class ToolVersion( object, APIItem ):
+    api_element_visible_keys = ( 'id', 'tool_shed_repository' )
     def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):
         self.id = id
         self.create_time = create_time
@@ -3510,6 +3511,15 @@ class ToolVersion( object ):
                 version_ids.insert( 0, tool_version.tool_id )
             return version_ids
         return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
+
+    def get_api_value( self, view='element' ):
+        rval = APIItem.get_api_value(self, view)
+        rval['tool_name'] = self.tool_id
+        for a in self.parent_tool_association:
+            rval['parent_tool_id'] = a.parent_id
+        for a in self.child_tool_association:
+            rval['child_tool_id'] = a.tool_id
+        return rval
 
 class ToolVersionAssociation( object ):
     def __init__( self, id=None, tool_id=None, parent_id=None ):
