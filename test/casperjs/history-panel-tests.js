@@ -79,7 +79,7 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
     this.test.assert( loggedInAs === email, 'loggedInAs() matches email: "' + loggedInAs + '"' );
 });
 
-// grab the history frame bounds for mouse later tests
+// grab the history frame bounds for later mouse tests
 spaceghost.then( function(){
     historyFrameInfo = this.getElementInfo( 'iframe[name="galaxy_history"]' );
     //this.debug( 'historyFrameInfo:' + this.jsonStr( historyFrameInfo ) );

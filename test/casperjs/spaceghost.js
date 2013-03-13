@@ -136,7 +136,6 @@ SpaceGhost.prototype.init = function init( options ){
     this.debug( 'clientScripts:\n' + this.jsonStr( this.options.clientScripts ) );
 
     this._loadModules();
-
 };
 
 /** Allow CLI arguments to set options if the proper option name is used.
@@ -415,6 +414,15 @@ SpaceGhost.prototype._loadModules = function _loadModules(){
 };
 
 // =================================================================== PAGE CONTROL
+/** An override of casper.start for additional set up.
+ *      (Currently only used to change viewport)
+ */
+SpaceGhost.prototype.start = function start(){
+    var returned = Casper.prototype.start.apply( this, arguments );
+    this.viewport( 1024, 728 );
+    return returned;
+};
+
 /** An override of casper.open specifically for Galaxy.
  *      (Currently only used to change language headers)
  */
@@ -492,17 +500,19 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
     });
 };
 
-/** Override capture to save to environ: GALAXY_TEST_SAVE (or passed in from CLI)
- *  @param {String} filename    the image filename
+/** Hover over an element.
+ *      NOTE: not for use with iframes (main, tool, history) - they need to re-calc
+ *      for the iframe bounds and should be implemented in their own modules
+ *  @param {String} selector        a css or xpath selector for an historyItemWrapper
+ *  @param {Function} whenHovering  a function to call after the hover (will be scoped to spaceghost)
  */
-SpaceGhost.prototype.capture = function capture( filename, clipRect_or_selector ){
-    //TODO: override with saved output dir
-    if( clipRect_or_selector && ( !utils.isClipRect( clipRect_or_selector ) ) ){
-        this.debug( "USING CAPTURE SELECTOR" );
-        return this.captureSelector( filename, clipRect_or_selector );
-    }
-    return Casper.prototype.capture.apply( this, arguments );
+SpaceGhost.prototype.hoverOver = function hoverOver( selector, whenHovering ){
+    var elementInfo = this.getElementInfo( selector );
+    this.page.sendEvent( 'mousemove', elementInfo.x + 1, elementInfo.y + 1 );
+    whenHovering.call( this );
+    return this;
 };
+
 
 // =================================================================== TESTING
 //TODO: form fill doesn't work as casperjs would want it - often a button -> controller url
@@ -591,6 +601,15 @@ SpaceGhost.prototype.assertNavigationRequested = function assertNavigationReques
     });
 };
 
+/** Assert that a given string (toSearch) contains some given string (searchFor).
+ *  @param {String} toSearch    the string to search
+ *  @param {String} searchFor   the string to search for
+ *  @param {String} msg         assertion msg to display
+ */
+SpaceGhost.prototype.assertTextContains = function assertTextContains( toSearch, searchFor, msg ){
+    this.test.assert( toSearch.indexOf( searchFor ) !== -1, msg );
+};
+
 // =================================================================== CONVENIENCE
 /** Wraps casper.getElementInfo in try, returning null if element not found instead of erroring.
  *  @param {String} selector    css or xpath selector for the element to find
@@ -619,6 +638,17 @@ SpaceGhost.prototype.tryClick = function tryClick( selector ){
 
 // =================================================================== GALAXY CONVENIENCE
 // =================================================================== MISCELAIN
+/** Override capture to save to environ: GALAXY_TEST_SAVE (or passed in from CLI)
+ *  @param {String} filename    the image filename
+ */
+SpaceGhost.prototype.capture = function capture( filename, clipRect_or_selector ){
+    //TODO: override with saved output dir
+    if( clipRect_or_selector && ( !utils.isClipRect( clipRect_or_selector ) ) ){
+        return this.captureSelector( filename, clipRect_or_selector );
+    }
+    return Casper.prototype.capture.apply( this, arguments );
+};
+
 /** Pop all handlers for eventName from casper and return them in order.
  *  @param {String} eventName   the name of the event from which to remove handlers
  */
@@ -736,7 +766,7 @@ SpaceGhost.prototype.toString = function(){
 // =================================================================== TEST DATA
 // maintain selectors, labels, text here in one central location
 
-//TODO: to separate file?
+//TODO: to data
 SpaceGhost.prototype.selectors = {
     masthead : {
         userMenu : {

@@ -136,12 +136,12 @@ HistoryPanel.prototype.hdaElementInfoByTitle = function hdaElementInfoByTitle( t
 };
 //TODO!: this will break if the hda name has single or double quotes (which are permitted in names)
 
-/** Find the id of the hda wrapper given the hda title and hid.
+/** Find the DOM id of the hda wrapper given the hda title and hid.
  *  @param {String} title   the title of the hda
  *  @param {Int} hid        (optional) the hid of the hda to look for
  *  @returns {String|null} DOM id of the historyItemWrapper found, null if not found
  */
-HistoryPanel.prototype.hdaIdByTitle = function hdaIdByTitle( title, hid ){
+HistoryPanel.prototype.hdaElementIdByTitle = function hdaElementIdByTitle( title, hid ){
     var elementInfo = this.hdaElementInfoByTitle( title, hid );
     return (( elementInfo && elementInfo.attributes && elementInfo.attributes.id )?
         ( elementInfo.attributes.id ):( null ));
@@ -200,6 +200,49 @@ HistoryPanel.prototype.expandHda = function expandHda( hdaSelector ){
     return spaceghost;
 };
 
+/** Hover over an element in the history panel.
+ *      This is re-implemented here because element bounds in iframes are calc'd
+ *      relative to the iframe - but mouse coords are not. Capture the iframe
+ *      bounds first to re-calc for mouse coords
+ *  @param {String} selector        a css or xpath selector for an historyItemWrapper
+ *  @param {Function} whenHovering  a function to call after the hover (will be scoped to spaceghost)
+ *  @param {ElementInfo} historyFrameInfo  casper ElementInfo for the history iframe (optional)
+ *      If undefined, hoverOver will use withFrame first and gather the information itself.
+ *      Send in history iframe info if you're already in the frame when calling this. bleh.
+ */
+HistoryPanel.prototype.hoverOver = function hoverOver( selector, whenHovering, historyFrameInfo ){
+    var spaceghost = this.spaceghost;
+
+    // helper function
+    function hoverAndCallback( historyFrameInfo, selector, whenHovering ){
+        // ...this suddenly started working when I upped the viewport size
+        //this.debug( 'historyFrameInfo:' + this.jsonStr( historyFrameInfo ) );
+        var elementInfo = this.getElementInfo( selector ),
+            newCoords = { x: ( historyFrameInfo.x + elementInfo.x ),
+                          y: ( historyFrameInfo.y + elementInfo.y ) };
+        //this.debug( 'elementInfo:' + this.jsonStr( elementInfo ) );
+        //this.debug( 'newCoords:' + this.jsonStr( newCoords ) );
+        this.page.sendEvent( 'mousemove', newCoords.x + 1, newCoords.y + 1 );
+        if( whenHovering ){
+            whenHovering.call( this );
+        }
+    }
+
+    // complicated by iframes
+    // if no history frame info was passed - assume not in history frame already and move into using withFrame
+    if( !historyFrameInfo ){
+        //TODO: move selector to data (use selectors.frames? )
+        historyFrameInfo = spaceghost.getElementInfo( 'iframe[name="galaxy_history"]' );
+        spaceghost.withFrame( spaceghost.selectors.frames.history, function inHistoryPanel(){
+            hoverAndCallback.call( spaceghost, historyFrameInfo, selector, whenHovering );
+        });
+
+    // otherwise, assume we're already 'in' the history frame and use the passed info
+    } else {
+        hoverAndCallback.call( spaceghost, historyFrameInfo, selector, whenHovering );
+    }
+    //return spaceghost;
+};
 
 // =================================================================== SELECTORS
 //TODO: data is not a very good name
@@ -219,9 +262,22 @@ HistoryPanel.prototype.data = {
             wrapper : {
                 stateClasses : {
                     prefix  : 'historyItem-',
-                    ok      : 'historyItem-ok'
+                    ok      : 'historyItem-ok',
+                    'new'   : 'historyItem-new'
                 }
-            }
+            },
+            title           : '.historyItemTitle',
+            titleButtons    : '.historyItemButtons',
+            displayButton   : '.icon-button.display',
+            editAttrButton  : '.icon-button.edit',
+            deleteButton    : '.icon-button.delete',
+            body            : '.historyItemBody',
+            summary         : '.hda-summary',
+            dbkey           : '.metadata-dbkey',
+            info            : '.hda-info',
+            primaryActionButtons    : 'div[id^="primary-actions"]',
+            secondaryActionButtons  : 'div[id^="secondary-actions"]',
+            peek            : 'pre.peek'
         }
     },
     labels : {
@@ -247,6 +303,23 @@ HistoryPanel.prototype.data = {
             emptyMsg : "Your history is empty. Click 'Get Data' on the left pane to start"
         },
         hda : {
+            ok: {
+                tooltips : {
+                    displayButton  : 'Display data in browser',
+                    editAttrButton : 'Edit Attributes',
+                    deleteButton   : 'Delete'
+                },
+                hrefs : {
+                    displayButton  : '/datasets/%s/display',
+                    editAttrButton : '/datasets/%s/edit',
+                    deleteButton   : '/datasets/%s/delete_async'
+                },
+                nodeNames : {
+                    displayButton  : 'a',
+                    editAttrButton : 'a',
+                    deleteButton   : 'a'
+                }
+            }
         }
     }
 };
