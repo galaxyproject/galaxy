@@ -1261,7 +1261,7 @@ def install_data_managers( app, shed_data_manager_conf_filename, metadata_dict, 
                 tool_elem = suc.generate_tool_elem( repository.tool_shed, repository.name, repository.installed_changeset_revision, 
                                                     repository.owner, tool_config_filename, tool, None )
                 elem.insert( 0, tool_elem )
-                data_manager = app.data_managers.load_manager_from_elem( elem, tool_path=shed_config_dict.get( 'tool_path', '' ) )
+                data_manager = app.data_managers.load_manager_from_elem( elem, tool_path=shed_config_dict.get( 'tool_path', '' ), replace_existing=True )
                 if data_manager:
                     rval.append( data_manager )
             else:
