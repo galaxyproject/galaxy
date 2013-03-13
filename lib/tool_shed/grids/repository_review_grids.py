@@ -4,6 +4,7 @@ from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_, or_
 from tool_shed.grids.repository_grids import RepositoryGrid
 import tool_shed.util.shed_util_common as suc
+import tool_shed.util.metadata_util as metadata_util
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -76,9 +77,9 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
             if repository_metadata_revisions:
                 rval = ''
                 for repository_metadata in repository_metadata_revisions:
-                    rev, label, changeset_revision = suc.get_rev_label_changeset_revision_from_repository_metadata( trans,
-                                                                                                                    repository_metadata,
-                                                                                                                    repository=repository )
+                    rev, label, changeset_revision = metadata_util.get_rev_label_changeset_revision_from_repository_metadata( trans,
+                                                                                                                              repository_metadata,
+                                                                                                                              repository=repository )
                     rval += '<a href="manage_repository_reviews_of_revision?id=%s&changeset_revision=%s">%s</a><br/>' % \
                         ( trans.security.encode_id( repository.id ), changeset_revision, label )
                 return rval

@@ -11,6 +11,7 @@ from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_, or_
 import tool_shed.util.shed_util_common as suc
+import tool_shed.util.metadata_util as metadata_util
 from tool_shed.util import encoding_util
 from galaxy.webapps.tool_shed.util import workflow_util
 from galaxy.webapps.tool_shed.util import common_util
@@ -365,7 +366,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             operation = kwd[ 'operation' ].lower()
             if operation == "preview_tools_in_changeset":
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
-                repository_metadata = suc.get_latest_repository_metadata( trans, repository.id )
+                repository_metadata = metadata_util.get_latest_repository_metadata( trans, repository.id )
                 latest_installable_changeset_revision = repository_metadata.changeset_revision
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='preview_tools_in_changeset',
@@ -1914,7 +1915,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     def reset_all_metadata( self, trans, id, **kwd ):
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
         # It resets all metadata on the complete changelog for a single repository in the tool shed.
-        invalid_file_tups, metadata_dict = suc.reset_all_metadata_on_repository_in_tool_shed( trans, id, **kwd )
+        invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, id, **kwd )
         if invalid_file_tups:
             repository = suc.get_repository_in_tool_shed( trans, id )
             message = suc.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
@@ -2082,7 +2083,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 else:
                     message += 'The selected files were deleted from the repository.  '
                     kwd[ 'message' ] = message
-                    suc.set_repository_metadata_due_to_new_tip( trans, repository, **kwd )
+                    metadata_util.set_repository_metadata_due_to_new_tip( trans, repository, **kwd )
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"

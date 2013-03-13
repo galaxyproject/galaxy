@@ -3,6 +3,7 @@ from galaxy import web, util
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.util import inflector
 import tool_shed.util.shed_util_common as suc
+import tool_shed.util.metadata_util as metadata_util
 import tool_shed.grids.admin_grids as admin_grids
 
 from galaxy import eggs
@@ -301,7 +302,7 @@ class AdminController( BaseUIController, Admin ):
     @web.require_admin
     def reset_metadata_on_selected_repositories_in_tool_shed( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = suc.reset_metadata_on_selected_repositories( trans, **kwd )
+            message, status = metadata_util.reset_metadata_on_selected_repositories( trans, **kwd )
         else:
             message = util.restore_text( kwd.get( 'message', ''  ) )
             status = kwd.get( 'status', 'done' )

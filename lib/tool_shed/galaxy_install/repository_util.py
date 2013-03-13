@@ -1,5 +1,6 @@
 import tool_shed.util.shed_util as shed_util
 import tool_shed.util.shed_util_common as suc
+import tool_shed.util.metadata_util as metadata_util
 
 def handle_repository_contents( app, tool_shed_repository, tool_path, repository_clone_url, relative_install_dir, tool_shed=None, tool_section=None,
                                 shed_tool_conf=None, reinstalling=False ):
@@ -9,16 +10,16 @@ def handle_repository_contents( app, tool_shed_repository, tool_path, repository
     """
     sa_session = app.model.context.current
     shed_config_dict = app.toolbox.get_shed_config_dict_by_filename( shed_tool_conf )
-    metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=app,
-                                                                                     repository=tool_shed_repository,
-                                                                                     changeset_revision=tool_shed_repository.changeset_revision,
-                                                                                     repository_clone_url=repository_clone_url,
-                                                                                     shed_config_dict=shed_config_dict,
-                                                                                     relative_install_dir=relative_install_dir,
-                                                                                     repository_files_dir=None,
-                                                                                     resetting_all_metadata_on_repository=False,
-                                                                                     updating_installed_repository=False,
-                                                                                     persist=True )
+    metadata_dict, invalid_file_tups = metadata_util.generate_metadata_for_changeset_revision( app=app,
+                                                                                               repository=tool_shed_repository,
+                                                                                               changeset_revision=tool_shed_repository.changeset_revision,
+                                                                                               repository_clone_url=repository_clone_url,
+                                                                                               shed_config_dict=shed_config_dict,
+                                                                                               relative_install_dir=relative_install_dir,
+                                                                                               repository_files_dir=None,
+                                                                                               resetting_all_metadata_on_repository=False,
+                                                                                               updating_installed_repository=False,
+                                                                                               persist=True )
     tool_shed_repository.metadata = metadata_dict
     sa_session.add( tool_shed_repository )
     sa_session.flush()

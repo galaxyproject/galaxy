@@ -1,5 +1,6 @@
 import os, logging
 import tool_shed.util.shed_util_common as suc
+import tool_shed.util.metadata_util as metadata_util
 from galaxy.web.form_builder import SelectField
 
 def build_approved_select_field( trans, name, selected_value=None, for_component=True ):
@@ -43,7 +44,7 @@ def build_changeset_revision_select_field( trans, repository, selected_value=Non
         # Restrict the options to all revisions that have associated metadata.
         repository_metadata_revisions = repository.metadata_revisions
     for repository_metadata in repository_metadata_revisions:
-        rev, label, changeset_revision = suc.get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=repository )
+        rev, label, changeset_revision = metadata_util.get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=repository )
         changeset_tups.append( ( rev, label, changeset_revision ) )
         refresh_on_change_values.append( changeset_revision )
     # Sort options by the revision label.  Even though the downloadable_revisions query sorts by update_time,

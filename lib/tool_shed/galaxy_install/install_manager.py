@@ -8,6 +8,7 @@ from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
 import tool_shed.util.shed_util as shed_util
 import tool_shed.util.shed_util_common as suc
+import tool_shed.util.metadata_util as metadata_util
 from galaxy.util.odict import odict
 from tool_shed.util import common_util
 
@@ -179,16 +180,16 @@ class InstallManager( object ):
             else:
                 print 'The tool "%s" (%s) has not been enabled because it is not defined in a proprietary tool config (%s).' \
                 % ( guid, tool_config, ", ".join( self.proprietary_tool_confs or [] ) )
-        metadata_dict, invalid_file_tups = suc.generate_metadata_for_changeset_revision( app=self.app,
-                                                                                         repository=tool_shed_repository,
-                                                                                         changeset_revision=tool_shed_repository.changeset_revision,
-                                                                                         repository_clone_url=repository_clone_url,
-                                                                                         shed_config_dict = self.shed_config_dict,
-                                                                                         relative_install_dir=relative_install_dir,
-                                                                                         repository_files_dir=None,
-                                                                                         resetting_all_metadata_on_repository=False,
-                                                                                         updating_installed_repository=False,
-                                                                                         persist=True )
+        metadata_dict, invalid_file_tups = metadata_util.generate_metadata_for_changeset_revision( app=self.app,
+                                                                                                   repository=tool_shed_repository,
+                                                                                                   changeset_revision=tool_shed_repository.changeset_revision,
+                                                                                                   repository_clone_url=repository_clone_url,
+                                                                                                   shed_config_dict = self.shed_config_dict,
+                                                                                                   relative_install_dir=relative_install_dir,
+                                                                                                   repository_files_dir=None,
+                                                                                                   resetting_all_metadata_on_repository=False,
+                                                                                                   updating_installed_repository=False,
+                                                                                                   persist=True )
         tool_shed_repository.metadata = metadata_dict
         self.app.sa_session.add( tool_shed_repository )
         self.app.sa_session.flush()
