@@ -11,7 +11,9 @@ from mercurial import hg, ui
 
 log = logging.getLogger( __name__ )
 
+
 class ShedTwillTestCase( TwillTestCase ):
+        
     def setUp( self ):
         # Security helper
         self.security = security.SecurityHelper( id_secret='changethisinproductiontoo' )
@@ -35,36 +37,65 @@ class ShedTwillTestCase( TwillTestCase ):
         self.galaxy_tool_dependency_dir = os.environ.get( 'GALAXY_TEST_TOOL_DEPENDENCY_DIR' )
         self.shed_tools_dict = {}
         self.home()
+        
     def add_repository_review_component( self, **kwd ):
         url = '/repository_review/create_component?operation=create'
         self.visit_url( url )
         self.submit_form( 1, 'create_component_button', **kwd )
+        
     def browse_category( self, category, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/browse_valid_categories?sort=name&operation=valid_repositories_by_category&id=%s' % \
               self.security.encode_id( category.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def browse_component_review( self, review, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository_review/browse_review?id=%s' % self.security.encode_id( review.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
+    def browse_custom_datatypes( self, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/browse_datatypes'
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def browse_repository( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/browse_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
+    def browse_repository_dependencies( self, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/browse_repository_dependencies'
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def browse_tool_shed( self, url, strings_displayed=[], strings_not_displayed=[] ):
         self.visit_galaxy_url( '/admin_toolshed/browse_tool_shed?tool_shed_url=%s' % url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
+    def browse_tool_dependencies( self, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/browse_tool_dependencies'
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        
+    def browse_tools( self, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/browse_tools'
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def check_count_of_metadata_revisions_associated_with_repository( self, repository, metadata_count ):
         self.check_repository_changelog( repository )
         self.check_string_count_in_page( 'Repository metadata is associated with this change set.', metadata_count )
+        
     def check_for_valid_tools( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         strings_displayed.append( 'Valid tools' )
         self.display_manage_repository_page( repository, strings_displayed, strings_not_displayed )
+        
     def check_galaxy_repository_db_status( self, repository_name, owner, expected_status ):
         installed_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, owner )
         assert installed_repository.status == expected_status, 'Status in database is %s, expected %s' % \
             ( installed_repository.status, expected_status )
+        
     def check_galaxy_repository_tool_panel_section( self, repository, expected_tool_panel_section ):
         metadata = repository.metadata
         assert 'tools' in metadata, 'Tools not found in metadata: %s' % metadata
@@ -83,6 +114,7 @@ class ShedTwillTestCase( TwillTestCase ):
         tool_panel_section = tool_panel_section_metadata[ tool_guid ][ 0 ][ 'name' ]
         assert tool_panel_section == expected_tool_panel_section, 'Expected tool panel section %s, found %s\nMetadata: %s\n' % \
             ( expected_tool_panel_section, tool_panel_section, metadata )
+        
     def check_installed_repository_tool_dependencies( self, 
                                                       installed_repository, 
                                                       strings_displayed=[], 
@@ -100,15 +132,18 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def check_repository_changelog( self, repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/view_changelog?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def check_repository_dependency( self, repository, depends_on_repository, depends_on_changeset_revision=None, changeset_revision=None ):
         strings_displayed = [ depends_on_repository.name, depends_on_repository.user.username  ]
         if depends_on_changeset_revision:
             strings_displayed.append( depends_on_changeset_revision )
         self.display_manage_repository_page( repository, changeset_revision=changeset_revision, strings_displayed=strings_displayed )
+        
     def check_repository_metadata( self, repository, tip_only=True ):
         if tip_only:
             assert self.tip_has_metadata( repository ) and len( self.get_repository_metadata_revisions( repository ) ) == 1, \
@@ -117,7 +152,8 @@ class ShedTwillTestCase( TwillTestCase ):
             assert len( self.get_repository_metadata_revisions( repository ) ) > 0, \
                    'Repository tip is not a metadata revision: Repository tip - %s, metadata revisions - %s.' % \
                    ( self.get_repository_tip( repository ), ', '.join( self.get_repository_metadata_revisions( repository ) ) )
-    def check_repository_tools_for_changeset_revision( self, repository, changeset_revision ):
+        
+    def check_repository_tools_for_changeset_revision( self, repository, changeset_revision, tool_metadata_strings_displayed=[], tool_page_strings_displayed=[] ):
         '''
         Loop through each tool dictionary in the repository metadata associated with the received changeset_revision. 
         For each of these, check for a tools attribute, and load the tool metadata page if it exists, then display that tool's page.
@@ -128,20 +164,17 @@ class ShedTwillTestCase( TwillTestCase ):
         if 'tools' not in metadata:
             raise AssertionError( 'No tools in %s revision %s.' % ( repository.name, changeset_revision ) )
         for tool_dict in metadata[ 'tools' ]:
-            metadata_strings_displayed = [ tool_dict[ 'guid' ], 
-                                           tool_dict[ 'version' ], 
-                                           tool_dict[ 'id' ], 
-                                           tool_dict[ 'name' ], 
-                                           tool_dict[ 'description' ],
-                                           changeset_revision ]
+            tool_id = tool_dict[ 'id' ]
+            tool_xml = tool_dict[ 'tool_config' ]
             url = '/repository/view_tool_metadata?repository_id=%s&changeset_revision=%s&tool_id=%s' % \
-                  ( self.security.encode_id( repository.id ), changeset_revision, tool_dict[ 'id' ] )
+                  ( self.security.encode_id( repository.id ), changeset_revision, tool_id )
             self.visit_url( url )
-            self.check_for_strings( metadata_strings_displayed )
-            self.load_display_tool_page( repository, tool_xml_path=tool_dict[ 'tool_config' ],
+            self.check_for_strings( tool_metadata_strings_displayed )
+            self.load_display_tool_page( repository, tool_xml_path=tool_xml,
                                          changeset_revision=changeset_revision,
-                                         strings_displayed=[ '%s (version %s)' % ( tool_dict[ 'name' ], tool_dict[ 'version' ] ) ],
+                                         strings_displayed=tool_page_strings_displayed,
                                          strings_not_displayed=[] )
+        
     def check_repository_invalid_tools_for_changeset_revision( self, repository, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         '''Load the invalid tool page for each invalid tool associated with this changeset revision and verify the received error messages.'''
         repository_metadata = self.get_repository_metadata_by_changeset_revision( repository, changeset_revision )
@@ -153,6 +186,7 @@ class ShedTwillTestCase( TwillTestCase ):
                                          changeset_revision=changeset_revision,
                                          strings_displayed=strings_displayed,
                                          strings_not_displayed=strings_not_displayed )
+        
     def check_string_count_in_page( self, pattern, min_count, max_count=None ):
         """Checks the number of 'pattern' occurrences in the current browser page"""        
         page = self.last_page()
@@ -167,6 +201,7 @@ class ShedTwillTestCase( TwillTestCase ):
             errmsg = "%i occurrences of '%s' found (min. %i, max. %i).\npage content written to '%s' " % \
                      ( pattern_count, pattern, min_count, max_count, fname )
             raise AssertionError( errmsg )
+        
     def create_category( self, **kwd ):
         category = test_db_util.get_category_by_name( kwd[ 'name' ] )
         if category is None:
@@ -174,6 +209,7 @@ class ShedTwillTestCase( TwillTestCase ):
             self.submit_form( form_no=1, button="create_category_button", **kwd )
             category = test_db_util.get_category_by_name( kwd[ 'name' ] )
         return category
+        
     def create_checkbox_query_string( self, field_name, value ):
         '''
         From galaxy.web.form_builder.CheckboxField:
@@ -197,6 +233,7 @@ class ShedTwillTestCase( TwillTestCase ):
             return '%s=%s&%s=%s' % ( field_name, field_value, field_name, field_value ) 
         else:
             return '%s=%s' % ( field_name, field_value )
+        
     def create_repository_complex_dependency( self, repository, xml_filename, depends_on={} ):
         self.generate_repository_dependency_xml( depends_on[ 'repositories' ], 
                                                          xml_filename, 
@@ -207,6 +244,7 @@ class ShedTwillTestCase( TwillTestCase ):
                           'tool_dependencies.xml', 
                           filepath=os.path.split( xml_filename )[0], 
                           commit_message='Uploaded dependency on %s.' % ', '.join( repo.name for repo in depends_on[ 'repositories' ] ) )
+        
     def create_repository_dependency( self, repository=None, depends_on=[], filepath=None ):
         dependency_description = '%s depends on %s.' % ( repository.name, ', '.join( repo.name for repo in depends_on ) )
         self.generate_repository_dependency_xml( depends_on, 
@@ -221,6 +259,7 @@ class ShedTwillTestCase( TwillTestCase ):
                           commit_message='Uploaded dependency on %s.' % ', '.join( repo.name for repo in depends_on ),
                           strings_displayed=[], 
                           strings_not_displayed=[] )
+        
     def create_repository_review( self, repository, review_contents_dict, changeset_revision=None, copy_from=None):
         strings_displayed = []
         if not copy_from:
@@ -242,6 +281,7 @@ class ShedTwillTestCase( TwillTestCase ):
                 ( self.get_repository_tip( repository ), self.security.encode_id( repository.id ), self.security.encode_id( review_id ) )
             self.visit_url( url )
         self.fill_review_form( review_contents_dict, strings_displayed, strings_not_displayed )
+        
     def create_user_in_galaxy( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         self.visit_galaxy_url( "/user/create?cntrller=%s&use_panels=False" % cntrller )
         tc.fv( '1', 'email', email )
@@ -272,6 +312,7 @@ class ShedTwillTestCase( TwillTestCase ):
                     except:
                         pass
         return previously_created, username_taken, invalid_username
+        
     def delete_files_from_repository( self, repository, filenames=[], strings_displayed=[ 'were deleted from the repository' ], strings_not_displayed=[] ):
         files_to_delete = []
         basepath = self.get_repo_path( repository )
@@ -287,24 +328,38 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.fv( "1", "selected_files_to_delete", ','.join( files_to_delete ) )
         tc.submit( 'select_files_to_delete_button' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
+    def delete_repository( self, repository ):
+        repository_id = self.security.encode_id( repository.id )
+        self.visit_url( '/admin/browse_repositories' )
+        url = '/admin/browse_repositories?operation=Delete&id=%s' % repository_id
+        strings_displayed = [ 'Deleted 1 repository', repository.name ]
+        strings_not_displayed = []
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def display_all_workflows( self, strings_displayed=[], strings_not_displayed=[] ):
         url = '/workflow'
         self.visit_galaxy_url( url )              
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def display_galaxy_browse_repositories_page( self, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/browse_repositories'
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def display_installed_repository_manage_page( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/manage_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
         strings_displayed.append( installed_repository.installed_changeset_revision )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def display_installed_workflow_image( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/generate_workflow_image?repository_id=%s&workflow_name=%s' % \
               ( self.security.encode_id( repository.id ), tool_shed_encode( workflow_name ) )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def display_manage_repository_page( self, repository, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         base_url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         if changeset_revision:
@@ -314,10 +369,12 @@ class ShedTwillTestCase( TwillTestCase ):
             url = base_url
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def display_repository_clone_page( self, owner_name, repository_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repos/%s/%s' % ( owner_name, repository_name )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def display_repository_file_contents( self, repository, filename, filepath=None, strings_displayed=[], strings_not_displayed=[] ):
         '''Find a file in the repository and display the contents.'''
         basepath = self.get_repo_path( repository )
@@ -331,10 +388,12 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository/get_file_contents?file_path=%s' % os.path.join( relative_path, filename )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def display_reviewed_repositories_owned_by_user( self, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository_review/reviewed_repositories_i_own'
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def edit_repository_categories( self, repository, categories_to_add=[], categories_to_remove=[], restore_original=True ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -359,10 +418,12 @@ class ShedTwillTestCase( TwillTestCase ):
                 strings_not_displayed.append( "selected>%s" % category )
             tc.submit( "manage_categories_button" )
             self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def display_repository_reviews_by_user( self, user, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository_review/repository_reviews_by_user?id=%s' % self.security.encode_id( user.id )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def edit_repository_information( self, repository, **kwd ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -381,6 +442,7 @@ class ShedTwillTestCase( TwillTestCase ):
             strings_displayed.append( self.escape_html( original_information[ input_elem_name ] ) )
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
+        
     def escape_html( self, string, unescape=False ):
         html_entities = [ ('&', 'X' ), ( "'", '&#39;' ), ( '"', '&#34;' ) ]
         for character, replacement in html_entities:
@@ -389,6 +451,7 @@ class ShedTwillTestCase( TwillTestCase ):
             else:
                 string = string.replace( character, replacement )
         return string
+        
     def fill_review_form( self, review_contents_dict, strings_displayed=[], strings_not_displayed=[] ):
         kwd = dict()
         for label, contents in review_contents_dict.items():
@@ -404,6 +467,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.submit_form( 1, 'Workflows__ESEP__review_button', **kwd )
         strings_displayed.append( 'Reviews were saved' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def galaxy_login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         previously_created, username_taken, invalid_username = \
             self.create_user_in_galaxy( email=email, password=password, username=username, redirect=redirect )
@@ -413,11 +477,13 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( '1', 'redirect', redirect )
             tc.fv( '1', 'password', password )
             tc.submit( 'login_button' )
+        
     def galaxy_logout( self ):
         self.home()
         self.visit_galaxy_url( "/user/logout" )
         self.check_page_for_string( "You have been logged out" )
         self.home()
+        
     def generate_invalid_dependency_xml( self, xml_filename, url, name, owner, changeset_revision, complex=True, package=None, version=None, description=None ):
         file_path = os.path.split( xml_filename )[0]
         dependency_entries = []
@@ -440,6 +506,7 @@ class ShedTwillTestCase( TwillTestCase ):
             repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
         file( xml_filename, 'w' ).write( repository_dependency_xml )
+        
     def generate_repository_dependency_xml( self, repositories, xml_filename, dependency_description='', complex=False, package=None, version=None ):
         file_path = os.path.split( xml_filename )[0]
         if not os.path.exists( file_path ):
@@ -464,11 +531,13 @@ class ShedTwillTestCase( TwillTestCase ):
             repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
         file( xml_filename, 'w' ).write( repository_dependency_xml )
+        
     def generate_temp_path( self, test_script_path, additional_paths=[] ):
         temp_path = os.path.join( self.tool_shed_test_tmp_dir, test_script_path, os.sep.join( additional_paths ) )
         if not os.path.exists( temp_path ):
             os.makedirs( temp_path )
         return temp_path
+        
     def get_datatypes_count( self ):
         url = '/admin/view_datatypes_registry'
         self.visit_galaxy_url( url )
@@ -477,11 +546,13 @@ class ShedTwillTestCase( TwillTestCase ):
         if datatypes_count:
             return datatypes_count.group( 1 )
         return None
+        
     def get_filename( self, filename, filepath=None ):
         if filepath is not None:
             return os.path.abspath( os.path.join( filepath, filename ) )
         else:
             return os.path.abspath( os.path.join( self.file_dir, filename ) )
+        
     def get_last_reviewed_revision_by_user( self, user, repository ):
         changelog_tuples = self.get_repository_changelog_tuples( repository )
         reviews = test_db_util.get_reviews_ordered_by_changeset_revision( repository.id, changelog_tuples, reviewer_user_id = user.id )
@@ -490,6 +561,7 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             last_review = None
         return last_review
+        
     def get_or_create_repository( self, owner=None, strings_displayed=[], strings_not_displayed=[], **kwd ):
         repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
         if repository is None:
@@ -498,6 +570,7 @@ class ShedTwillTestCase( TwillTestCase ):
             self.check_for_strings( strings_displayed, strings_not_displayed )
             repository = test_db_util.get_repository_by_name_and_owner( kwd[ 'name' ], owner )
         return repository
+        
     def get_repo_path( self, repository ):
         # An entry in the hgweb.config file looks something like: repos/test/mira_assembler = database/community_files/000/repo_123
         lhs = "repos/%s/%s" % ( repository.user.username, repository.name )
@@ -505,6 +578,7 @@ class ShedTwillTestCase( TwillTestCase ):
             return self.hgweb_config_manager.get_entry( lhs )
         except:
             raise Exception( "Entry for repository %s missing in hgweb config file %s." % ( lhs, self.hgweb_config_manager.hgweb_config ) )
+        
     def get_repository_changelog_tuples( self, repository ):
         repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
         changelog_tuples = []
@@ -512,12 +586,14 @@ class ShedTwillTestCase( TwillTestCase ):
             ctx = repo.changectx( changeset )
             changelog_tuples.append( ( ctx.rev(), repo.changectx( changeset ) ) )
         return changelog_tuples
+        
     def get_repository_datatypes_count( self, repository ):
         metadata = self.get_repository_metadata( repository )[0].metadata
         if 'datatypes' not in metadata:
             return 0
         else:
             return len( metadata[ 'datatypes' ] )
+        
     def get_repository_file_list( self, base_path, current_path=None ):
         '''Recursively load repository folder contents and append them to a list. Similar to os.walk but via /repository/open_folder.'''
         if current_path is None:
@@ -548,19 +624,20 @@ class ShedTwillTestCase( TwillTestCase ):
                 else:
                     returned_file_list.append( file_dict[ 'title' ] )
         return returned_file_list
+        
     def get_repository_metadata( self, repository ):
         return [ metadata_revision for metadata_revision in repository.metadata_revisions ]
+        
     def get_repository_metadata_by_changeset_revision( self, repository, changeset_revision ):
-        found = None
-        for metadata_revision in repository.metadata_revisions:
-            if metadata_revision.changeset_revision == changeset_revision:
-                found = metadata_revision
-        return found
+        return test_db_util.get_repository_metadata_for_changeset_revision( repository.id, changeset_revision )
+        
     def get_repository_metadata_revisions( self, repository ):
         return [ str( repository_metadata.changeset_revision ) for repository_metadata in repository.metadata_revisions ]
+        
     def get_repository_tip( self, repository ):
         repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
         return str( repo.changectx( repo.changelog.tip() ) )
+        
     def get_tools_from_repository_metadata( self, repository, include_invalid=False ):
         '''Get a list of valid and (optionally) invalid tool dicts from the repository metadata.'''
         valid_tools = []
@@ -571,6 +648,7 @@ class ShedTwillTestCase( TwillTestCase ):
             if include_invalid and 'invalid_tools' in repository_metadata.metadata:
                 invalid_tools.append( dict( tools=repository_metadata.metadata[ 'invalid_tools' ], changeset_revision=repository_metadata.changeset_revision ) )
         return valid_tools, invalid_tools
+        
     def grant_role_to_user( self, user, role ):
         strings_displayed = [ self.security.encode_id( role.id ), role.name ]
         strings_not_displayed = []
@@ -587,6 +665,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         strings_displayed = [ "Role '%s' has been updated" % role.name ]
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def grant_write_access( self, 
                             repository, 
                             usernames=[], 
@@ -601,6 +680,7 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "user_access", "allow_push", '+%s' % username )
         tc.submit( 'user_access_button' )
         self.check_for_strings( post_submit_strings_displayed, post_submit_strings_not_displayed )
+        
     def import_workflow( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/import_workflow?repository_id=%s&workflow_name=%s' % \
             ( self.security.encode_id( repository.id ), tool_shed_encode( workflow_name ) )
@@ -608,6 +688,7 @@ class ShedTwillTestCase( TwillTestCase ):
         if workflow_name not in strings_displayed:
             strings_displayed.append( workflow_name )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def initiate_installation_process( self, 
                                        install_tool_dependencies=False, 
                                        install_repository_dependencies=True, 
@@ -633,6 +714,7 @@ class ShedTwillTestCase( TwillTestCase ):
                 ( ','.join( util.listify( repository_ids ) ), encoded_kwd, reinstalling )
             self.visit_galaxy_url( url )
             return util.listify( repository_ids )
+        
     def install_repositories_from_search_results( self, repositories, install_tool_dependencies=False, 
                                                   strings_displayed=[], strings_not_displayed=[], **kwd ):
         '''
@@ -658,6 +740,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
         repository_ids = self.initiate_installation_process()
         self.wait_for_repository_installation( repository_ids )
+        
     def install_repository( self, name, owner, category_name, install_tool_dependencies=False, 
                             install_repository_dependencies=True, changeset_revision=None, 
                             strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[], 
@@ -702,6 +785,7 @@ class ShedTwillTestCase( TwillTestCase ):
             self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
         self.wait_for_repository_installation( repository_ids )
+        
     def load_citable_url( self, 
                           username, 
                           repository_name, 
@@ -733,20 +817,24 @@ class ShedTwillTestCase( TwillTestCase ):
             url = '/repository/browse_repositories?user_id=%s&operation=repositories_by_user' % encoded_user_id
             self.visit_url( url )
             self.check_for_strings( strings_displayed_in_iframe, strings_not_displayed_in_iframe )
+        
     def load_display_tool_page( self, repository, tool_xml_path, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml_path, changeset_revision )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def load_galaxy_tool_migrations_page( self, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin/review_tool_migration_stages'
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def load_invalid_tool_page( self, repository, tool_xml, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml, changeset_revision )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def load_workflow_image_in_tool_shed( self, repository, workflow_name, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         if not changeset_revision:
             changeset_revision = self.get_repository_tip( repository )
@@ -757,10 +845,12 @@ class ShedTwillTestCase( TwillTestCase ):
               ( self.security.encode_id( metadata.id ), tool_shed_encode( workflow_name ) )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def manage_review_components( self, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository_review/manage_components'
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def preview_repository_in_tool_shed( self, name, owner, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         repository = test_db_util.get_repository_by_name_and_owner( name, owner )
         if not changeset_revision:
@@ -768,6 +858,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( '/repository/preview_tools_in_changeset?repository_id=%s&changeset_revision=%s' % \
                         ( self.security.encode_id( repository.id ), changeset_revision ) )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def preview_workflow_in_tool_shed( self, repository_name, owner, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
         repository = test_db_util.get_repository_by_name_and_owner( repository_name, owner )
         metadata = self.get_repository_metadata( repository )
@@ -775,11 +866,13 @@ class ShedTwillTestCase( TwillTestCase ):
               ( tool_shed_encode( workflow_name ), self.security.encode_id( metadata[0].id ) )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def reactivate_repository( self, installed_repository ):
         url = '/admin_toolshed/browse_repositories?operation=activate+or+reinstall&id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
         strings_displayed = [ installed_repository.name, 'repository has been activated' ]
         self.check_for_strings( strings_displayed, [] )
+        
     def reinstall_repository( self, 
                               installed_repository, 
                               install_repository_dependencies=True, 
@@ -807,26 +900,32 @@ class ShedTwillTestCase( TwillTestCase ):
                                                              new_tool_panel_section )
         # Finally, wait until all repositories are in a final state (either Error or Installed) before returning.
         self.wait_for_repository_installation( repository_ids )
+        
     def repository_is_new( self, repository ):
         repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return tip_ctx.rev() < 0
+        
     def reset_installed_repository_metadata( self, repository ):
         url = '/admin_toolshed/reset_repository_metadata?id=%s' % self.security.encode_id( repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( [ 'Metadata has been reset' ] )
+        
     def reset_metadata_on_selected_repositories( self, repository_ids ):
         self.visit_url( '/admin/reset_metadata_on_selected_repositories_in_tool_shed' )
         kwd = dict( repository_ids=repository_ids )
         self.submit_form( form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd )
+        
     def reset_metadata_on_selected_installed_repositories( self, repository_ids ):
         self.visit_galaxy_url( '/admin_toolshed/reset_metadata_on_selected_installed_repositories' )
         kwd = dict( repository_ids=repository_ids )
         self.submit_form( form_no=1, button="reset_metadata_on_selected_repositories_button", **kwd )
+        
     def reset_repository_metadata( self, repository ):
         url = '/repository/reset_all_metadata?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
         self.check_for_strings( [ 'All repository metadata has been reset.' ] )
+        
     def review_repository( self, repository, review_contents_dict, user=None, changeset_revision=None ):
         strings_displayed = []
         strings_not_displayed = []
@@ -838,10 +937,12 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository_review/edit_review?id=%s' % self.security.encode_id( review.id )
         self.visit_url( url )
         self.fill_review_form( review_contents_dict, strings_displayed, strings_not_displayed )
+        
     def revoke_write_access( self, repository, username ):
         url = '/repository/manage_repository?user_access_button=Remove&id=%s&remove_auth=%s' % \
             ( self.security.encode_id( repository.id ), username )
         self.visit_url( url )
+        
     def search_for_valid_tools( self, search_fields={}, exact_matches=False, strings_displayed=[], strings_not_displayed=[], from_galaxy=False ):
         if from_galaxy:
             galaxy_url = '?galaxy_url=%s' % self.galaxy_url
@@ -854,6 +955,7 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.fv( "1", field_name, search_string )
             tc.submit()
             self.check_for_strings( strings_displayed, strings_not_displayed ) 
+        
     def send_message_to_repository_owner( self, 
                                           repository, 
                                           message, 
@@ -867,18 +969,30 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.fv( 1, 'message', message )
         tc.submit()
         self.check_for_strings( post_submit_strings_displayed, post_submit_strings_not_displayed ) 
+        
     def set_repository_deprecated( self, repository, set_deprecated=True, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/deprecate?id=%s&mark_deprecated=%s' % ( self.security.encode_id( repository.id ), set_deprecated )
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def set_repository_malicious( self, repository, set_malicious=True, strings_displayed=[], strings_not_displayed=[] ):
         self.display_manage_repository_page( repository )
         tc.fv( "malicious", "malicious", set_malicious )
         tc.submit( "malicious_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def tip_has_metadata( self, repository ):
         tip = self.get_repository_tip( repository )
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision( repository.id, tip )
+        
+    def undelete_repository( self, repository ):
+        repository_id = self.security.encode_id( repository.id )
+        url = '/admin/browse_repositories?operation=Undelete&id=%s' % repository_id
+        strings_displayed = [ 'Undeleted 1 repository', repository.name ]
+        strings_not_displayed = []
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def uninstall_repository( self, installed_repository, remove_from_disk=True ):
         url = '/admin_toolshed/deactivate_or_uninstall_repository?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
@@ -893,10 +1007,12 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             strings_displayed.append( 'has been deactivated' )
         self.check_for_strings( strings_displayed, strings_not_displayed=[] )
+        
     def update_installed_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/check_for_updates?id=%s' % self.security.encode_id( installed_repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def upload_file( self, 
                      repository, 
                      filename, 
@@ -942,18 +1058,26 @@ class ShedTwillTestCase( TwillTestCase ):
         #        else:
         #            time.sleep( 1 )
         #            continue
+        
     def verify_installed_repositories( self, installed_repositories=[], uninstalled_repositories=[] ):
         for repository_name, repository_owner in installed_repositories:
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, repository_owner )
             if galaxy_repository:
                 assert galaxy_repository.status == 'Installed', \
                     'Repository %s should be installed, but is %s' % ( repository_name, galaxy_repository.status )
+        
     def verify_installed_repository_metadata_unchanged( self, name, owner ):
         installed_repository = test_db_util.get_installed_repository_by_name_owner( name, owner )
         metadata = installed_repository.metadata
         self.reset_installed_repository_metadata( installed_repository )
         new_metadata = installed_repository.metadata
         assert metadata == new_metadata, 'Metadata for installed repository %s differs after metadata reset.' % name
+        
+    def verify_installed_repository_no_tool_panel_section( self, repository ):
+        '''Verify that there is no 'tool_panel_section' entry in the repository metadata.'''
+        metadata = repository.metadata
+        assert 'tool_panel_section' not in metadata, 'Tool panel section incorrectly found in metadata: %s' % metadata
+        
     def verify_installed_repository_data_table_entries( self, required_data_table_entries ):
         # The value of the received required_data_table_entries will be something like: [ 'sam_fa_indexes' ]
         data_tables = util.parse_xml( self.shed_tool_data_table_conf )
@@ -1006,6 +1130,7 @@ class ShedTwillTestCase( TwillTestCase ):
         # We better have an entry like: <table comment_char="#" name="sam_fa_indexes"> in our parsed data_tables
         # or we know that the repository was not correctly installed!
         assert found, 'No entry for %s in %s.' % ( required_data_table_entry, self.shed_tool_data_table_conf )
+        
     def verify_repository_reviews( self, repository, reviewer=None, strings_displayed=[], strings_not_displayed=[] ):
         changeset_revision = self.get_repository_tip( repository )
         # Verify that the currently logged in user has a repository review for the specified repository, reviewer, and changeset revision.
@@ -1017,6 +1142,7 @@ class ShedTwillTestCase( TwillTestCase ):
         # Load the review and check for the components passed in strings_displayed.
         review = test_db_util.get_repository_review_by_user_id_changeset_revision( reviewer.id, repository.id, changeset_revision )
         self.browse_component_review( review, strings_displayed=strings_displayed )
+        
     def verify_tool_metadata_for_installed_repository( self, installed_repository, strings_displayed=[], strings_not_displayed=[] ):
         repository_id = self.security.encode_id( installed_repository.id )
         for tool in installed_repository.metadata[ 'tools' ]:
@@ -1025,6 +1151,7 @@ class ShedTwillTestCase( TwillTestCase ):
             url = '/admin_toolshed/view_tool_metadata?repository_id=%s&tool_id=%s' % ( repository_id, urllib.quote_plus( tool[ 'id' ] ) )
             self.visit_galaxy_url( url )
             self.check_for_strings( strings, strings_not_displayed )
+        
     def verify_unchanged_repository_metadata( self, repository ):
         old_metadata = dict()
         new_metadata = dict()
@@ -1036,14 +1163,17 @@ class ShedTwillTestCase( TwillTestCase ):
         # Python's dict comparison recursively compares sorted key => value pairs and returns true if any key or value differs,
         # or if the number of keys differs.
         assert old_metadata == new_metadata, 'Metadata changed after reset on repository %s.' % repository.name 
+        
     def view_installed_workflow( self, repository, workflow_name, strings_displayed=[], strings_not_displayed=[] ):
         url = '/admin_toolshed/view_workflow?repository_id=%s&workflow_name=%s' % \
             ( self.security.encode_id( repository.id ), tool_shed_encode( workflow_name ) )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings, strings_not_displayed )
+        
     def visit_galaxy_url( self, url ):
         url = '%s%s' % ( self.galaxy_url, url )
         self.visit_url( url )
+        
     def wait_for_repository_installation( self, repository_ids ):
         final_states = [ galaxy_model.ToolShedRepository.installation_status.ERROR,
                          galaxy_model.ToolShedRepository.installation_status.INSTALLED ]

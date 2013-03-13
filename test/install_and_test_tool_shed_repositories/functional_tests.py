@@ -754,15 +754,15 @@ def main():
     if repositories_tested > 0:
         if repositories_passed:
             print '# ----------------------------------------------------------------------------------'
-            print "# Repositories passed:"
+            print "# %d repositories passed:" % len( repositories_passed )
             show_summary_output( repositories_passed )
         if repositories_failed:
             print '# ----------------------------------------------------------------------------------'
-            print "# Repositories failed:"
+            print "# %d repositories failed:" % len( repositories_failed )
             show_summary_output( repositories_failed )
         if repositories_failed_install:
             print '# ----------------------------------------------------------------------------------'
-            print "# Repositories not installed correctly:"
+            print "# %d repositories not installed correctly:" % len( repositories_failed_install )
             show_summary_output( repositories_failed_install )
     print "####################################################################################"
     
