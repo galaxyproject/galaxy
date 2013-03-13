@@ -1,0 +1,72 @@
+<macros>
+  <macro name="refGenomeSourceConditional">
+    <conditional name="refGenomeSource">
+      <param name="genomeSource" type="select" label="Use a built in reference genome or own from your history" help="Built-ins genomes were created using default options">
+        <option value="indexed" selected="True">Use a built-in genome</option>
+        <option value="history">Use a genome from history</option>
+      </param>
+      <when value="indexed">
+        <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
+          <yield />
+        </param>
+      </when>
+      <when value="history">
+        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select the reference genome" />
+      </when>  <!-- history -->
+    </conditional>  <!-- refGenomeSource -->
+  </macro>
+  <macro name="indel_searchConditional">
+    <conditional name="indel_search">
+      <param name="allow_indel_search" type="select" label="Allow indel search">
+        <option value="Yes">Yes</option>
+        <option value="No">No</option>
+      </param>
+      <when value="No"/>
+      <when value="Yes">
+        <param name="max_insertion_length" type="integer" value="3" label="Max insertion length." help="The maximum insertion length." />
+        <param name="max_deletion_length" type="integer" value="3" label="Max deletion length." help="The maximum deletion length." />
+      </when>
+    </conditional>    
+  </macro>
+  <macro name="own_junctionsConditional">
+    <conditional name="own_junctions">
+      <param name="use_junctions" type="select" label="Use Own Junctions">
+        <option value="No">No</option>
+        <option value="Yes">Yes</option>
+      </param>
+      <when value="Yes">
+        <conditional name="gene_model_ann">
+          <param name="use_annotations" type="select" label="Use Gene Annotation Model">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </param>
+          <when value="No" />
+          <when value="Yes">
+            <param format="gtf,gff3" name="gene_annotation_model" type="data" label="Gene Model Annotations" help="TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping."/>
+          </when>
+        </conditional>
+        <expand macro="raw_juncsConditional" />
+        <expand macro="no_novel_juncsParam" />
+      </when>
+      <when value="No" />
+    </conditional> <!-- /own_junctions -->
+  </macro>
+  <macro name="raw_juncsConditional">
+    <conditional name="raw_juncs">
+      <param name="use_juncs" type="select" label="Use Raw Junctions">
+        <option value="No">No</option>
+        <option value="Yes">Yes</option>
+      </param>
+      <when value="No" />
+      <when value="Yes">
+        <param format="interval" name="raw_juncs" type="data" label="Raw Junctions" help="Supply TopHat with a list of raw junctions. Junctions are specified one per line, in a tab-delimited format. Records look like: [chrom] [left] [right] [+/-] left and right are zero-based coordinates, and specify the last character of the left sequenced to be spliced to the first character of the right sequence, inclusive."/>
+      </when>
+    </conditional>
+  </macro>
+  <macro name="no_novel_juncsParam">
+    <param name="no_novel_juncs" type="select" label="Only look for supplied junctions">
+      <option value="No">No</option>
+      <option value="Yes">Yes</option>
+    </param>
+  </macro>    
+</macros>

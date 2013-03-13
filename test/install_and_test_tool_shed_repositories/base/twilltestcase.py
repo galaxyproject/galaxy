@@ -2,7 +2,7 @@ import galaxy.model as model
 import common, string, os, re, test_db_util, simplejson, logging, time, sys
 import galaxy.util as util
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
-from galaxy.tool_shed.encoding_util import tool_shed_encode, tool_shed_decode
+from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
 
 log = logging.getLogger( __name__ )
 
@@ -55,7 +55,7 @@ class InstallTestRepository( TwillTestCase ):
         name = repository_info_dict[ 'name' ]
         owner = repository_info_dict[ 'owner' ]
         changeset_revision = repository_info_dict[ 'changeset_revision' ]
-        encoded_repository_id = repository_info_dict[ 'encoded_repository_id' ]
+        encoded_repository_id = repository_info_dict[ 'repository_id' ]
         tool_shed_url = repository_info_dict[ 'tool_shed_url' ]
         preview_params = urllib.urlencode( dict( repository_id=encoded_repository_id, changeset_revision=changeset_revision ) )
         self.visit_url( '%s/repository/preview_tools_in_changeset?%s' % ( tool_shed_url, preview_params ) )

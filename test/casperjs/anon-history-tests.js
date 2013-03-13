@@ -36,25 +36,25 @@ var email = spaceghost.user.getRandomEmail(),
 if( spaceghost.fixtureData.testUser ){
     email = spaceghost.fixtureData.testUser.email;
     password = spaceghost.fixtureData.testUser.password;
+    spaceghost.info( 'Will use fixtureData.testUser: ' + email );
 }
 
-var galaxyCookieName = 'galaxysession',
-
-    nameSelector     = 'div#history-name',
-    unnamedName      = 'Unnamed history',
-    subtitleSelector = 'div#history-subtitle-area',
-    initialSizeStr   = '0 bytes',
-    tagIconSelector  = '#history-tag.icon-button',
-    annoIconSelector = '#history-annotate.icon-button',
-    //emptyMsgSelector = '#emptyHistoryMessage';
-    emptyMsgSelector = '.infomessagesmall',
-    emptyMsgStr      = "Your history is empty. Click 'Get Data' on the left pane to start",
-
-    tooltipSelector  = '.bs-tooltip',
-    anonNameTooltip  = 'You must be logged in to edit your history name',
+var tooltipSelector  = '.bs-tooltip',
 
     editableTextClass = 'editable-text',
-    editableTextInputSelector = 'input#renaming-active';
+    editableTextInputSelector = 'input#renaming-active',
+
+    galaxyCookieName = 'galaxysession';
+
+    unnamedName         = spaceghost.historypanel.data.text.history.newName,
+    nameSelector        = spaceghost.historypanel.data.selectors.history.name,
+    subtitleSelector    = spaceghost.historypanel.data.selectors.history.subtitle,
+    initialSizeStr      = spaceghost.historypanel.data.text.history.newSize,
+    tagIconSelector     = spaceghost.historypanel.data.selectors.history.tagIcon,
+    annoIconSelector    = spaceghost.historypanel.data.selectors.history.annoIcon,
+    emptyMsgSelector    = spaceghost.historypanel.data.selectors.history.emptyMsg,
+    emptyMsgStr         = spaceghost.historypanel.data.text.history.emptyMsg,
+    anonNameTooltip     = spaceghost.historypanel.data.text.anonymous.tooltips.name;
 
 var historyFrameInfo = {},
     testUploadInfo = {};
@@ -110,8 +110,8 @@ spaceghost.thenOpen( spaceghost.baseUrl, function testPanelStructure(){
         this.test.assertDoesntExist( tagIconSelector,  'Tag icon button not found' );
         this.test.assertDoesntExist( annoIconSelector, 'Annotation icon button not found' );
 
-        this.test.comment( "A message about the current history being empty should be displayed" );
         this.test.assertExists( emptyMsgSelector, emptyMsgSelector + ' exists' );
+        this.test.comment( "A message about the current history being empty should be displayed" );
         this.test.assertVisible( emptyMsgSelector, 'Empty history message is visible' );
         this.test.assertSelectorHasText( emptyMsgSelector, emptyMsgStr,
             'Message contains "' + emptyMsgStr + '"' );
@@ -171,6 +171,17 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
             this.test.assert( uploadInfo.hdaElement.attributes.id === hdaInfo.attributes.id,
                 "After logging in - found a matching hda by hda view id: " + hdaInfo.attributes.id );
         }
+    });
+});
+
+spaceghost.user.logout();
+spaceghost.thenOpen( spaceghost.baseUrl, function(){
+    this.test.comment( 'logging out should create a new, anonymous history' );
+
+    this.withFrame( this.selectors.frames.history, function(){
+        this.test.assertSelectorHasText( nameSelector, unnamedName, 'History name is ' + unnamedName );
+        this.test.assertSelectorHasText( emptyMsgSelector, emptyMsgStr,
+            'Message contains "' + emptyMsgStr + '"' );
     });
 });
 

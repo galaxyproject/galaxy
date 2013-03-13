@@ -154,7 +154,7 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
         uploadInfo = {};
 
     // precondition: filepath is relative to scriptDir
-    filepath = spaceghost.options.scriptDir + '/' + filepath;
+    filepath = spaceghost.options.scriptDir + filepath;
 
     // upload the file erroring if a done message is not displayed, aggregate info about upload
     spaceghost.info( 'uploading file: ' + filepath + ' (timeout after ' + timeoutAfterMs + ')' );
@@ -179,14 +179,16 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
         spaceghost.debug( 'beginning wait for upload file\'s ok state' );
         // get the hda view DOM element from the upload name and hid
         spaceghost.withFrame( spaceghost.selectors.frames.history, function(){
-            var hdaInfo = spaceghost.historypanel.hdaElementInfoByTitle( uploadInfo.name, uploadInfo.hid );
-            if( !hdaInfo ){
-                throw new spaceghost.GalaxyError( 'Upload Error: uploaded file HDA not found: '
-                    + uploadInfo.hid + ', ' + uploadInfo.name );
-            }
-            spaceghost.debug( 'hdaInfo: ' + spaceghost.jsonStr( hdaInfo ) );
-            uploadInfo.hdaElement = hdaInfo;
-            // uploadInfo now has filepath, filename, name, hid, and hdaElement
+            spaceghost.waitForSelector( '#history-name', function(){
+                var hdaInfo = spaceghost.historypanel.hdaElementInfoByTitle( uploadInfo.name, uploadInfo.hid );
+                if( hdaInfo === null ){
+                    throw new spaceghost.GalaxyError( 'Upload Error: uploaded file HDA not found: '
+                        + uploadInfo.hid + ', ' + uploadInfo.name );
+                }
+                spaceghost.debug( 'hdaInfo: ' + spaceghost.jsonStr( hdaInfo ) );
+                uploadInfo.hdaElement = hdaInfo;
+                // uploadInfo now has filepath, filename, name, hid, and hdaElement
+            });
         });
 
         spaceghost.then( function waitForOk(){
@@ -217,5 +219,3 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
 };
 //TODO: upload via url
 //TODO: upload by textarea
-
-

@@ -68,6 +68,7 @@ SAMPLES="
 datatypes_conf.xml.sample
 universe_wsgi.ini.sample
 tool_data_table_conf.xml.sample
+tool_sheds_conf.xml.sample
 shed_tool_data_table_conf.xml.sample
 migrated_tools_conf.xml.sample
 data_manager_conf.xml.sample

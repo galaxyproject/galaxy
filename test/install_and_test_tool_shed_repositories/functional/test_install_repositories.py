@@ -3,7 +3,7 @@ import install_and_test_tool_shed_repositories.base.test_db_util as test_db_util
 from install_and_test_tool_shed_repositories.base.twilltestcase import InstallTestRepository
 log = logging.getLogger(__name__)
 
-class TestInstallRepositories( InstallTestRepository ):
+class InstallTestRepositories( InstallTestRepository ):
     """Abstract test case that installs and uninstalls a predefined list of repositories."""
     def do_installation( self, repository_info_dict ):
         self.logout()
@@ -35,11 +35,11 @@ def generate_install_method( repository_dict=None ):
     G = globals()
     # Eliminate all previous tests from G.
     for key, val in G.items():
-        if key.startswith( 'TestInstallRepository_' ) or key.startswith( 'TestUninstallRepository_' ):
+        if key.startswith( 'TestInstallRepository_' ) or key.startswith( 'TestUninstallRepository_' ) or key.startswith( 'TestForTool_' ):
             del G[ key ]
     # Create a new subclass with a method named install_repository_XXX that installs the repository specified by the provided dict.
     name = "TestInstallRepository_" + repository_dict[ 'name' ]
-    baseclasses = ( TestInstallRepositories, )
+    baseclasses = ( InstallTestRepositories, )
     namespace = dict()
     def make_install_method( repository_dict ):
         def test_install_repository( self ):
@@ -61,11 +61,11 @@ def generate_uninstall_method( repository_dict=None ):
     G = globals()
     # Eliminate all previous tests from G.
     for key, val in G.items():
-        if key.startswith( 'TestInstallRepository_' ) or key.startswith( 'TestUninstallRepository_' ):
+        if key.startswith( 'TestInstallRepository_' ) or key.startswith( 'TestUninstallRepository_' ) or key.startswith( 'TestForTool_' ):
             del G[ key ]
     # Create a new subclass with a method named install_repository_XXX that installs the repository specified by the provided dict.
     name = "TestUninstallRepository_" + repository_dict[ 'name' ]
-    baseclasses = ( TestInstallRepositories, )
+    baseclasses = ( InstallTestRepositories, )
     namespace = dict()
     def make_uninstall_method( repository_dict ):
         def test_install_repository( self ):

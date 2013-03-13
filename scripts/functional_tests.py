@@ -42,7 +42,6 @@ import nose.config
 import nose.loader
 import nose.plugins.manager
 
-import pprint
 log = logging.getLogger( "functional_tests.py" )
 
 default_galaxy_test_host = "localhost"
@@ -227,7 +226,6 @@ def main():
             kwargs[ 'object_store' ] = 'distributed'
             kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
         # Build the Universe Application
-        print 'app.kwargs:\n%s' %( pprint.pformat( kwargs ) )
         app = UniverseApplication( job_queue_workers = 5,
                                    id_secret = 'changethisinproductiontoo',
                                    template_path = "templates",
@@ -314,6 +312,7 @@ def main():
         log.info( "Functional tests will be run against %s:%s" % ( galaxy_test_host, galaxy_test_port ) )
     success = False
     try:
+        tool_configs = app.config.tool_configs
         # What requires these? Handy for (eg) functional tests to save outputs?        
         if galaxy_test_save:
             os.environ[ 'GALAXY_TEST_SAVE' ] = galaxy_test_save
@@ -322,10 +321,10 @@ def main():
         if testing_migrated_tools or testing_installed_tools:
             shed_tools_dict = {}
             if testing_migrated_tools:
-                shed_tools_dict = parse_tool_panel_config( migrated_tool_panel_config, shed_tools_dict )
+                has_test_data, shed_tools_dict = parse_tool_panel_config( migrated_tool_panel_config, shed_tools_dict )
             elif testing_installed_tools:
                 for shed_tool_config in installed_tool_panel_configs:
-                    shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
+                    has_test_data, shed_tools_dict = parse_tool_panel_config( shed_tool_config, shed_tools_dict )
             # Persist the shed_tools_dict to the galaxy_tool_shed_test_file.
             shed_tools_file = open( galaxy_tool_shed_test_file, 'w' )
             shed_tools_file.write( to_json_string( shed_tools_dict ) )
@@ -337,7 +336,6 @@ def main():
                 # Eliminate the migrated_tool_panel_config from the app's tool_configs, append the list of installed_tool_panel_configs,
                 # and reload the app's toolbox.
                 relative_migrated_tool_panel_config = os.path.join( app.config.root, migrated_tool_panel_config )
-                tool_configs = app.config.tool_configs
                 if relative_migrated_tool_panel_config in tool_configs:
                     tool_configs.remove( relative_migrated_tool_panel_config )
                 for installed_tool_panel_config in installed_tool_panel_configs:

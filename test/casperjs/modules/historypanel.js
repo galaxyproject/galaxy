@@ -1,5 +1,5 @@
 // =================================================================== module object, exports
-/** Creates a new tools module object.
+/** Creates a new historypanel module object.
  *  @exported
  */
 exports.create = function createHistoryPanel( spaceghost ){
@@ -24,13 +24,14 @@ HistoryPanel.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 /* TODO:
-    run a tool
+    conv.fns:
+        expand hda (click title)
+        undelete hda
+        rename history
 
 */
 // =================================================================== INTERNAL
-
 // =================================================================== API (external)
-//TODO: to history module
 /** Find the casper element info of the hda wrapper given the hda title and hid.
  *      NOTE: if more than one is found, will return the first found.
  *      precondition: you should wrap this with withFrame( 'galaxy_history' ) :(
@@ -44,6 +45,7 @@ HistoryPanel.prototype.hdaElementInfoByTitle = function hdaElementInfoByTitle( t
         wrapperInfo = null;
 
     //NOTE: depends on jquery
+    //TODO: move to xpath
     wrapperInfo = spaceghost.evaluate( function( titleContains ){
         // find the title, then the wrapper (2 containers up)
         var $title = $( '.historyItemTitle:contains(' + titleContains + ')' );
@@ -115,4 +117,136 @@ HistoryPanel.prototype.waitForHdaState = function waitForHdaState( hdaSelector, 
             );
         });
     });
+};
+
+/** Find the casper element info of the hda wrapper given the hda title and hid.
+ *      NOTE: if more than one is found, will return the first found.
+ *      precondition: you should wrap this with withFrame( 'galaxy_history' ) :(
+ *  @param {String} title   the title of the hda
+ *  @param {Int} hid        (optional) the hid of the hda to look for
+ *  @returns {Object|null} ElementInfo of the historyItemWrapper found, null if not found
+ */
+HistoryPanel.prototype.hdaElementInfoByTitle = function hdaElementInfoByTitle( title, hid ){
+    var titleContains = ( hid !== undefined )?( hid + ': ' + title ):( title ),
+        wrapperInfo = this.spaceghost.elementInfoOrNull(
+            //TODO??: how to put this in editable json file
+            xpath( '//span[contains(text(),"' + titleContains + '")]/parent::*/parent::*' ) );
+    //this.spaceghost.debug( 'wrapperInfo: ' + this.spaceghost.jsonStr( wrapperInfo ) );
+    return wrapperInfo;
+};
+//TODO!: this will break if the hda name has single or double quotes (which are permitted in names)
+
+/** Find the id of the hda wrapper given the hda title and hid.
+ *  @param {String} title   the title of the hda
+ *  @param {Int} hid        (optional) the hid of the hda to look for
+ *  @returns {String|null} DOM id of the historyItemWrapper found, null if not found
+ */
+HistoryPanel.prototype.hdaIdByTitle = function hdaIdByTitle( title, hid ){
+    var elementInfo = this.hdaElementInfoByTitle( title, hid );
+    return (( elementInfo && elementInfo.attributes && elementInfo.attributes.id )?
+        ( elementInfo.attributes.id ):( null ));
+};
+
+/** Deletes an hda by finding an hda with the given title and clicking on the delete icon.
+ *      NOTE: if more than one is found, the first found will be deleted.
+ *  @param {String} hdaSelector     a css or xpath selector for an historyItemWrapper
+ *  @param {Function} whenDeletedFn function to be called when the hda is deleted (optional)
+ *  @param {Function} timeoutFn     function to be called if/when the deleted attempted times out (optional)
+ */
+HistoryPanel.prototype.deleteHda = function deleteHda( hdaSelector, whenDeletedFn, timeoutFn ){
+    whenDeletedFn = whenDeletedFn || function(){};
+    var spaceghost = this.spaceghost;
+
+    spaceghost.withFrame( spaceghost.selectors.frames.history, function deletingHda(){
+        //precondition: historyItemWrapper's (hda dom elements) should have an id
+        // we could use the selector directly, but better if it errors before an attempted delete
+        var hdaId = spaceghost.getElementInfo( hdaSelector ).attributes.id;
+        spaceghost.debug( 'hda id: ' + hdaId );
+
+        // get the delete icon and click it
+        //TODO: handle disabled delete icon?
+        var deleteIconSelector = 'a[id^="historyItemDeleter-"]',
+            thisDeleteIconSelector = '#' + hdaId + ' ' + deleteIconSelector;
+        spaceghost.click( thisDeleteIconSelector );
+
+        spaceghost.waitWhileSelector( '#' + hdaId,
+            function hdaNoLongerInDom(){
+                spaceghost.info( 'hda deleted: ' + hdaSelector );
+                whenDeletedFn.call( spaceghost );
+
+            }, function timeout(){
+                if( timeoutFn ){
+                    timeoutFn.call( spaceghost );
+                } else {
+                    throw new spaceghost.GalaxyError( 'HistoryPanelError: '
+                        + 'timeout attempting to delete hda : ' + hdaSelector );
+                }
+            });
+    });
+};
+
+/** Expands an HDA.
+ *  @param {String} hdaSelector     a css or xpath selector for an historyItemWrapper
+ */
+HistoryPanel.prototype.expandHda = function expandHda( hdaSelector ){
+    var spaceghost = this.spaceghost,
+        historyFrameInfo = spaceghost.getElementInfo( 'iframe[name="galaxy_history"]' );
+
+    spaceghost.withFrame( spaceghost.selectors.frames.history, function expandingHda(){
+        var titleInfo = spaceghost.getElementInfo( hdaSelector + ' .historyItemTitle' );
+        spaceghost.page.sendEvent( 'mousedown',
+            historyFrameInfo.x + titleInfo.x + 1, historyFrameInfo.y + titleInfo.y - 5 );
+    });
+    return spaceghost;
+};
+
+
+// =================================================================== SELECTORS
+//TODO: data is not a very good name
+HistoryPanel.prototype.data = {
+    selectors : {
+        history : {
+            name        : 'div#history-name',
+            subtitle    : 'div#history-subtitle-area',
+            tagIcon     : '#history-tag.icon-button',
+            tagArea     : '#history-tag-area',
+            annoIcon    : '#history-annotate.icon-button',
+            annoArea    : '#history-annotation-area',
+            emptyMsg    : '.infomessagesmall',
+            undeleteLink : '.historyItemUndelete'
+        },
+        hda : {
+            wrapper : {
+                stateClasses : {
+                    prefix  : 'historyItem-',
+                    ok      : 'historyItem-ok'
+                }
+            }
+        }
+    },
+    labels : {
+        history : {
+        },
+        hda : {
+        }
+    },
+    text : {
+        anonymous : {
+            tooltips : {
+                name    : 'You must be logged in to edit your history name'
+            }
+        },
+        history : {
+            tooltips : {
+                name     : 'Click to rename history',
+                tagIcon  : 'Edit history tags',
+                annoIcon : 'Edit history annotation'
+            },
+            newName  : 'Unnamed history',
+            newSize  : '0 bytes',
+            emptyMsg : "Your history is empty. Click 'Get Data' on the left pane to start"
+        },
+        hda : {
+        }
+    }
 };

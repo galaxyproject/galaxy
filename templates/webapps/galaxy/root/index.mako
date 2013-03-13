@@ -118,7 +118,7 @@
     if trans.app.config.require_login and not trans.user:
         center_url = h.url_for( controller='user', action='login' )
     elif tool_id is not None:
-        center_url = h.url_for( 'tool_runner', tool_id=tool_id, from_noframe=True )
+        center_url = h.url_for( 'tool_runner', tool_id=tool_id, from_noframe=True, **params )
     elif workflow_id is not None:
         center_url = h.url_for( controller='workflow', action='run', id=workflow_id )
     elif m_c is not None:

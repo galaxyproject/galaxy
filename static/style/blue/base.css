@@ -1133,6 +1133,7 @@ div.historyItem-upload{background:#ccccff;}div.historyItem-upload .state-icon{ba
 div.historyItem-queued{background:#eeeeee;}
 div.historyItem-noPermission{filter:alpha(opacity=60);-moz-opacity:.60;opacity:.60;}
 div.historyItem-paused{background:#d9edf7;}div.historyItem-paused .state-icon{font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat;}div.historyItem-paused .state-icon:before{content:"\f04c";}
+div.historyItem-new .state-icon{font-family:FontAwesome;font-size:1.1666666666666667em;background-image:none !important;background-position:0% 0%;background-repeat:repeat;}div.historyItem-new .state-icon:before{content:"\f071";}
 div.historyItemTitleBar.spinner .state-icon{background:url(data_running.gif) 0 1px no-repeat !important;}
 div.historyItemButtons{float:right;}
 div.historyItemBody div{padding-top:2px;}

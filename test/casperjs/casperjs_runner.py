@@ -9,7 +9,7 @@ Tests can be run in any of the following ways:
 * sh run_functional_tests.sh test/casperjs/test_runner
 * sh run_functional_tests.sh
 
-Note: that you can enable (lots) of debugging info using cli options:
+Note: that you can enable (lots of) debugging info using cli options:
 * casperjs usertests.js --url='http://localhost:8080' --verbose=true --logLevel=debug
 
 (see casperjs.org for more information)
@@ -47,6 +47,7 @@ _PATH_TO_HEADLESS = 'casperjs'
 _TODO = """
     get data back from js scripts (uploaded files, etc.)
     use returned json to output list of failed assertions if code == 2
+    better way to turn debugging on from the environment
 """
 
 # ====================================================================
@@ -72,7 +73,7 @@ class CasperJSTestCase( unittest.TestCase ):
     debug = False
     # bit of a hack - this is the beginning of the last string when capserjs --verbose=true --logLevel=debug
     #   use this to get subprocess to stop waiting for output
-    casper_done_str = '[info] [phantom] Done'
+    casper_done_str = '# Tests complete'
 
     # convert js test results to unittest.TestResults
     results_adapter = None #CasperJsonToUnittestResultsConverter()
@@ -94,11 +95,12 @@ class CasperJSTestCase( unittest.TestCase ):
             while process.poll() == None:
                 stderr_msg = process.stderr.readline()
                 stderr_msg = self.strip_escape_codes( stderr_msg.strip() )
-                log.debug( '(%s): %s', rel_script_path, stderr_msg )
-                # HACK: this is the last string displayed using the debug settings - afterwards it hangs
-                #   so: bail on this string
-                if stderr_msg.startswith( self.casper_done_str ):
-                    break
+                if stderr_msg:
+                    log.debug( '(%s): %s', rel_script_path, stderr_msg )
+                    # HACK: this is the last string displayed using the debug settings - afterwards it hangs
+                    #   so: bail on this string
+                    if stderr_msg.startswith( self.casper_done_str ):
+                        break
 
             # stdout is assumed to have the json test data/results
             ( stdout_output, stderr_output ) = process.communicate()
@@ -139,8 +141,11 @@ class CasperJSTestCase( unittest.TestCase ):
         command_line_list.append( '--return-json' )
 
         # check flag to output (very) verbose debugging messages from casperjs and tests
-        if self.debug:
+        #NOTE: this can be set in the class or by using the debug_these_tests flag in server_env
+        if( ( self.debug )
+        or  ( rel_script_path in self.env.debug_these_tests ) ):
             command_line_list.extend([ '--verbose=true', '--logLevel=debug' ])
+            #TODO: add capture, html output flags
 
         #TODO: allow casperjs cli options ('--includes='), ?in args, kwargs?
         command_line_list.extend( args )
@@ -296,13 +301,16 @@ test_user = {
 class Test_01_User( CasperJSTestCase ):
     """TestCase that uses javascript and a headless browser to test dynamic pages.
     """
-    #debug = True
     def test_10_registration( self ):
         """User registration tests: register new user, logout, attempt bad registrations.
         """
         # all keywords will be compiled into a single JSON obj and passed to the server
-        self.run_js_script( 'registration-tests.js',
-            testuser=test_user )
+        #self.run_js_script( 'registration-tests.js',
+        #    testUser=test_user )
+        #    # this causes a time out in history-panel-tests: why?
+        #    # also: I can't seem to bump the timeout to an error (using a handler) - causes script to hang
+        #    #   removing for the sake of bbot
+        self.run_js_script( 'registration-tests.js' )
 
         #TODO:?? could theoretically do db cleanup, checks here with SQLALX
         #TODO: have run_js_script return other persistant fixture data (uploaded files, etc.)
@@ -310,42 +318,47 @@ class Test_01_User( CasperJSTestCase ):
     def test_20_login( self ):
         """User log in tests.
         """
-        self.run_js_script( 'login-tests.js',
-            testuser=test_user )
+        self.run_js_script( 'login-tests.js' )
 
 
 class Test_02_Tools( CasperJSTestCase ):
     """(Minimal) casperjs tests for tools.
     """
-    #debug = True
     def test_10_upload( self ):
         """Tests uploading files
         """
-        self.run_js_script( 'upload-tests.js',
-            testuser=test_user )
+        self.run_js_script( 'upload-tests.js' )
 
 
 class Test_03_HistoryPanel( CasperJSTestCase ):
     """(Minimal) casperjs tests for tools.
     """
-    #debug = True
     def test_00_history_panel( self ):
         """Test history panel basics (controls, structure, refresh, history options menu, etc.).
         """
-        self.run_js_script( 'history-panel-tests.js',
-            testuser=test_user )
+        self.run_js_script( 'history-panel-tests.js' )
 
     def test_10_anonymous_histories( self ):
         """Test history panel basics with an anonymous user.
         """
-        self.run_js_script( 'anon-history-tests.js',
-            testuser=test_user )
+        self.run_js_script( 'anon-history-tests.js' )
+
+
+class Test_04_HDAs( CasperJSTestCase ):
+    """(Minimal) casperjs tests for tools.
+    """
+    def test_00_HDA_states( self ):
+        """Test structure rendering of HDAs in all the possible HDA states
+        """
+        self.run_js_script( 'hda-state-tests.js' )
 
 
 
 # ==================================================================== MAIN
 if __name__ == '__main__':
     log.setLevel( logging.DEBUG )
+    from server_env import log as server_env_log
+    server_env_log.setLevel( logging.DEBUG )
     setup_module()
     #TODO: server_env config doesn't work with unittest's lame main fn
     unittest.main()

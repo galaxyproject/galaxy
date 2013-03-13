@@ -252,7 +252,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         self.install_repository( emboss_datatypes_repository_name, 
                                  common.test_user_1_name, 
                                  category_name,
-                                 includes_tools=False )
+                                 includes_tools_for_display_in_tool_panel=False )
         installed_repositories = [ ( emboss_datatypes_repository_name, common.test_user_1_name ),
                                    ( freebayes_repository_name, common.test_user_1_name ) ]
         uninstalled_repositories = [ ( emboss_repository_name, common.test_user_1_name ),

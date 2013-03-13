@@ -36,7 +36,7 @@ class Admin( object ):
                                         message=message,
                                         status=status )
         else:
-            return trans.fill_template( '/webapps/community/admin/index.mako',
+            return trans.fill_template( '/webapps/tool_shed/admin/index.mako',
                                         message=message,
                                         status=status )
     @web.expose
@@ -49,7 +49,7 @@ class Admin( object ):
                                         message=message,
                                         status=status )
         else:
-            return trans.fill_template( '/webapps/community/admin/center.mako',
+            return trans.fill_template( '/webapps/tool_shed/admin/center.mako',
                                         message=message,
                                         status=status )
     @web.expose

@@ -2,6 +2,8 @@
     Use in test command
 
     bug: assertStepsRaise raise errors (all the way) when used in 'casperjs test .'
+    normalize names of fns that use withFrame or then to 'then<action>'
+    make any callbacks optional (that can be)
 
     Does it run:
         casperjs usertests.js --url='http://localhost:8080'
@@ -118,7 +120,7 @@ SpaceGhost.prototype.init = function init( options ){
 
     // save errors for later output (needs to go before process CLI)
     this.errors = [];
-    this.on( 'error', function( msg, backtrace ){
+    this.on( 'error', function pushErrorToStack( msg, backtrace ){
         //this.debug( 'adding error to stack: ' + msg + ', trace:' + JSON.stringify( backtrace, null, 2 ) );
         this.errors.push({ msg: msg, backtrace: backtrace });
     });
@@ -174,6 +176,8 @@ SpaceGhost.prototype._saveScreenOnErrorHandler = function _saveScreenOnErrorHand
 /** Set up any SG specific options passed in on the cli.
  */
 SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
+    //this.debug( 'cli: ' + this.jsonStr( this.cli ) );
+
     //TODO: init these programmitically
     var CLI_OPTIONS = {
         returnJsonOnly  : { defaultsTo: false, flag: 'return-json',    help: 'send output to stderr, json to stdout' },
@@ -183,6 +187,8 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
         //screenOnError   : { defaultsTo: false, flag: 'error-screen',   help: 'capture a screenshot on a page error' },
         //textOnError     : { defaultsTo: false, flag: 'error-text',     help: 'output page text on a page error' },
         //htmlOnError     : { defaultsTo: false, flag: 'error-html',   help: 'output page html on a page error' }
+        //htmlOnFail      : { defaultsTo: false, flag: 'fail-html',   help: 'output page html on a test failure' },
+        //screenOnFail    : { defaultsTo: false, flag: 'fail-screen',   help: 'capture a screenshot on a test failure' }
     };
 
     // --url parameter required (the url of the server to test with)
@@ -192,17 +198,16 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
     }
     this.baseUrl = this.cli.get( 'url' );
 
+    //TODO: move these handlers into _setUpEventHandlers
     // --return-json: supress all output except for JSON logs, test results, and errors at finish
     //  this switch allows a testing suite to send JSON data back via stdout (w/o logs, echos interferring)
     this.options.returnJsonOnly = CLI_OPTIONS.returnJsonOnly.defaultsTo;
     if( this.cli.has( CLI_OPTIONS.returnJsonOnly.flag ) ){
         this.options.returnJsonOnly = true;
 
-        //this._suppressOutput();
         this._redirectOutputToStderr();
-
         // output json on fail-first error
-        this.on( 'error', function( msg, backtrace ){
+        this.on( 'error', function outputJSONOnError( msg, backtrace ){
             //console.debug( 'return-json caught error' );
             if( spaceghost.options.exitOnError ){
                 this.outputStateAsJson();
@@ -212,6 +217,7 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
         // non-error finshes/json-output are handled in run() for now
     }
 
+    //TODO: remove boilerplate
     // --error-on-alert=false: don't throw an error if the page calls alert (default: true)
     this.options.raisePageError = CLI_OPTIONS.raisePageError.defaultsTo;
     if( this.cli.has( CLI_OPTIONS.raisePageError.flag ) ){
@@ -240,15 +246,18 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
         this.on( 'page.error', this._saveHtmlOnErrorHandler );
     }
 
-    // --error-screen: print the casper.debugPage (the page's text) output on an error
+    // --error-screen: capture the casper browser screen on an error
     if( this.cli.has( 'error-screen' ) ){
         this.on( 'page.error', this._saveScreenOnErrorHandler );
     }
+
+    // --fail-html: print the casper.debugHTML (the page's html) output on an test failure
+    // --fail-screen: print the casper browser screen output on an test failure
     */
 
     // get any fixture data passed in as JSON in args
     //  (NOTE: currently the 2nd arg (with the url being 1st?)
-    this.fixtureData = ( this.cli.has( 1 ) )?( JSON.parse( this.cli.get( 1 ) ) ):( {} );
+    this.fixtureData = ( this.cli.has( 0 ) )?( JSON.parse( this.cli.get( 0 ) ) ):( {} );
     this.debug( 'fixtureData:' + this.jsonStr( this.fixtureData ) );
 
 };
@@ -329,6 +338,14 @@ SpaceGhost.prototype._pageErrorHandler = function _pageErrorHandler( msg, backtr
     }
 };
 
+/** Event handler for step/casper timeouts - throws PageError
+ */
+SpaceGhost.prototype._timeoutHandler = function _timeoutHandler(){
+    console.debug( 'timeout' );
+    //msg = msg.replace( 'PageError: ', '' );
+    throw new PageError( 'Timeout occurred' );
+};
+
 /** Event handler for console messages from the page.
  */
 SpaceGhost.prototype._pageConsoleHandler = function _pageConsoleHandler(){
@@ -372,6 +389,9 @@ SpaceGhost.prototype._setUpEventHandlers = function _setUpEventHandlers(){
     // ........................ page errors
     this.on( 'page.error',  this._pageErrorHandler );
     //this.on( 'load.failed', this._loadFailedHandler );
+    this.on( 'timeout',  this._timeoutHandler );
+    this.on( 'step.timeout',  this._timeoutHandler );
+    this.on( 'waitFor.timeout',  this._timeoutHandler );
 
     // ........................ page info/debugging
     // these are already displayed at the casper info level
@@ -391,6 +411,7 @@ SpaceGhost.prototype._loadModules = function _loadModules(){
     this.user  = require( this.options.scriptDir + 'modules/user'  ).create( this );
     this.tools = require( this.options.scriptDir + 'modules/tools' ).create( this );
     this.historypanel = require( this.options.scriptDir + 'modules/historypanel' ).create( this );
+    this.historyoptions = require( this.options.scriptDir + 'modules/historyoptions' ).create( this );
 };
 
 // =================================================================== PAGE CONTROL
@@ -416,7 +437,10 @@ SpaceGhost.prototype.run = function run( onComplete, time ){
             var returnCode = ( this.test.testResults.failed )?( 2 ):( 0 );
 
             // if --return-json is used: output json and exit
+            //NOTE: used by the test runner to gather JSON test info from stdout
             if( this.options.returnJsonOnly ){
+                // echo a string to indicate that tests are complete (used in casperjs_runner.py to stop process)
+                this.echo( '# Tests complete' );
                 this.outputStateAsJson();
                 this.exit( returnCode );
 
@@ -438,16 +462,18 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
     //TODO:  *  @param {Boolean} removeOtherListeners option to remove other listeners while this fires
     // create three steps: 1) set up new error handler, 2) try the fn, 3) check for errors and rem. handler
     var originalExitOnError,
+        originalErrorHandlers = [],
         errorMsg = '', errorTrace = [],
         recordError = function( msg, trace ){
             errorMsg = msg; errorTrace = trace;
         };
 
-    // dont bail on the error (but preserve option), install hndlr to simply record msg, trace
-    //NOTE: haven't had to remove other listeners yet
+    // dont bail on the error (but preserve option), uninstall other handlers,
+    //  and install hndlr to simply record msg, trace
     this.then( function(){
         originalExitOnError = this.options.exitOnError;
         this.options.exitOnError = false;
+        originalErrorHandlers = this.popAllListeners( 'error' );
         this.on( 'error', recordError );
     });
 
@@ -459,12 +485,24 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
         if( errorMsg ){
             catchFn.call( this, errorMsg, errorTrace );
         }
-        // remove that listener either way and restore the bail option
+        // remove that listener either way, restore original handlers, and restore the bail option
         this.removeListener( 'error', recordError );
+        this.addListeners( 'error', originalErrorHandlers );
         this.options.exitOnError = originalExitOnError;
     });
 };
 
+/** Override capture to save to environ: GALAXY_TEST_SAVE (or passed in from CLI)
+ *  @param {String} filename    the image filename
+ */
+SpaceGhost.prototype.capture = function capture( filename, clipRect_or_selector ){
+    //TODO: override with saved output dir
+    if( clipRect_or_selector && ( !utils.isClipRect( clipRect_or_selector ) ) ){
+        this.debug( "USING CAPTURE SELECTOR" );
+        return this.captureSelector( filename, clipRect_or_selector );
+    }
+    return Casper.prototype.capture.apply( this, arguments );
+};
 
 // =================================================================== TESTING
 //TODO: form fill doesn't work as casperjs would want it - often a button -> controller url
@@ -527,6 +565,32 @@ SpaceGhost.prototype.assertStepsRaise = function assertStepsRaise( msgContains, 
     this.tryStepsCatch( stepsFn, testTheError );
 };
 
+/** Assert that a function causes a navigation request with (at least partially) the given url.
+ *      NOTE: _should_ play well with steps (e.g. then, thenOpen, etc.)
+ *  @param {String} url                 some portion of the expected url for the nav request
+ *  @param {String} message             the assertion message
+ *  @param {Function} fnThatRequests    a function that causes a navigation request (e.g. click a link)
+ */
+SpaceGhost.prototype.assertNavigationRequested = function assertNavigationRequested( expectedUrl, message,
+                                                                                     fnThatRequests ){
+    var requested = false;
+    function captureNavReq( url, navigationType, navigationLocked, isMainFrame ){
+        this.debug( 'Checking navigation.requested for url: ' + expectedUrl );
+        // use || here to handle multiple requests, if any one url works -> test will pass
+        requested = requested || ( url.indexOf( expectedUrl ) !== -1 );
+    }
+    this.then( function(){
+        this.on( 'navigation.requested', captureNavReq );
+    });
+    this.then( function(){
+        fnThatRequests.call( this );
+    });
+    this.then( function(){
+        this.removeListener( 'navigation.requested', captureNavReq );
+        this.test.assert( requested, message );
+    });
+};
+
 // =================================================================== CONVENIENCE
 /** Wraps casper.getElementInfo in try, returning null if element not found instead of erroring.
  *  @param {String} selector    css or xpath selector for the element to find
@@ -555,6 +619,25 @@ SpaceGhost.prototype.tryClick = function tryClick( selector ){
 
 // =================================================================== GALAXY CONVENIENCE
 // =================================================================== MISCELAIN
+/** Pop all handlers for eventName from casper and return them in order.
+ *  @param {String} eventName   the name of the event from which to remove handlers
+ */
+SpaceGhost.prototype.popAllListeners = function popAllListeners( eventName ){
+    var returnedListeners = this.listeners( eventName );
+    this.removeAllListeners( eventName );
+    return returnedListeners;
+};
+
+/** Add the given list of handler functions to the listener for eventName in order.
+ *  @param {String} eventName   the name of the event to which to add handlers
+ *  @param {Array} handlerArray an array of event handler functions to add
+ */
+SpaceGhost.prototype.addListeners = function addListeners( eventName, handlerArray ){
+    for( var i=0; i<handlerArray.length; i++ ){
+        this.addListener( eventName, handlerArray[i] );
+    }
+};
+
 /** Send message to stderr
  */
 SpaceGhost.prototype.stderr = function( msg ){
@@ -603,6 +686,12 @@ SpaceGhost.prototype.out = function( msg, namespace ){
  */
 SpaceGhost.prototype.jsonStr = function( obj ){
     return JSON.stringify( obj, null, 2 );
+};
+
+/** output to debug the JSON of the selector (or null if not found)
+ */
+SpaceGhost.prototype.debugElement = function debugElement( selector ){
+    this.debug( this.jsonStr( this.elementInfoOrNull( selector ) ) );
 };
 
 /** Debug SG itself
@@ -720,6 +809,13 @@ SpaceGhost.prototype.loadJSONFile = function loadJSONFile( filepath ){
     return JSON.parse( require( 'fs' ).read( filepath ) );
 };
 
+SpaceGhost.prototype.writeJSONFile = function writeJSONFile( filepath, object, mode ){
+    mode = mode || 'w';
+    //precondition: filepath is relative to script dir
+    filepath = this.options.scriptDir + filepath;
+    return require( 'fs' ).write( filepath, this.jsonStr( object ), mode );
+};
+
 // =================================================================== EXPORTS
 /**
  */
@@ -733,4 +829,3 @@ exports.create = function create(options) {
     "use strict";
     return new SpaceGhost(options);
 };
-

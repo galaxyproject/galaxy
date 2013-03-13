@@ -1,9 +1,9 @@
-import galaxy.webapps.community.util.hgweb_config
+import galaxy.webapps.tool_shed.util.hgweb_config
 import galaxy.model as galaxy_model
 import common, string, os, re, test_db_util, simplejson, logging, time
 import galaxy.util as util
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
-from galaxy.tool_shed.encoding_util import tool_shed_encode, tool_shed_decode
+from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -17,7 +17,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.security = security.SecurityHelper( id_secret='changethisinproductiontoo' )
         self.history_id = None
         self.hgweb_config_dir = os.environ.get( 'TEST_HG_WEB_CONFIG_DIR' )
-        self.hgweb_config_manager = galaxy.webapps.community.util.hgweb_config.HgWebConfigManager()
+        self.hgweb_config_manager = galaxy.webapps.tool_shed.util.hgweb_config.HgWebConfigManager()
         self.hgweb_config_manager.hgweb_config_dir = self.hgweb_config_dir
         self.tool_shed_test_tmp_dir = os.environ.get( 'TOOL_SHED_TEST_TMP_DIR', None)
         self.host = os.environ.get( 'TOOL_SHED_TEST_HOST' )
@@ -661,7 +661,7 @@ class ShedTwillTestCase( TwillTestCase ):
     def install_repository( self, name, owner, category_name, install_tool_dependencies=False, 
                             install_repository_dependencies=True, changeset_revision=None, 
                             strings_displayed=[], strings_not_displayed=[], preview_strings_displayed=[], 
-                            post_submit_strings_displayed=[], new_tool_panel_section=None, includes_tools=True,
+                            post_submit_strings_displayed=[], new_tool_panel_section=None, includes_tools_for_display_in_tool_panel=True,
                             **kwd ):
         self.browse_tool_shed( url=self.url )
         self.browse_category( test_db_util.get_category_by_name( category_name ) )
@@ -692,7 +692,7 @@ class ShedTwillTestCase( TwillTestCase ):
             kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
         if new_tool_panel_section:
             kwd[ 'new_tool_panel_section' ] =  new_tool_panel_section
-        if includes_tools:
+        if includes_tools_for_display_in_tool_panel:
             self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
             self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         else:

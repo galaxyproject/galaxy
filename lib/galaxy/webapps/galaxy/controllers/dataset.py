@@ -180,16 +180,6 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         if not hda or not self._can_access_dataset( trans, hda ):
             return trans.show_error_message( "Either this dataset does not exist or you do not have permission to access it." )
         return trans.fill_template( "dataset/errors.mako", hda=hda )
-    @web.expose
-    def stdoutX( self, trans, dataset_id=None, **kwargs ):
-        trans.response.set_content_type( 'text/plain' )
-        try:
-            hda = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( trans.security.decode_id( dataset_id ) )
-            assert hda and self._can_access_dataset( trans, hda )
-            job = hda.creating_job_associations[0].job
-        except:
-            return "Invalid dataset ID or you are not allowed to access this dataset"
-        return job.stdout
 
     @web.expose
     def stdout( self, trans, dataset_id=None, **kwargs ):

@@ -233,7 +233,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                                  install_tool_dependencies=True, 
                                  preview_strings_displayed=preview_strings_displayed,
                                  post_submit_strings_displayed=[ base_repository.name, tool_repository.name, 'new' ],
-                                 includes_tools=True )
+                                 includes_tools_for_display_in_tool_panel=True )
     def test_0050_verify_installed_repositories( self ):
         '''Verify that the installed repositories are displayed properly.'''
         base_repository = test_db_util.get_installed_repository_by_name_owner( bwa_base_repository_name, common.test_user_1_name )

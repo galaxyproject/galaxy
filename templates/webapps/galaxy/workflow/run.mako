@@ -1,5 +1,11 @@
 <%inherit file="/base.mako"/>
 
+<style>
+/* TODO: Move this block into base.less? base.css? Someone more familiar with GUI should move this. */
+.icon-button.link {background:url(../images/silk/link.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
+.icon-button.link-broken {background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
+</style>
+
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "libs/jquery/jquery.autocomplete" )}
@@ -33,12 +39,12 @@
                     } else {
                         select.val($('option:last', select).val());
                     }
+                    select.closest('.form-row').children('label').children('span.mode-icon').hide();
                     select.removeAttr('multiple').removeAttr('size');
                     placeholder = 'type to filter';
                 } else {
-                    // Comment out the following line to multiple batch input workflows in UI.
-                    $('.multiinput').addClass('disabled');
                     $('.multiinput', select.closest('.form-row')).removeClass('disabled');
+                    select.closest('.form-row').children('label').children('span.mode-icon').show();
                     select.attr('multiple', 'multiple').attr('size', 8);
                     placeholder = 'type to filter, [enter] to select all';
                 }
@@ -125,6 +131,52 @@
                 }).width(new_width).css('display', 'block');
                 select.after(filter);
                 select.width(new_width);
+            });
+
+            // Augment hidden fields with icons.
+            // http://stackoverflow.com/a/2088430
+            $(function(){
+                $(".multi-mode").each(function(){
+                    if($(this).val() == "matched") { 
+                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link mode-icon"></span>')
+                            .attr({id:$(this).attr("id")})
+                            .css("display", $(this).css("display")));
+                    } else {
+                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link-broken mode-icon"></span>')
+                            .attr({id:$(this).attr("id")})
+                            .css("display", $(this).css("display"))); 
+                    }
+                });
+                $("span.mode-icon").click(function(){
+                    i= $(this).closest('.form-row').find("input[type=hidden]");
+                    if($(this).hasClass("link")) {
+                        $(this).removeClass("link").addClass("link-broken");
+                        $(i).val("product");
+                    } else {
+                        $(this).removeClass("link-broken").addClass("link");
+                        $(i).val("matched");
+                    }
+                });
+            });
+            $("#tool_form").submit(function(e) {
+                var matchLength = -1;
+                $('span.multiinput_wrap select[name*="|input"]').each(function() {
+                    var value = $(this).val();
+                    if(value instanceof Array) {
+                        // Multi-value
+                        if($(this).siblings("input[type=hidden]").val() == "matched") {
+                            var length = $(this).val().length;
+                            if(matchLength == -1) {
+                                matchLength = length;
+                            } else if(length != matchLength) {
+                                e.preventDefault();
+                                alert("Linked inputs must be submitted in equal number.");
+                                return false;
+                            }
+                        }
+                    }
+                });
+                return true;
             });
         });
     </script>
@@ -260,6 +312,7 @@ if wf_parms:
                     %if step.type == 'data_input':
                     ##Input Dataset Step, wrap for multiinput.
                         <span class='multiinput_wrap'>
+                        <input class="multi-mode" type="hidden" name="${str(step.id)}|multi_mode" id="${str(step.id)}|multi_mode" value="matched" />
                         ${param.get_html_field( t, value, other_values ).get_html( str(step.id) + "|" + prefix )}
                         </span>
                     %else:
@@ -339,30 +392,6 @@ if wf_parms:
 
 <form id="tool_form" name="tool_form" method="POST">
 ## <input type="hidden" name="workflow_name" value="${h.to_unicode( workflow.name ) | h}" />
-
-<!-- TODO: Implement UI for selecting between product and matched mode
-     for batch workflows in multiple inputs are selected for 2 or more
-     params.
-
-     1) Delete this line above: $('.multiinput').addClass('disabled');
-     2) Allow user to select between product and matched mode.
-
-     If user selected 5 inputs for one param and 5 inputs for another
-     in matched mode that will be run the workflow 5 times matching
-     each input and in product mode it will run the workflow 25 times
-     with every combination of input pairs. If user selects 6 inputs
-     for one param and 4 for another, in product mode 24 workflows
-     will run and in matched mode the submission will fail.
-
-     In matched mode the inputs are matched from top to bottom
-     regardless of the order they are actually select in. This
-     behavior is I assume the desired behavior but I have only tested
-     it in chrome, care should be taken to test behavior on other
-     browsers and augment UI to ensure numbers of inputs matches
-     up.
--->
-<input type="hidden" name="multiple_input_mode" value="matched" /> <!-- product or matched -->
-
 
 %if wf_parms:
 <div class="metadataForm">

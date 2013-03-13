@@ -2,7 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_dependencies_section" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_readme_section" />
-<%namespace file="/webapps/community/repository/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
@@ -60,7 +60,7 @@
 </div>
 <div class="toolForm">
     <div class="toolFormBody">
-        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
+        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
             <div style="clear: both"></div>
             <% readme_files_dict = containers_dict.get( 'readme_files', None ) %>
             %if readme_files_dict:

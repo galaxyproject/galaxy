@@ -903,26 +903,10 @@ class GalaxyRBACAgent( RBACAgent ):
                                  .filter( and_( trans.app.model.DatasetPermissions.dataset_id.in_( dataset_ids ),
                                                 trans.app.model.DatasetPermissions.action == self.permitted_actions.DATASET_ACCESS.action ) ) \
                                  .all()
-
         # Every dataset returned has "access" privileges associated with it,
         # so it's not public.
         for permission in access_data_perms:
             datasets_public[ permission.dataset_id ] = False 
-
-        # Test code: Check if the results match up with the original:
-        test_code = False 
-        if test_code:
-            log.debug( "datasets_are_public test: check datasets_are_public matches dataset_is_public:" )
-            test_success = True
-            for dataset in datasets:
-                orig_is_public = self.dataset_is_public( dataset )
-                if orig_is_public == datasets_public[ dataset.id ]:
-                    log.debug( "\tMatch for dataset %d" % dataset.id )
-                else:
-                    success = False
-                    log.error( "\tERROR: Did not match: single is_public: %s; multiple is_public: %s" 
-                             % ( single_is_public, datasets_public[ dataset.id ] ) )
-            log.debug( "datasets_are_public: test succeeded? %s" % test_success )
         return datasets_public
 
 

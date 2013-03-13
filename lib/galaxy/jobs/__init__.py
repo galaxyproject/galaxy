@@ -907,7 +907,6 @@ class JobWrapper( object ):
         job_context = ExpressionContext( dict( stdout = job.stdout, stderr = job.stderr ) )
         job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
 
-        
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
@@ -917,6 +916,8 @@ class JobWrapper( object ):
                 dataset.info = ( dataset.info  or '' ) + context['stdout'] + context['stderr']
                 dataset.tool_version = self.version_string
                 dataset.set_size()
+                if 'uuid' in context:
+                    dataset.dataset.uuid = context['uuid']
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
                     self.app.object_store.update_from_file(dataset.dataset, create=True)

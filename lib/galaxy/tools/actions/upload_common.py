@@ -294,6 +294,10 @@ def create_paramfile( trans, uploaded_datasets ):
                 link_data_only = uploaded_dataset.link_data_only
             except:
                 link_data_only = 'copy_files'
+            try:
+                uuid_str = uploaded_dataset.uuid
+            except:
+                uuid_str = None
             json = dict( file_type = uploaded_dataset.file_type,
                          ext = uploaded_dataset.ext,
                          name = uploaded_dataset.name,
@@ -302,6 +306,7 @@ def create_paramfile( trans, uploaded_datasets ):
                          type = uploaded_dataset.type,
                          is_binary = is_binary,
                          link_data_only = link_data_only,
+                         uuid = uuid_str,
                          space_to_tab = uploaded_dataset.space_to_tab,
                          in_place = trans.app.config.external_chown_script is None,
                          path = uploaded_dataset.path )

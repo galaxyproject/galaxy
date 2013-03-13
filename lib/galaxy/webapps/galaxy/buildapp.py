@@ -84,6 +84,11 @@ def app_factory( global_conf, **kwargs ):
                                 name_prefix='history_',
                                 path_prefix='/api/histories/:history_id', 
                                 parent_resources=dict( member_name='history', collection_name='histories' ) )
+    webapp.api_mapper.connect("history_contents_display",
+                              "/api/histories/:history_id/contents/:history_content_id/display",
+                              controller="datasets",
+                              action="display",
+                              conditions=dict(method=["GET"]))
     webapp.api_mapper.resource( 'permission',
                                 'permissions',
                                 path_prefix='/api/libraries/:library_id',
@@ -100,6 +105,12 @@ def app_factory( global_conf, **kwargs ):
                                 name_prefix='group_',
                                 path_prefix='/api/groups/:group_id',
                                 parent_resources=dict( member_name='group', collection_name='groups' ) )
+    webapp.api_mapper.resource( 'content',
+                                'contents',
+                                controller='tool_shed_repository_contents',
+                                name_prefix='tool_shed_repository_',
+                                path_prefix='/api/tool_shed_repositories/:tool_shed_repository_id',
+                                parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
     _add_item_tags_controller( webapp, 
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
@@ -132,6 +143,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.resource( 'tool', 'tools', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
     webapp.api_mapper.resource( 'genome', 'genomes', path_prefix='/api' )
+    webapp.api_mapper.resource( 'tool_shed_repository', 'tool_shed_repositories', path_prefix='/api' )
     webapp.api_mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.api_mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
@@ -142,6 +154,8 @@ def app_factory( global_conf, **kwargs ):
     # "POST /api/workflows/import"  =>  ``workflows.import_workflow()``.
     # Defines a named route "import_workflow".
     webapp.api_mapper.connect("import_workflow", "/api/workflows/upload", controller="workflows", action="import_new_workflow", conditions=dict(method=["POST"]))
+    webapp.api_mapper.connect("workflow_dict", '/api/workflows/{workflow_id}/download', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
+    # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.api_mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
 
     # Connect logger from app

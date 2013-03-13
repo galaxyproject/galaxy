@@ -909,7 +909,7 @@
                     <div class="toolSectionWrapper">
                     %if key.startswith( 'tool' ):
                         ${render_tool( val, False )}
-                    %elif key.startswith( 'section' ):
+                    %elif key.startswith( 'section' ) and val.elems:
                     <% section = val %>
                         <div class="toolSectionTitle" id="title_${section.id}">
                             <span>${section.name}</span>
@@ -930,6 +930,23 @@
                     %endif
                     </div>
                 %endfor
+                ## Data Manager Tools
+                %if trans.user_is_admin() and trans.app.data_managers.data_managers:
+                   <div>&nbsp;</div>
+                   <div class="toolSectionWrapper">
+                       <div class="toolSectionTitle" id="title___DATA_MANAGER_TOOLS__">
+                           <span>Data Manager Tools</span>
+                       </div>
+                       <div id="__DATA_MANAGER_TOOLS__" class="toolSectionBody">
+                           <div class="toolSectionBg">
+                               %for data_manager_id, data_manager_val in trans.app.data_managers.data_managers.items():
+                                   ${ render_tool( data_manager_val.tool, True ) }
+                               %endfor
+                           </div>
+                       </div>
+                   </div>
+                %endif
+                ## End Data Manager Tools
             </div>
             ## Feedback when search returns no results.
             <div id="search-no-results" style="display: none; padding-top: 5px">

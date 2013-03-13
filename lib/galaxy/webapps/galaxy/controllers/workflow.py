@@ -1,28 +1,41 @@
-from galaxy.web.base.controller import *
-
 import pkg_resources
 pkg_resources.require( "simplejson" )
 pkg_resources.require( "SVGFig" )
-import simplejson
-import base64, httplib, urllib2, sgmllib, svgfig, urllib, urllib2
+
+import base64
+import httplib
 import math
-from galaxy.web.framework.helpers import time_ago, grids
-from galaxy.tools.parameters import *
-from galaxy.tools import DefaultToolState
-from galaxy.tools.parameters.grouping import Repeat, Conditional
-from galaxy.datatypes.data import Data
-from galaxy.util.odict import odict
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.util.topsort import topsort, topsort_levels, CycleError
-from galaxy.tool_shed import encoding_util
-from galaxy.workflow.modules import *
+import os
+import sgmllib
+import simplejson
+import svgfig
+import urllib2
+
+from sqlalchemy import and_
+from tool_shed.util import encoding_util
+
 from galaxy import model
 from galaxy import util
-from galaxy.model.mapping import desc
-from galaxy.model.orm import *
-from galaxy.model.item_attrs import *
-from galaxy.web.framework.helpers import to_unicode
+from galaxy import web
+from galaxy.datatypes.data import Data
 from galaxy.jobs.actions.post import ActionBox
+from galaxy.model.mapping import desc
+from galaxy.tools.parameters import RuntimeValue, visit_input_values
+from galaxy.tools.parameters.basic import DataToolParameter, DrillDownSelectToolParameter, SelectToolParameter, UnvalidatedValue
+from galaxy.tools.parameters.grouping import Conditional, Repeat
+from galaxy.util.json import from_json_string
+from galaxy.util.odict import odict
+from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.topsort import CycleError, topsort, topsort_levels
+from galaxy.web import error, url_for
+from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesStoredWorkflowMixin
+from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
+from galaxy.web.framework import form
+from galaxy.web.framework.helpers import grids, time_ago
+from galaxy.web.framework.helpers import to_unicode
+from galaxy.workflow.modules import module_factory, ToolModule
+
+
 
 class StoredWorkflowListGrid( grids.Grid ):
     class StepsColumn( grids.GridColumn ):
@@ -1813,7 +1826,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Unpack and add post-job actions.
             post_job_actions = step_dict.get( 'post_job_actions', {} )
             for name, pja_dict in post_job_actions.items():
-                pja = PostJobAction( pja_dict[ 'action_type' ],
+                pja = model.PostJobAction( pja_dict[ 'action_type' ],
                                      step, pja_dict[ 'output_name' ],
                                      pja_dict[ 'action_arguments' ] )
         # Second pass to deal with connections between steps
@@ -2106,22 +2119,26 @@ def _build_workflow_on_str(instance_ds_names):
 
 
 def _expand_multiple_inputs(kwargs, mode):
-    (input_combos, multi_inputs) = _build_input_combos(kwargs, mode)
+    (single_inputs, matched_multi_inputs, multiplied_multi_inputs) = \
+       _split_inputs(kwargs, mode)
+
+    # Build up every combination of inputs to be run together.
+    input_combos = _extend_with_matched_combos(single_inputs, matched_multi_inputs)
+    input_combos = _extend_with_multiplied_combos(input_combos, multiplied_multi_inputs)
+
+    # Input name that are multiply specified
+    multi_input_keys = \
+      matched_multi_inputs.keys() + multiplied_multi_inputs.keys()
+
     for input_combo in input_combos:
         for key, value in input_combo.iteritems():
             kwargs[key] = value
-        yield (kwargs, multi_inputs.keys())
+        yield (kwargs, multi_input_keys)
 
-def _build_input_combos(kwargs, mode):
-    if mode == "product":
-        return _build_input_combos_product(kwargs)
-    else: # mode == "matched"
-        return _build_input_combos_matched(kwargs)
 
-def _build_input_combos_matched(kwargs):
-    (single_inputs, multi_inputs) = _split_inputs(kwargs)
+def _extend_with_matched_combos(single_inputs, multi_inputs):
     if len(multi_inputs) == 0:
-        return ([{}], {})
+        return [single_inputs]
 
     matched_multi_inputs = []
 
@@ -2139,11 +2156,12 @@ def _build_input_combos_matched(kwargs):
             raise Exception("Failed to match up multi-select inputs, must select equal number of data files in each multiselect")
         for index, value in enumerate(multi_input_values):
             matched_multi_inputs[index][multi_input_key] = value
-    return (matched_multi_inputs, multi_inputs)
+    return matched_multi_inputs
 
-def _build_input_combos_product(kwargs):
-    (single_inputs, multi_inputs) = _split_inputs(kwargs)
-    combos = [single_inputs]
+
+def _extend_with_multiplied_combos(input_combos, multi_inputs):
+    combos = input_combos
+
     for multi_input_key, multi_input_value in multi_inputs.iteritems():
         iter_combos = []
 
@@ -2152,21 +2170,32 @@ def _build_input_combos_product(kwargs):
                 iter_combos.append(_copy_and_extend_inputs(combo, multi_input_key, input_value))
 
         combos = iter_combos
-    return (combos, multi_inputs)
+    return combos
+
 
 def _copy_and_extend_inputs(inputs, key, value):
     new_inputs = dict(inputs)
     new_inputs[key] = value
     return new_inputs
 
-def _split_inputs(kwargs):
+
+def _split_inputs(kwargs, mode):
+    """
+    """
     input_keys = filter(lambda a: a.endswith('|input'), kwargs)
     single_inputs = {}
-    multi_inputs = {}
+    matched_multi_inputs = {}
+    multiplied_multi_inputs = {}
     for input_key in input_keys:
         input_val = kwargs[input_key]
         if isinstance(input_val, list):
-            multi_inputs[input_key] = input_val
+            input_base = input_key[:-len("|input")]
+            mode_key = "%s|multi_mode" % input_base
+            mode = kwargs.get(mode_key, "matched")
+            if mode == "matched":
+                matched_multi_inputs[input_key] = input_val
+            else:
+                multiplied_multi_inputs[input_key] = input_val
         else:
             single_inputs[input_key] = input_val
-    return (single_inputs, multi_inputs)
+    return (single_inputs, matched_multi_inputs, multiplied_multi_inputs)

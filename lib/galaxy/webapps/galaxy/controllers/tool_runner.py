@@ -2,15 +2,20 @@
 Upload class
 """
 
-from galaxy.web.base.controller import *
+import logging
+import galaxy.util
+
+from galaxy import web
+from galaxy.tools import DefaultToolState
+from galaxy.tools.actions import upload_common
+from galaxy.tools.parameters import params_to_incoming, visit_input_values
+from galaxy.tools.parameters.basic import DataToolParameter, UnvalidatedValue
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
-from galaxy.tools import DefaultToolState
-from galaxy.tools.parameters.basic import UnvalidatedValue
-from galaxy.tools.parameters import params_to_incoming
-from galaxy.tools.actions import upload_common
+from galaxy.web import error, url_for
+from galaxy.web.base.controller import BaseUIController
+from galaxy.web.form_builder import SelectField
 
-import logging
 log = logging.getLogger( __name__ )
 
 class AddFrameData:
@@ -37,28 +42,10 @@ class ToolRunner( BaseUIController ):
     def default(self, trans, tool_id=None, **kwd):
         """Catches the tool id and redirects as needed"""
         return self.index(trans, tool_id=tool_id, **kwd)
+
     def __get_tool_components( self, tool_id, tool_version=None, get_loaded_tools_by_lineage=False, set_selected=False ):
-        """
-        Retrieve all loaded versions of a tool from the toolbox and return a select list enabling selection of a different version, the list of the tool's
-        loaded versions, and the specified tool.
-        """
-        toolbox = self.get_toolbox()
-        tool_version_select_field = None
-        tools = []
-        tool = None
-        # Backwards compatibility for datasource tools that have default tool_id configured, but which are now using only GALAXY_URL.
-        tool_ids = util.listify( tool_id )
-        for tool_id in tool_ids:
-            if get_loaded_tools_by_lineage:
-                tools = toolbox.get_loaded_tools_by_lineage( tool_id )
-            else:
-                tools = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=True )
-            if tools:
-                tool = toolbox.get_tool( tool_id, tool_version=tool_version, get_all_versions=False )
-                if len( tools ) > 1:
-                    tool_version_select_field = self.build_tool_version_select_field( tools, tool.id, set_selected )
-                break
-        return tool_version_select_field, tools, tool
+        return self.get_toolbox().get_tool_components( tool_id, tool_version, get_loaded_tools_by_lineage, set_selected )
+
     @web.expose
     def index(self, trans, tool_id=None, from_noframe=None, **kwd):
         # No tool id passed, redirect to main page
@@ -83,7 +70,7 @@ class ToolRunner( BaseUIController ):
                                                           message=message,
                                                           status=status,
                                                           redirect=redirect ) )
-        params = util.Params( kwd, sanitize = False ) #Sanitize parameters when substituting into command line via input wrappers
+        params = galaxy.util.Params( kwd, sanitize = False ) #Sanitize parameters when substituting into command line via input wrappers
         #do param translation here, used by datasource tools
         if tool.input_translator:
             tool.input_translator.translate( params )
@@ -103,7 +90,7 @@ class ToolRunner( BaseUIController ):
                                     toolbox=self.get_toolbox(),
                                     tool_version_select_field=tool_version_select_field,
                                     tool=tool,
-                                    util=util,
+                                    util=galaxy.util,
                                     add_frame=add_frame,
                                     **vars )
         
@@ -215,7 +202,7 @@ class ToolRunner( BaseUIController ):
         #create an incoming object from the original job's dataset-modified param objects
         incoming = {}
         params_to_incoming( incoming, tool.inputs, params_objects, trans.app )
-        incoming[ "tool_state" ] = util.object_to_string( state.encode( tool, trans.app ) )
+        incoming[ "tool_state" ] = galaxy.util.object_to_string( state.encode( tool, trans.app ) )
         template, vars = tool.handle_input( trans, incoming, old_errors=upgrade_messages ) #update new state with old parameters
         # Is the "add frame" stuff neccesary here?
         add_frame = AddFrameData()
@@ -228,7 +215,7 @@ class ToolRunner( BaseUIController ):
                                     toolbox=self.get_toolbox(),
                                     tool_version_select_field=tool_version_select_field,
                                     tool=tool,
-                                    util=util,
+                                    util=galaxy.util,
                                     add_frame=add_frame,
                                     tool_id_version_message=tool_id_version_message,
                                     **vars )
@@ -288,9 +275,9 @@ class ToolRunner( BaseUIController ):
         tool = self.get_toolbox().get_tool( tool_id )
         if not tool:
             return False # bad tool_id
-        nonfile_params = util.Params( kwd, sanitize=False )
+        nonfile_params = galaxy.util.Params( kwd, sanitize=False )
         if kwd.get( 'tool_state', None ) not in ( None, 'None' ):
-            encoded_state = util.string_to_object( kwd["tool_state"] )
+            encoded_state = galaxy.util.string_to_object( kwd["tool_state"] )
             tool_state = DefaultToolState()
             tool_state.decode( encoded_state, tool, trans.app )
         else:
