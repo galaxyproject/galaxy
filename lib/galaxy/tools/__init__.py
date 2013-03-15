@@ -2349,7 +2349,7 @@ class Tool( object ):
                     messages[ input.name ] = { input.test_param.name: "No value found for '%s%s', used default" % ( prefix, input.label ) }
                     test_value = input.test_param.get_initial_value( trans, context )
                     current_case = input.get_current_case( test_value, trans )
-                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, messages[ input.name ], context, prefix )
+                    self.check_and_update_param_values_helper( input.cases[ current_case ].inputs, {}, trans, messages[ input.name ], context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Repeat ):
                     if input.min:
                         messages[ input.name ] = []
@@ -2357,7 +2357,7 @@ class Tool( object ):
                             rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
                             rep_dict = dict()
                             messages[ input.name ].append( rep_dict )
-                            self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix )
+                            self.check_and_update_param_values_helper( input.inputs, {}, trans, rep_dict, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     messages[ input.name ] = "No value found for '%s%s', used default" % ( prefix, input.label )
                 values[ input.name ] = input.get_initial_value( trans, context )
@@ -2366,7 +2366,7 @@ class Tool( object ):
                 if isinstance( input, Repeat ):
                     for i, d in enumerate( values[ input.name ] ):
                         rep_prefix = prefix + "%s %d > " % ( input.title, i + 1 )
-                        self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix )
+                        self.check_and_update_param_values_helper( input.inputs, d, trans, messages, context, rep_prefix, allow_workflow_parameters=allow_workflow_parameters )
                 elif isinstance( input, Conditional ):
                     group_values = values[ input.name ]
                     if input.test_param.name not in group_values:
@@ -2378,7 +2378,7 @@ class Tool( object ):
                             messages[ child_input.name ] = "Value no longer valid for '%s%s', replaced with default" % ( prefix, child_input.label )
                     else:
                         current = group_values["__current_case__"]
-                        self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix )
+                        self.check_and_update_param_values_helper( input.cases[current].inputs, group_values, trans, messages, context, prefix, allow_workflow_parameters=allow_workflow_parameters )
                 else:
                     # Regular tool parameter, no recursion needed
                     try:
