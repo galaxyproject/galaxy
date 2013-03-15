@@ -466,7 +466,7 @@ def generate_environment_dependency_metadata( elem, valid_tool_dependencies_dict
     return valid_tool_dependencies_dict
 
 def generate_guid_for_object( repository_clone_url, guid_type, obj_id, version ):
-    tmp_url = clean_repository_clone_url( repository_clone_url )
+    tmp_url = suc.clean_repository_clone_url( repository_clone_url )
     return '%s/%s/%s/%s' % ( tmp_url, guid_type, obj_id, version )
 
 def generate_metadata_for_changeset_revision( app, repository, changeset_revision, repository_clone_url, shed_config_dict=None, relative_install_dir=None,
