@@ -31,7 +31,12 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
                 return {'error' : str(e)}
             if query is not None:
                 current_user_roles = trans.get_current_user_roles()
-                for item in query.process(trans):
+                try:
+                    results = query.process(trans)
+                except Exception, e:
+                    return {'error' : str(e)}
+                
+                for item in results:
                     append = False
                     if trans.user_is_admin(): 
                         append = True

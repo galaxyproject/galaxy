@@ -118,7 +118,8 @@ class LibraryDatasetDatasetView(ViewQueryBaseClass):
     FIELDS = { 
         'extended_metadata' : ViewField('extended_metadata', handler=library_extended_metadata_filter), 
         'name' : ViewField('name', sqlalchemy_field=LibraryDatasetDatasetAssociation.name ),
-        'id' : ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id) 
+        'id' : ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id),
+        'deleted' : ViewField('deleted', sqlalchemy_field=LibraryDatasetDatasetAssociation.deleted),
     }
 
     def search(self, trans):
@@ -311,8 +312,13 @@ field_name = word:x (
     |-> x
     ) 
 alphanum = anything:x ?(re.search(r'\w', x) is not None) -> x
-logic_statement = field_name:left ws comparison:comp ws quotable_word:right -> GalaxyQueryComparison(left, comp, right)
-quotable_word = ( word | quote_word )
+logic_statement = field_name:left ws comparison:comp ws value_word:right -> GalaxyQueryComparison(left, comp, right)
+value_word = ( 
+    'false' -> False 
+    | 'False' -> False 
+    | 'true' -> True 
+    | 'True' -> True    
+    | quote_word )
 comparison = ( '=' -> '='
     | '>' -> '>'
     | '<' -> '<'

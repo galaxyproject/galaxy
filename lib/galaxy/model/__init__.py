@@ -929,7 +929,10 @@ class Dataset( object ):
         return self.object_store.get_filename( self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id )
     def _calculate_size( self ):
         if self.external_filename:
-            return os.path.getsize(self.external_filename)
+            try:
+                return os.path.getsize(self.external_filename)
+            except OSError:
+                return 0
         else:
             return self.object_store.size(self)
     def get_size( self, nice_size=False ):
@@ -1902,10 +1905,15 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                      visible = ldda.visible,
                      state = ldda.state,
                      file_size = file_size,
+                     file_name = ldda.file_name,
                      data_type = ldda.ext,
                      genome_build = ldda.dbkey,
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb )
+        if ldda.dataset.uuid is None:
+            rval['uuid'] = None
+        else:
+            rval['uuid'] = str(ldda.dataset.uuid)
         if ldda.extended_metadata is not None:
             rval['extended_metadata'] = ldda.extended_metadata.data
         for name, spec in ldda.metadata.spec.items():
