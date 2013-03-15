@@ -3,7 +3,6 @@ Determine if installed tool shed repositories have updates available in their re
 """
 import threading, urllib2, logging
 from galaxy.util import string_as_bool
-import tool_shed.util.shed_util as shed_util
 import tool_shed.util.shed_util_common as suc
 from galaxy.model.orm import and_
 

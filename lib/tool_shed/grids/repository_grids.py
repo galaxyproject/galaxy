@@ -5,6 +5,7 @@ from galaxy.model.orm import and_, or_
 from galaxy.util import json
 import tool_shed.util.shed_util_common as suc
 import tool_shed.grids.util as grids_util
+from tool_shed.util import metadata_util
 
 from galaxy import eggs
 eggs.require('markupsafe')
@@ -776,12 +777,16 @@ class RepositoryDependenciesGrid( RepositoryMetadataGrid ):
                             required_repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
                             if required_repository:
                                 required_repository_id = trans.security.encode_id( required_repository.id )
-                                required_repository_metadata = suc.get_repository_metadata_by_repository_id_changeset_revision( trans, required_repository_id, changeset_revision )
+                                required_repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                                                                          required_repository_id,
+                                                                                                                                          changeset_revision )
                                 if not required_repository_metadata:
                                     repo_dir = required_repository.repo_path( trans.app )
                                     repo = hg.repository( suc.get_configured_ui(), repo_dir )
                                     updated_changeset_revision = suc.get_next_downloadable_changeset_revision( required_repository, repo, changeset_revision )
-                                    required_repository_metadata = suc.get_repository_metadata_by_repository_id_changeset_revision( trans, required_repository_id, updated_changeset_revision )
+                                    required_repository_metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision( trans,
+                                                                                                                                              required_repository_id,
+                                                                                                                                              updated_changeset_revision )
                                 required_repository_metadata_id = trans.security.encode_id( required_repository_metadata.id )
                                 rd_str += '<a href="browse_repository_dependencies?operation=view_or_manage_repository&id=%s">' % ( required_repository_metadata_id )
                             rd_str += 'Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>' % ( escape_html( rd_tup[ 1 ] ), escape_html( rd_tup[ 3 ] ), escape_html( rd_tup[ 2 ] ) )

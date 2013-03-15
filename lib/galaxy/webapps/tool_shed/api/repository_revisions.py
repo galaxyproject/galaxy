@@ -1,6 +1,7 @@
 import datetime
 from galaxy.web.framework.helpers import time_ago
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import metadata_util
 from galaxy import web, util
 from galaxy.model.orm import and_, or_
 from galaxy.web.base.controller import BaseAPIController
@@ -73,7 +74,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         Displays information about a repository_metadata record in the Tool Shed.
         """
         try:
-            repository_metadata = suc.get_repository_metadata_by_id( trans, id )
+            repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
             repository_data = repository_metadata.get_api_value( view='element',
                                                                  value_mapper=default_value_mapper( trans, repository_metadata ) )
             repository_data[ 'contents_url' ] = web.url_for( 'repository_revision_contents', repository_metadata_id=id )
@@ -91,7 +92,7 @@ class RepositoryRevisionsController( BaseAPIController ):
         """
         repository_metadata_id = kwd.get( 'id', None )
         try:
-            repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+            repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
             flush_needed = False
             for key, new_value in payload.items():
                 if hasattr( repository_metadata, key ):

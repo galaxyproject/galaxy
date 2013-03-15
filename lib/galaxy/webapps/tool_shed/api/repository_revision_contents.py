@@ -1,6 +1,7 @@
 import logging
 from galaxy.web.framework.helpers import time_ago
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import metadata_util
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController
 
@@ -29,7 +30,7 @@ class RepositoryRevisionContentsController( BaseAPIController ):
         rval = []
         repository_metadata_id = kwd.get( 'repository_metadata_id', None )
         try:
-            repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+            repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
             repository_dict = repository_metadata.as_dict( value_mapper=default_value_mapper( trans, repository_metadata ) )
             repository_dict[ 'url' ] = web.url_for( 'repository_revision_contents', repository_metadata_id=repository_metadata_id )
             rval.append( repository_dict )

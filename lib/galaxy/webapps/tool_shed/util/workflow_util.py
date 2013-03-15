@@ -6,7 +6,7 @@ pkg_resources.require( "SVGFig" )
 import logging, svgfig
 from galaxy.util import json
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import encoding_util
+from tool_shed.util import encoding_util, metadata_util
 from galaxy.workflow.modules import InputDataModule, ToolModule, WorkflowModuleFactory
 import galaxy.webapps.galaxy.controllers.workflow
 import galaxy.tools
@@ -152,7 +152,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
     workflow_name = encoding_util.tool_shed_decode( workflow_name )
     if trans.webapp.name == 'tool_shed':
         # We're in the tool shed.
-        repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+        repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
         repository_id = trans.security.encode_id( repository_metadata.repository_id )
         changeset_revision = repository_metadata.changeset_revision
         metadata = repository_metadata.metadata

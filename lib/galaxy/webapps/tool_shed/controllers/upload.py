@@ -3,7 +3,7 @@ from galaxy.web.base.controller import BaseUIController
 from galaxy import web, util
 from galaxy.datatypes import checkers
 import tool_shed.util.shed_util_common as suc
-import tool_shed.util.metadata_util as metadata_util
+from tool_shed.util import metadata_util, repository_dependency_util, tool_dependency_util
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -198,17 +198,17 @@ class UploadController( BaseUIController ):
                     # so warning messages are important because orphans are always valid.  The repository owner must be warned in case they did not intend to define an
                     # orphan dependency, but simply provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
                     # Handle messaging for orphan tool dependencies.
-                    orphan_message = suc.generate_message_for_orphan_tool_dependencies( metadata_dict )
+                    orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( metadata_dict )
                     if orphan_message:
                         message += orphan_message
                         status = 'warning'
                     # Handle messaging for invalid tool dependencies.
-                    invalid_tool_dependencies_message = suc.generate_message_for_invalid_tool_dependencies( metadata_dict )
+                    invalid_tool_dependencies_message = tool_dependency_util.generate_message_for_invalid_tool_dependencies( metadata_dict )
                     if invalid_tool_dependencies_message:
                         message += invalid_tool_dependencies_message
                         status = 'error'
                     # Handle messaging for invalid repository dependencies.
-                    invalid_repository_dependencies_message = suc.generate_message_for_invalid_repository_dependencies( metadata_dict )
+                    invalid_repository_dependencies_message = repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata_dict )
                     if invalid_repository_dependencies_message:
                         message += invalid_repository_dependencies_message
                         status = 'error'

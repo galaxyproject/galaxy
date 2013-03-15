@@ -5,6 +5,7 @@ from galaxy.webapps.tool_shed.util import container_util
 from galaxy.datatypes import checkers
 from galaxy.tools.data_manager.manager import DataManager
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_install_util, tool_dependency_util
 from galaxy.model.orm import and_
 
 from galaxy import eggs
@@ -921,6 +922,37 @@ def get_relative_path_to_repository_file( root, name, relative_install_dir, work
             relative_path_to_file = relative_path_to_file[ len( shed_config_dict.get( 'tool_path' ) ) + 1: ]
     return relative_path_to_file
 
+def get_repository_metadata_by_id( trans, id ):
+    """Get repository metadata from the database"""
+    return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
+
+def get_repository_metadata_by_repository_id_changeset_revision( trans, id, changeset_revision ):
+    """Get a specified metadata record for a specified repository."""
+    return trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                           .filter( and_( trans.model.RepositoryMetadata.table.c.repository_id == trans.security.decode_id( id ),
+                                          trans.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision ) ) \
+                           .first()
+
+def get_repository_metadata_revisions_for_review( repository, reviewed=True ):
+    repository_metadata_revisions = []
+    metadata_changeset_revision_hashes = []
+    if reviewed:
+        for metadata_revision in repository.metadata_revisions:
+            metadata_changeset_revision_hashes.append( metadata_revision.changeset_revision )
+        for review in repository.reviews:
+            if review.changeset_revision in metadata_changeset_revision_hashes:
+                rmcr_hashes = [ rmr.changeset_revision for rmr in repository_metadata_revisions ]
+                if review.changeset_revision not in rmcr_hashes:
+                    repository_metadata_revisions.append( review.repository_metadata )
+    else:
+        for review in repository.reviews:
+            if review.changeset_revision not in metadata_changeset_revision_hashes:
+                metadata_changeset_revision_hashes.append( review.changeset_revision )
+        for metadata_revision in repository.metadata_revisions:
+            if metadata_revision.changeset_revision not in metadata_changeset_revision_hashes:
+                repository_metadata_revisions.append( metadata_revision )
+    return repository_metadata_revisions
+
 def get_rev_label_changeset_revision_from_repository_metadata( trans, repository_metadata, repository=None ):
     if repository is None:
         repository = repository_metadata.repository
@@ -1086,6 +1118,26 @@ def handle_repository_elem( app, repository_elem ):
             is_valid = False
             return repository_dependencies_tup, is_valid, error_message
     return repository_dependencies_tup, is_valid, error_message
+
+def is_downloadable( metadata_dict ):
+    # NOTE: although repository README files are considered Galaxy utilities, they have no effect on determining if a revision is installable.
+    # See the comments in the compare_readme_files() method.
+    if 'datatypes' in metadata_dict:
+        # We have proprietary datatypes.
+        return True
+    if 'repository_dependencies' in metadata_dict:
+        # We have repository_dependencies.
+        return True
+    if 'tools' in metadata_dict:
+        # We have tools.
+        return True
+    if 'tool_dependencies' in metadata_dict:
+        # We have tool dependencies, and perhaps only tool dependencies!
+        return True
+    if 'workflows' in metadata_dict:
+        # We have exported workflows.
+        return True
+    return False
 
 def new_datatypes_metadata_required( trans, repository_metadata, metadata_dict ):
     """
@@ -1293,6 +1345,89 @@ def new_workflow_metadata_required( trans, repository_metadata, metadata_dict ):
             return True
     # The received metadata_dict includes no metadata for workflows, so a new repository_metadata table record is not needed.
     return False
+
+def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, tool_path, repository, reinstalling=False, required_repo_info_dicts=None ):
+    """
+    Retrieve necessary information from the received repository's metadata to populate the containers_dict for display.  This method is called only
+    from Galaxy (not the tool shed) when displaying repository dependencies for installed repositories and when displaying them for uninstalled
+    repositories that are being reinstalled.
+    """
+    metadata = repository.metadata
+    if metadata:
+        # Handle proprietary datatypes.
+        datatypes = metadata.get( 'datatypes', None )
+        # Handle invalid tools.
+        invalid_tools = metadata.get( 'invalid_tools', None )
+        # Handle README files.
+        if repository.has_readme_files:
+            if reinstalling:
+                # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
+                url = suc.url_join( tool_shed_url,
+                                    'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
+                                    ( repository.name, repository.owner, repository.installed_changeset_revision ) )
+                response = urllib2.urlopen( url )
+                raw_text = response.read()
+                response.close()
+                readme_files_dict = json.from_json_string( raw_text )
+            else:
+                readme_files_dict = suc.build_readme_files_dict( repository.metadata, tool_path )
+        else:
+            readme_files_dict = None
+        # Handle repository dependencies.
+        installed_repository_dependencies, missing_repository_dependencies = \
+            common_install_util.get_installed_and_missing_repository_dependencies( trans, repository )
+        # Handle the current repository's tool dependencies.
+        repository_tool_dependencies = metadata.get( 'tool_dependencies', None )
+        repository_installed_tool_dependencies, repository_missing_tool_dependencies = \
+            tool_dependency_util.get_installed_and_missing_tool_dependencies( trans, repository, repository_tool_dependencies )
+        if reinstalling:
+            installed_tool_dependencies, missing_tool_dependencies = \
+                tool_dependency_util.populate_tool_dependencies_dicts( trans=trans,
+                                                                       tool_shed_url=tool_shed_url,
+                                                                       tool_path=tool_path,
+                                                                       repository_installed_tool_dependencies=repository_installed_tool_dependencies,
+                                                                       repository_missing_tool_dependencies=repository_missing_tool_dependencies,
+                                                                       required_repo_info_dicts=required_repo_info_dicts )
+        else:
+            installed_tool_dependencies = repository_installed_tool_dependencies
+            missing_tool_dependencies = repository_missing_tool_dependencies
+        # Handle valid tools.
+        valid_tools = metadata.get( 'tools', None )
+        # Handle workflows.
+        workflows = metadata.get( 'workflows', None )
+        # Handle Data Managers
+        valid_data_managers = None
+        invalid_data_managers = None
+        data_managers_errors = None
+        if 'data_manager' in metadata:
+            valid_data_managers = metadata['data_manager'].get( 'data_managers', None )
+            invalid_data_managers = metadata['data_manager'].get( 'invalid_data_managers', None )
+            data_managers_errors = metadata['data_manager'].get( 'messages', None )
+        containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
+                                                                      repository=repository,
+                                                                      datatypes=datatypes,
+                                                                      invalid_tools=invalid_tools,
+                                                                      missing_repository_dependencies=missing_repository_dependencies,
+                                                                      missing_tool_dependencies=missing_tool_dependencies,
+                                                                      readme_files_dict=readme_files_dict,
+                                                                      repository_dependencies=installed_repository_dependencies,
+                                                                      tool_dependencies=installed_tool_dependencies,
+                                                                      valid_tools=valid_tools,
+                                                                      workflows=workflows,
+                                                                      valid_data_managers=valid_data_managers,
+                                                                      invalid_data_managers=invalid_data_managers,
+                                                                      data_managers_errors=data_managers_errors,
+                                                                      new_install=False,
+                                                                      reinstalling=reinstalling )
+    else:
+        containers_dict = dict( datatypes=None,
+                                invalid_tools=None,
+                                readme_files_dict=None,
+                                repository_dependencies=None,
+                                tool_dependencies=None,
+                                valid_tools=None,
+                                workflows=None )
+    return containers_dict
 
 def reset_all_metadata_on_installed_repository( trans, id ):
     """Reset all metadata on a single tool shed repository installed into a Galaxy instance."""
@@ -1551,7 +1686,7 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
             # Update the latest stored repository metadata with the contents and attributes of metadata_dict.
             repository_metadata = get_latest_repository_metadata( trans, repository.id )
             if repository_metadata:
-                downloadable = suc.is_downloadable( metadata_dict )
+                downloadable = is_downloadable( metadata_dict )
                 # Update the last saved repository_metadata table row.
                 repository_metadata.changeset_revision = repository.tip( trans.app )
                 repository_metadata.metadata = metadata_dict
@@ -1666,7 +1801,7 @@ def update_existing_tool_dependency( app, repository, original_dependency_dict, 
             break
     if tool_dependency and tool_dependency.can_update:
         dependency_install_dir = tool_dependency.installation_directory( app )
-        removed_from_disk, error_message = suc.remove_tool_dependency_installation_directory( dependency_install_dir )
+        removed_from_disk, error_message = tool_dependency_util.remove_tool_dependency_installation_directory( dependency_install_dir )
         if removed_from_disk:
             sa_session = app.model.context.current
             new_dependency_name = None

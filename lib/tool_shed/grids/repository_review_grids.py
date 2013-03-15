@@ -4,7 +4,7 @@ from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_, or_
 from tool_shed.grids.repository_grids import RepositoryGrid
 import tool_shed.util.shed_util_common as suc
-import tool_shed.util.metadata_util as metadata_util
+from tool_shed.util import metadata_util
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -73,7 +73,7 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
     class WithoutReviewsRevisionColumn( grids.GridColumn ):
         def get_value( self, trans, grid, repository ):
             # Restrict the options to revisions that have not yet been reviewed.
-            repository_metadata_revisions = suc.get_repository_metadata_revisions_for_review( repository, reviewed=False )
+            repository_metadata_revisions = metadata_util.get_repository_metadata_revisions_for_review( repository, reviewed=False )
             if repository_metadata_revisions:
                 rval = ''
                 for repository_metadata in repository_metadata_revisions:

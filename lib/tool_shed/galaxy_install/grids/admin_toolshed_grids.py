@@ -3,7 +3,7 @@ import logging
 from galaxy import model, util
 from galaxy.web.framework.helpers import iff, grids
 from galaxy.model.orm import or_
-import tool_shed.util.shed_util as shed_util
+from tool_shed.util import tool_dependency_util
 
 log = logging.getLogger( __name__ )
 
@@ -345,7 +345,7 @@ class ToolDependencyGrid( grids.Grid ):
     ]
 
     def build_initial_query( self, trans, **kwd ):
-        tool_dependency_ids = shed_util.get_tool_dependency_ids( as_string=False, **kwd )
+        tool_dependency_ids = tool_dependency_util.get_tool_dependency_ids( as_string=False, **kwd )
         if tool_dependency_ids:
             clause_list = []
             for tool_dependency_id in tool_dependency_ids:
