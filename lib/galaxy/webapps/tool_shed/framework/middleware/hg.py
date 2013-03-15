@@ -56,12 +56,12 @@ class Hg( object ):
                 times_downloaded += 1
                 connection.execute( "update repository set times_downloaded = %d where user_id = %d and name = '%s'" % ( times_downloaded, user_id, name.lower() ) )
                 connection.close()
-        if cmd == 'unbundle':
+        if cmd in [ 'unbundle', 'pushkey' ]:
             # This is an hg push from the command line.  When doing this, the following commands, in order,
             # will be retrieved from environ (see the docs at http://mercurial.selenic.com/wiki/WireProtocol):
-            # # If mercurial version >= '2.2.3': capabilities -> batch -> branchmap -> unbundle -> listkeys -> pushkey
+            # # If mercurial version >= '2.2.3': capabilities -> batch -> branchmap -> unbundle -> listkeys -> pushkey -> listkeys
             #
-            # The mercurial API unbundle() ( i.e., hg push ) method ultimately requires authorization.
+            # The mercurial API unbundle() ( i.e., hg push ) and pushkey() methods ultimately require authorization.
             # We'll force password entry every time a change set is pushed.
             #
             # When a user executes hg commit, it is not guaranteed to succeed.  Mercurial records your name 
