@@ -11,7 +11,7 @@ from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_, or_
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import encoding_util, metadata_util, readme_util, repository_dependency_util, tool_dependency_util, tool_util
+from tool_shed.util import encoding_util, metadata_util, readme_util, repository_dependency_util, review_util, tool_dependency_util, tool_util
 from tool_shed.galaxy_install import repository_util
 from galaxy.webapps.tool_shed.util import common_util, container_util, workflow_util
 import galaxy.tools
@@ -1709,16 +1709,16 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         categories = suc.get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
         # Determine if the current changeset revision has been reviewed by the current user.
-        reviewed_by_user = suc.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
+        reviewed_by_user = review_util.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
-            review = suc.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
-                                                                                 repository_id=id,
-                                                                                 changeset_revision=changeset_revision,
-                                                                                 user_id=trans.security.encode_id( trans.user.id ) )
+            review = review_util.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+                                                                                         repository_id=id,
+                                                                                         changeset_revision=changeset_revision,
+                                                                                         user_id=trans.security.encode_id( trans.user.id ) )
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
-        can_browse_repository_reviews = suc.can_browse_repository_reviews( trans, repository )
+        can_browse_repository_reviews = review_util.can_browse_repository_reviews( trans, repository )
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/tool_shed/repository/manage_repository.mako',
                                     repo_name=repo_name,
@@ -2496,17 +2496,17 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 message += malicious_error
             status = 'error'
         # Determine if the current changeset revision has been reviewed by the current user.
-        reviewed_by_user = suc.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
+        reviewed_by_user = review_util.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
-            review = suc.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
-                                                                                 repository_id=id,
-                                                                                 changeset_revision=changeset_revision,
-                                                                                 user_id=trans.security.encode_id( trans.user.id ) )
+            review = review_util.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+                                                                                         repository_id=id,
+                                                                                         changeset_revision=changeset_revision,
+                                                                                         user_id=trans.security.encode_id( trans.user.id ) )
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
-        can_browse_repository_reviews = suc.can_browse_repository_reviews( trans, repository )
+        can_browse_repository_reviews = review_util.can_browse_repository_reviews( trans, repository )
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -2590,12 +2590,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
         trans.app.config.tool_data_path = original_tool_data_path
-        reviewed_by_user = suc.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
+        reviewed_by_user = review_util.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
         if reviewed_by_user:
-            review = suc.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
-                                                                                 repository_id=repository_id,
-                                                                                 changeset_revision=changeset_revision,
-                                                                                 user_id=trans.security.encode_id( trans.user.id ) )
+            review = review_util.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
+                                                                                         repository_id=repository_id,
+                                                                                         changeset_revision=changeset_revision,
+                                                                                         user_id=trans.security.encode_id( trans.user.id ) )
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
