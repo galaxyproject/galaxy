@@ -5,7 +5,7 @@ from galaxy.webapps.tool_shed.util import container_util
 from galaxy.datatypes import checkers
 from galaxy.tools.data_manager.manager import DataManager
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import common_install_util, tool_dependency_util
+from tool_shed.util import common_install_util, readme_util, tool_dependency_util, tool_util
 from galaxy.model.orm import and_
 
 from galaxy import eggs
@@ -417,7 +417,7 @@ def generate_datatypes_metadata( app, repository_clone_url, repository_files_dir
                     # Parse the tool_config to get the guid.
                     tool_config_path = suc.get_config_from_disk( tool_config, repository_files_dir )
                     full_path = os.path.abspath( tool_config_path )
-                    tool, valid, error_message = suc.load_tool_from_config( app, full_path )
+                    tool, valid, error_message = tool_util.load_tool_from_config( app, full_path )
                     if tool is None:
                         guid = None
                     else:
@@ -533,7 +533,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
         metadata_dict[ 'sample_files' ] = sample_file_metadata_paths
     # Copy all sample files included in the repository to a single directory location so we can load tools that depend on them.
     for sample_file in sample_file_copy_paths:
-        suc.copy_sample_file( app, sample_file, dest_path=work_dir )
+        tool_util.copy_sample_file( app, sample_file, dest_path=work_dir )
         # If the list of sample files includes a tool_data_table_conf.xml.sample file, laad it's table elements into memory.
         relative_path, filename = os.path.split( sample_file )
         if filename == 'tool_data_table_conf.xml.sample':
@@ -578,13 +578,13 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                                 log.debug( "Error parsing %s, exception: %s" % ( full_path, str( e ) ) )
                                 is_tool = False
                             if is_tool:
-                                tool, valid, error_message = suc.load_tool_from_config( app, full_path )
+                                tool, valid, error_message = tool_util.load_tool_from_config( app, full_path )
                                 if tool is None:
                                     if not valid:
                                         invalid_tool_configs.append( name )
                                         invalid_file_tups.append( ( name, error_message ) )
                                 else:
-                                    invalid_files_and_errors_tups = suc.check_tool_input_params( app, files_dir, name, tool, sample_file_copy_paths )
+                                    invalid_files_and_errors_tups = tool_util.check_tool_input_params( app, files_dir, name, tool, sample_file_copy_paths )
                                     can_set_metadata = True
                                     for tup in invalid_files_and_errors_tups:
                                         if name in tup:
@@ -1370,7 +1370,7 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                 response.close()
                 readme_files_dict = json.from_json_string( raw_text )
             else:
-                readme_files_dict = suc.build_readme_files_dict( repository.metadata, tool_path )
+                readme_files_dict = readme_util.build_readme_files_dict( repository.metadata, tool_path )
         else:
             readme_files_dict = None
         # Handle repository dependencies.
@@ -1403,22 +1403,22 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
             valid_data_managers = metadata['data_manager'].get( 'data_managers', None )
             invalid_data_managers = metadata['data_manager'].get( 'invalid_data_managers', None )
             data_managers_errors = metadata['data_manager'].get( 'messages', None )
-        containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
-                                                                      repository=repository,
-                                                                      datatypes=datatypes,
-                                                                      invalid_tools=invalid_tools,
-                                                                      missing_repository_dependencies=missing_repository_dependencies,
-                                                                      missing_tool_dependencies=missing_tool_dependencies,
-                                                                      readme_files_dict=readme_files_dict,
-                                                                      repository_dependencies=installed_repository_dependencies,
-                                                                      tool_dependencies=installed_tool_dependencies,
-                                                                      valid_tools=valid_tools,
-                                                                      workflows=workflows,
-                                                                      valid_data_managers=valid_data_managers,
-                                                                      invalid_data_managers=invalid_data_managers,
-                                                                      data_managers_errors=data_managers_errors,
-                                                                      new_install=False,
-                                                                      reinstalling=reinstalling )
+        containers_dict = container_util.build_repository_containers_for_galaxy( trans=trans,
+                                                                                 repository=repository,
+                                                                                 datatypes=datatypes,
+                                                                                 invalid_tools=invalid_tools,
+                                                                                 missing_repository_dependencies=missing_repository_dependencies,
+                                                                                 missing_tool_dependencies=missing_tool_dependencies,
+                                                                                 readme_files_dict=readme_files_dict,
+                                                                                 repository_dependencies=installed_repository_dependencies,
+                                                                                 tool_dependencies=installed_tool_dependencies,
+                                                                                 valid_tools=valid_tools,
+                                                                                 workflows=workflows,
+                                                                                 valid_data_managers=valid_data_managers,
+                                                                                 invalid_data_managers=invalid_data_managers,
+                                                                                 data_managers_errors=data_managers_errors,
+                                                                                 new_install=False,
+                                                                                 reinstalling=reinstalling )
     else:
         containers_dict = dict( datatypes=None,
                                 invalid_tools=None,
@@ -1583,7 +1583,7 @@ def reset_all_metadata_on_repository_in_tool_shed( trans, id ):
     # Set tool version information for all downloadable changeset revisions.  Get the list of changeset revisions from the changelog.
     reset_all_tool_versions( trans, id, repo )
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-    suc.reset_tool_data_tables( trans.app )
+    tool_util.reset_tool_data_tables( trans.app )
     return invalid_file_tups, metadata_dict
 
 def reset_metadata_on_selected_repositories( trans, **kwd ):
@@ -1608,7 +1608,7 @@ def reset_metadata_on_selected_repositories( trans, **kwd ):
                     repository = suc.get_installed_tool_shed_repository( trans, repository_id )
                     invalid_file_tups, metadata_dict = reset_all_metadata_on_installed_repository( trans, repository_id )
                 if invalid_file_tups:
-                    message = suc.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
+                    message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, None, as_html=False )
                     log.debug( message )
                     unsuccessful_count += 1
                 else:
@@ -1733,10 +1733,10 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
         message += "be defined so this revision cannot be automatically installed into a local Galaxy instance."
         status = "error"
     if invalid_file_tups:
-        message = suc.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
+        message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
         status = 'error'
     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-    suc.reset_tool_data_tables( trans.app )
+    tool_util.reset_tool_data_tables( trans.app )
     return message, status
 
 def set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=None, **kwd ):

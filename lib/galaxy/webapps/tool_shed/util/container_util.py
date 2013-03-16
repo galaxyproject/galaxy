@@ -1,4 +1,5 @@
-import os, logging
+import os, logging, threading
+from tool_shed.util import readme_util
 
 log = logging.getLogger( __name__ )
 
@@ -170,6 +171,34 @@ class Workflow( object ):
         self.repository_metadata_id = repository_metadata_id
         self.repository_id = repository_id
 
+def add_orphan_settings_to_tool_dependencies( tool_dependencies, orphan_tool_dependencies ):
+    """Inspect all received tool dependencies and label those that are orphans within the repository."""
+    orphan_env_dependencies = orphan_tool_dependencies.get( 'set_environment', None )
+    new_tool_dependencies = {}
+    if tool_dependencies:
+        for td_key, requirements_dict in tool_dependencies.items():
+            if td_key in [ 'set_environment' ]:
+                # "set_environment": [{"name": "R_SCRIPT_PATH", "type": "set_environment"}]
+                if orphan_env_dependencies:
+                    new_set_environment_dict_list = []
+                    for set_environment_dict in requirements_dict:
+                        if set_environment_dict in orphan_env_dependencies:
+                            set_environment_dict[ 'is_orphan' ] = True
+                        else:
+                            set_environment_dict[ 'is_orphan' ] = False
+                        new_set_environment_dict_list.append( set_environment_dict )
+                    new_tool_dependencies[ td_key ] = new_set_environment_dict_list
+                else:
+                    new_tool_dependencies[ td_key ] = requirements_dict
+            else:
+                # {"R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1"}
+                if td_key in orphan_tool_dependencies:
+                    requirements_dict[ 'is_orphan' ] = True
+                else:
+                    requirements_dict[ 'is_orphan' ] = False
+                new_tool_dependencies[ td_key ] = requirements_dict
+    return new_tool_dependencies
+
 def build_data_managers_folder( trans, folder_id, data_managers, label=None ):
     """Return a folder hierarchy containing Data Managers."""
     if data_managers:
@@ -199,6 +228,7 @@ def build_data_managers_folder( trans, folder_id, data_managers, label=None ):
     else:
         data_managers_root_folder = None
     return folder_id, data_managers_root_folder
+
 def build_datatypes_folder( trans, folder_id, datatypes, label='Datatypes' ):
     """Return a folder hierarchy containing datatypes."""
     if datatypes:
@@ -249,6 +279,7 @@ def build_datatypes_folder( trans, folder_id, datatypes, label='Datatypes' ):
     else:
         datatypes_root_folder = None
     return folder_id, datatypes_root_folder
+
 def build_invalid_data_managers_folder( trans, folder_id, data_managers, error_messages=None, label=None ):
     """Return a folder hierarchy containing invalid Data Managers."""
     if data_managers or error_messages:
@@ -285,6 +316,7 @@ def build_invalid_data_managers_folder( trans, folder_id, data_managers, error_m
     else:
         data_managers_root_folder = None
     return folder_id, data_managers_root_folder
+
 def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid_repository_dependencies_dict ):
     """Return a folder hierarchy containing invalid repository dependencies."""
     label = 'Invalid repository dependencies'
@@ -320,6 +352,7 @@ def build_invalid_repository_dependencies_root_folder( trans, folder_id, invalid
     else:
         invalid_repository_dependencies_root_folder = None
     return folder_id, invalid_repository_dependencies_root_folder
+
 def build_invalid_tool_dependencies_root_folder( trans, folder_id, invalid_tool_dependencies_dict ):
     """Return a folder hierarchy containing invalid tool dependencies."""
     # # INvalid tool dependencies are always packages like:
@@ -358,6 +391,7 @@ def build_invalid_tool_dependencies_root_folder( trans, folder_id, invalid_tool_
     else:
         invalid_tool_dependencies_root_folder = None
     return folder_id, invalid_tool_dependencies_root_folder
+
 def build_invalid_tools_folder( trans, folder_id, invalid_tool_configs, changeset_revision, repository=None, label='Invalid tools' ):
     """Return a folder hierarchy containing invalid tools."""
     # TODO: Should we display invalid tools on the tool panel selection page when installing the repository into Galaxy?
@@ -388,6 +422,7 @@ def build_invalid_tools_folder( trans, folder_id, invalid_tool_configs, changese
     else:
         invalid_tools_root_folder = None
     return folder_id, invalid_tools_root_folder
+
 def build_readme_files_folder( trans, folder_id, readme_files_dict, label='Readme files' ):
     """Return a folder hierarchy containing readme text files."""
     if readme_files_dict:
@@ -415,6 +450,254 @@ def build_readme_files_folder( trans, folder_id, readme_files_dict, label='Readm
     else:
         readme_files_root_folder = None
     return folder_id, readme_files_root_folder
+
+def build_repository_containers_for_galaxy( trans, repository, datatypes, invalid_tools, missing_repository_dependencies, missing_tool_dependencies,
+                                            readme_files_dict, repository_dependencies, tool_dependencies, valid_tools, workflows, valid_data_managers,
+                                            invalid_data_managers, data_managers_errors, new_install=False, reinstalling=False ):
+    """Return a dictionary of containers for the received repository's dependencies and readme files for display during installation to Galaxy."""
+    containers_dict = dict( datatypes=None,
+                            invalid_tools=None,
+                            missing_tool_dependencies=None,
+                            readme_files=None,
+                            repository_dependencies=None,
+                            missing_repository_dependencies=None,
+                            tool_dependencies=None,
+                            valid_tools=None,
+                            workflows=None,
+                            valid_data_managers=None,
+                            invalid_data_managers=None )
+    # Some of the tool dependency folders will include links to display tool dependency information, and some of these links require the repository
+    # id.  However we need to be careful because sometimes the repository object is None.
+    if repository:
+        repository_id = repository.id
+        changeset_revision = repository.changeset_revision
+    else:
+        repository_id = None
+        changeset_revision = None
+    lock = threading.Lock()
+    lock.acquire( True )
+    try:
+        folder_id = 0
+        # Datatypes container.
+        if datatypes:
+            folder_id, datatypes_root_folder = build_datatypes_folder( trans, folder_id, datatypes )
+            containers_dict[ 'datatypes' ] = datatypes_root_folder
+        # Invalid tools container.
+        if invalid_tools:
+            folder_id, invalid_tools_root_folder = build_invalid_tools_folder( trans,
+                                                                               folder_id,
+                                                                               invalid_tools,
+                                                                               changeset_revision,
+                                                                               repository=repository,
+                                                                               label='Invalid tools' )
+            containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
+        # Readme files container.
+        if readme_files_dict:
+            folder_id, readme_files_root_folder = build_readme_files_folder( trans, folder_id, readme_files_dict )
+            containers_dict[ 'readme_files' ] = readme_files_root_folder
+        # Installed repository dependencies container.
+        if repository_dependencies:
+            if new_install:
+                label = 'Repository dependencies'
+            else:
+                label = 'Installed repository dependencies'
+            folder_id, repository_dependencies_root_folder = build_repository_dependencies_folder( trans=trans,
+                                                                                                   folder_id=folder_id,
+                                                                                                   repository_dependencies=repository_dependencies,
+                                                                                                   label=label,
+                                                                                                   installed=True )
+            containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
+        # Missing repository dependencies container.
+        if missing_repository_dependencies:
+            folder_id, missing_repository_dependencies_root_folder = \
+                build_repository_dependencies_folder( trans=trans,
+                                                      folder_id=folder_id,
+                                                      repository_dependencies=missing_repository_dependencies,
+                                                      label='Missing repository dependencies',
+                                                      installed=False )
+            containers_dict[ 'missing_repository_dependencies' ] = missing_repository_dependencies_root_folder
+        # Installed tool dependencies container.
+        if tool_dependencies:
+            if new_install:
+                label = 'Tool dependencies'
+            else:
+                label = 'Installed tool dependencies'
+            # We only want to display the Status column if the tool_dependency is missing.
+            folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( trans,
+                                                                                       folder_id,
+                                                                                       tool_dependencies,
+                                                                                       label=label,
+                                                                                       missing=False,
+                                                                                       new_install=new_install,
+                                                                                       reinstalling=reinstalling )
+            containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
+        # Missing tool dependencies container.
+        if missing_tool_dependencies:
+            # We only want to display the Status column if the tool_dependency is missing.
+            folder_id, missing_tool_dependencies_root_folder = build_tool_dependencies_folder( trans,
+                                                                                               folder_id,
+                                                                                               missing_tool_dependencies,
+                                                                                               label='Missing tool dependencies',
+                                                                                               missing=True,
+                                                                                               new_install=new_install,
+                                                                                               reinstalling=reinstalling )
+            containers_dict[ 'missing_tool_dependencies' ] = missing_tool_dependencies_root_folder
+        # Valid tools container.
+        if valid_tools:
+            folder_id, valid_tools_root_folder = build_tools_folder( trans,
+                                                                     folder_id,
+                                                                     valid_tools,
+                                                                     repository,
+                                                                     changeset_revision,
+                                                                     label='Valid tools' )
+            containers_dict[ 'valid_tools' ] = valid_tools_root_folder
+        # Workflows container.
+        if workflows:
+            folder_id, workflows_root_folder = build_workflows_folder( trans=trans,
+                                                                       folder_id=folder_id,
+                                                                       workflows=workflows,
+                                                                       repository_metadata_id=None,
+                                                                       repository_id=repository_id,
+                                                                       label='Workflows' )
+            containers_dict[ 'workflows' ] = workflows_root_folder
+        if valid_data_managers:
+            folder_id, valid_data_managers_root_folder = build_data_managers_folder( trans=trans,
+                                                                                     folder_id=folder_id,
+                                                                                     data_managers=valid_data_managers,
+                                                                                     label='Valid Data Managers' )
+            containers_dict[ 'valid_data_managers' ] = valid_data_managers_root_folder
+        if invalid_data_managers or data_managers_errors:
+            folder_id, invalid_data_managers_root_folder = build_invalid_data_managers_folder( trans=trans,
+                                                                                               folder_id=folder_id,
+                                                                                               data_managers=invalid_data_managers,
+                                                                                               error_messages=data_managers_errors,
+                                                                                               label='Invalid Data Managers' )
+            containers_dict[ 'invalid_data_managers' ] = invalid_data_managers_root_folder
+    except Exception, e:
+        log.debug( "Exception in build_repository_containers_for_galaxy: %s" % str( e ) )
+    finally:
+        lock.release()
+    return containers_dict
+
+def build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata ):
+    """Return a dictionary of containers for the received repository's dependencies and contents for display in the tool shed."""
+    containers_dict = dict( datatypes=None,
+                            invalid_tools=None,
+                            readme_files=None,
+                            repository_dependencies=None,
+                            tool_dependencies=None,
+                            valid_tools=None,
+                            workflows=None,
+                            valid_data_managers=None
+                             )
+    if repository_metadata:
+        metadata = repository_metadata.metadata
+        lock = threading.Lock()
+        lock.acquire( True )
+        try:
+            folder_id = 0
+            # Datatypes container.
+            if metadata:
+                if 'datatypes' in metadata:
+                    datatypes = metadata[ 'datatypes' ]
+                    folder_id, datatypes_root_folder = build_datatypes_folder( trans, folder_id, datatypes )
+                    containers_dict[ 'datatypes' ] = datatypes_root_folder
+            # Invalid repository dependencies container.
+            if metadata:
+                if 'invalid_repository_dependencies' in metadata:
+                    invalid_repository_dependencies = metadata[ 'invalid_repository_dependencies' ]
+                    folder_id, invalid_repository_dependencies_root_folder = \
+                        build_invalid_repository_dependencies_root_folder( trans,
+                                                                           folder_id,
+                                                                           invalid_repository_dependencies )
+                    containers_dict[ 'invalid_repository_dependencies' ] = invalid_repository_dependencies_root_folder
+            # Invalid tool dependencies container.
+            if metadata:
+                if 'invalid_tool_dependencies' in metadata:
+                    invalid_tool_dependencies = metadata[ 'invalid_tool_dependencies' ]
+                    folder_id, invalid_tool_dependencies_root_folder = \
+                        build_invalid_tool_dependencies_root_folder( trans,
+                                                                     folder_id,
+                                                                     invalid_tool_dependencies )
+                    containers_dict[ 'invalid_tool_dependencies' ] = invalid_tool_dependencies_root_folder
+            # Invalid tools container.
+            if metadata:
+                if 'invalid_tools' in metadata:
+                    invalid_tool_configs = metadata[ 'invalid_tools' ]
+                    folder_id, invalid_tools_root_folder = build_invalid_tools_folder( trans,
+                                                                                       folder_id,
+                                                                                       invalid_tool_configs,
+                                                                                       changeset_revision,
+                                                                                       repository=repository,
+                                                                                       label='Invalid tools' )
+                    containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
+            # Readme files container.
+            if metadata:
+                if 'readme_files' in metadata:
+                    readme_files_dict = readme_util.build_readme_files_dict( metadata )
+                    folder_id, readme_files_root_folder = build_readme_files_folder( trans, folder_id, readme_files_dict )
+                    containers_dict[ 'readme_files' ] = readme_files_root_folder
+            # Repository dependencies container.
+            folder_id, repository_dependencies_root_folder = build_repository_dependencies_folder( trans=trans,
+                                                                                                   folder_id=folder_id,
+                                                                                                   repository_dependencies=repository_dependencies,
+                                                                                                   label='Repository dependencies',
+                                                                                                   installed=False )
+            if repository_dependencies_root_folder:
+                containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
+            # Tool dependencies container.
+            if metadata:
+                if 'tool_dependencies' in metadata:
+                    tool_dependencies = metadata[ 'tool_dependencies' ]
+                    if trans.webapp.name == 'tool_shed':
+                        if 'orphan_tool_dependencies' in metadata:
+                            orphan_tool_dependencies = metadata[ 'orphan_tool_dependencies' ]
+                            tool_dependencies = add_orphan_settings_to_tool_dependencies( tool_dependencies, orphan_tool_dependencies )
+                    folder_id, tool_dependencies_root_folder = build_tool_dependencies_folder( trans,
+                                                                                               folder_id,
+                                                                                               tool_dependencies,
+                                                                                               missing=False,
+                                                                                               new_install=False )
+                    containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
+            # Valid tools container.
+            if metadata:
+                if 'tools' in metadata:
+                    valid_tools = metadata[ 'tools' ]
+                    folder_id, valid_tools_root_folder = build_tools_folder( trans,
+                                                                             folder_id,
+                                                                             valid_tools,
+                                                                             repository,
+                                                                             changeset_revision,
+                                                                             label='Valid tools' )
+                    containers_dict[ 'valid_tools' ] = valid_tools_root_folder
+            # Workflows container.
+            if metadata:
+                if 'workflows' in metadata:
+                    workflows = metadata[ 'workflows' ]
+                    folder_id, workflows_root_folder = build_workflows_folder( trans=trans,
+                                                                               folder_id=folder_id,
+                                                                               workflows=workflows,
+                                                                               repository_metadata_id=repository_metadata.id,
+                                                                               repository_id=None,
+                                                                               label='Workflows' )
+                    containers_dict[ 'workflows' ] = workflows_root_folder
+            # Valid Data Managers container
+            if metadata:
+                if 'data_manager' in metadata:
+                    data_managers = metadata['data_manager'].get( 'data_managers', None )
+                    folder_id, data_managers_root_folder = build_data_managers_folder( trans, folder_id, data_managers, label="Data Managers" )
+                    containers_dict[ 'valid_data_managers' ] = data_managers_root_folder
+                    error_messages = metadata['data_manager'].get( 'error_messages', None )
+                    data_managers = metadata['data_manager'].get( 'invalid_data_managers', None )
+                    folder_id, data_managers_root_folder = build_invalid_data_managers_folder( trans, folder_id, data_managers, error_messages, label="Invalid Data Managers" )
+                    containers_dict[ 'invalid_data_managers' ] = data_managers_root_folder
+                    
+        except Exception, e:
+            log.debug( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
+        finally:
+            lock.release()
+    return containers_dict
+
 def build_repository_dependencies_folder( trans, folder_id, repository_dependencies, label='Repository dependencies', installed=False ):
     """Return a folder hierarchy containing repository dependencies."""
     if repository_dependencies:
@@ -438,6 +721,7 @@ def build_repository_dependencies_folder( trans, folder_id, repository_dependenc
     else:
         repository_dependencies_root_folder = None
     return folder_id, repository_dependencies_root_folder
+
 def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revision, valid=True, label='Valid tools' ):
     """Return a folder hierarchy containing valid tools."""
     if tool_dicts:
@@ -494,6 +778,7 @@ def build_tools_folder( trans, folder_id, tool_dicts, repository, changeset_revi
     else:
         tools_root_folder = None
     return folder_id, tools_root_folder
+
 def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='Tool dependencies', missing=False, new_install=False, reinstalling=False ):
     """Return a folder hierarchy containing tool dependencies."""
     # When we're in Galaxy (not the tool shed) and the tool dependencies are not installed or are in an error state, they are considered missing.  The tool
@@ -603,6 +888,7 @@ def build_tool_dependencies_folder( trans, folder_id, tool_dependencies, label='
     else:
         tool_dependencies_root_folder = None
     return folder_id, tool_dependencies_root_folder
+
 def build_workflows_folder( trans, folder_id, workflows, repository_metadata_id=None, repository_id=None, label='Workflows' ):
     """
     Return a folder hierarchy containing workflow objects for each workflow dictionary in the received workflows list.  When
@@ -646,6 +932,7 @@ def build_workflows_folder( trans, folder_id, workflows, repository_metadata_id=
     else:
         workflows_root_folder = None
     return folder_id, workflows_root_folder
+
 def cast_empty_repository_dependency_folders( folder, repository_dependency_id ):
     """
     Change any empty folders contained within the repository dependencies container into a repository dependency since it has no repository dependencies
@@ -660,6 +947,7 @@ def cast_empty_repository_dependency_folders( folder, repository_dependency_id )
     for sub_folder in folder.folders:
         return cast_empty_repository_dependency_folders( sub_folder, repository_dependency_id )
     return folder, repository_dependency_id
+
 def generate_repository_dependencies_folder_label_from_key( repository_name, repository_owner, changeset_revision, key ):
     """Return a repository dependency label based on the repository dependency key."""
     if key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, key ):
@@ -667,6 +955,7 @@ def generate_repository_dependencies_folder_label_from_key( repository_name, rep
     else:
         label = "Repository <b>%s</b> revision <b>%s</b> owned by <b>%s</b>" % ( repository_name, changeset_revision, repository_owner )
     return label
+
 def generate_repository_dependencies_key_for_repository( toolshed_base_url, repository_name, repository_owner, changeset_revision ):
     # FIXME: assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported.
     return '%s%s%s%s%s%s%s' % ( str( toolshed_base_url ).rstrip( '/' ),
@@ -676,14 +965,17 @@ def generate_repository_dependencies_key_for_repository( toolshed_base_url, repo
                                 str( repository_owner ),
                                 STRSEP,
                                 str( changeset_revision ) )
+
 def generate_tool_dependencies_key( name, version, type ):
     return '%s%s%s%s%s' % ( str( name ), STRSEP, str( version ), STRSEP, str( type ) )
+
 def get_folder( folder, key ):
     if folder.key == key:
         return folder
     for sub_folder in folder.folders:
         return get_folder( sub_folder, key )
     return None
+
 def get_components_from_key( key ):
     # FIXME: assumes tool shed is current tool shed since repository dependencies across tool sheds is not yet supported.
     items = key.split( STRSEP )
@@ -692,6 +984,7 @@ def get_components_from_key( key ):
     repository_owner = items[ 2 ]
     changeset_revision = items[ 3 ]
     return toolshed_base_url, repository_name, repository_owner, changeset_revision
+
 def handle_repository_dependencies_container_entry( trans, repository_dependencies_folder, rd_key, rd_value, folder_id, repository_dependency_id, folder_keys ):
     toolshed, repository_name, repository_owner, changeset_revision = get_components_from_key( rd_key )
     folder = get_folder( repository_dependencies_folder, rd_key )
@@ -744,6 +1037,7 @@ def handle_repository_dependencies_container_entry( trans, repository_dependenci
             # Insert the repository_dependency into the folder.
             sub_folder.repository_dependencies.append( repository_dependency )
     return repository_dependencies_folder, folder_id, repository_dependency_id
+
 def is_subfolder_of( folder, repository_dependency ):
     toolshed, repository_name, repository_owner, changeset_revision = repository_dependency
     key = generate_repository_dependencies_key_for_repository( toolshed, repository_name, repository_owner, changeset_revision )
@@ -751,15 +1045,18 @@ def is_subfolder_of( folder, repository_dependency ):
         if key == sub_folder.key:
             return True
     return False
+
 def key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, key ):
     toolshed_base_url, key_name, key_owner, key_changeset_revision = get_components_from_key( key )
     return repository_name == key_name and repository_owner == key_owner and changeset_revision == key_changeset_revision
+
 def populate_repository_dependencies_container( trans, repository_dependencies_folder, repository_dependencies, folder_id, repository_dependency_id ):
     folder_keys = repository_dependencies.keys()
     for key, value in repository_dependencies.items():
         repository_dependencies_folder, folder_id, repository_dependency_id = \
             handle_repository_dependencies_container_entry( trans, repository_dependencies_folder, key, value, folder_id, repository_dependency_id, folder_keys )
     return repository_dependencies_folder, folder_id, repository_dependency_id
+
 def print_folders( pad, folder ):
     # For debugging...
     pad_str = ''
@@ -770,6 +1067,7 @@ def print_folders( pad, folder ):
         print '    %s%s' % ( pad_str, repository_dependency.listify )
     for sub_folder in folder.folders:
         print_folders( pad+5, sub_folder )
+
 def prune_repository_dependencies( folder ):
     """
     Since the object used to generate a repository dependencies container is a dictionary and not an odict() (it must be json-serialize-able), the

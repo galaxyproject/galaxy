@@ -1,13 +1,18 @@
-import os, logging
+import filecmp, logging, os, shutil, tempfile
 import tool_shed.util.shed_util_common as suc
 from galaxy import util
 import galaxy.tools
 from galaxy.tools.search import ToolBoxSearch
 from galaxy.model.orm import and_
 from galaxy.datatypes import checkers
+from galaxy.tools import parameters
+from galaxy.tools.parameters import dynamic_options
 
 from galaxy import eggs
 import pkg_resources
+
+pkg_resources.require( 'mercurial' )
+from mercurial import hg, ui, commands
 
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree, ElementInclude
@@ -74,6 +79,111 @@ def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_rev
         app.toolbox.write_integrated_tool_panel_config_file()
     app.toolbox_search = ToolBoxSearch( app.toolbox )
 
+def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset_revision ):
+    """
+    Determine if repository's tool config file on disk can be used.  This method is restricted to tool config files since, with the
+    exception of tool config files, multiple files with the same name will likely be in various directories in the repository and we're
+    comparing file names only (not relative paths).
+    """
+    if not file_path or not os.path.exists( file_path ):
+        # The file no longer exists on disk, so it must have been deleted at some previous point in the change log.
+        return False
+    if changeset_revision == repository.tip( trans.app ):
+        return True
+    file_name = suc.strip_path( file_path )
+    latest_version_of_file = get_latest_tool_config_revision_from_repository_manifest( repo, file_name, changeset_revision )
+    can_use_disk_file = filecmp.cmp( file_path, latest_version_of_file )
+    try:
+        os.unlink( latest_version_of_file )
+    except:
+        pass
+    return can_use_disk_file
+
+def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files ):
+    """
+    Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make 
+    sure the files exist.
+    """
+    invalid_files_and_errors_tups = []
+    correction_msg = ''
+    for input_param in tool.input_params:
+        if isinstance( input_param, parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
+            # If the tool refers to .loc files or requires an entry in the tool_data_table_conf.xml, make sure all requirements exist.
+            options = input_param.dynamic_options or input_param.options
+            if options and isinstance( options, dynamic_options.DynamicOptions ):
+                if options.tool_data_table or options.missing_tool_data_table_name:
+                    # Make sure the repository contains a tool_data_table_conf.xml.sample file.
+                    sample_tool_data_table_conf = suc.get_config_from_disk( 'tool_data_table_conf.xml.sample', repo_dir )
+                    if sample_tool_data_table_conf:
+                        error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf )
+                        if error:
+                            invalid_files_and_errors_tups.append( ( 'tool_data_table_conf.xml.sample', correction_msg ) )
+                        else:
+                            options.missing_tool_data_table_name = None
+                    else:
+                        correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  Upload a file named tool_data_table_conf.xml.sample "
+                        correction_msg += "to the repository that includes the required entry to correct this error.<br/>"
+                        invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
+                if options.index_file or options.missing_index_file:
+                    # Make sure the repository contains the required xxx.loc.sample file.
+                    index_file = options.index_file or options.missing_index_file
+                    index_file_name = suc.strip_path( index_file )
+                    sample_found = False
+                    for sample_file in sample_files:
+                        sample_file_name = suc.strip_path( sample_file )
+                        if sample_file_name == '%s.sample' % index_file_name:
+                            options.index_file = index_file_name
+                            options.missing_index_file = None
+                            if options.tool_data_table:
+                                options.tool_data_table.missing_index_file = None
+                            sample_found = True
+                            break
+                    if not sample_found:
+                        correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file_name )
+                        correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
+                        invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
+    return invalid_files_and_errors_tups
+
+def concat_messages( msg1, msg2 ):
+    if msg1:
+        if msg2:
+            message = '%s  %s' % ( msg1, msg2 )
+        else:
+            message = msg1
+    elif msg2:
+        message = msg2
+    else:
+        message = ''
+    return message
+
+def copy_disk_sample_files_to_dir( trans, repo_files_dir, dest_path ):
+    """Copy all files currently on disk that end with the .sample extension to the directory to which dest_path refers."""
+    sample_files = []
+    for root, dirs, files in os.walk( repo_files_dir ):
+        if root.find( '.hg' ) < 0:
+            for name in files:
+                if name.endswith( '.sample' ):
+                    relative_path = os.path.join( root, name )
+                    copy_sample_file( trans.app, relative_path, dest_path=dest_path )
+                    sample_files.append( name )
+    return sample_files
+
+def copy_sample_file( app, filename, dest_path=None ):
+    """Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path is ~/tool-data."""
+    if dest_path is None:
+        dest_path = os.path.abspath( app.config.tool_data_path )
+    sample_file_name = suc.strip_path( filename )
+    copied_file = sample_file_name.replace( '.sample', '' )
+    full_source_path = os.path.abspath( filename )
+    full_destination_path = os.path.join( dest_path, sample_file_name )
+    # Don't copy a file to itself - not sure how this happens, but sometimes it does...
+    if full_source_path != full_destination_path:
+        # It's ok to overwrite the .sample version of the file.
+        shutil.copy( full_source_path, full_destination_path )
+    # Only create the .loc file if it does not yet exist.  We don't overwrite it in case it contains stuff proprietary to the local instance.
+    if not os.path.exists( os.path.join( dest_path, copied_file ) ):
+        shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
+
 def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=None, dest_path=None ):
     """
     Copy all appropriate files to dest_path in the local Galaxy environment that have not already been copied.  Those that have been copied
@@ -89,7 +199,44 @@ def copy_sample_files( app, sample_files, tool_path=None, sample_files_copied=No
                 filename=os.path.join( tool_path, filename )
             # Attempt to ensure we're copying an appropriate file.
             if is_data_index_sample_file( filename ):
-                suc.copy_sample_file( app, filename, dest_path=dest_path )
+                copy_sample_file( app, filename, dest_path=dest_path )
+
+def generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False ):
+    if as_html:
+        new_line = '<br/>'
+        bold_start = '<b>'
+        bold_end = '</b>'
+    else:
+        new_line = '\n'
+        bold_start = ''
+        bold_end = ''
+    message = ''
+    if not displaying_invalid_tool:
+        if metadata_dict:
+            message += "Metadata may have been defined for some items in revision '%s'.  " % str( repository.tip( trans.app ) )
+            message += "Correct the following problems if necessary and reset metadata.%s" % new_line
+        else:
+            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip( trans.app ) )
+            message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.%s" % new_line
+    for itc_tup in invalid_file_tups:
+        tool_file, exception_msg = itc_tup
+        if exception_msg.find( 'No such file or directory' ) >= 0:
+            exception_items = exception_msg.split()
+            missing_file_items = exception_items[ 7 ].split( '/' )
+            missing_file = missing_file_items[ -1 ].rstrip( '\'' )
+            if missing_file.endswith( '.loc' ):
+                sample_ext = '%s.sample' % missing_file
+            else:
+                sample_ext = missing_file
+            correction_msg = "This file refers to a missing file %s%s%s.  " % ( bold_start, str( missing_file ), bold_end )
+            correction_msg += "Upload a file named %s%s%s to the repository to correct this error." % ( bold_start, sample_ext, bold_end )
+        else:
+            if as_html:
+                correction_msg = exception_msg
+            else:
+                correction_msg = exception_msg.replace( '<br/>', new_line ).replace( '<b>', bold_start ).replace( '</b>', bold_end )
+        message += "%s%s%s - %s%s" % ( bold_start, tool_file, bold_end, correction_msg, new_line )
+    return message
 
 def generate_tool_panel_dict_for_new_install( tool_dicts, tool_section=None ):
     """
@@ -218,6 +365,66 @@ def get_headers( fname, sep, count=60, is_multi_byte=False ):
             break
     return headers
 
+def get_latest_tool_config_revision_from_repository_manifest( repo, filename, changeset_revision ):
+    """
+    Get the latest revision of a tool config file named filename from the repository manifest up to the value of changeset_revision.
+    This method is restricted to tool_config files rather than any file since it is likely that, with the exception of tool config files,
+    multiple files will have the same name in various directories within the repository.
+    """
+    stripped_filename = suc.strip_path( filename )
+    for changeset in suc.reversed_upper_bounded_changelog( repo, changeset_revision ):
+        manifest_ctx = repo.changectx( changeset )
+        for ctx_file in manifest_ctx.files():
+            ctx_file_name = suc.strip_path( ctx_file )
+            if ctx_file_name == stripped_filename:
+                try:
+                    fctx = manifest_ctx[ ctx_file ]
+                except LookupError:
+                    # The ctx_file may have been moved in the change set.  For example, 'ncbi_blastp_wrapper.xml' was moved to
+                    # 'tools/ncbi_blast_plus/ncbi_blastp_wrapper.xml', so keep looking for the file until we find the new location.
+                    continue
+                fh = tempfile.NamedTemporaryFile( 'wb' )
+                tmp_filename = fh.name
+                fh.close()
+                fh = open( tmp_filename, 'wb' )
+                fh.write( fctx.data() )
+                fh.close()
+                return tmp_filename
+    return None
+
+def get_list_of_copied_sample_files( repo, ctx, dir ):
+    """
+    Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
+    each discovered file to dir and return the list of filenames.  If a .sample file was added in a changeset and then deleted in a later
+    changeset, it will be returned in the deleted_sample_files list.  The caller will set the value of app.config.tool_data_path to dir in
+    order to load the tools and generate metadata for them.
+    """
+    deleted_sample_files = []
+    sample_files = []
+    for changeset in suc.reversed_upper_bounded_changelog( repo, ctx ):
+        changeset_ctx = repo.changectx( changeset )
+        for ctx_file in changeset_ctx.files():
+            ctx_file_name = suc.strip_path( ctx_file )
+            # If we decide in the future that files deleted later in the changelog should not be used, we can use the following if statement.
+            # if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
+            if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files:
+                fctx = suc.get_file_context_from_ctx( changeset_ctx, ctx_file )
+                if fctx in [ 'DELETED' ]:
+                    # Since the possibly future used if statement above is commented out, the same file that was initially added will be
+                    # discovered in an earlier changeset in the change log and fall through to the else block below.  In other words, if
+                    # a file named blast2go.loc.sample was added in change set 0 and then deleted in changeset 3, the deleted file in changeset
+                    # 3 will be handled here, but the later discovered file in changeset 0 will be handled in the else block below.  In this
+                    # way, the file contents will always be found for future tools even though the file was deleted.
+                    if ctx_file_name not in deleted_sample_files:
+                        deleted_sample_files.append( ctx_file_name )
+                else:
+                    sample_files.append( ctx_file_name )
+                    tmp_ctx_file_name = os.path.join( dir, ctx_file_name.replace( '.sample', '' ) )
+                    fh = open( tmp_ctx_file_name, 'wb' )
+                    fh.write( fctx.data() )
+                    fh.close()
+    return sample_files, deleted_sample_files
+
 def get_tool_path_install_dir( partial_install_dir, shed_tool_conf_dict, tool_dict, config_elems ):
     for elem in config_elems:
         if elem.tag == 'tool':
@@ -275,7 +482,7 @@ def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repos
         if sample_tool_data_table_conf:
             # Add entries to the ToolDataTableManager's in-memory data_tables dictionary as well as the list of data_table_elems and the list of
             # data_table_elem_names.
-            error, message = suc.handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
+            error, message = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf, persist=True )
             if error:
                 # TODO: Do more here than logging an exception.
                 log.debug( message )
@@ -283,7 +490,7 @@ def handle_missing_data_table_entry( app, relative_install_dir, tool_path, repos
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
         # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-        suc.reset_tool_data_tables( app )
+        reset_tool_data_tables( app )
     return repository_tools_tups
 
 def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tups, sample_files_copied ):
@@ -302,7 +509,7 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
                 for sample_file in sample_files:
                     sample_file_name = suc.strip_path( sample_file )
                     if sample_file_name == '%s.sample' % missing_file_name:
-                        suc.copy_sample_file( app, sample_file )
+                        copy_sample_file( app, sample_file )
                         if options.tool_data_table and options.tool_data_table.missing_index_file:
                             options.tool_data_table.handle_found_index_file( options.missing_index_file )
                         sample_files_copied.append( options.missing_index_file )
@@ -311,6 +518,60 @@ def handle_missing_index_file( app, tool_path, sample_files, repository_tools_tu
         repository_tool = app.toolbox.load_tool( os.path.join( tool_path, tup_path ), guid=guid )
         repository_tools_tups[ index ] = ( tup_path, guid, repository_tool )
     return repository_tools_tups, sample_files_copied
+
+def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir ):
+    # Copy all sample files from disk to a temporary directory since the sample files may be in multiple directories.
+    message = ''
+    sample_files = copy_disk_sample_files_to_dir( trans, repo_files_dir, work_dir )
+    if sample_files:
+        if 'tool_data_table_conf.xml.sample' in sample_files:
+            # Load entries into the tool_data_tables if the tool requires them.
+            tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
+            error, message = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
+    tool, valid, message2 = load_tool_from_config( trans.app, tool_config_filepath )
+    message = concat_messages( message, message2 )
+    return tool, valid, message, sample_files
+
+def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir ):
+    tool = None
+    message = ''
+    ctx = get_changectx_for_changeset( repo, changeset_revision )
+    # We're not currently doing anything with the returned list of deleted_sample_files here.  It is intended to help handle sample files that are in 
+    # the manifest, but have been deleted from disk.
+    sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
+    if sample_files:
+        trans.app.config.tool_data_path = work_dir
+        if 'tool_data_table_conf.xml.sample' in sample_files:
+            # Load entries into the tool_data_tables if the tool requires them.
+            tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
+            if tool_data_table_config:
+                error, message = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
+                if error:
+                    log.debug( message )
+    manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
+    if manifest_ctx and ctx_file:
+        tool, message2 = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
+        message = concat_messages( message, message2 )
+    return tool, message, sample_files
+
+def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
+    """
+    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary.  If persist is True (should only occur
+    if call is from the Galaxy side, not the tool shed), the new entries will be appended to Galaxy's shed_tool_data_table_conf.xml file on disk.
+    """
+    error = False
+    message = ''
+    try:
+        new_table_elems, message = app.tool_data_tables.add_new_entries_from_config_file( config_filename=filename,
+                                                                                          tool_data_path=app.config.tool_data_path,
+                                                                                          shed_tool_data_table_config=app.config.shed_tool_data_table_config,
+                                                                                          persist=persist )
+        if message:
+            error = True
+    except Exception, e:
+        message = str( e )
+        error = True
+    return error, message
 
 def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel_section, new_tool_panel_section ):
     """Handle the selected tool panel location for loading tools included in tool shed repositories when installing or reinstalling them."""
@@ -439,6 +700,90 @@ def is_data_index_sample_file( file_path ):
         return False
     # Default to copying the file if none of the above are true.
     return True
+
+def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config_filename ):
+    """
+    Return a loaded tool whose tool config file name (e.g., filtering.xml) is the value of tool_config_filename.  The value of changeset_revision
+    is a valid (downloadable) changset revision.  The tool config will be located in the repository manifest between the received valid changeset
+    revision and the first changeset revision in the repository, searching backwards.
+    """
+    original_tool_data_path = trans.app.config.tool_data_path
+    repository = suc.get_repository_in_tool_shed( trans, repository_id )
+    repo_files_dir = repository.repo_path( trans.app )
+    repo = hg.repository( suc.get_configured_ui(), repo_files_dir )
+    message = ''
+    tool = None
+    can_use_disk_file = False
+    tool_config_filepath = suc.get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
+    work_dir = tempfile.mkdtemp()
+    can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
+    if can_use_disk_file:
+        trans.app.config.tool_data_path = work_dir
+        tool, valid, message, sample_files = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir )
+        if tool is not None:
+            invalid_files_and_errors_tups = check_tool_input_params( trans.app,
+                                                                     repo_files_dir,
+                                                                     tool_config_filename,
+                                                                     tool,
+                                                                     sample_files )
+            if invalid_files_and_errors_tups:
+                message2 = generate_message_for_invalid_tools( trans,
+                                                               invalid_files_and_errors_tups,
+                                                               repository,
+                                                               metadata_dict=None,
+                                                               as_html=True,
+                                                               displaying_invalid_tool=True )
+                message = concat_messages( message, message2 )
+    else:
+        tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
+    suc.remove_dir( work_dir )
+    trans.app.config.tool_data_path = original_tool_data_path
+    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
+    reset_tool_data_tables( trans.app )
+    return repository, tool, message
+
+def load_tool_from_config( app, full_path ):
+    try:
+        tool = app.toolbox.load_tool( full_path )
+        valid = True
+        error_message = None
+    except KeyError, e:
+        tool = None
+        valid = False
+        error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
+        error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
+        error_message += 'this error.  '
+    except Exception, e:
+        tool = None
+        valid = False
+        error_message = str( e )
+    return tool, valid, error_message
+
+def load_tool_from_tmp_config( trans, repo, ctx, ctx_file, work_dir ):
+    tool = None
+    message = ''
+    tmp_tool_config = suc.get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
+    if tmp_tool_config:
+        element_tree = util.parse_xml( tmp_tool_config )
+        element_tree_root = element_tree.getroot()
+        # Look for code files required by the tool config.
+        tmp_code_files = []
+        for code_elem in element_tree_root.findall( 'code' ):
+            code_file_name = code_elem.get( 'file' )
+            tmp_code_file_name = suc.copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
+            if tmp_code_file_name:
+                tmp_code_files.append( tmp_code_file_name )
+        tool, valid, message = load_tool_from_config( trans.app, tmp_tool_config )
+        for tmp_code_file in tmp_code_files:
+            try:
+                os.unlink( tmp_code_file )
+            except:
+                pass
+        try:
+            os.unlink( tmp_tool_config )
+        except:
+            pass
+    return tool, message
 
 def panel_entry_per_tool( tool_section_dict ):
     # Return True if tool_section_dict looks like this.
@@ -604,3 +949,7 @@ def remove_from_tool_panel( trans, repository, shed_tool_conf, uninstall ):
     if uninstall and trans.app.config.update_integrated_tool_panel:
         # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
         trans.app.toolbox.write_integrated_tool_panel_config_file()
+
+def reset_tool_data_tables( app ):
+    # Reset the tool_data_tables to an empty dictionary.
+    app.tool_data_tables.data_tables = {}

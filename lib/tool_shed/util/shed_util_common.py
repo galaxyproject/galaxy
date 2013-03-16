@@ -1,18 +1,14 @@
-import os, shutil, tempfile, logging, string, threading, urllib2, filecmp
+import os, shutil, tempfile, logging, string, urllib2
 from datetime import datetime
 from time import gmtime, strftime
 from galaxy import util
-from galaxy.tools import parameters
 from galaxy.util import json
 from galaxy.util.odict import odict
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
-from galaxy.webapps.tool_shed.util import container_util
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 import sqlalchemy.orm.exc
-from galaxy.tools.parameters import dynamic_options
-from tool_shed.util import encoding_util
 
 from galaxy import eggs
 import pkg_resources
@@ -89,297 +85,6 @@ This message was sent from the Galaxy Tool Shed instance hosted on the server
 '${host}'
 """
 
-def add_orphan_settings_to_tool_dependencies( tool_dependencies, orphan_tool_dependencies ):
-    """Inspect all received tool dependencies and label those that are orphans within the repository."""
-    orphan_env_dependencies = orphan_tool_dependencies.get( 'set_environment', None )
-    new_tool_dependencies = {}
-    if tool_dependencies:
-        for td_key, requirements_dict in tool_dependencies.items():
-            if td_key in [ 'set_environment' ]:
-                # "set_environment": [{"name": "R_SCRIPT_PATH", "type": "set_environment"}]
-                if orphan_env_dependencies:
-                    new_set_environment_dict_list = []
-                    for set_environment_dict in requirements_dict:
-                        if set_environment_dict in orphan_env_dependencies:
-                            set_environment_dict[ 'is_orphan' ] = True
-                        else:
-                            set_environment_dict[ 'is_orphan' ] = False
-                        new_set_environment_dict_list.append( set_environment_dict )
-                    new_tool_dependencies[ td_key ] = new_set_environment_dict_list
-                else:
-                    new_tool_dependencies[ td_key ] = requirements_dict
-            else:
-                # {"R/2.15.1": {"name": "R", "readme": "some string", "type": "package", "version": "2.15.1"}
-                if td_key in orphan_tool_dependencies:
-                    requirements_dict[ 'is_orphan' ] = True
-                else:
-                    requirements_dict[ 'is_orphan' ] = False
-                new_tool_dependencies[ td_key ] = requirements_dict
-    return new_tool_dependencies
-def build_readme_files_dict( metadata, tool_path=None ):
-    """Return a dictionary of valid readme file name <-> readme file content pairs for all readme files contained in the received metadata."""
-    readme_files_dict = {}
-    if metadata:
-        if 'readme_files' in metadata:
-            for relative_path_to_readme_file in metadata[ 'readme_files' ]:
-                readme_file_name = os.path.split( relative_path_to_readme_file )[ 1 ]
-                if tool_path:
-                    full_path_to_readme_file = os.path.abspath( os.path.join( tool_path, relative_path_to_readme_file ) )
-                else:
-                    full_path_to_readme_file = os.path.abspath( relative_path_to_readme_file )
-                try:
-                    f = open( full_path_to_readme_file, 'r' )
-                    text = f.read()
-                    f.close()
-                    readme_files_dict[ readme_file_name ] = translate_string( text, to_html=False )
-                except Exception, e:
-                    log.debug( "Error reading README file '%s' defined in metadata: %s" % ( str( relative_path_to_readme_file ), str( e ) ) )
-    return readme_files_dict
-def build_repository_containers_for_galaxy( trans, repository, datatypes, invalid_tools, missing_repository_dependencies, missing_tool_dependencies,
-                                            readme_files_dict, repository_dependencies, tool_dependencies, valid_tools, workflows, valid_data_managers,
-                                            invalid_data_managers, data_managers_errors, new_install=False, reinstalling=False ):
-    """Return a dictionary of containers for the received repository's dependencies and readme files for display during installation to Galaxy."""
-    containers_dict = dict( datatypes=None,
-                            invalid_tools=None,
-                            missing_tool_dependencies=None,
-                            readme_files=None,
-                            repository_dependencies=None,
-                            missing_repository_dependencies=None,
-                            tool_dependencies=None,
-                            valid_tools=None,
-                            workflows=None,
-                            valid_data_managers=None,
-                            invalid_data_managers=None )
-    # Some of the tool dependency folders will include links to display tool dependency information, and some of these links require the repository
-    # id.  However we need to be careful because sometimes the repository object is None.
-    if repository:
-        repository_id = repository.id
-        changeset_revision = repository.changeset_revision
-    else:
-        repository_id = None
-        changeset_revision = None
-    lock = threading.Lock()
-    lock.acquire( True )
-    try:
-        folder_id = 0
-        # Datatypes container.
-        if datatypes:
-            folder_id, datatypes_root_folder = container_util.build_datatypes_folder( trans, folder_id, datatypes )
-            containers_dict[ 'datatypes' ] = datatypes_root_folder
-        # Invalid tools container.
-        if invalid_tools:
-            folder_id, invalid_tools_root_folder = container_util.build_invalid_tools_folder( trans,
-                                                                                              folder_id,
-                                                                                              invalid_tools,
-                                                                                              changeset_revision,
-                                                                                              repository=repository,
-                                                                                              label='Invalid tools' )
-            containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
-        # Readme files container.
-        if readme_files_dict:
-            folder_id, readme_files_root_folder = container_util.build_readme_files_folder( trans, folder_id, readme_files_dict )
-            containers_dict[ 'readme_files' ] = readme_files_root_folder
-        # Installed repository dependencies container.
-        if repository_dependencies:
-            if new_install:
-                label = 'Repository dependencies'
-            else:
-                label = 'Installed repository dependencies'
-            folder_id, repository_dependencies_root_folder = container_util.build_repository_dependencies_folder( trans=trans,
-                                                                                                                  folder_id=folder_id,
-                                                                                                                  repository_dependencies=repository_dependencies,
-                                                                                                                  label=label,
-                                                                                                                  installed=True )
-            containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
-        # Missing repository dependencies container.
-        if missing_repository_dependencies:
-            folder_id, missing_repository_dependencies_root_folder = \
-                container_util.build_repository_dependencies_folder( trans=trans,
-                                                                     folder_id=folder_id,
-                                                                     repository_dependencies=missing_repository_dependencies,
-                                                                     label='Missing repository dependencies',
-                                                                     installed=False )
-            containers_dict[ 'missing_repository_dependencies' ] = missing_repository_dependencies_root_folder
-        # Installed tool dependencies container.
-        if tool_dependencies:
-            if new_install:
-                label = 'Tool dependencies'
-            else:
-                label = 'Installed tool dependencies'
-            # We only want to display the Status column if the tool_dependency is missing.
-            folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( trans,
-                                                                                                      folder_id,
-                                                                                                      tool_dependencies,
-                                                                                                      label=label,
-                                                                                                      missing=False,
-                                                                                                      new_install=new_install,
-                                                                                                      reinstalling=reinstalling )
-            containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
-        # Missing tool dependencies container.
-        if missing_tool_dependencies:
-            # We only want to display the Status column if the tool_dependency is missing.
-            folder_id, missing_tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( trans,
-                                                                                                              folder_id,
-                                                                                                              missing_tool_dependencies,
-                                                                                                              label='Missing tool dependencies',
-                                                                                                              missing=True,
-                                                                                                              new_install=new_install,
-                                                                                                              reinstalling=reinstalling )
-            containers_dict[ 'missing_tool_dependencies' ] = missing_tool_dependencies_root_folder
-        # Valid tools container.
-        if valid_tools:
-            folder_id, valid_tools_root_folder = container_util.build_tools_folder( trans,
-                                                                                    folder_id,
-                                                                                    valid_tools,
-                                                                                    repository,
-                                                                                    changeset_revision,
-                                                                                    label='Valid tools' )
-            containers_dict[ 'valid_tools' ] = valid_tools_root_folder
-        # Workflows container.
-        if workflows:
-            folder_id, workflows_root_folder = container_util.build_workflows_folder( trans=trans,
-                                                                                      folder_id=folder_id,
-                                                                                      workflows=workflows,
-                                                                                      repository_metadata_id=None,
-                                                                                      repository_id=repository_id,
-                                                                                      label='Workflows' )
-            containers_dict[ 'workflows' ] = workflows_root_folder
-        if valid_data_managers:
-            folder_id, valid_data_managers_root_folder = container_util.build_data_managers_folder( trans=trans,
-                                                                                      folder_id=folder_id,
-                                                                                      data_managers=valid_data_managers,
-                                                                                      label='Valid Data Managers' )
-            containers_dict[ 'valid_data_managers' ] = valid_data_managers_root_folder
-        if invalid_data_managers or data_managers_errors:
-            folder_id, invalid_data_managers_root_folder = container_util.build_invalid_data_managers_folder( trans=trans,
-                                                                                      folder_id=folder_id,
-                                                                                      data_managers=invalid_data_managers,
-                                                                                      error_messages=data_managers_errors,
-                                                                                      label='Invalid Data Managers' )
-            containers_dict[ 'invalid_data_managers' ] = invalid_data_managers_root_folder
-    except Exception, e:
-        log.debug( "Exception in build_repository_containers_for_galaxy: %s" % str( e ) )
-    finally:
-        lock.release()
-    return containers_dict
-def build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata ):
-    """Return a dictionary of containers for the received repository's dependencies and contents for display in the tool shed."""
-    containers_dict = dict( datatypes=None,
-                            invalid_tools=None,
-                            readme_files=None,
-                            repository_dependencies=None,
-                            tool_dependencies=None,
-                            valid_tools=None,
-                            workflows=None,
-                            valid_data_managers=None
-                             )
-    if repository_metadata:
-        metadata = repository_metadata.metadata
-        lock = threading.Lock()
-        lock.acquire( True )
-        try:
-            folder_id = 0
-            # Datatypes container.
-            if metadata:
-                if 'datatypes' in metadata:
-                    datatypes = metadata[ 'datatypes' ]
-                    folder_id, datatypes_root_folder = container_util.build_datatypes_folder( trans, folder_id, datatypes )
-                    containers_dict[ 'datatypes' ] = datatypes_root_folder
-            # Invalid repository dependencies container.
-            if metadata:
-                if 'invalid_repository_dependencies' in metadata:
-                    invalid_repository_dependencies = metadata[ 'invalid_repository_dependencies' ]
-                    folder_id, invalid_repository_dependencies_root_folder = \
-                        container_util.build_invalid_repository_dependencies_root_folder( trans,
-                                                                                          folder_id,
-                                                                                          invalid_repository_dependencies )
-                    containers_dict[ 'invalid_repository_dependencies' ] = invalid_repository_dependencies_root_folder
-            # Invalid tool dependencies container.
-            if metadata:
-                if 'invalid_tool_dependencies' in metadata:
-                    invalid_tool_dependencies = metadata[ 'invalid_tool_dependencies' ]
-                    folder_id, invalid_tool_dependencies_root_folder = \
-                        container_util.build_invalid_tool_dependencies_root_folder( trans,
-                                                                                    folder_id,
-                                                                                    invalid_tool_dependencies )
-                    containers_dict[ 'invalid_tool_dependencies' ] = invalid_tool_dependencies_root_folder
-            # Invalid tools container.
-            if metadata:
-                if 'invalid_tools' in metadata:
-                    invalid_tool_configs = metadata[ 'invalid_tools' ]
-                    folder_id, invalid_tools_root_folder = container_util.build_invalid_tools_folder( trans,
-                                                                                                      folder_id,
-                                                                                                      invalid_tool_configs,
-                                                                                                      changeset_revision,
-                                                                                                      repository=repository,
-                                                                                                      label='Invalid tools' )
-                    containers_dict[ 'invalid_tools' ] = invalid_tools_root_folder
-            # Readme files container.
-            if metadata:
-                if 'readme_files' in metadata:
-                    readme_files_dict = build_readme_files_dict( metadata )
-                    folder_id, readme_files_root_folder = container_util.build_readme_files_folder( trans, folder_id, readme_files_dict )
-                    containers_dict[ 'readme_files' ] = readme_files_root_folder
-            # Repository dependencies container.
-            folder_id, repository_dependencies_root_folder = container_util.build_repository_dependencies_folder( trans=trans,
-                                                                                                                  folder_id=folder_id,
-                                                                                                                  repository_dependencies=repository_dependencies,
-                                                                                                                  label='Repository dependencies',
-                                                                                                                  installed=False )
-            if repository_dependencies_root_folder:
-                containers_dict[ 'repository_dependencies' ] = repository_dependencies_root_folder
-            # Tool dependencies container.
-            if metadata:
-                if 'tool_dependencies' in metadata:
-                    tool_dependencies = metadata[ 'tool_dependencies' ]
-                    if trans.webapp.name == 'tool_shed':
-                        if 'orphan_tool_dependencies' in metadata:
-                            orphan_tool_dependencies = metadata[ 'orphan_tool_dependencies' ]
-                            tool_dependencies = add_orphan_settings_to_tool_dependencies( tool_dependencies, orphan_tool_dependencies )
-                    folder_id, tool_dependencies_root_folder = container_util.build_tool_dependencies_folder( trans,
-                                                                                                              folder_id,
-                                                                                                              tool_dependencies,
-                                                                                                              missing=False,
-                                                                                                              new_install=False )
-                    containers_dict[ 'tool_dependencies' ] = tool_dependencies_root_folder
-            # Valid tools container.
-            if metadata:
-                if 'tools' in metadata:
-                    valid_tools = metadata[ 'tools' ]
-                    folder_id, valid_tools_root_folder = container_util.build_tools_folder( trans,
-                                                                                            folder_id,
-                                                                                            valid_tools,
-                                                                                            repository,
-                                                                                            changeset_revision,
-                                                                                            label='Valid tools' )
-                    containers_dict[ 'valid_tools' ] = valid_tools_root_folder
-            # Workflows container.
-            if metadata:
-                if 'workflows' in metadata:
-                    workflows = metadata[ 'workflows' ]
-                    folder_id, workflows_root_folder = container_util.build_workflows_folder( trans=trans,
-                                                                                              folder_id=folder_id,
-                                                                                              workflows=workflows,
-                                                                                              repository_metadata_id=repository_metadata.id,
-                                                                                              repository_id=None,
-                                                                                              label='Workflows' )
-                    containers_dict[ 'workflows' ] = workflows_root_folder
-            # Valid Data Managers container
-            if metadata:
-                if 'data_manager' in metadata:
-                    data_managers = metadata['data_manager'].get( 'data_managers', None )
-                    folder_id, data_managers_root_folder = container_util.build_data_managers_folder( trans, folder_id, data_managers, label="Data Managers" )
-                    containers_dict[ 'valid_data_managers' ] = data_managers_root_folder
-                    error_messages = metadata['data_manager'].get( 'error_messages', None )
-                    data_managers = metadata['data_manager'].get( 'invalid_data_managers', None )
-                    folder_id, data_managers_root_folder = container_util.build_invalid_data_managers_folder( trans, folder_id, data_managers, error_messages, label="Invalid Data Managers" )
-                    containers_dict[ 'invalid_data_managers' ] = data_managers_root_folder
-                    
-        except Exception, e:
-            log.debug( "Exception in build_repository_containers_for_tool_shed: %s" % str( e ) )
-        finally:
-            lock.release()
-    return containers_dict
 def build_repository_ids_select_field( trans, name='repository_ids', multiple=True, display='checkboxes' ):
     """Method called from both Galaxy and the Tool Shed to generate the current list of repositories for resetting metadata."""
     repositories_select_field = SelectField( name=name, multiple=multiple, display=display )
@@ -412,25 +117,6 @@ def can_browse_repository_reviews( trans, repository ):
                 if trans.app.security_agent.user_can_browse_component_review( trans.app, repository, component_review, user ):
                     return True
     return False
-def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset_revision ):
-    """
-    Determine if repository's tool config file on disk can be used.  This method is restricted to tool config files since, with the
-    exception of tool config files, multiple files with the same name will likely be in various directories in the repository and we're
-    comparing file names only (not relative paths).
-    """
-    if not file_path or not os.path.exists( file_path ):
-        # The file no longer exists on disk, so it must have been deleted at some previous point in the change log.
-        return False
-    if changeset_revision == repository.tip( trans.app ):
-        return True
-    file_name = strip_path( file_path )
-    latest_version_of_file = get_latest_tool_config_revision_from_repository_manifest( repo, file_name, changeset_revision )
-    can_use_disk_file = filecmp.cmp( file_path, latest_version_of_file )
-    try:
-        os.unlink( latest_version_of_file )
-    except:
-        pass
-    return can_use_disk_file
 def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     """Check the malicious flag in repository metadata for a specified change set"""
     repository_metadata = get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -450,50 +136,6 @@ def changeset_revision_reviewed_by_user( trans, user, repository, changeset_revi
         if review.changeset_revision == changeset_revision and review.user == user:
             return True
     return False
-def check_tool_input_params( app, repo_dir, tool_config_name, tool, sample_files ):
-    """
-    Check all of the tool's input parameters, looking for any that are dynamically generated using external data files to make 
-    sure the files exist.
-    """
-    invalid_files_and_errors_tups = []
-    correction_msg = ''
-    for input_param in tool.input_params:
-        if isinstance( input_param, parameters.basic.SelectToolParameter ) and input_param.is_dynamic:
-            # If the tool refers to .loc files or requires an entry in the tool_data_table_conf.xml, make sure all requirements exist.
-            options = input_param.dynamic_options or input_param.options
-            if options and isinstance( options, dynamic_options.DynamicOptions ):
-                if options.tool_data_table or options.missing_tool_data_table_name:
-                    # Make sure the repository contains a tool_data_table_conf.xml.sample file.
-                    sample_tool_data_table_conf = get_config_from_disk( 'tool_data_table_conf.xml.sample', repo_dir )
-                    if sample_tool_data_table_conf:
-                        error, correction_msg = handle_sample_tool_data_table_conf_file( app, sample_tool_data_table_conf )
-                        if error:
-                            invalid_files_and_errors_tups.append( ( 'tool_data_table_conf.xml.sample', correction_msg ) )
-                        else:
-                            options.missing_tool_data_table_name = None
-                    else:
-                        correction_msg = "This file requires an entry in the tool_data_table_conf.xml file.  Upload a file named tool_data_table_conf.xml.sample "
-                        correction_msg += "to the repository that includes the required entry to correct this error.<br/>"
-                        invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
-                if options.index_file or options.missing_index_file:
-                    # Make sure the repository contains the required xxx.loc.sample file.
-                    index_file = options.index_file or options.missing_index_file
-                    index_file_name = strip_path( index_file )
-                    sample_found = False
-                    for sample_file in sample_files:
-                        sample_file_name = strip_path( sample_file )
-                        if sample_file_name == '%s.sample' % index_file_name:
-                            options.index_file = index_file_name
-                            options.missing_index_file = None
-                            if options.tool_data_table:
-                                options.tool_data_table.missing_index_file = None
-                            sample_found = True
-                            break
-                    if not sample_found:
-                        correction_msg = "This file refers to a file named <b>%s</b>.  " % str( index_file_name )
-                        correction_msg += "Upload a file named <b>%s.sample</b> to the repository to correct this error." % str( index_file_name )
-                        invalid_files_and_errors_tups.append( ( tool_config_name, correction_msg ) )
-    return invalid_files_and_errors_tups
 def clean_repository_clone_url( repository_clone_url ):
     if repository_clone_url.find( '@' ) > 0:
         # We have an url that includes an authenticated user, something like:
@@ -527,17 +169,6 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
         error_message = 'Error cloning repository: %s' % str( e )
         log.debug( error_message )
         return False, error_message
-def concat_messages( msg1, msg2 ):
-    if msg1:
-        if msg2:
-            message = '%s  %s' % ( msg1, msg2 )
-        else:
-            message = msg1
-    elif msg2:
-        message = msg2
-    else:
-        message = ''
-    return message
 def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     # Persist the current in-memory list of config_elems to a file named by the value of config_filename.  
     fd, filename = tempfile.mkstemp()
@@ -549,17 +180,6 @@ def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
     os.close( fd )
     shutil.move( filename, os.path.abspath( config_filename ) )
     os.chmod( config_filename, 0644 )
-def copy_disk_sample_files_to_dir( trans, repo_files_dir, dest_path ):
-    """Copy all files currently on disk that end with the .sample extension to the directory to which dest_path refers."""
-    sample_files = []
-    for root, dirs, files in os.walk( repo_files_dir ):
-        if root.find( '.hg' ) < 0:
-            for name in files:
-                if name.endswith( '.sample' ):
-                    relative_path = os.path.join( root, name )
-                    copy_sample_file( trans.app, relative_path, dest_path=dest_path )
-                    sample_files.append( name )
-    return sample_files
 def copy_file_from_manifest( repo, ctx, filename, dir ):
     """Copy the latest version of the file named filename from the repository manifest to the directory to which dir refers."""
     for changeset in reversed_upper_bounded_changelog( repo, ctx ):
@@ -572,21 +192,6 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
             fh.close()
             return file_path
     return None
-def copy_sample_file( app, filename, dest_path=None ):
-    """Copy xxx.sample to dest_path/xxx.sample and dest_path/xxx.  The default value for dest_path is ~/tool-data."""
-    if dest_path is None:
-        dest_path = os.path.abspath( app.config.tool_data_path )
-    sample_file_name = strip_path( filename )
-    copied_file = sample_file_name.replace( '.sample', '' )
-    full_source_path = os.path.abspath( filename )
-    full_destination_path = os.path.join( dest_path, sample_file_name )
-    # Don't copy a file to itself - not sure how this happens, but sometimes it does...
-    if full_source_path != full_destination_path:
-        # It's ok to overwrite the .sample version of the file.
-        shutil.copy( full_source_path, full_destination_path )
-    # Only create the .loc file if it does not yet exist.  We don't overwrite it in case it contains stuff proprietary to the local instance.
-    if not os.path.exists( os.path.join( dest_path, copied_file ) ):
-        shutil.copy( full_source_path, os.path.join( dest_path, copied_file ) )
 def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url, metadata_dict,
                                            status, current_changeset_revision=None, owner='', dist_to_shed=False ):
     # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
@@ -642,20 +247,6 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     sa_session.add( tool_shed_repository )
     sa_session.flush()
     return tool_shed_repository
-def ensure_required_repositories_exist_for_reinstall( trans, repository_dependencies ):
-    """
-    Inspect the received repository_dependencies dictionary and make sure tool_shed_repository objects exist in the database for each entry.  These
-    tool_shed_repositories do not necessarily have to exist on disk, and if they do not, their status will be marked appropriately.  They must exist
-    in the database in order for repository dependency relationships to be properly built.
-    """
-    for key, val in repository_dependencies.items():
-        if key in [ 'root_key', 'description' ]:
-            continue
-        tool_shed, name, owner, changeset_revision = container_util.get_components_from_key( key )
-        repository = get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset_revision )
-        for repository_components_list in val:
-            tool_shed, name, owner, changeset_revision = repository_components_list
-            repository = get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset_revision )
 def generate_clone_url_for_installed_repository( app, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
     tool_shed_url = get_url_from_repository_tool_shed( app, repository )
@@ -675,42 +266,6 @@ def generate_clone_url_from_repo_info_tup( repo_info_tup ):
     toolshed, name, owner, changeset_revision = repo_info_tup
     # Don't include the changeset_revision in clone urls.
     return url_join( toolshed, 'repos', owner, name )
-def generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict, as_html=True, displaying_invalid_tool=False ):
-    if as_html:
-        new_line = '<br/>'
-        bold_start = '<b>'
-        bold_end = '</b>'
-    else:
-        new_line = '\n'
-        bold_start = ''
-        bold_end = ''
-    message = ''
-    if not displaying_invalid_tool:
-        if metadata_dict:
-            message += "Metadata may have been defined for some items in revision '%s'.  " % str( repository.tip( trans.app ) )
-            message += "Correct the following problems if necessary and reset metadata.%s" % new_line
-        else:
-            message += "Metadata cannot be defined for revision '%s' so this revision cannot be automatically " % str( repository.tip( trans.app ) )
-            message += "installed into a local Galaxy instance.  Correct the following problems and reset metadata.%s" % new_line
-    for itc_tup in invalid_file_tups:
-        tool_file, exception_msg = itc_tup
-        if exception_msg.find( 'No such file or directory' ) >= 0:
-            exception_items = exception_msg.split()
-            missing_file_items = exception_items[ 7 ].split( '/' )
-            missing_file = missing_file_items[ -1 ].rstrip( '\'' )
-            if missing_file.endswith( '.loc' ):
-                sample_ext = '%s.sample' % missing_file
-            else:
-                sample_ext = missing_file
-            correction_msg = "This file refers to a missing file %s%s%s.  " % ( bold_start, str( missing_file ), bold_end )
-            correction_msg += "Upload a file named %s%s%s to the repository to correct this error." % ( bold_start, sample_ext, bold_end )
-        else:
-            if as_html:
-                correction_msg = exception_msg
-            else:
-                correction_msg = exception_msg.replace( '<br/>', new_line ).replace( '<b>', bold_start ).replace( '</b>', bold_end )
-        message += "%s%s%s - %s%s" % ( bold_start, tool_file, bold_end, correction_msg, new_line )
-    return message
 def generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=None ):
     """Generate the URL for sharing a repository that is in the tool shed."""
     base_url = url_for( '/', qualified=True ).rstrip( '/' )
@@ -925,64 +480,6 @@ def get_file_context_from_ctx( ctx, filename ):
 def get_installed_tool_shed_repository( trans, id ):
     """Get a repository on the Galaxy side from the database via id"""
     return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
-def get_latest_tool_config_revision_from_repository_manifest( repo, filename, changeset_revision ):
-    """
-    Get the latest revision of a tool config file named filename from the repository manifest up to the value of changeset_revision.
-    This method is restricted to tool_config files rather than any file since it is likely that, with the exception of tool config files,
-    multiple files will have the same name in various directories within the repository.
-    """
-    stripped_filename = strip_path( filename )
-    for changeset in reversed_upper_bounded_changelog( repo, changeset_revision ):
-        manifest_ctx = repo.changectx( changeset )
-        for ctx_file in manifest_ctx.files():
-            ctx_file_name = strip_path( ctx_file )
-            if ctx_file_name == stripped_filename:
-                try:
-                    fctx = manifest_ctx[ ctx_file ]
-                except LookupError:
-                    # The ctx_file may have been moved in the change set.  For example, 'ncbi_blastp_wrapper.xml' was moved to
-                    # 'tools/ncbi_blast_plus/ncbi_blastp_wrapper.xml', so keep looking for the file until we find the new location.
-                    continue
-                fh = tempfile.NamedTemporaryFile( 'wb' )
-                tmp_filename = fh.name
-                fh.close()
-                fh = open( tmp_filename, 'wb' )
-                fh.write( fctx.data() )
-                fh.close()
-                return tmp_filename
-    return None
-def get_list_of_copied_sample_files( repo, ctx, dir ):
-    """
-    Find all sample files (files in the repository with the special .sample extension) in the reversed repository manifest up to ctx.  Copy
-    each discovered file to dir and return the list of filenames.  If a .sample file was added in a changeset and then deleted in a later
-    changeset, it will be returned in the deleted_sample_files list.  The caller will set the value of app.config.tool_data_path to dir in
-    order to load the tools and generate metadata for them.
-    """
-    deleted_sample_files = []
-    sample_files = []
-    for changeset in reversed_upper_bounded_changelog( repo, ctx ):
-        changeset_ctx = repo.changectx( changeset )
-        for ctx_file in changeset_ctx.files():
-            ctx_file_name = strip_path( ctx_file )
-            # If we decide in the future that files deleted later in the changelog should not be used, we can use the following if statement.
-            # if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files and ctx_file_name not in deleted_sample_files:
-            if ctx_file_name.endswith( '.sample' ) and ctx_file_name not in sample_files:
-                fctx = get_file_context_from_ctx( changeset_ctx, ctx_file )
-                if fctx in [ 'DELETED' ]:
-                    # Since the possibly future used if statement above is commented out, the same file that was initially added will be
-                    # discovered in an earlier changeset in the change log and fall through to the else block below.  In other words, if
-                    # a file named blast2go.loc.sample was added in change set 0 and then deleted in changeset 3, the deleted file in changeset
-                    # 3 will be handled here, but the later discovered file in changeset 0 will be handled in the else block below.  In this
-                    # way, the file contents will always be found for future tools even though the file was deleted.
-                    if ctx_file_name not in deleted_sample_files:
-                        deleted_sample_files.append( ctx_file_name )
-                else:
-                    sample_files.append( ctx_file_name )
-                    tmp_ctx_file_name = os.path.join( dir, ctx_file_name.replace( '.sample', '' ) )
-                    fh = open( tmp_ctx_file_name, 'wb' )
-                    fh.write( fctx.data() )
-                    fh.close()
-    return sample_files, deleted_sample_files
 def get_named_tmpfile_from_ctx( ctx, filename, dir ):
     filename = strip_path( filename )
     for ctx_file in ctx.files():
@@ -1092,20 +589,6 @@ def get_previous_repository_reviews( trans, repository, changeset_revision ):
             previous_reviews_dict[ previous_changeset_revision ] = dict( changeset_revision_label=previous_changeset_revision_label,
                                                                          reviews=revision_reviews )
     return previous_reviews_dict
-def get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict ):
-    """Return a dictionary of README files contained in the single repository being installed so they can be displayed on the tool panel section selection page."""
-    name = repo_info_dict.keys()[ 0 ]
-    repo_info_tuple = repo_info_dict[ name ]
-    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = get_repo_info_tuple_contents( repo_info_tuple )
-    # Handle README files.
-    url = url_join( tool_shed_url,
-                    'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
-                    ( name, repository_owner, changeset_revision ) )
-    response = urllib2.urlopen( url )
-    raw_text = response.read()
-    response.close()
-    readme_files_dict = json.from_json_string( raw_text )
-    return readme_files_dict
 def get_repo_info_tuple_contents( repo_info_tuple ):
     # Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced.
     if len( repo_info_tuple ) == 6:
@@ -1235,54 +718,6 @@ def get_repository_tools_tups( app, metadata_dict ):
             if tool:
                 repository_tools_tups.append( ( relative_path, guid, tool ) )
     return repository_tools_tups
-def get_required_repo_info_dicts( tool_shed_url, repo_info_dicts ):
-    """
-    Inspect the list of repo_info_dicts for repository dependencies and append a repo_info_dict for each of them to the list.  All
-    repository_dependencies entries in each of the received repo_info_dicts includes all required repositories, so only one pass through
-    this method is required to retrieve all repository dependencies.
-    """
-    all_repo_info_dicts = []
-    if repo_info_dicts:
-        # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool shed to discover repository ids.
-        required_repository_tups = []
-        for repo_info_dict in repo_info_dicts:
-            for repository_name, repo_info_tup in repo_info_dict.items():
-                description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
-                    get_repo_info_tuple_contents( repo_info_tup )
-                if repository_dependencies:
-                    for key, val in repository_dependencies.items():
-                        if key in [ 'root_key', 'description' ]:
-                            continue
-                        toolshed, name, owner, changeset_revision = container_util.get_components_from_key( key )
-                        components_list = [ toolshed, name, owner, changeset_revision ]
-                        if components_list not in required_repository_tups:
-                            required_repository_tups.append( components_list )
-                        for components_list in val:
-                            if components_list not in required_repository_tups:
-                                required_repository_tups.append( components_list )
-            if required_repository_tups:
-                # The value of required_repository_tups is a list of tuples, so we need to encode it.
-                encoded_required_repository_tups = []
-                for required_repository_tup in required_repository_tups:
-                    encoded_required_repository_tups.append( encoding_util.encoding_sep.join( required_repository_tup ) )
-                encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
-                encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )
-                url = url_join( tool_shed_url, '/repository/get_required_repo_info_dict?encoded_str=%s' % encoded_required_repository_str )
-                response = urllib2.urlopen( url )
-                text = response.read()
-                response.close()
-                if text:
-                    required_repo_info_dict = json.from_json_string( text )                        
-                    required_repo_info_dicts = []
-                    encoded_dict_strings = required_repo_info_dict[ 'repo_info_dicts' ]
-                    for encoded_dict_str in encoded_dict_strings:
-                        decoded_dict = encoding_util.tool_shed_decode( encoded_dict_str )
-                        required_repo_info_dicts.append( decoded_dict )                        
-                    if required_repo_info_dicts:                            
-                        for required_repo_info_dict in required_repo_info_dicts:
-                            if required_repo_info_dict not in all_repo_info_dicts:
-                                all_repo_info_dicts.append( required_repo_info_dict )
-    return all_repo_info_dicts
 def get_reversed_changelog_changesets( repo ):
     reversed_changelog = []
     for changeset in repo.changelog:
@@ -1519,57 +954,6 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                     util.send_mail( frm, to, subject, body, trans.app.config )
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
-def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir ):
-    # Copy all sample files from disk to a temporary directory since the sample files may be in multiple directories.
-    message = ''
-    sample_files = copy_disk_sample_files_to_dir( trans, repo_files_dir, work_dir )
-    if sample_files:
-        if 'tool_data_table_conf.xml.sample' in sample_files:
-            # Load entries into the tool_data_tables if the tool requires them.
-            tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
-            error, message = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-    tool, valid, message2 = load_tool_from_config( trans.app, tool_config_filepath )
-    message = concat_messages( message, message2 )
-    return tool, valid, message, sample_files
-def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir ):
-    tool = None
-    message = ''
-    ctx = get_changectx_for_changeset( repo, changeset_revision )
-    # We're not currently doing anything with the returned list of deleted_sample_files here.  It is intended to help handle sample files that are in 
-    # the manifest, but have been deleted from disk.
-    sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
-    if sample_files:
-        trans.app.config.tool_data_path = work_dir
-        if 'tool_data_table_conf.xml.sample' in sample_files:
-            # Load entries into the tool_data_tables if the tool requires them.
-            tool_data_table_config = os.path.join( work_dir, 'tool_data_table_conf.xml' )
-            if tool_data_table_config:
-                error, message = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
-                if error:
-                    log.debug( message )
-    manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
-    if manifest_ctx and ctx_file:
-        tool, message2 = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
-        message = concat_messages( message, message2 )
-    return tool, message, sample_files
-def handle_sample_tool_data_table_conf_file( app, filename, persist=False ):
-    """
-    Parse the incoming filename and add new entries to the in-memory app.tool_data_tables dictionary.  If persist is True (should only occur
-    if call is from the Galaxy side, not the tool shed), the new entries will be appended to Galaxy's shed_tool_data_table_conf.xml file on disk.
-    """
-    error = False
-    message = ''
-    try:
-        new_table_elems, message = app.tool_data_tables.add_new_entries_from_config_file( config_filename=filename,
-                                                                                          tool_data_path=app.config.tool_data_path,
-                                                                                          shed_tool_data_table_config=app.config.shed_tool_data_table_config,
-                                                                                          persist=persist )
-        if message:
-            error = True
-    except Exception, e:
-        message = str( e )
-        error = True
-    return error, message
 def has_previous_repository_reviews( trans, repository, changeset_revision ):
     """Determine if a repository has a changeset revision review prior to the received changeset revision."""
     repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
@@ -1579,87 +963,6 @@ def has_previous_repository_reviews( trans, repository, changeset_revision ):
         if previous_changeset_revision in reviewed_revision_hashes:
             return True
     return False
-def load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config_filename ):
-    """
-    Return a loaded tool whose tool config file name (e.g., filtering.xml) is the value of tool_config_filename.  The value of changeset_revision
-    is a valid (downloadable) changset revision.  The tool config will be located in the repository manifest between the received valid changeset
-    revision and the first changeset revision in the repository, searching backwards.
-    """
-    original_tool_data_path = trans.app.config.tool_data_path
-    repository = get_repository_in_tool_shed( trans, repository_id )
-    repo_files_dir = repository.repo_path( trans.app )
-    repo = hg.repository( get_configured_ui(), repo_files_dir )
-    message = ''
-    tool = None
-    can_use_disk_file = False
-    tool_config_filepath = get_absolute_path_to_file_in_repository( repo_files_dir, tool_config_filename )
-    work_dir = tempfile.mkdtemp()
-    can_use_disk_file = can_use_tool_config_disk_file( trans, repository, repo, tool_config_filepath, changeset_revision )
-    if can_use_disk_file:
-        trans.app.config.tool_data_path = work_dir
-        tool, valid, message, sample_files = handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_config_filepath, work_dir )
-        if tool is not None:
-            invalid_files_and_errors_tups = check_tool_input_params( trans.app,
-                                                                     repo_files_dir,
-                                                                     tool_config_filename,
-                                                                     tool,
-                                                                     sample_files )
-            if invalid_files_and_errors_tups:
-                message2 = generate_message_for_invalid_tools( trans,
-                                                               invalid_files_and_errors_tups,
-                                                               repository,
-                                                               metadata_dict=None,
-                                                               as_html=True,
-                                                               displaying_invalid_tool=True )
-                message = concat_messages( message, message2 )
-    else:
-        tool, message, sample_files = handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir )
-    remove_dir( work_dir )
-    trans.app.config.tool_data_path = original_tool_data_path
-    # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-    reset_tool_data_tables( trans.app )
-    return repository, tool, message
-def load_tool_from_config( app, full_path ):
-    try:
-        tool = app.toolbox.load_tool( full_path )
-        valid = True
-        error_message = None
-    except KeyError, e:
-        tool = None
-        valid = False
-        error_message = 'This file requires an entry for "%s" in the tool_data_table_conf.xml file.  Upload a file ' % str( e )
-        error_message += 'named tool_data_table_conf.xml.sample to the repository that includes the required entry to correct '
-        error_message += 'this error.  '
-    except Exception, e:
-        tool = None
-        valid = False
-        error_message = str( e )
-    return tool, valid, error_message
-def load_tool_from_tmp_config( trans, repo, ctx, ctx_file, work_dir ):
-    tool = None
-    message = ''
-    tmp_tool_config = get_named_tmpfile_from_ctx( ctx, ctx_file, work_dir )
-    if tmp_tool_config:
-        element_tree = util.parse_xml( tmp_tool_config )
-        element_tree_root = element_tree.getroot()
-        # Look for code files required by the tool config.
-        tmp_code_files = []
-        for code_elem in element_tree_root.findall( 'code' ):
-            code_file_name = code_elem.get( 'file' )
-            tmp_code_file_name = copy_file_from_manifest( repo, ctx, code_file_name, work_dir )
-            if tmp_code_file_name:
-                tmp_code_files.append( tmp_code_file_name )
-        tool, valid, message = load_tool_from_config( trans.app, tmp_tool_config )
-        for tmp_code_file in tmp_code_files:
-            try:
-                os.unlink( tmp_code_file )
-            except:
-                pass
-        try:
-            os.unlink( tmp_tool_config )
-        except:
-            pass
-    return tool, message
 def open_repository_files_folder( trans, folder_path ):
     try:
         files_list = get_repository_files( trans, folder_path )
@@ -1714,9 +1017,6 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
             if tool_shed_repository and tool_shed_repository.status not in [ trans.model.ToolShedRepository.installation_status.NEW ]:
                 return tool_shed_repository, previous_changeset_revision
     return None, None
-def reset_tool_data_tables( app ):
-    # Reset the tool_data_tables to an empty dictionary.
-    app.tool_data_tables.data_tables = {}
 def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changeset_revision, included_upper_bounds_changeset_revision ):
     """
     Return a reversed list of changesets in the repository changelog after the excluded_lower_bounds_changeset_revision, but up to and

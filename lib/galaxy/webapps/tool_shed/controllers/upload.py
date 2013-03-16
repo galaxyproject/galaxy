@@ -3,7 +3,7 @@ from galaxy.web.base.controller import BaseUIController
 from galaxy import web, util
 from galaxy.datatypes import checkers
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import metadata_util, repository_dependency_util, tool_dependency_util
+from tool_shed.util import metadata_util, repository_dependency_util, tool_dependency_util, tool_util
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -153,7 +153,7 @@ class UploadController( BaseUIController ):
                     if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
                         # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
                         # to the in-memory trans.app.tool_data_tables dictionary.
-                        error, error_message = suc.handle_sample_tool_data_table_conf_file( trans.app, full_path )
+                        error, error_message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, full_path )
                         if error:
                             message = '%s<br/>%s' % ( message, error_message )
                     # See if the content of the change set was valid.
@@ -213,7 +213,7 @@ class UploadController( BaseUIController ):
                         message += invalid_repository_dependencies_message
                         status = 'error'
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-                    suc.reset_tool_data_tables( trans.app )
+                    tool_util.reset_tool_data_tables( trans.app )
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
                                                                id=repository_id,
@@ -223,7 +223,7 @@ class UploadController( BaseUIController ):
                 else:
                     status = 'error'
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-                suc.reset_tool_data_tables( trans.app )
+                tool_util.reset_tool_data_tables( trans.app )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/tool_shed/repository/upload.mako',
                                     repository=repository,
@@ -360,7 +360,7 @@ class UploadController( BaseUIController ):
             if filename_in_archive.endswith( 'tool_data_table_conf.xml.sample' ):
                 # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
                 # to the in-memory trans.app.tool_data_tables dictionary.
-                error, message = suc.handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
+                error, message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
                 if error:
                     return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
         commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )

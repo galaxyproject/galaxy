@@ -11,9 +11,9 @@ from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_, or_
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import encoding_util, metadata_util, repository_dependency_util, tool_dependency_util
+from tool_shed.util import encoding_util, metadata_util, readme_util, repository_dependency_util, tool_dependency_util, tool_util
 from tool_shed.galaxy_install import repository_util
-from galaxy.webapps.tool_shed.util import common_util, workflow_util
+from galaxy.webapps.tool_shed.util import common_util, container_util, workflow_util
 import galaxy.tools
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
@@ -638,7 +638,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        repository, tool, message = suc.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         if message:
             status = 'error'
         tool_state = self.__new_state( trans )
@@ -1069,7 +1069,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         changeset_revision = kwd[ 'changeset_revision' ]
         repository = suc.get_repository_by_name_and_owner( trans.app, repository_name, repository_owner )
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), changeset_revision )        
-        return suc.build_readme_files_dict( repository_metadata.metadata )
+        return readme_util.build_readme_files_dict( repository_metadata.metadata )
 
     @web.json
     def get_repository_dependencies( self, trans, **kwd ):
@@ -1289,7 +1289,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                         break
             if 'workflows' in metadata:
                 includes_workflows = True
-            readme_files_dict = suc.build_readme_files_dict( metadata )
+            readme_files_dict = readme_util.build_readme_files_dict( metadata )
         # See if the repo_info_dict was populated with repository_dependencies or tool_dependencies.
         for name, repo_info_tuple in repo_info_dict.items():
             description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
@@ -1461,18 +1461,18 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'error' )
-        repository, tool, error_message = suc.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
+        repository, tool, error_message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
         is_malicious = suc.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         invalid_file_tups = []
         if tool:
-            invalid_file_tups = suc.check_tool_input_params( trans.app,
-                                                             repository.repo_path( trans.app ),
-                                                             tool_config,
-                                                             tool,
-                                                             [] )
+            invalid_file_tups = tool_util.check_tool_input_params( trans.app,
+                                                                   repository.repo_path( trans.app ),
+                                                                   tool_config,
+                                                                   tool,
+                                                                   [] )
         if invalid_file_tups:
-            message = suc.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, {}, as_html=True, displaying_invalid_tool=True )
+            message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, {}, as_html=True, displaying_invalid_tool=True )
         elif error_message:
             message = error_message
         try:
@@ -1719,7 +1719,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         else:
             review_id = None
         can_browse_repository_reviews = suc.can_browse_repository_reviews( trans, repository )
-        containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/tool_shed/repository/manage_repository.mako',
                                     repo_name=repo_name,
                                     description=description,
@@ -1832,7 +1832,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                                             selected_value=changeset_revision,
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
-        containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/tool_shed/repository/preview_tools_in_changeset.mako',
                                     repository=repository,
                                     containers_dict=containers_dict,
@@ -1920,7 +1920,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         invalid_file_tups, metadata_dict = metadata_util.reset_all_metadata_on_repository_in_tool_shed( trans, id, **kwd )
         if invalid_file_tups:
             repository = suc.get_repository_in_tool_shed( trans, id )
-            message = suc.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
+            message = tool_util.generate_message_for_invalid_tools( trans, invalid_file_tups, repository, metadata_dict )
             status = 'error'
         else:
             message = "All repository metadata has been reset.  "
@@ -2505,7 +2505,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             review_id = trans.security.encode_id( review.id )
         else:
             review_id = None
-        containers_dict = suc.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
+        containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         can_browse_repository_reviews = suc.can_browse_repository_reviews( trans, repository )
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',
                                     repo=repo,
@@ -2559,21 +2559,21 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                             guid = tool_metadata_dict[ 'guid' ]
                             full_path_to_tool_config = os.path.abspath( relative_path_to_tool_config )
                             full_path_to_dir, tool_config_filename = os.path.split( full_path_to_tool_config )
-                            can_use_disk_file = suc.can_use_tool_config_disk_file( trans, repository, repo, full_path_to_tool_config, changeset_revision )
+                            can_use_disk_file = tool_util.can_use_tool_config_disk_file( trans, repository, repo, full_path_to_tool_config, changeset_revision )
                             if can_use_disk_file:
                                 trans.app.config.tool_data_path = work_dir
-                                tool, valid, message, sample_files = suc.handle_sample_files_and_load_tool_from_disk( trans,
+                                tool, valid, message, sample_files = tool_util.handle_sample_files_and_load_tool_from_disk( trans,
                                                                                                                       repo_files_dir,
                                                                                                                       full_path_to_tool_config,
                                                                                                                       work_dir )
                                 if message:
                                     status = 'error'
                             else:
-                                tool, message, sample_files = suc.handle_sample_files_and_load_tool_from_tmp_config( trans,
-                                                                                                                     repo,
-                                                                                                                     changeset_revision,
-                                                                                                                     tool_config_filename,
-                                                                                                                     work_dir )
+                                tool, message, sample_files = tool_util.handle_sample_files_and_load_tool_from_tmp_config( trans,
+                                                                                                                           repo,
+                                                                                                                           changeset_revision,
+                                                                                                                           tool_config_filename,
+                                                                                                                           work_dir )
                                 if message:
                                     status = 'error'
                             break

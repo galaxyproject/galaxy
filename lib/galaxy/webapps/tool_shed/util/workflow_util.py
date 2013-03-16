@@ -6,7 +6,7 @@ pkg_resources.require( "SVGFig" )
 import logging, svgfig
 from galaxy.util import json
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import encoding_util, metadata_util
+from tool_shed.util import encoding_util, metadata_util, tool_util
 from galaxy.workflow.modules import InputDataModule, ToolModule, WorkflowModuleFactory
 import galaxy.webapps.galaxy.controllers.workflow
 import galaxy.tools
@@ -52,7 +52,7 @@ class RepoToolModule( ToolModule ):
             if self.tool_id in [ tool_dict[ 'id' ], tool_dict[ 'guid' ] ]:
                 if trans.webapp.name == 'tool_shed':
                     # We're in the tool shed.
-                    repository, self.tool, message = suc.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
+                    repository, self.tool, message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_dict[ 'tool_config' ] )
                     if message and self.tool is None:
                         self.errors = 'unavailable'
                     break

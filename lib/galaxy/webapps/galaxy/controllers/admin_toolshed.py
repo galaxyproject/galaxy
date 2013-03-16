@@ -7,7 +7,7 @@ from galaxy.util import json
 from galaxy.model.orm import or_
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_install_util, data_manager_util, datatype_util, encoding_util, metadata_util
-from tool_shed.util import repository_dependency_util, tool_dependency_util, tool_util
+from tool_shed.util import readme_util, repository_dependency_util, tool_dependency_util, tool_util
 from tool_shed.galaxy_install import repository_util
 from galaxy.webapps.tool_shed.util import workflow_util
 import tool_shed.galaxy_install.grids.admin_toolshed_grids as admin_toolshed_grids
@@ -1075,7 +1075,7 @@ class AdminToolshed( AdminGalaxy ):
             name, repository_owner, changeset_revision, includes_tool_dependencies, installed_repository_dependencies, \
                 missing_repository_dependencies, installed_tool_dependencies, missing_tool_dependencies = \
                 common_install_util.get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, includes_tool_dependencies )
-            readme_files_dict = suc.get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict )
+            readme_files_dict = readme_util.get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict )
             # We're handling 1 of 2 scenarios here: (1) we're installing a tool shed repository for the first time, so we've retrieved the list of installed
             # and missing repository dependencies from the database (2) we're handling the scenario where an error occurred during the installation process,
             # so we have a tool_shed_repository record in the database with associated repository dependency records.  Since we have the repository
@@ -1362,7 +1362,7 @@ class AdminToolshed( AdminGalaxy ):
                     includes_tool_dependencies = True
                 if 'workflows' in metadata:
                     includes_workflows = True
-                readme_files_dict = suc.build_readme_files_dict( metadata )
+                readme_files_dict = readme_util.build_readme_files_dict( metadata )
                 tool_dependencies = metadata.get( 'tool_dependencies', None )
             repository_dependencies = self.get_repository_dependencies( trans=trans,
                                                                         repository_id=repository_id,

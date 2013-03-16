@@ -1,8 +1,9 @@
-import os, logging
+import os, logging, urllib2
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import data_manager_util, datatype_util, tool_util
+from tool_shed.util import encoding_util, data_manager_util, datatype_util, tool_util
 from tool_shed.galaxy_install.tool_dependencies.install_util import install_package, set_environment
 from galaxy import util
+from galaxy.util import json
 from galaxy.webapps.tool_shed.util import container_util
 
 from galaxy import eggs
@@ -78,7 +79,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         else:
             installed_rd, missing_rd = get_installed_and_missing_repository_dependencies_for_new_install( trans, repo_info_tuple )
         # Discover all repository dependencies and retrieve information for installing them.
-        required_repo_info_dicts = suc.get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
+        required_repo_info_dicts = get_required_repo_info_dicts( tool_shed_url, util.listify( repo_info_dict ) )
         # Display tool dependencies defined for each of the repository dependencies.
         if required_repo_info_dicts:
             all_tool_dependencies = {}
@@ -233,6 +234,55 @@ def get_installed_and_missing_tool_dependencies_for_new_install( trans, all_tool
         tool_dependencies = None
         missing_tool_dependencies = None
     return tool_dependencies, missing_tool_dependencies
+
+def get_required_repo_info_dicts( tool_shed_url, repo_info_dicts ):
+    """
+    Inspect the list of repo_info_dicts for repository dependencies and append a repo_info_dict for each of them to the list.  All
+    repository_dependencies entries in each of the received repo_info_dicts includes all required repositories, so only one pass through
+    this method is required to retrieve all repository dependencies.
+    """
+    all_repo_info_dicts = []
+    if repo_info_dicts:
+        # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool shed to discover repository ids.
+        required_repository_tups = []
+        for repo_info_dict in repo_info_dicts:
+            for repository_name, repo_info_tup in repo_info_dict.items():
+                description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+                    suc.get_repo_info_tuple_contents( repo_info_tup )
+                if repository_dependencies:
+                    for key, val in repository_dependencies.items():
+                        if key in [ 'root_key', 'description' ]:
+                            continue
+                        toolshed, name, owner, changeset_revision = container_util.get_components_from_key( key )
+                        components_list = [ toolshed, name, owner, changeset_revision ]
+                        if components_list not in required_repository_tups:
+                            required_repository_tups.append( components_list )
+                        for components_list in val:
+                            if components_list not in required_repository_tups:
+                                required_repository_tups.append( components_list )
+            if required_repository_tups:
+                # The value of required_repository_tups is a list of tuples, so we need to encode it.
+                encoded_required_repository_tups = []
+                for required_repository_tup in required_repository_tups:
+                    encoded_required_repository_tups.append( encoding_util.encoding_sep.join( required_repository_tup ) )
+                encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
+                encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )
+                url = suc.url_join( tool_shed_url, '/repository/get_required_repo_info_dict?encoded_str=%s' % encoded_required_repository_str )
+                response = urllib2.urlopen( url )
+                text = response.read()
+                response.close()
+                if text:
+                    required_repo_info_dict = json.from_json_string( text )                        
+                    required_repo_info_dicts = []
+                    encoded_dict_strings = required_repo_info_dict[ 'repo_info_dicts' ]
+                    for encoded_dict_str in encoded_dict_strings:
+                        decoded_dict = encoding_util.tool_shed_decode( encoded_dict_str )
+                        required_repo_info_dicts.append( decoded_dict )                        
+                    if required_repo_info_dicts:                            
+                        for required_repo_info_dict in required_repo_info_dicts:
+                            if required_repo_info_dict not in all_repo_info_dicts:
+                                all_repo_info_dicts.append( required_repo_info_dict )
+    return all_repo_info_dicts
 
 def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies ):
     """

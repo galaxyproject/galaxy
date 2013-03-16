@@ -203,22 +203,22 @@ def populate_containers_dict_for_new_install( trans, tool_shed_url, tool_path, r
                                                                repository_missing_tool_dependencies=missing_tool_dependencies,
                                                                required_repo_info_dicts=None )
     # Since we are installing a new repository, most of the repository contents are set to None since we don't yet know what they are.
-    containers_dict = suc.build_repository_containers_for_galaxy( trans=trans,
-                                                                  repository=None,
-                                                                  datatypes=None,
-                                                                  invalid_tools=None,
-                                                                  missing_repository_dependencies=missing_repository_dependencies,
-                                                                  missing_tool_dependencies=missing_tool_dependencies,
-                                                                  readme_files_dict=readme_files_dict,
-                                                                  repository_dependencies=installed_repository_dependencies,
-                                                                  tool_dependencies=installed_tool_dependencies,
-                                                                  valid_tools=None,
-                                                                  workflows=None,
-                                                                  valid_data_managers=None,
-                                                                  invalid_data_managers=None,
-                                                                  data_managers_errors=None,
-                                                                  new_install=True,
-                                                                  reinstalling=False )
+    containers_dict = container_util.build_repository_containers_for_galaxy( trans=trans,
+                                                                             repository=None,
+                                                                             datatypes=None,
+                                                                             invalid_tools=None,
+                                                                             missing_repository_dependencies=missing_repository_dependencies,
+                                                                             missing_tool_dependencies=missing_tool_dependencies,
+                                                                             readme_files_dict=readme_files_dict,
+                                                                             repository_dependencies=installed_repository_dependencies,
+                                                                             tool_dependencies=installed_tool_dependencies,
+                                                                             valid_tools=None,
+                                                                             workflows=None,
+                                                                             valid_data_managers=None,
+                                                                             invalid_data_managers=None,
+                                                                             data_managers_errors=None,
+                                                                             new_install=True,
+                                                                             reinstalling=False )
     # Merge the missing_repository_dependencies container contents to the installed_repository_dependencies container.
     containers_dict = repository_dependency_util.merge_missing_repository_dependencies_to_installed_container( containers_dict )
     # Merge the missing_tool_dependencies container contents to the installed_tool_dependencies container.
