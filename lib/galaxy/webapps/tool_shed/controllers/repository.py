@@ -11,9 +11,9 @@ from galaxy.web.framework.helpers import grids
 from galaxy.util import json
 from galaxy.model.orm import and_, or_
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import encoding_util, metadata_util, readme_util, repository_dependency_util, review_util, tool_dependency_util, tool_util
+from tool_shed.util import encoding_util, metadata_util, readme_util, repository_dependency_util, review_util, tool_dependency_util, tool_util, workflow_util
 from tool_shed.galaxy_install import repository_util
-from galaxy.webapps.tool_shed.util import common_util, container_util, workflow_util
+from galaxy.webapps.tool_shed.util import common_util, container_util
 import galaxy.tools
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util

@@ -7,9 +7,8 @@ from galaxy.util import json
 from galaxy.model.orm import or_
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_install_util, data_manager_util, datatype_util, encoding_util, metadata_util
-from tool_shed.util import readme_util, repository_dependency_util, tool_dependency_util, tool_util
+from tool_shed.util import readme_util, repository_dependency_util, tool_dependency_util, tool_util, workflow_util
 from tool_shed.galaxy_install import repository_util
-from galaxy.webapps.tool_shed.util import workflow_util
 import tool_shed.galaxy_install.grids.admin_toolshed_grids as admin_toolshed_grids
 import pkg_resources
 
