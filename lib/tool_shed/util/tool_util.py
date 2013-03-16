@@ -535,7 +535,7 @@ def handle_sample_files_and_load_tool_from_disk( trans, repo_files_dir, tool_con
 def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_revision, tool_config_filename, work_dir ):
     tool = None
     message = ''
-    ctx = get_changectx_for_changeset( repo, changeset_revision )
+    ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
     # We're not currently doing anything with the returned list of deleted_sample_files here.  It is intended to help handle sample files that are in 
     # the manifest, but have been deleted from disk.
     sample_files, deleted_sample_files = get_list_of_copied_sample_files( repo, ctx, dir=work_dir )
@@ -548,7 +548,7 @@ def handle_sample_files_and_load_tool_from_tmp_config( trans, repo, changeset_re
                 error, message = handle_sample_tool_data_table_conf_file( trans.app, tool_data_table_config )
                 if error:
                     log.debug( message )
-    manifest_ctx, ctx_file = get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
+    manifest_ctx, ctx_file = suc.get_ctx_file_path_from_manifest( tool_config_filename, repo, changeset_revision )
     if manifest_ctx and ctx_file:
         tool, message2 = load_tool_from_tmp_config( trans, repo, manifest_ctx, ctx_file, work_dir )
         message = concat_messages( message, message2 )
