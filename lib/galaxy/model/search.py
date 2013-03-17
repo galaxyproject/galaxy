@@ -188,13 +188,23 @@ def library_folder_parent_library_id_filter(item, left, operator, right):
         return item.parent_library.id != right
     raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
+def library_path_filter(item, left, operator, right):
+    lpath = "/" + "/".join(item.library_path)
+    if operator == '=':
+        return lpath == right
+    if operator == '!=':
+        return lpath != right
+    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+
+
 class LibraryFolderView(ViewQueryBaseClass):
     VIEW_NAME = "library_folder"
     FIELDS = { 
         'name' : ViewField('name', sqlalchemy_field=LibraryFolder.name ),
         'id' : ViewField('id', sqlalchemy_field=LibraryFolder.id, id_decode=True),
         'parent_id' : ViewField('parent_id', sqlalchemy_field=LibraryFolder.parent_id, id_decode=True ),
-        'parent_library_id' : ViewField('parent_library_id', post_filter=library_folder_parent_library_id_filter, id_decode=True)
+        'parent_library_id' : ViewField('parent_library_id', post_filter=library_folder_parent_library_id_filter, id_decode=True),
+        'library_path' : ViewField('library_path', post_filter=library_path_filter)
     }
 
     def search(self, trans):

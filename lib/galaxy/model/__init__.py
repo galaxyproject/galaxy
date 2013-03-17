@@ -1713,15 +1713,17 @@ class LibraryFolder( object, APIItem ):
             else:
                 template = info_association.template
             rval['data_template'] = template.name
-
+        rval['library_path'] = self.library_path
+        rval['parent_library_id'] = self.parent_library.id
+        return rval
+    @property
+    def library_path(self):
         l_path = []
         f = self
         while f.parent:
             l_path.insert(0, f.name)
-            f = f.parent
-        rval['library_path'] = l_path
-        rval['parent_library_id'] = self.parent_library.id
-        return rval
+            f = f.parent        
+        return l_path
     @property
     def parent_library( self ):
         f = self
