@@ -98,6 +98,7 @@ class ViewQueryBaseClass(object):
                 field = self.FIELDS[left_base]
                 if field.sqlalchemy_field is not None:
                     if operator == "=":
+                        print field.sqlalchemy_field == right, field.sqlalchemy_field, right 
                         self.query = self.query.filter( field.sqlalchemy_field == right )
                     elif operator == "like":
                         self.query = self.query.filter( field.sqlalchemy_field.like(right) )
@@ -216,11 +217,20 @@ class LibraryFolderView(ViewQueryBaseClass):
 #Library Dataset Searching
 ##################
 
+def library_dataset_name_filter(item, left, operator, right):
+    if operator == '=':
+        return item.name == right
+    if operator == '!=':
+        return item.name != right
+    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+
+
 class LibraryDatasetView(ViewQueryBaseClass):
     VIEW_NAME = "library_dataset"
     FIELDS = { 
-        'name' : ViewField('name', sqlalchemy_field=LibraryDataset.name ),
-        'id' : ViewField('id', sqlalchemy_field=LibraryDataset.id, id_decode=True) 
+        'name' : ViewField('name', post_filter=library_dataset_name_filter),
+        'id' : ViewField('id', sqlalchemy_field=LibraryDataset.id, id_decode=True),
+        'folder_id' : ViewField('folder_id', sqlalchemy_field=LibraryDataset.folder_id, id_decode=True)
     }
 
     def search(self, trans):

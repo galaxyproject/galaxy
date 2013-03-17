@@ -1786,6 +1786,7 @@ class LibraryDataset( object ):
 
         rval = dict( id = self.id,
                      ldda_id = ldda.id,
+                     folder_id = self.folder_id,
                      model_class = self.__class__.__name__,
                      name = ldda.name,
                      file_name = ldda.file_name,
