@@ -838,7 +838,7 @@ class JobWrapper( object ):
         log.warning('set_runner() is deprecated, use set_job_destination()')
         self.set_job_destination(self.job_destination, external_id)
 
-    def set_job_destination(self, job_destination, external_id):
+    def set_job_destination(self, job_destination, external_id=None ):
         """
         Persist job destination params in the database for recovery.
 
