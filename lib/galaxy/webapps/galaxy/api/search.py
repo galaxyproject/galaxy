@@ -30,6 +30,7 @@ class SearchController( BaseAPIController, SharableItemSecurityMixin ):
             except Exception, e:
                 return {'error' : str(e)}
             if query is not None:
+                query.decode_query_ids(trans)
                 current_user_roles = trans.get_current_user_roles()
                 try:
                     results = query.process(trans)

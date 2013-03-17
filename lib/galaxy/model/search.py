@@ -43,12 +43,27 @@ class ViewField(object):
     These filter operations are either handled with standard sqlalchemy filter calls,
     or passed to specialized handlers (such as when a table join would be needed to 
     do the filtering)
+
+    Parameters:
+
+    sqlalchemy_field - Simple filtering using existing table columns, the argument is an sqlalchemy column 
+        that the right hand value will be compared against
+
+    handler - Requires more specialized code to do filtering, usually requires a table join in order to
+        process the conditional
+
+    post_filter - Unable to do simple sqlalchemy based table filtering, filter is applied to loaded object
+        Thus methods avalible to the object can be used for filtering. example: a library folder must climb 
+        its chain of parents to find out which library it belongs to
+
     """
-    def __init__(self, name, sqlalchemy_field=None, handler=None):
+    def __init__(self, name, sqlalchemy_field=None, handler=None, post_filter=None, id_decode=False):
         self.name = name
         self.sqlalchemy_field = sqlalchemy_field
         self.handler = handler
-        
+        self.post_filter = post_filter
+        self.id_decode = id_decode
+
 
 class ViewQueryBaseClass(object):
     FIELDS = {}
@@ -58,6 +73,19 @@ class ViewQueryBaseClass(object):
         self.query = None
         self.do_query = False
         self.state = {}
+        self.post_filter = []
+
+    def decode_query_ids(self, trans, conditional):
+        if conditional.operator == 'and':
+            self.decode_query_ids(trans, conditional.left)
+            self.decode_query_ids(trans, conditional.right)
+        else:
+            left_base = conditional.left.split('.')[0]
+            if left_base in self.FIELDS:
+                field = self.FIELDS[left_base]
+                if field.id_decode:
+                    conditional.right = trans.security.decode_id( conditional.right )
+
 
     def filter(self, left, operator, right):
         if operator == 'and':
@@ -77,6 +105,8 @@ class ViewQueryBaseClass(object):
                         raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
                 elif field.handler is not None:
                     field.handler(self, left, operator, right)
+                elif field.post_filter is not None:
+                    self.post_filter.append( [field.post_filter, left, operator, right] )
                 else:
                     raise GalaxyParseError("Unable to filter on field: %s" % (left))
 
@@ -89,7 +119,12 @@ class ViewQueryBaseClass(object):
     def get_results(self, force_query=False):
         if self.query is not None and (force_query or self.do_query):
             for row in self.query.distinct().all():
-                yield row
+                selected = True
+                for f in self.post_filter:
+                    if not f[0](row, f[1],f[2],f[3]):
+                        selected = False
+                if selected:
+                    yield row
 
 
 ##################
@@ -118,7 +153,7 @@ class LibraryDatasetDatasetView(ViewQueryBaseClass):
     FIELDS = { 
         'extended_metadata' : ViewField('extended_metadata', handler=library_extended_metadata_filter), 
         'name' : ViewField('name', sqlalchemy_field=LibraryDatasetDatasetAssociation.name ),
-        'id' : ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id),
+        'id' : ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id, id_decode=True),
         'deleted' : ViewField('deleted', sqlalchemy_field=LibraryDatasetDatasetAssociation.deleted),
     }
 
@@ -134,7 +169,7 @@ class LibraryView(ViewQueryBaseClass):
     VIEW_NAME = "library"
     FIELDS = { 
         'name' : ViewField('name', sqlalchemy_field=Library.name ),
-        'id' : ViewField('id', sqlalchemy_field=Library.id) 
+        'id' : ViewField('id', sqlalchemy_field=Library.id, id_decode=True) 
     }
 
     def search(self, trans):
@@ -146,11 +181,20 @@ class LibraryView(ViewQueryBaseClass):
 #Library Folder Searching
 ##################
 
+def library_folder_parent_library_id_filter(item, left, operator, right):
+    if operator == '=':
+        return item.parent_library.id == right
+    if operator == '!=':
+        return item.parent_library.id != right
+    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
+
 class LibraryFolderView(ViewQueryBaseClass):
     VIEW_NAME = "library_folder"
     FIELDS = { 
         'name' : ViewField('name', sqlalchemy_field=LibraryFolder.name ),
-        'id' : ViewField('id', sqlalchemy_field=LibraryFolder.id) 
+        'id' : ViewField('id', sqlalchemy_field=LibraryFolder.id, id_decode=True),
+        'parent_id' : ViewField('parent_id', sqlalchemy_field=LibraryFolder.parent_id, id_decode=True ),
+        'parent_library_id' : ViewField('parent_library_id', post_filter=library_folder_parent_library_id_filter, id_decode=True)
     }
 
     def search(self, trans):
@@ -166,7 +210,7 @@ class LibraryDatasetView(ViewQueryBaseClass):
     VIEW_NAME = "library_dataset"
     FIELDS = { 
         'name' : ViewField('name', sqlalchemy_field=LibraryDataset.name ),
-        'id' : ViewField('id', sqlalchemy_field=LibraryDataset.id) 
+        'id' : ViewField('id', sqlalchemy_field=LibraryDataset.id, id_decode=True) 
     }
 
     def search(self, trans):
@@ -181,7 +225,7 @@ class HistoryDatasetView(ViewQueryBaseClass):
     DOMAIN = "history_dataset"
     FIELDS = {
         'name' : ViewField('name', sqlalchemy_field=HistoryDatasetAssociation.name),
-        'id' : ViewField('id',sqlalchemy_field=HistoryDatasetAssociation.id )
+        'id' : ViewField('id',sqlalchemy_field=HistoryDatasetAssociation.id, id_decode=True)
     }
 
     def search(self, trans):
@@ -230,7 +274,7 @@ class HistoryView(ViewQueryBaseClass):
     DOMAIN = "history"
     FIELDS = {
         'name' : ViewField('name', sqlalchemy_field=History.name),
-        'id' : ViewField('id', sqlalchemy_field=History.id),
+        'id' : ViewField('id', sqlalchemy_field=History.id, id_decode=True),
         'tag' : ViewField("tag", handler=history_handle_tag),
         'annotation' : ViewField("annotation", handler=history_handle_annotation)
     }
@@ -262,7 +306,7 @@ class WorkflowView(ViewQueryBaseClass):
     DOMAIN = "workflow"
     FIELDS = {
         'name' : ViewField('name', sqlalchemy_field=StoredWorkflow.name),
-        'id' : ViewField('id', sqlalchemy_field=StoredWorkflow.id),
+        'id' : ViewField('id', sqlalchemy_field=StoredWorkflow.id, id_decode=True),
         'tag' : ViewField('tag', handler=workflow_tag_handler)
     }
 
@@ -318,6 +362,7 @@ value_word = (
     | 'False' -> False 
     | 'true' -> True 
     | 'True' -> True    
+    | 'None' -> None
     | quote_word )
 comparison = ( '=' -> '='
     | '>' -> '>'
@@ -364,11 +409,15 @@ class GalaxyQueryAnd:
 class GalaxyParseError(Exception):
     pass
 
-class SearchProcess:
+class SearchQuery:
     def __init__(self, view, query):
         self.view = view
         self.query = query
     
+    def decode_query_ids(self, trans):
+        if self.query.conditional is not None:
+            self.view.decode_query_ids(trans, self.query.conditional)
+
     def process(self, trans):
         self.view.search(trans)
         if self.query.conditional is not None:
@@ -392,7 +441,7 @@ class SearchProcess:
 
 class GalaxySearchEngine:
     """
-    Primary class for searching. Parses GQL (Galaxy Query Language) queries and returns a 'SearchProcess' class
+    Primary class for searching. Parses GQL (Galaxy Query Language) queries and returns a 'SearchQuery' class
     """
     def __init__(self):
         self.parser = parsley.makeGrammar(gqlGrammar, { 
@@ -407,6 +456,6 @@ class GalaxySearchEngine:
 
         if q.table_name in view_mapping:
             view = view_mapping[q.table_name]()
-            return SearchProcess(view, q)
+            return SearchQuery(view, q)
         raise GalaxyParseError("No such table %s" % (q.table_name))
 

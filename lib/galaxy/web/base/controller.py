@@ -131,7 +131,7 @@ class BaseController( object ):
         if type( rval ) != dict:
             return rval
         for k, v in rval.items():
-            if k == 'id' or k.endswith( '_id' ):
+            if (k == 'id' or k.endswith( '_id' )) and v is not None:
                 try:
                     rval[k] = trans.security.encode_id( v )
                 except:
