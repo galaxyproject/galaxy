@@ -485,7 +485,7 @@ class JobConfiguration( object ):
                     log.warning("Job runner classes must be subclassed from BaseJobRunner, %s has bases: %s" % (id, runner_class.__bases__))
                     continue
                 try:
-                    rval[id] = runner_class( self.app, runner['workers'], **runner['kwds'] )
+                    rval[id] = runner_class( self.app, runner[ 'workers' ], **runner.get( 'kwds', {} ) )
                 except TypeError:
                     log.warning( "Job runner '%s:%s' has not been converted to a new-style runner" % ( module_name, class_name ) )
                     rval[id] = runner_class( self.app )
