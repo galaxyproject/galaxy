@@ -167,6 +167,13 @@
                 </div>
             </div>
         %endif
+        %if ldda.extended_metadata:
+            <div class="form-row">
+                <label>Extended Metadata:</label>
+                <pre>${util.pretty_print_json(ldda.extended_metadata.data)}</pre>
+                <div style="clear: both"></div>
+            </div>
+        %endif
         %if trans.user_is_admin() and cntrller == 'library_admin':
             <div class="form-row">
                 <label>Disk file:</label>

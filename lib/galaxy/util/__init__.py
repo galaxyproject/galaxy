@@ -49,6 +49,9 @@ BINARY_CHARS = [ NULL_CHAR ]
 from inflection import Inflector, English
 inflector = Inflector(English)
 
+pkg_resources.require( "simplejson" )
+import simplejson
+
 def is_multi_byte( chars ):
     for char in chars:
         try:
@@ -167,6 +170,11 @@ def pretty_print_xml( elem, level=0 ):
         if level and ( not elem.tail or not elem.tail.strip() ):
             elem.tail = i + pad
     return elem
+
+def pretty_print_json(json_data, is_json_string=False):
+    if is_json_string:
+        json_data = simplejson.loads(json_data)
+    return simplejson.dumps(json_data, sort_keys=True, indent=4 * ' ')
 
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
