@@ -195,20 +195,16 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             return "Not implemented."
 
 
-#TODO: move these into model
 def get_hda_dict( trans, history, hda, for_editing ):
     hda_dict = hda.get_api_value( view='element' )
 
-    hda_dict[ 'id' ] = trans.security.encode_id( hda.id )
-    hda_dict[ 'history_id' ] = trans.security.encode_id( history.id )
-    hda_dict[ 'hid' ] = hda.hid
-
-    hda_dict[ 'file_ext' ] = hda.ext
+    # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
     if trans.user_is_admin() or trans.app.config.expose_dataset_path:
         hda_dict[ 'file_name' ] = hda.file_name
 
     if not hda_dict[ 'deleted' ]:
-        hda_dict[ 'download_url' ] = url_for( 'history_contents_display', history_id = trans.security.encode_id( history.id ), history_content_id = trans.security.encode_id( hda.id ) )
+        hda_dict[ 'download_url' ] = url_for( 'history_contents_display', history_id = trans.security.encode_id( history.id ), 
+                                              history_content_id = trans.security.encode_id( hda.id ) )
 
     can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
     hda_dict[ 'accessible' ] = ( trans.user_is_admin() or can_access_hda )
@@ -224,22 +220,14 @@ def get_hda_dict( trans, history, hda, for_editing ):
 
     hda_dict[ 'display_apps' ] = get_display_apps( trans, hda )
     hda_dict[ 'display_types' ] = get_old_display_applications( trans, hda )
-
-    if hda.dataset.uuid is None:
-        hda_dict['uuid'] = None
-    else:
-        hda_dict['uuid'] = str(hda.dataset.uuid)
-
     hda_dict[ 'visualizations' ] = hda.get_visualizations()
-    if hda.peek and hda.peek != 'no peek':
-        hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
 
     if hda.creating_job and hda.creating_job.tool_id:
         tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
         if tool_used and tool_used.force_history_refresh:
             hda_dict[ 'force_history_refresh' ] = True
 
-    return hda_dict
+    return trans.security.encode_dict_ids( hda_dict )
 
 def get_display_apps( trans, hda ):
     #TODO: make more straightforward (somehow)

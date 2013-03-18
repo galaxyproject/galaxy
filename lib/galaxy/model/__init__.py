@@ -1516,6 +1516,11 @@ class HistoryDatasetAssociation( DatasetInstance ):
         # other model classes.
         hda = self
         rval = dict( id = hda.id,
+                     uuid = ( lambda uuid: str( uuid ) if uuid else None )( hda.dataset.uuid ),
+                     history_id = hda.history.id,
+                     hid = hda.hid,
+                     file_ext = hda.ext,
+                     peek = ( lambda hda: hda.display_peek() if hda.peek and hda.peek != 'no peek' else None )( hda ),
                      model_class = self.__class__.__name__,
                      name = hda.name,
                      deleted = hda.deleted,
