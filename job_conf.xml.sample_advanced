@@ -7,6 +7,7 @@
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
         <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
         <plugin id="gridengine" type="runner" load="galaxy.jobs.runners.drmaa:DRMAARunner"/>
+        <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr.LwrJobRunner" /> <!-- https://lwr.readthedocs.org -->
     </plugins>
     <handlers default="handlers">
         <!-- Additional job handlers - the id should match the name of a
@@ -39,6 +40,11 @@
             <!-- A destination that represents a method in the dynamic runner. -->
             <param id="type">python</param>
             <param id="function">foo</param>
+        </destination>
+        <destination id="secure_lwr" runner="lwr">
+            <param id="url">https://windowshost.examle.com:8913/</param>
+            <!-- If set, private_token must match token remote LWR server configured with. -->
+            <param id="private_token">123456789changeme</param>
         </destination>
     </destinations>
     <tools>

@@ -9,12 +9,13 @@ import os, errno
 from time import sleep
 
 from galaxy.jobs import TaskWrapper
+from galaxy.jobs.runners import BaseJobRunner
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'TaskedJobRunner' ]
 
-class TaskedJobRunner( object ):
+class TaskedJobRunner( BaseJobRunner ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
@@ -25,7 +26,7 @@ class TaskedJobRunner( object ):
         self._init_worker_threads()
 
     def queue_job( self, job_wrapper ):
-        super( LocalJobRunner, self ).queue_job( job_wrapper )
+        super( TaskedJobRunner, self ).queue_job( job_wrapper )
         if not job_wrapper.is_ready:
             return
 

@@ -173,7 +173,9 @@ class PBSJobRunner( AsynchronousJobRunner ):
         return JobDestination(runner='pbs', params=params)
 
     def parse_destination_params(self, params):
-        """A wrapper method around __args_to_attrs() that allow administrators to define PBS params as either command-line options (as in ``qsub(1B)``) or more human-readable "long" args (as in ``pbs_submit(3B)``).
+        """A wrapper method around __args_to_attrs() that allow administrators to define PBS
+        params as either command-line options (as in ``qsub(1B)``) or more human-readable "long"
+        args (as in ``pbs_submit(3B)``).
 
         :returns: list of dicts -- The dicts map directly to pbs attropl structs (see ``pbs_submit(3B)``)
         """
@@ -185,7 +187,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
                 arg = arg.lstrip('-')
                 args[arg] = value
             except:
-                log.warning('Unrecognized long argument in destination params: %s' % k)
+                log.warning('Unrecognized long argument in destination params: %s' % arg)
         return self.__args_to_attrs(args)
 
     # Internal stuff
