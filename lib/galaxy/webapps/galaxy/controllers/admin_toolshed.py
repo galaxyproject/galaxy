@@ -399,7 +399,7 @@ class AdminToolshed( AdminGalaxy ):
             tool_panel_dict = tool_util.generate_tool_panel_dict_for_new_install( metadata_dict[ 'tools' ], tool_section )
             sample_files = metadata_dict.get( 'sample_files', [] )
             tool_index_sample_files = tool_util.get_tool_index_sample_files( sample_files )
-            tool_util.copy_sample_files( self.app, tool_index_sample_files, tool_path=tool_path )
+            tool_util.copy_sample_files( trans.app, tool_index_sample_files, tool_path=tool_path )
             sample_files_copied = [ str( s ) for s in tool_index_sample_files ]
             repository_tools_tups = suc.get_repository_tools_tups( trans.app, metadata_dict )
             if repository_tools_tups:
