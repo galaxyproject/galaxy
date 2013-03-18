@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<job_conf>
+    <plugins workers="4">
+        <!-- "workers" is the number of threads for the runner's work queue.
+             The default from <plugins> is used if not defined for a <plugin>.
+          -->
+        <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
+        <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
+        <plugin id="gridengine" type="runner" load="galaxy.jobs.runners.drmaa:DRMAARunner"/>
+        <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr.LwrJobRunner" /> <!-- https://lwr.readthedocs.org -->
+    </plugins>
+    <handlers default="handlers">
+        <!-- Additional job handlers - the id should match the name of a
+             [server:<id>] in universe_wsgi.ini.
+         -->
+        <handler id="handler0" tags="handlers"/>
+        <handler id="handler1" tags="handlers"/>
+        <handler id="special_handler0" tags="special_handlers"/>
+        <handler id="special_handler1" tags="special_handlers"/>
+        <handler id="trackster_handler"/>
+    </handlers>
+    <destinations default="local">
+        <!-- Destinations define details about remote resources and how jobs
+             should be executed on those remote resources.
+         -->
+        <destination id="local" runner="local"/>
+        <destination id="pbs" runner="pbs" tags="mycluster"/>
+        <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
+            <!-- Define parameters that are native to the job runner plugin. -->
+            <param id="Execution_Time">72:00:00</param>
+        </destination>
+        <destination id="remote_cluster" runner="drmaa" tags="longjobs"/>
+        <destination id="real_user_cluster" runner="drmaa">
+            <!-- TODO: The real user options should maybe not be considered runner params. -->
+            <param id="galaxy_external_runjob_script">scripts/drmaa_external_runner.py</param>
+            <param id="galaxy_external_killjob_script">scripts/drmaa_external_killer.py</param>
+            <param id="galaxy_external_chown_script">scripts/external_chown_script.py</param>
+        </destination>
+        <destination id="dynamic" runner="dynamic">
+            <!-- A destination that represents a method in the dynamic runner. -->
+            <param id="type">python</param>
+            <param id="function">foo</param>
+        </destination>
+        <destination id="secure_lwr" runner="lwr">
+            <param id="url">https://windowshost.examle.com:8913/</param>
+            <!-- If set, private_token must match token remote LWR server configured with. -->
+            <param id="private_token">123456789changeme</param>
+        </destination>
+    </destinations>
+    <tools>
+        <!-- Tools can be configured to use specific destinations or handlers,
+             identified by either the "id" or "tags" attribute.  If assigned to
+             a tag, a handler or destination that matches that tag will be
+             chosen at random.
+         -->
+        <tool id="foo" handler="trackster_handler">
+            <param id="source">trackster</param>
+        </tool>
+        <tool id="bar" destination="dynamic"/>
+        <tool id="baz" handler="special_handlers" destination="bigmem"/>
+    </tools>
+    <limits>
+        <!-- Certain limits can be defined. -->
+        <limit type="registered_user_concurrent_jobs">2</limit>
+        <limit type="unregistered_user_concurrent_jobs">1</limit>
+        <limit type="job_walltime">24:00:00</limit>
+        <limit type="concurrent_jobs" id="local">1</limit>
+        <limit type="concurrent_jobs" tag="mycluster">2</limit>
+        <limit type="concurrent_jobs" tag="longjobs">1</limit>
+    </limits>
+</job_conf>

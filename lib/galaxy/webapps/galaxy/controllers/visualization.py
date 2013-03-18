@@ -4,8 +4,9 @@ from sqlalchemy import desc, or_, and_
 from galaxy import model, web
 from galaxy.model.item_attrs import UsesAnnotations, UsesItemRatings
 from galaxy.web.base.controller import BaseUIController, SharableMixin, UsesVisualizationMixin
-from galaxy.web.framework.helpers import time_ago, grids, iff
+from galaxy.web.framework.helpers import time_ago, grids
 from galaxy import util
+from galaxy.datatypes.interval import Bed
 from galaxy.util.json import from_json_string
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
@@ -503,7 +504,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 self.create_item_slug( session, visualization )
                 session.flush()
                 trans.set_message( "Visualization '%s' shared with user '%s'" % ( visualization.title, other.email ) )
-                return trans.response.send_redirect( url_for( action='sharing', id=id ) )
+                return trans.response.send_redirect( url_for(controller='visualization', action='sharing', id=id ) )
         return trans.fill_template( "/ind_share_base.mako",
                                     message = msg,
                                     messagetype = mtype,
@@ -551,7 +552,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         if self.create_item_slug( trans.sa_session, visualization ):
             trans.sa_session.flush()
-        return_dict = { "name" : visualization.title, "link" : url_for( action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug ) }
+        return_dict = { "name" : visualization.title, "link" : url_for(controller='visualization', action="display_by_username_and_slug", username=visualization.user.username, slug=visualization.slug ) }
         return return_dict
 
     @web.expose
@@ -588,11 +589,11 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 visualization_slug_err = rval[ 'slug_err' ]
             else:
                 # Successfully created viz.
-                return trans.response.send_redirect( web.url_for( action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='visualization', action='list' ) )
         
         viz_type_options = [ ( t, t ) for t in self.viz_types ]
         return trans.show_form( 
-            web.FormBuilder( web.url_for(), "Create new visualization", submit_text="Submit" )
+            web.FormBuilder( web.url_for(controller='visualization', action='create'), "Create new visualization", submit_text="Submit" )
                 .add_text( "visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err )
                 .add_select( "visualization_type", "Type", options=viz_type_options, error=None )
                 .add_text( "visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
@@ -601,7 +602,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                                 from the visualization title, but can be edited. This field
                                 must contain only lowercase letters, numbers, and
                                 the '-' character.""" )
-                .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), error=None)
+                .add_select( "visualization_dbkey", "Visualization DbKey/Build", value=visualization_dbkey, options=trans.app.genomes.get_dbkeys( trans, chrom_info=True ), error=None)
                 .add_text( "visualization_annotation", "Visualization annotation", value=visualization_annotation, error=visualization_annotation_err,
                             help="A description of the visualization; annotation is shown alongside published visualizations."),
                 template="visualization/create.mako" )
@@ -649,7 +650,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                     self.add_item_annotation( trans.sa_session, trans.get_user(), visualization, visualization_annotation )
                 session.flush()
                 # Redirect to visualization list.
-                return trans.response.send_redirect( web.url_for( action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='visualization', action='list' ) )
         else:
             visualization_title = visualization.title
             # Create slug if it's not already set.
@@ -660,7 +661,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             if not visualization_annotation:
                 visualization_annotation = ""
         return trans.show_form( 
-            web.FormBuilder( web.url_for( id=id ), "Edit visualization attributes", submit_text="Submit" )
+            web.FormBuilder( web.url_for(controller='visualization', action='edit', id=id ), "Edit visualization attributes", submit_text="Submit" )
                 .add_text( "visualization_title", "Visualization title", value=visualization_title, error=visualization_title_err )
                 .add_text( "visualization_slug", "Visualization identifier", value=visualization_slug, error=visualization_slug_err,
                            help="""A unique identifier that will be used for
@@ -683,7 +684,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         Provide info necessary for creating a new trackster browser.
         """
         return trans.fill_template( "tracks/new_browser.mako", 
-                                    dbkeys=trans.app.genomes.get_dbkeys_with_chrom_info( trans ), 
+                                    dbkeys=trans.app.genomes.get_dbkeys( trans, chrom_info=True ), 
                                     default_dbkey=kwargs.get("default_dbkey", None) )
         
     @web.expose

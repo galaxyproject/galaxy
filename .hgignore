@@ -45,6 +45,9 @@ tool_sheds_conf.xml
 integrated_tool_panel.xml
 openid_conf.xml
 shed_tool_data_table_conf.xml
+job_conf.xml
+data_manager_conf.xml
+shed_data_manager_conf.xml
 
 static/welcome.html.*
 static/welcome.html
@@ -78,7 +81,7 @@ tool-data/shared/jars/
 
 # CSS build artifacts.
 */variables.less
-static/june_2007_style/blue/base_sprites.less
+static/style/blue/base_sprites.less
 
 # Testing
 selenium-server.jar

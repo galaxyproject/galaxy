@@ -443,7 +443,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
         if not user and trans.app.config.require_login:
             if trans.app.config.allow_user_creation:
                 create_account_str = "  If you don't already have an account, <a href='%s'>you may create one</a>." % \
-                    web.url_for( action='create', cntrller='user' )
+                    web.url_for( controller='user', action='create', cntrller='user' )
                 if trans.webapp.name == 'galaxy':
                     header = require_login_template % ( "Galaxy instance", create_account_str )
                 else:
@@ -553,7 +553,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                                                       cntrller,
                                                                       subscribe_checked,
                                                                       **kwd )
-                    if trans.webapp.name == 'community':
+                    if trans.webapp.name == 'tool_shed':
                         redirect_url = url_for( '/' )
                     if success and not is_admin:
                         # The handle_user_login() method has a call to the history_set_default_permissions() method
@@ -735,7 +735,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                         message=message,
                                         status=status )
         else:
-            return trans.fill_template( '/webapps/community/user/manage_info.mako',
+            return trans.fill_template( '/webapps/tool_shed/user/manage_info.mako',
                                         cntrller=cntrller,
                                         user=user,
                                         email=email,
@@ -912,7 +912,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                         trans.sa_session.add( reset_user )
                         trans.sa_session.flush()
                         trans.log_event( "User reset password: %s" % email )
-                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( action='login' ) )
+                        message = "Password has been reset and emailed to: %s.  <a href='%s'>Click here</a> to return to the login form." % ( email, web.url_for( controller='user', action='login' ) )
                     except Exception, e:
                         message = 'Failed to reset password: %s' % str( e )
                         status = 'error'
@@ -929,9 +929,12 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     message=message,
                                     status=status )
     def __validate( self, trans, params, email, password, confirm, username ):
-        # If coming from the community webapp, we'll require a public user name
-        if trans.webapp.name == 'community' and not username:
-            return "A public user name is required"
+        # If coming from the tool shed webapp, we'll require a public user name
+        if trans.webapp.name == 'tool_shed':
+            if not username:
+                return "A public user name is required in the tool shed."
+            if username in [ 'repos' ]:
+                return "The term <b>%s</b> is a reserved word in the tool shed, so it cannot be used as a public user name." % username
         message = validate_email( trans, email )
         if not message:
             message = validate_password( trans, password, confirm )

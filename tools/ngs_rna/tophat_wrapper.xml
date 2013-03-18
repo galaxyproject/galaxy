@@ -151,23 +151,12 @@
     </command>
     <inputs>
         <param format="fastqsanger" name="input1" type="data" label="RNA-Seq FASTQ file" help="Nucleotide-space: Must have Sanger-scaled quality values with ASCII offset 33" />
-        <conditional name="refGenomeSource">
-          <param name="genomeSource" type="select" label="Will you select a reference genome from your history or use a built-in index?" help="Built-ins were indexed using default options">
-            <option value="indexed">Use a built-in index</option>
-            <option value="history">Use one from the history</option>
-          </param>
-          <when value="indexed">
-            <param name="index" type="select" label="Select a reference genome" help="If your genome of interest is not listed, contact the Galaxy team">
-              <options from_data_table="tophat_indexes">
-                <filter type="sort_by" column="2"/>
-                <validator type="no_options" message="No indexes are available for the selected input dataset"/>
-              </options>
-            </param>
-          </when>
-          <when value="history">
-            <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select the reference genome" />
-          </when>  <!-- history -->
-        </conditional>  <!-- refGenomeSource -->
+        <expand macro="refGenomeSourceConditional">
+          <options from_data_table="tophat_indexes">
+            <filter type="sort_by" column="2"/>
+            <validator type="no_options" message="No genomes are available for the selected input dataset"/>
+          </options>
+        </expand>
         <conditional name="singlePaired">
             <param name="sPaired" type="select" label="Is this library mate-paired?">
               <option value="single">Single-end</option>
@@ -298,17 +287,7 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
                   <param name="splice_mismatches" type="integer" value="0" label="Maximum number of mismatches that can appear in the anchor region of spliced alignment" />
                   <param name="min_intron_length" type="integer" value="70" label="The minimum intron length" help="TopHat will ignore donor/acceptor pairs closer than this many bases apart." />
                   <param name="max_intron_length" type="integer" value="500000" label="The maximum intron length" help="When searching for junctions ab initio, TopHat will ignore donor/acceptor pairs farther than this many bases apart, except when such a pair is supported by a split segment alignment of a long read." />
-                  <conditional name="indel_search">
-                      <param name="allow_indel_search" type="select" label="Allow indel search">
-                          <option value="Yes">Yes</option>
-                          <option value="No">No</option>
-                      </param>
-                      <when value="No"/>
-                      <when value="Yes">
-                         <param name="max_insertion_length" type="integer" value="3" label="Max insertion length." help="The maximum insertion length." />
-                         <param name="max_deletion_length" type="integer" value="3" label="Max deletion length." help="The maximum deletion length." />
-                      </when>
-                  </conditional>
+                  <expand macro="indel_searchConditional" />
                   <param name="max_multihits" type="integer" value="20" label="Maximum number of alignments to be allowed" />
                   <param name="min_segment_intron" type="integer" value="50" label="Minimum intron length that may be found during split-segment (default) search" />
                   <param name="max_segment_intron" type="integer" value="500000" label="Maximum intron length that may be found during split-segment (default) search" />
@@ -316,40 +295,7 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
                   <param name="seg_mismatches" type="integer" min="0" max="3" value="2" label="Number of mismatches allowed in each segment alignment for reads mapped independently" />
                   <param name="seg_length" type="integer" value="25" label="Minimum length of read segments" />
                   <!-- Options for supplying own junctions. -->
-                  <conditional name="own_junctions">
-                      <param name="use_junctions" type="select" label="Use Own Junctions">
-                        <option value="No">No</option>
-                        <option value="Yes">Yes</option>
-                      </param>
-                      <when value="Yes">
-                          <conditional name="gene_model_ann">
-                             <param name="use_annotations" type="select" label="Use Gene Annotation Model">
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                             </param>
-                             <when value="No" />
-                             <when value="Yes">
-                               <param format="gtf" name="gene_annotation_model" type="data" label="Gene Model Annotations" help="TopHat will use the exon records in this file to build a set of known splice junctions for each gene, and will attempt to align reads to these junctions even if they would not normally be covered by the initial mapping."/>
-                             </when>
-                          </conditional>
-                          <conditional name="raw_juncs">
-                             <param name="use_juncs" type="select" label="Use Raw Junctions">
-                                <option value="No">No</option>
-                                <option value="Yes">Yes</option>
-                             </param>
-                             <when value="No" />
-                             <when value="Yes">
-                               <param format="interval" name="raw_juncs" type="data" label="Raw Junctions" help="Supply TopHat with a list of raw junctions. Junctions are specified one per line, in a tab-delimited format. Records look like: [chrom] [left] [right] [+/-] left and right are zero-based coordinates, and specify the last character of the left sequenced to be spliced to the first character of the right sequence, inclusive."/>
-                             </when>
-                          </conditional>
-                          <param name="no_novel_juncs" type="select" label="Only look for supplied junctions">
-                            <option value="No">No</option>
-                            <option value="Yes">Yes</option>
-                          </param>
-                      </when>
-                      <when value="No" />
-                  </conditional> <!-- /own_junctions -->
-                  
+                  <expand macro="own_junctionsConditional" />
                   <!-- Closure search. -->
                   <conditional name="closure_search">
                     <param name="use_search" type="select" label="Use Closure Search">
@@ -387,83 +333,40 @@ alignments (number of reads divided by average depth of coverage)" help="0.0 to 
 
     <outputs>
         <data format="bed" name="insertions" label="${tool.name} on ${on_string}: insertions" from_work_dir="tophat_out/insertions.bed">
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
+            <expand macro="dbKeyActions" />
         </data>
         <data format="bed" name="deletions" label="${tool.name} on ${on_string}: deletions" from_work_dir="tophat_out/deletions.bed">
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
+            <expand macro="dbKeyActions" />
         </data>
         <data format="bed" name="junctions" label="${tool.name} on ${on_string}: splice junctions" from_work_dir="tophat_out/junctions.bed">
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
+            <expand macro="dbKeyActions" />
         </data>
         <data format="bam" name="accepted_hits" label="${tool.name} on ${on_string}: accepted_hits" from_work_dir="tophat_out/accepted_hits.bam">
-            <actions>
-              <conditional name="refGenomeSource.genomeSource">
-                <when value="indexed">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
-                      <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
-                      <filter type="param_value" ref="refGenomeSource.index" column="0"/>
-                    </option>
-                  </action>
-                </when>
-                <when value="history">
-                  <action type="metadata" name="dbkey">
-                    <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
-                  </action>
-                </when>
-              </conditional>
-            </actions>
+            <expand macro="dbKeyActions" />
         </data>
     </outputs>
-
+    <macros>
+      <import>tophat_macros.xml</import>
+      <macro name="dbKeyActions">
+        <actions>
+          <conditional name="refGenomeSource.genomeSource">
+            <when value="indexed">
+              <action type="metadata" name="dbkey">
+                <option type="from_data_table" name="tophat_indexes" column="1" offset="0">
+                  <filter type="param_value" column="0" value="#" compare="startswith" keep="False"/>
+                  <filter type="param_value" ref="refGenomeSource.index" column="0"/>
+                </option>
+              </action>
+            </when>
+            <when value="history">
+              <action type="metadata" name="dbkey">
+                <option type="from_param" name="refGenomeSource.ownFile" param_attribute="dbkey" />
+              </action>
+            </when>
+          </conditional>
+        </actions>
+      </macro>
+    </macros>
     <tests>
         <!-- Test base-space single-end reads with pre-built index and preset parameters -->
         <test>

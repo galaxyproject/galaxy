@@ -4,7 +4,7 @@ from Queue import Queue, Empty
 from galaxy import model
 from galaxy.jobs.runners import BaseJobRunner
 
-from paste.deploy.converters import asbool
+from galaxy.util import asbool
 
 import pkg_resources
 

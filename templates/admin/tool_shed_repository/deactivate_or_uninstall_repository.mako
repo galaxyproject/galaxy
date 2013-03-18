@@ -59,7 +59,7 @@
                     <div class="toolParamHelp" style="clear: both;">
                             * The repository and all of it's contents will remain on disk.
                     </div>
-                    %if repository.includes_tools:
+                    %if repository.includes_tools_for_display_in_tool_panel:
                         <div class="toolParamHelp" style="clear: both;">
                             * The repository's tools will not be loaded into the tool panel.
                         </div>
@@ -87,7 +87,7 @@
                 <div class="toolParamHelp" style="clear: both;">
                     * The repository and all of it's contents will be removed from disk.
                 </div>
-                %if repository.includes_tools:
+                %if repository.includes_tools_for_display_in_tool_panel:
                     <div class="toolParamHelp" style="clear: both;">
                         * The repository's tool tag sets will be removed from the tool config file in which they are defined.
                     </div>

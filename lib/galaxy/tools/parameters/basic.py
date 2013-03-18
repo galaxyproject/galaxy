@@ -880,6 +880,9 @@ class GenomeBuildParameter( SelectToolParameter ):
     >>> print p.filter_value( "hg17" )
     hg17
     """
+    def __init__( self, *args, **kwds ):
+        super( GenomeBuildParameter, self ).__init__( *args, **kwds )
+        self.static_options = [ ( value, key, False ) for key, value in util.dbnames ]
     def get_options( self, trans, other_values ):
         if not trans.history:
             yield 'unspecified', '?', False
@@ -1072,9 +1075,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     >>> print p.get_html()
     <div class="form-row drilldown-container" id="drilldown--736f6d655f6e616d65">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
     <input type="checkbox" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="some_name" value="option1" >Option 1
     </div>
@@ -1082,9 +1085,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     <input type="checkbox" name="some_name" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
     <input type="checkbox" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="checkbox" name="some_name" value="option3" >Option 3
     </div>
@@ -1118,9 +1121,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     >>> print p.get_html()
     <div class="form-row drilldown-container" id="drilldown--736f6d655f6e616d65">
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-click"></span>
     <input type="radio" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="some_name" value="option1" >Option 1
     </div>
@@ -1128,9 +1131,9 @@ class DrillDownSelectToolParameter( SelectToolParameter ):
     <input type="radio" name="some_name" value="option2" >Option 2
     </div>
     <div class="form-row-input">
-    <span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
+    <div><span class="form-toggle icon-button toggle-expand" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-click"></span>
     <input type="radio" name="some_name" value="heading1" >Heading 1
-    <div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
+    </div><div class="form-row" id="drilldown--736f6d655f6e616d65-68656164696e6731-68656164696e6731-container" style="float: left; margin-left: 1em;">
     <div class="form-row-input">
     <input type="radio" name="some_name" value="option3" >Option 3
     </div>
@@ -1552,7 +1555,7 @@ class DataToolParameter( ToolParameter ):
         # although, this should never be called in workflow mode right?
         if trans.workflow_building_mode:
             return None
-        if not value:
+        if not value and not self.optional:
             raise ValueError( "History does not include a dataset of the required format / build" )
         if value in [None, "None"]:
             return None

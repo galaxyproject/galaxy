@@ -16,7 +16,6 @@ class Grid( object ):
     """
     Specifies the content and format of a grid (data table).
     """
-    webapp = None
     title = ""
     exposed = True
     model_class = None
@@ -56,7 +55,6 @@ class Grid( object ):
     def __call__( self, trans, **kwargs ):
         # Get basics.
         # FIXME: pretty sure this is only here to pass along, can likely be eliminated
-        webapp = trans.webapp.name
         status = kwargs.get( 'status', None )
         message = kwargs.get( 'message', None )
         # Build a base filter and sort key that is the combination of the saved state and defaults.
@@ -229,7 +227,6 @@ class Grid( object ):
         params = cur_filter_dict.copy()
         params['sort'] = sort_key
         params['async'] = ( 'async' in kwargs )
-        params['webapp'] = webapp
         trans.log_action( trans.get_user(), unicode( "grid.view" ), context, params )
         # Render grid.
         def url( *args, **kwargs ):
@@ -273,7 +270,6 @@ class Grid( object ):
                                     status = status,
                                     message = message,
                                     use_panels=self.use_panels,
-                                    webapp=webapp,
                                     show_item_checkboxes = ( self.show_item_checkboxes or 
                                                              kwargs.get( 'show_item_checkboxes', '' ) in [ 'True', 'true' ] ),
                                     # Pass back kwargs so that grid template can set and use args without
@@ -458,7 +454,7 @@ class CommunityRatingColumn( GridColumn, UsesItemRatings ):
     """ Column that displays community ratings for an item. """
     def get_value( self, trans, grid, item ):
         ave_item_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, item, webapp_model=trans.model )
-        return trans.fill_template( "community_rating.mako",
+        return trans.fill_template( "tool_shed_rating.mako",
                                     ave_item_rating=ave_item_rating,
                                     num_ratings=num_ratings,
                                     item_id=trans.security.encode_id( item.id ) )

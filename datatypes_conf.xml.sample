@@ -26,7 +26,6 @@
       <converter file="bed_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
       <converter file="bed_to_fli_converter.xml" target_datatype="fli"/>
       <!-- <display file="ucsc/interval_as_bed.xml" /> -->
-      <display file="genetrack.xml" />
       <display file="igb/bed.xml" />
     </datatype>
     <datatype extension="bedgraph" type="galaxy.datatypes.interval:BedGraph" display_in_upload="true">
@@ -34,7 +33,6 @@
     </datatype>
     <datatype extension="bedstrict" type="galaxy.datatypes.interval:BedStrict" />
     <datatype extension="bed6" type="galaxy.datatypes.interval:Bed6">
-      <converter file="bed_to_genetrack_converter.xml" target_datatype="genetrack"/>
     </datatype>
     <datatype extension="bed12" type="galaxy.datatypes.interval:Bed12" />
     <datatype extension="len" type="galaxy.datatypes.chrominfo:ChromInfo" display_in_upload="true">
@@ -61,6 +59,7 @@
     <datatype extension="bowtie_base_index" type="galaxy.datatypes.ngsindex:BowtieBaseIndex" mimetype="text/html" display_in_upload="False"/>
     <datatype extension="csfasta" type="galaxy.datatypes.sequence:csFasta" display_in_upload="true"/>
     <datatype extension="data" type="galaxy.datatypes.data:Data" mimetype="application/octet-stream" max_optional_metadata_filesize="1048576" />
+    <datatype extension="data_manager_json" type="galaxy.datatypes.data:Text" mimetype="application/json" subclass="True" display_in_upload="False"/>
     <datatype extension="fasta" type="galaxy.datatypes.sequence:Fasta" display_in_upload="true">
       <converter file="fasta_to_tabular_converter.xml" target_datatype="tabular"/>
       <converter file="fasta_to_bowtie_base_index_converter.xml" target_datatype="bowtie_base_index"/>
@@ -116,7 +115,6 @@
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
 	  <converter file="interval_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
       <!-- <display file="ucsc/interval_as_bed.xml" inherit="True" /> -->
-      <display file="genetrack.xml" inherit="True"/>
       <display file="ensembl/ensembl_interval_as_bed.xml" inherit="True"/>
       <display file="gbrowse/gbrowse_interval_as_bed.xml" inherit="True"/>
       <display file="rviewer/bed.xml" inherit="True"/>

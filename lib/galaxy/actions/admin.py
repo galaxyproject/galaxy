@@ -1,9 +1,10 @@
 """
 Contains administrative functions
 """
+
 import logging
 from galaxy import util
-from galaxy.exceptions import *
+from galaxy.exceptions import MessageException
 
 log = logging.getLogger( __name__ )
 
@@ -167,12 +168,14 @@ class AdminActions( object ):
         self.sa_session.flush()
         message += ', '.join( names )
         return message
-        
+
     def _purge_quota( self, quota, params ):
-        # This method should only be called for a Quota that has previously been deleted.
-        # Purging a deleted Quota deletes all of the following from the database:
-        # - UserQuotaAssociations where quota_id == Quota.id
-        # - GroupQuotaAssociations where quota_id == Quota.id
+        """
+        This method should only be called for a Quota that has previously been deleted.
+        Purging a deleted Quota deletes all of the following from the database:
+        - UserQuotaAssociations where quota_id == Quota.id
+        - GroupQuotaAssociations where quota_id == Quota.id
+        """
         quotas = util.listify( quota )
         names = []
         for q in quotas:
@@ -194,3 +197,4 @@ class AdminActions( object ):
         self.sa_session.flush()
         message += ', '.join( names )
         return message
+

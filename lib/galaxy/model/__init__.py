@@ -131,6 +131,8 @@ class Job( object ):
         self.info = None
         self.job_runner_name = None
         self.job_runner_external_id = None
+        self.destination_id = None
+        self.destination_params = None
         self.post_job_actions = []
         self.imported = False
         self.handler = None
@@ -346,7 +348,7 @@ class Task( object ):
         Return an id tag suitable for identifying the task.
         This combines the task's job id and the task's own id.
         """
-        return "%s:%s" % ( self.job.get_id(), self.get_id() )
+        return "%s_%s" % ( self.job.get_id(), self.get_id() )
     def get_command_line( self ):
         return self.command_line
     def get_parameters( self ):
@@ -895,6 +897,7 @@ class Dataset( object ):
         self.external_filename = external_filename
         self._extra_files_path = extra_files_path
         self.file_size = file_size
+        self.uuid = None
 
     def get_file_name( self ):
         if not self.external_filename:
@@ -1528,8 +1531,9 @@ class HistoryDatasetAssociation( DatasetInstance ):
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
                 val = val.file_name
-            elif isinstance( val, list ):
-                val = ', '.join( [str(v) for v in val] )
+            # If no value for metadata, look in datatype for metadata.
+            elif val == None and hasattr( hda.datatype, name ):
+                val = getattr( hda.datatype, name )
             rval['metadata_' + name] = val
         return rval
 
@@ -1770,6 +1774,10 @@ class LibraryDataset( object ):
                      misc_info = ldda.info,
                      misc_blurb = ldda.blurb,
                      template_data = template_data )
+        if ldda.dataset.uuid is None:
+            rval['uuid'] = None
+        else:
+            rval['uuid'] = str(ldda.dataset.uuid)
         for name, spec in ldda.metadata.spec.items():
             val = ldda.metadata.get( name )
             if isinstance( val, MetadataFile ):
@@ -2994,6 +3002,20 @@ class VisualizationRatingAssociation( ItemRatingAssociation ):
     def set_item( self, visualization ):
         self.visualization = visualization
 
+#Data Manager Classes
+class DataManagerHistoryAssociation( object ):
+    def __init__( self, id=None, history=None, user=None ):
+        self.id = id
+        self.history = history
+        self.user = user
+
+class DataManagerJobAssociation( object ):
+    def __init__( self, id=None, job=None, data_manager_id=None ):
+        self.id = id
+        self.job = job
+        self.data_manager_id = data_manager_id
+#end of Data Manager Classes
+
 class UserPreference ( object ):
     def __init__( self, name=None, value=None ):
         self.name = name
@@ -3013,6 +3035,10 @@ class APIKeys( object ):
     pass
 
 class ToolShedRepository( object ):
+    api_collection_visible_keys = ( 'id', 'name', 'tool_shed', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+                                    'update_available', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
+    api_element_visible_keys = ( 'id', 'name', 'tool_shed', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+                                    'update_available', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
     installation_status = Bunch( NEW='New',
                                  CLONING='Cloning',
                                  SETTING_TOOL_VERSIONS='Setting tool versions',
@@ -3048,6 +3074,10 @@ class ToolShedRepository( object ):
         self.dist_to_shed = dist_to_shed
         self.status = status
         self.error_message = error_message
+    def as_dict( self, trans ):
+        tsr_dict = self.get_api_value( view='element' )
+        tsr_dict[ 'id' ] = trans.security.encode_id( self.id )    
+        return tsr_dict
     def repo_files_directory( self, app ):
         repo_path = self.repo_path( app )
         if repo_path:
@@ -3135,6 +3165,22 @@ class ToolShedRepository( object ):
                 if self.shed_config_filename == shed_tool_conf_dict[ 'config_filename' ]:
                     return shed_tool_conf_dict
         return default
+    def get_api_value( self, view='collection', value_mapper=None ):
+        if value_mapper is None:
+            value_mapper = {}
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[ key ] = self.__getattribute__( key )
+                if key in value_mapper:
+                    rval[ key ] = value_mapper.get( key )( rval[ key ] )
+            except AttributeError:
+                rval[ key ] = None
+        return rval
     @property
     def can_install( self ):
         return self.status == self.installation_status.NEW
@@ -3151,14 +3197,32 @@ class ToolShedRepository( object ):
     def can_reinstall_or_activate( self ):
         return self.deleted
     @property
+    def has_readme_files( self ):
+        if self.metadata:
+            return 'readme_files' in self.metadata
+        return False
+    @property
     def has_repository_dependencies( self ):
         if self.metadata:
             return 'repository_dependencies' in self.metadata
         return False
     @property
+    def includes_data_managers( self ):
+        if self.metadata:
+            return bool( len( self.metadata.get( 'data_manager', {} ).get( 'data_managers', {} ) ) )
+        return False
+    @property
     def includes_tools( self ):
         if self.metadata:
             return 'tools' in self.metadata
+        return False
+    @property
+    def includes_tools_for_display_in_tool_panel( self ):
+        if self.includes_tools:
+            tool_dicts = self.metadata[ 'tools' ]
+            for tool_dict in tool_dicts:
+                if tool_dict.get( 'add_to_tool_panel', True ):
+                    return True
         return False
     @property
     def includes_tool_dependencies( self ):
@@ -3173,11 +3237,6 @@ class ToolShedRepository( object ):
     @property
     def in_error_state( self ):
         return self.status == self.installation_status.ERROR
-    @property
-    def has_readme_files( self ):
-        if self.metadata:
-            return 'readme_files' in self.metadata
-        return False
     @property
     def repository_dependencies( self ):
         required_repositories = []

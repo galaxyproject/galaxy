@@ -1,20 +1,29 @@
-import logging, os, sys, time, tempfile
-from galaxy import util
-from galaxy.util.odict import odict
-from galaxy.util.bunch import Bunch
-from galaxy.util import inflector
-from galaxy.util.sanitize_html import sanitize_html
-from cgi import escape
-import mimetypes
+import logging
 import metadata
+import mimetypes
+import os
+import sys
+import tempfile
 import zipfile
-from metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
+from cgi import escape
+from galaxy import util
+from galaxy.datatypes.metadata import MetadataElement #import directly to maintain ease of use in Datatype class definitions
+from galaxy.util import inflector
+from galaxy.util.bunch import Bunch
+from galaxy.util.odict import odict
+from galaxy.util.sanitize_html import sanitize_html
+
+from galaxy import eggs
+eggs.require( "Paste" )
+import paste
 
 
 if sys.version_info[:2] < ( 2, 6 ):
     zipfile.BadZipFile = zipfile.error
 if sys.version_info[:2] < ( 2, 5 ):
     zipfile.LargeZipFile = zipfile.error
+
+log = logging.getLogger(__name__)
 
 tmpd = tempfile.mkdtemp()
 comptypes=[]
@@ -36,7 +45,6 @@ except OSError:
     pass
 os.rmdir( tmpd )
 
-log = logging.getLogger(__name__)
 
 # Valid first column and strand column values vor bed, other formats
 col1_startswith = ['chr', 'chl', 'groupun', 'reftig_', 'scaffold', 'super_', 'vcho']
@@ -69,6 +77,9 @@ class Data( object ):
     <class 'galaxy.datatypes.metadata.MetadataParameter'>
 
     """
+    # Data is not chunkable by default.
+    CHUNKABLE = False
+
     #: dictionary of metadata fields for this datatype::
     metadata_spec = None
 

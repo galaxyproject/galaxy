@@ -2,7 +2,7 @@
 Utility functions used systemwide.
 
 """
-import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno
+import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno, shutil
 from email.MIMEText import MIMEText
 
 # Older py compatibility
@@ -204,7 +204,18 @@ def restore_text(text):
     return text
 
 def sanitize_text(text):
-    """Restricts the characters that are allowed in a text"""
+    """
+    Restricts the characters that are allowed in text; accepts both strings
+    and lists of strings.
+    """
+    if isinstance( text, basestring ):
+        return _sanitize_text_helper(text)
+    elif isinstance( text, list ):
+        return [ _sanitize_text_helper(t) for t in text ]
+
+def _sanitize_text_helper(text):
+    """Restricts the characters that are allowed in a string"""
+
     out = []
     for c in text:
         if c in valid_chars:
@@ -341,6 +352,21 @@ def xml_text(root, name=None):
     # No luck, return empty string
     return ''
     
+# asbool implementation pulled from PasteDeploy
+truthy = frozenset(['true', 'yes', 'on', 'y', 't', '1'])
+falsy = frozenset(['false', 'no', 'off', 'n', 'f', '0'])
+def asbool(obj):
+    if isinstance(obj, basestring):
+        obj = obj.strip().lower()
+        if obj in truthy:
+            return True
+        elif obj in falsy:
+            return False
+        else:
+            raise ValueError("String is not true/false: %r" % obj)
+    return bool(obj)
+
+
 def string_as_bool( string ):
     if str( string ).lower() in ( 'true', 'yes', 'on' ):
         return True
@@ -424,11 +450,6 @@ def get_gbrowse_sites_by_build(build):
     for site in gbrowse_build_sites:
         if build in site['builds']:
             sites.append((site['name'],site['url']))
-    return sites
-def get_genetrack_sites():
-    sites = []
-    for site in genetrack_sites:
-        sites.append( ( site['name'], site['url'] ) )
     return sites
 
 def read_dbnames(filename):
@@ -564,6 +585,22 @@ def relpath( path, start = None ):
     if not rel_list:
         return curdir
     return join( *rel_list )
+
+def relativize_symlinks( path, start=None, followlinks=False):
+    for root, dirs, files in os.walk( path, followlinks=followlinks ):
+        rel_start = None
+        for file_name in files:
+            symlink_file_name = os.path.join( root, file_name )
+            if os.path.islink( symlink_file_name ):
+                symlink_target = os.readlink( symlink_file_name )
+                if rel_start is None:
+                    if start is None:
+                        rel_start = root
+                    else:
+                        rel_start = start
+                rel_path = relpath( symlink_target, rel_start )
+                os.remove( symlink_file_name )
+                os.symlink( rel_path, symlink_file_name )
 
 def stringify_dictionary_keys( in_dict ):
     #returns a new dictionary
@@ -735,6 +772,28 @@ def send_mail( frm, to, subject, body, config ):
     s.sendmail( frm, to, msg.as_string() )
     s.quit()
 
+def force_symlink( source, link_name ):
+    try:
+        os.symlink( source, link_name )
+    except OSError, e:
+        if e.errno == errno.EEXIST:
+            os.remove( link_name )
+            os.symlink( source, link_name )
+        else:
+            raise e
+
+def move_merge( source, target ):
+    #when using shutil and moving a directory, if the target exists,
+    #then the directory is placed inside of it
+    #if the target doesn't exist, then the target is made into the directory
+    #this makes it so that the target is always the target, and if it exists,
+    #the source contents are moved into the target
+    if os.path.isdir( source ) and os.path.exists( target ) and os.path.isdir( target ):
+        for name in os.listdir( source ):
+            move_merge( os.path.join( source, name ), os.path.join( target, name ) )
+    else:
+        return shutil.move( source, target ) 
+
 galaxy_root_path = os.path.join(__path__[0], "..","..","..")
 
 # The dbnames list is used in edit attributes and the upload tool
@@ -744,7 +803,6 @@ ensembl_names = read_ensembl( os.path.join( galaxy_root_path, "tool-data", "shar
 ncbi_names = read_ncbi( os.path.join( galaxy_root_path, "tool-data", "shared", "ncbi", "builds.txt" ) )
 ucsc_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "ucsc", "ucsc_build_sites.txt" ) )
 gbrowse_build_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "gbrowse", "gbrowse_build_sites.txt" ) )
-genetrack_sites = read_build_sites( os.path.join( galaxy_root_path, "tool-data", "shared", "genetrack", "genetrack_sites.txt" ), check_builds=False )
 dlnames = dict(ucsc=ucsc_names, ensembl=ensembl_names, ncbi=ncbi_names)
 
 def galaxy_directory():

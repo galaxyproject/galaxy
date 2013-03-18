@@ -384,9 +384,14 @@ def read_unordered_gtf( iterator, strict=False ):
         key_fn = lambda fields: fields[0] + '_' + get_transcript_id( fields )
 
     
-    # Aggregate intervals by transcript_id.
+    # Aggregate intervals by transcript_id and collect comments.
     feature_intervals = odict()
+    comments = []
     for count, line in enumerate( iterator ):
+        if line.startswith( '#' ):
+            comments.append( Comment( line ) )
+            continue
+
         line_key = key_fn( line.split('\t') )
         if line_key in feature_intervals:
             feature = feature_intervals[ line_key ]
@@ -413,7 +418,13 @@ def read_unordered_gtf( iterator, strict=False ):
     for features in chroms_features_sorted:
         features.sort( lambda a,b: cmp( a.start, b.start ) )
         
-    # Yield.
+    # Yield comments first, then features.
+    # FIXME: comments can appear anywhere in file, not just the beginning. 
+    # Ideally, then comments would be associated with features and output 
+    # just before feature/line.
+    for comment in comments:
+        yield comment
+
     for chrom_features in chroms_features_sorted:
         for feature in chrom_features:
             yield feature

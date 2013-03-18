@@ -14,6 +14,8 @@ from galaxy.web.framework.helpers import to_unicode
 from galaxy.datatypes.display_applications import util
 from galaxy.datatypes.metadata import FileParameter
 
+from galaxy.datatypes.display_applications.link_generator import get_display_app_link_generator
+
 import pkg_resources
 pkg_resources.require( "Routes" )
 import routes
@@ -71,8 +73,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                             # don't fail entire list if hda err's, record and move on
                             # (making sure http recvr knows it's err'd)
                             trans.response.status = 500
-                            log.error( "Error in history API at listing contents " +
-                                "with history %s, hda %s: %s", history_id, encoded_hda_id, str( exc ) )
+                            log.error( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
+                                history_id, encoded_hda_id, type( exc ), str( exc ) )
                             rval.append( self._exception_as_hda_dict( trans, encoded_hda_id, exc ) )
 
             else:
@@ -113,11 +115,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         Returns a dictionary for an HDA that raised an exception when it's
         dictionary was being built.
-        {
-            'id'    : < the encoded dataset id >,
-            'type'  : < name of the dataset >,
-            'url'   : < api url to retrieve this datasets full data >,
-        }
         """
         return {
             'id'        : hda_id,
@@ -133,8 +130,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}
         Displays information about a history content (dataset).
-
-        
         """
         hda_dict = {}
         try:
@@ -208,14 +203,7 @@ def get_hda_dict( trans, history, hda, for_editing ):
         hda_dict[ 'file_name' ] = hda.file_name
 
     if not hda_dict[ 'deleted' ]:
-        # Problem: Method url_for cannot use the dataset controller
-        # Get the environment from DefaultWebTransaction
-        #   and use default webapp mapper instead of webapp API mapper
-        web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
-        # http://routes.groovie.org/generating.html
-        # url_for is being phased out, so new applications should use url
-        hda_dict[ 'download_url' ] = web_url_for( controller='dataset', action='display',
-            dataset_id=trans.security.encode_id( hda.id ), to_ext=hda.ext )
+        hda_dict[ 'download_url' ] = url_for( 'history_contents_display', history_id = trans.security.encode_id( history.id ), history_content_id = trans.security.encode_id( hda.id ) )
 
     can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
     hda_dict[ 'accessible' ] = ( trans.user_is_admin() or can_access_hda )
@@ -230,9 +218,16 @@ def get_hda_dict( trans, history, hda, for_editing ):
             hda_dict[ 'meta_files' ] = meta_files
 
     hda_dict[ 'display_apps' ] = get_display_apps( trans, hda )
-    #hda_dict[ 'display_types' ] = get_display_types( trans, hda )
+    hda_dict[ 'display_types' ] = get_old_display_applications( trans, hda )
+
+    if hda.dataset.uuid is None:
+        hda_dict['uuid'] = None
+    else:
+        hda_dict['uuid'] = str(hda.dataset.uuid)
+
     hda_dict[ 'visualizations' ] = hda.get_visualizations()
-    hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
+    if hda.peek and hda.peek != 'no peek':
+        hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
 
     if hda.creating_job and hda.creating_job.tool_id:
         tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
@@ -248,7 +243,7 @@ def get_display_apps( trans, hda ):
     def get_display_app_url( display_app_link, hda, trans ):
         web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
         dataset_hash, user_hash = util.encode_dataset_user( trans, hda, None )
-        return web_url_for( controller='/dataset',
+        return web_url_for( controller='dataset',
                         action="display_application",
                         dataset_id=dataset_hash,
                         user_id=user_hash,
@@ -267,21 +262,20 @@ def get_display_apps( trans, hda ):
 
     return display_apps
 
-def get_display_types( trans, hda ):
-    #TODO: make more straightforward (somehow)
-    #FIXME: need to force a transition to all new-style display applications
+def get_old_display_applications( trans, hda ):
     display_apps = []
-    
-    for display_app in hda.datatype.get_display_types():
+    for display_app_name in hda.datatype.get_display_types():
+        link_generator = get_display_app_link_generator( display_app_name )
+        display_links = link_generator.generate_links( trans, hda )
+
         app_links = []
-        target_frame, display_links = hda.datatype.get_display_links( hda, display_app, trans.app, trans.request.base )
         for display_name, display_link in display_links:
             app_links.append({
-                'target' : target_frame,
+                'target' : '_blank',
                 'href' : display_link,
                 'text' : display_name
             })
         if app_links:
-            display_apps.append( dict( label=hda.datatype.get_display_label( display_app ), links=app_links ) )
+            display_apps.append( dict( label=hda.datatype.get_display_label( display_app_name ), links=app_links ) )
 
     return display_apps

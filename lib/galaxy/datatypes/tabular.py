@@ -20,6 +20,9 @@ log = logging.getLogger(__name__)
 
 class Tabular( data.Text ):
     """Tab delimited data"""
+
+    # All tabular data is chunkable.
+    CHUNKABLE = True
     CHUNK_SIZE = 50000
 
     """Add metadata elements"""
@@ -32,19 +35,19 @@ class Tabular( data.Text ):
         data.Text.init_meta( self, dataset, copy_from=copy_from )
     def set_meta( self, dataset, overwrite = True, skip = None, max_data_lines = 100000, max_guess_type_data_lines = None, **kwd ):
         """
-        Tries to determine the number of columns as well as those columns
-        that contain numerical values in the dataset.  A skip parameter is
-        used because various tabular data types reuse this function, and
-        their data type classes are responsible to determine how many invalid
-        comment lines should be skipped. Using None for skip will cause skip
-        to be zero, but the first line will be processed as a header. A
+        Tries to determine the number of columns as well as those columns that
+        contain numerical values in the dataset.  A skip parameter is used
+        because various tabular data types reuse this function, and their data
+        type classes are responsible to determine how many invalid comment
+        lines should be skipped. Using None for skip will cause skip to be
+        zero, but the first line will be processed as a header. A
         max_data_lines parameter is used because various tabular data types
         reuse this function, and their data type classes are responsible to
         determine how many data lines should be processed to ensure that the
         non-optional metadata parameters are properly set; if used, optional
         metadata parameters will be set to None, unless the entire file has
-        already been read. Using None (default) for max_data_lines will
-        process all data lines.
+        already been read. Using None for max_data_lines will process all data
+        lines.
 
         Items of interest:
 

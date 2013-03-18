@@ -85,9 +85,9 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
                               'type': step.type,
                               'tool_id': step.tool_id,
                               'input_steps': {}}
-        for conn in step.input_connections:
-            steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id, 
-                                                              'step_output': conn.output_name}
+            for conn in step.input_connections:
+                steps[step.id]['input_steps'][conn.input_name] = {'source_step': conn.output_step_id,
+                                                                  'step_output': conn.output_name}
         item['steps'] = steps
         return item
 
@@ -258,24 +258,16 @@ class WorkflowsAPIController(BaseAPIController, UsesAnnotations):
         trans.sa_session.flush()
         return rval
 
-    # ---------------------------------------------------------------------------------------------- #
-    # ---------------------------------------------------------------------------------------------- #
-    # ---- RPARK EDITS ---- #
-    # ---------------------------------------------------------------------------------------------- #
-    # ---------------------------------------------------------------------------------------------- #
     @web.expose_api
-    #@web.json
     def workflow_dict( self, trans, workflow_id, **kwd ):
         """
         GET /api/workflows/{encoded_workflow_id}/download
         Returns a selected workflow as a json dictionary.
         """
-
         try:
             stored_workflow = trans.sa_session.query(self.app.model.StoredWorkflow).get(trans.security.decode_id(workflow_id))
         except Exception,e:
             return ("Workflow with ID='%s' can not be found\n Exception: %s") % (workflow_id, str( e ))
-
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin():
             if trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation).filter_by(user=trans.user, stored_workflow=stored_workflow).count() == 0:

@@ -1,17 +1,17 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
-<%namespace file="/webapps/community/common/common.mako" import="*" />
-<%namespace file="/webapps/community/repository/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    from galaxy.tool_shed.encoding_util import tool_shed_encode
+    from tool_shed.util.encoding_util import tool_shed_encode
 %>
 
 <%!
    def inherit(context):
        if context.get('use_panels'):
-           return '/webapps/community/base_panels.mako'
+           return '/webapps/tool_shed/base_panels.mako'
        else:
            return '/base.mako'
 %>

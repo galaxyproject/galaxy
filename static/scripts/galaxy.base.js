@@ -241,8 +241,9 @@ function naturalSort(a, b) {
 
 // Replace select box with a text input box + autocomplete.
 function replace_big_select_inputs(min_length, max_length, select_elts) {
-    // To do replace, jQuery's autocomplete plugin must be loaded.
-    if (!jQuery().autocomplete) {
+    // To do replace, the select2 plugin must be loaded.
+
+    if (!jQuery.fn.select2) {
         return;
     }
     
@@ -255,7 +256,7 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
     }
 
     var select_elts = select_elts || $('select');
-    
+
     select_elts.each( function() {
         var select_elt = $(this);
         // Make sure that options is within range.
@@ -263,131 +264,21 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
         if ( (num_options < min_length) || (num_options > max_length) ) {
             return;
         }
-            
-        // Skip multi-select because widget cannot handle multi-select.
-        if (select_elt.attr('multiple') === 'multiple') {
-            return;
-        }
-            
+        
         if (select_elt.hasClass("no-autocomplete")) {
             return;
         }
-        
-        // Replace select with text + autocomplete.
-        var start_value = select_elt.attr('value');
-        
-        // Set up text input + autocomplete element.
-        var text_input_elt = $("<input type='text' class='text-and-autocomplete-select'></input>");
-        text_input_elt.attr('size', 40);
-        text_input_elt.attr('name', select_elt.attr('name'));
-        text_input_elt.attr('id', select_elt.attr('id'));
-        text_input_elt.click( function() {
-            // Show all. Also provide note that load is happening since this can be slow.
-            var cur_value = $(this).val();
-            $(this).val('Loading...');
-            $(this).showAllInCache();
-            $(this).val(cur_value);
-            $(this).select();
-        });
 
-        // Get options for select for autocomplete.
-        var select_options = [];
-        var select_mapping = {};
-        select_elt.children('option').each( function() {
-            // Get text, value for option.
-            var text = $(this).text();
-            var value = $(this).attr('value');
+        /* Replaced jQuery.autocomplete with select2, notes:
+         * - multiple selects are supported 
+         * - the original element is updated with the value, convert_to_values should not be needed
+         * - events are fired when updating the original element, so refresh_on_change should just work
+         *
+         * - should we still sort dbkey fields here? 
+         */
+        
+        select_elt.select2( { width: "resolve" } );
 
-            // Set options and mapping. Mapping is (i) [from text to value] AND (ii) [from value to value]. This
-            // enables a user to type the value directly rather than select the text that represents the value. 
-            select_options.push( text );
-            select_mapping[ text ] = value;
-            select_mapping[ value ] = value;
-
-            // If this is the start value, set value of input element.
-            if ( value == start_value ) {
-                text_input_elt.attr('value', text);
-            }
-        });
-        
-        // Set initial text if it's empty.
-        if ( start_value === '' || start_value === '?') {
-            text_input_elt.attr('value', 'Click to Search or Select');
-        }
-        
-        // Sort dbkey options list only.
-        if (select_elt.attr('name') == 'dbkey') {
-            select_options = select_options.sort(naturalSort);
-        }
-        
-        // Do autocomplete.
-        var autocomplete_options = { selectFirst: false, autoFill: false, mustMatch: false, matchContains: true, max: max_length, minChars : 0, hideForLessThanMinChars : false };
-        text_input_elt.autocomplete(select_options, autocomplete_options);
-
-        // Replace select with text input.
-        select_elt.replaceWith(text_input_elt);
-        
-        // Set trigger to replace text with value when element's form is submitted. If text doesn't correspond to value, default to start value.
-        var submit_hook = function() {
-            // Try to convert text to value.
-            var cur_value = text_input_elt.attr('value');
-            var new_value = select_mapping[cur_value];
-            if (new_value !== null && new_value !== undefined) {
-                text_input_elt.attr('value', new_value);
-            } else {
-                // If there is a non-empty start value, use that; otherwise unknown.
-                if (start_value !== "") {
-                    text_input_elt.attr('value', start_value);
-                } else {
-                    // This is needed to make the DB key work.
-                    text_input_elt.attr('value', '?');
-                }
-            }
-        };
-        text_input_elt.parents('form').submit( function() { submit_hook(); } );
-        
-        // Add custom event so that other objects can execute name --> value conversion whenever they want.
-        $(document).bind("convert_to_values", function() { submit_hook(); } );
-        
-        // If select is refresh on change, mirror this behavior.
-        if (select_elt.attr('refresh_on_change') == 'true') {
-            // Get refresh vals.
-            var ref_on_change_vals = select_elt.attr('refresh_on_change_values'),
-                last_selected_value = select_elt.attr("last_selected_value");
-            if (ref_on_change_vals !== undefined) {
-                ref_on_change_vals = ref_on_change_vals.split(',');
-            }
-            // Function that attempts to refresh based on the value in the text element.
-            var try_refresh_fn = function() {
-                // Get new value and see if it can be matched.
-                var new_value = select_mapping[text_input_elt.attr('value')];
-                if (last_selected_value !== new_value && new_value !== null && new_value !== undefined) {
-                    if (ref_on_change_vals !== undefined && $.inArray(new_value, ref_on_change_vals) === -1 && $.inArray(last_selected_value, ref_on_change_vals) === -1) {
-                        return;
-                    }
-                    text_input_elt.attr('value', new_value);
-                    $(window).trigger("refresh_on_change");
-                    text_input_elt.parents('form').submit();
-                }
-            };
-            
-            // Attempt refresh if (a) result event fired by autocomplete (indicating autocomplete occurred) or (b) on keyup (in which
-            // case a user may have manually entered a value that needs to be refreshed).
-            text_input_elt.bind("result", try_refresh_fn);
-            text_input_elt.keyup( function(e) {
-                if (e.keyCode === 13) { // Return key
-                    try_refresh_fn();
-                }
-            });
-            
-            // Disable return key so that it does not submit the form automatically. This is done because element should behave like a 
-            // select (enter = select), not text input (enter = submit form).
-            text_input_elt.keydown( function(e) {
-                if (e.keyCode === 13) { // Return key
-                    return false;
-                }
-            });
-        }
     });
 }
 
@@ -729,6 +620,7 @@ GalaxyAsync.prototype.log_user_action = function( action, context, params ) {
 };
 
 $(document).ready( function() {
+
     $("select[refresh_on_change='true']").change( function() {
         var select_field = $(this),
             select_val = select_field.val(),

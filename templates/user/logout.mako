@@ -1,4 +1,4 @@
-<%inherit file="/base_panels.mako"/>
+<%inherit file="/webapps/galaxy/base_panels.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
 
 

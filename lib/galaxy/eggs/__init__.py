@@ -349,7 +349,7 @@ class Crate( object ):
             raise EggNotFetchable( missing )
 
 class GalaxyConfig( object ):
-    always_conditional = ( 'GeneTrack', 'pysam', 'ctypes', 'python_daemon' )
+    always_conditional = ( 'pysam', 'ctypes', 'python_daemon' )
     def __init__( self, config_file ):
         if config_file is None:
             self.config = None
@@ -387,7 +387,6 @@ class GalaxyConfig( object ):
                          "guppy":           lambda: self.config.get( "app:main", "use_memdump" ),
                          "python_openid":   lambda: self.config.get( "app:main", "enable_openid" ),
                          "python_daemon":   lambda: sys.version_info[:2] >= ( 2, 5 ),
-                         "GeneTrack":       lambda: sys.version_info[:2] >= ( 2, 5 ),
                          "ctypes":          lambda: ( "drmaa" in self.config.get( "app:main", "start_job_runners" ).split(",") ) and sys.version_info[:2] == ( 2, 4 ),
                          "pysam":           lambda: check_pysam()
                        }.get( egg_name, lambda: True )()

@@ -10,8 +10,6 @@ from Queue import Queue, Empty
 from galaxy import model
 from galaxy.jobs.runners import BaseJobRunner
 
-from paste.deploy.converters import asbool
-
 import pkg_resources
 
 
@@ -91,7 +89,7 @@ class DRMAAJobRunner( BaseJobRunner ):
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
     STOP_SIGNAL = object()
-    def __init__( self, app ):
+    def __init__( self, app, nworkers ):
         """Initialize this job runner and start the monitor thread"""
         # Check if drmaa was importable, fail if not
         self.app = app

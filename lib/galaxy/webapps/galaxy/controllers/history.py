@@ -25,26 +25,10 @@ class NameColumn( grids.TextColumn ):
 
 class HistoryListGrid( grids.Grid ):
     # Custom column types
-    class DatasetsByStateColumn( grids.GridColumn ):
+    class DatasetsByStateColumn( grids.GridColumn, UsesHistoryMixin ):
         def get_value( self, trans, grid, history ):
-            # Build query to get (state, count) pairs.
-            cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ] 
-            from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
-            where_clause = and_( trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id,
-                                 trans.app.model.HistoryDatasetAssociation.table.c.deleted == False,
-                                 trans.app.model.HistoryDatasetAssociation.table.c.visible == True,
-                                  )
-            group_by = trans.app.model.Dataset.table.c.state
-            query = select( columns=cols_to_select,
-                            from_obj=from_obj,
-                            whereclause=where_clause,
-                            group_by=group_by )
-                            
-            # Process results.
-            state_count_dict = {}
-            for row in trans.sa_session.execute( query ):
-                state, count = row
-                state_count_dict[ state ] = count
+            state_count_dict = self.get_hda_state_counts( trans, history )
+
             rval = []
             for state in ( 'ok', 'running', 'queued', 'error' ):
                 count = state_count_dict.get( state, 0 )
@@ -53,12 +37,16 @@ class HistoryListGrid( grids.Grid ):
                 else:
                     rval.append( '' )
             return rval
+
+
     class HistoryListNameColumn( NameColumn ):
         def get_link( self, trans, grid, history ):
             link = None
             if not history.deleted:
                 link = dict( operation="Switch", id=history.id, use_panels=grid.use_panels )
             return link
+
+
     class DeletedColumn( grids.DeletedColumn ):
         def get_value( self, trans, grid, history ):
             if history == trans.history:
@@ -74,6 +62,7 @@ class HistoryListGrid( grids.Grid ):
             else:
                 query = query.order_by( self.model_class.table.c.purged.desc(), self.model_class.table.c.update_time.desc() )
             return query
+
 
     # Grid definition
     title = "Saved Histories"
@@ -635,7 +624,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # If no source to create archive from, show form to upload archive or specify URL.
         if not archive_source:
             return trans.show_form(
-                web.FormBuilder( web.url_for(), "Import a History from an Archive", submit_text="Submit" ) \
+                web.FormBuilder( web.url_for(controller='history', action='import_archive'), "Import a History from an Archive", submit_text="Submit" ) \
                     .add_input( "text", "Archived History URL", "archive_url", value="", error=None )
                     # TODO: add support for importing via a file.
                     #.add_input( "file", "Archived History File", "archive_file", value=None, error=None )
@@ -695,7 +684,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 return open( trans.app.object_store.get_filename( jeha.dataset ) )
             elif jeha.job.state in [ model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.WAITING ]:
                 return trans.show_message( "Still exporting history %(n)s; please check back soon. Link: <a href='%(s)s'>%(s)s</a>" \
-                        % ( { 'n' : history.name, 's' : url_for( action="export_archive", id=id, qualified=True ) } ) )
+                        % ( { 'n' : history.name, 's' : url_for( controller='history', action="export_archive", id=id, qualified=True ) } ) )
 
         # Run job to do export.
         history_exp_tool = trans.app.toolbox.get_tool( '__EXPORT_HISTORY__' )
@@ -708,7 +697,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
                                     the archive or import it to another Galaxy server: \
                                     <a href='%(u)s'>%(u)s</a>" \
-                                    % ( { 'n' : history.name, 'u' : url_for( action="export_archive", id=id, qualified=True ) } ) )
+                                    % ( { 'n' : history.name, 'u' : url_for(controller='history', action="export_archive", id=id, qualified=True ) } ) )
 
     @web.expose
     @web.json
@@ -720,7 +709,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             trans.sa_session.flush()
         return_dict = {
             "name" : history.name,
-            "link" : url_for( action="display_by_username_and_slug", username=history.user.username, slug=history.slug ) }
+            "link" : url_for(controller='history', action="display_by_username_and_slug", username=history.user.username, slug=history.slug ) }
         return return_dict
 
     @web.expose
@@ -834,7 +823,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.show_warn_message( """
             Warning! If you import this history, you will lose your current
             history. <br>You can <a href="%s">continue and import this history</a> or %s.
-            """ % ( web.url_for( id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
+            """ % ( web.url_for(controller='history', action='imp',  id=id, confirm=True, referer=trans.request.referer ), referer_message ), use_panels=True )
 
     @web.expose
     def view( self, trans, id=None, show_deleted=False, use_panels=True ):
@@ -847,7 +836,9 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         if not history_to_view:
             return trans.show_error_message( "The specified history does not exist." )
         # Admin users can view any history
-        if not trans.user_is_admin() and not history_to_view.importable:
+        if( ( history_to_view.user != trans.user )
+        and ( not trans.user_is_admin()  )
+        and ( not history_to_view.importable ) ):
             error( "Either you are not allowed to view this history or the owner of this history has not made it accessible." )
         # View history.
         show_deleted = util.string_as_bool( show_deleted )

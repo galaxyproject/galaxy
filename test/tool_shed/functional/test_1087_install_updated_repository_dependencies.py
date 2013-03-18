@@ -1,4 +1,4 @@
-from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os, logging
+from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 
 column_repository_name = 'column_maker_1087'
@@ -11,8 +11,6 @@ convert_repository_long_description = "Convert delimiters to tab"
 
 category_name = 'Test 1087 Advanced Circular Dependencies'
 category_description = 'Test circular dependency features'
-
-log = logging.getLogger( __name__ )
 
 class TestRepositoryDependencies( ShedTwillTestCase ):
     '''Test installing a repository, then updating it to include repository dependencies.'''
@@ -46,9 +44,14 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'column_maker/column_maker.tar', 
+                              filename='column_maker/column_maker.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded column_maker tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded column_maker.tar.' )
+                              strings_not_displayed=[] )
     def test_0010_create_and_populate_convert_repository( self ):
         '''Create and populate the convert_chars repository.'''
         self.logout()
@@ -64,9 +67,14 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
                                                     strings_displayed=[] )
         if self.repository_is_new( repository ):
             self.upload_file( repository, 
-                              'convert_chars/convert_chars.tar', 
+                              filename='convert_chars/convert_chars.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded convert_chars tarball.',
                               strings_displayed=[], 
-                              commit_message='Uploaded convert_chars.tar.' )
+                              strings_not_displayed=[] )
     def test_0015_install_and_uninstall_column_repository( self ):
         '''Install and uninstall the column_maker repository.'''
         self.galaxy_logout()
@@ -91,15 +99,14 @@ class TestRepositoryDependencies( ShedTwillTestCase ):
         convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
         self.check_repository_dependency( column_repository, convert_repository )
-        log.debug( [ repository.id for repository in test_db_util.get_all_installed_repositories() ] )
     def test_0030_reinstall_column_repository( self ):
         '''Reinstall column_maker and verify that it now shows repository dependencies.'''
         installed_column_repository = test_db_util.get_installed_repository_by_name_owner( column_repository_name, common.test_user_1_name )
         convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
-        strings_displayed=[ 'Handle repository dependencies', convert_repository.name, self.get_repository_tip( convert_repository ) ]
+        strings_displayed=[ 'Handle repository dependencies', 'convert_chars_1087', self.get_repository_tip( convert_repository ) ]
         # Due to twill's limitations, only check for strings on the (redirected) reselect tool panel section page, don't actually reinstall.
         url = '/admin_toolshed/browse_repositories?operation=activate+or+reinstall&id=%s' % self.security.encode_id( installed_column_repository.id )
         self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed )
-        uninstalled_repositories = [ ( column_repository_name, common.test_user_1_name )  ]
-        self.verify_installed_uninstalled_repositories( uninstalled_repositories=uninstalled_repositories, installed_repositories=[] )
+        strings_not_displayed = [ 'column_maker_1087' ]
+        self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
