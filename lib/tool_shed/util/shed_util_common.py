@@ -160,7 +160,7 @@ def clone_repository( repository_clone_url, repository_file_dir, ctx_rev ):
         return False, error_message
 
 def config_elems_to_xml_file( app, config_elems, config_filename, tool_path ):
-    # Persist the current in-memory list of config_elems to a file named by the value of config_filename.  
+    """Persist the current in-memory list of config_elems to a file named by the value of config_filename."""
     fd, filename = tempfile.mkstemp()
     os.write( fd, '<?xml version="1.0"?>\n' )
     os.write( fd, '<toolbox tool_path="%s">\n' % str( tool_path ) )
@@ -242,7 +242,7 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
 
 def generate_clone_url_for_installed_repository( app, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
-    tool_shed_url = get_url_from_repository_tool_shed( app, repository )
+    tool_shed_url = get_url_from_tool_shed( app, repository.tool_shed )
     return url_join( tool_shed_url, 'repos', repository.owner, repository.name )
 
 def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
@@ -469,7 +469,7 @@ def get_file_context_from_ctx( ctx, filename ):
     return None
 
 def get_installed_tool_shed_repository( trans, id ):
-    """Get a repository on the Galaxy side from the database via id"""
+    """Get a tool shed repository record from the Galaxy database defined by the id."""
     return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
 
 def get_named_tmpfile_from_ctx( ctx, filename, dir ):
@@ -516,6 +516,11 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
     return None
 
 def get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset_revision ):
+    """
+    Return a tool shed repository database record defined by the combination of tool shed, repository name, repository owner and changeset_revision
+    or installed_changeset_revision.  A new tool shed repository record will be created if one is not located.
+    """
+    # This method is used only in Galaxy, not the tool shed.
     repository = get_repository_for_dependency_relationship( trans.app, tool_shed, name, owner, changeset_revision )
     if not repository:
         tool_shed_url = get_url_from_tool_shed( trans.app, tool_shed )
@@ -572,7 +577,7 @@ def get_previous_downloadable_changeset_revision( repository, repo, before_chang
             previous_changeset_revision = changeset_revision
 
 def get_repo_info_tuple_contents( repo_info_tuple ):
-    # Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced.
+    """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
     if len( repo_info_tuple ) == 6:
         description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, tool_dependencies = repo_info_tuple
         repository_dependencies = None
@@ -613,6 +618,8 @@ def get_repository_by_name_and_owner( app, name, owner ):
     return None
 
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
+    """Return a tool shed repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
+    # This method is used only in Galaxy, not the tool shed.
     repository =  get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app=app,
                                                                                             tool_shed=tool_shed,
                                                                                             name=name,
@@ -627,6 +634,7 @@ def get_repository_for_dependency_relationship( app, tool_shed, name, owner, cha
     return repository
 
 def get_repository_file_contents( file_path ):
+    """Return the display-safe contents of a repository file."""
     if checkers.is_gzip( file_path ):
         safe_str = to_safe_string( '\ngzip compressed file\n' )
     elif checkers.is_bz2( file_path ):
@@ -646,6 +654,7 @@ def get_repository_file_contents( file_path ):
     return safe_str
 
 def get_repository_files( trans, folder_path ):
+    """Return the file hierarchy of a tool shed repository."""
     contents = []
     for item in os.listdir( folder_path ):
         # Skip .hg directories
@@ -684,6 +693,7 @@ def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision
     return None
 
 def get_repository_owner( cleaned_repository_url ):
+    """Gvien a "cleaned" repository clone URL, return the owner of the repository."""
     items = cleaned_repository_url.split( '/repos/' )
     repo_path = items[ 1 ]
     if repo_path.startswith( '/' ):
@@ -691,11 +701,13 @@ def get_repository_owner( cleaned_repository_url ):
     return repo_path.lstrip( '/' ).split( '/' )[ 0 ]
 
 def get_repository_owner_from_clone_url( repository_clone_url ):
+    """Given a repository clone URL, return the owner of the repository."""
     tmp_url = clean_repository_clone_url( repository_clone_url )
     tool_shed = tmp_url.split( '/repos/' )[ 0 ].rstrip( '/' )
     return get_repository_owner( tmp_url )
 
 def get_repository_tools_tups( app, metadata_dict ):
+    """Return a list of tuples of the form (relative_path, guid, tool) for each tool defined in the received tool shed repository metadata."""
     repository_tools_tups = []
     index, shed_conf_dict = get_shed_tool_conf_dict( app, metadata_dict.get( 'shed_config_filename' ) )
     if 'tools' in metadata_dict:
@@ -713,6 +725,7 @@ def get_repository_tools_tups( app, metadata_dict ):
     return repository_tools_tups
 
 def get_reversed_changelog_changesets( repo ):
+    """Return a list of changesets in reverse order from that provided by the repository manifest."""
     reversed_changelog = []
     for changeset in repo.changelog:
         reversed_changelog.insert( 0, changeset )
@@ -728,6 +741,7 @@ def get_revision_label( trans, repository, changeset_revision ):
         return "-1:%s" % changeset_revision
 
 def get_rev_label_from_changeset_revision( repo, changeset_revision ):
+    """Given a changeset revision hash, return two strings, the changeset rev and the changeset revision hash."""
     ctx = get_changectx_for_changeset( repo, changeset_revision )
     if ctx:
         rev = '%04d' % ctx.rev()
@@ -748,8 +762,10 @@ def get_shed_tool_conf_dict( app, shed_tool_conf ):
                 return index, shed_tool_conf_dict
 
 def get_tool_panel_config_tool_path_install_dir( app, repository ):
-    # Return shed-related tool panel config, the tool_path configured in it, and the relative path to the directory where the
-    # repository is installed.  This method assumes all repository tools are defined in a single shed-related tool panel config.
+    """
+    Return shed-related tool panel config, the tool_path configured in it, and the relative path to the directory where the repository is installed.
+    This method assumes all repository tools are defined in a single shed-related tool panel config.
+    """
     tool_shed = clean_tool_shed_url( repository.tool_shed )
     partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
     # Get the relative tool installation paths from each of the shed tool configs.
@@ -782,11 +798,14 @@ def get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf ):
     return None
 
 def get_tool_shed_repository_by_id( trans, repository_id ):
+    """Return a tool shed repository database record defined by the id."""
+    # This method is used only in Galaxy, not the tool shed.
     return trans.sa_session.query( trans.model.ToolShedRepository ) \
                            .filter( trans.model.ToolShedRepository.table.c.id == trans.security.decode_id( repository_id ) ) \
                            .first()
 
 def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_shed, name, owner, changeset_revision ):
+    """Return a tool shed repository database record defined by the combination of a tool_shed, repository name, repository owner and current changeet_revision."""
     # This method is used only in Galaxy, not the tool shed.
     sa_session = app.model.context.current
     if tool_shed.find( '//' ) > 0:
@@ -800,6 +819,7 @@ def get_tool_shed_repository_by_shed_name_owner_changeset_revision( app, tool_sh
                      .first()
 
 def get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app, tool_shed, name, owner, installed_changeset_revision ):
+    """Return a tool shed repository database record defined by the combination of a tool_shed, repository name, repository owner and installed_changeet_revision."""
     # This method is used only in Galaxy, not the tool shed.
     sa_session = app.model.context.current
     if tool_shed.find( '//' ) > 0:
@@ -816,22 +836,11 @@ def get_tool_shed_from_clone_url( repository_clone_url ):
     tmp_url = clean_repository_clone_url( repository_clone_url )
     return tmp_url.split( '/repos/' )[ 0 ].rstrip( '/' )
 
-def get_url_from_repository_tool_shed( app, repository ):
-    """
-    The stored value of repository.tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
-    something like: http://toolshed.g2.bx.psu.edu/.
-    """
-    for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
-        if shed_url.find( repository.tool_shed ) >= 0:
-            if shed_url.endswith( '/' ):
-                shed_url = shed_url.rstrip( '/' )
-            return shed_url
-    # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
-    return None
-
 def get_url_from_tool_shed( app, tool_shed ):
-    # The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is something like:
-    # http://toolshed.g2.bx.psu.edu/
+    """
+    The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is something like:
+    http://toolshed.g2.bx.psu.edu/
+    """
     for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
         if shed_url.find( tool_shed ) >= 0:
             if shed_url.endswith( '/' ):
@@ -856,26 +865,28 @@ def get_user_by_username( app, username ):
         return None
 
 def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert=False, admin_only=False ):
-    # There are 2 complementary features that enable a tool shed user to receive email notification:
-    # 1. Within User Preferences, they can elect to receive email when the first (or first valid)
-    #    change set is produced for a new repository.
-    # 2. When viewing or managing a repository, they can check the box labeled "Receive email alerts"
-    #    which caused them to receive email alerts when updates to the repository occur.  This same feature
-    #    is available on a per-repository basis on the repository grid within the tool shed.
-    #
-    # There are currently 4 scenarios for sending email notification when a change is made to a repository:
-    # 1. An admin user elects to receive email when the first change set is produced for a new repository
-    #    from User Preferences.  The change set does not have to include any valid content.  This allows for
-    #    the capture of inappropriate content being uploaded to new repositories.
-    # 2. A regular user elects to receive email when the first valid change set is produced for a new repository
-    #    from User Preferences.  This differs from 1 above in that the user will not receive email until a
-    #    change set tha tincludes valid content is produced.
-    # 3. An admin user checks the "Receive email alerts" check box on the manage repository page.  Since the
-    #    user is an admin user, the email will include information about both HTML and image content that was
-    #    included in the change set.
-    # 4. A regular user checks the "Receive email alerts" check box on the manage repository page.  Since the
-    #    user is not an admin user, the email will not include any information about both HTML and image content
-    #    that was included in the change set.
+    """
+    There are 2 complementary features that enable a tool shed user to receive email notification:
+    1. Within User Preferences, they can elect to receive email when the first (or first valid)
+       change set is produced for a new repository.
+    2. When viewing or managing a repository, they can check the box labeled "Receive email alerts"
+       which caused them to receive email alerts when updates to the repository occur.  This same feature
+       is available on a per-repository basis on the repository grid within the tool shed.
+
+    There are currently 4 scenarios for sending email notification when a change is made to a repository:
+    1. An admin user elects to receive email when the first change set is produced for a new repository
+       from User Preferences.  The change set does not have to include any valid content.  This allows for
+       the capture of inappropriate content being uploaded to new repositories.
+    2. A regular user elects to receive email when the first valid change set is produced for a new repository
+       from User Preferences.  This differs from 1 above in that the user will not receive email until a
+       change set tha tincludes valid content is produced.
+    3. An admin user checks the "Receive email alerts" check box on the manage repository page.  Since the
+       user is an admin user, the email will include information about both HTML and image content that was
+       included in the change set.
+    4. A regular user checks the "Receive email alerts" check box on the manage repository page.  Since the
+       user is not an admin user, the email will not include any information about both HTML and image content
+       that was included in the change set.
+    """
     repo_dir = repository.repo_path( trans.app )
     repo = hg.repository( get_configured_ui(), repo_dir )
     sharable_link = generate_sharable_link_for_repository_in_tool_shed( trans, repository, changeset_revision=None )
@@ -948,6 +959,7 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
 
 def open_repository_files_folder( trans, folder_path ):
+    """Return a list of dictionaries, each of which contains information for a file or directory contained within a directory in a repository file hierarchy."""
     try:
         files_list = get_repository_files( trans, folder_path )
     except OSError, e:
@@ -957,19 +969,20 @@ def open_repository_files_folder( trans, folder_path ):
     folder_contents = []
     for filename in files_list:
         is_folder = False
-        if filename and filename[-1] == os.sep:
+        if filename and filename[ -1 ] == os.sep:
             is_folder = True
         if filename:
             full_path = os.path.join( folder_path, filename )
-            node = { "title": filename,
-                     "isFolder": is_folder,
-                     "isLazy": is_folder,
-                     "tooltip": full_path,
-                     "key": full_path }
+            node = { "title" : filename,
+                     "isFolder" : is_folder,
+                     "isLazy" : is_folder,
+                     "tooltip" : full_path,
+                     "key" : full_path }
             folder_contents.append( node )
     return folder_contents
 
 def remove_dir( dir ):
+    """Attempt to remove a directory from disk."""
     if os.path.exists( dir ):
         try:
             shutil.rmtree( dir )
@@ -1029,9 +1042,11 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
     return reversed_changelog
 
 def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
+    """Return a reversed list of changesets in the repository changelog up to and including the included_upper_bounds_changeset_revision."""
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
 
 def strip_path( fpath ):
+    """Attempt to strip the path from a file name."""
     if not fpath:
         return fpath
     try:
@@ -1072,12 +1087,15 @@ def to_safe_string( text, to_html=True ):
     return text
 
 def tool_shed_from_repository_clone_url( repository_clone_url ):
+    """Given a repository clone URL, return the tool shed that contains the repository."""
     return clean_repository_clone_url( repository_clone_url ).split( '/repos/' )[ 0 ].rstrip( '/' )
 
 def tool_shed_is_this_tool_shed( toolshed_base_url ):
+    """Determine if a tool shed is the current tool shed."""
     return toolshed_base_url.rstrip( '/' ) == str( url_for( '/', qualified=True ) ).rstrip( '/' )
 
 def translate_string( raw_text, to_html=True ):
+    """Return a subset of a string (up to MAX_CONTENT_SIZE) translated to a safe string for display in a browser."""
     if raw_text:
         if len( raw_text ) <= MAX_CONTENT_SIZE:
             translated_string = to_safe_string( raw_text, to_html=to_html )
@@ -1141,12 +1159,14 @@ def update_repository( repo, ctx_rev=None ):
     commands.update( get_configured_ui(), repo, rev=ctx_rev )
 
 def update_tool_shed_repository_status( app, tool_shed_repository, status ):
+    """Update the status of a tool shed repository in the process of being installed into Galaxy."""
     sa_session = app.model.context.current
     tool_shed_repository.status = status
     sa_session.add( tool_shed_repository )
     sa_session.flush()
 
 def url_join( *args ):
+    """Return a valid URL produced by appending a base URL and a set of request parameters."""
     parts = []
     for arg in args:
         parts.append( arg.strip( '/' ) )

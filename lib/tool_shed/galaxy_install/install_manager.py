@@ -279,7 +279,7 @@ class InstallManager( object ):
         if self.__isinstalled( clone_dir ):
             print "Skipping automatic install of repository '", name, "' because it has already been installed in location ", clone_dir
         else:
-            tool_shed_url = self.__get_url_from_tool_shed( self.tool_shed )
+            tool_shed_url = suc.get_url_from_tool_shed( self.app, self.tool_shed )
             repository_clone_url = os.path.join( tool_shed_url, 'repos', self.repository_owner, name )
             relative_install_dir = os.path.join( relative_clone_dir, name )
             install_dir = os.path.join( clone_dir, name )
@@ -351,16 +351,6 @@ class InstallManager( object ):
     @property
     def non_shed_tool_panel_configs( self ):
         return common_util.get_non_shed_tool_panel_configs( self.app )
-    def __get_url_from_tool_shed( self, tool_shed ):
-        # The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is something like:
-        # http://toolshed.g2.bx.psu.edu/
-        for shed_name, shed_url in self.app.tool_shed_registry.tool_sheds.items():
-            if shed_url.find( tool_shed ) >= 0:
-                if shed_url.endswith( '/' ):
-                    shed_url = shed_url.rstrip( '/' )
-                return shed_url
-        # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
-        return None
     def __isinstalled( self, clone_dir ):
         full_path = os.path.abspath( clone_dir )
         if os.path.exists( full_path ):

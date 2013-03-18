@@ -77,7 +77,7 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
 def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     """Return the changeset revision hash to which the repository can be updated."""
     changeset_revision_dict = {}
-    tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+    tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
     url = suc.url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
         ( repository.name, repository.owner, repository.installed_changeset_revision ) )
     try:

@@ -184,7 +184,7 @@ class AdminToolshed( AdminGalaxy ):
         params = util.Params( kwd )
         repository_id = params.get( 'id', None )
         repository = suc.get_installed_tool_shed_repository( trans, repository_id )
-        tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+        tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
         url = suc.url_join( tool_shed_url,
                             'repository/check_for_updates?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
                             ( web.url_for( '/', qualified=True ), repository.name, repository.owner, repository.changeset_revision ) )
@@ -314,7 +314,7 @@ class AdminToolshed( AdminGalaxy ):
         need it so that we can derive the tool shed from which it was installed.
         """
         repository = suc.get_installed_tool_shed_repository( trans, repository_id )
-        tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+        tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
         url = suc.url_join( tool_shed_url,
                             'repository/get_repository_dependencies?name=%s&owner=%s&changeset_revision=%s' % \
                             ( repository_name, repository_owner, changeset_revision ) )
@@ -337,7 +337,7 @@ class AdminToolshed( AdminGalaxy ):
         it so that we can derive the tool shed from which it was installed.
         """
         repository = suc.get_installed_tool_shed_repository( trans, repository_id )
-        tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+        tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
         url = suc.url_join( tool_shed_url,
                             'repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s' % \
                             ( repository_name, repository_owner, changeset_revision ) )
@@ -359,7 +359,7 @@ class AdminToolshed( AdminGalaxy ):
         uninstalled tool shed repository.
         """
         repository = suc.get_installed_tool_shed_repository( trans, repository_id )
-        tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+        tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
         url = suc.url_join( tool_shed_url,
                             'repository/get_updated_repository_information?name=%s&owner=%s&changeset_revision=%s' % \
                             ( repository_name, repository_owner, changeset_revision ) )
@@ -654,7 +654,7 @@ class AdminToolshed( AdminGalaxy ):
                     suc.update_tool_shed_repository_status( trans.app,
                                                             tool_shed_repository,
                                                             trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
-                    tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, tool_shed_repository )
+                    tool_shed_url = suc.get_url_from_tool_shed( trans.app, tool_shed_repository.tool_shed )
                     url = suc.url_join( tool_shed_url,
                                         '/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
                                         ( tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.changeset_revision ) )
@@ -711,7 +711,7 @@ class AdminToolshed( AdminGalaxy ):
         repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         if not repository:
             return trans.show_error_message( 'Invalid repository specified.' )
-        tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+        tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
         if repository.status in [ trans.model.ToolShedRepository.installation_status.CLONING ]:
             tool_shed_repository_ids = [ repository_id ]
             return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
@@ -1172,7 +1172,7 @@ class AdminToolshed( AdminGalaxy ):
         clone_dir = os.path.join( tool_path, suc.generate_tool_shed_repository_install_dir( repository_clone_url,
                                                                                             tool_shed_repository.installed_changeset_revision ) )
         relative_install_dir = os.path.join( clone_dir, tool_shed_repository.name )
-        tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, tool_shed_repository )
+        tool_shed_url = suc.get_url_from_tool_shed( trans.app, tool_shed_repository.tool_shed )
         tool_section = None
         tool_panel_section = kwd.get( 'tool_panel_section', '' )
         new_tool_panel_section = kwd.get( 'new_tool_panel_section', '' )
@@ -1317,7 +1317,7 @@ class AdminToolshed( AdminGalaxy ):
         tool_shed_repository = suc.get_installed_tool_shed_repository( trans, repository_id )
         repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, tool_shed_repository )
         metadata = tool_shed_repository.metadata
-        tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, tool_shed_repository )
+        tool_shed_url = suc.get_url_from_tool_shed( trans.app, tool_shed_repository.tool_shed )
         tool_path, relative_install_dir = tool_shed_repository.get_tool_relative_path( trans.app )
         if latest_changeset_revision and latest_ctx_rev:
             # There are updates available in the tool shed for the repository, so use the receieved dependency information which was retrieved from
@@ -1481,7 +1481,7 @@ class AdminToolshed( AdminGalaxy ):
     def reset_repository_metadata( self, trans, id ):
         """Reset all metadata on a single installed tool shed repository."""
         repository = suc.get_installed_tool_shed_repository( trans, id )
-        tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+        tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
         repository_clone_url = suc.generate_clone_url_for_installed_repository( trans.app, repository )
         tool_path, relative_install_dir = repository.get_tool_relative_path( trans.app )
         if relative_install_dir:
@@ -1560,7 +1560,7 @@ class AdminToolshed( AdminGalaxy ):
         metadata for the repository's revision in the Galaxy database.
         """
         repository = suc.get_installed_tool_shed_repository( trans, kwd[ 'id' ] )
-        tool_shed_url = suc.get_url_from_repository_tool_shed( trans.app, repository )
+        tool_shed_url = suc.get_url_from_tool_shed( trans.app, repository.tool_shed )
         url = suc.url_join( tool_shed_url,
                             'repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
                             ( repository.name, repository.owner, repository.changeset_revision ) )
