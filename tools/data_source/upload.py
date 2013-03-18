@@ -307,6 +307,8 @@ def add_file( dataset, registry, json_file, output_path ):
                  stdout = stdout,
                  name = dataset.name,
                  line_count = line_count )
+    if dataset.get('uuid', None) is not None:
+        info['uuid'] = dataset.get('uuid')
     json_file.write( to_json_string( info ) + "\n" )
 
     if link_data_only == 'copy_files' and datatype.dataset_content_needs_grooming( output_path ):

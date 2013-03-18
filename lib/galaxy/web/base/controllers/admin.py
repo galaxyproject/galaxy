@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timedelta
 from string import punctuation as PUNCTUATION
 
@@ -6,6 +7,8 @@ from galaxy.model.orm import *
 
 from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
+
+log = logging.getLogger( __name__ )
 
 class Admin( object ):
     # Override these
@@ -33,7 +36,7 @@ class Admin( object ):
                                         message=message,
                                         status=status )
         else:
-            return trans.fill_template( '/webapps/community/admin/index.mako',
+            return trans.fill_template( '/webapps/tool_shed/admin/index.mako',
                                         message=message,
                                         status=status )
     @web.expose
@@ -46,7 +49,7 @@ class Admin( object ):
                                         message=message,
                                         status=status )
         else:
-            return trans.fill_template( '/webapps/community/admin/center.mako',
+            return trans.fill_template( '/webapps/tool_shed/admin/center.mako',
                                         message=message,
                                         status=status )
     @web.expose
@@ -76,7 +79,7 @@ class Admin( object ):
     @web.require_admin
     def roles( self, trans, **kwargs ):
         if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
+            operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == "roles":
                 return self.role( trans, **kwargs )
             if operation == "create":
@@ -411,7 +414,7 @@ class Admin( object ):
     @web.require_admin
     def groups( self, trans, **kwargs ):
         if 'operation' in kwargs:
-            operation = kwargs['operation'].lower()
+            operation = kwargs[ 'operation' ].lower().replace( '+', ' ' )
             if operation == "groups":
                 return self.group( trans, **kwargs )
             if operation == "create":
@@ -987,18 +990,18 @@ class Admin( object ):
             sorts.append( 'None' )
         elif new_sort is not None:
             sorts[-1] = new_sort
-        breadcrumb = "<a href='%s' class='breadcrumb'>heap</a>" % web.url_for()
+        breadcrumb = "<a href='%s' class='breadcrumb'>heap</a>" % web.url_for(controller='admin', action='memdump')
         # new lists so we can assemble breadcrumb links
         new_ids = []
         new_sorts = []
         for id, sort in zip( ids, sorts ):
             new_ids.append( id )
             if id != 'None':
-                breadcrumb += "<a href='%s' class='breadcrumb'>[%s]</a>" % ( web.url_for( ids=','.join( new_ids ), sorts=','.join( new_sorts ) ), id )
+                breadcrumb += "<a href='%s' class='breadcrumb'>[%s]</a>" % ( web.url_for(controller='admin', action='memdump', ids=','.join( new_ids ), sorts=','.join( new_sorts ) ), id )
                 heap = heap[int(id)]
             new_sorts.append( sort )
             if sort != 'None':
-                breadcrumb += "<a href='%s' class='breadcrumb'>.by('%s')</a>" % ( web.url_for( ids=','.join( new_ids ), sorts=','.join( new_sorts ) ), sort )
+                breadcrumb += "<a href='%s' class='breadcrumb'>.by('%s')</a>" % ( web.url_for(controller='admin', action='memdump', ids=','.join( new_ids ), sorts=','.join( new_sorts ) ), sort )
                 heap = heap.by( sort )
         ids = ','.join( new_ids )
         sorts = ','.join( new_sorts )
@@ -1013,8 +1016,6 @@ class Admin( object ):
         deleted = []
         msg = None
         status = None
-        if self.app.config.job_manager != self.app.config.server_name:
-            return trans.show_error_message( 'This Galaxy instance (%s) is not the job manager (%s).  If using multiple servers, please directly access the job manager instance to manage jobs.' % (self.app.config.server_name, self.app.config.job_manager) )
         job_ids = util.listify( stop )
         if job_ids and stop_msg in [ None, '' ]:
             msg = 'Please enter an error message to display to the user describing why the job was terminated'
@@ -1023,7 +1024,15 @@ class Admin( object ):
             if stop_msg[-1] not in PUNCTUATION:
                 stop_msg += '.'
             for job_id in job_ids:
-                trans.app.job_manager.job_stop_queue.put( job_id, error_msg="This job was stopped by an administrator: %s  For more information or help" % stop_msg )
+                error_msg = "This job was stopped by an administrator: %s  <a href='%s' target='_blank'>Contact support</a> for additional help." \
+                        % ( stop_msg, self.app.config.get("support_url", "http://wiki.galaxyproject.org/Support" ) )
+                if trans.app.config.track_jobs_in_database:
+                    job = trans.app.model.Job.get( job_id )
+                    job.stderr = error_msg
+                    job.state = trans.app.model.Job.states.DELETED_NEW
+                    trans.sa_session.add( job )
+                else:
+                    trans.app.job_manager.job_stop_queue.put( job_id, error_msg=error_msg )
                 deleted.append( str( job_id ) )
         if deleted:
             msg = 'Queued job'
@@ -1032,11 +1041,7 @@ class Admin( object ):
             msg += ' for deletion: '
             msg += ', '.join( deleted )
             status = 'done'
-        if ajl_submit:
-            if job_lock == 'on':
-                trans.app.job_manager.job_queue.job_lock = True
-            else:
-                trans.app.job_manager.job_queue.job_lock = False
+            trans.sa_session.flush()
         cutoff_time = datetime.utcnow() - timedelta( seconds=int( cutoff ) )
         jobs = trans.sa_session.query( trans.app.model.Job ) \
                                .filter( and_( trans.app.model.Job.table.c.update_time < cutoff_time,
@@ -1057,8 +1062,7 @@ class Admin( object ):
                                     last_updated = last_updated,
                                     cutoff = cutoff,
                                     msg = msg,
-                                    status = status,
-                                    job_lock = trans.app.job_manager.job_queue.job_lock )
+                                    status = status )
 
 ## ---- Utility methods -------------------------------------------------------
 

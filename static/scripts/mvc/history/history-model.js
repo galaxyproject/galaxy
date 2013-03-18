@@ -191,7 +191,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             // if not interruption by iframe reload
             //TODO: remove when iframes are removed
             if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
-                alert( _l( 'Error getting history updates from the server.' ) + '\n' + error );
+                alert( _l( 'Error getting history updates from the server:' ) + '\n' + error );
                 history.log( 'stateUpdater error:', error, 'responseText:', xhr.responseText );
             }
         });
@@ -230,7 +230,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
 
                 } else {
                     var msg = _l( 'ERROR updating hdas from api history contents' ) + ': ';
-                    history.log( msg, hdaIds, xhr, status, error, errorJSON );
+                    history.log( msg, hdaIds, xhr, status, error, errorJson );
                     alert( msg + hdaIds.join(',') );
                 }
             },

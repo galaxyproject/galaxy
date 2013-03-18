@@ -79,6 +79,7 @@ class Library( BaseUIController ):
                                     default_action=default_action,
                                     message=message,
                                     status=status )
+
     @web.expose
     def browse_libraries( self, trans, **kwd ):
         if 'operation' in kwd:

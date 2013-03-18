@@ -76,6 +76,7 @@
         item_class_name_lc = item_class_name.lower()
         item_class_plural_name = get_class_plural_display_name( item.__class__ )
         item_class_plural_name_lc = item_class_plural_name.lower()
+        item_controller = get_controller_name(item)
         
         # Get item name.
         item_name = get_item_name(item)
@@ -84,7 +85,7 @@
     <div class="toolForm">
         <div class="toolFormTitle">Share ${item_class_name} '${item_name}' with Another User</div>
             <div class="toolFormBody">
-                <form action="${h.url_for( action='share', id=trans.security.encode_id( item.id ) )}" method="POST">
+                <form action="${h.url_for(controller=item_controller, action='share', id=trans.security.encode_id( item.id ) )}" method="POST">
                     <div class="form-row">
                         <label>
                             Email address of user to share with
@@ -98,7 +99,7 @@
                         <input type="submit" value="Share"></input>
                     </div>
                     <div class="form-row">
-                        <a href="${h.url_for( action="sharing", id=trans.security.encode_id( item.id ) )}">Back to ${item_class_name}'s Sharing Home</a>
+                        <a href="${h.url_for(controller=item_controller, action="sharing", id=trans.security.encode_id( item.id ) )}">Back to ${item_class_name}'s Sharing Home</a>
                     </div>
                     
                 </form>

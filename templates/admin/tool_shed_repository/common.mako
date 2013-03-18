@@ -1,4 +1,4 @@
-<%namespace file="/webapps/community/repository/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
 
 <%def name="browse_files(title_text, directory_path)">
     <script type="text/javascript">

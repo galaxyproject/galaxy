@@ -2,7 +2,7 @@
 Universe configuration builder.
 """
 
-import sys, os, tempfile
+import sys, os, tempfile, re
 import logging, logging.config
 import ConfigParser
 from datetime import timedelta
@@ -69,12 +69,21 @@ class Configuration( object ):
         self.shed_tool_data_table_config = resolve_path( kwargs.get( 'shed_tool_data_table_config', 'shed_tool_data_table_conf.xml' ), self.root )
         self.enable_tool_shed_check = string_as_bool( kwargs.get( 'enable_tool_shed_check', False ) )
         try:
-            self.hours_between_check = int( kwargs.get( 'hours_between_check', 12 ) )
-            if self.hours_between_check < 1 or self.hours_between_check > 24:
-                self.hours_between_check = 12
+            self.hours_between_check = kwargs.get( 'hours_between_check', 12 )
+            if isinstance( self.hours_between_check, float ):
+                # Float values are supported for functional tests.
+                if self.hours_between_check < 0.001 or self.hours_between_check > 24.0:
+                    self.hours_between_check = 12.0
+            else:
+                if self.hours_between_check < 1 or self.hours_between_check > 24:
+                    self.hours_between_check = 12
         except:
             self.hours_between_check = 12
         self.update_integrated_tool_panel = kwargs.get( "update_integrated_tool_panel", True )
+        self.enable_data_manager_user_view = string_as_bool( kwargs.get( "enable_data_manager_user_view", "False" ) )
+        self.data_manager_config_file = resolve_path( kwargs.get('data_manager_config_file', 'data_manager_conf.xml' ), self.root )
+        self.shed_data_manager_config_file = resolve_path( kwargs.get('shed_data_manager_config_file', 'shed_data_manager_conf.xml' ), self.root )
+        self.galaxy_data_manager_data_path = kwargs.get( 'galaxy_data_manager_data_path',  self.tool_data_path )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
         self.set_metadata_externally = string_as_bool( kwargs.get( "set_metadata_externally", "False" ) )
@@ -91,6 +100,7 @@ class Configuration( object ):
         self.collect_outputs_from = [ x.strip() for x in kwargs.get( 'collect_outputs_from', 'new_file_path,job_working_directory' ).lower().split(',') ]
         self.template_path = resolve_path( kwargs.get( "template_path", "templates" ), self.root )
         self.template_cache = resolve_path( kwargs.get( "template_cache_path", "database/compiled_templates" ), self.root )
+        self.job_config_file = resolve_path( kwargs.get( 'job_config_file', 'job_conf.xml' ), self.root )
         self.local_job_queue_workers = int( kwargs.get( "local_job_queue_workers", "5" ) )
         self.cluster_job_queue_workers = int( kwargs.get( "cluster_job_queue_workers", "3" ) )
         self.job_queue_cleanup_interval = int( kwargs.get("job_queue_cleanup_interval", "5") )
@@ -111,8 +121,8 @@ class Configuration( object ):
         self.smtp_server = kwargs.get( 'smtp_server', None )
         self.smtp_username = kwargs.get( 'smtp_username', None )
         self.smtp_password = kwargs.get( 'smtp_password', None )
-        self.track_jobs_in_database = kwargs.get( 'track_jobs_in_database', None )
-        self.start_job_runners = kwargs.get( 'start_job_runners', None )
+        self.track_jobs_in_database = kwargs.get( 'track_jobs_in_database', 'None' )
+        self.start_job_runners = listify(kwargs.get( 'start_job_runners', '' ))
         self.expose_dataset_path = string_as_bool( kwargs.get( 'expose_dataset_path', 'False' ) )
         # External Service types used in sample tracking
         self.external_service_type_config_file = resolve_path( kwargs.get( 'external_service_type_config_file', 'external_service_types_conf.xml' ), self.root )
@@ -123,8 +133,8 @@ class Configuration( object ):
         # The transfer manager and deferred job queue
         self.enable_beta_job_managers = string_as_bool( kwargs.get( 'enable_beta_job_managers', 'False' ) )
         # Per-user Job concurrency limitations
+        self.cache_user_job_count = string_as_bool( kwargs.get( 'cache_user_job_count', False ) )
         self.user_job_limit = int( kwargs.get( 'user_job_limit', 0 ) )
-        # user_job_limit for backwards-compatibility
         self.registered_user_job_limit = int( kwargs.get( 'registered_user_job_limit', self.user_job_limit ) )
         self.anonymous_user_job_limit = int( kwargs.get( 'anonymous_user_job_limit', self.user_job_limit ) )
         self.default_cluster_job_runner = kwargs.get( 'default_cluster_job_runner', 'local:///' )
@@ -143,7 +153,6 @@ class Configuration( object ):
         self.sanitize_all_html = string_as_bool( kwargs.get( 'sanitize_all_html', True ) )
         self.ucsc_display_sites = kwargs.get( 'ucsc_display_sites', "main,test,archaea,ucla" ).lower().split(",")
         self.gbrowse_display_sites = kwargs.get( 'gbrowse_display_sites', "modencode,sgd_yeast,tair,wormbase,wormbase_ws120,wormbase_ws140,wormbase_ws170,wormbase_ws180,wormbase_ws190,wormbase_ws200,wormbase_ws204,wormbase_ws210,wormbase_ws220,wormbase_ws225" ).lower().split(",")
-        self.genetrack_display_sites = kwargs.get( 'genetrack_display_sites', "main,test" ).lower().split(",")
         self.brand = kwargs.get( 'brand', None )
         self.support_url = kwargs.get( 'support_url', 'http://wiki.g2.bx.psu.edu/Support' )
         self.wiki_url = kwargs.get( 'wiki_url', 'http://g2.trac.bx.psu.edu/' )
@@ -215,28 +224,20 @@ class Configuration( object ):
             # Crummy, but PasteScript does not give you a way to determine this
             if arg.lower().startswith('--server-name='):
                 self.server_name = arg.split('=', 1)[-1]
+        # Store all configured server names
+        self.server_names = []
+        for section in global_conf_parser.sections():
+            if section.startswith('server:'):
+                self.server_names.append(section.replace('server:', '', 1))
         # Store advanced job management config
         self.job_manager = kwargs.get('job_manager', self.server_name).strip()
         self.job_handlers = [ x.strip() for x in kwargs.get('job_handlers', self.server_name).split(',') ]
         self.default_job_handlers = [ x.strip() for x in kwargs.get('default_job_handlers', ','.join( self.job_handlers ) ).split(',') ]
-        # parse the [galaxy:job_limits] section
-        self.job_limits = {}
-        try:
-            job_limits = global_conf_parser.items( 'galaxy:job_limits' )
-            for k, v in job_limits:
-                # Since the URL contains a colon and possibly an equals sign, consider ' = ' the delimiter
-                more_k, v = v.split(' = ', 1)
-                k = '%s:%s' % (k, more_k.strip())
-                v = v.strip().rsplit(None, 1)
-                v[1] = int(v[1])
-                self.job_limits[k] = v
-        except ConfigParser.NoSectionError:
-            pass
-        # Use database for IPC unless this is a standalone server (or multiple servers doing self dispatching in memory)
-        if self.track_jobs_in_database is None or self.track_jobs_in_database == "None":
-            self.track_jobs_in_database = True
-            if ( len( self.job_handlers ) == 1 ) and ( self.job_handlers[0] == self.server_name ) and ( self.job_manager == self.server_name ):
-                self.track_jobs_in_database = False
+        # Use database for job running IPC unless this is a standalone server or explicitly set in the config
+        if self.track_jobs_in_database == 'None':
+            self.track_jobs_in_database = False
+            if len(self.server_names) > 1:
+                self.track_jobs_in_database = True
         else:
             self.track_jobs_in_database = string_as_bool( self.track_jobs_in_database )
         # Store per-tool runner configs
@@ -253,7 +254,9 @@ class Configuration( object ):
             amqp_config = {}
         for k, v in amqp_config:
             self.amqp[k] = v
-        self.biostar = kwargs.get( 'biostar', None )
+        self.biostar_url = kwargs.get( 'biostar_url', None )
+        self.biostar_key_name = kwargs.get( 'biostar_key_name', None )
+        self.biostar_key = kwargs.get( 'biostar_key', None )
         self.running_functional_tests = string_as_bool( kwargs.get( 'running_functional_tests', False ) )
         # Experimental: This will not be enabled by default and will hide 
         # nonproduction code.
@@ -261,10 +264,23 @@ class Configuration( object ):
         self.api_folders = string_as_bool( kwargs.get( 'api_folders', False ) )
         # This is for testing new library browsing capabilities.
         self.new_lib_browse = string_as_bool( kwargs.get( 'new_lib_browse', False ) )
+        # Error logging with sentry
+        self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
         # Logging with fluentd
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
+
+    @property
+    def sentry_dsn_public( self ):
+        """
+        Sentry URL with private key removed for use in client side scripts, 
+        sentry server will need to be configured to accept events
+        """
+        if self.sentry_dsn:
+            return re.sub( r"^([^:/?#]+:)?//(\w+):(\w+)", r"\1//\2", self.sentry_dsn )
+        else:
+            return None
 
     def __read_tool_job_config( self, global_conf_parser, section, key ):
         try:
@@ -299,7 +315,7 @@ class Configuration( object ):
 
             return rval
         except ConfigParser.NoSectionError:
-            return []
+            return {}
     def get( self, key, default ):
         return self.config_dict.get( key, default )
     def get_bool( self, key, default ):
@@ -387,36 +403,40 @@ def get_database_engine_options( kwargs ):
 
 def configure_logging( config ):
     """
-    Allow some basic logging configuration to be read from the cherrpy
-    config.
+    Allow some basic logging configuration to be read from ini file.
     """
-    # PasteScript will have already configured the logger if the appropriate
-    # sections were found in the config file, so we do nothing if the
-    # config has a loggers section, otherwise we do some simple setup
-    # using the 'log_*' values from the config.
-    if config.global_conf_parser.has_section( "loggers" ):
-        return
-    format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
-    level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
-    destination = config.get( "log_destination", "stdout" )
-    log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
     # Get root logger
     root = logging.getLogger()
-    # Set level
-    root.setLevel( level )
-    # Turn down paste httpserver logging
-    if level <= logging.DEBUG:
-        logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
-    # Remove old handlers
-    for h in root.handlers[:]:
-        root.removeHandler(h)
-    # Create handler
-    if destination == "stdout":
-        handler = logging.StreamHandler( sys.stdout )
-    else:
-        handler = logging.FileHandler( destination )
-    # Create formatter
-    formatter = logging.Formatter( format )
-    # Hook everything up
-    handler.setFormatter( formatter )
-    root.addHandler( handler )
+    # PasteScript will have already configured the logger if the 
+    # 'loggers' section was found in the config file, otherwise we do 
+    # some simple setup using the 'log_*' values from the config.
+    if not config.global_conf_parser.has_section( "loggers" ):
+        format = config.get( "log_format", "%(name)s %(levelname)s %(asctime)s %(message)s" )
+        level = logging._levelNames[ config.get( "log_level", "DEBUG" ) ]
+        destination = config.get( "log_destination", "stdout" )
+        log.info( "Logging at '%s' level to '%s'" % ( level, destination ) )
+        # Set level
+        root.setLevel( level )
+        # Turn down paste httpserver logging
+        if level <= logging.DEBUG:
+            logging.getLogger( "paste.httpserver.ThreadPool" ).setLevel( logging.WARN )
+        # Remove old handlers
+        for h in root.handlers[:]:
+            root.removeHandler(h)
+        # Create handler
+        if destination == "stdout":
+            handler = logging.StreamHandler( sys.stdout )
+        else:
+            handler = logging.FileHandler( destination )
+        # Create formatter
+        formatter = logging.Formatter( format )
+        # Hook everything up
+        handler.setFormatter( formatter )
+        root.addHandler( handler )
+    # If sentry is configured, also log to it
+    if config.sentry_dsn:
+        pkg_resources.require( "raven" )
+        from raven.handlers.logging import SentryHandler
+        sentry_handler = SentryHandler( config.sentry_dsn )
+        sentry_handler.setLevel( logging.WARN )
+        root.addHandler( sentry_handler )

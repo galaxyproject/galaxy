@@ -20,7 +20,7 @@
             </div>
             <div class="form-row">
                 <label>Public name:</label>
-                %if t.webapp.name == 'community':
+                %if t.webapp.name == 'tool_shed':
                     %if user.active_repositories:
                         <input type="hidden" name="username" value="${username}"/>
                         ${username}

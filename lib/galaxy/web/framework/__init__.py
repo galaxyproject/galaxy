@@ -23,8 +23,8 @@ import simplejson
 
 import helpers
 
-pkg_resources.require( "PasteDeploy" )
-from paste.deploy.converters import asbool
+from galaxy.util import asbool
+
 import paste.httpexceptions
 
 pkg_resources.require( "Mako" )
@@ -99,7 +99,14 @@ def require_login( verb="perform this action", use_panels=False, webapp='galaxy'
         return decorator
     return argcatcher
 
-def expose_api( func ):
+def expose_api_raw( func ):
+    """
+    Expose this function via the API but don't dump the results
+    to JSON.
+    """
+    return expose_api( func, to_json=False )
+
+def expose_api( func, to_json=True ):
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
         def error( environ, start_response ):
@@ -183,10 +190,12 @@ def expose_api( func ):
                 trans.response.status = 400
                 return "That user does not exist."
         try:
-            if trans.debug:
-                return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
-            else:
-                return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+            rval = func( self, trans, *args, **kwargs)
+            if to_json and trans.debug:
+                rval = simplejson.dumps( rval, indent=4, sort_keys=True )
+            elif to_json:
+                rval = simplejson.dumps( rval )
+            return rval
         except paste.httpexceptions.HTTPException:
             raise # handled
         except:
@@ -599,7 +608,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # remote user authenticates, we'll look for this information, and if missing, create it.
             if not self.app.security_agent.get_private_user_role( user ):
                 self.app.security_agent.create_private_user_role( user )
-            if 'webapp' not in self.environ or self.environ['webapp'] != 'community':
+            if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
                 if not user.default_permissions:
                     self.app.security_agent.user_set_default_permissions( user )
                     self.app.security_agent.user_set_default_permissions( user, history=True, dataset=True )
@@ -623,7 +632,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             self.sa_session.flush()
             self.app.security_agent.create_private_user_role( user )
             # We set default user permissions, before we log in and set the default history permissions
-            if 'webapp' not in self.environ or self.environ['webapp'] != 'community':
+            if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
                 self.app.security_agent.user_set_default_permissions( user )
             #self.log_event( "Automatically created account '%s'", user.email )
         return user
@@ -729,7 +738,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 history = self.new_history()
             else:
                 # Perhaps a bot is running a tool without having logged in to get a history
-                log.debug( "Error: this request returned None from get_history(): %s" % self.request.browser_url )
+                log.debug( "This request returned None from get_history(): %s" % self.request.browser_url )
                 return None
         return history
     def set_history( self, history ):

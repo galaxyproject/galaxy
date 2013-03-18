@@ -40,6 +40,8 @@ class Configuration( object ):
         self.screencasts_url = kwargs.get( 'screencasts_url', None )
         self.log_events = False
         self.cookie_path = kwargs.get( "cookie_path", "/" )
+        # Error logging with sentry
+        self.sentry_dsn = kwargs.get( 'sentry_dsn', None )
         #Parse global_conf
         global_conf = kwargs.get( 'global_conf', None )
         global_conf_parser = ConfigParser.ConfigParser()

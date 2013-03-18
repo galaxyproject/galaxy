@@ -55,11 +55,12 @@ class GenomeIndexToolAction( ToolAction ):
             job.add_parameter( name, value )
 
         job.state = start_job_state # job inputs have been configured, restore initial job state
+        job.set_handler(tool.get_job_handler(None))
         trans.sa_session.flush()
 
 
         # Queue the job for execution
-        trans.app.job_queue.put( job.id, tool )
+        trans.app.job_queue.put( job.id, tool.id )
         log.info( "Added genome index job to the job queue, id: %s" % str( job.id ) )
 
         return job, odict()

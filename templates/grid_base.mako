@@ -129,6 +129,19 @@
             cur_page: ${cur_page_num},
             num_pages: ${num_pages}
         });
+
+        // Initialize grid objects on load.
+        // FIXME: use a grid view object eventually.
+        $(document).ready(function() {
+            init_grid_elements();
+            init_grid_controls();
+            
+            // Initialize text filters to select text on click and use normal font when user is typing.
+            $('input[type=text]').each(function() {
+                $(this).click(function() { $(this).select(); } )
+                       .keyup(function () { $(this).css("font-style", "normal"); });
+            });
+        });
     </script>
 </%def>
 
@@ -446,12 +459,14 @@
     ## Grid operations for multiple items.
     %if show_item_checkboxes:
         <tr>
+            ## place holder for multiple operation commands
+            <input type="hidden" id="operation" name="operation" value="">
             <td></td>
             <td colspan="100">
                 For <span class="grid-selected-count"></span> selected ${items_plural}:
                 %for operation in grid.operations:
                     %if operation.allow_multiple:
-                        <input type="submit" name="operation" value="${operation.label}" class="action-button">
+                        <input type="button" value="${operation.label}" class="action-button" onclick="submit_operation(this, '${operation.confirm}')">
                     %endif
                 %endfor
             </td>

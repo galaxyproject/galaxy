@@ -18,7 +18,7 @@ class PageListGrid( grids.Grid ):
     # Custom column.
     class URLColumn( grids.PublicURLColumn ):
         def get_value( self, trans, grid, item ):
-            return url_for( action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
+            return url_for(controller='page', action='display_by_username_and_slug', username=item.user.username, slug=item.slug )
     
     # Grid definition
     use_panels = True
@@ -365,9 +365,9 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
                 session.flush()
                 # Display the management page
                 ## trans.set_message( "Page '%s' created" % page.title )
-                return trans.response.send_redirect( web.url_for( action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='page', action='list' ) )
         return trans.show_form( 
-            web.FormBuilder( web.url_for(), "Create new page", submit_text="Submit" )
+            web.FormBuilder( web.url_for(controller='page', action='create'), "Create new page", submit_text="Submit" )
                 .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
                 .add_text( "page_slug", "Page identifier", value=page_slug, error=page_slug_err,
                            help="""A unique identifier that will be used for
@@ -410,7 +410,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
                 self.add_item_annotation( trans.sa_session, trans.get_user(), page, page_annotation )
                 session.flush()
                 # Redirect to page list.
-                return trans.response.send_redirect( web.url_for( action='list' ) )
+                return trans.response.send_redirect( web.url_for(controller='page', action='list' ) )
         else:
             page_title = page.title
             page_slug = page.slug
@@ -418,7 +418,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
             if not page_annotation:
                 page_annotation = ""
         return trans.show_form( 
-            web.FormBuilder( web.url_for( id=encoded_id ), "Edit page attributes", submit_text="Submit" )
+            web.FormBuilder( web.url_for(controller='page', action='edit', id=encoded_id ), "Edit page attributes", submit_text="Submit" )
                 .add_text( "page_title", "Page title", value=page_title, error=page_title_err )
                 .add_text( "page_slug", "Page identifier", value=page_slug, error=page_slug_err,
                            help="""A unique identifier that will be used for
@@ -656,7 +656,7 @@ class PageController( BaseUIController, SharableMixin, UsesAnnotations, UsesHist
 
         if self.create_item_slug( trans.sa_session, page ):
             trans.sa_session.flush()
-        return_dict = { "name" : page.title, "link" : url_for( action="display_by_username_and_slug", username=page.user.username, slug=page.slug ) }
+        return_dict = { "name" : page.title, "link" : url_for(controller='page', action="display_by_username_and_slug", username=page.user.username, slug=page.slug ) }
         return return_dict
         
     @web.expose

@@ -1,5 +1,5 @@
 <% _=n_ %>
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<!DOCTYPE HTML>
 <html>
     <head>
         <title>${self.title()}</title>
@@ -23,12 +23,21 @@
 
 ## Default javascripts
 <%def name="javascripts()">
-    ## <!--[if lt IE 7]>
-    ## <script type='text/javascript' src="/static/scripts/libs/IE/IE7.js"> </script>
-    ## <![endif]-->
     
+    ## Send errors to Sntry server if configured
+    %if app.config.sentry_dsn:
+        ${h.js( "libs/tracekit", "libs/raven" )}
+        <script>
+            Raven.config('${app.config.sentry_dsn_public}').install();
+            %if trans.user:
+                Raven.setUser( { email: "${trans.user.email}" } );
+            %endif
+        </script>
+    %endif
+
     ${h.js(
         "libs/jquery/jquery",
+        "libs/jquery/select2",
         "libs/json2",
         "libs/bootstrap",
         "libs/underscore",
@@ -45,7 +54,7 @@
     ${h.js(
         "mvc/ui"
     )}
-    
+
     <script type="text/javascript">
         // console protection
         window.console = window.console || {
@@ -56,7 +65,7 @@
             error   : function(){},
             assert  : function(){}
         };
-      
+
         // Set up needed paths.
         var galaxy_paths = new GalaxyPaths({
             root_path: '${h.url_for( "/" )}',

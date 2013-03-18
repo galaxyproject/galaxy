@@ -76,10 +76,10 @@ class DefaultToolAction( object ):
                             else:
                                 raise Exception, 'A path for explicit datatype conversion has not been found: %s --/--> %s' % ( input_datasets[ prefix + input.name + str( i + 1 ) ].extension, conversion_extensions )
                         if parent:
-                            parent[input.name] = input_datasets[ prefix + input.name + str( i + 1 ) ]
+                            parent[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
                                 #allow explicit conversion to be stored in job_parameter table
-                                parent[ conversion_name ] = conversion_data.id #a more robust way to determine JSONable value is desired
+                                parent[ conversion_name ][i] = conversion_data.id #a more robust way to determine JSONable value is desired
                         else:
                             param_values[input.name][i] = input_datasets[ prefix + input.name + str( i + 1 ) ]
                             for conversion_name, conversion_data in conversions:
@@ -168,7 +168,7 @@ class DefaultToolAction( object ):
         
         # Set history.
         if not history:
-            history = trans.history
+            history = tool.get_default_history_by_trans( trans, create=True )
         
         out_data = odict()
         # Collect any input datasets from the incoming parameters
@@ -402,6 +402,7 @@ class DefaultToolAction( object ):
         job.object_store_id = object_store_id
         if job_params:
             job.params = to_json_string( job_params )
+        job.set_handler(tool.get_job_handler(job_params))
         trans.sa_session.add( job )
         trans.sa_session.flush()
         # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
@@ -425,7 +426,7 @@ class DefaultToolAction( object ):
             trans.sa_session.flush()
             trans.response.send_redirect( url_for( controller='tool_runner', action='redirect', redirect_url=redirect_url ) )
         else:
-            # Queue the job for execution
-            trans.app.job_queue.put( job.id, tool )
+            # Put the job in the queue if tracking in memory
+            trans.app.job_queue.put( job.id, job.tool_id )
             trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
             return job, out_data

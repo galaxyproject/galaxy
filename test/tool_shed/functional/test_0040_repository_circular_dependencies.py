@@ -2,12 +2,12 @@ from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 
 freebayes_repository_name = 'freebayes_0040'
-freebayes_repository_description = "Galaxy's freebayes tool"
-freebayes_repository_long_description = "Long description of Galaxy's freebayes tool"
+freebayes_repository_description = "Galaxy's freebayes tool for test 0040"
+freebayes_repository_long_description = "Long description of Galaxy's freebayes tool for test 0040"
 
 filtering_repository_name = 'filtering_0040'
-filtering_repository_description = "Galaxy's filtering tool"
-filtering_repository_long_description = "Long description of Galaxy's filtering tool"
+filtering_repository_description = "Galaxy's filtering tool for test 0040"
+filtering_repository_long_description = "Long description of Galaxy's filtering tool for test 0040"
 
 class TestRepositoryCircularDependencies( ShedTwillTestCase ):
     '''Verify that the code correctly displays repositories with circular repository dependencies.'''
@@ -37,9 +37,14 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
                                                     categories=[ 'test_0040_repository_circular_dependencies' ], 
                                                     strings_displayed=[] )
         self.upload_file( repository, 
-                          'freebayes/freebayes.tar', 
+                          filename='freebayes/freebayes.tar', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded the tool tarball.',
                           strings_displayed=[], 
-                          commit_message='Uploaded freebayes.tar.' )
+                          strings_not_displayed=[] )
     def test_0015_create_filtering_repository( self ):
         '''Create and populate filtering_0040.'''
         self.logout()
@@ -51,9 +56,14 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
                                                     categories=[ 'test_0040_repository_circular_dependencies' ], 
                                                     strings_displayed=[] )
         self.upload_file( repository, 
-                          'filtering/filtering_1.1.0.tar', 
+                          filename='filtering/filtering_1.1.0.tar', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=True,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message='Uploaded the tool tarball for filtering 1.1.0.',
                           strings_displayed=[], 
-                          commit_message='Uploaded filtering.tar.' )
+                          strings_not_displayed=[] )
     def test_0020_create_dependency_on_freebayes( self ):
         '''Upload a repository_dependencies.xml file that specifies the current revision of freebayes to the filtering_0040 repository.'''
         # The dependency structure should look like:
@@ -67,9 +77,14 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                  dependency_description='Filtering 1.1.0 depends on the freebayes repository.' )
         self.upload_file( filtering_repository, 
-                          'repository_dependencies.xml', 
+                          filename='repository_dependencies.xml', 
                           filepath=repository_dependencies_path, 
-                          commit_message='Uploaded dependency on freebayes' )
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded dependency on freebayes.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0025_create_dependency_on_filtering( self ):
         '''Upload a repository_dependencies.xml file that specifies the current revision of filtering to the freebayes_0040 repository.'''
         # The dependency structure should look like:
@@ -83,9 +98,14 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
                                                  self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
                                                  dependency_description='Freebayes depends on the filtering repository.' )
         self.upload_file( freebayes_repository, 
-                          'repository_dependencies.xml', 
+                          filename='repository_dependencies.xml', 
                           filepath=repository_dependencies_path, 
-                          commit_message='Uploaded dependency on filtering' )
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False, 
+                          commit_message='Uploaded dependency on filtering.',
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
     def test_0030_verify_repository_dependencies( self ):
         '''Verify that each repository can depend on the other without causing an infinite loop.'''
         filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
@@ -107,5 +127,5 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         '''Verify that freebayes displays tool dependencies.'''
         repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
         self.display_manage_repository_page( repository, 
-                                             strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Valid tools' ],
+                                             strings_displayed=[ 'freebayes', '0.9.4_9696d0ce8a9', 'samtools', '0.1.18', 'Valid tools', 'package' ],
                                              strings_not_displayed=[ 'Invalid tools' ] )

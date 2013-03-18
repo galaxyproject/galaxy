@@ -68,8 +68,11 @@ SAMPLES="
 datatypes_conf.xml.sample
 universe_wsgi.ini.sample
 tool_data_table_conf.xml.sample
+tool_sheds_conf.xml.sample
 shed_tool_data_table_conf.xml.sample
 migrated_tools_conf.xml.sample
+data_manager_conf.xml.sample
+shed_data_manager_conf.xml.sample
 tool-data/shared/ensembl/builds.txt.sample
 tool-data/shared/igv/igv_build_sites.txt.sample
 tool-data/shared/ncbi/builds.txt.sample
@@ -113,6 +116,9 @@ for sample in $SAMPLES; do
     echo "Copying $sample to $file"
     cp $sample $file
 done
+
+echo "Copying job_conf.xml.sample_basic to job_conf.xml"
+cp job_conf.xml.sample_basic job_conf.xml
 
 for dir in $DIRS; do
     if [ ! -d $dir ]; then

@@ -273,5 +273,5 @@ class GalaxyTagHandler( TagHandler ):
 
 class CommunityTagHandler( TagHandler ):
     def __init__( self ):
-        from galaxy.webapps.community import model
+        from galaxy.webapps.tool_shed import model
         TagHandler.__init__( self )

@@ -90,7 +90,7 @@ class Registry( object ):
                     dtype = elem.get( 'type', None )
                     type_extension = elem.get( 'type_extension', None )
                     mimetype = elem.get( 'mimetype', None )
-                    display_in_upload = elem.get( 'display_in_upload', False )
+                    display_in_upload = galaxy.util.string_as_bool( elem.get( 'display_in_upload', False ) )
                     make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
                     # Proprietary datatypes included in installed tool shed repositories will include two special attributes
                     # (proprietary_path and proprietary_datatype_module) if they depend on proprietary datatypes classes.
@@ -107,7 +107,7 @@ class Registry( object ):
                                 in_memory_dtype = elem.get( 'type', None )
                                 in_memory_type_extension = elem.get( 'type_extension', None )
                                 in_memory_mimetype = elem.get( 'mimetype', None )
-                                in_memory_display_in_upload = elem.get( 'display_in_upload', False )
+                                in_memory_display_in_upload = galaxy.util.string_as_bool( elem.get( 'display_in_upload', False ) )
                                 in_memory_make_subclass = galaxy.util.string_as_bool( elem.get( 'subclass', False ) )
                                 if in_memory_dtype == dtype and in_memory_type_extension == type_extension and in_memory_mimetype == mimetype \
                                     and in_memory_display_in_upload == display_in_upload and in_memory_make_subclass == make_subclass:
