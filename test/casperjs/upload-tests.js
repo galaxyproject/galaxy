@@ -39,6 +39,7 @@ if( spaceghost.fixtureData.testUser ){
     password = spaceghost.fixtureData.testUser.password;
 }
 
+var testUploadInfo = {};
 
 // =================================================================== TESTS
 // ------------------------------------------------------------------- start a new user
@@ -51,84 +52,72 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
 
 
 // ------------------------------------------------------------------- long form
-// upload a file from the filesystem
-var uploadInfo = {};
+
+// upload a file...
 spaceghost.then( function(){
-    // strangely, this works with a non-existant file --> empty txt file
-    var filename = '1.sam';
-    var filepath = this.options.scriptDir + '/../../test-data/' + filename;
+    this.test.comment( 'Test uploading a file' );
+
+    var filename = '1.txt',
+        filepath = this.options.scriptDir + '/../../test-data/' + filename;
+
     this.tools._uploadFile( filepath );
 
-    // when an upload begins successfully...
-    // 1. main should reload with a donemessagelarge
-    // 2. which contains the uploaded file's new hid
-    // 3. and the filename of the upload
-    this.withFrame( 'galaxy_main', function(){
-        var doneElementInfo = this.elementInfoOrNull( '.donemessagelarge' );
-        this.test.assert( doneElementInfo !== null,
-            "Found donemessagelarge after uploading file" );
+    // when an upload begins successfully main should reload with a infomessagelarge
+    this.withMainPanel( function mainAfterUpload(){
+        var infoInfo = this.elementInfoOrNull( this.data.selectors.messages.infolarge );
+        this.test.assert( infoInfo !== null,
+            "Found infomessagelarge after uploading file" );
+        this.test.assert( infoInfo.text.indexOf( this.data.text.upload.success ) !== -1,
+            "Found upload success message: " + this.data.text.upload.success );
 
-        uploadInfo = this.tools._parseDoneMessageForTool( doneElementInfo.text );
-        this.test.assert( uploadInfo.hid >= 0,
-            'Found sensible hid from upload donemessagelarge: ' + uploadInfo.hid );
-        this.test.assert( uploadInfo.name === filename,
-            'Found matching name from upload donemessagelarge: ' + uploadInfo.name );
-    });
-
-});
-
-// move to the history panel and wait for upload to finish
-spaceghost.then( function(){
-    var hdaInfo = null;
-
-    this.withFrame( 'galaxy_history', function(){
-        hdaInfo = this.historypanel.hdaElementInfoByTitle( uploadInfo.name, uploadInfo.hid );
-        this.debug( 'hda:\n' + this.jsonStr( hdaInfo ) );
-    });
-
-    this.then( function(){
-        this.test.comment( 'Waiting for upload to move to ok state in history' );
-        //precondition: needs class
-        var hdaStateClass = hdaInfo.attributes[ 'class' ].match( /historyItem\-(\w+)/ )[0];
-        if( hdaStateClass !== 'historyItem-ok' ){
-            this.historypanel.waitForHdaState( '#' + hdaInfo.attributes.id, 'ok',
-                function whenInStateFn(){
-                    this.test.assert( true, 'Upload completed successfully for: ' + uploadInfo.name );
-
-                }, function timeoutFn(){
-                    this.test.fail( 'Test timedout for upload: ' + uploadInfo.name );
-
-                // wait a maximum of 30 secs
-                }, 30 * 1000 );
-        }
+        testUploadInfo.name = filename;
     });
 });
 
+// ... and move to the history panel and wait for upload to finish
+spaceghost.historypanel.waitForHdas( function(){
+    this.test.comment( 'Waiting for upload to move to ok state in history' );
+
+    var hdaInfo = this.historypanel.hdaElementInfoByTitle( testUploadInfo.name );
+    if( !hdaInfo ){
+        this.test.fail( 'Could not locate new hda: ' + testUploadInfo.name );
+
+    } else {
+        this.historypanel.waitForHdaState( '#' + hdaInfo.attributes.id, 'ok',
+            function whenInStateFn( newHdaInfo ){
+                //this.debug( 'newHdaInfo:\n' + this.jsonStr( newHdaInfo ) );
+                this.test.pass( 'Upload completed successfully for: ' + testUploadInfo.name );
+            },
+            function timeoutFn( newHdaInfo ){
+                this.debug( 'newHdaInfo:\n' + this.jsonStr( newHdaInfo ) );
+                this.test.fail( 'Test timed out for upload: ' + testUploadInfo.name );
+            },
+            // wait a maximum of 30 secs
+            30 * 1000 );
+    }
+});
+
+// ------------------------------------------------------------------- short form
 spaceghost.then( function(){
-    this.test.comment( 'testing convenience function' );
+    this.test.comment( 'Test convenience function' );
+
     spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
-        this.test.assert( uploadInfo.hdaElement !== null, "Convenience function produced hda in ok state" );
+        this.test.assert( uploadInfo.hdaElement !== null, "Convenience function produced hda" );
+        var state = this.historypanel.getHdaState( '#' + uploadInfo.hdaElement.attributes.id );
+        this.test.assert( state === 'ok', "Convenience function produced hda in ok state" );
     });
 });
 
+// ------------------------------------------------------------------- test conv. fn error
 /*
-//??: this error's AND waitFor()s THREE times - something to do with assertStepsRaise + waitFor
+//??: this error's AND waitFor()s THREE times (or more) - something to do with assertStepsRaise + waitFor
 spaceghost.then( function(){
     this.test.comment( 'testing convenience function timeout error' );
     this.assertStepsRaise( 'GalaxyError: Upload Error: timeout waiting', function(){
-        spaceghost.then( function(){
-            spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
-                this.test.fail( "Convenience function did not timeout!" );
-            }, 250 );
-        });
+        spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
+            this.test.fail( "Convenience function did not timeout!" );
+        }, 50 );
     });
-});
-
-// this correctly errors
-spaceghost.then( function(){
-    spaceghost.tools.uploadFile( '../../test-data/1.sam', function( uploadInfo ){
-        this.test.fail( "Convenience function did not timeout!" );
-    }, 250 );
 });
 */
 

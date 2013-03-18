@@ -11,9 +11,9 @@ exports.create = function createTools( spaceghost ){
  */
 var Tools = function Tools( spaceghost ){
     //??: circ ref?
-    this.options = {
-        defaultUploadWait : ( 30 * 1000 )
-    };
+    this.options = {};
+    /** Default amount of ms to wait for upload to finish */
+    this.options.defaultUploadWait = ( 30 * 1000 );
     this.spaceghost = spaceghost;
 };
 exports.Tools = Tools;
@@ -22,69 +22,14 @@ Tools.prototype.toString = function toString(){
     return this.spaceghost + '.Tools';
 };
 
+
 // -------------------------------------------------------------------
 /* TODO:
     move selectors from sg to here
 
 */
 // =================================================================== INTERNAL
-/** Tests uploading a file.
- *      NOTE: this version does NOT throw an error on a bad upload.
- *      It is meant for testing the upload functionality and, therefore, is marked as private.
- *      Other tests should use uploadFile
- *  @param {String} filepath    the local filesystem path of the file to upload (absolute (?))
- */
-Tools.prototype._uploadFile = function _uploadFile( filepath ){
-    var spaceghost = this.spaceghost,
-        uploadInfo = {};
-    //TODO: check file exists using phantom.fs
-    //TODO: pull from test data
-    uploadInfo[ spaceghost.data.selectors.tools.upload.fileInput ] = filepath;
-    spaceghost.debug( 'uploading file: ' + filepath );
-
-    spaceghost.then( function(){
-        spaceghost.withFrame( spaceghost.data.selectors.frames.tools, function(){
-            spaceghost.clickLabel( spaceghost.data.labels.tools.upload.panelLabel );
-        });
-    });
-
-    spaceghost.then( function beginUpload(){
-        spaceghost.withFrame( spaceghost.data.selectors.frames.main, function(){
-            spaceghost.fill( spaceghost.data.selectors.tools.general.form, uploadInfo, false );
-
-            // the following throws:
-            //  [error] [remote] Failed dispatching clickmouse event on xpath selector: //input[@value="Execute"]:
-            //  PageError: TypeError: 'undefined' is not a function (evaluating '$(spaceghost).formSerialize()')
-            // ...and yet the upload still seems to work
-            spaceghost.click( xpath( spaceghost.data.selectors.tools.general.executeButton_xpath ) );
-        });
-    });
-
-    // debugging
-    spaceghost.withFrame( spaceghost.data.selectors.frames.main, function afterUpload(){
-        var messageInfo = spaceghost.elementInfoOrNull( spaceghost.data.selectors.messages.all );
-        spaceghost.debug( 'post upload message:\n' + spaceghost.jsonStr( messageInfo ) );
-    });
-};
-
-/** Parses the hid and name of a newly uploaded file from the tool execution donemessagelarge
- *  @param {String} doneMsgText     the text extracted from the donemessagelarge after a tool execution
- */
-Tools.prototype._parseDoneMessageForTool = function parseDoneMessageForTool( doneMsgText ){
-    //TODO: test on non-upload
-    var executionInfo = {};
-    var textMatch = doneMsgText.match( /added to the queue:\n\n(\d+)\: (.*)\n/m );
-    if( textMatch ){
-        if( textMatch.length > 1 ){
-            executionInfo.hid = parseInt( textMatch[1], 10 );
-        }
-        if( textMatch.length > 2 ){
-            executionInfo.name = textMatch[2];
-        }
-        executionInfo.name = textMatch[2];
-    }
-    return executionInfo;
-};
+var xpath = require( 'casper' ).selectXPath;
 
 // ------------------------------------------------------------------- get avail. tools
 // list available tools
@@ -109,7 +54,73 @@ Tools.prototype._parseDoneMessageForTool = function parseDoneMessageForTool( don
 //    });
 //});
 
+/** Parses the hid and name of a new file from the tool execution donemessagelarge
+ *  @param {String} doneMsgText     the text extracted from the donemessagelarge after a tool execution
+ */
+Tools.prototype._parseDoneMessageForTool = function parseDoneMessageForTool( doneMsgText ){
+    //TODO: test
+    var executionInfo = {};
+    var textMatch = doneMsgText.match( /added to the queue:\n\n(\d+)\: (.*)\n/m );
+    if( textMatch ){
+        if( textMatch.length > 1 ){
+            executionInfo.hid = parseInt( textMatch[1], 10 );
+        }
+        if( textMatch.length > 2 ){
+            executionInfo.name = textMatch[2];
+        }
+        executionInfo.name = textMatch[2];
+    }
+    return executionInfo;
+};
+
+// ------------------------------------------------------------------- upload (internal)
+/** Tests uploading a file.
+ *      NOTE: this version does NOT throw an error on a bad upload.
+ *      It is meant for testing the upload functionality and, therefore, is marked as private.
+ *      Other tests should use uploadFile
+ *  @param {String} filepath    the local filesystem path of the file to upload (absolute (?))
+ */
+Tools.prototype._uploadFile = function _uploadFile( filepath ){
+    //TODO: generalize for all tools
+    var spaceghost = this.spaceghost,
+        uploadInfo = {};
+    uploadInfo[ spaceghost.data.selectors.tools.upload.fileInput ] = filepath;
+
+    // click the upload tool
+    spaceghost.thenOpen( spaceghost.baseUrl ).withToolPanel( function(){
+        // we can apprently click a tool label without expanding the tool container for it
+        this.clickLabel( spaceghost.data.labels.tools.upload.panelLabel );
+        this.jumpToMain( function(){
+            this.waitForSelector( 'body' );
+        });
+    });
+
+    // fill in the form and click execute - wait for reload
+    spaceghost.withMainPanel( function(){
+        //?? no wait for page to load?
+        this.fill( this.data.selectors.tools.general.form, uploadInfo, false );
+
+        // the following throws:
+        //  [error] [remote] Failed dispatching clickmouse event on xpath selector: //input[@value="Execute"]:
+        //  PageError: TypeError: 'undefined' is not a function (evaluating '$(spaceghost).formSerialize()')
+        // ...and yet the upload still seems to work
+        this.click( xpath( this.data.selectors.tools.general.executeButton_xpath ) );
+
+        // wait for main panel, history reload
+        ////NOTE!: assumes tool execution reloads the history panel
+        this.waitForMultipleNavigation( [ 'tool_runner/upload_async_message', 'history' ], function(){
+            // debugging
+            this.jumpToMain( function(){
+                var messageInfo = this.elementInfoOrNull( this.data.selectors.messages.all );
+                this.debug( ( messageInfo )?( messageInfo.attributes['class'] + ':\n' + messageInfo.text )
+                                           :( 'NO post upload message' ) );
+            });
+        });
+    });
+};
+
 // =================================================================== API (external)
+// ------------------------------------------------------------------- misc
 /** get filename from filepath
  *  @param {String} filepath    (POSIX) filepath
  *  @returns {String} filename part of filepath
@@ -122,14 +133,15 @@ Tools.prototype.filenameFromFilepath = function filenameFromFilepath( filepath )
     return filepath;
 };
 
-/** Wait for the hda with given id to move into the given state.
+// ------------------------------------------------------------------- upload (conv.)
+/** Convenience function for uploading a file.
  *      callback function will be passed an uploadInfo object in the form:
  *          filepath:   the filepath of the uploaded file
  *          filename:   the filename of the uploaded file
  *          hid:        the hid of the uploaded file hda in the current history
  *          name:       the name of the uploaded file hda
  *          hdaElement: the hda DOM (casperjs form) element info object (see Casper#getElementInfo)
- *  @param {String} filepath        (POSIX) filepath
+ *  @param {String} filepath        (POSIX) filepath relative to the script's directory
  *  @param {Function} callback      callback function called after hda moves into ok state (will be passed uploadInfo)
  *  @param {Integer} timeoutAfterMs milliseconds to wait before timing out (defaults to options.defaultUploadWait)
  */
@@ -142,64 +154,47 @@ Tools.prototype.uploadFile = function uploadFile( filepath, callback, timeoutAft
     // precondition: filepath is relative to scriptDir
     filepath = spaceghost.options.scriptDir + filepath;
 
-    // upload the file erroring if a done message is not displayed, aggregate info about upload
     spaceghost.info( 'uploading file: ' + filepath + ' (timeout after ' + timeoutAfterMs + ')' );
     this._uploadFile( filepath );
-    spaceghost.withFrame( spaceghost.data.selectors.frames.main, function toolExecuted(){
-        spaceghost.debug( 'checking for done message' );
-        var doneElementInfo = spaceghost.elementInfoOrNull( spaceghost.data.selectors.messages.donelarge );
-        if( !doneElementInfo ){
-            throw new spaceghost.GalaxyError( 'Upload Error: no done message uploading "' + filepath + '"' );
+
+    // error if an info message wasn't found
+    spaceghost.withMainPanel( function checkUploadMessage(){
+        var infoInfo = spaceghost.elementInfoOrNull( this.data.selectors.messages.infolarge );
+        if( ( !infoInfo )
+        ||  ( infoInfo.text.indexOf( this.data.text.upload.success ) === -1 ) ){
+            throw new this.GalaxyError( 'Upload Error: no info message uploading "' + filepath + '"' );
         }
-        spaceghost.debug( 'doneElementInfo: ' + spaceghost.jsonStr( doneElementInfo ) );
-        // grab the hid and uploaded hda name from the done message
-        uploadInfo = spaceghost.tools._parseDoneMessageForTool( doneElementInfo.text );
+        // safe to store these
         uploadInfo.filename = filename;
         uploadInfo.filepath = filepath;
-        spaceghost.debug( 'uploadInfo: ' + spaceghost.jsonStr( uploadInfo ) );
     });
 
     // the hpanel should refresh and display the uploading file, wait for that to go into the ok state
     // throw if uploaded HDA doesn't appear, or it doesn't move to 'ok' after allotted time
-    spaceghost.then( function getNewHda(){
-        spaceghost.debug( 'beginning wait for upload file\'s ok state' );
-        // get the hda view DOM element from the upload name and hid
-        spaceghost.withFrame( spaceghost.data.selectors.frames.history, function(){
-            spaceghost.waitForSelector( '#history-name', function(){
-                var hdaInfo = spaceghost.historypanel.hdaElementInfoByTitle( uploadInfo.name, uploadInfo.hid );
-                if( hdaInfo === null ){
-                    throw new spaceghost.GalaxyError( 'Upload Error: uploaded file HDA not found: '
-                        + uploadInfo.hid + ', ' + uploadInfo.name );
-                }
-                spaceghost.debug( 'hdaInfo: ' + spaceghost.jsonStr( hdaInfo ) );
-                uploadInfo.hdaElement = hdaInfo;
-                // uploadInfo now has filepath, filename, name, hid, and hdaElement
-            });
-        });
+    spaceghost.historypanel.waitForHdas( function afterHpanelRefresh(){
 
-        spaceghost.then( function waitForOk(){
-            spaceghost.debug( 'beginning wait for upload file\'s ok state' );
+        var hdaElement = this.historypanel.hdaElementInfoByTitle( uploadInfo.filename );
+        if( hdaElement === null ){
+            var hdaContainer = this.historypanel.data.selectors.hdaContainer;
+            this.warning( 'Upload Error: ' + hdaContainer + ':\n' + this.getHTML( hdaContainer ) );
+            throw new this.GalaxyError( 'Upload Error: uploaded file HDA not found: ' + uploadInfo.filename );
+        }
+        this.debug( 'uploaded HDA element: ' + this.jsonStr( this.quickInfo( hdaElement ) ) );
+        uploadInfo.hdaElement = hdaElement;
 
-            // currently best way to get hda state is using the historyItem-<state> class of the historyItemWrapper
-            var hdaStateClass = uploadInfo.hdaElement.attributes[ 'class' ].match( /historyItem\-(\w+)/ )[0];
-            if( hdaStateClass !== 'historyItem-ok' ){
+        this.historypanel.waitForHdaState( '#' + uploadInfo.hdaElement.attributes.id, 'ok',
+            // success: update the upload info and run callback
+            function whenInStateFn( newHdaInfo ){
+                this.info( 'Upload complete: ' + newHdaInfo.text );
+                uploadInfo.hdaElement = newHdaInfo;
+                callback.call( spaceghost, uploadInfo );
 
-                spaceghost.historypanel.waitForHdaState( '#' + uploadInfo.hdaElement.attributes.id, 'ok',
-                    function whenInStateFn( hdaInfo ){
-                        // refresh hdaElement info
-                        uploadInfo.hdaElement = hdaInfo;
-                        callback.call( spaceghost, uploadInfo );
+            }, function timeoutFn( newHdaInfo ){
+                this.warning( 'timeout waiting for upload:\n' + this.jsonStr( this.quickInfo( newHdaInfo ) ) );
+                throw new spaceghost.GalaxyError( 'Upload Error: timeout waiting for ok state: '
+                    + '"' + uploadInfo.filepath + '" (waited ' + timeoutAfterMs + ' ms)' );
 
-                    }, function timeoutFn( hdaInfo ){
-                        var finalClass = (( hdaInfo )?( hdaInfo.attributes[ 'class' ] ):( undefined ));
-                        spaceghost.debug( 'final classes: ' + finalClass );
-                        throw new spaceghost.GalaxyError( 'Upload Error: timeout waiting for ok state: '
-                            + '"' + uploadInfo.hid + ': ' + uploadInfo.name + '"'
-                            + ' (waited ' + timeoutAfterMs + ' ms)' );
-
-                    }, timeoutAfterMs );
-            }
-        });
+            }, timeoutAfterMs );
     });
     return spaceghost;
 };

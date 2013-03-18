@@ -175,15 +175,20 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         if from_ld_id:
             try:
                 ld = self.get_library_dataset( trans, from_ld_id, check_ownership=False, check_accessible=False )
-                assert type( ld ) is trans.app.model.LibraryDataset, "Library content id ( %s ) is not a dataset" % from_ld_id
+                assert type( ld ) is trans.app.model.LibraryDataset, (
+                    "Library content id ( %s ) is not a dataset" % from_ld_id )
+
             except AssertionError, e:
                 trans.response.status = 400
                 return str( e )
+
             except Exception, e:
                 return str( e )
+
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
             trans.sa_session.flush()
             return hda.get_api_value()
+
         else:
             # TODO: implement other "upload" methods here.
             trans.response.status = 403
