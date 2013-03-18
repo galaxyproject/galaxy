@@ -1059,7 +1059,12 @@ def to_safe_string( text, to_html=True ):
     """Translates the characters in text to an html string"""
     if text:
         if to_html:
-            escaped_text = str( markupsafe.escape( text ) )
+            try:
+                escaped_text = text.decode( 'utf-8' )
+                escaped_text = escaped_text.encode( 'ascii', 'ignore' )
+                escaped_text = str( markupsafe.escape( escaped_text ) )
+            except UnicodeDecodeError, e:
+                escaped_text = "Error decoding string: %s" % str( e )
         else:
             escaped_text = str( text )
         translated = []
