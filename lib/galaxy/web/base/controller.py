@@ -6,12 +6,16 @@ import operator
 import os
 import re
 import pkg_resources
+import urllib
 pkg_resources.require("SQLAlchemy >= 0.4")
+pkg_resources.require( "Routes" )
+import routes
 
 from sqlalchemy import func, and_, select
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError, HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
 
 from galaxy import util, web
+from gettext import gettext
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException, MessageException
 from galaxy.security.validate_user_input import validate_publicname
@@ -24,6 +28,11 @@ from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all
 from galaxy.datatypes.data import Text
 
+
+from galaxy.datatypes.display_applications import util as da_util
+from galaxy.datatypes.metadata import FileParameter
+
+from galaxy.datatypes.display_applications.link_generator import get_display_app_link_generator
 
 log = logging.getLogger( __name__ )
 
@@ -321,6 +330,85 @@ class UsesHistoryDatasetAssociationMixin:
         if dataset.state != trans.app.model.Job.states.OK:
             return dataset.conversion_messages.PENDING
         return None
+
+    def get_hda_dict( self, trans, hda ):
+        hda_dict = hda.get_api_value( view='element' )
+        history = hda.history
+
+        # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
+        if trans.user_is_admin() or trans.app.config.expose_dataset_path:
+            hda_dict[ 'file_name' ] = hda.file_name
+
+        if not hda_dict[ 'deleted' ]:
+            hda_dict[ 'download_url' ] = url_for( 'history_contents_display', history_id = trans.security.encode_id( history.id ), 
+                                                  history_content_id = trans.security.encode_id( hda.id ) )
+
+        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+        hda_dict[ 'accessible' ] = ( trans.user_is_admin() or can_access_hda )
+        hda_dict[ 'api_type' ] = "file"
+
+        if not( hda.purged or hda.deleted or hda.dataset.purged ):
+            meta_files = []
+            for meta_type in hda.metadata.spec.keys():
+                if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
+                    meta_files.append( dict( file_type=meta_type ) )
+            if meta_files:
+                hda_dict[ 'meta_files' ] = meta_files
+
+        hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+        hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+        hda_dict[ 'visualizations' ] = hda.get_visualizations()
+
+        if hda.creating_job and hda.creating_job.tool_id:
+            tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
+            if tool_used and tool_used.force_history_refresh:
+                hda_dict[ 'force_history_refresh' ] = True
+
+        return trans.security.encode_dict_ids( hda_dict )
+
+    def get_display_apps( self, trans, hda ):
+        #TODO: make more straightforward (somehow)
+        display_apps = []
+
+        def get_display_app_url( display_app_link, hda, trans ):
+            web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
+            dataset_hash, user_hash = da_util.encode_dataset_user( trans, hda, None )
+            return web_url_for( controller='dataset',
+                            action="display_application",
+                            dataset_id=dataset_hash,
+                            user_id=user_hash,
+                            app_name=urllib.quote_plus( display_app_link.display_application.id ),
+                            link_name=urllib.quote_plus( display_app_link.id ) )
+
+        for display_app in hda.get_display_applications( trans ).itervalues():
+            app_links = []
+            for display_app_link in display_app.links.itervalues():
+                app_links.append({
+                    'target' : display_app_link.url.get( 'target_frame', '_blank' ),
+                    'href' : get_display_app_url( display_app_link, hda, trans ),
+                    'text' : gettext( display_app_link.name )
+                })
+            display_apps.append( dict( label=display_app.name, links=app_links ) )
+
+        return display_apps
+
+    def get_old_display_applications( self, trans, hda ):
+        display_apps = []
+        for display_app_name in hda.datatype.get_display_types():
+            link_generator = get_display_app_link_generator( display_app_name )
+            display_links = link_generator.generate_links( trans, hda )
+
+            app_links = []
+            for display_name, display_link in display_links:
+                app_links.append({
+                    'target' : '_blank',
+                    'href' : display_link,
+                    'text' : display_name
+                })
+            if app_links:
+                display_apps.append( dict( label=hda.datatype.get_display_label( display_app_name ), links=app_links ) )
+
+        return display_apps
 
 
 class UsesLibraryMixin:
