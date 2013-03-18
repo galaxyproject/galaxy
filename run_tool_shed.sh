@@ -3,7 +3,7 @@
 cd `dirname $0`
 
 SAMPLES="
-    community_wsgi.ini.sample
+    tool_shed_wsgi.ini.sample
     datatypes_conf.xml.sample
     external_service_types_conf.xml.sample
     migrated_tools_conf.xml.sample
@@ -34,4 +34,4 @@ for sample in $SAMPLES; do
     fi
 done
 
-python ./scripts/paster.py serve community_wsgi.ini --pid-file=community_webapp.pid --log-file=community_webapp.log $@
+python ./scripts/paster.py serve tool_shed_wsgi.ini --pid-file=tool_shed_webapp.pid --log-file=tool_shed_webapp.log $@

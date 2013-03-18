@@ -175,7 +175,7 @@ def main():
     os.environ[ 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
     # ---- Build Tool Shed Application -------------------------------------------------- 
     toolshedapp = None 
-    global_conf = { '__file__' : 'community_wsgi.ini.sample' }
+    global_conf = { '__file__' : 'tool_shed_wsgi.ini.sample' }
 #    if not toolshed_database_connection.startswith( 'sqlite://' ):
 #        kwargs[ 'database_engine_option_max_overflow' ] = '20'
     if tool_dependency_dir is not None:
