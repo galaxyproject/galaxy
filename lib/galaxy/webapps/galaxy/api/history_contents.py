@@ -67,7 +67,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     if encoded_hda_id in ids:
                         #TODO: share code with show
                         try:
-                            rval.append( get_hda_dict( trans, history, hda, for_editing=True ) )
+                            rval.append( get_hda_dict( trans, history, hda ) )
 
                         except Exception, exc:
                             # don't fail entire list if hda err's, record and move on
@@ -149,7 +149,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 hda = self.get_history_dataset_association( trans, history, id,
                     check_ownership=True, check_accessible=True )
 
-            hda_dict = get_hda_dict( trans, history, hda, for_editing=True )
+            hda_dict = get_hda_dict( trans, history, hda )
 
         except Exception, e:
             msg = "Error in history API at listing dataset: %s" % ( str(e) )
@@ -195,7 +195,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             return "Not implemented."
 
 
-def get_hda_dict( trans, history, hda, for_editing ):
+def get_hda_dict( trans, history, hda ):
     hda_dict = hda.get_api_value( view='element' )
 
     # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
