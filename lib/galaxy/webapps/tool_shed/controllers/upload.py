@@ -2,6 +2,8 @@ import sys, os, shutil, logging, tarfile, tempfile, urllib
 from galaxy.web.base.controller import BaseUIController
 from galaxy import web, util
 from galaxy.datatypes import checkers
+from galaxy.util import json
+
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import metadata_util, repository_dependency_util, tool_dependency_util, tool_util
 
