@@ -98,7 +98,7 @@
                 %if data.purged:
                     <span class="icon-button display_disabled tooltip" title="Cannot display datasets removed from disk"></span>
                 %else:
-                    <a class="icon-button display tooltip" dataset_id="${dataset_id}" title='${_("Display data in browser")}' href="${display_url}"
+                    <a class="icon-button display tooltip" dataset_id="${dataset_id}" title='${_("View data")}' href="${display_url}"
                     %if for_editing:
                         target="galaxy_main"
                     %endif
