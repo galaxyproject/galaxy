@@ -845,7 +845,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                     base_offset += cig_len;
                     break;
                 case "D": // Deletion.
-                    ctx.fillStyle = "red";
+                    ctx.fillStyle = "black";
                     ctx.fillRect(s_start, y_center + 4, s_end - s_start, 3);
                     // TODO: is this true? No change in seq_offset because sequence not used when skipping.
                     base_offset += cig_len;
