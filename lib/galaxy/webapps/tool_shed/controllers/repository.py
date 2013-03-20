@@ -317,9 +317,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     def browse_valid_categories( self, trans, **kwd ):
         # The request came from Galaxy, so restrict category links to display only valid repository changeset revisions.
-        galaxy_url = kwd.get( 'galaxy_url', None )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         if galaxy_url:
-            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+            kwd[ 'galaxy_url' ] = galaxy_url
         if 'f-free-text-search' in kwd:
             if kwd[ 'f-free-text-search' ] == 'All':
                 # The user performed a search, then clicked the "x" to eliminate the search criteria.
@@ -346,11 +346,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_valid_repositories',
                                                                   **kwd ) )
+        log.debug("CCC In browse_valid_categories, just before returning valid_category_grid, kwd: %s" % str( kwd ))
         return self.valid_category_grid( trans, **kwd )
 
     @web.expose
     def browse_valid_repositories( self, trans, **kwd ):
-        galaxy_url = kwd.get( 'galaxy_url', None )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+        if galaxy_url:
+            kwd[ 'galaxy_url' ] = galaxy_url
         repository_id = kwd.get( 'id', None )
         if 'f-free-text-search' in kwd:
             if 'f-Category.name' in kwd:
@@ -359,8 +362,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 category = suc.get_category_by_name( trans, category_name )
                 # Set the id value in kwd since it is required by the ValidRepositoryGrid.build_initial_query method.
                 kwd[ 'id' ] = trans.security.encode_id( category.id )
-        if galaxy_url:
-            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if operation == "preview_tools_in_changeset":
@@ -423,7 +424,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         # If the request originated with the UpdateManager, it will not include a galaxy_url.
-        galaxy_url = kwd.get( 'galaxy_url', '' )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
@@ -437,11 +438,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         if from_update_manager:
             update = 'true'
             no_update = 'false'
-        else:
+        elif galaxy_url:
             # Start building up the url to redirect back to the calling Galaxy instance.            
             url = suc.url_join( galaxy_url,
                                 'admin_toolshed/update_to_changeset_revision?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
                                 ( web.url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
+        else:
+            message = 'Unable to check for updates due to an invalid Galaxy URL: <b>%s</b>.  You may need to enable cookies in your browser.  ' % galaxy_url
+            return trans.show_error_message( message )
         if changeset_revision == repository.tip( trans.app ):
             # If changeset_revision is the repository tip, there are no additional updates.
             if from_update_manager:
@@ -746,9 +750,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = kwd.get( 'galaxy_url', None )
-        if galaxy_url:
-            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         if 'operation' in kwd:
             item_id = kwd.get( 'id', '' )
             if item_id:
@@ -833,9 +835,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = kwd.get( 'galaxy_url', None )
-        if galaxy_url:
-            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         if 'operation' in kwd:
             item_id = kwd.get( 'id', '' )
             if item_id:
@@ -952,7 +952,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = kwd.get( 'galaxy_url', '' )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
@@ -1443,18 +1442,23 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         changeset_revisions = kwd.get( 'changeset_revisions', None )
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
-        galaxy_url = kwd.get( 'galaxy_url', None )
         if not repository_ids:
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             repository_ids = trans.security.encode_id( repository.id )
-        if not galaxy_url:
-            # If galaxy_url is not in the request, it had to have been stored in a cookie by the tool shed.
-            galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-        # Redirect back to local Galaxy to perform install.
-        url = suc.url_join( galaxy_url,
-                            'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
-                            ( web.url_for( '/', qualified=True ), ','.join( util.listify( repository_ids ) ), ','.join( util.listify( changeset_revisions ) ) ) )
-        return trans.response.send_redirect( url )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+        if galaxy_url:
+            # Redirect back to local Galaxy to perform install.
+            url = suc.url_join( galaxy_url,
+                                'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
+                                ( web.url_for( '/', qualified=True ), ','.join( util.listify( repository_ids ) ), ','.join( util.listify( changeset_revisions ) ) ) )
+            return trans.response.send_redirect( url )
+        else:
+            message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  You may need to enable cookies in your browser.  ' % galaxy_url
+            status = 'error'
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_valid_categories',
+                                                              message=message,
+                                                              status=status ) )
 
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
@@ -1854,8 +1858,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        # If the request originated with the UpdateManager, it will not include a galaxy_url.
-        galaxy_url = kwd.get( 'galaxy_url', '' )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
