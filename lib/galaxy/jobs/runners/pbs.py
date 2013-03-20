@@ -222,29 +222,16 @@ class PBSJobRunner( AsynchronousJobRunner ):
 
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
-
-        try:
-            job_wrapper.prepare()
-            command_line = self.build_command_line( job_wrapper, include_metadata=not( self.app.config.pbs_stage_path ) )
-        except:
-            job_wrapper.fail( "failure preparing job", exception=True )
-            log.exception("failure running job %d" % job_wrapper.job_id)
+        # Superclass method has some basic sanity checks
+        super( LocalJobRunner, self ).queue_job( job_wrapper )
+        if not job_wrapper.is_ready:
             return
+
+        # command line has been added to the wrapper by the superclass queue_job()
+        command_line = job_wrapper.runner_command_line
 
         job_destination = job_wrapper.job_destination
         
-        # This is silly, why would we queue a job with no command line?
-        if not command_line:
-            job_wrapper.finish( '', '' )
-            return
-        
-        # Check for deletion before we change state
-        if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
-            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
-                job_wrapper.cleanup()
-            return
-
         # Determine the job's PBS destination (server/queue) and options from the job destination definition
         pbs_queue_name = None
         pbs_server_name = self.default_pbs_server
