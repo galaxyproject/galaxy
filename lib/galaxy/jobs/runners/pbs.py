@@ -141,6 +141,9 @@ class PBSJobRunner( AsynchronousJobRunner ):
     def url_to_destination(self, url):
         """Convert a legacy URL to a job destination"""
 
+        if not url:
+            return
+
         # Determine the the PBS server
         url_split = url.split("/")
         server = url_split[2]
@@ -161,6 +164,9 @@ class PBSJobRunner( AsynchronousJobRunner ):
         try:
             opts = url.split('/')[4].strip().lstrip('-').split(' -')
             assert opts != ['']
+            # stripping the - comes later (in parse_destination_params)
+            for i, opt in enumerate(opts):
+                opts[i] = '-' + opt
         except:
             opts = []
         for opt in opts:
@@ -210,6 +216,8 @@ class PBSJobRunner( AsynchronousJobRunner ):
         return rval
 
     def __get_pbs_server(self, job_destination_params):
+        if job_destination_params is None:
+            return None
         return job_destination_params['destination'].split('@')[-1]
 
     def queue_job( self, job_wrapper ):
@@ -600,9 +608,13 @@ class PBSJobRunner( AsynchronousJobRunner ):
 
         try:
             pbs_server_name = self.__get_pbs_server( job.destination_params )
+            if pbs_server_name is None:
+                log.debug("(%s) Job queued but no destination stored in job params, cannot delete"
+                         % job_tag ) 
+                return
             c = pbs.pbs_connect( pbs_server_name )
             if c <= 0:
-                log.debug("%s Connection to PBS server for job delete failed"
+                log.debug("(%s) Connection to PBS server for job delete failed"
                          % job_tag ) 
                 return
             pbs.pbs_deljob( c, job.get_job_runner_external_id(), '' )
