@@ -305,7 +305,7 @@ HistoryPanel.prototype.data = {
         hda : {
             ok: {
                 tooltips : {
-                    displayButton  : 'Display data in browser',
+                    displayButton  : 'View data',
                     editAttrButton : 'Edit Attributes',
                     deleteButton   : 'Delete'
                 },

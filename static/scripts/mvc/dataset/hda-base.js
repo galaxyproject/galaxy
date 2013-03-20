@@ -219,7 +219,7 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
             displayBtnData.title = _l( 'Cannot display datasets removed from disk' );
             
         } else {
-            displayBtnData.title = _l( 'Display data in browser' );
+            displayBtnData.title = _l( 'View data' );
             displayBtnData.href  = this.urls.display;
         }
 
