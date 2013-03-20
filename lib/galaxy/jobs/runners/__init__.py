@@ -103,8 +103,14 @@ class BaseJobRunner( object ):
         job_wrapper.is_ready = False
 
         # Make sure the job hasn't been deleted
-        if job_state != model.Job.states.QUEUED:
+        if job_state == model.Job.states.DELETED:
+            log.debug( "(%s) Job deleted by user before it entered the %s queue"  % ( job_id, self.runner_name ) )
+            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+                job_wrapper.cleanup()
+            return
+        elif job_state != model.Job.states.QUEUED:
             log.info( "(%d) Job is in state %s, skipping execution"  % ( job_id, job_state ) ) 
+            # cleanup may not be safe in all states
             return
 
         # Prepare the job
