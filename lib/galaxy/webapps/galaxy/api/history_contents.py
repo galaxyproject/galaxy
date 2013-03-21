@@ -2,23 +2,11 @@
 API operations on the contents of a history.
 """
 import logging
-import urllib
-from gettext import gettext
 
 from galaxy import web
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.web.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
-
-from galaxy.web.framework.helpers import to_unicode
-from galaxy.datatypes.display_applications import util
-from galaxy.datatypes.metadata import FileParameter
-
-from galaxy.datatypes.display_applications.link_generator import get_display_app_link_generator
-
-import pkg_resources
-pkg_resources.require( "Routes" )
-import routes
 
 log = logging.getLogger( __name__ )
 
@@ -67,7 +55,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     if encoded_hda_id in ids:
                         #TODO: share code with show
                         try:
-                            rval.append( get_hda_dict( trans, history, hda, for_editing=True ) )
+                            rval.append( self.get_hda_dict( trans, hda ) )
 
                         except Exception, exc:
                             # don't fail entire list if hda err's, record and move on
@@ -149,7 +137,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                 hda = self.get_history_dataset_association( trans, history, id,
                     check_ownership=True, check_accessible=True )
 
-            hda_dict = get_hda_dict( trans, history, hda, for_editing=True )
+            hda_dict = self.get_hda_dict( trans, hda )
 
         except Exception, e:
             msg = "Error in history API at listing dataset: %s" % ( str(e) )
@@ -175,107 +163,22 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         if from_ld_id:
             try:
                 ld = self.get_library_dataset( trans, from_ld_id, check_ownership=False, check_accessible=False )
-                assert type( ld ) is trans.app.model.LibraryDataset, "Library content id ( %s ) is not a dataset" % from_ld_id
+                assert type( ld ) is trans.app.model.LibraryDataset, (
+                    "Library content id ( %s ) is not a dataset" % from_ld_id )
+
             except AssertionError, e:
                 trans.response.status = 400
                 return str( e )
+
             except Exception, e:
                 return str( e )
+
             hda = ld.library_dataset_dataset_association.to_history_dataset_association( history, add_to_history=True )
             trans.sa_session.flush()
             return hda.get_api_value()
+
         else:
             # TODO: implement other "upload" methods here.
             trans.response.status = 403
             return "Not implemented."
 
-
-#TODO: move these into model
-def get_hda_dict( trans, history, hda, for_editing ):
-    hda_dict = hda.get_api_value( view='element' )
-
-    hda_dict[ 'id' ] = trans.security.encode_id( hda.id )
-    hda_dict[ 'history_id' ] = trans.security.encode_id( history.id )
-    hda_dict[ 'hid' ] = hda.hid
-
-    hda_dict[ 'file_ext' ] = hda.ext
-    if trans.user_is_admin() or trans.app.config.expose_dataset_path:
-        hda_dict[ 'file_name' ] = hda.file_name
-
-    if not hda_dict[ 'deleted' ]:
-        hda_dict[ 'download_url' ] = url_for( 'history_contents_display', history_id = trans.security.encode_id( history.id ), history_content_id = trans.security.encode_id( hda.id ) )
-
-    can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-    hda_dict[ 'accessible' ] = ( trans.user_is_admin() or can_access_hda )
-    hda_dict[ 'api_type' ] = "file"
-
-    if not( hda.purged or hda.deleted or hda.dataset.purged ):
-        meta_files = []
-        for meta_type in hda.metadata.spec.keys():
-            if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
-                meta_files.append( dict( file_type=meta_type ) )
-        if meta_files:
-            hda_dict[ 'meta_files' ] = meta_files
-
-    hda_dict[ 'display_apps' ] = get_display_apps( trans, hda )
-    hda_dict[ 'display_types' ] = get_old_display_applications( trans, hda )
-
-    if hda.dataset.uuid is None:
-        hda_dict['uuid'] = None
-    else:
-        hda_dict['uuid'] = str(hda.dataset.uuid)
-
-    hda_dict[ 'visualizations' ] = hda.get_visualizations()
-    if hda.peek and hda.peek != 'no peek':
-        hda_dict[ 'peek' ] = to_unicode( hda.display_peek() )
-
-    if hda.creating_job and hda.creating_job.tool_id:
-        tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
-        if tool_used and tool_used.force_history_refresh:
-            hda_dict[ 'force_history_refresh' ] = True
-
-    return hda_dict
-
-def get_display_apps( trans, hda ):
-    #TODO: make more straightforward (somehow)
-    display_apps = []
-
-    def get_display_app_url( display_app_link, hda, trans ):
-        web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
-        dataset_hash, user_hash = util.encode_dataset_user( trans, hda, None )
-        return web_url_for( controller='dataset',
-                        action="display_application",
-                        dataset_id=dataset_hash,
-                        user_id=user_hash,
-                        app_name=urllib.quote_plus( display_app_link.display_application.id ),
-                        link_name=urllib.quote_plus( display_app_link.id ) )
-
-    for display_app in hda.get_display_applications( trans ).itervalues():
-        app_links = []
-        for display_app_link in display_app.links.itervalues():
-            app_links.append({
-                'target' : display_app_link.url.get( 'target_frame', '_blank' ),
-                'href' : get_display_app_url( display_app_link, hda, trans ),
-                'text' : gettext( display_app_link.name )
-            })
-        display_apps.append( dict( label=display_app.name, links=app_links ) )
-
-    return display_apps
-
-def get_old_display_applications( trans, hda ):
-    display_apps = []
-    for display_app_name in hda.datatype.get_display_types():
-        link_generator = get_display_app_link_generator( display_app_name )
-        display_links = link_generator.generate_links( trans, hda )
-
-        app_links = []
-        for display_name, display_link in display_links:
-            app_links.append({
-                'target' : '_blank',
-                'href' : display_link,
-                'text' : display_name
-            })
-        if app_links:
-            display_apps.append( dict( label=hda.datatype.get_display_label( display_app_name ), links=app_links ) )
-
-    return display_apps

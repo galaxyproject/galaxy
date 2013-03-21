@@ -312,4 +312,4 @@ class ToolRunner( BaseUIController ):
         <p><b>Please do not use your browser\'s "stop" or "reload" buttons until the upload is complete, or it may be interrupted.</b></p>
         <p>You may safely continue to use Galaxy while the upload is in progress.  Using "stop" and "reload" on pages other than Galaxy is also safe.</p>
         """
-        return trans.show_message( msg, refresh_frames='history' )
+        return trans.show_message( msg )

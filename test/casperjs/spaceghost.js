@@ -1,67 +1,40 @@
 /* TODO:
-    Use in test command
 
-    bug: assertStepsRaise raise errors (all the way) when used in 'casperjs test .'
-    normalize names of fns that use withFrame or then to 'then<action>'
+    normalize names of steps to 'then<action>' or with
+    support method chaining pattern
+    move selectors, text to class level (spaceghost.data, module.data)
     make any callbacks optional (that can be)
 
-    Does it run:
-        casperjs usertests.js --url='http://localhost:8080'
-        casperjs usertests.js --url='http://localhost:8080' --return-json
-        casperjs usertests.js --url='http://localhost:8080' --verbose=true --logLevel=debug
-        casperjs test test/casperjs --url='http://localhost:8080'
-        python casperjs_runner.py
-        nosetests
-        sh run_functional_tests.sh test/casperjs/
-        sh run_functional_tests.sh
-        (buildbot)
-
     BUGS:
-        echo doesn't seem to work with python
-        trace not showing for errors here
+        bug: filenames in backtrace not bubbling up properly
+        bug: assertStepsRaise used with wait throws more than once
+        trace filename not showing for errors here
+        ?: assertStepsRaise raise errors (all the way) when used in 'casperjs test .'
 
-    what if:
-        does an error saving a sshot bail the entire suite?
+    Does casperjs_runner:
+        work with fail on first = false
 
-    Do the above handle:
-        test script errors
-        page errors (evaluate, find element, etc.)
-        failures
-        passes
-        python errors
-
-    Does test_runner:
-        aggregate properly (passes, failures)
-        fail on first = false
-
-    Test:
-        screenshotting
+    FEATURE CREEP:
+        assertTooltip( selector, textShouldBe ){
+            hoverover selector
+            assert tooltip
+            assert tooltip text
+            hoverover 0, 0 // clear tooltip
+        }
+        screenshotting on all step.complete (see captureSteps.js)
         save html/sshots to GALAXY_TEST_SAVE (test_runner)
 
+    Use in test command
     can we pass the entire test_env (instead of just url) from test_runner to sg?
-    support method chaining pattern
-    move selectors, text to class level (spaceghost)
-
-    modules?
-    May want to move common functions into PageObject-like subs of sg, e.g.:
-        spaceghost.loginPage.logout()
-        spaceghost.masthead.userMenu().login() // to click User -> Login
-
-    more conv. functions:
-        withMainFrame( callback )
-        getMessageInfo returns *message elementInfo or null
-
-    frames in casper are a PITA (as are steps in gen.): is there a better way to select within a frame w/o a step?
-    waitFor (with progress and finally): a gen. form of waitForHdaState
-
 */
 // ===================================================================
 /** Extended version of casper object for use with Galaxy
  */
 
 // ------------------------------------------------------------------- modules
-var Casper = require( 'casper' ).Casper;
-var utils = require( 'utils' );
+var Casper = require( 'casper' ).Casper,
+    fs = require( 'fs' ),
+    utils = require( 'utils' );
 
 // ------------------------------------------------------------------- inheritance
 /** @class An extension of the Casper object with methods and overrides specifically
@@ -85,6 +58,7 @@ utils.inherits( SpaceGhost, Casper );
 //exports._ = _;
 
 // ------------------------------------------------------------------- error types
+//TODO: change to inheriting from Error
 PageError.prototype = new CasperError();
 PageError.prototype.constructor = CasperError;
 /** @class Represents a javascript error on the page casper is browsing
@@ -131,7 +105,7 @@ SpaceGhost.prototype._init = function _init( options ){
      *  @memberOf SpaceGhost */
     this.errors = [];
     this.on( 'error', function pushErrorToStack( msg, backtrace ){
-        //this.debug( 'adding error to stack: ' + msg + ', trace:' + JSON.stringify( backtrace, null, 2 ) );
+        //this.debug( 'adding error to stack: ' + msg + ', trace:' + this.jsonStr( backtrace ) );
         this.errors.push({ msg: msg, backtrace: backtrace });
     });
     this._processCLIArguments();
@@ -140,10 +114,10 @@ SpaceGhost.prototype._init = function _init( options ){
     // inject these scripts by default
     this.debug( 'this.options.scriptDir:' + this.options.scriptDir );
     this.options.clientScripts = [
-        this.options.scriptDir + '../../static/scripts/libs/jquery/jquery.js'
+        //this.options.scriptDir + '../../static/scripts/libs/jquery/jquery.js'
         //...
     ].concat( this.options.clientScripts );
-    this.debug( 'clientScripts:\n' + this.jsonStr( this.options.clientScripts ) );
+    this.debug( 'clientScripts: ' + this.jsonStr( this.options.clientScripts ) );
 
     this._loadModules();
 };
@@ -172,16 +146,18 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
     //this.debug( 'cli: ' + this.jsonStr( this.cli ) );
 
     //TODO: init these programmitically
+    //TODO: need to document these
     var CLI_OPTIONS = {
         returnJsonOnly  : { defaultsTo: false, flag: 'return-json',    help: 'send output to stderr, json to stdout' },
         raisePageError  : { defaultsTo: true,  flag: 'page-error',     help: 'raise errors thrown on the page' },
         errorOnAlert    : { defaultsTo: false, flag: 'error-on-alert', help: 'throw errors when a page calls alert' },
-        failOnAlert     : { defaultsTo: true,  flag: 'fail-on-alert',  help: 'fail a test when a page calls alert' }
+        failOnAlert     : { defaultsTo: true,  flag: 'fail-on-alert',  help: 'fail a test when a page calls alert' },
         //screenOnError   : { defaultsTo: false, flag: 'error-screen',   help: 'capture a screenshot on a page error' },
         //textOnError     : { defaultsTo: false, flag: 'error-text',     help: 'output page text on a page error' },
         //htmlOnError     : { defaultsTo: false, flag: 'error-html',   help: 'output page html on a page error' }
         //htmlOnFail      : { defaultsTo: false, flag: 'fail-html',   help: 'output page html on a test failure' },
         //screenOnFail    : { defaultsTo: false, flag: 'fail-screen',   help: 'capture a screenshot on a test failure' }
+        logNamespace    : { defaultsTo: false,  flag: 'log-namespace', help: 'filter log messages to this namespace' }
     };
 
     // --url parameter required (the url of the server to test with)
@@ -203,6 +179,7 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
         this.on( 'error', function outputJSONOnError( msg, backtrace ){
             //console.debug( 'return-json caught error' );
             if( spaceghost.options.exitOnError ){
+                this._sendStopSignal();
                 this.outputStateAsJson();
                 spaceghost.exit( 1 );
             }
@@ -253,19 +230,25 @@ SpaceGhost.prototype._processCLIArguments = function _processCLIArguments(){
     this.fixtureData = ( this.cli.has( 0 ) )?( JSON.parse( this.cli.get( 0 ) ) ):( {} );
     this.debug( 'fixtureData:' + this.jsonStr( this.fixtureData ) );
 
+    /** only output log messages with the given namespace */
+    this.options.logNamespace = CLI_OPTIONS.logNamespace.defaultsTo;
+    if( this.cli.has( CLI_OPTIONS.logNamespace.flag ) ){
+        this.options.logNamespace = this.cli.get( CLI_OPTIONS.logNamespace.flag );
+        this._setLogNamespaceFilter( this.options.logNamespace );
+    }
+
 };
 
 /** Suppress the normal output from the casper object (echo, errors)
+ *  @param {String} namespace   the namespace to filter log msgs to
  *  @private
  */
-SpaceGhost.prototype._suppressOutput = function _suppressOutput(){
-    // currently (1.0) the only way to suppress test pass/fail messages
-    //  (no way to re-route to log either - circular)
-    this.echo = function( msg ){};
-
-    //this.removeListener( 'error', this.listeners( 'error' )[0] );
-    // clear the casper listener that outputs formatted error messages
-    this.removeListener( 'error', this.listeners( 'error' )[1] );
+SpaceGhost.prototype._setLogNamespaceFilter = function _setLogNamespaceFilter( namespace ){
+    var regex = RegExp( '\\[' + namespace + '\\]' );
+    // this will fail if there's [namespace] in the actual message - NBD
+    this.setFilter( 'log.message', function( message ) {
+        return ( message.match( regex ) )?( message ):( ' ' );
+    });
 };
 
 /** Suppress the normal output from the casper object (echo, errors)
@@ -335,16 +318,6 @@ SpaceGhost.prototype._pageErrorHandler = function _pageErrorHandler( msg, backtr
     }
 };
 
-/** 'timeout' Event handler for step/casper timeouts - raises as PageError
- *  @throws {PageError} Timeout occurred
- *  @private
- */
-SpaceGhost.prototype._timeoutHandler = function _timeoutHandler(){
-    console.debug( 'timeout' );
-    //msg = msg.replace( 'PageError: ', '' );
-    throw new PageError( 'Timeout occurred' );
-};
-
 /** 'alert' Event handler that raises an AlertError with the alert message
  *  @throws {AlertError} (the alert message)
  *  @private
@@ -396,6 +369,30 @@ SpaceGhost.prototype._saveScreenOnErrorHandler = function _saveScreenOnErrorHand
     //this.capture( filename );
 };
 
+/** 'timeout' Event handler for step/casper timeouts - raises as PageError
+ *  @throws {PageError} Timeout occurred
+ *  @private
+ */
+SpaceGhost.prototype._timeoutHandler = function _timeoutHandler(){
+    //msg = msg.replace( 'PageError: ', '' );
+    throw new PageError( 'Timeout occurred' );
+};
+
+/** By default, Casper dies on timeouts - which kills our runner. Throw errors instead.
+ *  @private
+ */
+SpaceGhost.prototype._setUpTimeoutHandlers = function _setUpTimeoutHandlers(){
+    this.options.onStepTimeout = function _onStepTimeout( timeout, stepNum ){
+        throw new PageError( "Maximum step execution timeout exceeded for step " + stepNum );
+    };
+    this.options.onTimeout = function _onTimeout( timeout ){
+        throw new PageError( "Script timeout reached: " + timeout );
+    };
+    this.options.onWaitTimeout = function _onWaitTimeout( timeout ){
+        throw new PageError( "Wait timeout reached: " + timeout );
+    };
+};
+
 /** Sets up event handlers.
  *  @private
  */
@@ -405,13 +402,14 @@ SpaceGhost.prototype._setUpEventHandlers = function _setUpEventHandlers(){
     // ........................ page errors
     this.on( 'page.error',  this._pageErrorHandler );
     //this.on( 'load.failed', this._loadFailedHandler );
-    this.on( 'timeout',  this._timeoutHandler );
-    this.on( 'step.timeout',  this._timeoutHandler );
-    this.on( 'waitFor.timeout',  this._timeoutHandler );
 
     // ........................ page info/debugging
     this.on( 'remote.alert',    this._alertHandler );
+    //this.on( 'remote.message',       function( msg ){ this.debug( 'remote: ' + msg ); });
+    //this.on( 'navigation.requested', function( url ){ this.debug( 'navigation: ' + url ); });
 
+    // ........................ timeouts
+    this._setUpTimeoutHandlers();
 };
 
 // ------------------------------------------------------------------- sub modules
@@ -423,13 +421,15 @@ SpaceGhost.prototype._setUpEventHandlers = function _setUpEventHandlers(){
  *  @private
  */
 SpaceGhost.prototype._loadModules = function _loadModules(){
-    this.user  = require( this.options.scriptDir + 'modules/user'  ).create( this );
-    this.tools = require( this.options.scriptDir + 'modules/tools' ).create( this );
-    this.historypanel = require( this.options.scriptDir + 'modules/historypanel' ).create( this );
+    this.user           = require( this.options.scriptDir + 'modules/user'  ).create( this );
+    this.tools          = require( this.options.scriptDir + 'modules/tools' ).create( this );
+    this.historypanel   = require( this.options.scriptDir + 'modules/historypanel' ).create( this );
     this.historyoptions = require( this.options.scriptDir + 'modules/historyoptions' ).create( this );
+    this.api            = require( this.options.scriptDir + 'modules/api' ).create( this );
 };
 
 // =================================================================== PAGE CONTROL
+// ------------------------------------------------------------------- overrides
 /** An override of casper.start for additional set up.
  *      (Currently only used to change viewport)
  *  @see Casper#start
@@ -451,6 +451,13 @@ SpaceGhost.prototype.open = function open(){
     return Casper.prototype.open.apply( this, arguments );
 };
 
+/** Send a signal that we're done - used by py wrapper subprocess.
+ *  @private
+ */
+SpaceGhost.prototype._sendStopSignal = function _sendStopSignal(){
+    this.echo( '# Stopping' );
+};
+
 /** An override to provide json output and more informative error codes.
  *      Exits with 2 if a test has failed.
  *      Exits with 1 if some error has occurred.
@@ -466,7 +473,7 @@ SpaceGhost.prototype.run = function run( onComplete, time ){
             //NOTE: used by the test runner to gather JSON test info from stdout
             if( this.options.returnJsonOnly ){
                 // echo a string to indicate that tests are complete (used in casperjs_runner.py to stop process)
-                this.echo( '# Tests complete' );
+                this._sendStopSignal();
                 this.outputStateAsJson();
                 this.exit( returnCode );
 
@@ -478,6 +485,7 @@ SpaceGhost.prototype.run = function run( onComplete, time ){
     Casper.prototype.run.call( this, new_onComplete, time );
 };
 
+// ------------------------------------------------------------------- try step
 /** Install a function as an error handler temporarily, run a function with steps, then remove the handler.
  *      A rough stand-in for try catch with steps.
  *      CatchFn will be passed error's msg and trace.
@@ -504,6 +512,8 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
 
     // try the step...
     this.then( stepsFn );
+    //TODO: this doesn't work well with wait for (see upload-tests.js)
+    //  possibly combine above and below?
 
     this.then( function(){
         // ...and if an error was recorded call the catch with the info
@@ -517,6 +527,7 @@ SpaceGhost.prototype.tryStepsCatch = function tryStepsCatch( stepsFn, catchFn ){
     });
 };
 
+// ------------------------------------------------------------------- misc
 /** Hover over an element.
  *      NOTE: not for use with iframes (main, tool, history) - they need to re-calc
  *      for the iframe bounds and should be implemented in their own modules
@@ -530,15 +541,195 @@ SpaceGhost.prototype.hoverOver = function hoverOver( selector, whenHovering ){
     return this;
 };
 
+/** Wait for a navigation request then call a function.
+ *      NOTE: uses string indexOf - doesn't play well with urls like [ 'history', 'history/bler' ]
+ *  @param {String} urlToWaitFor    the url to wait for (rel. to spaceghost.baseUrl)
+ *  @param {Function} then          the function to call after the nav request
+ */
+SpaceGhost.prototype.waitForNavigation = function waitForNavigation( urlToWaitFor, then ){
+    return this.waitForMultipleNavigation( [ urlToWaitFor ], then );
+};
+
+/** Wait for a multiple navigation requests then call a function.
+ *      NOTE: uses string indexOf - doesn't play well with urls like [ 'history', 'history/bler' ]
+ *  @param {String[]} urlsToWaitFor the relative urls to wait for
+ *  @param {Function} then          the function to call after the nav request
+ */
+SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigation( urlsToWaitFor, then ){
+    this.info( 'waiting for navigation: ' + this.jsonStr( urlsToWaitFor ) );
+    function urlMatches( urlToMatch, url ){
+        return ( url.indexOf( spaceghost.baseUrl + '/' + urlToMatch ) !== -1 );
+    }
+
+    function catchNavReq( url ){
+        //this.debug( 'nav.req: ' + url );
+        for( var i=( urlsToWaitFor.length - 1 ); i>=0; i-- ){
+            //this.debug( '\t checking: ' + urlsToWaitFor[i] );
+            if( urlMatches( urlsToWaitFor[i], url ) ){
+                this.info( 'Navigation (' + urlsToWaitFor[i] + ') found: ' + url );
+                urlsToWaitFor.splice( i, 1 );
+            }
+        }
+        //this.debug( 'urlsToWaitFor: ' + this.jsonStr( urlsToWaitFor ) );
+    }
+    this.on( 'navigation.requested', catchNavReq );
+
+    this.waitFor(
+        function checkForNav(){
+            if( urlsToWaitFor.length === 0 ){
+                this.removeListener( 'navigation.requested', catchNavReq );
+                return true;
+            }
+            return false;
+        },
+        function callThen(){
+            if( utils.isFunction( then ) ){ then.call( this ); }
+        }
+    );
+    return this;
+};
+
+
+// ------------------------------------------------------------------- iframes, damnable iframes
+/** Version of Casper#withFrame for the history iframe.
+ *      Hopefully will allow easier test transition if/when frames are removed
+ *      (i.e. -> just call the function).
+ *  @param {Function} then  function called when in the history frame
+ */
+SpaceGhost.prototype.withHistoryPanel = function withHistoryPanel( then ){
+    return this.withFrame( this.data.selectors.frames.history, then );
+};
+
+/** Version of Casper#withFrame for the tool iframe.
+ *  @param {Function} then  function called when in the frame
+ */
+SpaceGhost.prototype.withToolPanel = function withToolPanel( then ){
+    return this.withFrame( this.data.selectors.frames.tools, then );
+};
+
+/** Version of Casper#withFrame for the main iframe.
+ *  @param {Function} then  function called when in the frame
+ */
+SpaceGhost.prototype.withMainPanel = function withMainPanel( then ){
+    return this.withFrame( this.data.selectors.frames.main, then );
+};
+
+/** Jumps into given frame, exectutes fn, and jumps back to original frame.
+ *      NOTE: this doesn't use steps like casper's withFrame but uses phantom's switchTo[Main]Frame,
+ *      so you can safely return values from fn
+ *  @param {Selector} frame the selector for the frame to jump to (use 'top' to jump to top frame)
+ *  @param {Function} fn    function called when in the frame
+ *  @returns {Any} the return value of fn
+ */
+SpaceGhost.prototype.jumpToFrame = function jumpToFrame( frame, fn ){
+    //TODO: plainly maintains that main frame has no frameName, namely: ''
+    var origFrameName = this.page.frameName || 'top';
+    //(??) if we're already there...
+    if( origFrameName === frame ){ return fn.call( this ); }
+
+    if( origFrameName ){
+        // if there's a frame name we assume we're in some child frame,
+        //  we need to move up before moving into the new frame
+        this.page.switchToMainFrame();
+    }
+    if( frame !== 'top' ){ this.page.switchToFrame( frame ); }
+    var returned = fn.call( this );
+
+    // move back into main, then into the orig child frame if given
+    if( frame !== 'top' ){ this.page.switchToMainFrame(); }
+    if( origFrameName ){
+        this.page.switchToFrame( origFrameName );
+    }
+    return returned;
+};
+
+/** Jumps into history frame, exectutes fn, and jumps back to original frame.
+ *  @param {Selector} frame the selector for the frame to jump to
+ *  @param {Function} fn    function called when in the frame
+ *  @returns {Any} the return value of fn
+ */
+SpaceGhost.prototype.jumpToHistory = function jumpToHistory( fn ){
+    return this.jumpToFrame( this.data.selectors.frames.history, fn );
+};
+
+/** Jumps into tools frame, exectutes fn, and jumps back to original frame.
+ *  @param {Selector} frame the selector for the frame to jump to
+ *  @param {Function} fn    function called when in the frame
+ *  @returns {Any} the return value of fn
+ */
+SpaceGhost.prototype.jumpToTools = function jumpToTools( fn ){
+    return this.jumpToFrame( this.data.selectors.frames.tools, fn );
+};
+
+/** Jumps into main frame, exectutes fn, and jumps back to original frame.
+ *  @param {Selector} frame the selector for the frame to jump to
+ *  @param {Function} fn    function called when in the frame
+ *  @returns {Any} the return value of fn
+ */
+SpaceGhost.prototype.jumpToMain = function jumpToMain( fn ){
+    return this.jumpToFrame( this.data.selectors.frames.main, fn );
+};
+
+/** Jumps into top frame, exectutes fn, and jumps back to original frame.
+ *  @param {Selector} frame the selector for the frame to jump to
+ *  @param {Function} fn    function called when in the frame
+ *  @returns {Any} the return value of fn
+ */
+SpaceGhost.prototype.jumpToTop = function jumpToTop( fn ){
+    return this.jumpToFrame( 'top', fn );
+};
+
 
 // =================================================================== TESTING
 //TODO: form fill doesn't work as casperjs would want it - often a button -> controller url
 //TODO: saveScreenshot (to GALAXY_TEST_SAVE)
 //TODO: saveHtml (to GALAXY_TEST_SAVE)
 
+/** Checks whether fn raises an error with a message that contains a given string.
+ *      NOTE: DOES NOT work with steps. @see SpaceGhost#assertStepsRaise
+ *  @param {Function} testFn        a function that may throw an error
+ *  @param {String} errMsgContains  some portion of the correct error msg
+ *  @private
+ */
+SpaceGhost.prototype._raises = function _raises( testFn, errMsgContains ){
+    var failed = false;
+    try {
+        testFn.call( this );
+    } catch( err ){
+        if( err.message.indexOf( errMsgContains ) !== -1 ){
+            failed = true;
+
+        // re-raise other, non-searched-for errors
+        } else {
+            throw err;
+        }
+    }
+    return failed;
+};
+
+/** Simple assert raises.
+ *      NOTE: DOES NOT work with steps. @see SpaceGhost#assertStepsRaise
+ *  @param {Function} testFn        a function that may throw an error
+ *  @param {String} errMsgContains  some portion of the correct error msg
+ *  @param {String} msg             assertion message to display
+ */
+SpaceGhost.prototype.assertRaises = function assertRaises( testFn, errMsgContains, msg ){
+    return this.test.assert( this._raises( testFn, errMsgContains ), msg  );
+};
+
+/** Simple assert does not raise.
+ *      NOTE: DOES NOT work with steps. @see SpaceGhost#assertStepsRaise
+ *  @param {Function} testFn        a function that may throw an error
+ *  @param {String} errMsgContains  some portion of the correct error msg
+ *  @param {String} msg             assertion message to display
+ */
+SpaceGhost.prototype.assertDoesntRaise = function assertDoesntRaise( testFn, errMsgContains, msg ){
+    return this.test.assert( !this._raises( testFn, errMsgContains ), msg  );
+};
+
 /** Casper has an (undocumented?) skip test feature. This is a conv. wrapper for that.
  */
-SpaceGhost.prototype.skipTest = function(){
+SpaceGhost.prototype.skipTest = function skipTest(){
     throw this.test.SKIP_MESSAGE;
 };
 
@@ -680,6 +871,16 @@ SpaceGhost.prototype.tryClick = function tryClick( selector ){
 
 
 // =================================================================== MISCELAIN
+/** Override echo to not print empty lines (only way to do log filtering)
+ *  @param {String} msg    the msg to output
+ *  @param {String} style  the casper style to use
+ */
+SpaceGhost.prototype.echo = function echo( msg, style ){
+    if( msg.trim() ){
+        Casper.prototype.echo.call( this, msg, style );
+    }
+};
+
 /** Override capture to save to environ: GALAXY_TEST_SAVE (or passed in from CLI)
  *  @param {String} filename    the image filename
  */
@@ -689,6 +890,24 @@ SpaceGhost.prototype.capture = function capture( filename, clipRect_or_selector 
         return this.captureSelector( filename, clipRect_or_selector );
     }
     return Casper.prototype.capture.apply( this, arguments );
+};
+
+/** Capture a progression of sshots with a delay inbetween.
+ *  @param {String} filepath
+ *  @param {String} filename
+ *  @param {String} ext
+ *  @param {Integer} count
+ *  @param {Integer} delay
+ */
+SpaceGhost.prototype.captureProgression = function captureProgression( filepath, filename, ext, count, delay ){
+    if( !count ){ return this; }
+    var spaceghost = this,
+        interval = setInterval( function(){
+            var imageName = filepath + filename + '.' + count + '.' + ext;
+            spaceghost.capture( imageName );
+            count -= 1;
+            if( count <= 0 ){ clearInterval( interval ); }
+        }, delay );
 };
 
 /** Pop all handlers for eventName from casper and return them in order.
@@ -715,8 +934,9 @@ SpaceGhost.prototype.addListeners = function addListeners( eventName, handlerArr
  *  @param {String} the msg to output
  */
 SpaceGhost.prototype.stderr = function( msg ){
-    var fs = require( 'fs' );
-    fs.write( '/dev/stderr', msg + '\n', 'w' );
+    if( msg.trim() ){
+        fs.write( '/dev/stderr', msg + '\n', 'w' );
+    }
 };
 
 // ------------------------------------------------------------------- convenience logging funcs
@@ -769,6 +989,14 @@ SpaceGhost.prototype.debugElement = function debugElement( selector ){
     this.debug( selector + ':\n' + this.jsonStr( this.elementInfoOrNull( selector ) ) );
 };
 
+/** return a more limited version of a Casper ElementInfo object.
+ *  @params {Casper ElementInfo} info   the Casper ElementInfo object to simplify
+ *  @returns {Object} of the form { attributes: <attributes>, text: <text> }
+ */
+SpaceGhost.prototype.quickInfo = function quickInfo( info ){
+    return { attributes: info.attributes, text: info.text };
+};
+
 /** Debug SG itself
  */
 SpaceGhost.prototype.debugMe = function(){
@@ -777,12 +1005,14 @@ SpaceGhost.prototype.debugMe = function(){
 };
 
 /** Get the last error on the stack.
+ *  @returns {Error} the last error
  */
 SpaceGhost.prototype.lastError = function(){
     return this.errors[( this.errors.length - 1 )];
 };
 
 /** String representation
+ *  @returns {String}
  */
 SpaceGhost.prototype.toString = function(){
     var currentUrl = '';
@@ -793,25 +1023,34 @@ SpaceGhost.prototype.toString = function(){
 };
 
 /** Load and parse a JSON file into an object.
- *  @param filepath     filepath relative to the current scriptDir
- *  @returns the object parsed
+ *  @param {String} filepath     filepath relative to the current scriptDir
+ *  @returns {Object} the object parsed
  */
 SpaceGhost.prototype.loadJSONFile = function loadJSONFile( filepath ){
     //precondition: filepath is relative to script dir
     filepath = this.options.scriptDir + filepath;
-    return JSON.parse( require( 'fs' ).read( filepath ) );
+    return JSON.parse( fs.read( filepath ) );
 };
 
-/** Load and parse a JSON file into an object.
- *  @param filepath     filepath relative to the current scriptDir
- *  @param object       the object to write
- *  @param mode         'w' for a new file, 'a' for append
+/** Write an object to a JSON file.
+ *  @param {String} filepath     filepath relative to the current scriptDir
+ *  @param {Object} object       the object to write
+ *  @param {String} mode         'w' for a new file, 'a' for append
  */
 SpaceGhost.prototype.writeJSONFile = function writeJSONFile( filepath, object, mode ){
     mode = mode || 'w';
     //precondition: filepath is relative to script dir
     filepath = this.options.scriptDir + filepath;
-    return require( 'fs' ).write( filepath, this.jsonStr( object ), mode );
+    return fs.write( filepath, this.jsonStr( object ), mode );
+};
+
+/** Save the HTML from the current page to file.
+ *  @param {String} filepath    filepath relative to the current scriptDir
+ *  @param {String} selector    A DOM CSS3/XPath selector (optional)
+ *  @param {Boolean} outer      Whether to fetch outer HTML contents (default: false)
+ */
+SpaceGhost.prototype.writeHTMLFile = function writeHTMLFile( filepath, selector, outer ){
+    return fs.write( filepath, this.getHTML( selector, outer ), 'w' );
 };
 
 
@@ -821,24 +1060,30 @@ SpaceGhost.prototype.writeJSONFile = function writeJSONFile( filepath, object, m
 SpaceGhost.prototype.data = {
     selectors : {
         tooltipBalloon          : '.bs-tooltip',
+
         editableText            : '.editable-text',
         editableTextInput       : 'input#renaming-active',
-        masthead : {
-            userMenu : {
-                userEmail       : 'a #user-email',
-                userEmail_xpath : '//a[contains(text(),"Logged in as")]/span["id=#user-email"]'
-            }
+
+        messages : {
+            all         : '[class*="message"]',
+            error       : '.errormessage',
+            done        : '.donemessage',
+            info        : '.infomessage',
+            donelarge   : '.donemessagelarge',
+            infolarge   : '.infomessagelarge'
         },
+
         frames : {
             main    : 'galaxy_main',
             tools   : 'galaxy_tools',
             history : 'galaxy_history'
         },
-        messages : {
-            all         : '[class*="message"]',
-            error       : '.errormessage',
-            done        : '.donemessage',
-            donelarge   : '.donemessagelarge'
+
+        masthead : {
+            userMenu : {
+                userEmail       : 'a #user-email',
+                userEmail_xpath : '//a[contains(text(),"Logged in as")]/span["id=#user-email"]'
+            }
         },
         loginPage : {
             form            : 'form#login',
@@ -881,81 +1126,14 @@ SpaceGhost.prototype.data = {
             badEmailError   : 'Enter a real email address'
         },
         upload : {
+            success : 'Your upload has been queued'
+        },
+        tool : {
             success : 'The following job has been successfully added to the queue'
         }
     }
 };
 
-/*
-SpaceGhost.prototype.selectors = {
-    tooltipBalloon          : '.bs-tooltip',
-    editableText            : '.editable-text',
-    editableTextInput       : 'input#renaming-active',
-    masthead : {
-        userMenu : {
-            userEmail       : 'a #user-email',
-            userEmail_xpath : '//a[contains(text(),"Logged in as")]/span["id=#user-email"]'
-        }
-    },
-    frames : {
-        main    : 'galaxy_main',
-        tools   : 'galaxy_tools',
-        history : 'galaxy_history'
-    },
-    messages : {
-        all         : '[class*="message"]',
-        error       : '.errormessage',
-        done        : '.donemessage',
-        donelarge   : '.donemessagelarge'
-    },
-    loginPage : {
-        form            : 'form#login',
-        submit_xpath    : "//input[@value='Login']",
-        url_regex       : /\/user\/login/
-    },
-    registrationPage : {
-        form            : 'form#registration',
-        submit_xpath    : "//input[@value='Submit']"
-    },
-    tools : {
-        general : {
-            form : 'form#tool_form',
-            executeButton_xpath : '//input[@value="Execute"]'
-        },
-        upload : {
-            fileInput   : 'files_0|file_data'   // is this general?
-        }
-    }
-};
-
-SpaceGhost.prototype.labels = {
-    masthead : {
-        menus : {
-            user : 'User'
-        },
-        userMenu : {
-            register    : 'Register',
-            login       : 'Login',
-            logout      : 'Logout'
-        }
-    },
-    tools : {
-        upload : {
-            panelLabel  : 'Upload File'
-        }
-    }
-};
-
-SpaceGhost.prototype.text = {
-    registrationPage : {
-        badEmailError   : 'Enter a real email address'
-        //...
-    },
-    upload : {
-        success : 'The following job has been successfully added to the queue'
-    }
-};
-*/
 
 // =================================================================== EXPORTS
 exports.SpaceGhost  = SpaceGhost;

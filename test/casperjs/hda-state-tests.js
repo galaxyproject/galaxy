@@ -55,17 +55,10 @@ var utils = require( 'utils' ),
 // start a new user
 spaceghost.user.loginOrRegisterUser( email, password );
 
-// grab the history frame bounds for later mouse tests
-spaceghost.then( function(){
-    historyFrameInfo = this.getElementInfo( 'iframe[name="galaxy_history"]' );
-    //this.debug( 'historyFrameInfo:' + this.jsonStr( historyFrameInfo ) );
-});
-
 // upload a file
 spaceghost.then( function upload(){
     spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
         testUploadInfo = _uploadInfo;
-        this.info( 'testUploadInfo:' + this.jsonStr( testUploadInfo ) );
     });
 });
 
@@ -73,13 +66,12 @@ spaceghost.then( function upload(){
 // =================================================================== TEST HELPERS
 //NOTE: to be called with fn.call( spaceghost, ... )
 
-function testTitle( hdaSelector, hid, name ){
-    var titleSelector = hdaSelector + ' ' + this.historypanel.data.selectors.hda.title,
-        titleShouldBe = hid + ': ' + name;
+function testTitle( hdaSelector, name ){
+    var titleSelector = hdaSelector + ' ' + this.historypanel.data.selectors.hda.title;
     this.test.assertVisible( titleSelector,
         'HDA title is visible' );
-    this.test.assertSelectorHasText( titleSelector, titleShouldBe,
-        'HDA has proper hid and title' );
+    this.test.assertSelectorHasText( titleSelector, name,
+        'HDA contains name (' + name + '): ' + this.fetchText( titleSelector ) );
 }
 
 function testTitleButtonStructure( hdaSelector, shouldHaveTheseButtons ){
@@ -87,28 +79,9 @@ function testTitleButtonStructure( hdaSelector, shouldHaveTheseButtons ){
     shouldHaveTheseButtons = shouldHaveTheseButtons || [ 'display', 'edit', 'delete' ];
 
     var hdaDbId = this.getElementAttribute( hdaSelector, 'id' ).split( '-' )[1],
-        buttonsArea = hdaSelector + ' ' + this.historypanel.data.selectors.hda.titleButtons,
-        buttons = {
-            // this seems backwards -> TODO: move buttonsArea concat into loop below, move this data to historypanel.data
-            display : {
-                nodeName : this.historypanel.data.text.hda.ok.nodeNames.displayButton,
-                selector : buttonsArea + ' ' + this.historypanel.data.selectors.hda.displayButton,
-                tooltip  : this.historypanel.data.text.hda.ok.tooltips.displayButton,
-                hrefTpl  : this.historypanel.data.text.hda.ok.hrefs.displayButton
-            },
-            edit : {
-                nodeName : this.historypanel.data.text.hda.ok.nodeNames.editAttrButton,
-                selector : buttonsArea + ' ' + this.historypanel.data.selectors.hda.editAttrButton,
-                tooltip  : this.historypanel.data.text.hda.ok.tooltips.editAttrButton,
-                hrefTpl  : this.historypanel.data.text.hda.ok.hrefs.editAttrButton
-            },
-            'delete' : {
-                nodeName : this.historypanel.data.text.hda.ok.nodeNames.deleteButton,
-                selector : buttonsArea + ' ' + this.historypanel.data.selectors.hda.deleteButton,
-                tooltip  : this.historypanel.data.text.hda.ok.tooltips.deleteButton,
-                hrefTpl  : this.historypanel.data.text.hda.ok.hrefs.deleteButton
-            }
-        };
+        buttonsArea = hdaSelector + ' ' + this.historypanel.data.selectors.hda.titleButtonArea,
+        buttons = this.historypanel.data.hdaTitleButtons;
+
     this.test.assertVisible( buttonsArea, 'Button area is visible' );
 
     for( var i=0; i<shouldHaveTheseButtons.length; i++ ){
@@ -123,7 +96,7 @@ function testTitleButtonStructure( hdaSelector, shouldHaveTheseButtons ){
         this.test.assertVisible( button.selector, buttonName + ' button is visible' );
 
         var buttonElement = this.getElementInfo( button.selector );
-        this.debug( 'buttonElement:' + this.jsonStr( buttonElement ) );
+        this.debug( 'buttonElement:' + this.jsonStr( this.quickInfo( buttonElement ) ) );
 
         // should be an anchor
         this.test.assert( buttonElement.nodeName === button.nodeName,
@@ -135,12 +108,13 @@ function testTitleButtonStructure( hdaSelector, shouldHaveTheseButtons ){
         this.assertTextContains( href, hrefShouldBe,
             buttonName + ' has proper href (' + hrefShouldBe + '): ' + href );
 
-        this.historypanel.hoverOver( button.selector, function testingHover(){
-            var tooltipText = button.tooltip;
-            this.test.assertVisible( tooltipSelector, buttonName + ' button tooltip is visible when hovering' );
-            this.test.assertSelectorHasText( tooltipSelector, tooltipText,
-                buttonName + ' button has tooltip text: "' + tooltipText + '"' );
-        }, historyFrameInfo );
+        this.historypanel.hoverOver( button.selector );
+        var tooltipText = button.tooltip;
+        this.test.assertVisible( tooltipSelector, buttonName + ' button tooltip is visible when hovering' );
+        this.test.assertSelectorHasText( tooltipSelector, tooltipText,
+            buttonName + ' button has tooltip text: "' + tooltipText + '"' );
+        // clear the tooltip
+        this.page.sendEvent( 'mouseover', 0, 0 );
     }
 }
 
@@ -185,6 +159,7 @@ function testPrimaryActionButtons( hdaSelector ){
     this.test.comment( 'Primary action buttons div should exist and be visible' );
     this.test.assertExists( buttonsSelector, 'Primary action buttons div exists' );
     this.test.assertVisible( buttonsSelector, 'Primary action buttons div is visible' );
+    //TODO: ...
 }
 
 function testSecondaryActionButtons( hdaSelector ){
@@ -193,6 +168,7 @@ function testSecondaryActionButtons( hdaSelector ){
     this.test.comment( 'Secondary action buttons div should exist and be visible' );
     this.test.assertExists( buttonsSelector, 'Secondary action buttons div exists' );
     this.test.assertVisible( buttonsSelector, 'Secondary action buttons div is visible' );
+    //TODO: ...
 }
 
 function testPeek( hdaSelector, expectedPeekArray ){
@@ -239,112 +215,97 @@ function testExpandedBody( hdaSelector, expectedSummaryTextArray, expectedInfoTe
 
 // =================================================================== TESTS
 // ------------------------------------------------------------------- ok state
-spaceghost.then( function checkOkState(){
+spaceghost.withHistoryPanel( function(){
     this.test.comment( 'HDAs in the "ok" state should be well formed' );
 
-    this.withFrame( spaceghost.data.selectors.frames.history, function(){
-        var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
-        this.test.assertVisible( uploadSelector, 'HDA is visible' );
+    var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+    this.test.assertVisible( uploadSelector, 'HDA is visible' );
 
-        this.test.comment( 'should have the proper state class' );
-        this.assertHasClass( uploadSelector, this.historypanel.data.selectors.hda.wrapper.stateClasses.ok,
-            'HDA has ok state class' );
+    this.test.comment( 'should have the proper state class' );
+    this.assertHasClass( uploadSelector, this.historypanel.data.selectors.hda.wrapper.stateClasses.ok,
+        'HDA has ok state class' );
 
-        // since we're using css there's no great way to test state icon (.state-icon is empty)
+    // since we're using css there's no great way to test state icon (.state-icon is empty)
 
-        this.test.comment( 'should have proper title and hid' );
-        testTitle.call( spaceghost, uploadSelector, testUploadInfo.hid, testUploadInfo.name );
+    this.test.comment( 'should have proper title and hid' );
+    testTitle.call( spaceghost, uploadSelector, testUploadInfo.filename );
 
-        this.test.comment( 'should have all of the three, main buttons' );
-        testTitleButtonStructure.call( spaceghost, uploadSelector );
+    this.test.comment( 'should have all of the three, main buttons' );
+    testTitleButtonStructure.call( spaceghost, uploadSelector );
 
-        this.test.comment( 'body is not visible before clicking the hda title' );
-        var body = uploadSelector + ' ' + this.historypanel.data.selectors.hda.body;
-        this.test.assertNotVisible( body, 'body is not visible' );
+    this.test.comment( 'body is not visible before clicking the hda title' );
+    var body = uploadSelector + ' ' + this.historypanel.data.selectors.hda.body;
+    this.test.assertNotVisible( body, 'body is not visible' );
 
-        this.test.comment( 'clicking the hda title should expand its body' );
-        var hdaTitle = uploadSelector + ' ' + this.historypanel.data.selectors.hda.title;
-        this.click( hdaTitle );
-        this.wait( 500, function(){
+    this.test.comment( 'clicking the hda title should expand its body' );
+    this.historypanel.thenExpandHda( uploadSelector, function(){
+        // ugh.
+        this.jumpToHistory( function(){
             testExpandedBody.call( spaceghost, uploadSelector, summaryShouldBeArray, infoShouldBe, false );
         });
     });
 });
-
 // restore to collapsed
-spaceghost.then( function collapseOkState(){
+spaceghost.then( function(){
     this.test.comment( "Collapsing hda in 'ok' state should hide body again" );
-    this.withFrame( spaceghost.data.selectors.frames.history, function(){
-        var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id,
-            hdaTitle = uploadSelector + ' ' + this.historypanel.data.selectors.hda.title;
-            body = uploadSelector + ' ' + this.historypanel.data.selectors.hda.body;
+    var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
 
-        this.click( hdaTitle );
-        this.wait( 500, function(){
-            this.test.assertNotVisible( body, 'body is not visible' );
-        });
+    spaceghost.historypanel.thenCollapseHda( uploadSelector, function collapseOkState(){
+        this.test.assertNotVisible( uploadSelector + ' ' + this.historypanel.data.selectors.hda.body,
+            'body is not visible' );
     });
 });
 
-
 // ------------------------------------------------------------------- new state
-spaceghost.then( function checkNewState(){
-    this.test.comment( 'HDAs in the "new" state should be well formed' );
+spaceghost.withHistoryPanel( function(){
+    // set state directly through model, wait for re-render
+    //TODO: not ideal to test this
+    this.evaluate( function(){
+        return Galaxy.currHistoryPanel.model.hdas.at( 0 ).set( 'state', 'new' );
+    });
+    this.wait( 1000, function(){
+        this.test.comment( 'HDAs in the "new" state should be well formed' );
 
-    this.withFrame( spaceghost.data.selectors.frames.history, function(){
-        // set state directly through model
-        //TODO: not ideal
-        this.evaluate( function(){
-            return Galaxy.currHistoryPanel.model.hdas.at( 0 ).set( 'state', 'new' );
-        });
-        // wait for re-render
-        this.wait( 500, function(){
-            var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
-            this.test.assertVisible( uploadSelector, 'HDA is visible' );
+        var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+        this.test.assertVisible( uploadSelector, 'HDA is visible' );
 
-            // should have proper title and hid
-            testTitle.call( spaceghost, uploadSelector, testUploadInfo.hid, testUploadInfo.name );
+        // should have proper title and hid
+        testTitle.call( spaceghost, uploadSelector, testUploadInfo.filename );
 
-            this.test.comment( 'new HDA should have the new state class' );
-            this.assertHasClass( uploadSelector, this.historypanel.data.selectors.hda.wrapper.stateClasses['new'],
-                'HDA has new state class' );
+        this.test.comment( 'new HDA should have the new state class' );
+        this.assertHasClass( uploadSelector, this.historypanel.data.selectors.hda.wrapper.stateClasses['new'],
+            'HDA has new state class' );
 
-            this.test.comment( 'new HDA should NOT have any of the three, main buttons' );
-            var buttonSelector = uploadSelector + ' ' + this.historypanel.data.selectors.hda.titleButtons + ' a';
-            this.test.assertDoesntExist( buttonSelector, 'No display, edit, or delete buttons' );
+        this.test.comment( 'new HDA should NOT have any of the three, main buttons' );
+        var buttonSelector = uploadSelector + ' ' + this.historypanel.data.selectors.hda.titleButtons + ' a';
+        this.test.assertDoesntExist( buttonSelector, 'No display, edit, or delete buttons' );
 
-            this.test.comment( 'clicking the title of the new HDA will expand the body' );
-            var hdaTitle = uploadSelector + ' ' + this.historypanel.data.selectors.hda.title;
-            this.click( hdaTitle );
-            this.wait( 500, function(){
-                var bodySelector = uploadSelector + ' ' + this.historypanel.data.selectors.hda.body;
-                this.test.assertVisible( bodySelector, 'HDA body is visible (after expanding)' );
+        this.test.comment( 'clicking the title of the new HDA will expand the body' );
 
-                var expectedBodyText = 'This is a new dataset';
-                this.test.comment( 'the body should have the text: ' + expectedBodyText );
-                this.test.assertSelectorHasText( bodySelector, expectedBodyText,
-                    'HDA body has text: ' + expectedBodyText );
+        this.historypanel.thenExpandHda( uploadSelector, function(){
+            var bodySelector = uploadSelector + ' ' + this.historypanel.data.selectors.hda.body;
+            this.test.assertVisible( bodySelector, 'HDA body is visible (after expanding)' );
 
-                // restore to collapsed
-                this.click( hdaTitle );
-            });
+            var expectedBodyText = 'This is a new dataset';
+            this.test.comment( 'the body should have the text: ' + expectedBodyText );
+            this.test.assertSelectorHasText( bodySelector, expectedBodyText,
+                'HDA body has text: ' + expectedBodyText );
         });
     });
 });
 // restore state, collapse
-spaceghost.then( function revertStateAndCollapse(){
-    this.withFrame( spaceghost.data.selectors.frames.history, function(){
+spaceghost.withHistoryPanel( function revertStateAndCollapse(){
+    var uploadSelector = '#' + testUploadInfo.hdaElement.attributes.id;
+
+    this.historypanel.thenCollapseHda( uploadSelector, function(){
         this.evaluate( function(){
             return Galaxy.currHistoryPanel.model.hdas.at( 0 ).set( 'state', 'ok' );
         });
-        this.wait( 500, function(){
-            var hdaTitle = '#' + testUploadInfo.hdaElement.attributes.id
-                + ' ' + this.historypanel.data.selectors.hda.title;
-            this.click( hdaTitle );
-        });
     });
+    this.wait( 1000 );
 });
-
+/*
+*/
 
 // ===================================================================
 spaceghost.run( function(){
