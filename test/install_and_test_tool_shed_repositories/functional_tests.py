@@ -107,12 +107,21 @@ if os.path.exists( 'tool_data_table_conf.test.xml' ):
 else:
     additional_tool_data_tables = None
     additional_tool_data_path = None
-# And set up a blank tool_data_table_conf.xml and shed_tool_data_table_conf.xml.
+
+# Also set up default tool data tables.
+if os.path.exists( 'tool_data_table_conf.xml' ):
+    tool_data_table_conf = 'tool_data_table_conf.xml'
+elif os.path.exists( 'tool_data_table_conf.xml.sample' ):
+    tool_data_table_conf = 'tool_data_table_conf.xml.sample'
+else:
+    tool_data_table_conf = None
+
+# And set up a blank shed_tool_data_table_conf.xml.
 tool_data_table_conf_xml_template = '''<?xml version="1.0"?>
 <tables>
 </tables>
 '''
-
+    
 # The tool shed url and api key must be set for this script to work correctly. Additionally, if the tool shed url does not
 # point to one of the defaults, the GALAXY_INSTALL_TEST_TOOL_SHEDS_CONF needs to point to a tool sheds configuration file
 # that contains a definition for that tool shed.
@@ -328,7 +337,7 @@ def main():
     galaxy_test_proxy_port = None
     # Set up the configuration files for the Galaxy instance.
     shed_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_DATA_TABLE_CONF', os.path.join( galaxy_test_tmp_dir, 'test_shed_tool_data_table_conf.xml' ) )
-    galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DATA_TABLE_CONF', os.path.join( galaxy_test_tmp_dir, 'test_tool_data_table_conf.xml' ) )
+    galaxy_tool_data_table_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DATA_TABLE_CONF', tool_data_table_conf )
     galaxy_tool_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_CONF', os.path.join( galaxy_test_tmp_dir, 'test_tool_conf.xml' ) )
     galaxy_shed_tool_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_SHED_TOOL_CONF', os.path.join( galaxy_test_tmp_dir, 'test_shed_tool_conf.xml' ) )
     galaxy_migrated_tool_conf_file = os.environ.get( 'GALAXY_INSTALL_TEST_MIGRATED_TOOL_CONF', os.path.join( galaxy_test_tmp_dir, 'test_migrated_tool_conf.xml' ) )
@@ -350,7 +359,7 @@ def main():
     galaxy_file_path = os.path.join( galaxy_db_path, 'files' )
     new_repos_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     galaxy_tempfiles = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
-    galaxy_shed_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir ) 
+    galaxy_shed_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir, prefix='shed_tools' ) 
     galaxy_migrated_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir ) 
     galaxy_tool_dependency_dir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir ) 
     os.environ[ 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR' ] = galaxy_tool_dependency_dir
@@ -367,9 +376,6 @@ def main():
 
     print "Database connection: ", database_connection
 
-    # Generate the tool_data_table_conf.xml file.
-    file( galaxy_tool_data_table_conf_file, 'w' ).write( tool_data_table_conf_xml_template )
-    os.environ[ 'GALAXY_INSTALL_TEST_TOOL_DATA_TABLE_CONF' ] = galaxy_tool_data_table_conf_file
     # Generate the shed_tool_data_table_conf.xml file.
     file( shed_tool_data_table_conf_file, 'w' ).write( tool_data_table_conf_xml_template )
     os.environ[ 'GALAXY_INSTALL_TEST_SHED_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
