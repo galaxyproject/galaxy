@@ -98,9 +98,9 @@
                     <a href="${get_history_link( history )}">${_('refresh')}</a> |
                 %endif
                 %if show_deleted:
-                    <a href="${h.url_for(controller='history', id=trans.security.encode_id(history.id), show_deleted=False, use_panels=use_panels )}">${_('hide deleted')}</a> |
+                    <a href="${h.url_for(controller='history', action='view', id=trans.security.encode_id(history.id), show_deleted=False, use_panels=use_panels )}">${_('hide deleted')}</a> |
                 %else:
-                    <a href="${h.url_for(controller='history', id=trans.security.encode_id(history.id), show_deleted=True, use_panels=use_panels )}">${_('show deleted')}</a> |
+                    <a href="${h.url_for(controller='history', action='view', id=trans.security.encode_id(history.id), show_deleted=True, use_panels=use_panels )}">${_('show deleted')}</a> |
                 %endif
                 <a href="#" class="toggle">collapse all</a>
             </div>
