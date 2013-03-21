@@ -12,59 +12,29 @@ import subprocess
 from Queue import Queue, Empty
 
 from galaxy import model
-from galaxy.jobs.runners import BaseJobRunner
+
+from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'ShellJobRunner' ]
 
-class RunnerJobState( object ):
-    def __init__( self ):
-        """
-        Encapsulates state related to a job that is being run and that we need to monitor.
-        """
-        self.job_wrapper = None
-        self.external_job_id = None
-        self.old_state = None
-        self.running = False
-        self.job_file = None
-        self.ofile = None
-        self.efile = None
-        self.runner_url = None
-
-class ShellJobRunner( BaseJobRunner ):
+class ShellJobRunner( AsynchronousJobRunner ):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
     """
-    STOP_SIGNAL = object()
-    def __init__( self, app ):
-        """Initialize this job runner and start the monitor thread"""
-        # Check if drmaa was importable, fail if not
-        self.app = app
-        self.sa_session = app.model.context
-        self.remote_home_directory = None
-        # 'watched' and 'queue' are both used to keep track of jobs to watch.
-        # 'queue' is used to add new watched jobs, and can be called from
-        # any thread (usually by the 'queue_job' method). 'watched' must only
-        # be modified by the monitor thread, which will move items from 'queue'
-        # to 'watched' and then manage the watched jobs.
-        self.watched = []
-        self.monitor_queue = Queue()
-        self.monitor_thread = threading.Thread( target=self.monitor )
-        self.monitor_thread.start()
-        self.work_queue = Queue()
-        self.work_threads = []
-        nworkers = app.config.cluster_job_queue_workers
+    runner_name = "ShellRunner"
+
+    def __init__( self, app, nworkers ):
+        """Start the job runner """
+        super( ShellJobRunner, self ).__init__( app, nworkers )
 
         self.cli_shells = None
         self.cli_job_interfaces = None
         self.__load_cli_plugins()
 
-        for i in range( nworkers ):
-            worker = threading.Thread( target=self.run_next )
-            worker.start()
-            self.work_threads.append( worker )
-        log.debug( "%d workers ready" % nworkers )
+        self._init_monitor_thread()
+        self._init_worker_threads()
 
     def __load_cli_plugins(self):
         def __load(module_path, d):
@@ -84,96 +54,61 @@ class ShellJobRunner( BaseJobRunner ):
         __load('galaxy.jobs.runners.cli_shell', self.cli_shells)
         __load('galaxy.jobs.runners.cli_job', self.cli_job_interfaces)
 
-    def get_cli_plugins(self, runner_url):
-        shell_params, job_params = runner_url.split('/')[2:4]
-        # split 'foo=bar&baz=quux' into { 'foo' : 'bar', 'baz' : 'quux' }
-        shell_params = dict ( [ ( k, v ) for k, v in [ kv.split('=', 1) for kv in shell_params.split('&') ] ] )
-        job_params = dict ( [ ( k, v ) for k, v in [ kv.split('=', 1) for kv in job_params.split('&') ] ] )
+    def get_cli_plugins( self, shell_params, job_params ):
         # load shell plugin
         shell = self.cli_shells[shell_params['plugin']](**shell_params)
         job_interface = self.cli_job_interfaces[job_params['plugin']](**job_params)
         return shell, job_interface
 
-    def run_next( self ):
-        """
-        Run the next item in the queue (a job waiting to run or finish )
-        """
-        while 1:
-            ( op, obj ) = self.work_queue.get()
-            if op is self.STOP_SIGNAL:
-                return
-            try:
-                if op == 'queue':
-                    self.queue_job( obj )
-                elif op == 'finish':
-                    self.finish_job( obj )
-                elif op == 'fail':
-                    self.fail_job( obj )
-            except:
-                log.exception( "Uncaught exception %sing job" % op )
+    def parse_destination_params( self, params ):
+        shell_params = dict((k.replace('shell_', '', 1), v) for k, v in params.items() if k.startswith('shell_'))
+        job_params = dict((k.replace('job_', '', 1), v) for k, v in params.items() if k.startswith('job_'))
+        return shell_params, job_params
 
     def queue_job( self, job_wrapper ):
         """Create job script and submit it to the DRM"""
-        try:
-            job_wrapper.prepare()
-            command_line = self.build_command_line( job_wrapper, include_metadata=True )
-        except:
-            job_wrapper.fail( "failure preparing job", exception=True )
-            log.exception("failure running job %s" % job_wrapper.get_id_tag())
+        # Superclass method has some basic sanity checks
+        super( ShellJobRunner, self ).queue_job( job_wrapper )
+        if not job_wrapper.is_ready:
             return
 
-        # This is silly, why would we queue a job with no command line?
-        if not command_line:
-            job_wrapper.finish( '', '' )
-            return
-        
-        # Check for deletion before we change state
-        if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.debug( "Job %s deleted by user before it entered the queue" % job_wrapper.get_id_tag() )
-            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
-                job_wrapper.cleanup()
-            return
+        # command line has been added to the wrapper by the superclass queue_job()
+        command_line = job_wrapper.runner_command_line
 
         # Get shell and job execution interface
-        runner_url = job_wrapper.get_job_runner_url()
-        shell, job_interface = self.get_cli_plugins(runner_url)
-
-        # Change to queued state immediately
-        job_wrapper.change_state( model.Job.states.QUEUED )
-
-        # define job attributes
-        ofile = "%s.gjout" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
-        efile = "%s.gjerr" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
-        ecfile = "%s.gjec" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
-        job_name = "g%s_%s_%s" % ( job_wrapper.job_id, job_wrapper.tool.id, job_wrapper.user )
-
-        # fill in the DRM's job run template
-        script = job_interface.get_job_template(ofile, efile, job_name, job_wrapper, command_line, ecfile)
-        script_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
-
-        try:
-            fh = file(script_file, "w")
-            fh.write(script)
-            fh.close()
-        except:
-            job_wrapper.fail("failure preparing job script", exception=True)
-            log.exception("failure running job %s" % job_wrapper.get_id_tag())
-            return
-
-        # job was deleted while we were preparing it
-        if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.info("Job %s deleted by user before it entered the queue" % job_wrapper.get_id_tag())
-            if self.app.config.cleanup_job in ("always", "onsuccess"):
-                job_wrapper.cleanup()
-            return
+        job_destination = job_wrapper.job_destination
+        shell_params, job_params = self.parse_destination_params(job_destination.params)
+        shell, job_interface = self.get_cli_plugins(shell_params, job_params)
 
         # wrapper.get_id_tag() instead of job_id for compatibility with TaskWrappers.
         galaxy_id_tag = job_wrapper.get_id_tag()
 
-        log.debug("(%s) submitting file: %s" % (galaxy_id_tag, script_file ))
-        log.debug("(%s) command is: %s" % (galaxy_id_tag, command_line ) )
+        # define job attributes
+        ajs = AsynchronousJobState( files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper )
 
-        cmd_out = shell.execute(job_interface.submit(script_file))
+        # fill in the DRM's job run template
+        script = job_interface.get_job_template(ajs.output_file, ajs.error_file, ajs.job_name, job_wrapper, command_line, ajs.exit_code_file)
+
+        try:
+            fh = file(ajs.job_file, "w")
+            fh.write(script)
+            fh.close()
+        except:
+            log.exception("(%s) failure writing job script" % galaxy_id_tag )
+            job_wrapper.fail("failure preparing job script", exception=True)
+            return
+
+        # job was deleted while we were preparing it
+        if job_wrapper.get_state() == model.Job.states.DELETED:
+            log.info("(%s) Job deleted by user before it entered the queue" % galaxy_id_tag )
+            if self.app.config.cleanup_job in ("always", "onsuccess"):
+                job_wrapper.cleanup()
+            return
+
+        log.debug( "(%s) submitting file: %s" % ( galaxy_id_tag, ajs.job_file ) )
+        log.debug( "(%s) command is: %s" % ( galaxy_id_tag, command_line ) )
+
+        cmd_out = shell.execute(job_interface.submit(ajs.job_file))
         if cmd_out.returncode != 0:
             log.error('(%s) submission failed (stdout): %s' % (galaxy_id_tag, cmd_out.stdout))
             log.error('(%s) submission failed (stderr): %s' % (galaxy_id_tag, cmd_out.stderr))
@@ -188,47 +123,16 @@ class ShellJobRunner( BaseJobRunner ):
         log.info("(%s) queued with identifier: %s" % ( galaxy_id_tag, external_job_id ) )
 
         # store runner information for tracking if Galaxy restarts
-        job_wrapper.set_runner( runner_url, external_job_id )
+        job_wrapper.set_job_destination( job_destination, external_job_id )
 
         # Store state information for job
-        runner_job_state = RunnerJobState()
-        runner_job_state.job_wrapper = job_wrapper
-        runner_job_state.external_job_id = external_job_id
-        runner_job_state.ofile = ofile
-        runner_job_state.efile = efile
-        runner_job_state.ecfile = ecfile
-        runner_job_state.job_file = script_file
-        runner_job_state.old_state = 'new'
-        runner_job_state.running = False
-        runner_job_state.runner_url = runner_url
+        ajs.job_id = external_job_id
+        ajs.old_state = 'new'
+        ajs.job_destination = job_destination
         
         # Add to our 'queue' of jobs to monitor
-        self.monitor_queue.put( runner_job_state )
+        self.monitor_queue.put( ajs )
 
-    def monitor( self ):
-        """
-        Watches jobs currently in the PBS queue and deals with state changes
-        (queued to running) and job completion
-        """
-        while 1:
-            # Take any new watched jobs and put them on the monitor list
-            try:
-                while 1: 
-                    runner_job_state = self.monitor_queue.get_nowait()
-                    if runner_job_state is self.STOP_SIGNAL:
-                        # TODO: This is where any cleanup would occur
-                        return
-                    self.watched.append( runner_job_state )
-            except Empty:
-                pass
-            # Iterate over the list of watched jobs and check state
-            try:
-                self.check_watched_items()
-            except:
-                log.exception('Uncaught exception checking job state:')
-            # Sleep a bit before the next state check
-            time.sleep( 15 )
-            
     def check_watched_items( self ):
         """
         Called by the monitor thread to look at each watched job and deal
@@ -238,68 +142,66 @@ class ShellJobRunner( BaseJobRunner ):
 
         job_states = self.__get_job_states()
 
-        for runner_job_state in self.watched:
-            external_job_id = runner_job_state.external_job_id
-            galaxy_job_id = runner_job_state.job_wrapper.job_id
-            old_state = runner_job_state.old_state
+        for ajs in self.watched:
+            external_job_id = ajs.job_id
+            id_tag = ajs.job_wrapper.get_id_tag()
+            old_state = ajs.old_state
             state = job_states.get(external_job_id, None)
             if state is None:
-                log.debug("(%s/%s) job not found in batch state check" % ( galaxy_job_id, external_job_id ) )
-                shell, job_interface = self.get_cli_plugins(runner_job_state.runner_url)
+                log.debug("(%s/%s) job not found in batch state check" % ( id_tag, external_job_id ) )
+                shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)
+                shell, job_interface = self.get_cli_plugins(shell_params, job_params)
                 cmd_out = shell.execute(job_interface.get_single_status(external_job_id))
                 state = job_interface.parse_single_status(cmd_out.stdout, external_job_id)
                 if state == model.Job.states.OK:
-                    log.debug('(%s/%s) job execution finished, running job wrapper finish method' % ( galaxy_job_id, external_job_id ) )
-                    self.work_queue.put( ( 'finish', runner_job_state ) )
+                    log.debug('(%s/%s) job execution finished, running job wrapper finish method' % ( id_tag, external_job_id ) )
+                    self.work_queue.put( ( self.finish_job, ajs ) )
                     continue
                 else:
-                    log.warning('(%s/%s) job not found in batch state check, but found in individual state check' % ( galaxy_job_id, external_job_id ) )
+                    log.warning('(%s/%s) job not found in batch state check, but found in individual state check' % ( id_tag, external_job_id ) )
                     if state != old_state:
-                        runner_job_state.job_wrapper.change_state( state )
+                        ajs.job_wrapper.change_state( state )
             else:
                 if state != old_state:
-                    log.debug("(%s/%s) state change: %s" % ( galaxy_job_id, external_job_id, state ) )
-                    runner_job_state.job_wrapper.change_state( state )
-                if state == model.Job.states.RUNNING and not runner_job_state.running:
-                    runner_job_state.running = True
-                    runner_job_state.job_wrapper.change_state( model.Job.states.RUNNING )
-            runner_job_state.old_state = state
-            new_watched.append( runner_job_state )
+                    log.debug("(%s/%s) state change: %s" % ( id_tag, external_job_id, state ) )
+                    ajs.job_wrapper.change_state( state )
+                if state == model.Job.states.RUNNING and not ajs.running:
+                    ajs.running = True
+                    ajs.job_wrapper.change_state( model.Job.states.RUNNING )
+            ajs.old_state = state
+            new_watched.append( ajs )
         # Replace the watch list with the updated version
         self.watched = new_watched
 
     def __get_job_states(self):
-        runner_urls = {}
+        job_destinations = {}
         job_states = {}
-        for runner_job_state in self.watched:
-            # remove any job plugin options from the runner URL since they should not affect doing a batch state check
-            runner_url = runner_job_state.runner_url.split('/')
-            job_params = runner_url[3]
-            job_params = dict ( [ ( k, v ) for k, v in [ kv.split('=', 1) for kv in job_params.split('&') ] ] )
-            runner_url[3] = 'plugin=%s' % job_params['plugin']
-            runner_url = '/'.join(runner_url)
-            # create the list of job ids to check for each runner url
-            if runner_job_state.runner_url not in runner_urls:
-                runner_urls[runner_job_state.runner_url] = [runner_job_state.external_job_id]
+        # unique the list of destinations
+        for ajs in self.watched:
+            if ajs.job_destination.id not in job_destinations:
+                job_destinations[ajs.job_destination.id] = dict( job_destination=ajs.job_destination, job_ids=[ ajs.job_id ] )
             else:
-                runner_urls[runner_job_state.runner_url].append(runner_job_state.external_job_id)
-        # check each runner url for the listed job ids
-        for runner_url, job_ids in runner_urls.items():
-            shell, job_interface = self.get_cli_plugins(runner_url)
+                job_destinations[ajs.job_destination.id]['job_ids'].append( ajs.job_id )
+        # check each destination for the listed job ids
+        for job_destination_id, v in job_destinations.items():
+            job_destination = v['job_destination']
+            job_ids = v['job_ids']
+            shell_params, job_params = self.parse_destination_params(job_destination.params)
+            shell, job_interface = self.get_cli_plugins(shell_params, job_params)
             cmd_out = shell.execute(job_interface.get_status(job_ids))
             assert cmd_out.returncode == 0, cmd_out.stderr
             job_states.update(job_interface.parse_status(cmd_out.stdout, job_ids))
         return job_states
-        
-    def finish_job( self, runner_job_state ):
+
+    def finish_job( self, ajs ):
         """
         Get the output/error for a finished job, pass to `job_wrapper.finish`
         and cleanup all the DRM temporary files.
         """
-        ofile = runner_job_state.ofile
-        efile = runner_job_state.efile
-        ecfile = runner_job_state.ecfile
-        job_file = runner_job_state.job_file
+        ofile = ajs.output_file
+        efile = ajs.error_file
+        ecfile = ajs.exit_code_file
+        job_file = ajs.job_file
         # collect the output
         # wait for the files to appear
         which_try = 0
@@ -323,35 +225,15 @@ class ShellJobRunner( BaseJobRunner ):
                 which_try += 1
 
         try:
-            runner_job_state.job_wrapper.finish( stdout, stderr, exit_code )
+            ajs.job_wrapper.finish( stdout, stderr, exit_code )
         except:
             log.exception("Job wrapper finish method failed")
-
-    def fail_job( self, job_state ):
-        """
-        Seperated out so we can use the worker threads for it.
-        """
-        self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
-        job_state.job_wrapper.fail( job_state.fail_message )
-
-    def put( self, job_wrapper ):
-        """Add a job to the queue (by job identifier)"""
-        # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state( model.Job.states.QUEUED )
-        self.work_queue.put( ( 'queue', job_wrapper ) )
-
-    def shutdown( self ):
-        """Attempts to gracefully shut down the monitor thread"""
-        log.info( "sending stop signal to worker threads" )
-        self.monitor_queue.put( self.STOP_SIGNAL )
-        for i in range( len( self.work_threads ) ):
-            self.work_queue.put( ( self.STOP_SIGNAL, None ) )
-        log.info( "drmaa job runner stopped" )
 
     def stop_job( self, job ):
         """Attempts to delete a dispatched job"""
         try:
-            shell, job_interface = self.get_cli_plugins( job.job_runner )
+            shell_params, job_params = self.parse_destination_params(job.destination_params)
+            shell, job_interface = self.get_cli_plugins(shell_params, job_params)
             cmd_out = shell.execute(job_interface.delete( job.job_runner_external_id ))
             assert cmd_out.returncode == 0, cmd_out.stderr
             log.debug( "(%s/%s) Terminated at user's request" % ( job.id, job.job_runner_external_id ) )
@@ -364,22 +246,31 @@ class ShellJobRunner( BaseJobRunner ):
         if job_id is None:
             self.put( job_wrapper )
             return
-        runner_job_state = RunnerJobState()
-        runner_job_state.ofile = "%s.gjout" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
-        runner_job_state.efile = "%s.gjerr" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
-        runner_job_state.ecfile = "%s.gjec" % os.path.join(job_wrapper.working_directory, job_wrapper.get_id_tag())
-        runner_job_state.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job_wrapper.get_id_tag())
-        runner_job_state.external_job_id = str( job_id )
-        job_wrapper.command_line = job.command_line
-        runner_job_state.job_wrapper = job_wrapper
-        runner_job_state.runner_url = job.job_runner_name
+        ajs = AsynchronousJobState( files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper )
+        ajs.job_id = str( job_id )
+        ajs.command_line = job.command_line
+        ajs.job_wrapper = job_wrapper
+        ajs.job_destination = job_wrapper.job_destination
+        self.__old_state_paths( ajs )
         if job.state == model.Job.states.RUNNING:
             log.debug( "(%s/%s) is still in running state, adding to the runner monitor queue" % ( job.id, job.job_runner_external_id ) )
-            runner_job_state.old_state = model.Job.states.RUNNING
-            runner_job_state.running = True
-            self.monitor_queue.put( runner_job_state )
+            ajs.old_state = model.Job.states.RUNNING
+            ajs.running = True
+            self.monitor_queue.put( ajs )
         elif job.state == model.Job.states.QUEUED:
             log.debug( "(%s/%s) is still in queued state, adding to the runner monitor queue" % ( job.id, job.job_runner_external_id ) )
-            runner_job_state.old_state = model.Job.states.QUEUED
-            runner_job_state.running = False
-            self.monitor_queue.put( runner_job_state )
+            ajs.old_state = model.Job.states.QUEUED
+            ajs.running = False
+            self.monitor_queue.put( ajs )
+
+    def __old_state_paths( self, ajs ):
+        """For recovery of jobs started prior to standardizing the naming of
+        files in the AsychronousJobState object
+        """
+        if ajs.job_wrapper is not None:
+            job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, ajs.job_wrapper.get_id_tag())
+            if not os.path.exists( ajs.job_file ) and os.path_exists( job_file ):
+                ajs.output_file = "%s.gjout" % os.path.join(ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
+                ajs.error_file = "%s.gjerr" % os.path.join(ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
+                ajs.exit_code_file = "%s.gjec" % os.path.join(ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
+                ajs.job_file = job_file
