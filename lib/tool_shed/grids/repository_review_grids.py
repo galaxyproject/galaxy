@@ -123,7 +123,8 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
         def get_value( self, trans, grid, repository ):
             rval = ''
             for review in repository.reviews:
-                rval += '%s<br/>' % review.approved
+                if review.approved:
+                    rval += '%s<br/>' % review.approved
             return rval
             
     title = "All reviewed repositories"
