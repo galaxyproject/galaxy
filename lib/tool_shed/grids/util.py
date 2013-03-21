@@ -8,6 +8,8 @@ def build_approved_select_field( trans, name, selected_value=None, for_component
                 ( 'Yes', trans.model.ComponentReview.approved_states.YES ) ]
     if for_component:
         options.append( ( 'Not applicable', trans.model.ComponentReview.approved_states.NA ) )
+        if selected_value is None:
+            selected_value = trans.model.ComponentReview.approved_states.NA
     select_field = SelectField( name=name )
     for option_tup in options:
         selected = selected_value and option_tup[ 1 ] == selected_value
