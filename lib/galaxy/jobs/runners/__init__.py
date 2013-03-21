@@ -4,6 +4,7 @@ Base classes for job runner plugins.
 
 import os
 import time
+import string
 import logging
 import threading
 
@@ -233,17 +234,38 @@ class AsynchronousJobState( object ):
     to communicate with distributed resource manager.
     """
 
-    def __init__( self ):
-        self.job_wrapper = None
-        self.job_id = None
+    def __init__( self, files_dir=None, job_wrapper=None, job_id=None, job_file=None, output_file=None, error_file=None, exit_code_file=None, job_name=None, job_destination=None  ):
         self.old_state = None
         self.running = False
-        self.job_file = None
-        self.output_file = None
-        self.error_file = None
-        self.exit_code_file = None
         self.check_count = 0
-        self.job_destination = None
+
+        self.job_wrapper = job_wrapper
+        # job_id is the DRM's job id, not the Galaxy job id
+        self.job_id = job_id
+        self.job_destination = job_destination
+
+        self.job_file = job_file
+        self.output_file = output_file
+        self.error_file = error_file
+        self.exit_code_file = exit_code_file
+        self.job_name = job_name
+
+        self.set_defaults( files_dir )
+
+    def set_defaults( self, files_dir ):
+        if self.job_wrapper is not None:
+            id_tag = self.job_wrapper.get_id_tag()
+            if files_dir is not None:
+                self.job_file = os.path.join( files_dir, 'galaxy_%s.sh' % id_tag )
+                self.output_file = os.path.join( files_dir, 'galaxy_%s.o' % id_tag )
+                self.error_file = os.path.join( files_dir, 'galaxy_%s.e' % id_tag )
+                self.exit_code_file = os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
+            job_name = 'g%s' % id_tag
+            if self.job_wrapper.tool.old_id:
+                job_name += '_%s' % self.job_wrapper.tool.old_id
+            if self.job_wrapper.user:
+                job_name += '_%s' % self.job_wrapper.user
+            self.job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
 
 class AsynchronousJobRunner( BaseJobRunner ):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
