@@ -320,7 +320,8 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                                                                     trans.model.ComponentReview.table.c.deleted == False,
                                                                     trans.model.ComponentReview.table.c.approved != trans.model.ComponentReview.approved_states.NA ) ) \
                                                      .scalar()
-                    review.rating = int( average_rating )
+                    if average_rating is not None:
+                        review.rating = int( average_rating )
                     trans.sa_session.add( review )
                     trans.sa_session.flush()
                     # Update the information in components_dict.
