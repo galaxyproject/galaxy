@@ -252,6 +252,8 @@ class AsynchronousJobState( object ):
 
         self.set_defaults( files_dir )
 
+        self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
+
     def set_defaults( self, files_dir ):
         if self.job_wrapper is not None:
             id_tag = self.job_wrapper.get_id_tag()
@@ -266,6 +268,17 @@ class AsynchronousJobState( object ):
             if self.job_wrapper.user:
                 job_name += '_%s' % self.job_wrapper.user
             self.job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
+
+    def cleanup( self ):
+        for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
+            try:
+                os.unlink( file )
+            except Exception, e:
+                log.debug( "(%s/%s) Unable to cleanup %s: %s" % ( self.job_wrapper.get_id_tag(), self.job_id, file, str( e ) ) )
+
+    def register_cleanup_file_attribute( self, attribute ):
+        if attribute not in self.cleanup_file_attributes:
+            self.cleanup_file_attributes.append( attribute )
 
 class AsynchronousJobRunner( BaseJobRunner ):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
@@ -347,11 +360,63 @@ class AsynchronousJobRunner( BaseJobRunner ):
     def check_watched_item(self):
         raise NotImplementedError()
 
-    def finish_job(self, job_state):
-        raise NotImplementedError()
+    def finish_job( self, job_state ):
+        """
+        Get the output/error for a finished job, pass to `job_wrapper.finish`
+        and cleanup all the job's temporary files.
+        """
+        galaxy_id_tag = job_state.job_wrapper.get_id_tag()
+        external_job_id = job_state.job_id
 
-    def fail_job(self, job_state):
-        raise NotImplementedError()
+        # To ensure that files below are readable, ownership must be reclaimed first
+        job_state.job_wrapper.reclaim_ownership()
+
+        # wait for the files to appear
+        which_try = 0
+        while which_try < (self.app.config.retry_job_output_collection + 1):
+            try:
+                stdout = file( job_state.output_file, "r" ).read( 32768 )
+                stderr = file( job_state.error_file, "r" ).read( 32768 )
+                which_try = (self.app.config.retry_job_output_collection + 1)
+            except Exception, e:
+                if which_try == self.app.config.retry_job_output_collection:
+                    stdout = ''
+                    stderr = 'Job output not returned from cluster'
+                    log.error( '(%s/%s) %s: %s' % ( galaxy_id_tag, external_job_id, stderr, str( e ) ) )
+                else:
+                    time.sleep(1)
+                which_try += 1
+
+        try:
+            # This should be an 8-bit exit code, but read ahead anyway: 
+            exit_code_str = file( job_state.exit_code_file, "r" ).read(32)
+        except:
+            # By default, the exit code is 0, which typically indicates success.
+            exit_code_str = "0"
+
+        try:
+            # Decode the exit code. If it's bogus, then just use 0.
+            exit_code = int(exit_code_str)
+        except:
+            log.warning( "(%s/%s) Exit code '%s' invalid. Using 0." % ( galaxy_id_tag, external_job_id, exit_code_str ) )
+            exit_code = 0
+
+        # clean up the job files
+        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
+            job_state.cleanup()
+
+        try:
+            job_state.job_wrapper.finish( stdout, stderr, exit_code )
+        except:
+            log.exception( "(%s/%s) Job wrapper finish method failed" % ( galaxy_id_tag, external_job_id ) )
+            job_state.job_wrapper.fail( "Unable to finish job", exception=True )
+
+    def fail_job( self, job_state ):
+        if getattr( job_state, 'stop_job', True ):
+            self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
+        job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
+        if self.app.config.cleanup_job == "always":
+            job_state.cleanup()
 
     def mark_as_finished(self, job_state):
         self.work_queue.put( ( self.finish_job, job_state ) )
