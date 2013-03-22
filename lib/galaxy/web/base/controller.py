@@ -394,6 +394,8 @@ class UsesHistoryDatasetAssociationMixin:
 
     def get_old_display_applications( self, trans, hda ):
         display_apps = []
+        if not trans.app.config.enable_old_display_applications:
+            return display_apps
         for display_app_name in hda.datatype.get_display_types():
             link_generator = get_display_app_link_generator( display_app_name )
             display_links = link_generator.generate_links( trans, hda )
