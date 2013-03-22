@@ -168,10 +168,6 @@ def _load_macro_file(path, tool_dir):
     return _load_macros(root, tool_dir)
 
 
-def _load_macro_def(macro):
-    return list(macro.getchildren())
-
-
 def _xml_set_children(element, new_children):
     for old_child in element.getchildren():
         element.remove(old_child)
