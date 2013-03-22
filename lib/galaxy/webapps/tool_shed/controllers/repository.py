@@ -1,26 +1,47 @@
-import os, logging, re, tempfile, ConfigParser, string
-from time import gmtime, strftime
+import ConfigParser
+import logging
+import os
+import re
+import string
+import tempfile
+from time import gmtime
+from time import strftime
 from datetime import date, datetime
-from galaxy import util, web
+from galaxy import util
+from galaxy import web
 from galaxy.util.odict import odict
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.form_builder import CheckboxField, build_select_field
+from galaxy.web.form_builder import CheckboxField
+from galaxy.web.form_builder import build_select_field
 from galaxy.webapps.tool_shed import model
 from galaxy.webapps.tool_shed.model import directory_hash_id
 from galaxy.web.framework.helpers import grids
 from galaxy.util import json
-from galaxy.model.orm import and_, or_
+from galaxy.model.orm import and_
+from galaxy.model.orm import or_
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import encoding_util, metadata_util, readme_util, repository_dependency_util, review_util, tool_dependency_util, tool_util, workflow_util
+from tool_shed.util import encoding_util
+from tool_shed.util import metadata_util
+from tool_shed.util import readme_util
+from tool_shed.util import repository_dependency_util
+from tool_shed.util import review_util
+from tool_shed.util import tool_dependency_util
+from tool_shed.util import tool_util
+from tool_shed.util import workflow_util
 from tool_shed.galaxy_install import repository_util
-from galaxy.webapps.tool_shed.util import common_util, container_util
+from galaxy.webapps.tool_shed.util import common_util
+from galaxy.webapps.tool_shed.util import container_util
 import galaxy.tools
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
 
 from galaxy import eggs
 eggs.require('mercurial')
-from mercurial import hg, ui, patch, commands
+
+from mercurial import commands
+from mercurial import hg
+from mercurial import patch
+from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -1124,35 +1145,17 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         includes_tool_dependencies = False
         repo_info_dicts = []
         for tup in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
-            repository_id, changeset_revision = tup
-            repository = suc.get_repository_in_tool_shed( trans, repository_id )
-            repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-            metadata = repository_metadata.metadata
-            if not includes_tools:
-                if 'tools' in metadata:
-                    includes_tools = True
-            if not includes_tools_for_display_in_tool_panel:
-                includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
-            if not has_repository_dependencies:
-                if 'repository_dependencies' in metadata:
-                    has_repository_dependencies = True
-            if not includes_tool_dependencies:
-                if 'tool_dependencies' in metadata:
-                    includes_tool_dependencies = True
-            repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( suc.get_configured_ui(), repo_dir )
-            ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
-            repo_info_dict = repository_util.create_repo_info_dict( trans=trans,
-                                                                    repository_clone_url=repository_clone_url,
-                                                                    changeset_revision=changeset_revision,
-                                                                    ctx_rev=str( ctx.rev() ),
-                                                                    repository_owner=repository.user.username,
-                                                                    repository_name=repository.name,
-                                                                    repository=repository,
-                                                                    repository_metadata=repository_metadata,
-                                                                    tool_dependencies=None,
-                                                                    repository_dependencies=None )
+            repository_id, changeset_revision = tup            
+            repo_info_dict, cur_includes_tools, cur_includes_tool_dependencies, cur_includes_tools_for_display_in_tool_panel, cur_has_repository_dependencies = \
+                repository_util.get_repo_info_dict( trans, repository_id, changeset_revision )
+            if cur_has_repository_dependencies and not has_repository_dependencies:
+                has_repository_dependencies = True
+            if cur_includes_tools and not includes_tools:
+                includes_tools = True
+            if cur_includes_tool_dependencies and not includes_tool_dependencies:
+                includes_tool_dependencies = True
+            if cur_includes_tools_for_display_in_tool_panel and not includes_tools_for_display_in_tool_panel:
+                includes_tools_for_display_in_tool_panel = True
             repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
         return dict( includes_tools=includes_tools,
                      includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,

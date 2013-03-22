@@ -1,6 +1,12 @@
-import os, shutil, tempfile, logging, string, urllib2
+import logging
+import os
+import shutil
+import string
+import tempfile
+import urllib2
 from datetime import datetime
-from time import gmtime, strftime
+from time import gmtime
+from time import strftime
 from galaxy import util
 from galaxy.util import json
 from galaxy.web import url_for
@@ -16,8 +22,10 @@ pkg_resources.require( 'mercurial' )
 from mercurial import hg, ui, commands
 
 pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
-from elementtree.ElementTree import Element, SubElement
+from elementtree import ElementTree
+from elementtree import ElementInclude
+from elementtree.ElementTree import Element
+from elementtree.ElementTree import SubElement
 
 eggs.require( 'markupsafe' )
 import markupsafe
@@ -522,7 +530,7 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
             if changeset_revision in changeset_revisions:
                 return changeset_revision
         elif not found_after_changeset_revision and changeset_revision == after_changeset_revision:
-            # We've found the changeset in the changelog for which we need to get the next downloadable changset.
+            # We've found the changeset in the changelog for which we need to get the next downloadable changeset.
             found_after_changeset_revision = True
     return None
 
