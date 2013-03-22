@@ -48,10 +48,7 @@
   </command>
   <inputs>
     <conditional name="reference_source">
-      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
-        <option value="cached">Locally cached</option>
-        <option value="history">History</option>
-      </param>
+      <expand macro="reference_source_selector_param" />
       <when value="cached">
         <param name="input_variant" type="data" format="vcf" label="Variant file to annotate" help="-V,--variant &amp;lt;variant&amp;gt;" />
         <param name="ref_file" type="select" label="Using reference genome" help="-R,--reference_sequence &amp;lt;reference_sequence&amp;gt;">

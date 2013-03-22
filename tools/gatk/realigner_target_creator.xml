@@ -49,10 +49,7 @@
   </command>
   <inputs>
     <conditional name="reference_source">
-      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
-        <option value="cached">Locally cached</option>
-        <option value="history">History</option>
-      </param>
+      <expand macro="reference_source_selector_param" />
       <when value="cached">
         <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;">
           <validator type="unspecified_build" />
@@ -101,21 +98,12 @@
     
     <expand macro="gatk_param_type_conditional" />
     
-    <conditional name="analysis_param_type">
-      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
-        <option value="basic" selected="True">Basic</option>
-        <option value="advanced">Advanced</option>
-      </param>
-      <when value="basic">
-        <!-- Do nothing here -->
-      </when>
-      <when value="advanced">
+    <expand macro="analysis_type_conditional">
         <param name="windowSize" type="integer" value="10" label="Window size for calculating entropy or SNP clusters (windowSize)" help="-window,--windowSize &amp;lt;windowSize&amp;gt;" />
         <param name="mismatchFraction" type="float" value="0.15" label="Fraction of base qualities needing to mismatch for a position to have high entropy (mismatchFraction)" help="to disable set to &lt;= 0 or &gt; 1 (-mismatch,--mismatchFraction &amp;lt;mismatchFraction&amp;gt;)"/>
         <param name="minReadsAtLocus" type="integer" value="4" label="Minimum reads at a locus to enable using the entropy calculation (minReadsAtLocus)" help="-minReads,--minReadsAtLocus &amp;lt;minReadsAtLocus&amp;gt;" />
         <param name="maxIntervalSize" type="integer" value="500" label="Maximum interval size" help="-maxInterval,--maxIntervalSize &amp;lt;maxIntervalSize&amp;gt;" />
-      </when>
-    </conditional>
+    </expand>
   </inputs>
   <outputs>
     <data format="gatk_interval" name="output_interval" label="${tool.name} on ${on_string} (GATK intervals)" />

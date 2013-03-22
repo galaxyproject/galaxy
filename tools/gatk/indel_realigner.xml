@@ -62,10 +62,7 @@
   <inputs>
     
     <conditional name="reference_source">
-      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
-        <option value="cached">Locally cached</option>
-        <option value="history">History</option>
-      </param>
+      <expand macro="reference_source_selector_param" />
       <when value="cached">
         <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;">
           <validator type="unspecified_build" />
@@ -116,15 +113,7 @@
     
     <expand macro="gatk_param_type_conditional" />
     
-    <conditional name="analysis_param_type">
-      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
-        <option value="basic" selected="True">Basic</option>
-        <option value="advanced">Advanced</option>
-      </param>
-      <when value="basic">
-        <!-- Do nothing here -->
-      </when>
-      <when value="advanced">
+    <expand macro="analysis_type_conditional">
         
         <param name="entropy_threshold" type="float" value="0.15" label="percentage of mismatching base quality scores at a position to be considered having high entropy" help="-entropy,--entropyThreshold &amp;lt;entropyThreshold&amp;gt;" />
         <param name="simplify_bam" type="boolean" checked="False" truevalue="-simplifyBAM" falsevalue="" label="Simplify BAM" help="-simplifyBAM,--simplifyBAM"/>
@@ -139,8 +128,7 @@
         <param name="max_reads_for_consensuses" type="integer" value="120" label="Max reads (chosen randomly) used for finding the potential alternate consensuses" help="-greedy,--maxReadsForConsensuses &amp;lt;maxReadsForConsensuses&amp;gt;" />
         <param name="max_reads_for_realignment" type="integer" value="20000" label="Max reads allowed at an interval for realignment" help="-maxReads,--maxReadsForRealignment &amp;lt;maxReadsForRealignment&amp;gt;" />
         <param name="no_original_alignment_tags" type="boolean" checked="False" truevalue="--noOriginalAlignmentTags" falsevalue="" label="Don't output the original cigar or alignment start tags for each realigned read in the output bam" help="-noTags,--noOriginalAlignmentTags"/> 
-      </when>
-    </conditional>
+    </expand>
   </inputs>
   <outputs>
     <data format="bam" name="output_bam" label="${tool.name} on ${on_string} (BAM)" />

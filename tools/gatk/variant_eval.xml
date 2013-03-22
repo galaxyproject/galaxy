@@ -102,10 +102,7 @@
   <inputs>
     
     <conditional name="reference_source">
-      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
-        <option value="cached">Locally cached</option>
-        <option value="history">History</option>
-      </param>
+      <expand macro="reference_source_selector_param" />
       <when value="cached">
         <repeat name="variants" title="Variant" min="1" help="-eval,--eval &amp;lt;eval&amp;gt;">
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
@@ -149,15 +146,7 @@
     <expand macro="gatk_param_type_conditional" />
     
     
-    <conditional name="analysis_param_type">
-      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
-        <option value="basic" selected="True">Basic</option>
-        <option value="advanced">Advanced</option>
-      </param>
-      <when value="basic">
-        <!-- Do nothing here -->
-      </when>
-      <when value="advanced">
+    <expand macro="analysis_type_conditional">
         <repeat name="stratifications" title="Stratification">
           <param name="select_exps" value="" type="text" label="Stratification Expression" help="-select,--select_exps &amp;lt;select_exps&amp;gt;">
             <sanitizer>
@@ -224,8 +213,7 @@
         <param name="known_cnvs" type="data" format="bed,gatk_interval,picard_interval_list" optional="True" label="File containing tribble-readable features describing a known list of copy number variants" help="-knownCNVs,--knownCNVs &amp;lt;knownCNVs&amp;gt;" />
         <param name="strat_intervals" type="data" format="bed,gatk_interval,picard_interval_list" optional="True" label="File containing tribble-readable features for the IntervalStratificiation" help="-stratIntervals,--stratIntervals &amp;lt;stratIntervals&amp;gt;" />
         
-      </when>
-    </conditional>
+    </expand>
     
     
   </inputs>

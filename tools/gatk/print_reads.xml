@@ -45,10 +45,7 @@
   </command>
   <inputs>
     <conditional name="reference_source">
-      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
-        <option value="cached">Locally cached</option>
-        <option value="history">History</option>
-      </param>
+      <expand macro="reference_source_selector_param" />
       <when value="cached">
         <repeat name="input_bams" title="BAM file" min="1" help="-I,--input_file &amp;lt;input_file&amp;gt;">
             <param name="input_bam" type="data" format="bam" label="BAM file">

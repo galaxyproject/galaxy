@@ -273,6 +273,26 @@
       </when>
     </conditional>    
   </xml>
+  <xml name="analysis_type_conditional">
+    <conditional name="analysis_param_type">
+      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
+        <option value="basic" selected="True">Basic</option>
+        <option value="advanced">Advanced</option>
+      </param>
+      <when value="basic">
+        <!-- Do nothing here -->
+      </when>
+      <when value="advanced">
+        <yield />
+      </when>
+    </conditional>
+  </xml>
+  <xml name="reference_source_selector_param">
+    <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
+      <option value="cached">Locally cached</option>
+      <option value="history">History</option>
+    </param>
+  </xml>
   <token name="@CITATION_SECTION@">------
 
 **Citation**

@@ -129,10 +129,7 @@
   </command>
   <inputs>
     <conditional name="reference_source">
-      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
-        <option value="cached">Locally cached</option>
-        <option value="history">History</option>
-      </param>
+      <expand macro="reference_source_selector_param" />
       <when value="cached">
         <repeat name="input_bams" title="BAM file" min="1" help="-I,--input_file &amp;lt;input_file&amp;gt;">
             <param name="input_bam" type="data" format="bam" label="BAM file">
@@ -175,15 +172,7 @@
     
     <expand macro="gatk_param_type_conditional" />
     
-    <conditional name="analysis_param_type">
-      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
-        <option value="basic" selected="True">Basic</option>
-        <option value="advanced">Advanced</option>
-      </param>
-      <when value="basic">
-        <!-- Do nothing here -->
-      </when>
-      <when value="advanced">
+    <expand macro="analysis_type_conditional">
         <param name="ignore_deletion_sites" type="boolean" truevalue="--ignoreDeletionSites" falsevalue="" checked="False" label="Ignore sites consisting only of deletions" help="--ignoreDeletionSites" />
         <param name="include_deletions" type="boolean" truevalue="--includeDeletions" falsevalue="" checked="False" label="Include information on deletions" help="-dels,--includeDeletions" />
         <param name="max_base_quality" type="integer" value="127" label="Maximum quality of bases to count towards depth" help="--maxBaseQuality &amp;lt;maxBaseQuality&amp;gt;" />
@@ -199,8 +188,7 @@
         <param name="print_bin_endpoints_and_exit" type="boolean" truevalue="--printBinEndpointsAndExit" falsevalue="" checked="False" label="Print the bin values and exits immediately" help="--printBinEndpointsAndExit" />
         <param name="start" type="integer" value="1" label="Starting (left endpoint) for granular binning" help="--start &amp;lt;start&amp;gt;" />
         <param name="stop" type="integer" value="500" label="Ending (right endpoint) for granular binning" help="--stop &amp;lt;stop&amp;gt;" />
-      </when>
-    </conditional>
+    </expand>
   </inputs>
   <outputs>
     <data format="tabular" name="output_per_locus_coverage" label="${tool.name} on ${on_string} (per locus coverage)" >

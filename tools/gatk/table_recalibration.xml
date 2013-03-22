@@ -66,10 +66,7 @@
   <inputs>
     <param name="input_recal" type="data" format="csv" label="Covariates table recalibration file" help="-recalFile,--recal_file &amp;lt;recal_file&amp;gt;" />
     <conditional name="reference_source">
-      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
-        <option value="cached">Locally cached</option>
-        <option value="history">History</option>
-      </param>
+      <expand macro="reference_source_selector_param" />
       <when value="cached">
         <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;">
           <validator type="unspecified_build" />
@@ -95,15 +92,7 @@
     <expand macro="gatk_param_type_conditional" />
     
     
-    <conditional name="analysis_param_type">
-      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
-        <option value="basic" selected="True">Basic</option>
-        <option value="advanced">Advanced</option>
-      </param>
-      <when value="basic">
-        <!-- Do nothing here -->
-      </when>
-      <when value="advanced">
+    <expand macro="analysis_type_conditional">
         <conditional name="default_read_group_type">
           <param name="default_read_group_type_selector" type="select" label="Set default Read Group" help="--default_read_group">
             <option value="default" selected="True">Don't Set</option>
@@ -172,8 +161,7 @@
         <param name="smoothing" type="integer" value="1" label="smoothing" help="-sm,--smoothing &amp;lt;smoothing&amp;gt;"/>
         <param name="max_quality_score" type="integer" value="50" label="Max quality score" help="-maxQ,--max_quality_score &amp;lt;max_quality_score&amp;gt;"/>
         <param name="do_not_write_original_quals" type="boolean" checked="False" truevalue="--doNotWriteOriginalQuals" falsevalue="" label="Do Not Write Original Quality tag" help="-noOQs,--doNotWriteOriginalQuals"/>
-      </when>
-    </conditional>
+    </expand>
   </inputs>
   <outputs>
     <data format="bam" name="output_bam" label="${tool.name} on ${on_string} (BAM)" />

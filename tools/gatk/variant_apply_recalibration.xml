@@ -43,10 +43,7 @@
   </command>
   <inputs>
     <conditional name="reference_source">
-      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
-        <option value="cached">Locally cached</option>
-        <option value="history">History</option>
-      </param>
+      <expand macro="reference_source_selector_param" />
       <when value="cached">
         <repeat name="variants" title="Variant" min="1" help="-input,--input &amp;lt;input&amp;gt;">
           <param name="input_variants" type="data" format="vcf" label="Variant file to annotate"/>

@@ -54,10 +54,7 @@
   <inputs>
     
     <conditional name="reference_source">
-      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
-        <option value="cached">Locally cached</option>
-        <option value="history">History</option>
-      </param>
+      <expand macro="reference_source_selector_param" />
       <when value="cached">
         <repeat min="1" name="input_variants" title="Variants to Merge" help="Records will be prioritized in the order that you list them here (-V,--variant &amp;lt;variant&amp;gt;)">
           <param name="input_variant" type="data" format="vcf" label="Input variant file" />
@@ -93,15 +90,7 @@
     <expand macro="gatk_param_type_conditional" />
     
     
-    <conditional name="analysis_param_type">
-      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
-        <option value="basic" selected="True">Basic</option>
-        <option value="advanced">Advanced</option>
-      </param>
-      <when value="basic">
-        <!-- Do nothing here -->
-      </when>
-      <when value="advanced">
+    <expand macro="analysis_type_conditional">
         <param name="filtered_records_merge_type" type="select" label="How should we deal with records seen at the same site in the VCF, but with different FILTER fields?" help="-filteredRecordsMergeType,--filteredrecordsmergetype &amp;lt;filteredrecordsmergetype&amp;gt;" >
           <option value="KEEP_IF_ANY_UNFILTERED" selected="true"/>
           <option value="KEEP_IF_ALL_UNFILTERED" />
@@ -115,8 +104,7 @@
         <param name="assume_identical_samples" checked="false" type="boolean" truevalue="--assumeIdenticalSamples" falsevalue="" label="If true, assume input VCFs have identical sample sets and disjoint calls so that one can simply perform a merge sort to combine the VCFs into one, drastically reducing the runtime." help="-assumeIdenticalSamples,--assumeIdenticalSamples" />
         <param name="minimum_n" type="integer" value="1" label="Combine variants and output site only if variant is present in at least N input files." help="-minN,--minimumN &amp;lt;minimumN&amp;gt;"/>
         
-      </when>
-    </conditional>
+    </expand>
     
     
   </inputs>

@@ -83,10 +83,7 @@
   </command>
   <inputs>
     <conditional name="reference_source">
-      <param name="reference_source_selector" type="select" label="Choose the source for the reference list">
-        <option value="cached">Locally cached</option>
-        <option value="history">History</option>
-      </param>
+      <expand macro="reference_source_selector_param" />
       <when value="cached">
         <param name="input_bam" type="data" format="bam" label="BAM file" help="-I,--input_file &amp;lt;input_file&amp;gt;">
           <validator type="unspecified_build" />
@@ -155,15 +152,7 @@
     
     <expand macro="gatk_param_type_conditional" />
     
-    <conditional name="analysis_param_type">
-      <param name="analysis_param_type_selector" type="select" label="Basic or Advanced Analysis options">
-        <option value="basic" selected="True">Basic</option>
-        <option value="advanced">Advanced</option>
-      </param>
-      <when value="basic">
-        <!-- Do nothing here -->
-      </when>
-      <when value="advanced">
+    <expand macro="analysis_type_conditional">
         <conditional name="default_read_group_type">
           <param name="default_read_group_type_selector" type="select" label="Set default Read Group" help="--default_read_group">
             <option value="default" selected="True">Don't Set</option>
@@ -227,8 +216,7 @@
         </conditional>
         <param name="window_size_nqs" type="integer" value="5" label="Window size used by MinimumNQSCovariate" help="window_size_nqs"/>
         <param name="homopolymer_nback" type="integer" value="7" label="number of previous bases to look at in HomopolymerCovariate" help="-nback,--homopolymer_nback &amp;lt;homopolymer_nback&amp;gt;" />
-      </when>
-    </conditional>
+    </expand>
   </inputs>
   <outputs>
     <data format="csv" name="output_recal" label="${tool.name} on ${on_string} (Covariate File)" />
