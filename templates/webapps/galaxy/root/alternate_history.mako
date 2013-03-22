@@ -28,7 +28,7 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
         ##    "You are over your disk ...w your allocated quota.",
         ##    "Show deleted",
         ##    "Show hidden",
-        ##    "Display data in browser",
+        ##    "View data",
         ##    "Edit Attributes",
         ##    "Download",
         ##    "View details",
@@ -60,7 +60,7 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
             # from history_common.mako
             'Download',
             'Display Data',
-            'Display data in browser',
+            'View data',
             'Edit attributes',
             'Delete',
             'Job is waiting to run',

@@ -50,8 +50,11 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             elif data_type == 'genome_data':
                 rval = self._get_genome_data( trans, dataset, kwd.get('dbkey', None) )
             else:
-                # Default: return dataset as API value.
-                rval = dataset.get_api_value()
+                # Default: return dataset as dict.
+                if hda_ldda == 'hda':
+                    rval = self.get_hda_dict( trans, dataset )
+                else:
+                    rval = dataset.get_api_value()
                 
         except Exception, e:
             rval = "Error in dataset API at listing contents: " + str( e )

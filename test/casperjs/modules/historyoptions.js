@@ -21,23 +21,65 @@ HistoryOptions.prototype.toString = function toString(){
 
 // -------------------------------------------------------------------
 /* TODO:
+    some of the fns below can be applied to any popup
 
 
 */
+// =================================================================== internal
+var xpath = require( 'casper' ).selectXPath;
+
 // =================================================================== API (external)
 /** Just open the menu
+ *  @param {Function} fn function to call when the menu opens
+ *  @returns {Any} the return value of fn
  */
-HistoryOptions.prototype.openMenu = function openMenu(){
-    this.spaceghost.click( this.data.selectors.button );
+HistoryOptions.prototype.openMenu = function openMenu( fn ){
+    return this.spaceghost.jumpToTop( function(){
+        this.click( this.historyoptions.data.selectors.button );
+        return fn.call( this );
+    });
 };
 
 /** Click an option by Label
+ *  @param {String} optionLabel the label of the option to click (can be partial?)
+ *  @returns {SpaceGhost} for chaining
  */
 HistoryOptions.prototype.clickOption = function clickOption( optionLabel ){
-    this.openMenu();
-    // casperjs clickLabel
-    var optionXpath = this.data.selectors.optionXpathByLabelFn( optionLabel );
-    this.spaceghost.click( optionXpath );
+    this.openMenu( function(){
+        this.click( this.historyoptions.data.selectors.optionXpathByLabelFn( optionLabel ) );
+        // shouldnt need to clear - clicking an option will do that
+    });
+    return this.spaceghost;
+};
+
+/** Is the history option with the given label showing as toggled?
+ *  @param {String} optionLabel the label of the option to check (can be partial?)
+ *  @returns {Boolean} true if the option is on, false if off OR not a toggle
+ */
+HistoryOptions.prototype.isOn = function isOn( optionLabel ){
+    return this.openMenu( function(){
+        var toggleIconInfo = this.elementInfoOrNull(
+            this.historyoptions.data.selectors.optionIsOnXpathByLabelFn( optionLabel ) );
+        // have to clear manually
+        this.click( 'body' );
+        return !!toggleIconInfo;
+    });
+};
+
+/** Toggle the option - optionally forcing to on or off.
+ *  @param {String} optionLabel the label of the option to check (can be partial?)
+ *  @param {Boolean} force  if true ensure option is on, if false ensure it's off,
+ *      if undefined simply toggle
+ *  @returns {Boolean} true if the option is now on, false if now off or not a toggle
+ */
+HistoryOptions.prototype.toggle = function toggle( optionLabel, force ){
+    var isOn = this.isOn( optionLabel );
+    if( ( force === false && isOn )
+    ||  ( force === true  && !isOn )
+    ||  ( force === undefined ) ){
+        return this.clickOption( optionLabel );
+    }
+    return force;
 };
 
 // -------------------------------------------------------------------
@@ -101,22 +143,68 @@ HistoryOptions.prototype.clickOption = function clickOption( optionLabel ){
 //};
 
 
-// -------------------------------------------------------------------
+// ------------------------------------------------------------------- check the togglable options
 // these are easy, one click options (they don't open a new page)
+/** Is 'Include Deleted Datasets' on (accrd. to the menu)?
+ */
+HistoryOptions.prototype.deletedAreIncluded = function deletedAreIncluded(){
+    return this.isOn( this.data.labels.options.includeDeleted );
+};
+/** Is 'Include Deleted Datasets' on (accrd. to the menu)?
+ */
+HistoryOptions.prototype.hiddenAreIncluded = function hiddenAreIncluded(){
+    return this.isOn( this.data.labels.options.includeHidden );
+};
+
+// ------------------------------------------------------------------- options that control the hpanel
 /** corresponds to history options menu: 'Collapse Expanded Datasets'
  */
-HistoryOptions.prototype.collapseExpanded = function collapseExpanded(){
-    this.clickOption( this.data.labels.options.collapseExpanded );
+HistoryOptions.prototype.collapseExpanded = function collapseExpanded( then ){
+    return this.spaceghost.then( function(){
+        this.historyoptions.clickOption( this.historyoptions.data.labels.options.collapseExpanded );
+        this.wait( 500, then );
+    });
 };
-/** corresponds to history options menu: 'Include Deleted Datasets'
+
+/** set 'Include Deleted Datasets' to on
+ *  @param {Function} then  casper step to run when option is set
  */
-HistoryOptions.prototype.includeDeleted = function includeDeleted(){
-    this.clickOption( this.data.labels.options.includeDeleted );
+HistoryOptions.prototype.includeDeleted = function includeDeleted( then ){
+    return this.spaceghost.then( function(){
+        this.historyoptions.toggle( this.historyoptions.data.labels.options.includeDeleted, true );
+        this.historypanel.waitForHdas( then );
+    });
 };
-/** corresponds to history options menu: 'Include Hidden Datasets'
+
+/** set 'Include Deleted Datasets' to off
+ *  @param {Function} then  casper step to run when option is set
  */
-HistoryOptions.prototype.includeHidden = function includeHidden(){
-    this.clickOption( this.data.labels.options.includeHidden );
+HistoryOptions.prototype.excludeDeleted = function excludeDeleted( then ){
+    return this.spaceghost.then( function(){
+        this.historyoptions.toggle( this.historyoptions.data.labels.options.includeDeleted, false );
+        //TODO:?? this puts in the history frame. Is that what we want?
+        this.historypanel.waitForHdas( then );
+    });
+};
+
+/** set 'Include Hidden Datasets' to on
+ *  @param {Function} then  casper step to run when option is set
+ */
+HistoryOptions.prototype.includeHidden = function includeHidden( then ){
+    return this.spaceghost.then( function(){
+        this.historyoptions.toggle( this.historyoptions.data.labels.options.includeHidden, true );
+        this.historypanel.waitForHdas( then );
+    });
+};
+
+/** set 'Include Hidden Datasets' to off
+ *  @param {Function} then  casper step to run when option is set
+ */
+HistoryOptions.prototype.excludeHidden = function excludeHidden( then ){
+    return this.spaceghost.then( function(){
+        this.historyoptions.toggle( this.historyoptions.data.labels.options.includeHidden, false );
+        this.historypanel.waitForHdas( then );
+    });
 };
 
 
@@ -129,6 +217,10 @@ HistoryOptions.prototype.data = {
         menu        : '#history-options-button-menu',
         optionXpathByLabelFn : function optionXpathByLabelFn( label ){
             return xpath( '//ul[@id="history-options-button-menu"]/li/a[text()[contains(.,"' + label + '")]]' );
+        },
+        optionIsOnXpathByLabelFn : function optionIsOnXpathByLabelFn( label ){
+            return xpath( '//ul[@id="history-options-button-menu"]/li/a[text()[contains(.,"' + label + '")]]'
+                        + '/span[@class="fa-icon-ok"]' );
         }
     },
     labels : {

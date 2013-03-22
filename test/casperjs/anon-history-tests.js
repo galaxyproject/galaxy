@@ -68,15 +68,10 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
 });
 
 // ------------------------------------------------------------------- check the empty history for well formedness
-// grab the history frame bounds for mouse later tests
-spaceghost.then( function(){
-    historyFrameInfo = this.getElementInfo( 'iframe[name="galaxy_history"]' );
-    //this.debug( 'historyFrameInfo:' + this.jsonStr( historyFrameInfo ) );
-});
-
 spaceghost.thenOpen( spaceghost.baseUrl, function testPanelStructure(){
     this.test.comment( 'history panel for anonymous user, new history' );
-    this.withFrame( spaceghost.data.selectors.frames.history, function(){
+
+    this.withHistoryPanel( function(){
         this.test.comment( "frame should have proper url and title: 'History'" );
         this.test.assertMatch( this.getCurrentUrl(), /\/history/, 'Found history frame url' );
         this.test.assertTitle( this.getTitle(), 'History', 'Found history frame title' );
@@ -103,15 +98,12 @@ spaceghost.thenOpen( spaceghost.baseUrl, function testPanelStructure(){
             'Message contains "' + emptyMsgStr + '"' );
 
         this.test.comment( 'name should have a tooltip with info on anon-user name editing' );
-        // mouse over to find tooltip
-        this.historypanel.hoverOver( nameSelector, function testingHover(){
-            this.test.assertExists( tooltipSelector, "Found tooltip after name hover" );
-            this.test.assertSelectorHasText( tooltipSelector, anonNameTooltip );
-        }, historyFrameInfo );
+        this.historypanel.hoverOver( nameSelector );
+        this.test.assertExists( tooltipSelector, "Found tooltip after name hover" );
+        this.test.assertSelectorHasText( tooltipSelector, anonNameTooltip );
 
         this.test.comment( 'name should NOT be editable when clicked by anon-user' );
-        this.assertDoesntHaveClass( nameSelector, editableTextClass,
-            "Name field is not classed as editable text" );
+        this.assertDoesntHaveClass( nameSelector, editableTextClass, "Name field is not classed as editable text" );
         this.click( nameSelector );
         this.test.assertDoesntExist( editableTextInput, "Clicking on name does not create an input" );
     });
@@ -120,12 +112,13 @@ spaceghost.thenOpen( spaceghost.baseUrl, function testPanelStructure(){
 // ------------------------------------------------------------------- anon user can upload file
 spaceghost.then( function testAnonUpload(){
     this.test.comment( 'anon-user should be able to upload files' );
+
     spaceghost.tools.uploadFile( filepathToUpload, function uploadCallback( _uploadInfo ){
-        this.debug( 'uploaded HDA info: ' + this.jsonStr( _uploadInfo ) );
+        this.debug( 'uploaded HDA info: ' + this.jsonStr( this.quickInfo( _uploadInfo.hdaElement ) ) );
         var hasHda = _uploadInfo.hdaElement,
             hasClass = _uploadInfo.hdaElement.attributes[ 'class' ],
             hasOkClass = _uploadInfo.hdaElement.attributes[ 'class' ].indexOf( 'historyItem-ok' ) !== -1;
-        this.test.assert( ( hasHda && hasClass && hasOkClass ), "Uploaded file: " + _uploadInfo.name );
+        this.test.assert( ( hasHda && hasClass && hasOkClass ), "Uploaded file: " + _uploadInfo.hdaElement.text );
         testUploadInfo = _uploadInfo;
     });
 });
@@ -134,19 +127,18 @@ spaceghost.then( function testAnonUpload(){
     this.test.assertNotVisible( emptyMsgSelector, 'Empty history message is not visible' );
 });
 
-
 // ------------------------------------------------------------------- anon user can run tool on file
 
 // ------------------------------------------------------------------- anon user registers/logs in -> same history
 spaceghost.user.loginOrRegisterUser( email, password );
 spaceghost.thenOpen( spaceghost.baseUrl, function(){
-
     this.test.comment( 'anon-user should login and be associated with previous history' );
+
     var loggedInAs = spaceghost.user.loggedInAs();
     this.test.assert( loggedInAs === email, 'loggedInAs() matches email: "' + loggedInAs + '"' );
 
-    this.withFrame( spaceghost.data.selectors.frames.history, function(){
-        var hdaInfo = this.historypanel.hdaElementInfoByTitle( testUploadInfo.name, testUploadInfo.hid );
+    this.historypanel.waitForHdas( function(){
+        var hdaInfo = this.historypanel.hdaElementInfoByTitle( testUploadInfo.hdaElement.text );
         this.test.assert( hdaInfo !== null, "After logging in - found a matching hda by name and hid" );
         if( hdaInfo ){
             this.test.assert( testUploadInfo.hdaElement.attributes.id === hdaInfo.attributes.id,
@@ -155,16 +147,17 @@ spaceghost.thenOpen( spaceghost.baseUrl, function(){
     });
 });
 
+// ------------------------------------------------------------------- logs out -> new history
 spaceghost.user.logout();
 spaceghost.thenOpen( spaceghost.baseUrl, function(){
     this.test.comment( 'logging out should create a new, anonymous history' );
-    this.withFrame( spaceghost.data.selectors.frames.history, function(){
+
+    this.historypanel.waitForHdas( function(){
         this.test.assertSelectorHasText( nameSelector, unnamedName, 'History name is ' + unnamedName );
         this.test.assertSelectorHasText( emptyMsgSelector, emptyMsgStr,
             'Message contains "' + emptyMsgStr + '"' );
     });
 });
-
 
 // ===================================================================
 spaceghost.run( function(){

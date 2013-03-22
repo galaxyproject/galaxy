@@ -23,7 +23,7 @@ Creates quality statistics report for the given SOLiD quality score file.
 
 .. class:: infomark
 
-**TIP:** This statistics report can be used as input for **Quality Boxplot for SOLiD data** tool.
+**TIP:** This statistics report can be used as input for **Quality Boxplot for SOLiD data** and **Nucleotides Distribution** tool.
 
 -----
 
