@@ -247,6 +247,16 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # them).
 #display_servers = hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu
 
+# To disable the old-style display applications that are hardcoded into datatype classes,
+# set enable_old_display_applications = False.
+# This may be desirable due to using the new-style, XML-defined, display applications that
+# have been defined for many of the datatypes that have the old-style.
+# There is also a potential security concern with the old-style applications,
+# where a malicious party could provide a link that appears to reference the Galaxy server,
+# but contains a redirect to a third-party server, tricking a Galaxy user to access said
+# site.
+#enable_old_display_applications = True
+
 # -- Next gen LIMS interface on top of existing Galaxy Sample/Request management code.
 
 use_nglims = False

@@ -700,6 +700,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
     @web.expose
     def display_at( self, trans, dataset_id, filename=None, **kwd ):
         """Sets up a dataset permissions so it is viewable at an external site"""
+        if not trans.app.config.enable_old_display_applications:
+            return trans.show_error_message( "This method of accessing external display applications has been disabled by a Galaxy administrator." )
         site = filename
         data = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dataset_id )
         if not data:
