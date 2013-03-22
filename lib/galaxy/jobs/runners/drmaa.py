@@ -210,7 +210,7 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
             # report if you experience problems with this.
             except ( drmaa.InvalidJobException, drmaa.InternalException ), e:
                 # we should only get here if an orphaned job was put into the queue at app startup
-                log.debug( "(%s/%s) job left DRM queue with following message: %s" % ( galaxy_id_tag, external_job_id, e ) )
+                log.info( "(%s/%s) job left DRM queue with following message: %s" % ( galaxy_id_tag, external_job_id, e ) )
                 self.work_queue.put( ( self.finish_job, ajs ) )
                 continue
             except drmaa.DrmCommunicationException, e:
@@ -230,7 +230,8 @@ class DRMAAJobRunner( AsynchronousJobRunner ):
                 ajs.running = True
                 ajs.job_wrapper.change_state( model.Job.states.RUNNING )
             if state in ( drmaa.JobState.DONE, drmaa.JobState.FAILED ):
-                self.work_queue.put( ( self.finish_job, ajs ) )
+                if ajs.job_wrapper.get_state() != model.Job.states.DELETED:
+                    self.work_queue.put( ( self.finish_job, ajs ) )
                 continue
             ajs.old_state = state
             new_watched.append( ajs )

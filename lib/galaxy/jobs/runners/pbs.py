@@ -223,7 +223,7 @@ class PBSJobRunner( AsynchronousJobRunner ):
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
         # Superclass method has some basic sanity checks
-        super( LocalJobRunner, self ).queue_job( job_wrapper )
+        super( PBSJobRunner, self ).queue_job( job_wrapper )
         if not job_wrapper.is_ready:
             return
 
@@ -394,6 +394,8 @@ class PBSJobRunner( AsynchronousJobRunner ):
             try:
                 status = statuses[job_id]
             except KeyError:
+                if pbs_job_state.job_wrapper.get_state() == model.Job.states.DELETED:
+                    continue
                 try:
                     # Recheck to make sure it wasn't a communication problem
                     self.check_single_job( pbs_server_name, job_id )

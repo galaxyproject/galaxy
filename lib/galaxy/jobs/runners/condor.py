@@ -205,8 +205,9 @@ class CondorJobRunner( AsynchronousJobRunner ):
                 # Will switching from RUNNING to QUEUED confuse Galaxy?
                 #cjs.job_wrapper.change_state( model.Job.states.QUEUED )
             if job_complete:
-                log.debug( "(%s/%s) job has completed" % ( galaxy_id_tag, job_id ) )
-                self.work_queue.put( ( self.finish_job, cjs ) )
+                if cjs.job_wrapper.get_state() != model.Job.states.DELETED:
+                    log.debug( "(%s/%s) job has completed" % ( galaxy_id_tag, job_id ) )
+                    self.work_queue.put( ( self.finish_job, cjs ) )
                 continue
             if job_failed:
                 log.debug( "(%s/%s) job failed" % ( galaxy_id_tag, job_id ) )
