@@ -1,2 +1,64 @@
 <macros>
+  <template name="standard_gatk_options">      
+    ##start standard gatk options
+    #if $gatk_param_type.gatk_param_type_selector == "advanced":
+        #for $pedigree in $gatk_param_type.pedigree:
+            -p '--pedigree "${pedigree.pedigree_file}"'
+        #end for
+        #for $pedigree_string in $gatk_param_type.pedigree_string_repeat:
+            -p '--pedigreeString "${pedigree_string.pedigree_string}"'
+        #end for
+        -p '--pedigreeValidationType "${gatk_param_type.pedigree_validation_type}"'
+        #for $read_filter in $gatk_param_type.read_filter:
+            -p '--read_filter "${read_filter.read_filter_type.read_filter_type_selector}"
+            ###raise Exception( str( dir( $read_filter ) ) )
+            #for $name, $param in $read_filter.read_filter_type.iteritems():
+                #if $name not in [ "__current_case__", "read_filter_type_selector" ]:
+                    #if hasattr( $param.input, 'truevalue' ):
+                        ${param}
+                    #else:
+                        --${name} "${param}"
+                    #end if
+                #end if
+            #end for
+            '
+        #end for
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_interval_repeat ):
+            -d "--intervals" "${input_intervals.input_intervals}" "${input_intervals.input_intervals.ext}" "input_intervals_${interval_count}"
+        #end for
+        
+        #for $interval_count, $input_intervals in enumerate( $gatk_param_type.input_exclude_interval_repeat ):
+            -d "--excludeIntervals" "${input_intervals.input_exclude_intervals}" "${input_intervals.input_exclude_intervals.ext}" "input_exlude_intervals_${interval_count}"
+        #end for
+
+        -p '--interval_set_rule "${gatk_param_type.interval_set_rule}"'
+        
+        -p '--downsampling_type "${gatk_param_type.downsampling_type.downsampling_type_selector}"'
+        #if str( $gatk_param_type.downsampling_type.downsampling_type_selector ) != "NONE":
+            -p '--${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_type_selector} "${gatk_param_type.downsampling_type.downsample_to_type.downsample_to_value}"'
+        #end if
+        -p '
+        --baq "${gatk_param_type.baq}"
+        --baqGapOpenPenalty "${gatk_param_type.baq_gap_open_penalty}"
+        ${gatk_param_type.use_original_qualities}
+        --defaultBaseQualities "${gatk_param_type.default_base_qualities}"
+        --validation_strictness "${gatk_param_type.validation_strictness}"
+        --interval_merging "${gatk_param_type.interval_merging}"
+        ${gatk_param_type.disable_experimental_low_memory_sharding}
+        ${gatk_param_type.non_deterministic_random_seed}
+        '
+        #for $rg_black_list_count, $rg_black_list in enumerate( $gatk_param_type.read_group_black_list_repeat ):
+            #if $rg_black_list.read_group_black_list_type.read_group_black_list_type_selector == "file":
+                -d "--read_group_black_list" "${rg_black_list.read_group_black_list_type.read_group_black_list}" "txt" "input_read_group_black_list_${rg_black_list_count}"
+            #else
+                -p '--read_group_black_list "${rg_black_list.read_group_black_list_type.read_group_black_list}"'
+            #end if
+        #end for
+    #end if
+    
+    #if str( $reference_source.reference_source_selector ) == "history":
+        -d "-R" "${reference_source.ref_file}" "${reference_source.ref_file.ext}" "gatk_input"
+    #end if
+    ##end standard gatk options
+  </template>
 </macros>
