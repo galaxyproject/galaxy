@@ -30,6 +30,7 @@ import re
 
 from galaxy.model import HistoryDatasetAssociation, LibraryDatasetDatasetAssociation, History, Library, LibraryFolder, LibraryDataset
 from galaxy.model import StoredWorkflowTagAssociation, StoredWorkflow, HistoryTagAssociation, ExtendedMetadata, ExtendedMetadataIndex
+from galaxy.model import ToolVersion
 
 from sqlalchemy import or_, and_
 from sqlalchemy.orm import aliased
@@ -236,6 +237,22 @@ class LibraryDatasetView(ViewQueryBaseClass):
     def search(self, trans):
         self.query = trans.sa_session.query( LibraryDataset )
 
+
+
+##################
+#Tool Searching
+##################
+
+class ToolView(ViewQueryBaseClass):
+    VIEW_NAME = "tool"
+    FIELDS = { 
+        'tool_id' : ViewField('name', sqlalchemy_field=ToolVersion.tool_id ),
+        'id' : ViewField('id', sqlalchemy_field=ToolVersion.id) 
+    }
+
+    def search(self, trans):
+        self.query = trans.sa_session.query( ToolVersion )
+
 ##################
 #History Dataset Searching
 ##################
@@ -347,7 +364,8 @@ view_mapping = {
     'history_dataset' : HistoryDatasetView,
     'hda' : HistoryDatasetView,
     'history' : HistoryView,
-    'workflow' : WorkflowView
+    'workflow' : WorkflowView,
+    'tool' : ToolView
 }
 
 """
