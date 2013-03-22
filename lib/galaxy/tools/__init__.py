@@ -57,7 +57,7 @@ from galaxy.visualization.genome.visual_analytics import TracksterConfig
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from tool_shed.util import shed_util_common
-from .loader import load_tool
+from .loader import load_tool, template_macro_params
 
 log = logging.getLogger( __name__ )
 
@@ -1246,6 +1246,7 @@ class Tool( object ):
         # thus hardcoded)  FIXME: hidden parameters aren't
         # parameters at all really, and should be passed in a different
         # way, making this check easier.
+        self.template_macro_params = template_macro_params(root)
         for param in self.inputs.values():
             if not isinstance( param, ( HiddenToolParameter, BaseURLToolParameter ) ):
                 self.input_required = True
@@ -2367,7 +2368,7 @@ class Tool( object ):
         `to_param_dict_string` method of the associated input.
         """
         param_dict = dict()
-
+        param_dict.update(self.template_macro_params)
         # All parameters go into the param_dict
         param_dict.update( incoming )
 

@@ -12,22 +12,51 @@ def load_tool(path):
     """
     tree = parse_xml(path)
     root = tree.getroot()
-    macros_el = root.find('macros')
-    tool_dir = os.path.dirname(path)
 
-    if macros_el:
-        macro_els = _load_macros(macros_el, tool_dir)
-        _xml_set_children(macros_el, macro_els)
+    _import_macros(root, path)
 
-        macro_dict = dict([(macro_el.get("name"), list(macro_el.getchildren())) \
-            for macro_el in macro_els \
-            if macro_el.get('type') == 'xml'])
-        _expand_macros([root], macro_dict)
+    # Expand xml macros
+    macro_dict = _macros_of_type(root, 'xml', lambda el: list(el.getchildren()))
+    _expand_macros([root], macro_dict)
 
     return tree
 
 
+def template_macro_params(root):
+    """
+    Look for template macros and populate param_dict (for cheetah)
+    with these.
+    """
+    param_dict = {}
+    macro_dict = _macros_of_type(root, 'template', lambda el: el.text)
+    for key, value in macro_dict.iteritems():
+        param_dict[key] = value
+    return param_dict
+
+
+def _import_macros(root, path):
+    tool_dir = os.path.dirname(path)
+    macros_el = root.find('macros')
+    if macros_el:
+        macro_els = _load_macros(macros_el, tool_dir)
+        _xml_set_children(macros_el, macro_els)
+
+
+def _macros_of_type(root, type, el_func):
+    macros_el = root.find('macros')
+    macro_dict = {}
+    if macros_el:
+        macro_els = macros_el.findall('macro')
+        macro_dict = dict([(macro_el.get("name"), el_func(macro_el)) \
+            for macro_el in macro_els \
+            if macro_el.get('type') == type])
+    return macro_dict
+
+
 def _expand_macros(elements, macros):
+    if not macros:
+        return
+
     for element in elements:
         # HACK for elementtree, newer implementations (etree/lxml) won't
         # require this parent_map data structure but elementtree does not
@@ -35,7 +64,6 @@ def _expand_macros(elements, macros):
         parent_map = dict((c, p) for p in element.getiterator() for c in p)
         for expand_el in element.findall('.//expand'):
             macro_name = expand_el.get('macro')
-            print macros.keys()
             macro_def = deepcopy(macros[macro_name])  # deepcopy needed?
 
             yield_els = [yield_el for macro_def_el in macro_def for yield_el in macro_def_el.findall('.//yield')]
@@ -75,7 +103,7 @@ def _load_embedded_macros(macros_el, tool_dir):
 
     # type shortcuts (<xml> is a shortcut for <macro type="xml",
     # likewise for <template>.
-    typed_tag = ['xml']
+    typed_tag = ['template', 'xml']
     for tag in typed_tag:
         macro_els = []
         if macros_el:
@@ -260,5 +288,20 @@ def test_loader():
         </xml>
     </macros>
 </tool>''')
-        xml = tool_dir.load(preprocess=True)
+        xml = tool_dir.load()
         assert xml.find("inputs") is not None
+
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool>
+    <command interpreter="python">tool_wrapper.py
+    #include source=$tool_params
+    </command>
+    <macros>
+        <template name="tool_params">-a 1 -b 2</template>
+    </macros>
+</tool>
+''')
+        xml = tool_dir.load()
+        params_dict = template_macro_params(xml.getroot())
+        assert params_dict['tool_params'] == "-a 1 -b 2"
