@@ -62,8 +62,15 @@ def _expand_tokens(elements, tokens):
         return
 
     for element in elements:
-        if element.text:
-            element.text = _expand_tokens_str(element.text, tokens)
+        value = element.text
+        if value:
+            new_value = _expand_tokens_str(element.text, tokens)
+            if not (new_value is value):
+                element.text = new_value
+        for key, value in element.attrib.iteritems():
+            new_value = _expand_tokens_str(value, tokens)
+            if not (new_value is value):
+                element.attrib[key] = new_value
         _expand_tokens(list(element.getchildren()), tokens)
 
 
@@ -342,3 +349,19 @@ def test_loader():
         xml = tool_dir.load()
         help_el = xml.find("help")
         assert help_el.text == "The citation.", help_el.text
+
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool>
+    <macros>
+        <token name="@TAG_VAL@">The value.</token>
+    </macros>
+    <another>
+        <tag value="@TAG_VAL@" />
+    </another>
+</tool>
+''')
+        xml = tool_dir.load()
+        tag_el = xml.find("another").find("tag")
+        value = tag_el.get('value')
+        assert value == "The value.", value
