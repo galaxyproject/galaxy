@@ -6,13 +6,9 @@ import os
 import time
 import glob
 import logging
-import threading
-import subprocess
-
-from Queue import Queue, Empty
 
 from galaxy import model
-
+from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
 log = logging.getLogger( __name__ )
@@ -59,6 +55,18 @@ class ShellJobRunner( AsynchronousJobRunner ):
         shell = self.cli_shells[shell_params['plugin']](**shell_params)
         job_interface = self.cli_job_interfaces[job_params['plugin']](**job_params)
         return shell, job_interface
+
+    def url_to_destination( self, url ):
+        params = {}
+        shell_params, job_params = url.split('/')[2:4]
+        # split 'foo=bar&baz=quux' into { 'foo' : 'bar', 'baz' : 'quux' }
+        shell_params = dict ( [ ( 'shell_' + k, v ) for k, v in [ kv.split('=', 1) for kv in shell_params.split('&') ] ] )
+        job_params = dict ( [ ( 'job_' + k, v ) for k, v in [ kv.split('=', 1) for kv in job_params.split('&') ] ] )
+        params.update( shell_params )
+        params.update( job_params )
+        log.debug("Converted URL '%s' to destination runner=cli, params=%s" % (url, params))
+        # Create a dynamic JobDestination
+        return JobDestination(runner='cli', params=params)
 
     def parse_destination_params( self, params ):
         shell_params = dict((k.replace('shell_', '', 1), v) for k, v in params.items() if k.startswith('shell_'))
@@ -148,6 +156,8 @@ class ShellJobRunner( AsynchronousJobRunner ):
             old_state = ajs.old_state
             state = job_states.get(external_job_id, None)
             if state is None:
+                if ajs.job_wrapper.get_state() == model.Job.states.DELETED:
+                    continue
                 log.debug("(%s/%s) job not found in batch state check" % ( id_tag, external_job_id ) )
                 shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)
                 shell, job_interface = self.get_cli_plugins(shell_params, job_params)
@@ -193,41 +203,17 @@ class ShellJobRunner( AsynchronousJobRunner ):
             job_states.update(job_interface.parse_status(cmd_out.stdout, job_ids))
         return job_states
 
-    def finish_job( self, ajs ):
+    def finish_job( self, job_state ):
+        """For recovery of jobs started prior to standardizing the naming of
+        files in the AsychronousJobState object
         """
-        Get the output/error for a finished job, pass to `job_wrapper.finish`
-        and cleanup all the DRM temporary files.
-        """
-        ofile = ajs.output_file
-        efile = ajs.error_file
-        ecfile = ajs.exit_code_file
-        job_file = ajs.job_file
-        # collect the output
-        # wait for the files to appear
-        which_try = 0
-        while which_try < (self.app.config.retry_job_output_collection + 1):
-            try:
-                ofh = file(ofile, "r")
-                efh = file(efile, "r")
-                ecfh = file(ecfile, "r")
-                stdout = ofh.read( 32768 )
-                stderr = efh.read( 32768 )
-                exit_code = ecfh.read(32)
-                which_try = (self.app.config.retry_job_output_collection + 1)
-            except:
-                if which_try == self.app.config.retry_job_output_collection:
-                    stdout = ''
-                    stderr = 'Job output not returned from cluster'
-                    exit_code = 0
-                    log.debug( stderr )
-                else:
-                    time.sleep(1)
-                which_try += 1
-
-        try:
-            ajs.job_wrapper.finish( stdout, stderr, exit_code )
-        except:
-            log.exception("Job wrapper finish method failed")
+        old_ofile = "%s.gjout" % os.path.join(job_state.job_wrapper.working_directory, job_state.job_wrapper.get_id_tag())
+        if os.path.exists( old_ofile ):
+            job_state.output_file = old_ofile
+            job_state.error_file = "%s.gjerr" % os.path.join(job_state.job_wrapper.working_directory, job_state.job_wrapper.get_id_tag())
+            job_state.exit_code_file = "%s.gjec" % os.path.join(job_state.job_wrapper.working_directory, job_state.job_wrapper.get_id_tag())
+            job_state.job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, job_state.job_wrapper.get_id_tag())
+        super( ShellJobRunner, self ).finish_job( job_state )
 
     def stop_job( self, job ):
         """Attempts to delete a dispatched job"""
@@ -251,7 +237,6 @@ class ShellJobRunner( AsynchronousJobRunner ):
         ajs.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
         ajs.job_destination = job_wrapper.job_destination
-        self.__old_state_paths( ajs )
         if job.state == model.Job.states.RUNNING:
             log.debug( "(%s/%s) is still in running state, adding to the runner monitor queue" % ( job.id, job.job_runner_external_id ) )
             ajs.old_state = model.Job.states.RUNNING
@@ -262,15 +247,3 @@ class ShellJobRunner( AsynchronousJobRunner ):
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put( ajs )
-
-    def __old_state_paths( self, ajs ):
-        """For recovery of jobs started prior to standardizing the naming of
-        files in the AsychronousJobState object
-        """
-        if ajs.job_wrapper is not None:
-            job_file = "%s/galaxy_%s.sh" % (self.app.config.cluster_files_directory, ajs.job_wrapper.get_id_tag())
-            if not os.path.exists( ajs.job_file ) and os.path_exists( job_file ):
-                ajs.output_file = "%s.gjout" % os.path.join(ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.error_file = "%s.gjerr" % os.path.join(ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.exit_code_file = "%s.gjec" % os.path.join(ajs.job_wrapper.working_directory, ajs.job_wrapper.get_id_tag())
-                ajs.job_file = job_file
