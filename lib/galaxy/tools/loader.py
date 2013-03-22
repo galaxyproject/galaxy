@@ -19,6 +19,10 @@ def load_tool(path):
     macro_dict = _macros_of_type(root, 'xml', lambda el: list(el.getchildren()))
     _expand_macros([root], macro_dict)
 
+    # Expand tokens
+    macro_dict = _macros_of_type(root, 'token', lambda el: el.text)
+    _expand_tokens([root], macro_dict)
+
     return tree
 
 
@@ -51,6 +55,23 @@ def _macros_of_type(root, type, el_func):
             for macro_el in macro_els \
             if macro_el.get('type') == type])
     return macro_dict
+
+
+def _expand_tokens(elements, tokens):
+    if not tokens or not elements:
+        return
+
+    for element in elements:
+        if element.text:
+            element.text = _expand_tokens_str(element.text, tokens)
+        _expand_tokens(list(element.getchildren()), tokens)
+
+
+def _expand_tokens_str(str, tokens):
+    for key, value in tokens.iteritems():
+        if str.find(key) > -1:
+            str = str.replace(key, value)
+    return str
 
 
 def _expand_macros(elements, macros):
@@ -103,7 +124,7 @@ def _load_embedded_macros(macros_el, tool_dir):
 
     # type shortcuts (<xml> is a shortcut for <macro type="xml",
     # likewise for <template>.
-    typed_tag = ['template', 'xml']
+    typed_tag = ['template', 'xml', 'token']
     for tag in typed_tag:
         macro_els = []
         if macros_el:
@@ -305,3 +326,19 @@ def test_loader():
         xml = tool_dir.load()
         params_dict = template_macro_params(xml.getroot())
         assert params_dict['tool_params'] == "-a 1 -b 2"
+
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool>
+    <macros>
+        <token name="@CITATION@">The citation.</token>
+    </macros>
+    <help>@CITATION@</help>
+    <another>
+        <tag />
+    </another>
+</tool>
+''')
+        xml = tool_dir.load()
+        help_el = xml.find("help")
+        assert help_el.text == "The citation.", help_el.text
