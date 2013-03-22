@@ -1,6 +1,12 @@
-import os, shutil, tempfile, logging, string, urllib2
+import logging
+import os
+import shutil
+import string
+import tempfile
+import urllib2
 from datetime import datetime
-from time import gmtime, strftime
+from time import gmtime
+from time import strftime
 from galaxy import util
 from galaxy.util import json
 from galaxy.web import url_for
@@ -16,8 +22,10 @@ pkg_resources.require( 'mercurial' )
 from mercurial import hg, ui, commands
 
 pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
-from elementtree.ElementTree import Element, SubElement
+from elementtree import ElementTree
+from elementtree import ElementInclude
+from elementtree.ElementTree import Element
+from elementtree.ElementTree import SubElement
 
 eggs.require( 'markupsafe' )
 import markupsafe
@@ -116,6 +124,7 @@ def changeset_is_malicious( trans, id, changeset_revision, **kwd ):
     return False
 
 def changeset_is_valid( app, repository, changeset_revision ):
+    """Make sure a changeset hash is valid for a specified repository."""
     repo = hg.repository( get_configured_ui(), repository.repo_path( app ) )
     for changeset in repo.changelog:
         changeset_hash = str( repo.changectx( changeset ) )
@@ -124,6 +133,7 @@ def changeset_is_valid( app, repository, changeset_revision ):
     return False
 
 def clean_repository_clone_url( repository_clone_url ):
+    """Return a URL that can be used to clone a tool shed repository, eliminating the protocol and user if either exists."""
     if repository_clone_url.find( '@' ) > 0:
         # We have an url that includes an authenticated user, something like:
         # http://test@bx.psu.edu:9009/repos/some_username/column
@@ -139,6 +149,7 @@ def clean_repository_clone_url( repository_clone_url ):
     return tmp_url
 
 def clean_tool_shed_url( tool_shed_url ):
+    """Return a tool shed URL, eliminating the port if it exists."""
     if tool_shed_url.find( ':' ) > 0:
         # Eliminate the port, if any, since it will result in an invalid directory name.
         return tool_shed_url.split( ':' )[ 0 ]
@@ -186,6 +197,10 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
 
 def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url, metadata_dict,
                                            status, current_changeset_revision=None, owner='', dist_to_shed=False ):
+    """
+    Update a tool shed repository record i the Galaxy database with the new information received.  If a record defined by the received tool shed, repository name
+    and owner does not exists, create a new record with the received information.
+    """
     # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
     # to be in the Galaxy distribution, but have been moved to the main Galaxy tool shed.
     log.debug( "Adding new row (or updating an existing row) for repository '%s' in the tool_shed_repository table." % name )
@@ -272,6 +287,7 @@ def generate_sharable_link_for_repository_in_tool_shed( trans, repository, chang
     return sharable_url
 
 def generate_tool_elem( tool_shed, repository_name, changeset_revision, owner, tool_file_path, tool, tool_section ):
+    """Create and return an ElementTree tool Element."""
     if tool_section is not None:
         tool_elem = SubElement( tool_section, 'tool' )
     else:
@@ -429,6 +445,7 @@ def get_configured_ui():
     return _ui
 
 def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
+    """Send a request to the tool shed to retrieve the ctx_rev for a repository defined by the combination of a name, owner and changeset revision."""
     url = url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
     response = urllib2.urlopen( url )
     ctx_rev = response.read()
@@ -448,6 +465,7 @@ def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
     return None, None
 
 def get_file_context_from_ctx( ctx, filename ):
+    """Return the mercurial file context for a specified file."""
     # We have to be careful in determining if we found the correct file because multiple files with the same name may be in different directories
     # within ctx if the files were moved within the change set.  For example, in the following ctx.files() list, the former may have been moved to
     # the latter: ['tmap_wrapper_0.0.19/tool_data_table_conf.xml.sample', 'tmap_wrapper_0.3.3/tool_data_table_conf.xml.sample'].  Another scenario
@@ -473,6 +491,7 @@ def get_installed_tool_shed_repository( trans, id ):
     return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
 
 def get_named_tmpfile_from_ctx( ctx, filename, dir ):
+    """Return a named temporary file created from a specified file with a given name included in a repository changeset revision."""
     filename = strip_path( filename )
     for ctx_file in ctx.files():
         ctx_file_name = strip_path( ctx_file )
@@ -511,7 +530,7 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
             if changeset_revision in changeset_revisions:
                 return changeset_revision
         elif not found_after_changeset_revision and changeset_revision == after_changeset_revision:
-            # We've found the changeset in the changelog for which we need to get the next downloadable changset.
+            # We've found the changeset in the changelog for which we need to get the next downloadable changeset.
             found_after_changeset_revision = True
     return None
 
@@ -958,6 +977,14 @@ def handle_email_alerts( trans, repository, content_alert_str='', new_repo_alert
             except Exception, e:
                 log.exception( "An error occurred sending a tool shed repository update alert by email." )
 
+def handle_galaxy_url( trans, **kwd ):
+    galaxy_url = kwd.get( 'galaxy_url', None )
+    if galaxy_url:
+        trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+    else:
+        galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
+    return galaxy_url
+
 def open_repository_files_folder( trans, folder_path ):
     """Return a list of dictionaries, each of which contains information for a file or directory contained within a directory in a repository file hierarchy."""
     try:
@@ -1059,7 +1086,12 @@ def to_safe_string( text, to_html=True ):
     """Translates the characters in text to an html string"""
     if text:
         if to_html:
-            escaped_text = str( markupsafe.escape( text ) )
+            try:
+                escaped_text = text.decode( 'utf-8' )
+                escaped_text = escaped_text.encode( 'ascii', 'ignore' )
+                escaped_text = str( markupsafe.escape( escaped_text ) )
+            except UnicodeDecodeError, e:
+                escaped_text = "Error decoding string: %s" % str( e )
         else:
             escaped_text = str( text )
         translated = []

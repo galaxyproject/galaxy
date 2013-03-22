@@ -1516,6 +1516,11 @@ class HistoryDatasetAssociation( DatasetInstance ):
         # other model classes.
         hda = self
         rval = dict( id = hda.id,
+                     uuid = ( lambda uuid: str( uuid ) if uuid else None )( hda.dataset.uuid ),
+                     history_id = hda.history.id,
+                     hid = hda.hid,
+                     file_ext = hda.ext,
+                     peek = ( lambda hda: hda.display_peek() if hda.peek and hda.peek != 'no peek' else None )( hda ),
                      model_class = self.__class__.__name__,
                      name = hda.name,
                      deleted = hda.deleted,
@@ -3035,9 +3040,9 @@ class APIKeys( object ):
     pass
 
 class ToolShedRepository( object ):
-    api_collection_visible_keys = ( 'id', 'name', 'tool_shed', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+    api_collection_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                     'update_available', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
-    api_element_visible_keys = ( 'id', 'name', 'tool_shed', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
+    api_element_visible_keys = ( 'id', 'tool_shed', 'name', 'owner', 'installed_changeset_revision', 'changeset_revision', 'ctx_rev', 'includes_datatypes',
                                     'update_available', 'deleted', 'uninstalled', 'dist_to_shed', 'status', 'error_message' )
     installation_status = Bunch( NEW='New',
                                  CLONING='Cloning',
@@ -3074,10 +3079,8 @@ class ToolShedRepository( object ):
         self.dist_to_shed = dist_to_shed
         self.status = status
         self.error_message = error_message
-    def as_dict( self, trans ):
-        tsr_dict = self.get_api_value( view='element' )
-        tsr_dict[ 'id' ] = trans.security.encode_id( self.id )    
-        return tsr_dict
+    def as_dict( self, value_mapper=None ):
+        return self.get_api_value( view='element', value_mapper=value_mapper )
     def repo_files_directory( self, app ):
         repo_path = self.repo_path( app )
         if repo_path:
@@ -3177,7 +3180,7 @@ class ToolShedRepository( object ):
             try:
                 rval[ key ] = self.__getattribute__( key )
                 if key in value_mapper:
-                    rval[ key ] = value_mapper.get( key )( rval[ key ] )
+                    rval[ key ] = value_mapper.get( key, rval[ key ] )
             except AttributeError:
                 rval[ key ] = None
         return rval

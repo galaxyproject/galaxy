@@ -6,8 +6,10 @@
           -->
         <plugin id="local" type="runner" load="galaxy.jobs.runners.local:LocalJobRunner"/>
         <plugin id="pbs" type="runner" load="galaxy.jobs.runners.pbs:PBSJobRunner" workers="2"/>
-        <plugin id="gridengine" type="runner" load="galaxy.jobs.runners.drmaa:DRMAARunner"/>
+        <plugin id="drmaa" type="runner" load="galaxy.jobs.runners.drmaa:DRMAARunner"/>
         <plugin id="lwr" type="runner" load="galaxy.jobs.runners.lwr.LwrJobRunner" /> <!-- https://lwr.readthedocs.org -->
+        <plugin id="cli" type="runner" load="galaxy.jobs.runners.cli:ShellJobRunner" />
+        <plugin id="condor" type="runner" load="galaxy.jobs.runners.condor:CondorJobRunner" />
     </plugins>
     <handlers default="handlers">
         <!-- Additional job handlers - the id should match the name of a
@@ -46,6 +48,14 @@
             <!-- If set, private_token must match token remote LWR server configured with. -->
             <param id="private_token">123456789changeme</param>
         </destination>
+        <destination id="ssh_torque" runner="cli">
+            <param id="shell_plugin">SecureShell</param>
+            <param id="job_plugin">Torque</param>
+            <param id="shell_username">foo</param>
+            <param id="shell_hostname">foo.example.org</param>
+            <param id="Job_Execution_Time">24:00:00</param>
+        </destination>
+        <destination id="condor" runner="condor"/>
     </destinations>
     <tools>
         <!-- Tools can be configured to use specific destinations or handlers,

@@ -813,11 +813,10 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         for (var i = 0; i < this.drawables.length; i++) {
             drawables_names.push(this.drawables[i].name);
         }
-        var new_track_name = "Composite Track of " + this.drawables.length + " tracks (" + drawables_names.join(", ") + ")";
         
         // Replace this group with composite track.
         var composite_track = new CompositeTrack(this.view, this.view, {
-            name: new_track_name,
+            name: this.name,
             drawables: this.drawables
         });
         var index = this.container.replace_drawable(this, composite_track, true);
@@ -885,10 +884,10 @@ var TracksterView = Backbone.View.extend({
         this.config = new DrawableConfig( {
             track: this,
             params: [
-                { key: 'a_color', label: 'A Color', type: 'color', default_value: "FF0000" },
-                { key: 'c_color', label: 'C Color', type: 'color', default_value: "00FF00" },
-                { key: 'g_color', label: 'G Color', type: 'color', default_value: "0000FF" },
-                { key: 't_color', label: 'T Color', type: 'color', default_value: "FF00FF" }
+                { key: 'a_color', label: 'A Color', type: 'color', default_value: "#FF0000" },
+                { key: 'c_color', label: 'C Color', type: 'color', default_value: "#00FF00" },
+                { key: 'g_color', label: 'G Color', type: 'color', default_value: "#0000FF" },
+                { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" }
             ], 
             saved_values: obj_dict.prefs,
             onchange: function() {

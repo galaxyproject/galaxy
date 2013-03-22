@@ -1,16 +1,11 @@
 import datetime
-from galaxy.web.framework.helpers import time_ago
-import tool_shed.util.shed_util_common as suc
-from tool_shed.util import metadata_util
-from galaxy import web, util
-from galaxy.model.orm import and_, or_
-from galaxy.web.base.controller import BaseAPIController
-from galaxy.web.framework.helpers import is_true
-
-import pkg_resources
-pkg_resources.require( "Routes" )
-import routes
 import logging
+from galaxy.web.framework.helpers import time_ago
+from tool_shed.util import metadata_util
+from galaxy import web
+from galaxy import util
+from galaxy.model.orm import and_
+from galaxy.web.base.controller import BaseAPIController
 
 log = logging.getLogger( __name__ )
 
@@ -21,15 +16,18 @@ def default_value_mapper( trans, repository_metadata ):
         value_mapper[ 'time_last_tested' ] = time_ago( repository_metadata.time_last_tested )
     return value_mapper
 
+
 class RepositoryRevisionsController( BaseAPIController ):
     """RESTful controller for interactions with tool shed repository revisions."""
+
     @web.expose_api
     def index( self, trans, **kwd ):
         """
         GET /api/repository_revisions
         Displays a collection (list) of repository revisions.
         """
-        rval = []
+        # Example URL: http://localhost:9009/api/repository_revisions
+        repository_metadata_dicts = []
         # Build up an anded clause list of filters.
         clause_list = []
         # Filter by downloadable if received.
@@ -58,32 +56,41 @@ class RepositoryRevisionsController( BaseAPIController ):
                                     .order_by( trans.app.model.RepositoryMetadata.table.c.repository_id ) \
                                     .all()
             for repository_metadata in query:
-                item = repository_metadata.get_api_value( view='collection',
-                                                          value_mapper=default_value_mapper( trans, repository_metadata ) )
-                item[ 'url' ] = web.url_for( 'repository_revision', id=trans.security.encode_id( repository_metadata.id ) )
-                rval.append( item )
+                repository_metadata_dict = repository_metadata.get_api_value( view='collection',
+                                                                              value_mapper=default_value_mapper( trans, repository_metadata ) )
+                repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
+                                                                 action='show',
+                                                                 id=trans.security.encode_id( repository_metadata.id ) )
+                repository_metadata_dicts.append( repository_metadata_dict )
+            return repository_metadata_dicts
         except Exception, e:
-            rval = "Error in the Tool Shed repository_revisions API in index: " + str( e )
-            log.error( rval + ": %s" % str( e ) )
+            message = "Error in the Tool Shed repository_revisions API in index: " + str( e )
+            log.error( message, exc_info=True )
             trans.response.status = 500
-        return rval
+            return message
+
     @web.expose_api
     def show( self, trans, id, **kwd ):
         """
         GET /api/repository_revisions/{encoded_repository_metadata_id}
         Displays information about a repository_metadata record in the Tool Shed.
+        
+        :param id: the encoded id of the `RepositoryMetadata` object
         """
+        # Example URL: http://localhost:9009/api/repository_revisions/bb125606ff9ea620
         try:
             repository_metadata = metadata_util.get_repository_metadata_by_id( trans, id )
-            repository_data = repository_metadata.get_api_value( view='element',
-                                                                 value_mapper=default_value_mapper( trans, repository_metadata ) )
-            repository_data[ 'contents_url' ] = web.url_for( 'repository_revision_contents', repository_metadata_id=id )
+            repository_metadata_dict = repository_metadata.as_dict( value_mapper=default_value_mapper( trans, repository_metadata ) )
+            repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
+                                                             action='show',
+                                                             id=trans.security.encode_id( repository_metadata.id ) )
+            return repository_metadata_dict
         except Exception, e:
             message = "Error in the Tool Shed repository_revisions API in show: %s" % str( e )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
-        return repository_data
+
     @web.expose_api
     def update( self, trans, payload, **kwd ):
         """
@@ -110,6 +117,8 @@ class RepositoryRevisionsController( BaseAPIController ):
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
-        item = repository_metadata.as_dict( value_mapper=default_value_mapper( trans, repository_metadata ) )
-        item[ 'url' ] = web.url_for( 'repository_revision', id=repository_metadata_id )
-        return [ item ]
+        repository_metadata_dict = repository_metadata.as_dict( value_mapper=default_value_mapper( trans, repository_metadata ) )
+        repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
+                                                         action='show',
+                                                         id=trans.security.encode_id( repository_metadata.id ) )
+        return repository_metadata_dict

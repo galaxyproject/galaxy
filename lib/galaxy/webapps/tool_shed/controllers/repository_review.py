@@ -3,6 +3,7 @@ from galaxy import web, util
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.form_builder import SelectField, CheckboxField
 from sqlalchemy.sql.expression import func
+from galaxy.model.orm import and_
 from galaxy.webapps.tool_shed.util import common_util
 from galaxy.webapps.tool_shed.util.container_util import STRSEP
 import tool_shed.util.shed_util_common as suc
@@ -315,9 +316,12 @@ class RepositoryReviewController( BaseUIController, common_util.ItemRatings ):
                 if flushed:
                     # Update the repository rating value to be the average of all component review ratings.
                     average_rating = trans.sa_session.query( func.avg( trans.model.ComponentReview.table.c.rating ) ) \
-                                                     .filter( trans.model.ComponentReview.table.c.repository_review_id == review.id ) \
+                                                     .filter( and_( trans.model.ComponentReview.table.c.repository_review_id == review.id,
+                                                                    trans.model.ComponentReview.table.c.deleted == False,
+                                                                    trans.model.ComponentReview.table.c.approved != trans.model.ComponentReview.approved_states.NA ) ) \
                                                      .scalar()
-                    review.rating = int( average_rating )
+                    if average_rating is not None:
+                        review.rating = int( average_rating )
                     trans.sa_session.add( review )
                     trans.sa_session.flush()
                     # Update the information in components_dict.

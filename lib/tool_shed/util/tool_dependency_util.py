@@ -1,13 +1,15 @@
-import os, logging
+import logging
+import os
+import shutil
+
+from galaxy import eggs
+eggs.require( 'elementtree' )
+from elementtree import ElementTree, ElementInclude
+
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
 
-from galaxy import eggs
-import pkg_resources
-
-pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
-from elementtree.ElementTree import Element, SubElement
+from galaxy import util
 
 log = logging.getLogger( __name__ )
 
@@ -319,7 +321,7 @@ def populate_tool_dependencies_dicts( trans, tool_shed_url, tool_path, repositor
 
 def remove_tool_dependency( trans, tool_dependency ):
     dependency_install_dir = tool_dependency.installation_directory( trans.app )
-    removed, error_message = suc.remove_tool_dependency_installation_directory( dependency_install_dir )
+    removed, error_message = remove_tool_dependency_installation_directory( dependency_install_dir )
     if removed:
         tool_dependency.status = trans.model.ToolDependency.installation_status.UNINSTALLED
         tool_dependency.error_message = None

@@ -18,7 +18,7 @@ This tool creates summary statistics on a FASTQ file.
 
 .. class:: infomark
 
-**TIP:** This statistics report can be used as input for the **Boxplot** and **Nucleotides Distribution** tools.
+**TIP:** This statistics report can be used as input for the **Boxplot** tools.
 
 -----
 

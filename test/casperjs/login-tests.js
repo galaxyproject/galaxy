@@ -39,6 +39,8 @@ if( spaceghost.fixtureData.testUser ){
     password = spaceghost.fixtureData.testUser.password;
 }
 
+var userEmailSelector = '//a[contains(text(),"Logged in as")]/span["id=#user-email"]';
+
 // =================================================================== TESTS
 // register a user (again...)
 spaceghost.thenOpen( spaceghost.baseUrl, function(){
@@ -52,8 +54,7 @@ spaceghost.then( function(){
     spaceghost.user.logout();
 });
 spaceghost.then( function(){
-    this.test.assertSelectorDoesntHaveText(
-        xpath( '//a[contains(text(),"Logged in as")]/span["id=#user-email"]' ), /\w/ );
+    this.test.assertSelectorDoesntHaveText( xpath( userEmailSelector ), /\w/ );
     this.test.assert( spaceghost.user.loggedInAs() === '', 'loggedInAs() is empty string' );
 });
 
@@ -63,8 +64,7 @@ spaceghost.then( function(){
     spaceghost.user._submitLogin( email, password ); //No such user
 });
 spaceghost.thenOpen( spaceghost.baseUrl, function(){
-    this.test.assertSelectorHasText(
-        xpath( '//a[contains(text(),"Logged in as")]/span["id=#user-email"]' ), email );
+    this.test.assertSelectorHasText( xpath( userEmailSelector ), email );
     this.test.assert( spaceghost.user.loggedInAs() === email, 'loggedInAs() matches email' );
 });
 

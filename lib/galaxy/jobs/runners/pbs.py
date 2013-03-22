@@ -141,6 +141,9 @@ class PBSJobRunner( AsynchronousJobRunner ):
     def url_to_destination(self, url):
         """Convert a legacy URL to a job destination"""
 
+        if not url:
+            return
+
         # Determine the the PBS server
         url_split = url.split("/")
         server = url_split[2]
@@ -161,6 +164,9 @@ class PBSJobRunner( AsynchronousJobRunner ):
         try:
             opts = url.split('/')[4].strip().lstrip('-').split(' -')
             assert opts != ['']
+            # stripping the - comes later (in parse_destination_params)
+            for i, opt in enumerate(opts):
+                opts[i] = '-' + opt
         except:
             opts = []
         for opt in opts:
@@ -210,33 +216,22 @@ class PBSJobRunner( AsynchronousJobRunner ):
         return rval
 
     def __get_pbs_server(self, job_destination_params):
+        if job_destination_params is None:
+            return None
         return job_destination_params['destination'].split('@')[-1]
 
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
-
-        try:
-            job_wrapper.prepare()
-            command_line = self.build_command_line( job_wrapper, include_metadata=not( self.app.config.pbs_stage_path ) )
-        except:
-            job_wrapper.fail( "failure preparing job", exception=True )
-            log.exception("failure running job %d" % job_wrapper.job_id)
+        # Superclass method has some basic sanity checks
+        super( PBSJobRunner, self ).queue_job( job_wrapper )
+        if not job_wrapper.is_ready:
             return
+
+        # command line has been added to the wrapper by the superclass queue_job()
+        command_line = job_wrapper.runner_command_line
 
         job_destination = job_wrapper.job_destination
         
-        # This is silly, why would we queue a job with no command line?
-        if not command_line:
-            job_wrapper.finish( '', '' )
-            return
-        
-        # Check for deletion before we change state
-        if job_wrapper.get_state() == model.Job.states.DELETED:
-            log.debug( "Job %s deleted by user before it entered the PBS queue" % job_wrapper.job_id )
-            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
-                job_wrapper.cleanup()
-            return
-
         # Determine the job's PBS destination (server/queue) and options from the job destination definition
         pbs_queue_name = None
         pbs_server_name = self.default_pbs_server
@@ -399,6 +394,8 @@ class PBSJobRunner( AsynchronousJobRunner ):
             try:
                 status = statuses[job_id]
             except KeyError:
+                if pbs_job_state.job_wrapper.get_state() == model.Job.states.DELETED:
+                    continue
                 try:
                     # Recheck to make sure it wasn't a communication problem
                     self.check_single_job( pbs_server_name, job_id )
@@ -600,9 +597,13 @@ class PBSJobRunner( AsynchronousJobRunner ):
 
         try:
             pbs_server_name = self.__get_pbs_server( job.destination_params )
+            if pbs_server_name is None:
+                log.debug("(%s) Job queued but no destination stored in job params, cannot delete"
+                         % job_tag ) 
+                return
             c = pbs.pbs_connect( pbs_server_name )
             if c <= 0:
-                log.debug("%s Connection to PBS server for job delete failed"
+                log.debug("(%s) Connection to PBS server for job delete failed"
                          % job_tag ) 
                 return
             pbs.pbs_deljob( c, job.get_job_runner_external_id(), '' )

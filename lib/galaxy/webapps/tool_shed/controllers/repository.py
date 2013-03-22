@@ -1,26 +1,47 @@
-import os, logging, re, tempfile, ConfigParser, string
-from time import gmtime, strftime
+import ConfigParser
+import logging
+import os
+import re
+import string
+import tempfile
+from time import gmtime
+from time import strftime
 from datetime import date, datetime
-from galaxy import util, web
+from galaxy import util
+from galaxy import web
 from galaxy.util.odict import odict
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.form_builder import CheckboxField, build_select_field
+from galaxy.web.form_builder import CheckboxField
+from galaxy.web.form_builder import build_select_field
 from galaxy.webapps.tool_shed import model
 from galaxy.webapps.tool_shed.model import directory_hash_id
 from galaxy.web.framework.helpers import grids
 from galaxy.util import json
-from galaxy.model.orm import and_, or_
+from galaxy.model.orm import and_
+from galaxy.model.orm import or_
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import encoding_util, metadata_util, readme_util, repository_dependency_util, review_util, tool_dependency_util, tool_util, workflow_util
+from tool_shed.util import encoding_util
+from tool_shed.util import metadata_util
+from tool_shed.util import readme_util
+from tool_shed.util import repository_dependency_util
+from tool_shed.util import review_util
+from tool_shed.util import tool_dependency_util
+from tool_shed.util import tool_util
+from tool_shed.util import workflow_util
 from tool_shed.galaxy_install import repository_util
-from galaxy.webapps.tool_shed.util import common_util, container_util
+from galaxy.webapps.tool_shed.util import common_util
+from galaxy.webapps.tool_shed.util import container_util
 import galaxy.tools
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
 
 from galaxy import eggs
 eggs.require('mercurial')
-from mercurial import hg, ui, patch, commands
+
+from mercurial import commands
+from mercurial import hg
+from mercurial import patch
+from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -317,9 +338,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     def browse_valid_categories( self, trans, **kwd ):
         # The request came from Galaxy, so restrict category links to display only valid repository changeset revisions.
-        galaxy_url = kwd.get( 'galaxy_url', None )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         if galaxy_url:
-            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+            kwd[ 'galaxy_url' ] = galaxy_url
         if 'f-free-text-search' in kwd:
             if kwd[ 'f-free-text-search' ] == 'All':
                 # The user performed a search, then clicked the "x" to eliminate the search criteria.
@@ -346,11 +367,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_valid_repositories',
                                                                   **kwd ) )
+        log.debug("CCC In browse_valid_categories, just before returning valid_category_grid, kwd: %s" % str( kwd ))
         return self.valid_category_grid( trans, **kwd )
 
     @web.expose
     def browse_valid_repositories( self, trans, **kwd ):
-        galaxy_url = kwd.get( 'galaxy_url', None )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+        if galaxy_url:
+            kwd[ 'galaxy_url' ] = galaxy_url
         repository_id = kwd.get( 'id', None )
         if 'f-free-text-search' in kwd:
             if 'f-Category.name' in kwd:
@@ -359,8 +383,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 category = suc.get_category_by_name( trans, category_name )
                 # Set the id value in kwd since it is required by the ValidRepositoryGrid.build_initial_query method.
                 kwd[ 'id' ] = trans.security.encode_id( category.id )
-        if galaxy_url:
-            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if operation == "preview_tools_in_changeset":
@@ -423,7 +445,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         # If the request originated with the UpdateManager, it will not include a galaxy_url.
-        galaxy_url = kwd.get( 'galaxy_url', '' )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
@@ -437,11 +459,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         if from_update_manager:
             update = 'true'
             no_update = 'false'
-        else:
+        elif galaxy_url:
             # Start building up the url to redirect back to the calling Galaxy instance.            
             url = suc.url_join( galaxy_url,
                                 'admin_toolshed/update_to_changeset_revision?tool_shed_url=%s&name=%s&owner=%s&changeset_revision=%s&latest_changeset_revision=' % \
                                 ( web.url_for( '/', qualified=True ), repository.name, repository.user.username, changeset_revision ) )
+        else:
+            message = 'Unable to check for updates due to an invalid Galaxy URL: <b>%s</b>.  You may need to enable cookies in your browser.  ' % galaxy_url
+            return trans.show_error_message( message )
         if changeset_revision == repository.tip( trans.app ):
             # If changeset_revision is the repository tip, there are no additional updates.
             if from_update_manager:
@@ -746,9 +771,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = kwd.get( 'galaxy_url', None )
-        if galaxy_url:
-            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         if 'operation' in kwd:
             item_id = kwd.get( 'id', '' )
             if item_id:
@@ -833,9 +856,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', '' ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = kwd.get( 'galaxy_url', None )
-        if galaxy_url:
-            trans.set_cookie( galaxy_url, name='toolshedgalaxyurl' )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
         if 'operation' in kwd:
             item_id = kwd.get( 'id', '' )
             if item_id:
@@ -952,7 +973,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        galaxy_url = kwd.get( 'galaxy_url', '' )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
@@ -1125,35 +1145,17 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         includes_tool_dependencies = False
         repo_info_dicts = []
         for tup in zip( util.listify( repository_ids ), util.listify( changeset_revisions ) ):
-            repository_id, changeset_revision = tup
-            repository = suc.get_repository_in_tool_shed( trans, repository_id )
-            repository_clone_url = suc.generate_clone_url_for_repository_in_tool_shed( trans, repository )
-            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
-            metadata = repository_metadata.metadata
-            if not includes_tools:
-                if 'tools' in metadata:
-                    includes_tools = True
-            if not includes_tools_for_display_in_tool_panel:
-                includes_tools_for_display_in_tool_panel = repository_metadata.includes_tools_for_display_in_tool_panel
-            if not has_repository_dependencies:
-                if 'repository_dependencies' in metadata:
-                    has_repository_dependencies = True
-            if not includes_tool_dependencies:
-                if 'tool_dependencies' in metadata:
-                    includes_tool_dependencies = True
-            repo_dir = repository.repo_path( trans.app )
-            repo = hg.repository( suc.get_configured_ui(), repo_dir )
-            ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
-            repo_info_dict = repository_util.create_repo_info_dict( trans=trans,
-                                                                    repository_clone_url=repository_clone_url,
-                                                                    changeset_revision=changeset_revision,
-                                                                    ctx_rev=str( ctx.rev() ),
-                                                                    repository_owner=repository.user.username,
-                                                                    repository_name=repository.name,
-                                                                    repository=repository,
-                                                                    repository_metadata=repository_metadata,
-                                                                    tool_dependencies=None,
-                                                                    repository_dependencies=None )
+            repository_id, changeset_revision = tup            
+            repo_info_dict, cur_includes_tools, cur_includes_tool_dependencies, cur_includes_tools_for_display_in_tool_panel, cur_has_repository_dependencies = \
+                repository_util.get_repo_info_dict( trans, repository_id, changeset_revision )
+            if cur_has_repository_dependencies and not has_repository_dependencies:
+                has_repository_dependencies = True
+            if cur_includes_tools and not includes_tools:
+                includes_tools = True
+            if cur_includes_tool_dependencies and not includes_tool_dependencies:
+                includes_tool_dependencies = True
+            if cur_includes_tools_for_display_in_tool_panel and not includes_tools_for_display_in_tool_panel:
+                includes_tools_for_display_in_tool_panel = True
             repo_info_dicts.append( encoding_util.tool_shed_encode( repo_info_dict ) )
         return dict( includes_tools=includes_tools,
                      includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel,
@@ -1443,18 +1445,23 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         changeset_revisions = kwd.get( 'changeset_revisions', None )
         name = kwd.get( 'name', None )
         owner = kwd.get( 'owner', None )
-        galaxy_url = kwd.get( 'galaxy_url', None )
         if not repository_ids:
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             repository_ids = trans.security.encode_id( repository.id )
-        if not galaxy_url:
-            # If galaxy_url is not in the request, it had to have been stored in a cookie by the tool shed.
-            galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
-        # Redirect back to local Galaxy to perform install.
-        url = suc.url_join( galaxy_url,
-                            'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
-                            ( web.url_for( '/', qualified=True ), ','.join( util.listify( repository_ids ) ), ','.join( util.listify( changeset_revisions ) ) ) )
-        return trans.response.send_redirect( url )
+        galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+        if galaxy_url:
+            # Redirect back to local Galaxy to perform install.
+            url = suc.url_join( galaxy_url,
+                                'admin_toolshed/prepare_for_install?tool_shed_url=%s&repository_ids=%s&changeset_revisions=%s' % \
+                                ( web.url_for( '/', qualified=True ), ','.join( util.listify( repository_ids ) ), ','.join( util.listify( changeset_revisions ) ) ) )
+            return trans.response.send_redirect( url )
+        else:
+            message = 'Repository installation is not possible due to an invalid Galaxy URL: <b>%s</b>.  You may need to enable cookies in your browser.  ' % galaxy_url
+            status = 'error'
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_valid_categories',
+                                                              message=message,
+                                                              status=status ) )
 
     @web.expose
     def load_invalid_tool( self, trans, repository_id, tool_config, changeset_revision, **kwd ):
@@ -1854,8 +1861,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
-        # If the request originated with the UpdateManager, it will not include a galaxy_url.
-        galaxy_url = kwd.get( 'galaxy_url', '' )
         name = params.get( 'name', None )
         owner = params.get( 'owner', None )
         changeset_revision = params.get( 'changeset_revision', None )
