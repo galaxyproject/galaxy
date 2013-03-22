@@ -148,13 +148,6 @@ Go `here &lt;http://www.broadinstitute.org/gsa/wiki/index.php/Input_files_for_th
  sample_file     Set[File]     []     File containing a list of samples (one per line). Can be specified multiple times
  sample_name     Set[String]     []     Sample name to be included in the analysis. Can be specified multiple times.
 
-------
-
-**Citation**
-
-For the underlying tool, please cite `DePristo MA, Banks E, Poplin R, Garimella KV, Maguire JR, Hartl C, Philippakis AA, del Angel G, Rivas MA, Hanna M, McKenna A, Fennell TJ, Kernytsky AM, Sivachenko AY, Cibulskis K, Gabriel SB, Altshuler D, Daly MJ. A framework for variation discovery and genotyping using next-generation DNA sequencing data. Nat Genet. 2011 May;43(5):491-8. &lt;http://www.ncbi.nlm.nih.gov/pubmed/21478889&gt;`_
-
-If you use this tool in Galaxy, please cite Blankenberg D, et al. *In preparation.*
-
+@CITATION_SECTION@
   </help>
 </tool>
