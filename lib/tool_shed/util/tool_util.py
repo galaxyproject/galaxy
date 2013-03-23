@@ -1,12 +1,17 @@
-import filecmp, logging, os, shutil, tempfile
-import tool_shed.util.shed_util_common as suc
-from galaxy import util
+import filecmp
+import logging
+import os
+import shutil
+import tempfile
 import galaxy.tools
-from galaxy.tools.search import ToolBoxSearch
-from galaxy.model.orm import and_
+from galaxy import util
 from galaxy.datatypes import checkers
+from galaxy.model.orm import and_
 from galaxy.tools import parameters
 from galaxy.tools.parameters import dynamic_options
+from galaxy.tools.search import ToolBoxSearch
+from galaxy.web.form_builder import SelectField
+import tool_shed.util.shed_util_common as suc
 
 from galaxy import eggs
 import pkg_resources
@@ -78,6 +83,33 @@ def add_to_tool_panel( app, repository_name, repository_clone_url, changeset_rev
         # Write the current in-memory version of the integrated_tool_panel.xml file to disk.
         app.toolbox.write_integrated_tool_panel_config_file()
     app.toolbox_search = ToolBoxSearch( app.toolbox )
+
+def build_shed_tool_conf_select_field( trans ):
+    """Build a SelectField whose options are the keys in trans.app.toolbox.shed_tool_confs."""
+    options = []
+    for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+        shed_tool_conf_filename = shed_tool_conf_dict[ 'config_filename' ]
+        if shed_tool_conf_filename != trans.app.config.migrated_tools_config:
+            if shed_tool_conf_filename.startswith( './' ):
+                option_label = shed_tool_conf_filename.replace( './', '', 1 )
+            else:
+                option_label = shed_tool_conf_filename
+            options.append( ( option_label, shed_tool_conf_filename ) )
+    select_field = SelectField( name='shed_tool_conf' )
+    for option_tup in options:
+        select_field.add_option( option_tup[ 0 ], option_tup[ 1 ] )
+    return select_field
+
+def build_tool_panel_section_select_field( trans ):
+    """Build a SelectField whose options are the sections of the current in-memory toolbox."""
+    options = []
+    for k, v in trans.app.toolbox.tool_panel.items():
+        if isinstance( v, galaxy.tools.ToolSection ):
+            options.append( ( v.name, v.id ) )
+    select_field = SelectField( name='tool_panel_section', display='radio' )
+    for option_tup in options:
+        select_field.add_option( option_tup[ 0 ], option_tup[ 1 ] )
+    return select_field
 
 def can_use_tool_config_disk_file( trans, repository, repo, file_path, changeset_revision ):
     """
