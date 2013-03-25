@@ -252,7 +252,7 @@ def handle_repository_contents( trans, tool_shed_repository, tool_path, reposito
             # Load proprietary datatype display applications
             trans.app.datatypes_registry.load_display_applications( installed_repository_dict=repository_dict )
 
-def handle_tool_shed_repositories( trans, installation_dict ):
+def handle_tool_shed_repositories( trans, installation_dict, using_api=False ):
     # The following installation_dict entries are all required.
     install_repository_dependencies = installation_dict[ 'install_repository_dependencies' ]
     new_tool_panel_section = installation_dict[ 'new_tool_panel_section' ]
@@ -272,7 +272,7 @@ def handle_tool_shed_repositories( trans, installation_dict ):
                                                                          no_changes_checked=no_changes_checked,
                                                                          tool_panel_section=tool_panel_section,
                                                                          new_tool_panel_section=new_tool_panel_section )
-    if message and len( repo_info_dicts ) == 1:
+    if message and len( repo_info_dicts ) == 1 and not using_api:
         installed_tool_shed_repository = created_or_updated_tool_shed_repositories[ 0 ]
         message += 'Click <a href="%s">here</a> to manage the repository.  ' % \
             ( web.url_for( controller='admin_toolshed', action='manage_repository', id=trans.security.encode_id( installed_tool_shed_repository.id ) ) )

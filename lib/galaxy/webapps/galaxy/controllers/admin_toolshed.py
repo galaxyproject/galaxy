@@ -846,7 +846,7 @@ class AdminToolshed( AdminGalaxy ):
                                       tool_path=tool_path,
                                       tool_shed_url=tool_shed_url )
             created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
-                repository_util.handle_tool_shed_repositories( trans, installation_dict )
+                repository_util.handle_tool_shed_repositories( trans, installation_dict, using_api=False )
             if message and len( repo_info_dicts ) == 1:
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                   action='browse_repositories',

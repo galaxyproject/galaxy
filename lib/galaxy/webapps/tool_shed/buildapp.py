@@ -77,7 +77,7 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.resource( 'repository',
                                 'repositories',
                                 controller='repositories',
-                                collection={ 'get_repository_and_revision' : 'GET' },
+                                collection={ 'get_repository_revision_install_info' : 'GET' },
                                 name_prefix='repository_',
                                 path_prefix='/api',
                                 parent_resources=dict( member_name='repository', collection_name='repositories' ) )
