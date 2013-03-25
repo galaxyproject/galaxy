@@ -22,7 +22,7 @@ def encode_data( key, data ):
     """
     Encode data to send a question to Biostar
     """
-    text = json.dumps(data)
+    text = json.to_json_string(data)
     text = base64.urlsafe_b64encode(text)
     digest = hmac.new(key, text).hexdigest()
     return text, digest
