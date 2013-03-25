@@ -734,7 +734,7 @@ def main():
                                    ( changeset_revision, name ) ) 
                     # Run the cleanup method. This removes tool functional test methods from the test_toolbox module and uninstalls the
                     # repository using Twill.
-                    execute_uninstall_method( repository_info_dict )
+                    success = execute_uninstall_method( repository_info_dict )
                     # Set the test_toolbox.toolbox module-level variable to the new app.toolbox.
                     test_toolbox.toolbox = app.toolbox
             else:
@@ -782,20 +782,23 @@ def main():
             print "# %d repositories failed:" % len( repositories_failed )
             show_summary_output( repositories_failed )
         if repositories_failed_install:
+            # Set success to False so that the return code will not be 0.
+            success = False
             print '# ----------------------------------------------------------------------------------'
             print "# %d repositories not installed correctly:" % len( repositories_failed_install )
             show_summary_output( repositories_failed_install )
     print "####################################################################################"
-    
-    if success:
-        return 0
+    if repositories_tested > 0:
+        if success:
+            return 0
+        else:
+            return 1
     else:
-        return 1
+        return 0
 
 if __name__ == "__main__":
     now = strftime( "%Y-%m-%d %H:%M:%S" )
     print "####################################################################################"
     print "# %s - running repository installation and testing script." % now
     print "####################################################################################"
-    return_code = main()
-    sys.exit( return_code )
+    sys.exit( main() )
