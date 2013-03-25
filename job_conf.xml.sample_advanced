@@ -29,7 +29,7 @@
         <destination id="pbs" runner="pbs" tags="mycluster"/>
         <destination id="pbs_longjobs" runner="pbs" tags="mycluster,longjobs">
             <!-- Define parameters that are native to the job runner plugin. -->
-            <param id="Execution_Time">72:00:00</param>
+            <param id="Resource_List">walltime=72:00:00</param>
         </destination>
         <destination id="remote_cluster" runner="drmaa" tags="longjobs"/>
         <destination id="real_user_cluster" runner="drmaa">
