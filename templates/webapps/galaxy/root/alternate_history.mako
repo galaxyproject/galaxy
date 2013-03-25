@@ -90,7 +90,7 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
 <%
     from urllib import unquote_plus
 
-    history_class_name      = history.__class__.__name__
+    history_class_name      = 'History'
     encoded_id_template     = '<%= id %>'
 
     url_dict = {
@@ -189,12 +189,9 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 ## I'd rather do without these (esp. the get_hdas which hits the db twice)
 ##   but we'd need a common map producer (something like get_api_value but more complete)
 ##TODO: api/web controllers should use common code, and this section should call that code
-<%def name="get_history( id )">
+<%def name="get_history( history )">
 <%
-    history_json = trans.webapp.api_controllers[ 'histories' ].show( trans, trans.security.encode_id( id ) )
-    #assert isinstance( history, dict ), (
-    #    'Bootstrapped history was expecting a dictionary: %s' %( str( history ) ) )
-    return history_json
+    return h.to_json_string( history )
 %>
 </%def>
 
@@ -207,16 +204,9 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 %>
 </%def>
 
-<%def name="get_hdas( history_id, hdas )">
+<%def name="get_hdas( hdas )">
 <%
-    #BUG: one inaccessible dataset will error entire list
-    if not hdas:
-        return '[]'
-    # rather just use the history.id (wo the datasets), but...
-    hda_json = trans.webapp.api_controllers[ 'history_contents' ].index(
-        trans, trans.security.encode_id( history_id ),
-        ids=( ','.join([ trans.security.encode_id( hda.id ) for hda in hdas ]) ) )
-    return hda_json
+    return h.to_json_string( hdas )
 %>
 </%def>
 
@@ -324,8 +314,8 @@ $(function(){
         page_show_hidden  = ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) },
 
         user    = ${ get_current_user() },
-        history = ${ get_history( history.id ) },
-        hdas    = ${ get_hdas( history.id, datasets ) };
+        history = ${ get_history( history ) },
+        hdas    = ${ get_hdas( datasets ) };
 
     // add user data to history
     // i don't like this history+user relationship, but user authentication changes views/behaviour
