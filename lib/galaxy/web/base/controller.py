@@ -833,7 +833,6 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         Returns a dictionary with state counts for history's HDAs. Key is a
         dataset state, value is the number of states in that count.
         """
-
         # Build query to get (state, count) pairs.
         cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ]
         from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
@@ -863,6 +862,135 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
             state_count_dict[ state ] = count
 
         return state_count_dict
+
+    def get_hda_summary_dicts( self, trans, history ):
+        """Returns a list of dictionaries containing summary information
+        for each HDA in the given history.
+        """
+        hda_model = trans.model.HistoryDatasetAssociation
+
+        # outer join with job output to get job_state or None
+        job_subq = ( trans.sa_session.query(
+                        trans.model.Job.id.label( 'job_id' ),
+                        trans.model.Job.state.label( 'job_state' ),
+                        trans.model.JobToOutputDatasetAssociation.dataset_id.label( 'hda_id' ) )
+                    .join( trans.model.JobToOutputDatasetAssociation ) ).subquery()
+
+        # get state, name, etc.
+        columns = ( hda_model.name, hda_model.hid, hda_model.id, hda_model.deleted,
+                    trans.model.Dataset.state,
+                    job_subq.c.job_state, job_subq.c.job_id )
+        column_keys = [ "name", "hid", "id", "deleted", "state", "job_state", "job_id" ]
+
+        query = ( trans.sa_session.query( *columns )
+                    .enable_eagerloads( False )
+                    .filter( hda_model.history == history )
+                    .join( trans.model.Dataset )
+                    .outerjoin(( job_subq, job_subq.c.hda_id == hda_model.id ))
+                    .order_by( hda_model.hid ) )
+
+        # build dictionaries, adding history id and encoding all ids
+        hda_dicts = []
+        for hda_tuple in query.all():
+            hda_dict = dict( zip( column_keys, hda_tuple ) )
+            #if hda_dict[ 'job_state' ] not in [ None, 'ok' ]:
+            #    print hda_dict[ 'hid' ], hda_dict[ 'name' ], hda_dict[ 'job_state' ]
+            hda_dict[ 'history_id' ] = history.id
+            trans.security.encode_dict_ids( hda_dict )
+            hda_dicts.append( hda_dict )
+        return hda_dicts
+
+    def _get_hda_state_summaries( self, trans, hda_dict_list ):
+        """Returns two dictionaries (in a tuple): state_counts and state_ids.
+        Each is keyed according to the possible hda states:
+            _counts contains a sum of the datasets in each state
+            _ids contains a list of the encoded ids for each hda in that state
+
+        hda_dict_list should be a list of hda data in dictionary form.
+        """
+        #TODO: doc to rst
+        # init counts, ids for each state
+        state_counts = {}
+        state_ids = {}
+        for key, state in trans.app.model.Dataset.states.items():
+            state_counts[ state ] = 0
+            state_ids[ state ] = []
+
+        for hda_dict in hda_dict_list:
+            item_state = hda_dict['state']
+            if not hda_dict['deleted']:
+                state_counts[ item_state ] = state_counts[ item_state ] + 1
+            # needs to return all ids (no deleted check)
+            state_ids[ item_state ].append( hda_dict['id'] )
+
+        return ( state_counts, state_ids )
+
+    def _get_history_state_from_hdas( self, trans, history, hda_state_counts ):
+        """Returns the history state based on the states of the HDAs it contains.
+        """
+        states = trans.app.model.Dataset.states
+
+        num_hdas = sum( hda_state_counts.values() )
+        # (default to ERROR)
+        state = states.ERROR
+        if num_hdas == 0:
+            state = states.NEW
+
+        else:
+            if( ( hda_state_counts[ states.RUNNING ] > 0 )
+            or  ( hda_state_counts[ states.SETTING_METADATA ] > 0 )
+            or  ( hda_state_counts[ states.UPLOAD ] > 0 ) ):
+                state = states.RUNNING
+
+            elif hda_state_counts[ states.QUEUED ] > 0:
+                state = states.QUEUED
+
+            elif( ( hda_state_counts[ states.ERROR ] > 0 )
+            or    ( hda_state_counts[ states.FAILED_METADATA ] > 0 ) ):
+                state = states.ERROR
+
+            elif hda_state_counts[ states.OK ] == num_hdas:
+                state = states.OK
+
+        return state
+
+    def _are_jobs_still_running( self, trans, hda_summary_list ):
+        """Determine whether any jobs are running from the given
+        list of hda summary dictionaries.
+        """
+        job_states = trans.model.Job.states
+        def is_job_running( job_state ):
+            return ( ( job_state == job_states.NEW )
+                   or( job_state == job_states.UPLOAD )
+                   or( job_state == job_states.WAITING )
+                   or( job_state == job_states.QUEUED )
+                   or( job_state == job_states.RUNNING ) )
+
+        return len( filter( lambda hda: is_job_running( hda['job_state'] ), hda_summary_list ) )
+
+    def get_history_dict( self, trans, history ):
+        """Returns history data in the form of a dictionary.
+        """
+        history_dict = history.get_api_value( view='element', value_mapper={ 'id':trans.security.encode_id })
+
+        history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
+
+        #TODO: separate, move to annotation api, fill on the client
+        history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
+        if not history_dict[ 'annotation' ]:
+            history_dict[ 'annotation' ] = ''
+
+        #TODO: allow passing as arg
+        hda_summaries = self.get_hda_summary_dicts( trans, history )
+        #TODO remove the following in v2
+        ( state_counts, state_ids ) = self._get_hda_state_summaries( trans, hda_summaries )
+        history_dict[ 'state_details' ] = state_counts
+        history_dict[ 'state_ids' ] = state_ids
+        history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
+
+        history_dict[ 'jobs_running' ] = self._are_jobs_still_running( trans, hda_summaries )
+
+        return history_dict
 
 
 class UsesFormDefinitionsMixin:
