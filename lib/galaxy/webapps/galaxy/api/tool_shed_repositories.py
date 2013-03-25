@@ -168,7 +168,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
         tool_path = payload.get( 'tool_path', None )
         tool_panel_section_id = payload.get( 'tool_panel_section_id', '' )
-        if tool_panel_section_id is not None:
+        if tool_panel_section_id not in [ None, '' ]:
             tool_panel_section = trans.app.toolbox.tool_panel[ tool_panel_section_id ]
         else:
             tool_panel_section = ''
