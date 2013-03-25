@@ -334,30 +334,39 @@ class UsesHistoryDatasetAssociationMixin:
     def get_hda_dict( self, trans, hda ):
         hda_dict = hda.get_api_value( view='element' )
         history = hda.history
+        hda_dict[ 'api_type' ] = "file"
 
         # Add additional attributes that depend on trans can hence must be added here rather than at the model level.
+        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
+        can_access_hda = ( trans.user_is_admin() or can_access_hda )
+        hda_dict[ 'accessible' ] = can_access_hda
+
+        # return here if deleted and purged or can't access
+        purged = ( hda.purged or hda.dataset.purged )
+        if ( hda.deleted and purged ) or not can_access_hda:
+            return trans.security.encode_dict_ids( hda_dict )
+
         if trans.user_is_admin() or trans.app.config.expose_dataset_path:
             hda_dict[ 'file_name' ] = hda.file_name
 
-        if not hda_dict[ 'deleted' ]:
-            hda_dict[ 'download_url' ] = url_for( 'history_contents_display', history_id = trans.security.encode_id( history.id ), 
-                                                  history_content_id = trans.security.encode_id( hda.id ) )
+        hda_dict[ 'download_url' ] = url_for( 'history_contents_display',
+            history_id = trans.security.encode_id( history.id ),
+            history_content_id = trans.security.encode_id( hda.id ) )
 
-        can_access_hda = trans.app.security_agent.can_access_dataset( trans.get_current_user_roles(), hda.dataset )
-        hda_dict[ 'accessible' ] = ( trans.user_is_admin() or can_access_hda )
-        hda_dict[ 'api_type' ] = "file"
-
-        if not( hda.purged or hda.deleted or hda.dataset.purged ):
-            meta_files = []
-            for meta_type in hda.metadata.spec.keys():
-                if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
-                    meta_files.append( dict( file_type=meta_type ) )
-            if meta_files:
-                hda_dict[ 'meta_files' ] = meta_files
+        meta_files = []
+        for meta_type in hda.metadata.spec.keys():
+            if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
+                meta_files.append( dict( file_type=meta_type ) )
+        if meta_files:
+            hda_dict[ 'meta_files' ] = meta_files
 
         hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
         hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
         hda_dict[ 'visualizations' ] = hda.get_visualizations()
+
+        # return here if deleted
+        if hda.deleted and not purged:
+            return trans.security.encode_dict_ids( hda_dict )
 
         if hda.creating_job and hda.creating_job.tool_id:
             tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
@@ -812,7 +821,6 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """Get a History from the database by id, verifying ownership."""
         history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
         return self.security_check( trans, history, check_ownership, check_accessible )
-
 
     def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
         """ Returns history's datasets. """
