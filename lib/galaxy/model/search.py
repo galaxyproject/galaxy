@@ -171,7 +171,8 @@ class LibraryView(ViewQueryBaseClass):
     VIEW_NAME = "library"
     FIELDS = { 
         'name' : ViewField('name', sqlalchemy_field=Library.name ),
-        'id' : ViewField('id', sqlalchemy_field=Library.id, id_decode=True) 
+        'id' : ViewField('id', sqlalchemy_field=Library.id, id_decode=True),
+        'deleted' : ViewField('deleted', sqlalchemy_field=Library.deleted)
     }
 
     def search(self, trans):
