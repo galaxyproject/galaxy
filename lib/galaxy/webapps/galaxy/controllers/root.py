@@ -155,9 +155,9 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                             'history_id': history_dictionary[ 'id' ],
                             'state'     : trans.model.Dataset.states.ERROR,
                             'visible'   : True,
-                            'misc_info' : str( exception ),
+                            'misc_info' : str( exc ),
                             'misc_blurb': 'Failed to retrieve dataset information.',
-                            'error'     : str( exception )
+                            'error'     : str( exc )
                         }
                         hda_dictionaries.append( return_val )
 
