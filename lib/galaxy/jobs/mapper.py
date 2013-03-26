@@ -103,8 +103,13 @@ class JobRunnerMapper( object ):
         return dest
 
     def __determine_expand_function_name( self, destination ):
-        # default look for function with same name as tool, unless one specified
-        expand_function_name = destination.params.get('function', self.job_wrapper.tool.id)
+        # default look for function with name matching an id of tool, unless one specified
+        expand_function_name = destination.params.get('function', None)
+        if not expand_function_name:
+            for tool_id in self.job_wrapper.tool.all_ids:
+                if self.__last_rule_module_with_function( tool_id ):
+                    expand_function_name = tool_id
+                    break                
         return expand_function_name
 
     def __get_expand_function( self, expand_function_name ):
