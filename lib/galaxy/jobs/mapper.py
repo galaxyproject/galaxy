@@ -21,9 +21,10 @@ class JobRunnerMapper( object ):
     (in the form of job_wrappers) to job runner url strings.
     """
 
-    def __init__( self, job_wrapper, url_to_destination ):
+    def __init__( self, job_wrapper, url_to_destination, job_config ):
         self.job_wrapper = job_wrapper
         self.url_to_destination = url_to_destination
+        self.job_config = job_config
         self.rule_modules = self.__get_rule_modules( )
 
     def __get_rule_modules( self ):
@@ -135,7 +136,7 @@ class JobRunnerMapper( object ):
                 if '://' in rval:
                     return self.__convert_url_to_destination(rval)
                 else:
-                    return self.app.job_config.get_destination(rval)
+                    return self.job_config.get_destination(rval)
             elif isinstance(rval, galaxy.jobs.JobDestination):
                 # If the function generated a JobDestination, we'll use that
                 # destination directly.  However, for advanced job limiting, a
