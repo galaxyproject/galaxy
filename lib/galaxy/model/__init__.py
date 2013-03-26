@@ -2142,8 +2142,8 @@ class StoredWorkflow( object, APIItem):
             new_swta.user = target_user
             self.tags.append(new_swta)
 
-    def get_api_value( self, view='collection' ):
-        rval = APIItem.get_api_value(self, view=view )
+    def get_api_value( self, view='collection', value_mapper = None  ):
+        rval = APIItem.get_api_value(self, view=view, value_mapper = value_mapper)
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
