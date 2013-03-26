@@ -1,4 +1,7 @@
-import os, sys, urllib, urllib2
+import logging
+import os
+import sys
+import urllib2
 
 new_path = [ os.path.join( os.path.dirname( __file__ ), '..', '..', 'lib' ) ]
 new_path.extend( sys.path[1:] )
@@ -14,6 +17,8 @@ pkg_resources.require( "pycrypto" )
 from Crypto.Cipher import Blowfish
 from Crypto.Util.randpool import RandomPool
 from Crypto.Util import number
+
+log = logging.getLogger( __name__ )
 
 def make_url( api_key, url, args=None ):
     # Adds the API Key to the URL if it's not already there.

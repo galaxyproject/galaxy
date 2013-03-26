@@ -1,9 +1,10 @@
 import logging
 from galaxy.web.framework.helpers import time_ago
-import tool_shed.util.shed_util_common as suc
 from galaxy import web
 from galaxy import util
 from galaxy.web.base.controller import BaseAPIController
+import tool_shed.util.shed_util_common as suc
+from tool_shed.galaxy_install import repository_util
 
 from galaxy import eggs
 import pkg_resources
@@ -29,7 +30,7 @@ def default_repository_metadata_value_mapper( trans, repository_metadata ):
 class RepositoriesController( BaseAPIController ):
     """RESTful controller for interactions with repositories in the Tool Shed."""
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def index( self, trans, deleted=False, **kwd ):
         """
         GET /api/repositories
@@ -56,7 +57,7 @@ class RepositoriesController( BaseAPIController ):
             trans.response.status = 500
             return message
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, **kwd ):
         """
         GET /api/repositories/{encoded_repository_id}
@@ -78,17 +79,59 @@ class RepositoriesController( BaseAPIController ):
             trans.response.status = 500
             return message
 
-    @web.expose_api
-    def get_repository_and_revision( self, trans, name, owner, changeset_revision, **kwd ):
+    @web.expose_api_anonymous
+    def get_repository_revision_install_info( self, trans, name, owner, changeset_revision, **kwd ):
         """
-        GET /api/repository/get_repository_and_revision
-        Returns information about a repository revision in the Tool Shed.
+        GET /api/repository/get_repository_revision_install_info
         
-        :param name: the name of the Repository object
-        :param owner: the owner of the Repository object
-        :param changset_revision: the changset_revision of the RepositoryMetadata object associated with the Repository object
+        :param name: the name of the Repository
+        :param owner: the owner of the Repository
+        :param changset_revision: the changset_revision of the RepositoryMetadata object associated with the Repository
+        
+        Returns a list of the following dictionaries::
+        - a dictionary defining the Repository.  For example:
+        {
+            "deleted": false, 
+            "deprecated": false, 
+            "description": "add_column hello", 
+            "id": "f9cad7b01a472135", 
+            "long_description": "add_column hello", 
+            "name": "add_column", 
+            "owner": "test", 
+            "private": false, 
+            "times_downloaded": 6, 
+            "url": "/api/repositories/f9cad7b01a472135", 
+            "user_id": "f9cad7b01a472135"
+        }
+        - a dictionary defining the Repsoitory revision (RepositoryMetadata).  For example:
+        {
+            "changeset_revision": "3a08cc21466f", 
+            "downloadable": true, 
+            "has_repository_dependencies": false, 
+            "id": "f9cad7b01a472135", 
+            "includes_datatypes": false, 
+            "includes_tool_dependencies": false, 
+            "includes_tools": true,
+            "includes_tools_for_display_in_tool_panel": true,
+            "includes_workflows": false, 
+            "malicious": false, 
+            "repository_id": "f9cad7b01a472135", 
+            "url": "/api/repository_revisions/f9cad7b01a472135"
+        }
+        - a dictionary including the additional information required to install the repository.  For example:
+        {
+            "add_column": [
+                "add_column hello", 
+                "http://test@localhost:9009/repos/test/add_column", 
+                "3a08cc21466f", 
+                "1", 
+                "test", 
+                {}, 
+                {}
+            ]
+        }
         """
-        # Example URL: http://localhost:9009/api/repositories/get_repository_and_revision?name=add_column&owner=test&changeset_revision=3a08cc21466f
+        # Example URL: http://localhost:9009/api/repositories/get_repository_revision_install_info?name=add_column&owner=test&changeset_revision=3a08cc21466f
         try:
             # Get the repository information.
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
@@ -106,6 +149,7 @@ class RepositoriesController( BaseAPIController ):
                 repo = hg.repository( suc.get_configured_ui(), repo_dir )
                 new_changeset_revision = suc.get_next_downloadable_changeset_revision( repository, repo, changeset_revision )
                 repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, new_changeset_revision )
+                changeset_revision = new_changeset_revision
             if repository_metadata:
                 encoded_repository_metadata_id = trans.security.encode_id( repository_metadata.id )
                 repository_metadata_dict = repository_metadata.get_api_value( view='collection',
@@ -113,14 +157,17 @@ class RepositoriesController( BaseAPIController ):
                 repository_metadata_dict[ 'url' ] = web.url_for( controller='repository_revisions',
                                                                  action='show',
                                                                  id=encoded_repository_metadata_id )
-                return repository_dict, repository_metadata_dict
+                # Get the repo_info_dict for installing the repository.
+                repo_info_dict, includes_tools, includes_tool_dependencies, includes_tools_for_display_in_tool_panel, has_repository_dependencies = \
+                    repository_util.get_repo_info_dict( trans, encoded_repository_id, changeset_revision )
+                return repository_dict, repository_metadata_dict, repo_info_dict
             else:
                 message = "Unable to locate repository_metadata record for repository id %d and changeset_revision %s" % ( repository.id, changeset_revision )
                 log.error( message, exc_info=True )
                 trans.response.status = 500
-                return repository_dict, {}
+                return repository_dict, {}, {}
         except Exception, e:
-            message = "Error in the Tool Shed repositories API in get_repository_and_revision: %s" % str( e )
+            message = "Error in the Tool Shed repositories API in get_repository_revision_install_info: %s" % str( e )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message

@@ -985,6 +985,17 @@ def handle_galaxy_url( trans, **kwd ):
         galaxy_url = trans.get_cookie( name='toolshedgalaxyurl' )
     return galaxy_url
 
+def have_shed_tool_conf_for_install( trans ):
+    if not trans.app.toolbox.shed_tool_confs:
+        return False
+    migrated_tools_conf_path, migrated_tools_conf_name = os.path.split( trans.app.config.migrated_tools_config )
+    for shed_tool_conf_dict in trans.app.toolbox.shed_tool_confs:
+        shed_tool_conf = shed_tool_conf_dict[ 'config_filename' ]
+        shed_tool_conf_path, shed_tool_conf_name = os.path.split( shed_tool_conf )
+        if shed_tool_conf_name != migrated_tools_conf_name:
+            return True
+    return False
+
 def open_repository_files_folder( trans, folder_path ):
     """Return a list of dictionaries, each of which contains information for a file or directory contained within a directory in a repository file hierarchy."""
     try:
@@ -1071,6 +1082,20 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
 def reversed_upper_bounded_changelog( repo, included_upper_bounds_changeset_revision ):
     """Return a reversed list of changesets in the repository changelog up to and including the included_upper_bounds_changeset_revision."""
     return reversed_lower_upper_bounded_changelog( repo, INITIAL_CHANGELOG_HASH, included_upper_bounds_changeset_revision )
+
+def set_repository_attributes( trans, repository, status, error_message, deleted, uninstalled, remove_from_disk=False ):
+    if remove_from_disk:
+        relative_install_dir = repository.repo_path( trans.app )
+        if relative_install_dir:
+            clone_dir = os.path.abspath( relative_install_dir )
+            shutil.rmtree( clone_dir )
+            log.debug( "Removed repository installation directory: %s" % str( clone_dir ) )
+    repository.error_message = error_message
+    repository.status = status
+    repository.deleted = deleted
+    repository.uninstalled = uninstalled
+    trans.sa_session.add( repository )
+    trans.sa_session.flush()
 
 def strip_path( fpath ):
     """Attempt to strip the path from a file name."""

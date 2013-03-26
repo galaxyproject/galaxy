@@ -1,13 +1,16 @@
-import os, logging
+import logging
+import os
+from galaxy import eggs
+from galaxy.model.orm import and_
 from galaxy.util.odict import odict
 import tool_shed.util.shed_util_common as suc
-from galaxy.model.orm import and_
 
-from galaxy import eggs
 import pkg_resources
 
 pkg_resources.require( 'mercurial' )
-from mercurial import hg, ui, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui
 
 log = logging.getLogger( __name__ )
 

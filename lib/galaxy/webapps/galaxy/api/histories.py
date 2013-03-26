@@ -62,26 +62,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         params = util.Params( kwd )
         deleted = util.string_as_bool( deleted )
 
-        states = trans.app.model.Dataset.states
-
-        def get_dataset_state_summaries( datasets ):
-            # cycles through the history's datasets, building counts and id lists for each possible ds state
-            state_counts = {}
-            state_ids = {}
-
-            # init counts, ids for each state
-            for key, state in states.items():
-                state_counts[state] = 0
-                state_ids[state] = []
-
-            # cycle through datasets saving each ds' state
-            for dataset in datasets:
-                item_state = dataset.state
-                if not dataset.deleted:
-                    state_counts[ item_state ] = state_counts[ item_state ] + 1
-                state_ids[ item_state ].append( trans.security.encode_id( dataset.id ) )
-            return ( state_counts, state_ids )
-
         # try to load the history, by most_recently_used or the given id
         try:
             if history_id == "most_recently_used":
@@ -94,42 +74,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 history = self.get_history( trans, history_id, check_ownership=False,
                                             check_accessible=True, deleted=deleted )
 
-            history_data = history.get_api_value( view='element', value_mapper={'id':trans.security.encode_id} )
-            history_data[ 'nice_size' ] = history.get_disk_size( nice_size=True )
-
-            #TODO: separate, move to annotation api, fill on the client
-            history_data[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
-            if not history_data[ 'annotation' ]:
-                history_data[ 'annotation' ] = ''
-
-            # get the history state using the state summaries of it's datasets (default to ERROR)
-            num_sets = len([ hda.id for hda in history.datasets if not hda.deleted ])
-            state = states.ERROR
-
-            ( state_counts, state_ids ) = get_dataset_state_summaries( history.datasets )
-
-            if num_sets == 0:
-                state = states.NEW
-
-            else:
-                if( ( state_counts[ states.RUNNING ] > 0 )
-                or    ( state_counts[ states.SETTING_METADATA ] > 0 )
-                or    ( state_counts[ states.UPLOAD ] > 0 ) ):
-                    state = states.RUNNING
-
-                elif state_counts[ states.QUEUED ] > 0:
-                    state = states.QUEUED
-
-                elif( ( state_counts[ states.ERROR ] > 0 )
-                or  ( state_counts[ states.FAILED_METADATA ] > 0 ) ):
-                    state = states.ERROR
-
-                elif state_counts[ states.OK ] == num_sets:
-                    state = states.OK
-
-            history_data[ 'state' ] = state
-            history_data[ 'state_details' ] = state_counts
-            history_data[ 'state_ids' ] = state_ids
+            history_data = self.get_history_dict( trans, history )
             history_data[ 'contents_url' ] = url_for( 'history_contents', history_id=history_id )
 
         except Exception, e:
