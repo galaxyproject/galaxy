@@ -1,0 +1,8 @@
+[Basic]
+develop = next-stable
+feature = feature/
+version_tag = 
+publish = default
+release = release/
+hotfix = hotfix/
+
