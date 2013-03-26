@@ -787,14 +787,19 @@ def main():
             print '# ----------------------------------------------------------------------------------'
             print "# %d repositories not installed correctly:" % len( repositories_failed_install )
             show_summary_output( repositories_failed_install )
-    print "####################################################################################"
-    if repositories_tested > 0:
-        if success:
-            return 0
         else:
-            return 1
+            success = True
     else:
+        success = True
+    print "####################################################################################"
+    # Normally, the value of 'success' would determine whether this test suite is marked as passed or failed
+    # in the automated buildbot framework. However, due to the procedure used here, we only want to report
+    # failure if a repository fails to install correctly. Therefore, we have overriden the value of 'success'
+    # here based on what actions the script has executed. 
+    if success:
         return 0
+    else:
+        return 1
 
 if __name__ == "__main__":
     now = strftime( "%Y-%m-%d %H:%M:%S" )
