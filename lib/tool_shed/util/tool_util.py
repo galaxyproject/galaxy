@@ -4,6 +4,7 @@ import os
 import shutil
 import tempfile
 import galaxy.tools
+from galaxy import eggs
 from galaxy import util
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
@@ -13,15 +14,18 @@ from galaxy.tools.search import ToolBoxSearch
 from galaxy.web.form_builder import SelectField
 import tool_shed.util.shed_util_common as suc
 
-from galaxy import eggs
 import pkg_resources
 
 pkg_resources.require( 'mercurial' )
-from mercurial import hg, ui, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui
 
 pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
-from elementtree.ElementTree import Element, SubElement
+from elementtree import ElementTree
+from elementtree import ElementInclude
+from elementtree.ElementTree import Element
+from elementtree.ElementTree import SubElement
 
 log = logging.getLogger( __name__ )
 

@@ -1,17 +1,25 @@
-import os, logging, urllib2
-import tool_shed.util.shed_util_common as suc
-from tool_shed.util import encoding_util, data_manager_util, datatype_util, tool_util
-from tool_shed.galaxy_install.tool_dependencies.install_util import install_package, set_environment
+import logging
+import os
+import urllib2
+from galaxy import eggs
 from galaxy import util
 from galaxy.util import json
 from galaxy.webapps.tool_shed.util import container_util
+import tool_shed.util.shed_util_common as suc
+from tool_shed.util import encoding_util
+from tool_shed.util import data_manager_util
+from tool_shed.util import datatype_util
+from tool_shed.util import tool_util
+from tool_shed.galaxy_install.tool_dependencies.install_util import install_package
+from tool_shed.galaxy_install.tool_dependencies.install_util import set_environment
 
-from galaxy import eggs
 import pkg_resources
 
 pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
-from elementtree.ElementTree import Element, SubElement
+from elementtree import ElementTree
+from elementtree import ElementInclude
+from elementtree.ElementTree import Element
+from elementtree.ElementTree import SubElement
 
 log = logging.getLogger( __name__ )
 

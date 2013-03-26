@@ -1,18 +1,24 @@
+import logging
+import galaxy.tools
+import galaxy.tools.parameters
+import galaxy.webapps.galaxy.controllers.workflow
 from galaxy import eggs
+from galaxy.util import json
+from galaxy.workflow.modules import InputDataModule
+from galaxy.workflow.modules import ToolModule
+from galaxy.workflow.modules import WorkflowModuleFactory
+import tool_shed.util.shed_util_common as suc
+from tool_shed.util import encoding_util
+from tool_shed.util import metadata_util
+from tool_shed.util import tool_util
+
 import pkg_resources
 
 pkg_resources.require( "SVGFig" )
-
-import logging, svgfig
-from galaxy.util import json
-import tool_shed.util.shed_util_common as suc
-from tool_shed.util import encoding_util, metadata_util, tool_util
-from galaxy.workflow.modules import InputDataModule, ToolModule, WorkflowModuleFactory
-import galaxy.webapps.galaxy.controllers.workflow
-import galaxy.tools
-import galaxy.tools.parameters
+import svgfig
 
 log = logging.getLogger( __name__ )
+
 
 class RepoInputDataModule( InputDataModule ):
 
@@ -24,12 +30,14 @@ class RepoInputDataModule( InputDataModule ):
         module = Class( trans )
         module.state = dict( name="Input Dataset" )
         return module
+
     @classmethod
     def from_dict( Class, trans, repository_id, changeset_revision, step_dict, tools_metadata=None, secure=True ):
         module = Class( trans )
         state = json.from_json_string( step_dict[ "tool_state" ] )
         module.state = dict( name=state.get( "name", "Input Dataset" ) )
         return module
+
     @classmethod
     def from_workflow_step( Class, trans, repository_id, changeset_revision, tools_metadata, step ):
         module = Class( trans )
@@ -37,6 +45,7 @@ class RepoInputDataModule( InputDataModule ):
         if step.tool_inputs and "name" in step.tool_inputs:
             module.state[ 'name' ] = step.tool_inputs[ 'name' ]
         return module
+
 
 class RepoToolModule( ToolModule ):
     
@@ -64,11 +73,13 @@ class RepoToolModule( ToolModule ):
         self.post_job_actions = {}
         self.workflow_outputs = []
         self.state = None
+
     @classmethod
     def new( Class, trans, repository_id, changeset_revision, tools_metadata, tool_id=None ):
         module = Class( trans, repository_id, changeset_revision, tools_metadata, tool_id )
         module.state = module.tool.new_state( trans, all_pages=True )
         return module
+
     @classmethod
     def from_dict( Class, trans, repository_id, changeset_revision, step_dict, tools_metadata, secure=True ):
         tool_id = step_dict[ 'tool_id' ]
@@ -78,6 +89,7 @@ class RepoToolModule( ToolModule ):
             module.state.decode( step_dict[ "tool_state" ], module.tool, module.trans.app, secure=secure )
         module.errors = step_dict.get( "tool_errors", None )
         return module
+
     @classmethod
     def from_workflow_step( Class, trans, repository_id, changeset_revision, tools_metadata, step ):
         module = Class( trans, repository_id, changeset_revision, tools_metadata, step.tool_id )
@@ -88,6 +100,7 @@ class RepoToolModule( ToolModule ):
             module.state.inputs = {}
         module.errors = step.tool_errors
         return module
+
     def get_data_inputs( self ):
         data_inputs = []
         def callback( input, value, prefixed_name, prefixed_label ):
@@ -98,6 +111,7 @@ class RepoToolModule( ToolModule ):
         if self.tool:
             galaxy.tools.parameters.visit_input_values( self.tool.inputs, self.state.inputs, callback )
         return data_inputs
+
     def get_data_outputs( self ):
         data_outputs = []
         if self.tool:
@@ -124,18 +138,23 @@ class RepoToolModule( ToolModule ):
                 data_outputs.append( dict( name=name, extensions=formats ) )
         return data_outputs
 
+
 class RepoWorkflowModuleFactory( WorkflowModuleFactory ):
+
     def __init__( self, module_types ):
         self.module_types = module_types
+
     def new( self, trans, type, tools_metadata=None, tool_id=None ):
         """Return module for type and (optional) tool_id initialized with new / default state."""
         assert type in self.module_types
         return self.module_types[type].new( trans, tool_id )
+
     def from_dict( self, trans, repository_id, changeset_revision, step_dict, **kwd ):
         """Return module initialized from the data in dictionary `step_dict`."""
         type = step_dict[ 'type' ]
         assert type in self.module_types
         return self.module_types[ type ].from_dict( trans, repository_id, changeset_revision, step_dict, **kwd )
+
     def from_workflow_step( self, trans, repository_id, changeset_revision, tools_metadata, step ):
         """Return module initialized from the WorkflowStep object `step`."""
         type = step.type
@@ -292,6 +311,7 @@ def generate_workflow_image( trans, workflow_name, repository_metadata_id=None, 
     canvas[ 'viewBox' ] = "0 0 %s %s" % ( width, height )
     trans.response.set_content_type( "image/svg+xml" )
     return canvas.standalone_xml()
+
 def get_workflow_data_inputs( step, module ):
     if module.type == 'tool':
         if module.tool:
@@ -306,6 +326,7 @@ def get_workflow_data_inputs( step, module ):
                 data_inputs.append( data_inputs_dict )
             return data_inputs
     return module.get_data_inputs()
+
 def get_workflow_data_outputs( step, module, steps ):
     if module.type == 'tool':
         if module.tool:
@@ -329,6 +350,7 @@ def get_workflow_data_outputs( step, module, steps ):
             data_outputs.append( data_outputs_dict )       
             return data_outputs
     return module.get_data_outputs()
+
 def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id, changeset_revision ):
     """
     Return an in-memory Workflow object from the dictionary object created when it was exported.  This method is called from
@@ -383,6 +405,7 @@ def get_workflow_from_dict( trans, workflow_dict, tools_metadata, repository_id,
     galaxy.webapps.galaxy.controllers.workflow.attach_ordered_steps( workflow, steps )
     # Return the in-memory Workflow object for display or later persistence to the Galaxy database.
     return workflow, missing_tool_tups
+
 def get_workflow_module_name( module, missing_tool_tups ):
     module_name = module.get_name()
     if module.type == 'tool' and module_name == 'unavailable':
@@ -392,6 +415,7 @@ def get_workflow_module_name( module, missing_tool_tups ):
                 module_name = '%s' % missing_tool_name
                 break
     return module_name
+
 def save_workflow( trans, workflow ):
     """Use the received in-memory Workflow object for saving to the Galaxy database."""
     stored = trans.model.StoredWorkflow()

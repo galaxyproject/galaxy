@@ -1,15 +1,14 @@
 import logging
 import os
 import shutil
-
 from galaxy import eggs
-eggs.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
-
+from galaxy import util
 from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
 
-from galaxy import util
+eggs.require( 'elementtree' )
+from elementtree import ElementTree
+from elementtree import ElementInclude
 
 log = logging.getLogger( __name__ )
 

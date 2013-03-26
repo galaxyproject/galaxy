@@ -1,6 +1,8 @@
-import os, logging, urllib2
-import tool_shed.util.shed_util_common as suc
+import logging
+import os
+import urllib2
 from galaxy.util import json
+import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 

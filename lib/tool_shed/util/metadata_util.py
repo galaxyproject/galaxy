@@ -1,21 +1,32 @@
-import os, tempfile, logging, urllib2
-from galaxy import web, util
-from galaxy.util import inflector, json
-from galaxy.webapps.tool_shed.util import container_util
-from galaxy.datatypes import checkers
-from galaxy.tools.data_manager.manager import DataManager
-import tool_shed.util.shed_util_common as suc
-from tool_shed.util import common_install_util, readme_util, tool_dependency_util, tool_util
-from galaxy.model.orm import and_
-
+import logging
+import os
+import tempfile
+import urllib2
 from galaxy import eggs
+from galaxy import util
+from galaxy import web
+from galaxy.datatypes import checkers
+from galaxy.model.orm import and_
+from galaxy.tools.data_manager.manager import DataManager
+from galaxy.util import inflector
+from galaxy.util import json
+from galaxy.webapps.tool_shed.util import container_util
+import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_install_util
+from tool_shed.util import readme_util
+from tool_shed.util import tool_dependency_util
+from tool_shed.util import tool_util
+
 import pkg_resources
 
 pkg_resources.require( 'mercurial' )
-from mercurial import hg, ui, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui
 
 pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
+from elementtree import ElementTree
+from elementtree import ElementInclude
 
 log = logging.getLogger( __name__ )
 

@@ -1,4 +1,5 @@
-import os, logging
+import logging
+import os
 from galaxy import util
 import tool_shed.util.shed_util_common as suc
 
