@@ -128,27 +128,14 @@ class JobRunnerMapper( object ):
         if expand_type == "python":
             expand_function_name = self.__determine_expand_function_name( destination )
             expand_function = self.__get_expand_function( expand_function_name )
-            rval = self.__invoke_expand_function( expand_function )
-            # TODO: test me extensively
-            if isinstance(rval, basestring):
-                # If the function returned a string, check if it's a URL, convert if necessary
-                if '://' in rval:
-                    return self.__convert_url_to_destination(rval)
+            job_destination = self.__invoke_expand_function( expand_function )
+            if not isinstance(job_destination, galaxy.jobs.JobDestination):
+                job_destination_rep = str(job_destination)  # Should be either id or url
+                if '://' in job_destination_rep:
+                    job_destination = self.__convert_url_to_destination(job_destination_rep)
                 else:
-                    return self.job_config.get_destination(rval)
-            elif isinstance(rval, galaxy.jobs.JobDestination):
-                # If the function generated a JobDestination, we'll use that
-                # destination directly.  However, for advanced job limiting, a
-                # function may want to set the JobDestination's 'tags'
-                # attribute so that limiting can be done on a destination tag.
-                #id_or_tag = rval.get('id')
-                #if rval.get('tags', None):
-                #    # functions that are generating destinations should only define one tag
-                #    id_or_tag = rval.get('tags')[0]
-                #return id_or_tag, rval
-                return rval
-            else:
-                raise Exception( 'Dynamic function returned a value that could not be understood: %s' % rval )
+                    job_destination = self.job_config.get_destination(job_destination_rep)
+            return job_destination
         elif expand_type is None:
             raise Exception( 'Dynamic function type not specified (hint: add <param id="type">python</param> to your <destination>)' )
         else:
