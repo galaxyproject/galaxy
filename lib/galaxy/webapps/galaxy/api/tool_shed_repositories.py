@@ -58,7 +58,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         GET /api/tool_shed_repositories/{encoded_tool_shed_repsository_id}
         Display a dictionary containing information about a specified tool_shed_repository.
 
-        :param tool_shed_repository_id: the encoded id of the `ToolShedRepository` object
+        :param id: the encoded id of the ToolShedRepository object
         """
         # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
         try:
@@ -80,18 +80,32 @@ class ToolShedRepositoriesController( BaseAPIController ):
         POST /api/tool_shed_repositories/install_repository_revision
         Install a specified repository revision from a specified tool shed into Galaxy.
         
-        :param tool_shed_url: the base URL of the Tool Shed from which to install the Repository
-        :param name: the name of the Repository
-        :param owner: the owner of the Repository
-        :param changset_revision: the changset_revision of the RepositoryMetadata object associated with the Repository
         :param key: the current Galaxy admin user's API key
-        :param new_tool_panel_section_label: optional label of a new section to be added to the Galaxy tool panel in which to load
-                                             tools contained in the Repository.  Either this parameter must be an empty string or
-                                             the tool_panel_section_id parameter must be an empty string, as both cannot be used.
-        :param tool_panel_section_id: optional id of the Galaxy tool panel section in which to load tools contained in the Repository.
-                                      If not set, tools will be loaded outside of any sections in the tool panel.  Either this
-                                      parameter must be an empty string or the tool_panel_section_id parameter must be an empty string,
-                                      as both cannot be used.
+        
+        The following parameters are included in the payload.
+        :param tool_shed_url (required): the base URL of the Tool Shed from which to install the Repository
+        :param name (required): the name of the Repository
+        :param owner (required): the owner of the Repository
+        :param changset_revision (required): the changset_revision of the RepositoryMetadata object associated with the Repository
+        :param new_tool_panel_section_label (optional): label of a new section to be added to the Galaxy tool panel in which to load
+                                                        tools contained in the Repository.  Either this parameter must be an empty string or
+                                                        the tool_panel_section_id parameter must be an empty string or both must be an empty
+                                                        string (both cannot be used simultaneously).
+        :param tool_panel_section_id (optional): id of the Galaxy tool panel section in which to load tools contained in the Repository.
+                                                 If this parameter is an empty string and the above new_tool_panel_section_label parameter is an
+                                                 empty string, tools will be loaded outside of any sections in the tool panel.  Either this
+                                                 parameter must be an empty string or the tool_panel_section_id parameter must be an empty string
+                                                 of both must be an empty string (both cannot be used simultaneously).
+        :param install_repository_dependencies (optional): Set to True if you want to install repository dependencies defined for the specified
+                                                           repository being installed.  The default setting is False.
+        :param install_tool_dependencies (optional): Set to True if you want to install tool dependencies defined for the specified repository being
+                                                     installed.  The default setting is False.
+        :param shed_tool_conf (optional): The shed-related tool panel configuration file configured in the "tool_config_file" setting in the Galaxy config file
+                                          (e.g., universe_wsgi.ini).  At least one shed-related tool panel config file is required to be configured. Setting
+                                          this parameter to a specific file enables you to choose where the specified repository will be installed because
+                                          the tool_path attribute of the <toolbox> from the specified file is used as the installation location
+                                          (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration
+                                          file will be selected automatically.
         """
         # Get the information about the repository to be installed from the payload.
         tool_shed_url = payload.get( 'tool_shed_url', '' )
@@ -160,29 +174,30 @@ class ToolShedRepositoriesController( BaseAPIController ):
             includes_tools_for_display_in_tool_panel = repository_revision_dict[ 'includes_tools_for_display_in_tool_panel' ]
         except:
             raise HTTPBadRequest( detail="Missing required parameter 'includes_tools_for_display_in_tool_panel'." )
-        # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain the repository
-        # information.
+        # Get the information about the Galaxy components (e.g., tool pane section, tool config file, etc) that will contain the repository information.
         install_repository_dependencies = payload.get( 'install_repository_dependencies', False )
         install_tool_dependencies = payload.get( 'install_tool_dependencies', False )
         new_tool_panel_section = payload.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
-        tool_path = payload.get( 'tool_path', None )
-        tool_panel_section_id = payload.get( 'tool_panel_section_id', '' )
-        if tool_panel_section_id not in [ None, '' ]:
-            tool_panel_section = trans.app.toolbox.tool_panel[ tool_panel_section_id ]
+        if shed_tool_conf:
+            # Get the tool_path setting.
+            index, shed_conf_dict = suc.get_shed_tool_conf_dict( trans.app, shed_tool_conf )
+            tool_path = shed_config_dict[ 'tool_path' ]
         else:
-            tool_panel_section = ''
-        if not shed_tool_conf or not tool_path:
-            # Pick a semi-random shed-related tool panel configuration file.
+            # Pick a semi-random shed-related tool panel configuration file and get the tool_path setting.
             for shed_config_dict in trans.app.toolbox.shed_tool_confs:
+                # Don't use migrated_tools_conf.xml.
                 if shed_config_dict[ 'config_filename' ] != trans.app.config.migrated_tools_config:
                     break
             shed_tool_conf = shed_config_dict[ 'config_filename' ]
             tool_path = shed_config_dict[ 'tool_path' ]
         if not shed_tool_conf:
             raise HTTPBadRequest( detail="Missing required parameter 'shed_tool_conf'." )
-        if not tool_path:
-            raise HTTPBadRequest( detail="Missing required parameter 'tool_path'." )
+        tool_panel_section_id = payload.get( 'tool_panel_section_id', '' )
+        if tool_panel_section_id not in [ None, '' ]:
+            tool_panel_section = trans.app.toolbox.tool_panel[ tool_panel_section_id ]
+        else:
+            tool_panel_section = ''
         # Build the dictionary of information necessary for creating tool_shed_repository database records for each repository being installed.
         installation_dict = dict( install_repository_dependencies=install_repository_dependencies,
                                   new_tool_panel_section=new_tool_panel_section,

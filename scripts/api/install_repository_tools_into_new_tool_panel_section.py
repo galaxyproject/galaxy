@@ -4,10 +4,10 @@ Install a specified repository revision from a specified tool shed into Galaxy. 
 valid tools, loading them into a new section of the Galaxy tool panel.  The repository has no tool dependencies or repository dependencies, so only
 a single repository will be installed.
 
-usage: ./install_repository_tools_into_new_tool_panel_section <api_key <galaxy base url> tool_shed_url name owner changeset_revision new_tool_panel_section_label
+usage: ./install_repository_tools_into_new_tool_panel_section.py <api_key <galaxy base url> tool_shed_url name owner changeset_revision new_tool_panel_section_label
 
 Here is a working example of how to use this script to install a repository from the test tool shed.
-./install_repository_tools_into_new_tool_panel_section.py <api key> <galaxy base url>/api/tool_shed_repositories/new/install_repository_revision http://testtoolshed.g2.bx.psu.edu gregs_filter greg f28d5018f9cb From%20Test%20Tool%20Shed
+./install_repository_tools_into_new_tool_panel_section.py <api key> <galaxy base url>/api/tool_shed_repositories/new/install_repository_revision http://testtoolshed.g2.bx.psu.edu gregs_filter greg f28d5018f9cb 'From Test Tool Shed'
 """
 
 import os

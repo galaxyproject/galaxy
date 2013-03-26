@@ -9,7 +9,7 @@ This example requires a tool panel config file (e.g., tool_conf.xml, shed_tool_c
 <section id="from_test_tool_shed" name="From Test Tool Shed" version="">
 </section>
 
-usage: ./install_repository_tools_into_existing_tool_panel_section <api_key <galaxy base url> tool_shed_url name owner changeset_revision tool_panel_section_id
+usage: ./install_repository_tools_into_existing_tool_panel_section.py <api_key <galaxy base url> tool_shed_url name owner changeset_revision tool_panel_section_id
 
 Here is a working example of how to use this script to install a repository from the test tool shed.
 ./install_repository_tools_into_existing_tool_panel_section.py <api key> <galaxy base url>/api/tool_shed_repositories/new/install_repository_revision http://testtoolshed.g2.bx.psu.edu gregs_filter greg f28d5018f9cb from_test_tool_shed
