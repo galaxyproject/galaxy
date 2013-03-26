@@ -8,15 +8,34 @@ import base64
 from galaxy.util import json
 import hmac
 
+# Slugifying from Armin Ronacher (http://flask.pocoo.org/snippets/5/)
+
+import re
+from unicodedata import normalize
+
+_punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+
+
+def slugify(text, delim=u'-'):
+    """Generates an slightly worse ASCII-only slug."""
+    result = []
+    for word in _punct_re.split(text.lower()):
+        word = normalize('NFKD', word).encode('ascii', 'ignore')
+        if word:
+            result.append(word)
+    return unicode(delim.join(result))
+
+
 # Biostar requires all keys to be present, so we start with a template
 DEFAULT_PAYLOAD = {
-    'email': "", 
-    'title': "Question about Galaxy", 
+    'email': "",
+    'title': "Question about Galaxy",
     'tags': 'galaxy',
-    'tool_name': '', 
-    'tool_version': '', 
+    'tool_name': '',
+    'tool_version': '',
     'tool_id': ''
 }
+
 
 def encode_data( key, data ):
     """
@@ -26,6 +45,13 @@ def encode_data( key, data ):
     text = base64.urlsafe_b64encode(text)
     digest = hmac.new(key, text).hexdigest()
     return text, digest
+
+
+def tag_for_tool( tool ):
+    """
+    Generate a reasonavle biostar tag for a tool.
+    """
+    return slugify( unicode( tool.name ) )
 
 
 class BiostarController( BaseUIController ):
@@ -81,6 +107,10 @@ class BiostarController( BaseUIController ):
         if not tool:
             return error( "No tool found matching '%s'" % tool_id )
         # Tool specific information for payload
-        payload = { 'title': "Question about Galaxy tool '%s'" % tool.name, 'tool_name': tool.name, 'tool_version': tool.version, 'tool_id': tool.id }
+        payload = { 'title': "Question about Galaxy tool '%s'" % tool.name,
+                    'tool_name': tool.name,
+                    'tool_version': tool.version,
+                    'tool_id': tool.id,
+                    'tags': 'galaxy ' + tag_for_tool( tool ) }
         # Pass on to regular question method
         return self.biostar_question_redirect( trans, payload )
