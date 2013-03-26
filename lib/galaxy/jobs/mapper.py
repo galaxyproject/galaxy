@@ -25,7 +25,6 @@ class JobRunnerMapper( object ):
         self.job_wrapper = job_wrapper
         self.url_to_destination = url_to_destination
         self.job_config = job_config
-        self.rule_modules = self.__get_rule_modules( )
 
     def __get_rule_modules( self ):
         unsorted_module_names = self.__get_rule_module_names( )
@@ -119,7 +118,7 @@ class JobRunnerMapper( object ):
     def __last_rule_module_with_function( self, function_name ):
         # self.rule_modules is sorted in reverse order, so find first
         # wiht function
-        for rule_module in self.rule_modules:
+        for rule_module in self.__get_rule_modules( ):
             if hasattr( rule_module, function_name ):
                 return rule_module
         return None
