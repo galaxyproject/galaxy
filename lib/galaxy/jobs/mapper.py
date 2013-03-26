@@ -129,7 +129,7 @@ class JobRunnerMapper( object ):
         return None
                 
     def __handle_dynamic_job_destination( self, destination ):
-        expand_type = destination.params.get('type', None)
+        expand_type = destination.params.get('type', "python")
         if expand_type == "python":
             expand_function_name = self.__determine_expand_function_name( destination )
             expand_function = self.__get_expand_function( expand_function_name )
@@ -141,8 +141,6 @@ class JobRunnerMapper( object ):
                 else:
                     job_destination = self.job_config.get_destination(job_destination_rep)
             return job_destination
-        elif expand_type is None:
-            raise Exception( 'Dynamic function type not specified (hint: add <param id="type">python</param> to your <destination>)' )
         else:
             raise Exception( "Unhandled dynamic job runner type specified - %s" % expand_type )
 
