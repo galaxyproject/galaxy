@@ -26,12 +26,14 @@ class TaskedJobRunner( BaseJobRunner ):
         self._init_worker_threads()
 
     def queue_job( self, job_wrapper ):
-        super( TaskedJobRunner, self ).queue_job( job_wrapper )
-        if not job_wrapper.is_ready:
+        # prepare the job
+        if not self.prepare_job( job_wrapper ):
             return
 
-        stderr = stdout = ''
+        # command line has been added to the wrapper by prepare_job()
         command_line = job_wrapper.runner_command_line
+
+        stderr = stdout = ''
 
         # Persist the destination
         job_wrapper.set_job_destination(job_wrapper.job_destination)

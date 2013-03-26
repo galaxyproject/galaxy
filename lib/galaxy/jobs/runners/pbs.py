@@ -222,12 +222,11 @@ class PBSJobRunner( AsynchronousJobRunner ):
 
     def queue_job( self, job_wrapper ):
         """Create PBS script for a job and submit it to the PBS queue"""
-        # Superclass method has some basic sanity checks
-        super( PBSJobRunner, self ).queue_job( job_wrapper )
-        if not job_wrapper.is_ready:
+        # prepare the job
+        if not self.prepare_job( job_wrapper, include_metadata=not( self.app.config.pbs_stage_path ) ):
             return
 
-        # command line has been added to the wrapper by the superclass queue_job()
+        # command line has been added to the wrapper by prepare_job()
         command_line = job_wrapper.runner_command_line
 
         job_destination = job_wrapper.job_destination
