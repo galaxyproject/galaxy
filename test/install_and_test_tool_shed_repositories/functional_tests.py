@@ -241,8 +241,7 @@ def get_repositories_to_install( location, source='file', format='json' ):
         listing = file( location, 'r' ).read()
     elif source == 'url':
         assert tool_shed_api_key is not None, 'Cannot proceed without tool shed API key.'
-        params = urllib.urlencode( dict( tools_functionally_correct='false', 
-                                         do_not_test='false', 
+        params = urllib.urlencode( dict( do_not_test='false', 
                                          downloadable='true', 
                                          malicious='false',
                                          includes_tools='true' ) )
@@ -281,10 +280,15 @@ def json_from_url( url ):
     return from_json_string( url_contents )
 
 def register_test_result( url, metadata_id, test_results_dict, tests_passed=False ):
+    '''
+    Set do_not_test = True if the repository fails functional tests. Set do_not_test = False
+    if the repository passes functional tests, so that the repository will always be re-tested
+    against the most recent code.
+    '''
     params = {}
     if tests_passed:
         params[ 'tools_functionally_correct' ] = 'true'
-        params[ 'do_not_test' ] = 'true'
+        params[ 'do_not_test' ] = 'false'
     else:
         params[ 'tools_functionally_correct' ] = 'false'
         params[ 'do_not_test' ] = 'true'
