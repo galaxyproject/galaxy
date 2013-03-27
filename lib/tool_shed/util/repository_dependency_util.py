@@ -1,14 +1,20 @@
-import os, logging
-from galaxy.util import json
-import tool_shed.util.shed_util_common as suc
-from tool_shed.util import common_install_util, encoding_util, metadata_util, tool_util
-from galaxy.webapps.tool_shed.util import container_util
-
+import logging
+import os
 from galaxy import eggs
+from galaxy.util import json
+from galaxy.webapps.tool_shed.util import container_util
+import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_install_util
+from tool_shed.util import encoding_util
+from tool_shed.util import metadata_util
+from tool_shed.util import tool_util
+
 import pkg_resources
 
 pkg_resources.require( 'mercurial' )
-from mercurial import hg, ui, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui
 
 log = logging.getLogger( __name__ )
 

@@ -1,8 +1,9 @@
-import binascii, logging
+import binascii
+import logging
+from galaxy import eggs
 from galaxy.util.hash_util import hmac_new
 from galaxy.util.json import json_fix
 
-from galaxy import eggs
 import pkg_resources
 
 pkg_resources.require( "simplejson" )
@@ -34,6 +35,7 @@ def tool_shed_decode( value ):
     if values is None:
         values = value
     return values
+
 def tool_shed_encode( val ):
     if isinstance( val, dict ):
         value = simplejson.dumps( val )

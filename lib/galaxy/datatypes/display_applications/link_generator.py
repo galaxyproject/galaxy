@@ -1,7 +1,10 @@
-"""Classes to generate links for display applications.
+"""Classes to generate links for old-style display applications.
 
 Separating Transaction based elements of display applications from datatypes.
 """
+
+#FIXME: The code contained within this file is for old-style display applications, but
+#this module namespace is intended to only handle the new-style display applications.
 
 import urllib
 
@@ -18,6 +21,8 @@ from galaxy.datatypes.interval import Interval, Gff, Wiggle, CustomTrack
 #   Currently, these are instantiated per HDA which is not the best solution
 
 #TODO: these could be extended to handle file_function and parse/contain the builds.txt files
+
+#HACK: these duplicate functionality from the individual datatype classes themselves
 
 def get_display_app_link_generator( display_app_name ):
     """Returns an instance of the proper link generator class

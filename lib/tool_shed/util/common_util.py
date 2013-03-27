@@ -1,4 +1,5 @@
-import os, urllib2
+import os
+import urllib2
 from galaxy import util
 from galaxy.util.odict import odict
 from tool_shed.util import encoding_util
@@ -63,6 +64,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
         exception_msg += 'The entry for this tool shed must always be available in this file, so re-add it before attempting to start your Galaxy server.\n'
         raise Exception( exception_msg )  
     return tool_shed_accessible, missing_tool_configs_dict
+
 def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_dict ):
     file_path = elem.get( 'file', None )
     if file_path:
@@ -71,6 +73,7 @@ def check_tool_tag_set( elem, migrated_tool_configs_dict, missing_tool_configs_d
             tool_dependencies = migrated_tool_configs_dict[ name ]
             missing_tool_configs_dict[ name ] = tool_dependencies
     return missing_tool_configs_dict
+
 def get_non_shed_tool_panel_configs( app ):
     # Get the non-shed related tool panel configs - there can be more than one, and the default is tool_conf.xml.
     config_filenames = []
@@ -83,6 +86,7 @@ def get_non_shed_tool_panel_configs( app ):
         if tool_path is None:
             config_filenames.append( config_filename )
     return config_filenames
+
 def get_tool_shed_url_from_tools_xml_file_path( app, tool_shed ):
     search_str = '://%s' % tool_shed
     for shed_name, shed_url in app.tool_shed_registry.tool_sheds.items():
