@@ -2,24 +2,22 @@
 Support for running a tool in Galaxy via an internal job management system
 """
 
-import os
-import sys
-import pwd
-import time
 import copy
-import random
-import logging
 import datetime
+import logging
+import os
+import pwd
+import random
+import re
+import shutil
+import subprocess
+import sys
 import threading
 import traceback
-import subprocess
 
 import galaxy
 from galaxy import util, model
 from galaxy.util.bunch import Bunch
-from galaxy.datatypes.tabular import *
-from galaxy.datatypes.interval import *
-# tabular/interval imports appear to be unused.  Clean up?
 from galaxy.datatypes import metadata
 from galaxy.util.json import from_json_string
 from galaxy.util.expressions import ExpressionContext
@@ -882,13 +880,16 @@ class JobWrapper( object ):
             return self.fail( job.info, stderr=stderr, stdout=stdout, exit_code=tool_exit_code )
 
         # Check the tool's stdout, stderr, and exit code for errors, but only
-        # if the job has not already been marked as having an error. 
+        # if the job has not already been marked as having an error.
         # The job's stdout and stderr will be set accordingly.
+
+        # We set final_job_state to use for dataset management, but *don't* set
+        # job.state until after dataset collection to prevent history issues
         if job.states.ERROR != job.state:
             if ( self.check_tool_output( stdout, stderr, tool_exit_code, job )):
-                job.state = job.states.OK
+                final_job_state = job.states.OK
             else:
-                job.state = job.states.ERROR
+                final_job_state = job.states.ERROR
 
         if self.version_string_cmd:
             version_filename = self.get_version_string_path()
@@ -908,9 +909,11 @@ class JobWrapper( object ):
                     if os.path.exists( dataset_path.real_path ) and os.stat( dataset_path.real_path ).st_size > 0:
                         log.warning( "finish(): %s not found, but %s is not empty, so it will be used instead" % ( dataset_path.false_path, dataset_path.real_path ) )
                     else:
+                        # Prior to fail we need to set job.state
+                        job.state = final_job_state
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
+
         job_context = ExpressionContext( dict( stdout = job.stdout, stderr = job.stderr ) )
-        job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
 
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
@@ -926,10 +929,7 @@ class JobWrapper( object ):
                 # Update (non-library) job output datasets through the object store
                 if dataset not in job.output_library_datasets:
                     self.app.object_store.update_from_file(dataset.dataset, create=True)
-                # TODO: The context['stderr'] holds stderr's contents. An error
-                # only really occurs if the job also has an error. So check the
-                # job's state:
-                if job.states.ERROR == job.state:
+                if job.states.ERROR == final_job_state:
                     dataset.blurb = "error"
                     dataset.mark_unhidden()
                 elif dataset.has_data():
@@ -945,13 +945,7 @@ class JobWrapper( object ):
                      ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) \
                        and self.app.config.retry_metadata_internally ):
                         dataset.datatype.set_meta( dataset, overwrite = False ) #call datatype.set_meta directly for the initial set_meta call during dataset creation
-                    # TODO: The context['stderr'] used to indicate that there
-                    # was an error. Now we must rely on the job's state instead;
-                    # that indicates whether the tool relied on stderr to indicate
-                    # the state or whether the tool used exit codes and regular
-                    # expressions to do so. So we use 
-                    # job.state == job.states.ERROR to replace this same test.
-                    elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != job.state: 
+                    elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != final_job_state: 
                         dataset._state = model.Dataset.states.FAILED_METADATA
                     else:
                         #load metadata from file
@@ -981,10 +975,7 @@ class JobWrapper( object ):
                     if dataset.ext == 'auto':
                         dataset.extension = 'txt'
                 self.sa_session.add( dataset )
-            # TODO: job.states.ERROR == job.state now replaces checking
-            # stderr for a problem:
-            #if context['stderr']:
-            if job.states.ERROR == job.state:
+            if job.states.ERROR == final_job_state:
                 log.debug( "setting dataset state to ERROR" )
                 # TODO: This is where the state is being set to error. Change it!
                 dataset_assoc.dataset.dataset.state = model.Dataset.states.ERROR
@@ -1054,7 +1045,12 @@ class JobWrapper( object ):
         # fix permissions
         for path in [ dp.real_path for dp in self.get_mutable_output_fnames() ]:
             util.umask_fix_perms( path, self.app.config.umask, 0666, self.app.config.gid )
+
+        # Finally set the job state.  This should only happen *after* all
+        # dataset creation, and will allow us to eliminate force_history_refresh.
+        job.state = final_job_state
         self.sa_session.flush()
+
         log.debug( 'job %d ended' % self.job_id )
         if self.app.config.cleanup_job == 'always' or ( not stderr and self.app.config.cleanup_job == 'onsuccess' ):
             self.cleanup()
