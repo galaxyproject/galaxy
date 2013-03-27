@@ -454,9 +454,10 @@ class ShedTwillTestCase( TwillTestCase ):
         
     def fill_review_form( self, review_contents_dict, strings_displayed=[], strings_not_displayed=[] ):
         kwd = dict()
+        changed = False
         for label, contents in review_contents_dict.items():
-            strings_displayed.append( label )
             if contents:
+                changed = True
                 kwd[ '%s__ESEP__comment' % label ] = contents[ 'comment' ]
                 kwd[ '%s__ESEP__rating' % label ] = contents[ 'rating' ]
                 if 'private' in contents:
@@ -464,8 +465,10 @@ class ShedTwillTestCase( TwillTestCase ):
                 kwd[ '%s__ESEP__approved' % label ] = contents[ 'approved' ]
             else:
                 kwd[ '%s__ESEP__approved' % label ] = 'not_applicable'
+        self.check_for_strings( strings_displayed, strings_not_displayed )
         self.submit_form( 1, 'Workflows__ESEP__review_button', **kwd )
-        strings_displayed.append( 'Reviews were saved' )
+        if changed:
+            strings_displayed.append( 'Reviews were saved' )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
     def galaxy_login( self, email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):

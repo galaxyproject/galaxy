@@ -1,13 +1,17 @@
-import os, logging, tempfile
-import tool_shed.util.shed_util_common as suc
-from galaxy import util
-
+import logging
+import os
+import tempfile
 from galaxy import eggs
+from galaxy import util
+import tool_shed.util.shed_util_common as suc
+
 import pkg_resources
 
 pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
-from elementtree.ElementTree import Element, SubElement
+from elementtree import ElementTree
+from elementtree import ElementInclude
+from elementtree.ElementTree import Element
+from elementtree.ElementTree import SubElement
 
 log = logging.getLogger( __name__ )
 
