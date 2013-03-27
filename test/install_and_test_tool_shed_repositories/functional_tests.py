@@ -281,8 +281,7 @@ def json_from_url( url ):
 
 def register_test_result( url, metadata_id, test_results_dict, tests_passed=False ):
     '''
-    Set do_not_test = True if the repository fails functional tests. Set do_not_test = False
-    if the repository passes functional tests, so that the repository will always be re-tested
+    This script should never set do_not_test = True, because the repositories should always be re-tested
     against the most recent code.
     '''
     params = {}
@@ -291,7 +290,7 @@ def register_test_result( url, metadata_id, test_results_dict, tests_passed=Fals
         params[ 'do_not_test' ] = 'false'
     else:
         params[ 'tools_functionally_correct' ] = 'false'
-        params[ 'do_not_test' ] = 'true'
+        params[ 'do_not_test' ] = 'false'
     params[ 'tool_test_errors' ] = test_results_dict
     return update( tool_shed_api_key, '%s' % ( url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params, return_formatted=False )
 
