@@ -72,14 +72,16 @@ class BiostarController( BaseUIController ):
         payload = dict( DEFAULT_PAYLOAD, **payload )
         # Do the best we can of providing user information for the payload
         if trans.user:
+            payload['username'] = "user-" + trans.security.encode_id( trans.user.id )
             payload['email'] = trans.user.email
             if trans.user.username:
-                payload['username'] = trans.user.username
                 payload['display_name'] = trans.user.username
             else:
-                payload['display_name'] = "Galaxy User"
+                payload['display_name'] = trans.user.email.split( "@" )[0]
         else:
-            payload['username'] = payload['display_name'] = "Anonymous Galaxy User %d" % trans.galaxy_session.id
+            encoded = trans.security.encode_id( trans.galaxy_session.id )
+            payload['username'] = "anon-" + encoded
+            payload['display_name'] = "Anonymous Galaxy User %d" % encoded[0:8]
         data, digest = encode_data( trans.app.config.biostar_key, payload )
         return trans.response.send_redirect( url_for( trans.app.config.biostar_url, data=data, digest=digest, name=trans.app.config.biostar_key_name, action=biostar_action ) )
 
