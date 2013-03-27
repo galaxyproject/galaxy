@@ -360,15 +360,16 @@ class UsesHistoryDatasetAssociationMixin:
         if meta_files:
             hda_dict[ 'meta_files' ] = meta_files
 
-        hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
         hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+        #hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
         hda_dict[ 'visualizations' ] = hda.get_visualizations()
 
         # return here if deleted
         if hda.deleted and not purged:
             return trans.security.encode_dict_ids( hda_dict )
 
-        if hda.creating_job and hda.creating_job.tool_id:
+        if( ( hda.state in [ 'running', 'queued' ] )
+        and ( hda.creating_job and hda.creating_job.tool_id ) ):
             tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
             if tool_used and tool_used.force_history_refresh:
                 hda_dict[ 'force_history_refresh' ] = True
@@ -382,6 +383,7 @@ class UsesHistoryDatasetAssociationMixin:
         def get_display_app_url( display_app_link, hda, trans ):
             web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
             dataset_hash, user_hash = da_util.encode_dataset_user( trans, hda, None )
+            return ''
             return web_url_for( controller='dataset',
                             action="display_application",
                             dataset_id=dataset_hash,
