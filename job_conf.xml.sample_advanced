@@ -40,7 +40,6 @@
         </destination>
         <destination id="dynamic" runner="dynamic">
             <!-- A destination that represents a method in the dynamic runner. -->
-            <param id="type">python</param>
             <param id="function">foo</param>
         </destination>
         <destination id="secure_lwr" runner="lwr">
