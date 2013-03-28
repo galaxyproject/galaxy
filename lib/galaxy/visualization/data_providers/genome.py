@@ -18,9 +18,7 @@ from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import summary_tree_from_file
 from galaxy.visualization.data_providers.basic import BaseDataProvider
-import galaxy_utils.sequence.vcf
-from galaxy.datatypes.tabular import Tabular, Vcf
-from galaxy.datatypes.interval import Interval, Bed, Gff, Gtf, ENCODEPeak, ChromatinInteractions
+from galaxy.datatypes.interval import Bed, Gff, Gtf
 
 from pysam import csamtools, ctabix
 
