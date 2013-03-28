@@ -11,12 +11,12 @@ if sys.version_info[:2] == (2, 4):
 pkg_resources.require( "pysam" )
 pkg_resources.require( "numpy" )
 import numpy
-from galaxy.datatypes.util.gff_util import *
+from galaxy.datatypes.util.gff_util import GFFReaderWrapper, GFFInterval, GFFFeature, convert_gff_coords_to_bed
 from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
-from galaxy.visualization.tracks.summary import *
+from galaxy.visualization.tracks.summary import summary_tree_from_file
 from galaxy.visualization.data_providers.basic import BaseDataProvider
 import galaxy_utils.sequence.vcf
 from galaxy.datatypes.tabular import Tabular, Vcf
