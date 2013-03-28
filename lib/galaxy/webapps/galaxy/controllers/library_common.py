@@ -94,7 +94,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         return rval
 
     @web.expose
-    def browse_library( self, trans, cntrller, **kwd ):
+    def browse_library( self, trans, cntrller='library', **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
