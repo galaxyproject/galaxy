@@ -36,7 +36,7 @@ class Configuration( object ):
         self.database_engine_options = get_database_engine_options( kwargs )                        
         self.database_create_tables = string_as_bool( kwargs.get( "database_create_tables", "True" ) )
         # Where dataset files are stored
-        self.file_path = resolve_path( kwargs.get( "file_path", "database/files" ), self.root )
+        self.file_path = resolve_path( kwargs.get( "file_path", "database/community_files" ), self.root )
         self.new_file_path = resolve_path( kwargs.get( "new_file_path", "database/tmp" ), self.root )
         self.cookie_path = kwargs.get( "cookie_path", "/" )
         self.enable_quotas = string_as_bool( kwargs.get( 'enable_quotas', False ) )

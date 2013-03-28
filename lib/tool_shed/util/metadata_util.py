@@ -377,7 +377,7 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
         log.debug( 'Loaded Data Manager tool_files: %s' % ( tool_file ) )
     return metadata_dict
 
-def generate_datatypes_metadata( app, repository_clone_url, repository_files_dir, datatypes_config, metadata_dict ):
+def generate_datatypes_metadata( app, repository, repository_clone_url, repository_files_dir, datatypes_config, metadata_dict ):
     """Update the received metadata_dict with information from the parsed datatypes_config."""
     try:
         tree = ElementTree.parse( datatypes_config )
@@ -428,7 +428,7 @@ def generate_datatypes_metadata( app, repository_clone_url, repository_files_dir
                     # Parse the tool_config to get the guid.
                     tool_config_path = suc.get_config_from_disk( tool_config, repository_files_dir )
                     full_path = os.path.abspath( tool_config_path )
-                    tool, valid, error_message = tool_util.load_tool_from_config( app, full_path )
+                    tool, valid, error_message = tool_util.load_tool_from_config( app, app.security.encode_id( repository.id ), full_path )
                     if tool is None:
                         guid = None
                     else:
@@ -534,7 +534,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
     # Handle proprietary datatypes, if any.
     datatypes_config = suc.get_config_from_disk( 'datatypes_conf.xml', files_dir )
     if datatypes_config:
-        metadata_dict = generate_datatypes_metadata( app, repository_clone_url, files_dir, datatypes_config, metadata_dict )
+        metadata_dict = generate_datatypes_metadata( app, repository, repository_clone_url, files_dir, datatypes_config, metadata_dict )
     # Get the relative path to all sample files included in the repository for storage in the repository's metadata.
     sample_file_metadata_paths, sample_file_copy_paths = get_sample_files_from_disk( repository_files_dir=files_dir,
                                                                                      tool_path=shed_config_dict.get( 'tool_path' ),
@@ -589,7 +589,7 @@ def generate_metadata_for_changeset_revision( app, repository, changeset_revisio
                                 log.debug( "Error parsing %s, exception: %s" % ( full_path, str( e ) ) )
                                 is_tool = False
                             if is_tool:
-                                tool, valid, error_message = tool_util.load_tool_from_config( app, full_path )
+                                tool, valid, error_message = tool_util.load_tool_from_config( app, app.security.encode_id( repository.id ), full_path )
                                 if tool is None:
                                     if not valid:
                                         invalid_tool_configs.append( name )

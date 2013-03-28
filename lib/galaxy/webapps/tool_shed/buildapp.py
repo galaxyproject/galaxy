@@ -69,6 +69,8 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/view/{owner}', controller='repository', action='sharable_owner' )
     webapp.add_route( '/view/{owner}/{name}', controller='repository', action='sharable_repository' )
     webapp.add_route( '/view/{owner}/{name}/{changeset_revision}', controller='repository', action='sharable_repository_revision' )
+    # The following route will handle displaying tool shelp images for tools contained in repositories.
+    webapp.add_route( '/repository/static/images/:repository_id/:image_file', controller='repository', action='display_tool_help_image_in_repository', repository_id=None, image_file=None )
     webapp.add_route( '/:controller/:action', action='index' )
     webapp.add_route( '/:action', controller='repository', action='index' )
     webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )

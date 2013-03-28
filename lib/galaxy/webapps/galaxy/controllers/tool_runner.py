@@ -1,19 +1,22 @@
 """
 Upload class
 """
-
+import os
 import logging
 import galaxy.util
-
 from galaxy import web
 from galaxy.tools import DefaultToolState
 from galaxy.tools.actions import upload_common
-from galaxy.tools.parameters import params_to_incoming, visit_input_values
-from galaxy.tools.parameters.basic import DataToolParameter, UnvalidatedValue
+from galaxy.tools.parameters import params_to_incoming
+from galaxy.tools.parameters import visit_input_values
+from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
-from galaxy.web import error, url_for
+from galaxy.web import error
+from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController
+import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
@@ -92,7 +95,17 @@ class ToolRunner( BaseUIController ):
                                     util=galaxy.util,
                                     add_frame=add_frame,
                                     **vars )
-        
+
+    @web.expose
+    def display_tool_help_image_in_repository( self, trans, **kwd ):
+        repository_id = kwd.get( 'repository_id', None )
+        image_file = kwd.get( 'image_file', None )
+        if repository_id and image_file:
+            repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
+            repo_files_dir = os.path.join( repository.repo_path( trans.app ), repository.name, repository.name )
+            return open( os.path.join( repo_files_dir, 'static', 'images', image_file ), 'r' )
+        return None
+
     @web.expose
     def rerun( self, trans, id=None, from_noframe=None, **kwd ):
         """

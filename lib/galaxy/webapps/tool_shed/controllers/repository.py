@@ -367,7 +367,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_valid_repositories',
                                                                   **kwd ) )
-        log.debug("CCC In browse_valid_categories, just before returning valid_category_grid, kwd: %s" % str( kwd ))
         return self.valid_category_grid( trans, **kwd )
 
     @web.expose
@@ -744,6 +743,16 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                           changeset_revision=changeset_revision,
                                                           message=message,
                                                           status='error' ) )
+
+    @web.expose
+    def display_tool_help_image_in_repository( self, trans, **kwd ):
+        repository_id = kwd.get( 'repository_id', None )
+        image_file = kwd.get( 'image_file', None )
+        if repository_id and image_file:
+            repository = suc.get_repository_in_tool_shed( trans, repository_id )
+            repo_files_dir = os.path.join( repository.repo_path( trans.app ), repository.name )
+            return open( os.path.join( repo_files_dir, 'static', 'images', image_file ), 'r' )
+        return None
 
     @web.expose
     def download( self, trans, repository_id, changeset_revision, file_type, **kwd ):
@@ -2568,14 +2577,16 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                             if can_use_disk_file:
                                 trans.app.config.tool_data_path = work_dir
                                 tool, valid, message, sample_files = tool_util.handle_sample_files_and_load_tool_from_disk( trans,
-                                                                                                                      repo_files_dir,
-                                                                                                                      full_path_to_tool_config,
-                                                                                                                      work_dir )
+                                                                                                                            repo_files_dir,
+                                                                                                                            repository_id,
+                                                                                                                            full_path_to_tool_config,
+                                                                                                                            work_dir )
                                 if message:
                                     status = 'error'
                             else:
                                 tool, message, sample_files = tool_util.handle_sample_files_and_load_tool_from_tmp_config( trans,
                                                                                                                            repo,
+                                                                                                                           repository_id,
                                                                                                                            changeset_revision,
                                                                                                                            tool_config_filename,
                                                                                                                            work_dir )
