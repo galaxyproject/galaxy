@@ -884,24 +884,15 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """
         hda_model = trans.model.HistoryDatasetAssociation
 
-        # outer join with job output to get job_state or None
-        job_subq = ( trans.sa_session.query(
-                        trans.model.Job.id.label( 'job_id' ),
-                        trans.model.Job.state.label( 'job_state' ),
-                        trans.model.JobToOutputDatasetAssociation.dataset_id.label( 'hda_id' ) )
-                    .join( trans.model.JobToOutputDatasetAssociation ) ).subquery()
-
         # get state, name, etc.
         columns = ( hda_model.name, hda_model.hid, hda_model.id, hda_model.deleted,
-                    trans.model.Dataset.state,
-                    job_subq.c.job_state, job_subq.c.job_id )
-        column_keys = [ "name", "hid", "id", "deleted", "state", "job_state", "job_id" ]
+                    trans.model.Dataset.state )
+        column_keys = [ "name", "hid", "id", "deleted", "state" ]
 
         query = ( trans.sa_session.query( *columns )
                     .enable_eagerloads( False )
                     .filter( hda_model.history == history )
                     .join( trans.model.Dataset )
-                    .outerjoin(( job_subq, job_subq.c.hda_id == hda_model.id ))
                     .order_by( hda_model.hid ) )
 
         # build dictionaries, adding history id and encoding all ids
@@ -969,20 +960,6 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
         return state
 
-    def _are_jobs_still_running( self, trans, hda_summary_list ):
-        """Determine whether any jobs are running from the given
-        list of hda summary dictionaries.
-        """
-        job_states = trans.model.Job.states
-        def is_job_running( job_state ):
-            return ( ( job_state == job_states.NEW )
-                   or( job_state == job_states.UPLOAD )
-                   or( job_state == job_states.WAITING )
-                   or( job_state == job_states.QUEUED )
-                   or( job_state == job_states.RUNNING ) )
-
-        return len( filter( lambda hda: is_job_running( hda['job_state'] ), hda_summary_list ) )
-
     def get_history_dict( self, trans, history ):
         """Returns history data in the form of a dictionary.
         """
@@ -1002,8 +979,6 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         history_dict[ 'state_details' ] = state_counts
         history_dict[ 'state_ids' ] = state_ids
         history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
-
-        history_dict[ 'jobs_running' ] = self._are_jobs_still_running( trans, hda_summaries )
 
         return history_dict
 
