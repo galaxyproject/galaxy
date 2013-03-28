@@ -73,7 +73,7 @@
             });
             $(this).append(select_link).append(" ").append(unselect_link);
         });
-        
+
         $(".add-librarydataset").live("click", function() {
             var link = $(this);
             $.ajax({
@@ -311,7 +311,7 @@
 
         %if trans.app.config.biostar_url:
             <!-- BioStar links -->
-            <span class="pull-right"><a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}" target="galaxy_main" class="fa-icon-question-sign tooltip" data-original-title="Ask a question about this tool"></a></span>
+            <span class="pull-right"><a href="${h.url_for( controller='biostar', action='biostar_tool_question_redirect', tool_id=tool.id )}" target="_blank" class="fa-icon-question-sign tooltip" data-original-title="Ask a question about this tool"></a></span>
             <!-- End of BioStar links -->
         %endif
         </div>
