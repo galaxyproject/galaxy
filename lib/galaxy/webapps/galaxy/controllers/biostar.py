@@ -29,7 +29,7 @@ def slugify(text, delim=u'-'):
 # Biostar requires all keys to be present, so we start with a template
 DEFAULT_PAYLOAD = {
     'email': "",
-    'title': "Question about Galaxy",
+    'title': "",
     'tags': 'galaxy',
     'tool_name': '',
     'tool_version': '',
@@ -109,8 +109,7 @@ class BiostarController( BaseUIController ):
         if not tool:
             return error( "No tool found matching '%s'" % tool_id )
         # Tool specific information for payload
-        payload = { 'title': "Question about Galaxy tool '%s'" % tool.name,
-                    'tool_name': tool.name,
+        payload = { 'tool_name': tool.name,
                     'tool_version': tool.version,
                     'tool_id': tool.id,
                     'tags': 'galaxy ' + tag_for_tool( tool ) }
