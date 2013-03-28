@@ -191,7 +191,12 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 ##TODO: api/web controllers should use common code, and this section should call that code
 <%def name="get_history( history )">
 <%
-    return h.to_json_string( history )
+    try:
+        return h.to_json_string( history )
+    except TypeError, type_err:
+        log.error( 'Could not serialize history' )
+        log.debug( 'history data: %s', str( history ) )
+        return '{}'
 %>
 </%def>
 
@@ -206,7 +211,12 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 
 <%def name="get_hdas( hdas )">
 <%
-    return h.to_json_string( hdas )
+    try:
+        return h.to_json_string( hdas )
+    except TypeError, type_err:
+        log.error( 'Could not serialize hdas for history: %s', history['id'] )
+        log.debug( 'hda data: %s', str( hdas ) )
+        return '{}'
 %>
 </%def>
 

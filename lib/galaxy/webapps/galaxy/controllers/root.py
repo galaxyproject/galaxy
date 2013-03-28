@@ -172,6 +172,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                                                show_deleted = show_deleted,
                                                show_hidden=show_hidden,
                                                over_quota=trans.app.quota_agent.get_percent( trans=trans ) >= 100,
+                                               log = log,
                                                message=message,
                                                status=status )
 
