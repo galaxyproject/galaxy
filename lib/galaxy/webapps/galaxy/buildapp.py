@@ -44,6 +44,8 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
+    # The following route will handle displaying tool shelp images for tools contained in repositories installed from the tool shed.
+    webapp.add_route( '/tool_runner/static/images/:repository_id/:image_file', controller='tool_runner', action='display_tool_help_image_in_repository', repository_id=None, image_file=None )
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )
