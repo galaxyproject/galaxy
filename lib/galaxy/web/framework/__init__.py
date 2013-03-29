@@ -726,8 +726,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 other_galaxy_session.is_valid = False
                 self.sa_session.add( other_galaxy_session )
         self.sa_session.flush()
-        # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
-        self.__update_session_cookie( name='galaxysession' )
+        if self.webapp.name == 'galaxy':
+            # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
+            self.__update_session_cookie( name='galaxysession' )
+        elif self.webapp.name == 'tool_shed':
+            self.__update_session_cookie( name='galaxycommunitysession' )
     def get_galaxy_session( self ):
         """
         Return the current galaxy session

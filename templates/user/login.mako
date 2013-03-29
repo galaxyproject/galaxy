@@ -1,10 +1,21 @@
-<%!
-    def inherit(context):
-        if context.get('use_panels'):
-            return '/webapps/galaxy/base_panels.mako'
-        else:
-            return '/base.mako'
-%>
+%if trans.webapp.name == 'galaxy':
+    <%!
+        def inherit(context):
+            if context.get('use_panels'):
+                return '/webapps/galaxy/base_panels.mako'
+            else:
+                return '/base.mako'
+    %>
+%elif trans.webapp.name == 'tool_shed':
+    <%!
+        def inherit(context):
+            if context.get('use_panels'):
+                return '/webapps/tool_shed/base_panels.mako'
+            else:
+                return '/base.mako'
+    %>
+%endif
+
 <%inherit file="${inherit(context)}"/>
 
 <%def name="init()">
