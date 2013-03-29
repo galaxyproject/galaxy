@@ -102,8 +102,14 @@ class ToolRunner( BaseUIController ):
         image_file = kwd.get( 'image_file', None )
         if repository_id and image_file:
             repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
-            repo_files_dir = os.path.join( repository.repo_path( trans.app ), repository.name, repository.name )
-            return open( os.path.join( repo_files_dir, 'static', 'images', image_file ), 'r' )
+            repo_files_dir = os.path.join( repository.repo_files_directory( trans.app ) )
+            default_path = os.path.abspath( os.path.join( repo_files_dir, 'static', 'images', image_file ) )
+            if os.path.exists( default_path ):
+                return open( default_path, 'r' )
+            else:
+                path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, image_file )
+                if os.path.exists( path_to_file ):
+                    return open( path_to_file, 'r' )
         return None
 
     @web.expose
