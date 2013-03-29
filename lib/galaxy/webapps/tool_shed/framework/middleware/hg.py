@@ -7,6 +7,7 @@ from paste.auth.basic import AuthBasicAuthenticator
 from paste.httpheaders import AUTH_TYPE
 from paste.httpheaders import REMOTE_USER
 
+from galaxy.util import asbool
 from galaxy.webapps.tool_shed import model
 from galaxy.util.hash_util import new_secure_hash
 import mercurial.__version__
