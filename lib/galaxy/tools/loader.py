@@ -86,26 +86,38 @@ def _expand_macros(elements, macros):
         return
 
     for element in elements:
-        # HACK for elementtree, newer implementations (etree/lxml) won't
-        # require this parent_map data structure but elementtree does not
-        # track parents or recongnize .find('..').
-        parent_map = dict((c, p) for p in element.getiterator() for c in p)
-        for expand_el in element.findall('.//expand'):
-            macro_name = expand_el.get('macro')
-            macro_def = deepcopy(macros[macro_name])  # deepcopy needed?
+        while True:
+            expand_el = element.find('.//expand')
+            if expand_el is None:
+                break
+            _expand_macro(element, expand_el, macros)
 
-            yield_els = [yield_el for macro_def_el in macro_def for yield_el in macro_def_el.findall('.//yield')]
 
-            expand_el_children = expand_el.getchildren()
-            macro_def_parent_map = \
-                dict((c, p) for macro_def_el in macro_def for p in macro_def_el.getiterator() for c in p)
+def _expand_macro(element, expand_el, macros):
+    macro_name = expand_el.get('macro')
+    macro_def = deepcopy(macros[macro_name])
 
-            for yield_el in yield_els:
-                _xml_replace(yield_el, expand_el_children, macro_def_parent_map)
+    _expand_yield_statements(macro_def, expand_el)
 
-            # Recursively expand contained macros.
-            _expand_macros(macro_def, macros)
-            _xml_replace(expand_el, macro_def, parent_map)
+    # Recursively expand contained macros.
+    _expand_macros(macro_def, macros)
+
+    # HACK for elementtree, newer implementations (etree/lxml) won't
+    # require this parent_map data structure but elementtree does not
+    # track parents or recongnize .find('..').
+    parent_map = dict((c, p) for p in element.getiterator() for c in p)
+    _xml_replace(expand_el, macro_def, parent_map)
+
+
+def _expand_yield_statements(macro_def, expand_el):
+    yield_els = [yield_el for macro_def_el in macro_def for yield_el in macro_def_el.findall('.//yield')]
+
+    expand_el_children = expand_el.getchildren()
+    macro_def_parent_map = \
+        dict((c, p) for macro_def_el in macro_def for p in macro_def_el.getiterator() for c in p)
+
+    for yield_el in yield_els:
+        _xml_replace(yield_el, expand_el_children, macro_def_parent_map)
 
 
 def _load_macros(macros_el, tool_dir):
@@ -294,6 +306,31 @@ def test_loader():
             </inputs>
         </macro>
         <macro name="second">
+            <input name="second_input" />
+        </macro>
+    </macros>
+</tool>''')
+        xml = tool_dir.load()
+        assert xml.find("inputs").findall("input")[1].get("name") == "second_input"
+
+    # Test recursive macro applications.
+    with TestToolDirectory() as tool_dir:
+        tool_dir.write('''
+<tool>
+    <expand macro="inputs">
+        <input name="first_input" />
+        <expand macro="second" />
+    </expand>
+    <macros>
+        <macro name="inputs">
+            <inputs>
+                <yield />
+            </inputs>
+        </macro>
+        <macro name="second">
+            <expand macro="second_delegate" />
+        </macro>
+        <macro name="second_delegate">
             <input name="second_input" />
         </macro>
     </macros>
