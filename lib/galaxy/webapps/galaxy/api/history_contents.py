@@ -142,6 +142,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     check_ownership=True, check_accessible=True )
 
             hda_dict = self.get_hda_dict( trans, hda )
+            hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+            hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
 
         except Exception, e:
             msg = "Error in history API at listing dataset: %s" % ( str(e) )

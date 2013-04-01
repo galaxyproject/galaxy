@@ -53,6 +53,9 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                 # Default: return dataset as dict.
                 if hda_ldda == 'hda':
                     rval = self.get_hda_dict( trans, dataset )
+                    # add these to match api/history_contents.py, show
+                    rval[ 'display_types' ] = self.get_old_display_applications( trans, dataset )
+                    rval[ 'display_apps' ] = self.get_display_apps( trans, dataset )
                 else:
                     rval = dataset.get_api_value()
                 
