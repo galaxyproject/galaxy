@@ -44,6 +44,8 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
+    # The following route will handle displaying tool shelp images for tools contained in repositories installed from the tool shed.
+    webapp.add_route( '/tool_runner/static/images/:repository_id/:image_file', controller='tool_runner', action='display_tool_help_image_in_repository', repository_id=None, image_file=None )
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )
@@ -105,12 +107,6 @@ def app_factory( global_conf, **kwargs ):
                                 name_prefix='group_',
                                 path_prefix='/api/groups/:group_id',
                                 parent_resources=dict( member_name='group', collection_name='groups' ) )
-    webapp.api_mapper.resource( 'content',
-                                'contents',
-                                controller='tool_shed_repository_contents',
-                                name_prefix='tool_shed_repository_',
-                                path_prefix='/api/tool_shed_repositories/:tool_shed_repository_id',
-                                parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
     _add_item_tags_controller( webapp, 
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
@@ -143,7 +139,6 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.resource( 'tool', 'tools', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
     webapp.api_mapper.resource( 'genome', 'genomes', path_prefix='/api' )
-    webapp.api_mapper.resource( 'tool_shed_repository', 'tool_shed_repositories', path_prefix='/api' )
     webapp.api_mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
     webapp.api_mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
     webapp.api_mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
@@ -157,7 +152,14 @@ def app_factory( global_conf, **kwargs ):
     webapp.api_mapper.connect("workflow_dict", '/api/workflows/{workflow_id}/download', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.api_mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
-
+    # Galaxy API for tool shed features.
+    webapp.api_mapper.resource( 'tool_shed_repository',
+                                'tool_shed_repositories',
+                                controller='tool_shed_repositories',
+                                name_prefix='tool_shed_repository_',
+                                path_prefix='/api',
+                                new={ 'install_repository_revision' : 'POST' },
+                                parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger

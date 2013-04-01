@@ -1,20 +1,22 @@
 """
 Upload class
 """
-
+import os
 import logging
 import galaxy.util
-
 from galaxy import web
 from galaxy.tools import DefaultToolState
 from galaxy.tools.actions import upload_common
-from galaxy.tools.parameters import params_to_incoming, visit_input_values
-from galaxy.tools.parameters.basic import DataToolParameter, UnvalidatedValue
+from galaxy.tools.parameters import params_to_incoming
+from galaxy.tools.parameters import visit_input_values
+from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters.basic import UnvalidatedValue
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import is_hashable
-from galaxy.web import error, url_for
+from galaxy.web import error
+from galaxy.web import url_for
 from galaxy.web.base.controller import BaseUIController
-from galaxy.web.form_builder import SelectField
+import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
 
@@ -93,7 +95,23 @@ class ToolRunner( BaseUIController ):
                                     util=galaxy.util,
                                     add_frame=add_frame,
                                     **vars )
-        
+
+    @web.expose
+    def display_tool_help_image_in_repository( self, trans, **kwd ):
+        repository_id = kwd.get( 'repository_id', None )
+        image_file = kwd.get( 'image_file', None )
+        if repository_id and image_file:
+            repository = suc.get_tool_shed_repository_by_id( trans, repository_id )
+            repo_files_dir = os.path.join( repository.repo_files_directory( trans.app ) )
+            default_path = os.path.abspath( os.path.join( repo_files_dir, 'static', 'images', image_file ) )
+            if os.path.exists( default_path ):
+                return open( default_path, 'r' )
+            else:
+                path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, image_file )
+                if os.path.exists( path_to_file ):
+                    return open( path_to_file, 'r' )
+        return None
+
     @web.expose
     def rerun( self, trans, id=None, from_noframe=None, **kwd ):
         """
@@ -219,21 +237,7 @@ class ToolRunner( BaseUIController ):
                                     add_frame=add_frame,
                                     tool_id_version_message=tool_id_version_message,
                                     **vars )
-    def build_tool_version_select_field( self, tools, tool_id, set_selected ):
-        """Build a SelectField whose options are the ids for the received list of tools."""
-        options = []
-        refresh_on_change_values = []
-        for tool in tools:
-            options.insert( 0, ( tool.version, tool.id ) )
-            refresh_on_change_values.append( tool.id )
-        select_field = SelectField( name='tool_id', refresh_on_change=True, refresh_on_change_values=refresh_on_change_values )
-        for option_tup in options:
-            selected = set_selected and option_tup[1] == tool_id
-            if selected:
-                select_field.add_option( 'version %s' % option_tup[0], option_tup[1], selected=True )
-            else:
-                select_field.add_option( 'version %s' % option_tup[0], option_tup[1] )
-        return select_field
+    
     @web.expose
     def redirect( self, trans, redirect_url=None, **kwd ):
         if not redirect_url:
@@ -327,4 +331,4 @@ class ToolRunner( BaseUIController ):
         <p><b>Please do not use your browser\'s "stop" or "reload" buttons until the upload is complete, or it may be interrupted.</b></p>
         <p>You may safely continue to use Galaxy while the upload is in progress.  Using "stop" and "reload" on pages other than Galaxy is also safe.</p>
         """
-        return trans.show_message( msg, refresh_frames='history' )
+        return trans.show_message( msg )

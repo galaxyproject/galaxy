@@ -5,6 +5,12 @@ from galaxy.model.orm import and_
 import tool_shed.util.shed_util_common as suc
 from tool_shed.grids.repository_grids import RepositoryGrid, CategoryGrid
 
+from galaxy import eggs
+import pkg_resources
+
+pkg_resources.require( 'mercurial' )
+from mercurial import hg, ui, commands
+
 log = logging.getLogger( __name__ )
 
 

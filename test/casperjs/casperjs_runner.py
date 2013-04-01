@@ -73,7 +73,7 @@ class CasperJSTestCase( unittest.TestCase ):
     debug = False
     # bit of a hack - this is the beginning of the last string when capserjs --verbose=true --logLevel=debug
     #   use this to get subprocess to stop waiting for output
-    casper_done_str = '# Tests complete'
+    casper_done_str = '# Stopping'
 
     # convert js test results to unittest.TestResults
     results_adapter = None #CasperJsonToUnittestResultsConverter()
@@ -209,7 +209,8 @@ class CasperJSTestCase( unittest.TestCase ):
             js_test_results = json.loads( results )
             failures = js_test_results[ 'testResults' ][ 'failures' ]
             assert len( failures ) == 0, (
-                "Some assertions failed in the headless browser tests (see the log for details)" )
+                "%d assertions failed in the headless browser tests" %( len( failures ) )
+                + " (see the log for details)" )
 
     # ---------------------------------------------------------------- TestCase overrides
     def setUp( self ):
@@ -299,10 +300,12 @@ test_user = {
 # ==================================================================== TESTCASE EXAMPLE
 # these could be broken out into other py files - shouldn't be necc. ATM
 class Test_01_User( CasperJSTestCase ):
-    """TestCase that uses javascript and a headless browser to test dynamic pages.
+    """Tests for the Galaxy user centered functionality:
+    registration, login, etc.
     """
     def test_10_registration( self ):
-        """User registration tests: register new user, logout, attempt bad registrations.
+        """User registration tests:
+        register new user, logout, attempt bad registrations.
         """
         # all keywords will be compiled into a single JSON obj and passed to the server
         #self.run_js_script( 'registration-tests.js',
@@ -331,7 +334,7 @@ class Test_02_Tools( CasperJSTestCase ):
 
 
 class Test_03_HistoryPanel( CasperJSTestCase ):
-    """(Minimal) casperjs tests for tools.
+    """Tests for History fetching, rendering, and modeling.
     """
     def test_00_history_panel( self ):
         """Test history panel basics (controls, structure, refresh, history options menu, etc.).
@@ -339,13 +342,18 @@ class Test_03_HistoryPanel( CasperJSTestCase ):
         self.run_js_script( 'history-panel-tests.js' )
 
     def test_10_anonymous_histories( self ):
+        """Test history options button.
+        """
+        self.run_js_script( 'history-options-tests.js' )
+
+    def test_20_anonymous_histories( self ):
         """Test history panel basics with an anonymous user.
         """
         self.run_js_script( 'anon-history-tests.js' )
 
 
 class Test_04_HDAs( CasperJSTestCase ):
-    """(Minimal) casperjs tests for tools.
+    """Tests for HistoryDatasetAssociation fetching, rendering, and modeling.
     """
     def test_00_HDA_states( self ):
         """Test structure rendering of HDAs in all the possible HDA states

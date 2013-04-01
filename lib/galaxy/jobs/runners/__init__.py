@@ -4,6 +4,7 @@ Base classes for job runner plugins.
 
 import os
 import time
+import string
 import logging
 import threading
 
@@ -94,29 +95,43 @@ class BaseJobRunner( object ):
         """
         raise NotImplementedError()
 
-    # Runners must override the job handling methods
-    def queue_job(self, job_wrapper):
+    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do
         """
         job_id = job_wrapper.get_id_tag()
         job_state = job_wrapper.get_state()
         job_wrapper.is_ready = False
+        job_wrapper.runner_command_line = None
 
         # Make sure the job hasn't been deleted
-        if job_state != model.Job.states.QUEUED:
+        if job_state == model.Job.states.DELETED:
+            log.debug( "(%s) Job deleted by user before it entered the %s queue"  % ( job_id, self.runner_name ) )
+            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+                job_wrapper.cleanup()
+            return False
+        elif job_state != model.Job.states.QUEUED:
             log.info( "(%d) Job is in state %s, skipping execution"  % ( job_id, job_state ) ) 
-            return
+            # cleanup may not be safe in all states
+            return False
 
         # Prepare the job
         try:
             job_wrapper.prepare()
-            job_wrapper.runner_command_line = self.build_command_line( job_wrapper )
+            job_wrapper.runner_command_line = self.build_command_line( job_wrapper, include_metadata=include_metadata, include_work_dir_outputs=include_work_dir_outputs )
         except:
             log.exception("(%s) Failure preparing job" % job_id)
             job_wrapper.fail( "failure preparing job", exception=True )
-            return
+            return False
 
-        job_wrapper.is_ready = True
+        if not job_wrapper.runner_command_line:
+            job_wrapper.finish( '', '' )
+            return False
+
+        return True
+
+    # Runners must override the job handling methods
+    def queue_job(self, job_wrapper):
+        raise NotImplementedError()
 
     def stop_job(self, job):
         raise NotImplementedError()
@@ -227,17 +242,51 @@ class AsynchronousJobState( object ):
     to communicate with distributed resource manager.
     """
 
-    def __init__( self ):
-        self.job_wrapper = None
-        self.job_id = None
+    def __init__( self, files_dir=None, job_wrapper=None, job_id=None, job_file=None, output_file=None, error_file=None, exit_code_file=None, job_name=None, job_destination=None  ):
         self.old_state = None
         self.running = False
-        self.job_file = None
-        self.output_file = None
-        self.error_file = None
-        self.exit_code_file = None
         self.check_count = 0
-        self.job_destination = None
+
+        self.job_wrapper = job_wrapper
+        # job_id is the DRM's job id, not the Galaxy job id
+        self.job_id = job_id
+        self.job_destination = job_destination
+
+        self.job_file = job_file
+        self.output_file = output_file
+        self.error_file = error_file
+        self.exit_code_file = exit_code_file
+        self.job_name = job_name
+
+        self.set_defaults( files_dir )
+
+        self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
+
+    def set_defaults( self, files_dir ):
+        if self.job_wrapper is not None:
+            id_tag = self.job_wrapper.get_id_tag()
+            if files_dir is not None:
+                self.job_file = os.path.join( files_dir, 'galaxy_%s.sh' % id_tag )
+                self.output_file = os.path.join( files_dir, 'galaxy_%s.o' % id_tag )
+                self.error_file = os.path.join( files_dir, 'galaxy_%s.e' % id_tag )
+                self.exit_code_file = os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
+            job_name = 'g%s' % id_tag
+            if self.job_wrapper.tool.old_id:
+                job_name += '_%s' % self.job_wrapper.tool.old_id
+            if self.job_wrapper.user:
+                job_name += '_%s' % self.job_wrapper.user
+            self.job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
+
+    def cleanup( self ):
+        for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
+            try:
+                os.unlink( file )
+            except Exception, e:
+                log.debug( "(%s/%s) Unable to cleanup %s: %s" % ( self.job_wrapper.get_id_tag(), self.job_id, file, str( e ) ) )
+
+    def register_cleanup_file_attribute( self, attribute ):
+        if attribute not in self.cleanup_file_attributes:
+            self.cleanup_file_attributes.append( attribute )
 
 class AsynchronousJobRunner( BaseJobRunner ):
     """Parent class for any job runner that runs jobs asynchronously (e.g. via
@@ -319,11 +368,63 @@ class AsynchronousJobRunner( BaseJobRunner ):
     def check_watched_item(self):
         raise NotImplementedError()
 
-    def finish_job(self, job_state):
-        raise NotImplementedError()
+    def finish_job( self, job_state ):
+        """
+        Get the output/error for a finished job, pass to `job_wrapper.finish`
+        and cleanup all the job's temporary files.
+        """
+        galaxy_id_tag = job_state.job_wrapper.get_id_tag()
+        external_job_id = job_state.job_id
 
-    def fail_job(self, job_state):
-        raise NotImplementedError()
+        # To ensure that files below are readable, ownership must be reclaimed first
+        job_state.job_wrapper.reclaim_ownership()
+
+        # wait for the files to appear
+        which_try = 0
+        while which_try < (self.app.config.retry_job_output_collection + 1):
+            try:
+                stdout = file( job_state.output_file, "r" ).read( 32768 )
+                stderr = file( job_state.error_file, "r" ).read( 32768 )
+                which_try = (self.app.config.retry_job_output_collection + 1)
+            except Exception, e:
+                if which_try == self.app.config.retry_job_output_collection:
+                    stdout = ''
+                    stderr = 'Job output not returned from cluster'
+                    log.error( '(%s/%s) %s: %s' % ( galaxy_id_tag, external_job_id, stderr, str( e ) ) )
+                else:
+                    time.sleep(1)
+                which_try += 1
+
+        try:
+            # This should be an 8-bit exit code, but read ahead anyway: 
+            exit_code_str = file( job_state.exit_code_file, "r" ).read(32)
+        except:
+            # By default, the exit code is 0, which typically indicates success.
+            exit_code_str = "0"
+
+        try:
+            # Decode the exit code. If it's bogus, then just use 0.
+            exit_code = int(exit_code_str)
+        except:
+            log.warning( "(%s/%s) Exit code '%s' invalid. Using 0." % ( galaxy_id_tag, external_job_id, exit_code_str ) )
+            exit_code = 0
+
+        # clean up the job files
+        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
+            job_state.cleanup()
+
+        try:
+            job_state.job_wrapper.finish( stdout, stderr, exit_code )
+        except:
+            log.exception( "(%s/%s) Job wrapper finish method failed" % ( galaxy_id_tag, external_job_id ) )
+            job_state.job_wrapper.fail( "Unable to finish job", exception=True )
+
+    def fail_job( self, job_state ):
+        if getattr( job_state, 'stop_job', True ):
+            self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
+        job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
+        if self.app.config.cleanup_job == "always":
+            job_state.cleanup()
 
     def mark_as_finished(self, job_state):
         self.work_queue.put( ( self.finish_job, job_state ) )

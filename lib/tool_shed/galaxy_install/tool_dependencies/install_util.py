@@ -1,7 +1,7 @@
 import sys, os, subprocess, tempfile, urllib2
 import common_util
 import fabric_util
-from tool_shed.util import encoding_util
+from tool_shed.util import encoding_util, tool_dependency_util
 from galaxy.model.orm import and_
 from galaxy.web import url_for
 
@@ -15,24 +15,6 @@ from elementtree.ElementTree import Element, SubElement
 def clean_tool_shed_url( base_url ):
     protocol, base = base_url.split( '://' )
     return base.rstrip( '/' )
-
-def create_or_update_tool_dependency( app, tool_shed_repository, name, version, type, status, set_status=True ):
-    # Called from Galaxy (never the tool shed) when a new repository is being installed or when an uninstalled repository is being reinstalled.
-    sa_session = app.model.context.current
-    # First see if an appropriate tool_dependency record exists for the received tool_shed_repository.
-    if version:
-        tool_dependency = get_tool_dependency_by_name_version_type_repository( app, tool_shed_repository, name, version, type )
-    else:
-        tool_dependency = get_tool_dependency_by_name_type_repository( app, tool_shed_repository, name, type )
-    if tool_dependency:
-        if set_status:
-            tool_dependency.status = status
-    else:
-        # Create a new tool_dependency record for the tool_shed_repository.
-        tool_dependency = app.model.ToolDependency( tool_shed_repository.id, name, version, type, status )
-    sa_session.add( tool_dependency )
-    sa_session.flush()
-    return tool_dependency
 
 def create_temporary_tool_dependencies_config( tool_shed_url, name, owner, changeset_revision ):
     """Make a call to the tool shed to get the required repository's tool_dependencies.xml file."""
@@ -95,23 +77,6 @@ def get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app, to
                 return tool_shed_repository
     return None
 
-def get_tool_dependency_by_name_type_repository( app, repository, name, type ):
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.ToolDependency ) \
-                     .filter( and_( app.model.ToolDependency.table.c.tool_shed_repository_id == repository.id,
-                                    app.model.ToolDependency.table.c.name == name,
-                                    app.model.ToolDependency.table.c.type == type ) ) \
-                     .first()
-
-def get_tool_dependency_by_name_version_type_repository( app, repository, name, version, type ):
-    sa_session = app.model.context.current
-    return sa_session.query( app.model.ToolDependency ) \
-                     .filter( and_( app.model.ToolDependency.table.c.tool_shed_repository_id == repository.id,
-                                    app.model.ToolDependency.table.c.name == name,
-                                    app.model.ToolDependency.table.c.version == version,
-                                    app.model.ToolDependency.table.c.type == type ) ) \
-                     .first()
-
 def get_tool_dependency_install_dir( app, repository_name, repository_owner, repository_changeset_revision, tool_dependency_type, tool_dependency_name,
                                      tool_dependency_version ):
     if tool_dependency_type == 'package':
@@ -147,13 +112,13 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
     for package_elem in elem:
         if package_elem.tag == 'install':
             # Create the tool_dependency record in the database.
-            tool_dependency = create_or_update_tool_dependency( app=app,
-                                                                tool_shed_repository=tool_shed_repository,
-                                                                name=package_name,
-                                                                version=package_version,
-                                                                type='package',
-                                                                status=app.model.ToolDependency.installation_status.INSTALLING,
-                                                                set_status=True )
+            tool_dependency = tool_dependency_util.create_or_update_tool_dependency( app=app,
+                                                                                     tool_shed_repository=tool_shed_repository,
+                                                                                     name=package_name,
+                                                                                     version=package_version,
+                                                                                     type='package',
+                                                                                     status=app.model.ToolDependency.installation_status.INSTALLING,
+                                                                                     set_status=True )
             # Get the installation method version from a tag like: <install version="1.0">
             package_install_version = package_elem.get( 'version', '1.0' )
             if package_install_version == '1.0':
@@ -296,13 +261,13 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                     elif package_elem.tag == 'install':
                         # <install version="1.0">
                         package_install_version = package_elem.get( 'version', '1.0' )
-                        tool_dependency = create_or_update_tool_dependency( app=app,
-                                                                            tool_shed_repository=tool_shed_repository,
-                                                                            name=package_name,
-                                                                            version=package_version,
-                                                                            type='package',
-                                                                            status=app.model.ToolDependency.installation_status.INSTALLING,
-                                                                            set_status=True )
+                        tool_dependency = tool_dependency_util.create_or_update_tool_dependency( app=app,
+                                                                                                 tool_shed_repository=tool_shed_repository,
+                                                                                                 name=package_name,
+                                                                                                 version=package_version,
+                                                                                                 type='package',
+                                                                                                 status=app.model.ToolDependency.installation_status.INSTALLING,
+                                                                                                 set_status=True )
                         if package_install_version == '1.0':
                             # Handle tool dependency installation using a fabric method included in the Galaxy framework.
                             for actions_elem in package_elem:
@@ -324,7 +289,11 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                     #    print 'Installing tool dependencies via fabric script ', proprietary_fabfile_path
             else:
                 print '\nSkipping installation of tool dependency', package_name, 'version', package_version, 'since it is installed in', install_dir, '\n'
-                tool_dependency = get_tool_dependency_by_name_version_type_repository( app, tool_shed_repository, package_name, package_version, 'package' )
+                tool_dependency = tool_dependency_util.get_tool_dependency_by_name_version_type_repository( app,
+                                                                                                            tool_shed_repository,
+                                                                                                            package_name,
+                                                                                                            package_version,
+                                                                                                            'package' )
                 tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
                 sa_session.add( tool_dependency )
                 sa_session.flush()
@@ -550,13 +519,13 @@ def set_environment( app, elem, tool_shed_repository ):
             if env_var_dict:
                 if not os.path.exists( install_dir ):
                     os.makedirs( install_dir )
-                tool_dependency = create_or_update_tool_dependency( app=app,
-                                                                    tool_shed_repository=tool_shed_repository,
-                                                                    name=env_var_name,
-                                                                    version=None,
-                                                                    type='set_environment',
-                                                                    status=app.model.ToolDependency.installation_status.INSTALLING,
-                                                                    set_status=True )
+                tool_dependency = tool_dependency_util.create_or_update_tool_dependency( app=app,
+                                                                                         tool_shed_repository=tool_shed_repository,
+                                                                                         name=env_var_name,
+                                                                                         version=None,
+                                                                                         type='set_environment',
+                                                                                         status=app.model.ToolDependency.installation_status.INSTALLING,
+                                                                                         set_status=True )
                 cmd = common_util.create_or_update_env_shell_file( install_dir, env_var_dict )
                 if env_var_version == '1.0':
                     # Handle setting environment variables using a fabric method.

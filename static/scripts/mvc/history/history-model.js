@@ -59,6 +59,8 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             if( _.isArray( initialHdas ) ){
                 this.hdas.reset( initialHdas );
                 this.checkForUpdates();
+                //TODO: don't call if force_history_refresh
+                this.updateDisplayApplications();
 
             // handle errors in initialHdas
             //TODO: errors from the api shouldn't be plain strings...
@@ -67,6 +69,18 @@ var History = BaseModel.extend( LoggableMixin ).extend(
                 alert( _l( 'Error loading bootstrapped history' ) + ':\n' + initialHdas );
             }
         }
+
+        // if an hda moves into the ready state and has the force_history_refresh flag (often via tool.xml)
+        //  then: refresh the panel
+        this.hdas.bind( 'state:ready', function( hda, newState, oldState ){
+            if( hda.get( 'force_history_refresh' ) ){
+                //TODO: could poll jobs here...
+                var history = this;
+                setTimeout( function(){
+                    history.stateUpdater();
+                }, History.UPDATE_DELAY );
+            }
+        }, this );
 
         // events
         //this.on( 'change', function( currModel, changedList ){
@@ -288,6 +302,35 @@ var History = BaseModel.extend( LoggableMixin ).extend(
         });
         // fire only once
         history.hdas.trigger( 'add', hdaDataList );
+    },
+
+    /** Update (from controller) the display application link data of the hdas with the given ids.
+     *  @param {String[]} ids an array of hda ids to update (optional, defaults to all hdas)
+     *  @returns {HistoryDatasetAssociation[]} hda models that were updated
+     */
+    updateDisplayApplications : function( ids ){
+        this.log( this + 'updateDisplayApplications:', ids );
+        var history = this,
+        //    data = { id: this.get( 'id' ) };
+        //if( ids && _.isArray( ids ) ){ data.hda_ids = ids.join( ',' ); }
+            data = ( ids && _.isArray( ids ) )?({ hda_ids : ids.join( ',' ) }):({});
+
+        //TODO: hardcoded
+        history.log( this + ': fetching display application data' );
+        jQuery.ajax( 'history/get_display_application_links', {
+            data : data,
+            success : function( data, status, xhr ){
+                history.hdas.set( data );
+            },
+            error : function( xhr, status, error ){
+                if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
+                    var msg = 'Error fetching display applications, ' + ids + ':' + ( xhr.responseText || error );
+                    Galaxy.show_modal( 'History panel error',
+                        msg, { 'Ok': function(){ Galaxy.hide_modal(); } });
+                    this.log( msg );
+                }
+            }
+        });
     },
 
     toString : function(){

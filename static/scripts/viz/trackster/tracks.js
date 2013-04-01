@@ -813,11 +813,10 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         for (var i = 0; i < this.drawables.length; i++) {
             drawables_names.push(this.drawables[i].name);
         }
-        var new_track_name = "Composite Track of " + this.drawables.length + " tracks (" + drawables_names.join(", ") + ")";
         
         // Replace this group with composite track.
         var composite_track = new CompositeTrack(this.view, this.view, {
-            name: new_track_name,
+            name: this.name,
             drawables: this.drawables
         });
         var index = this.container.replace_drawable(this, composite_track, true);
@@ -885,10 +884,10 @@ var TracksterView = Backbone.View.extend({
         this.config = new DrawableConfig( {
             track: this,
             params: [
-                { key: 'a_color', label: 'A Color', type: 'color', default_value: "FF0000" },
-                { key: 'c_color', label: 'C Color', type: 'color', default_value: "00FF00" },
-                { key: 'g_color', label: 'G Color', type: 'color', default_value: "0000FF" },
-                { key: 't_color', label: 'T Color', type: 'color', default_value: "FF00FF" }
+                { key: 'a_color', label: 'A Color', type: 'color', default_value: "#FF0000" },
+                { key: 'c_color', label: 'C Color', type: 'color', default_value: "#00FF00" },
+                { key: 'g_color', label: 'G Color', type: 'color', default_value: "#0000FF" },
+                { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" }
             ], 
             saved_values: obj_dict.prefs,
             onchange: function() {
@@ -1277,7 +1276,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                     view.reference_track.init();
                 }
             }
-            if (low !== undefined && high !== undefined) {
+            if (low && high) {
                 view.low = Math.max(low, 0);
                 view.high = Math.min(high, view.max_high);
             }
@@ -1290,34 +1289,49 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             view.request_redraw();
         }
     },
+
+    /**
+     * Change viewing region to that denoted by string. General format of string is:
+     *
+     * <chrom>[ {separator}<start>[-<end>] ]
+     *
+     * where separator can be whitespace or a colon. Examples:
+     *
+     * chr22
+     * chr1:100-200
+     * chr7 89999
+     * chr8 90000 990000
+     */
     go_to: function(str) {
-        // Preprocess str to remove spaces and commas.
-        str = str.replace(/ |,/g, "");
-        
-        // Go to new location.
-        var view = this,
-            new_low, 
-            new_high,
-            chrom_pos = str.split(":"),
+        // Remove commas.
+        str = str.replace(/,/g, '');
+
+        // Replace colons and hyphens with space for easy parsing.
+        str = str.replace(/:|\-/g, ' ');
+
+        // Parse new location.
+        var chrom_pos = str.split(/\s+/),
             chrom = chrom_pos[0],
-            pos = chrom_pos[1];
-        
-        if (pos !== undefined) {
-            try {
-                var pos_split = pos.split("-");
-                new_low = parseInt(pos_split[0], 10);
-                new_high = parseInt(pos_split[1], 10);
-            } catch (e) {
-                return false;
-            }
+            new_low = (chrom_pos[1] ? parseInt(chrom_pos[1], 10) : null),
+            new_high = (chrom_pos[2] ? parseInt(chrom_pos[2], 10) : null);
+
+        // If no new high, new_low is the position of focus, so adjust low, high
+        // accordingly.
+        if (!new_high) {
+            // HACK: max resolution is 30 bases,so adjust low, high accordingly.
+            new_low = new_low - 15;
+            new_high = new_low + 15;
         }
-        view.change_chrom(chrom, new_low, new_high);
+
+        this.change_chrom(chrom, new_low, new_high);
     },
+
     move_fraction: function(fraction) {
         var view = this;
         var span = view.high - view.low;
         this.move_delta(fraction * span);
     },
+
     move_delta: function(delta_chrom) {
         // Update low, high.
         var view = this;

@@ -542,3 +542,27 @@ function check_all_items() {
     }
     init_grid_elements();
 }
+
+
+// confirmation/submission of operation request
+function submit_operation(selected_button, confirmation_text)
+{
+    // verify in any item is selected
+    var number_of_checked_ids = $('input[name="id"]:checked').length;
+    if (!number_of_checked_ids > 0)
+        return false;
+    
+    // show confirmation box
+    if (confirmation_text != 'None' && confirmation_text != '')
+        if(!confirm(confirmation_text))
+            return false;
+    
+    // set up hidden field to parse the command/operation to controller
+    $('#operation').val(selected_button.value);
+    
+    // submit form
+    selected_button.form.submit();
+    
+    // return
+    return true;
+}

@@ -106,7 +106,13 @@ def expose_api_raw( func ):
     """
     return expose_api( func, to_json=False )
 
-def expose_api( func, to_json=True ):
+def expose_api_anonymous( func, to_json=True ):
+    """
+    Expose this function via the API but don't require an API key.
+    """
+    return expose_api( func, to_json=to_json, key_required=False )
+
+def expose_api( func, to_json=True, key_required=True ):
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
         def error( environ, start_response ):
@@ -114,7 +120,7 @@ def expose_api( func, to_json=True ):
             return error_message
         error_status = '403 Forbidden'
         ## If there is a user, we've authenticated a session.
-        if not trans.user and isinstance(trans.galaxy_session, Bunch):
+        if key_required and not trans.user and isinstance( trans.galaxy_session, Bunch ):
             # If trans.user is already set, don't check for a key.
             # This happens when we're authenticating using session instead of an API key.
             # The Bunch clause is used to prevent the case where there's no user, but there is a real session.
@@ -720,8 +726,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 other_galaxy_session.is_valid = False
                 self.sa_session.add( other_galaxy_session )
         self.sa_session.flush()
-        # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
-        self.__update_session_cookie( name='galaxysession' )
+        if self.webapp.name == 'galaxy':
+            # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
+            self.__update_session_cookie( name='galaxysession' )
+        elif self.webapp.name == 'tool_shed':
+            self.__update_session_cookie( name='galaxycommunitysession' )
     def get_galaxy_session( self ):
         """
         Return the current galaxy session

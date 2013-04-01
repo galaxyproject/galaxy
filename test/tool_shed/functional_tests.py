@@ -175,7 +175,7 @@ def main():
     os.environ[ 'TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF' ] = shed_tool_data_table_conf_file
     # ---- Build Tool Shed Application -------------------------------------------------- 
     toolshedapp = None 
-    global_conf = { '__file__' : 'community_wsgi.ini.sample' }
+    global_conf = { '__file__' : 'tool_shed_wsgi.ini.sample' }
 #    if not toolshed_database_connection.startswith( 'sqlite://' ):
 #        kwargs[ 'database_engine_option_max_overflow' ] = '20'
     if tool_dependency_dir is not None:
@@ -278,8 +278,10 @@ def main():
                                                database_connection = galaxy_database_connection,
                                                database_engine_option_pool_size = '10',
                                                datatype_converters_config_file = "datatype_converters_conf.xml.sample",
+                                               enable_tool_shed_check = True,
                                                file_path = galaxy_file_path,
                                                global_conf = global_conf,
+                                               hours_between_check = 0.001,
                                                id_secret = 'changethisinproductiontoo',
                                                job_queue_workers = 5,
                                                log_destination = "stdout",

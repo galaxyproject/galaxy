@@ -30,7 +30,7 @@ if sys.argv[-1] in [ 'tool_shed' ]:
     # Need to pop the last arg so the command line args will be correct
     # for sqlalchemy-migrate 
     webapp = sys.argv.pop()
-    config_file = 'community_wsgi.ini'
+    config_file = 'tool_shed_wsgi.ini'
     repo = 'lib/galaxy/webapps/tool_shed/model/migrate'
 else:
     # Poor man's optparse

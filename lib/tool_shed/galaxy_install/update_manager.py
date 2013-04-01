@@ -3,7 +3,6 @@ Determine if installed tool shed repositories have updates available in their re
 """
 import threading, urllib2, logging
 from galaxy.util import string_as_bool
-import tool_shed.util.shed_util as shed_util
 import tool_shed.util.shed_util_common as suc
 from galaxy.model.orm import and_
 
@@ -35,7 +34,7 @@ class UpdateManager( object ):
             self.sleeper.sleep( self.seconds_to_sleep )
         log.info( 'Transfer job restarter shutting down...' )
     def check_for_update( self, repository ):
-        tool_shed_url = suc.get_url_from_repository_tool_shed( self.app, repository )
+        tool_shed_url = suc.get_url_from_tool_shed( self.app, repository.tool_shed )
         url = '%s/repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&from_update_manager=True' % \
             ( tool_shed_url, repository.name, repository.owner, repository.changeset_revision )
         try:

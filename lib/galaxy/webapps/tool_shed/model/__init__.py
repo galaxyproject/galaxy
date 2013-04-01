@@ -192,10 +192,10 @@ class Repository( object, APIItem ):
 
 class RepositoryMetadata( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'has_repository_dependencies', 'includes_datatypes',
-                                    'includes_tools', 'includes_tool_dependencies', 'includes_workflows' )
+                                    'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
     api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct',
                                  'do_not_test', 'time_last_tested', 'tool_test_errors', 'has_repository_dependencies', 'includes_datatypes', 'includes_tools',
-                                 'includes_tool_dependencies', 'includes_workflows' )
+                                 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
     def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
                   tools_functionally_correct=False, do_not_test=False, time_last_tested=None, tool_test_errors=None, has_repository_dependencies=False,
                   includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False, includes_workflows=False ):

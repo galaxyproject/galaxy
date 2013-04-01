@@ -11,7 +11,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 
 log = logging.getLogger( __name__ )
 
-class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
+class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
     
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -98,8 +98,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
 
     @web.expose
     def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
-        """
-        Display the current history, creating a new history if necessary.
+        """Display the current history, creating a new history if necessary.
+
         NOTE: No longer accepts "id" or "template" options for security reasons.
         """
         params = util.Params( kwd )
@@ -130,10 +130,42 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
 
             else:
                 # get all datasets server-side, client-side will get flags and render appropriately
-                datasets = self.get_history_datasets( trans, history,
-                                                      show_deleted=True, show_hidden=True, show_purged=True )
+                hdas = self.get_history_datasets( trans, history,
+                    show_deleted=True, show_hidden=True, show_purged=True )
+
+                #TODO: would be good to re-use the hdas above to get the history data...
+                history_dictionary = self.get_history_dict( trans, history )
+
+                #TODO: blech - all here for now - duplication of hist. contents, index
+                hda_dictionaries = []
+                for hda in hdas:
+                    try:
+                        hda_dictionaries.append( self.get_hda_dict( trans, hda ) )
+
+                    except Exception, exc:
+                        # don't fail entire list if hda err's, record and move on
+                        # (making sure http recvr knows it's err'd)
+                        encoded_hda_id = trans.security.encode_id( hda.id )
+                        log.error( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
+                            history_dictionary[ 'id' ], encoded_hda_id, type( exc ), str( exc ) )
+                        return_val = {
+                            'id'        : encoded_hda_id,
+                            'name'      : hda.name,
+                            'hid'       : hda.hid,
+                            'history_id': history_dictionary[ 'id' ],
+                            'state'     : trans.model.Dataset.states.ERROR,
+                            'visible'   : True,
+                            'misc_info' : str( exc ),
+                            'misc_blurb': 'Failed to retrieve dataset information.',
+                            'error'     : str( exc )
+                        }
+                        hda_dictionaries.append( return_val )
+
+                history = history_dictionary
+                datasets = hda_dictionaries
 
             return trans.stream_template_mako( history_panel_template,
+            #return trans.fill_template_mako( history_panel_template,
                                                history = history,
                                                annotation = self.get_item_annotation_str( trans.sa_session, trans.user, history ),
                                                datasets = datasets,
@@ -141,6 +173,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                                                show_deleted = show_deleted,
                                                show_hidden=show_hidden,
                                                over_quota=trans.app.quota_agent.get_percent( trans=trans ) >= 100,
+                                               log = log,
                                                message=message,
                                                status=status )
 

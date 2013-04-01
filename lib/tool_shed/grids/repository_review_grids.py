@@ -4,6 +4,7 @@ from galaxy.web.framework.helpers import grids
 from galaxy.model.orm import and_, or_
 from tool_shed.grids.repository_grids import RepositoryGrid
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import metadata_util
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -70,15 +71,16 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
 
 
     class WithoutReviewsRevisionColumn( grids.GridColumn ):
+
         def get_value( self, trans, grid, repository ):
             # Restrict the options to revisions that have not yet been reviewed.
-            repository_metadata_revisions = suc.get_repository_metadata_revisions_for_review( repository, reviewed=False )
+            repository_metadata_revisions = metadata_util.get_repository_metadata_revisions_for_review( repository, reviewed=False )
             if repository_metadata_revisions:
                 rval = ''
                 for repository_metadata in repository_metadata_revisions:
-                    rev, label, changeset_revision = suc.get_rev_label_changeset_revision_from_repository_metadata( trans,
-                                                                                                                    repository_metadata,
-                                                                                                                    repository=repository )
+                    rev, label, changeset_revision = metadata_util.get_rev_label_changeset_revision_from_repository_metadata( trans,
+                                                                                                                              repository_metadata,
+                                                                                                                              repository=repository )
                     rval += '<a href="manage_repository_reviews_of_revision?id=%s&changeset_revision=%s">%s</a><br/>' % \
                         ( trans.security.encode_id( repository.id ), changeset_revision, label )
                 return rval
@@ -95,6 +97,36 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                     rval += '%s</a> | ' % user.username
                 rval = rval.rstrip( ' | ' )
             return rval
+
+
+    class RatingColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository ):
+            rval = ''
+            for review in repository.reviews:
+                if review.rating:
+                    for index in range( 1, 6 ):
+                        rval += '<input '
+                        rval += 'name="star1-%s" ' % trans.security.encode_id( review.id )
+                        rval += 'type="radio" '
+                        rval += 'class="community_rating_star star" '
+                        rval += 'disabled="disabled" '
+                        rval += 'value="%s" ' % str( review.rating )
+                        if review.rating > ( index - 0.5 ) and review.rating < ( index + 0.5 ):
+                            rval += 'checked="checked" '
+                        rval += '/>'
+                rval += '<br/>'
+            return rval
+
+    class ApprovedColumn( grids.TextColumn ):
+
+        def get_value( self, trans, grid, repository ):
+            rval = ''
+            for review in repository.reviews:
+                if review.approved:
+                    rval += '%s<br/>' % review.approved
+            return rval
+            
     title = "All reviewed repositories"
     model_class = model.Repository
     template='/webapps/tool_shed/repository_review/grid.mako'
@@ -104,10 +136,11 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                                     key="name",
                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                     attach_popup=True ),
-        WithReviewsRevisionColumn( "Reviewed revisions" ),
-        WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoryGrid.UserColumn( "Owner", attach_popup=False ),
-        ReviewersColumn( "Reviewers", attach_popup=False )
+        WithReviewsRevisionColumn( "Reviewed revisions" ),
+        ReviewersColumn( "Reviewers", attach_popup=False ),
+        RatingColumn( "Rating", attach_popup=False ),
+        ApprovedColumn( "Approved", attach_popup=False )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name", 
                                                 cols_to_filter=[ columns[ 0 ] ],
@@ -252,13 +285,16 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
 
         def get_value( self, trans, grid, review ):
             if review.rating:
-                rval = '<input '
-                rval += 'name="star1-%s" ' % trans.security.encode_id( review.id )
-                rval += 'type="radio" '
-                rval += 'class="community_rating_star star" '
-                rval += 'disabled="disabled" '
-                rval += 'value="%s"' % str( review.rating )
-                rval += '/>'
+                for index in range( 1, 6 ):
+                    rval = '<input '
+                    rval += 'name="star1-%s" ' % trans.security.encode_id( review.id )
+                    rval += 'type="radio" '
+                    rval += 'class="community_rating_star star" '
+                    rval += 'disabled="disabled" '
+                    rval += 'value="%s" ' % str( review.rating )
+                    if review.rating > ( index - 0.5 ) and review.rating < ( index + 0.5 ):
+                        rval += 'checked="checked" '
+                    rval += '/>'
                 return rval
             return ''
 

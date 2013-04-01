@@ -3,59 +3,129 @@
     <command interpreter="python">
         sorter.py
         --input=$input
-        --output=$output
+        --output=$out_file1
+        
+        #set $style = '' if (str($style) == 'alpha') else 'n'
+        #set $order = '' if (str($order) == 'ASC') else 'r'
         --key=$column,$column$style$order
+        
         #for $col in $column_set:
-        --key=${col.other_column},${col.other_column}${col.other_style}${col.other_order}
+        #set $other_column = str($col.other_column)
+        #set $other_style = '' if (str($col.other_style) == "alpha") else 'n'
+        #set $other_order = '' if (str($col.other_order) == "ASC") else 'r'
+        --key=$other_column,$other_column$other_style$other_order
         #end for
     </command>
     <inputs>
         <param format="tabular" name="input" type="data" label="Sort Dataset" />
         <param name="column" label="on column" type="data_column" data_ref="input" accept_default="true"/>
         <param name="style" type="select" label="with flavor">
-            <option value="n">Numerical sort</option>
-            <option value="">Alphabetical sort</option>
+            <option value="num">Numerical sort</option>
+            <option value="alpha">Alphabetical sort</option>
         </param>
         <param name="order" type="select" label="everything in">
-            <option value="r">Descending order</option>
-            <option value="">Ascending order</option>
+            <option value="DESC">Descending order</option>
+            <option value="ASC">Ascending order</option>
         </param>
         <repeat name="column_set" title="Column selection">
             <param name="other_column" label="on column" type="data_column" data_ref="input" accept_default="true" />
             <param name="other_style" type="select" label="with flavor">
-                <option value="n">Numerical sort</option>
-                <option value="">Alphabetical sort</option>
+                <option value="num">Numerical sort</option>
+                <option value="alpha">Alphabetical sort</option>
             </param>
             <param name="other_order" type="select" label="everything in">
-                <option value="r">Descending order</option>
-                <option value="">Ascending order</option>
+                <option value="DESC">Descending order</option>
+                <option value="ASC">Ascending order</option>
             </param>
         </repeat>
     </inputs>
     <outputs>
-        <data format="input" name="output" metadata_source="input"/>
+        <data format="input" name="out_file1" metadata_source="input"/>
     </outputs>
     <tests>
         <test>
             <param name="input" value="sort_in1.bed"/>
             <param name="column" value="1"/>
-            <param name="style" value=""/>
-            <param name="order" value=""/>
+            <param name="style" value="alpha"/>
+            <param name="order" value="ASC"/>
             <param name="other_column" value="3"/>
-            <param name="other_style" value="n"/>
-            <param name="other_order" value="r"/>
-            <output name="output" file="sort_out1.bed"/>
+            <param name="other_style" value="num"/>
+            <param name="other_order" value="DESC"/>
+            <output name="out_file1" file="sort_out1.bed"/>
         </test>
         <test>
             <param name="input" value="sort_in1.bed"/>
             <param name="column" value="1"/>
-            <param name="style" value=""/>
-            <param name="order" value=""/>
+            <param name="style" value="alpha"/>
+            <param name="order" value="ASC"/>
             <param name="other_column" value="3"/>
-            <param name="other_style" value="n"/>
-            <param name="other_order" value=""/>
-            <output name="output" file="sort_out2.bed"/>
+            <param name="other_style" value="num"/>
+            <param name="other_order" value="ASC"/>
+            <output name="out_file1" file="sort_out2.bed"/>
         </test>
     </tests>
+    <help>
+.. class:: infomark
+        
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
+        
+-----
 
+**Syntax**
+
+This tool sorts the dataset on any number of columns in either ascending or descending order.
+
+* Numerical sort orders numbers by their magnitude, ignores all characters besides numbers, and evaluates a string of numbers to the value they signify.
+* Alphabetical sort is a phonebook type sort based on the conventional order of letters in an alphabet. Each nth letter is compared with the nth letter of other words in the list, starting at the first letter of each word and advancing to the second, third, fourth, and so on, until the order is established. Therefore, in an alphabetical sort, 2 comes after 100 (1 &lt; 2).
+        
+-----
+
+**Examples**
+
+The list of numbers 4,17,3,5 collates to 3,4,5,17 by numerical sorting, while it collates to 17,3,4,5 by alphabetical sorting.
+
+Sorting the following::
+
+    Q     d    7   II    jhu  45
+    A     kk   4   I     h    111
+    Pd    p    1   ktY   WS   113
+    A     g    10  H     ZZ   856
+    A     edf  4   tw    b    234
+    BBB   rt   10  H     ZZ   100
+    A     rew  10  d     b    1111
+    C     sd   19  YH    aa   10
+    Hah   c    23  ver   bb   467
+    MN    gtr  1   a     X    32
+    N     j    9   a     T    205
+    BBB   rrf  10  b     Z    134
+    odfr  ws   6   Weg   dew  201
+    C     f    3   WW    SW   34
+    A     jhg  4   I     b    345
+    Pd    gf   7   Gthe  de   567
+    rS    hty  90  YY    LOp  89
+    A     g    10  H     h    43
+    A     g    4   I     h    500
+
+on columns 1 (alpha), 3 (num), and 6 (num) in ascending order will yield::
+
+    A     kk   4   I     h    111
+    A     edf  4   tw    b    234
+    A     jhg  4   I     b    345
+    A     g    4   I     h    500
+    A     g    10  H     h    43
+    A     g    10  H     ZZ   856
+    A     rew  10  d     b    1111
+    BBB   rt   10  H     ZZ   100
+    BBB   rrf  10  b     Z    134
+    C     f    3   WW    SW   34
+    C     sd   19  YH    aa   10
+    Hah   c    23  ver   bb   467
+    MN    gtr  1   a     X    32
+    N     j    9   a     T    205
+    odfr  ws   6   Weg   dew  201
+    Pd    p    1   ktY   WS   113
+    Pd    gf   7   Gthe  de   567
+    Q     d    7   II    jhu  45
+    rS    hty  90  YY    LOp  89
+    </help>
 </tool>

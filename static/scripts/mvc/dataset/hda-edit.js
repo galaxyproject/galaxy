@@ -404,6 +404,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @see HDABaseView#_render_body_ok
      */
     _render_body_ok : function( parent ){
+        //TODO: should call super somehow and insert the needed...
         // most common state renderer and the most complicated
         parent.append( this._render_hdaSummary() );
 
@@ -434,7 +435,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         parent.append( this._render_tagArea() );
         parent.append( this._render_annotationArea() );
         
-        parent.append( this._render_displayApps() );
+        parent.append( this._render_displayAppArea() );
+        this._render_displayApps( parent );
         parent.append( this._render_peek() );
     },
 

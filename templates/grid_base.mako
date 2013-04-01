@@ -459,12 +459,14 @@
     ## Grid operations for multiple items.
     %if show_item_checkboxes:
         <tr>
+            ## place holder for multiple operation commands
+            <input type="hidden" id="operation" name="operation" value="">
             <td></td>
             <td colspan="100">
                 For <span class="grid-selected-count"></span> selected ${items_plural}:
                 %for operation in grid.operations:
                     %if operation.allow_multiple:
-                        <input type="submit" name="operation" value="${operation.label}" class="action-button">
+                        <input type="button" value="${operation.label}" class="action-button" onclick="submit_operation(this, '${operation.confirm}')">
                     %endif
                 %endfor
             </td>

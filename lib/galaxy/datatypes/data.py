@@ -448,12 +448,12 @@ class Data( object ):
         apply anyway.
         """
         try:
-            if type in self.get_display_types():
+            if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr ( self, self.supported_display_apps[type]['links_function'] ) ( dataset, type, app, base_url, **kwd )
         except:
             log.exception( 'Function %s is referred to in datatype %s for generating links for type %s, but is not accessible' \
                            % ( self.supported_display_apps[type]['links_function'], self.__class__.__name__, type ) )
-        return []
+        return target_frame, []
     def get_converter_types(self, original_dataset, datatypes_registry):
         """Returns available converters by type for this dataset"""
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)

@@ -2,7 +2,10 @@ import sys, os, shutil, logging, tarfile, tempfile, urllib
 from galaxy.web.base.controller import BaseUIController
 from galaxy import web, util
 from galaxy.datatypes import checkers
+from galaxy.util import json
+
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import metadata_util, repository_dependency_util, tool_dependency_util, tool_util
 
 from galaxy import eggs
 eggs.require('mercurial')
@@ -15,6 +18,26 @@ undesirable_files = [ '.hg_archival.txt', 'hgrc', '.DS_Store' ]
 CHUNK_SIZE = 2**20 # 1Mb
 
 class UploadController( BaseUIController ):
+    def check_file_contents_for_email_alerts( self, trans ):
+        """
+        See if any admin users have chosen to receive email alerts when a repository is updated.  If so, the file contents of the update must be
+        checked for inappropriate content.
+        """
+        admin_users = trans.app.config.get( "admin_users", "" ).split( "," )
+        for repository in trans.sa_session.query( trans.model.Repository ) \
+                                          .filter( trans.model.Repository.table.c.email_alerts != None ):
+            email_alerts = json.from_json_string( repository.email_alerts )
+            for user_email in email_alerts:
+                if user_email in admin_users:
+                    return True
+        return False
+    def check_file_content_for_html_and_images( self, file_path ):
+        message = ''
+        if checkers.check_html( file_path ):
+            message = 'The file "%s" contains HTML content.\n' % str( file_path )
+        elif checkers.check_image( file_path ):
+            message = 'The file "%s" contains image content.\n' % str( file_path )
+        return message
     @web.expose
     @web.require_login( 'upload', use_panels=True )
     def upload( self, trans, **kwd ):
@@ -120,9 +143,9 @@ class UploadController( BaseUIController ):
                     shutil.move( uploaded_file_name, full_path )
                     # See if any admin users have chosen to receive email alerts when a repository is
                     # updated.  If so, check every uploaded file to ensure content is appropriate.
-                    check_contents = suc.check_file_contents( trans )
+                    check_contents = self.check_file_contents_for_email_alerts( trans )
                     if check_contents and os.path.isfile( full_path ):
-                        content_alert_str = self.__check_file_content( full_path )
+                        content_alert_str = self.check_file_content_for_html_and_images( full_path )
                     else:
                         content_alert_str = ''
                     commands.add( repo.ui, repo, full_path )
@@ -132,7 +155,7 @@ class UploadController( BaseUIController ):
                     if full_path.endswith( 'tool_data_table_conf.xml.sample' ):
                         # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
                         # to the in-memory trans.app.tool_data_tables dictionary.
-                        error, error_message = suc.handle_sample_tool_data_table_conf_file( trans.app, full_path )
+                        error, error_message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, full_path )
                         if error:
                             message = '%s<br/>%s' % ( message, error_message )
                     # See if the content of the change set was valid.
@@ -166,7 +189,7 @@ class UploadController( BaseUIController ):
                             else:
                                 message += "  %d files were removed from the repository root.  " % len( files_to_remove )
                         kwd[ 'message' ] = message
-                        suc.set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
+                        metadata_util.set_repository_metadata_due_to_new_tip( trans, repository, content_alert_str=content_alert_str, **kwd )
                     if repository.metadata_revisions:
                         # A repository's metadata revisions are order descending by update_time, so the zeroth revision will be the tip just after an upload.
                         metadata_dict = repository.metadata_revisions[0].metadata
@@ -177,22 +200,22 @@ class UploadController( BaseUIController ):
                     # so warning messages are important because orphans are always valid.  The repository owner must be warned in case they did not intend to define an
                     # orphan dependency, but simply provided incorrect information (tool shed, name owner, changeset_revision) for the definition.
                     # Handle messaging for orphan tool dependencies.
-                    orphan_message = suc.generate_message_for_orphan_tool_dependencies( metadata_dict )
+                    orphan_message = tool_dependency_util.generate_message_for_orphan_tool_dependencies( metadata_dict )
                     if orphan_message:
                         message += orphan_message
                         status = 'warning'
                     # Handle messaging for invalid tool dependencies.
-                    invalid_tool_dependencies_message = suc.generate_message_for_invalid_tool_dependencies( metadata_dict )
+                    invalid_tool_dependencies_message = tool_dependency_util.generate_message_for_invalid_tool_dependencies( metadata_dict )
                     if invalid_tool_dependencies_message:
                         message += invalid_tool_dependencies_message
                         status = 'error'
                     # Handle messaging for invalid repository dependencies.
-                    invalid_repository_dependencies_message = suc.generate_message_for_invalid_repository_dependencies( metadata_dict )
+                    invalid_repository_dependencies_message = repository_dependency_util.generate_message_for_invalid_repository_dependencies( metadata_dict )
                     if invalid_repository_dependencies_message:
                         message += invalid_repository_dependencies_message
                         status = 'error'
                     # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-                    suc.reset_tool_data_tables( trans.app )
+                    tool_util.reset_tool_data_tables( trans.app )
                     trans.response.send_redirect( web.url_for( controller='repository',
                                                                action='browse_repository',
                                                                id=repository_id,
@@ -202,7 +225,7 @@ class UploadController( BaseUIController ):
                 else:
                     status = 'error'
                 # Reset the tool_data_tables by loading the empty tool_data_table_conf.xml file.
-                suc.reset_tool_data_tables( trans.app )
+                tool_util.reset_tool_data_tables( trans.app )
         selected_categories = [ trans.security.decode_id( id ) for id in category_ids ]
         return trans.fill_template( '/webapps/tool_shed/repository/upload.mako',
                                     repository=repository,
@@ -330,16 +353,16 @@ class UploadController( BaseUIController ):
                             pass
         # See if any admin users have chosen to receive email alerts when a repository is
         # updated.  If so, check every uploaded file to ensure content is appropriate.
-        check_contents = suc.check_file_contents( trans )
+        check_contents = self.check_file_contents_for_email_alerts( trans )
         for filename_in_archive in filenames_in_archive:
             # Check file content to ensure it is appropriate.
             if check_contents and os.path.isfile( filename_in_archive ):
-                content_alert_str += self.__check_file_content( filename_in_archive )
+                content_alert_str += self.check_file_content_for_html_and_images( filename_in_archive )
             commands.add( repo.ui, repo, filename_in_archive )
             if filename_in_archive.endswith( 'tool_data_table_conf.xml.sample' ):
                 # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
                 # to the in-memory trans.app.tool_data_tables dictionary.
-                error, message = suc.handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
+                error, message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
                 if error:
                     return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
         commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
@@ -421,10 +444,3 @@ class UploadController( BaseUIController ):
                 message = "Uploaded archives cannot contain hgrc files."
                 return False, message
         return True, ''
-    def __check_file_content( self, file_path ):
-        message = ''
-        if checkers.check_html( file_path ):
-            message = 'The file "%s" contains HTML content.\n' % str( file_path )
-        elif checkers.check_image( file_path ):
-            message = 'The file "%s" contains image content.\n' % str( file_path )
-        return message

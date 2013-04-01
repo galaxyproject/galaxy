@@ -3,6 +3,7 @@ from galaxy import web, util
 from galaxy.web.base.controllers.admin import Admin
 from galaxy.util import inflector
 import tool_shed.util.shed_util_common as suc
+import tool_shed.util.metadata_util as metadata_util
 import tool_shed.grids.admin_grids as admin_grids
 
 from galaxy import eggs
@@ -105,7 +106,7 @@ class AdminController( BaseUIController, Admin ):
                 # The received id is a RepositoryMetadata object id, so we need to get the
                 # associated Repository and redirect to view_or_manage_repository with the
                 # changeset_revision.
-                repository_metadata = suc.get_repository_metadata_by_id( trans, kwd[ 'id' ] )
+                repository_metadata = metadata_util.get_repository_metadata_by_id( trans, kwd[ 'id' ] )
                 repository = repository_metadata.repository
                 kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 kwd[ 'changeset_revision' ] = repository_metadata.changeset_revision
@@ -195,7 +196,7 @@ class AdminController( BaseUIController, Admin ):
             ids = util.listify( id )
             count = 0
             for repository_metadata_id in ids:
-                repository_metadata = suc.get_repository_metadata_by_id( trans, repository_metadata_id )
+                repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
                 trans.sa_session.delete( repository_metadata )
                 trans.sa_session.flush()
                 count += 1
@@ -301,7 +302,7 @@ class AdminController( BaseUIController, Admin ):
     @web.require_admin
     def reset_metadata_on_selected_repositories_in_tool_shed( self, trans, **kwd ):
         if 'reset_metadata_on_selected_repositories_button' in kwd:
-            message, status = suc.reset_metadata_on_selected_repositories( trans, **kwd )
+            message, status = metadata_util.reset_metadata_on_selected_repositories( trans, **kwd )
         else:
             message = util.restore_text( kwd.get( 'message', ''  ) )
             status = kwd.get( 'status', 'done' )
@@ -331,7 +332,7 @@ class AdminController( BaseUIController, Admin ):
                         for repository_metadata in repository.metadata_revisions:
                             metadata = repository_metadata.metadata
                             if metadata:
-                                if suc.is_downloadable( metadata ):
+                                if metadata_util.is_downloadable( metadata ):
                                     repository_metadata.downloadable = True
                                     trans.sa_session.add( repository_metadata )
                         repository.deleted = False
