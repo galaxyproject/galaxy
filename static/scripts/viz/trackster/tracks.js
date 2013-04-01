@@ -813,11 +813,10 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         for (var i = 0; i < this.drawables.length; i++) {
             drawables_names.push(this.drawables[i].name);
         }
-        var new_track_name = "Composite Track of " + this.drawables.length + " tracks (" + drawables_names.join(", ") + ")";
         
         // Replace this group with composite track.
         var composite_track = new CompositeTrack(this.view, this.view, {
-            name: new_track_name,
+            name: this.name,
             drawables: this.drawables
         });
         var index = this.container.replace_drawable(this, composite_track, true);
@@ -880,6 +879,21 @@ var TracksterView = Backbone.View.extend({
         this.render();
         this.canvas_manager = new visualization.CanvasManager( this.container.get(0).ownerDocument );
         this.reset();
+
+        // Define track configuration
+        this.config = new DrawableConfig( {
+            track: this,
+            params: [
+                { key: 'a_color', label: 'A Color', type: 'color', default_value: "#FF0000" },
+                { key: 'c_color', label: 'C Color', type: 'color', default_value: "#00FF00" },
+                { key: 'g_color', label: 'G Color', type: 'color', default_value: "#0000FF" },
+                { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" }
+            ], 
+            saved_values: obj_dict.prefs,
+            onchange: function() {
+                track.request_redraw(false, true);
+            }
+        });
     },
 
     render: function() {
@@ -1102,7 +1116,12 @@ var TracksterView = Backbone.View.extend({
         
         this.reset();
         $(window).trigger("resize");
+    },
+
+    get_base_color: function(base) {
+        return this.config.values[ base.toLowerCase() + '_color' ];
     }
+
 });
 
 // FIXME: need to use this approach to enable inheritance of DrawableCollection functions.
@@ -1257,7 +1276,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                     view.reference_track.init();
                 }
             }
-            if (low !== undefined && high !== undefined) {
+            if (low && high) {
                 view.low = Math.max(low, 0);
                 view.high = Math.min(high, view.max_high);
             }
@@ -1270,34 +1289,49 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             view.request_redraw();
         }
     },
+
+    /**
+     * Change viewing region to that denoted by string. General format of string is:
+     *
+     * <chrom>[ {separator}<start>[-<end>] ]
+     *
+     * where separator can be whitespace or a colon. Examples:
+     *
+     * chr22
+     * chr1:100-200
+     * chr7 89999
+     * chr8 90000 990000
+     */
     go_to: function(str) {
-        // Preprocess str to remove spaces and commas.
-        str = str.replace(/ |,/g, "");
-        
-        // Go to new location.
-        var view = this,
-            new_low, 
-            new_high,
-            chrom_pos = str.split(":"),
+        // Remove commas.
+        str = str.replace(/,/g, '');
+
+        // Replace colons and hyphens with space for easy parsing.
+        str = str.replace(/:|\-/g, ' ');
+
+        // Parse new location.
+        var chrom_pos = str.split(/\s+/),
             chrom = chrom_pos[0],
-            pos = chrom_pos[1];
-        
-        if (pos !== undefined) {
-            try {
-                var pos_split = pos.split("-");
-                new_low = parseInt(pos_split[0], 10);
-                new_high = parseInt(pos_split[1], 10);
-            } catch (e) {
-                return false;
-            }
+            new_low = (chrom_pos[1] ? parseInt(chrom_pos[1], 10) : null),
+            new_high = (chrom_pos[2] ? parseInt(chrom_pos[2], 10) : null);
+
+        // If no new high, new_low is the position of focus, so adjust low, high
+        // accordingly.
+        if (!new_high) {
+            // HACK: max resolution is 30 bases,so adjust low, high accordingly.
+            new_low = new_low - 15;
+            new_high = new_low + 15;
         }
-        view.change_chrom(chrom, new_low, new_high);
+
+        this.change_chrom(chrom, new_low, new_high);
     },
+
     move_fraction: function(fraction) {
         var view = this;
         var span = view.high - view.low;
         this.move_delta(fraction * span);
     },
+
     move_delta: function(delta_chrom) {
         // Update low, high.
         var view = this;
@@ -1427,11 +1461,12 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         
         // -- Drawing code --
         
-        // Calculate resolution in both pixels/base and bases/pixel; round bases/pixels for tile calculations.
-        // TODO: require minimum difference in new resolution to update?
+        // Calculate resolution in both pixels/base and bases/pixel.
+        // TODO: require minimum difference in new resolution to update? This 
+        // would help alleviate issues when window is being resized.
         this.resolution_b_px = (this.high - this.low) / this.viewport_container.width();
-        this.resolution_px_b = this.viewport_container.width() / (this.high - this.low);
-                    
+        this.resolution_px_b = 1 / this.resolution_b_px;
+        
         // Overview
         var left_px = ( this.low / (this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
         var width_px = ( (this.high - this.low)/(this.max_high - this.max_low) * this.overview_viewport.width() ) || 0;
@@ -1982,7 +2017,7 @@ extend(DrawableConfig.prototype, {
                 if ( param.type === 'float' ) {
                     value = parseFloat( value );
                 } else if ( param.type === 'int' ) {
-                    value = parseInt( value );
+                    value = parseInt( value, 10 );
                 } else if ( param.type === 'bool' ) {
                     value = container.find( '#' + id ).is( ':checked' );
                 }
@@ -2221,6 +2256,14 @@ var Track = function(view, container, obj_dict) {
                          obj_dict.data_manager : 
                          new visualization.GenomeDataManager({
                              dataset: this.dataset,
+                             // HACK: simulate 'genome' attributes from view for now.
+                             // View should eventually use Genome object.
+                             genome: new visualization.Genome({
+                                key: view.dbkey,
+                                chroms_info: {
+                                    chrom_info: view.chrom_data
+                                }
+                             }),
                              data_mode_compatible: this.data_and_mode_compatible,
                              can_subset: this.can_subset
                          }));
@@ -2899,12 +2942,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             can_draw_now = false;
         }
         
-        // Get seq data if needed, maybe a deferred
+        // Get reference data if needed, maybe a deferred
         var seq_data;
-        if ( view.reference_track && w_scale > view.canvas_manager.char_width_px ) {
+        if ( view.reference_track ) {
             seq_data = view.reference_track.data_manager.get_data(region, track.mode, resolution, view.reference_track.data_url_extra_params);
             if ( is_deferred( seq_data ) ) {
                 can_draw_now = false;
+            }
+            else {
+                // Sequence data is available, subset to get only data in region.
+                seq_data = view.reference_track.data_manager.subset_entry(seq_data, region);
             }
         }
                 
@@ -3430,8 +3477,9 @@ var ReferenceTrack = function (view) {
     this.content_div.css("border", "none");
     this.data_url = reference_url + "/" + this.view.dbkey;
     this.data_url_extra_params = {reference: true};
-    this.data_manager = new visualization.ReferenceTrackDataManager({
-        data_url: this.data_url
+    this.data_manager = new visualization.GenomeReferenceDataManager({
+        data_url: this.data_url,
+        can_subset: this.can_subset
     });
     this.hide_contents();
 };
@@ -3447,41 +3495,38 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     can_draw: Drawable.prototype.can_draw,
 
     /**
-     * Only retrieves data and draws tile if reference data can be displayed.
+     * Retrieves data and draws tile if reference data can be displayed.
      */
     draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
         if (w_scale > this.view.canvas_manager.char_width_px) {
+             this.tiles_div.show();
             return TiledTrack.prototype.draw_helper.call(this, force, region, resolution, parent_element, w_scale, kwargs);
         }
         else {
-            this.hide_contents();
+             this.tiles_div.hide();
             return null;
         }
     },
 
+    can_subset: function(data) { return true; },
+
     /**
      * Draw ReferenceTrack tile.
      */
-    draw_tile: function(seq, ctx, mode, resolution, region, w_scale) {
-        var track = this;        
+    draw_tile: function(data, ctx, mode, resolution, region, w_scale) {
+        // Try to subset data.
+        var subset = this.data_manager.subset_entry(data, region),
+            seq_data = subset.data;
         
-        if (w_scale > this.view.canvas_manager.char_width_px) {
-            if (seq.data === null) {
-                this.hide_contents();
-                return;
-            }
-            var canvas = ctx.canvas;
-            ctx.font = ctx.canvas.manager.default_font;
-            ctx.textAlign = "center";
-            seq = seq.data;
-            for (var c = 0, str_len = seq.length; c < str_len; c++) {
-                var c_start = Math.floor(c * w_scale);
-                ctx.fillText(seq[c], c_start, 10);
-            }
-            this.show_contents();
-            return new Tile(track, region, resolution, canvas, seq);
+        // Draw sequence data.
+        var canvas = ctx.canvas;
+        ctx.font = ctx.canvas.manager.default_font;
+        ctx.textAlign = "center";
+        for (var c = 0, str_len = seq_data.length; c < str_len; c++) {
+            ctx.fillStyle = this.view.get_base_color(seq_data[c]);
+            ctx.fillText(seq_data[c], Math.floor(c * w_scale), 10);
         }
-        this.hide_contents();
+        return new Tile(this, region, resolution, canvas, subset);
     }
 });
 
@@ -3530,6 +3575,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     on_resize: function() {
         this.request_draw(true);
     },
+
     /**
      * Set track minimum value.
      */
@@ -3539,6 +3585,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         this.tile_cache.clear();
         this.request_draw();
     },
+    
     /**
      * Set track maximum value.
      */
@@ -3548,6 +3595,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         this.tile_cache.clear();
         this.request_draw();
     },
+    
     predraw_init: function() {
         var track = this;
         track.vertical_range = undefined;
@@ -3608,6 +3656,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 .prependTo(track.container_div);
         });
     },
+
     /**
      * Draw LineTrack tile.
      */
@@ -3622,11 +3671,12 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         
         return new Tile(this, region, resolution, canvas, result.data);
     },
+
     /**
-     * LineTrack data cannot currently be subsetted.
+     * Subset line tracks only if resolution is single-base pair.
      */
-    can_subset: function(data) {
-        return false;
+    can_subset: function(entry) { 
+        return (entry.data[1][0] - entry.data[0][0] === 1);
     }
 });
 
@@ -4038,10 +4088,13 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }        
         
         // Create painter.
-        var filter_alpha_scaler = (this.filters_manager.alpha_filter ? new FilterScaler(this.filters_manager.alpha_filter) : null);
-        var filter_height_scaler = (this.filters_manager.height_filter ? new FilterScaler(this.filters_manager.height_filter) : null);
-        // HACK: ref_seq will only be defined for ReadTracks, and only the ReadPainter accepts that argument
-        var painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, ref_seq);
+        var filter_alpha_scaler = (this.filters_manager.alpha_filter ? new FilterScaler(this.filters_manager.alpha_filter) : null),
+            filter_height_scaler = (this.filters_manager.height_filter ? new FilterScaler(this.filters_manager.height_filter) : null),
+            painter = new (this.painter)(filtered, tile_low, tile_high, this.prefs, mode, filter_alpha_scaler, filter_height_scaler, 
+                                         // HACK: ref_seq only be defined for ReadTracks, and only the ReadPainter accepts that argument
+                                         ref_seq,
+                                         // Only the ReadPainer will use this function
+                                         function(b) { return track.view.get_base_color(b); });
         var feature_mapper = null;
 
         ctx.fillStyle = this.prefs.block_color;

@@ -880,6 +880,9 @@ class GenomeBuildParameter( SelectToolParameter ):
     >>> print p.filter_value( "hg17" )
     hg17
     """
+    def __init__( self, *args, **kwds ):
+        super( GenomeBuildParameter, self ).__init__( *args, **kwds )
+        self.static_options = [ ( value, key, False ) for key, value in util.dbnames ]
     def get_options( self, trans, other_values ):
         if not trans.history:
             yield 'unspecified', '?', False

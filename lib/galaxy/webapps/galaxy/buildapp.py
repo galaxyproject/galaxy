@@ -6,10 +6,11 @@ import logging, atexit
 import os, os.path
 import sys, warnings
 
+from galaxy.util import asbool
+
 from paste.request import parse_formvars
 from paste.util import import_string
 from paste import httpexceptions
-from paste.deploy.converters import asbool
 import pkg_resources
 
 log = logging.getLogger( __name__ )
@@ -43,6 +44,8 @@ def app_factory( global_conf, **kwargs ):
     atexit.register( app.shutdown )
     # Create the universe WSGI application
     webapp = GalaxyWebApplication( app, session_cookie='galaxysession', name='galaxy' )
+    # The following route will handle displaying tool shelp images for tools contained in repositories installed from the tool shed.
+    webapp.add_route( '/tool_runner/static/images/:repository_id/:image_file', controller='tool_runner', action='display_tool_help_image_in_repository', repository_id=None, image_file=None )
     webapp.add_ui_controllers( 'galaxy.webapps.galaxy.controllers', app )
     # Force /history to go to /root/history -- needed since the tests assume this
     webapp.add_route( '/history', controller='root', action='history' )
@@ -82,6 +85,11 @@ def app_factory( global_conf, **kwargs ):
                                 name_prefix='history_',
                                 path_prefix='/api/histories/:history_id', 
                                 parent_resources=dict( member_name='history', collection_name='histories' ) )
+    webapp.api_mapper.connect("history_contents_display",
+                              "/api/histories/:history_id/contents/:history_content_id/display",
+                              controller="datasets",
+                              action="display",
+                              conditions=dict(method=["GET"]))
     webapp.api_mapper.resource( 'permission',
                                 'permissions',
                                 path_prefix='/api/libraries/:library_id',
@@ -139,8 +147,17 @@ def app_factory( global_conf, **kwargs ):
     # "POST /api/workflows/import"  =>  ``workflows.import_workflow()``.
     # Defines a named route "import_workflow".
     webapp.api_mapper.connect("import_workflow", "/api/workflows/upload", controller="workflows", action="import_new_workflow", conditions=dict(method=["POST"]))
+    webapp.api_mapper.connect("workflow_dict", '/api/workflows/{workflow_id}/download', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
+    # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.api_mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
-
+    # Galaxy API for tool shed features.
+    webapp.api_mapper.resource( 'tool_shed_repository',
+                                'tool_shed_repositories',
+                                controller='tool_shed_repositories',
+                                name_prefix='tool_shed_repository_',
+                                path_prefix='/api',
+                                new={ 'install_repository_revision' : 'POST' },
+                                parent_resources=dict( member_name='tool_shed_repository', collection_name='tool_shed_repositories' ) )
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger
@@ -239,6 +256,12 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         from paste import recursive
         app = recursive.RecursiveMiddleware( app, conf )
         log.debug( "Enabling 'recursive' middleware" )
+    # If sentry logging is enabled, log here before propogating up to
+    # the error middleware
+    sentry_dsn = conf.get( 'sentry_dsn', None )
+    if sentry_dsn:
+        from galaxy.web.framework.middleware.sentry import Sentry
+        app = Sentry( app, sentry_dsn )
     # Various debug middleware that can only be turned on if the debug
     # flag is set, either because they are insecure or greatly hurt
     # performance
@@ -253,12 +276,6 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
             from paste.debug import profile
             app = profile.ProfileMiddleware( app, conf )
             log.debug( "Enabling 'profile' middleware" )
-        # Middleware that intercepts print statements and shows them on the
-        # returned page
-        if asbool( conf.get( 'use_printdebug', True ) ):
-            from paste.debug import prints
-            app = prints.PrintDebugMiddleware( app, conf )
-            log.debug( "Enabling 'print debug' middleware" )
     if debug and asbool( conf.get( 'use_interactive', False ) ):
         # Interactive exception debugging, scary dangerous if publicly
         # accessible, if not enabled we'll use the regular error printing
@@ -272,26 +289,25 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         # Not in interactive debug mode, just use the regular error middleware
         if sys.version_info[:2] >= ( 2, 6 ):
             warnings.filterwarnings( 'ignore', '.*', DeprecationWarning, '.*serial_number_generator', 11, True )
-            from paste.exceptions import errormiddleware
+            import galaxy.web.framework.middleware.error
             warnings.filters.pop()
         else:
-            from paste.exceptions import errormiddleware
-        app = errormiddleware.ErrorMiddleware( app, conf )
+            import galaxy.web.framework.middleware.error
+        app = galaxy.web.framework.middleware.error.ErrorMiddleware( app, conf )
         log.debug( "Enabling 'error' middleware" )
     # Transaction logging (apache access.log style)
     if asbool( conf.get( 'use_translogger', True ) ):
         from galaxy.web.framework.middleware.translogger import TransLogger
         app = TransLogger( app )
         log.debug( "Enabling 'trans logger' middleware" )
-    # Config middleware just stores the paste config along with the request,
-    # not sure we need this but useful
-    from paste.deploy.config import ConfigMiddleware
-    app = ConfigMiddleware( app, conf )
-    log.debug( "Enabling 'config' middleware" )
     # X-Forwarded-Host handling
     from galaxy.web.framework.middleware.xforwardedhost import XForwardedHostMiddleware
     app = XForwardedHostMiddleware( app )
     log.debug( "Enabling 'x-forwarded-host' middleware" )
+    # Request ID middleware
+    from galaxy.web.framework.middleware.request_id import RequestIDMiddleware
+    app = RequestIDMiddleware( app )
+    log.debug( "Enabling 'Request ID' middleware" )
     return app
     
 def wrap_in_static( app, global_conf, **local_conf ):

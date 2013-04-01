@@ -1,3 +1,4 @@
+// Additional dependencies: jQuery, underscore.
 define(["libs/backbone/backbone-relational"], function() {
 
 /**
@@ -46,13 +47,223 @@ var Dataset = Backbone.RelationalModel.extend({
     urlRoot: galaxy_paths.get('datasets_url')
 });
 
+/**
+ * A tabular dataset. This object extends dataset to provide incremental chunked data.
+ */
+var TabularDataset = Dataset.extend({
+    defaults: _.extend({}, Dataset.prototype.defaults, {
+        chunk_url: null,
+        first_data_chunk: null,
+        chunk_index: -1,
+        at_eof: false
+    }),
+
+    initialize: function(options) {
+        Dataset.prototype.initialize.call(this);
+
+        // If first data chunk is available, next chunk is 1.
+        this.attributes.chunk_index = (this.attributes.first_data_chunk ? 1 : 0);
+    },
+
+    /**
+     * Returns a jQuery Deferred object that resolves to the next data chunk or null if at EOF.
+     */
+    get_next_chunk: function() {
+        // If already at end of file, do nothing.
+        if (this.attributes.at_eof) {
+            return null;
+        }
+
+        // Get next chunk.
+        var self = this,
+            next_chunk = $.Deferred();
+        $.getJSON(this.attributes.chunk_url, {
+            chunk: self.attributes.chunk_index++
+        }).success(function(chunk) {
+            var rval;
+            if (chunk.ck_data !== '') {
+                // Found chunk.
+                rval = chunk;
+            }
+            else {
+                // At EOF.
+                self.attributes.at_eof = true;
+                rval = null;
+            }
+            next_chunk.resolve(rval);
+        });
+
+        return next_chunk;
+    }
+});
+
 var DatasetCollection = Backbone.Collection.extend({
     model: Dataset
 });
 
+/**
+ * Provides table-based, dynamic view of a tabular dataset. 
+ * NOTE: view's el must be in DOM already and provided when 
+ * createing the view so that scrolling event can be attached
+ * to the correct container.
+ */
+var TabularDatasetChunkedView = Backbone.View.extend({
+
+    initialize: function(options) {},
+
+    render: function() {
+        // Add loading indicator div.
+        this.$el.append( $('<div/>').attr('id', 'loading_indicator') );
+
+        // Add data table and header.
+        var data_table = $('<table/>').attr({
+            id: 'content_table',
+            cellpadding: 0
+        });
+        this.$el.append(data_table);
+        var column_names = this.model.get_metadata('column_names');
+        if (column_names) {
+            data_table.append('<tr><th>' + column_names.join('</th><th>') + '</th></tr>');
+        }
+
+        // Add first chunk.
+        var first_chunk = this.model.get('first_data_chunk');
+        if (first_chunk) {
+            this._renderChunk(first_chunk);
+        }
+
+        // -- Show new chunks during scrolling. --
+        
+        var self = this,
+            // Element that does the scrolling.
+            scroll_elt = _.find(this.$el.parents(), function(p) {
+                return $(p).css('overflow') === 'auto';
+            }),
+            // Flag to ensure that only one chunk is loaded at a time.
+            loading_chunk = false;
+
+        // If no scrolling element found, use window.
+        if (!scroll_elt) { scroll_elt = window; }
+
+        // Wrap scrolling element for easy access.
+        scroll_elt = $(scroll_elt);
+
+        // Set up chunk loading when scrolling using the scrolling element.
+        scroll_elt.scroll(function() {
+            // If not already loading a chunk and have scrolled to the bottom of this element, get next chunk.
+            if ( !loading_chunk && (self.$el.height() - scroll_elt.scrollTop() - scroll_elt.height() <= 0) ) {
+                loading_chunk = true;
+                $.when(self.model.get_next_chunk()).then(function(result) {
+                    if (result) {
+                        self._renderChunk(result);
+                        loading_chunk = false;
+                    }
+                });
+            }
+        });
+        $('#loading_indicator').ajaxStart(function(){
+           $(this).show();
+        }).ajaxStop(function(){
+           $(this).hide();
+        });
+    },
+
+    // -- Helper functions. --
+
+    _renderCell: function(cell_contents, index, colspan) {
+        var column_types = this.model.get_metadata('column_types');
+        if (colspan !== undefined) {
+            return $('<td>').attr('colspan', colspan).addClass('stringalign').text(cell_contents);
+        }
+        else if (column_types[index] === 'str' || column_types === 'list') {
+            /* Left align all str columns, right align the rest */
+            return $('<td>').addClass('stringalign').text(cell_contents);
+        }
+        else {
+            return $('<td>').text(cell_contents);
+        }
+    },
+
+    _renderRow: function(line) {
+        // Check length of cells to ensure this is a complete row.
+        var cells = line.split('\t'),
+            row = $('<tr>'),
+            num_columns = this.model.get_metadata('columns');
+        if (cells.length === num_columns) {
+            _.each(cells, function(cell_contents, index) {
+                row.append(this._renderCell(cell_contents, index));
+            }, this);
+        }
+        else if (cells.length > num_columns) {
+            // SAM file or like format with optional metadata included.
+            _.each(cells.slice(0, num_columns - 1), function(cell_contents, index) {
+                row.append(this._renderCell(cell_contents, index));
+            }, this);
+            row.append(this._renderCell(cells.slice(num_columns - 1).join('\t'), num_columns - 1));
+        }
+        else if (num_columns > 5 && cells.length === num_columns - 1 ) {
+            // SAM file or like format with optional metadata missing.
+            _.each(cells, function(cell_contents, index) {
+                row.append(this._renderCell(cell_contents, index));
+            }, this);
+            row.append($('<td>'));
+        }
+        else {
+            // Comment line, just return the one cell.
+            row.append(this._renderCell(line, 0, num_columns));
+        }
+        return row;
+    },
+
+    _renderChunk: function(chunk) {
+        var data_table = this.$el.find('table');
+        _.each(chunk.ck_data.split('\n'), function(line, index) {
+            data_table.append(this._renderRow(line));
+        }, this);
+    }
+});
+
+// -- Utility functions. --
+
+/**
+ * Create a model, attach it to a view, render view, and attach it to a parent element.
+ */
+var createModelAndView = function(model, view, model_config, parent_elt) {
+    // Create model, view.
+    var a_view = new view({
+        model: new model(model_config)
+    });
+
+    // Render view and add to parent element.
+    a_view.render();
+    if (parent_elt) {
+        parent_elt.append(a_view.$el);
+    }
+
+    return a_view;
+};
+
+/**
+ * Create a tabular dataset chunked view (and requisite tabular dataset model)
+ * and appends to parent_elt.
+ */
+var createTabularDatasetChunkedView = function(dataset_config, parent_elt) {
+    // Create view element and add to parent.
+    var view_div = $('<div/>').appendTo(parent_elt);
+
+    // Create view with model, render, and return.
+    return new TabularDatasetChunkedView({
+        el: view_div,
+        model: new TabularDataset(dataset_config)
+    }).render();
+};
+
 return {
 	Dataset: Dataset,
-	DatasetCollection: DatasetCollection
+    TabularDataset: TabularDataset,
+	DatasetCollection: DatasetCollection,
+    TabularDatasetChunkedView: TabularDatasetChunkedView,
+    createTabularDatasetChunkedView: createTabularDatasetChunkedView
 };
 
 });

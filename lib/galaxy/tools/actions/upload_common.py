@@ -294,6 +294,10 @@ def create_paramfile( trans, uploaded_datasets ):
                 link_data_only = uploaded_dataset.link_data_only
             except:
                 link_data_only = 'copy_files'
+            try:
+                uuid_str = uploaded_dataset.uuid
+            except:
+                uuid_str = None
             json = dict( file_type = uploaded_dataset.file_type,
                          ext = uploaded_dataset.ext,
                          name = uploaded_dataset.name,
@@ -302,6 +306,7 @@ def create_paramfile( trans, uploaded_datasets ):
                          type = uploaded_dataset.type,
                          is_binary = is_binary,
                          link_data_only = link_data_only,
+                         uuid = uuid_str,
                          space_to_tab = uploaded_dataset.space_to_tab,
                          in_place = trans.app.config.external_chown_script is None,
                          path = uploaded_dataset.path )
@@ -358,11 +363,12 @@ def create_job( trans, params, tool, json_file_path, data_list, folder=None ):
             # open( dataset.file_name, "w" ).close()
     job.object_store_id = object_store_id
     job.state = job.states.NEW
+    job.set_handler(tool.get_job_handler(None))
     trans.sa_session.add( job )
     trans.sa_session.flush()
 
     # Queue the job for execution
-    trans.app.job_queue.put( job.id, tool )
+    trans.app.job_queue.put( job.id, job.tool_id )
     trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
     output = odict()
     for i, v in enumerate( data_list ):

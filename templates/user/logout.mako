@@ -1,6 +1,10 @@
-<%inherit file="/base_panels.mako"/>
-<%namespace file="/message.mako" import="render_msg" />
+%if trans.webapp.name == 'galaxy':
+    <%inherit file="/webapps/galaxy/base_panels.mako"/>
+%elif trans.webapp.name == 'tool_shed':
+    <%inherit file="/webapps/tool_shed/base_panels.mako"/>
+%endif
 
+<%namespace file="/message.mako" import="render_msg" />
 
 <%def name="init()">
 <%

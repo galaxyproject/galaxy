@@ -47,21 +47,42 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                                               strings_displayed=[] )
         if self.repository_is_new( datatypes_repository ):
             running_standalone = True
-            self.upload_file( datatypes_repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
+            self.upload_file( datatypes_repository, 
+                              filename='emboss/datatypes/datatypes_conf.xml', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded datatypes_conf.xml.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             emboss_repository = self.get_or_create_repository( name=emboss_repository_name, 
                                                                description=emboss_repository_description, 
                                                                long_description=emboss_repository_long_description, 
                                                                owner=common.test_user_1_name,
                                                                category_id=self.security.encode_id( category.id ), 
                                                                strings_displayed=[] )
-            self.upload_file( emboss_repository, 'emboss/emboss.tar', commit_message='Uploaded emboss_5.tar' )
+            self.upload_file( emboss_repository, 
+                              filename='emboss/emboss.tar', 
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded emboss.tar',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
             repository_dependencies_path = self.generate_temp_path( 'test_1020', additional_paths=[ 'emboss', '5' ] )
             self.generate_repository_dependency_xml( [ datatypes_repository ], 
                                                      self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ) )
             self.upload_file( emboss_repository, 
-                              'repository_dependencies.xml', 
-                              filepath=repository_dependencies_path, 
-                              commit_message='Uploaded repository_dependencies.xml' )
+                              filename='repository_dependencies.xml', 
+                              filepath=repository_dependencies_path,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False,
+                              commit_message='Uploaded repository_dependencies.xml.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
         repository_datatypes_count = int( self.get_repository_datatypes_count( datatypes_repository ) )
     def test_0010_install_emboss_repository( self ):
         '''Install the emboss repository into the Galaxy instance.'''
@@ -77,10 +98,10 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                  strings_displayed=strings_displayed,
                                  new_tool_panel_section='test_1210' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'emboss_0020',
+                              'Galaxy wrappers for Emboss version 5.0.0 tools',
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
         current_datatypes = int( self.get_datatypes_count() )
@@ -101,32 +122,32 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
         '''Reinstall the emboss repository.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         self.reinstall_repository( installed_repository )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'emboss_0020',
+                              'Galaxy wrappers for Emboss version 5.0.0 tools',
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
-        self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'emboss' ] )
+        strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'emboss' ] )
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
     def test_0025_deactivate_emboss_repository( self ):
         '''Deactivate the emboss repository without removing it from disk.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         self.uninstall_repository( installed_repository, remove_from_disk=False )
-        strings_not_displayed = [ installed_repository.name,
+        strings_not_displayed = [ 'emboss_0020',
                                   installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
     def test_0030_reactivate_emboss_repository( self ):
         '''Reactivate the emboss repository and verify that it now shows up in the list of installed repositories.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         self.reactivate_repository( installed_repository )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'emboss_0020',
+                              'Galaxy wrappers for Emboss version 5.0.0 tools',
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
-        self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'emboss' ] )
+        strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'emboss' ] )
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )

@@ -120,9 +120,9 @@
     ## Help tab.
     <%
         menu_options = []
-        qa_url = app.config.get( "qa_url", None )
-        if qa_url:
-            menu_options = [ [_('Galaxy Q&A'), qa_url, "_blank" ] ]
+        if app.config.biostar_url:
+            menu_options = [ [_('Galaxy Q&A Site'), h.url_for( controller='biostar', action='biostar_redirect', biostar_action='show/tag/galaxy' ), "_blank" ],
+                             [_('Ask a question'), h.url_for( controller='biostar', action='biostar_question_redirect' ), "_blank" ] ]
         menu_options.extend( [
             [_('Support'), app.config.get( "support_url", "http://wiki.g2.bx.psu.edu/Support" ), "_blank" ],
             [_('Tool shed wiki'), app.config.get( "wiki_url", "http://wiki.g2.bx.psu.edu/Tool%20Shed" ), "_blank" ],

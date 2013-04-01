@@ -1,7 +1,7 @@
 <%!
     def inherit(context):
         if context.get('use_panels'):
-            return '/base_panels.mako'
+            return '/webapps/galaxy/base_panels.mako'
         else:
             return '/base.mako'
 %>
@@ -59,7 +59,7 @@
     %endif
     <br/>
 
-    <% form_action = h.url_for( cntrller=cntrller, use_panels=use_panels ) %>
+    <% form_action = h.url_for( controller='user', action='openid_associate', cntrller=cntrller, use_panels=use_panels ) %>
 
     ${render_login_form( form_action=form_action )}
 

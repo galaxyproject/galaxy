@@ -44,7 +44,15 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
                                              strings_displayed=[] )
         if self.repository_is_new( repository ):
             running_standalone = True
-            self.upload_file( repository, 'emboss/datatypes/datatypes_conf.xml', commit_message='Uploaded datatypes_conf.xml.' )
+            self.upload_file( repository, 
+                              filename='emboss/datatypes/datatypes_conf.xml',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded datatypes_conf.xml.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
     def test_0015_verify_datatypes_in_datatypes_repository( self ):
         '''Verify that the emboss_datatypes repository contains datatype entries.'''
         repository = test_db_util.get_repository_by_name_and_owner( datatypes_repository_name, common.test_user_1_name )
@@ -60,7 +68,15 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
                                                  owner=common.test_user_1_name,
                                                  category_id=self.security.encode_id( category.id ), 
                                                  strings_displayed=[] )
-            self.upload_file( repository, 'emboss/emboss.tar', commit_message='Uploaded emboss_5.tar' )
+            self.upload_file( repository, 
+                              filename='emboss/emboss.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded emboss tool tarball.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
     def test_0025_generate_repository_dependency_with_invalid_url( self ):
         '''Generate a repository dependency for emboss 5 with an invalid URL.'''
         global running_standalone
@@ -74,13 +90,16 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
             owner = repository.user.username
             changeset_revision = self.get_repository_tip( repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=False, description='This is invalid.' )
-            strings_displayed = [ 'Invalid tool shed <b>%s</b> defined for repository <b>%s</b>' % ( url, repository.name ) ] 
+            strings_displayed = [ 'Repository dependencies are currently supported only within the same tool shed' ] 
             self.upload_file( emboss_repository, 
-                              'repository_dependencies.xml',
+                              filename='repository_dependencies.xml',
+                              filepath=dependency_path,
                               valid_tools_only=False,
-                              filepath=dependency_path, 
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded dependency on emboss_datatypes_0110 with invalid url.',
-                              strings_displayed=strings_displayed )
+                              strings_displayed=strings_displayed, 
+                              strings_not_displayed=[] )
     def test_0030_generate_repository_dependency_with_invalid_name( self ):
         '''Generate a repository dependency for emboss 5 with an invalid name.'''
         global running_standalone
@@ -94,13 +113,16 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
             owner = repository.user.username
             changeset_revision = self.get_repository_tip( repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=False, description='This is invalid.' )
-            strings_displayed = [ 'Invalid repository name <b>%s</b> defined.' % name ] 
+            strings_displayed = [ 'because the name is invalid.' ] 
             self.upload_file( emboss_repository, 
-                              'repository_dependencies.xml',
+                              filename='repository_dependencies.xml',
+                              filepath=dependency_path,
                               valid_tools_only=False,
-                              filepath=dependency_path, 
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded dependency on emboss_datatypes_0110 with invalid name.',
-                              strings_displayed=strings_displayed )
+                              strings_displayed=strings_displayed, 
+                              strings_not_displayed=[] )
     def test_0035_generate_repository_dependency_with_invalid_owner( self ):
         '''Generate a repository dependency for emboss 5 with an invalid owner.'''
         global running_standalone
@@ -114,13 +136,16 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
             owner = '!?invalid?!'
             changeset_revision = self.get_repository_tip( repository )
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=False, description='This is invalid.' )
-            strings_displayed = [ 'Invalid owner <b>%s</b> defined for repository <b>%s</b>' % ( owner, repository.name ) ] 
+            strings_displayed = [ 'because the owner is invalid' ] 
             self.upload_file( emboss_repository, 
-                              'repository_dependencies.xml',
+                              filename='repository_dependencies.xml',
+                              filepath=dependency_path,
                               valid_tools_only=False,
-                              filepath=dependency_path, 
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded dependency on emboss_datatypes_0110 with invalid owner.',
-                              strings_displayed=strings_displayed )
+                              strings_displayed=strings_displayed, 
+                              strings_not_displayed=[] )
     def test_0040_generate_repository_dependency_with_invalid_changeset_revision( self ):
         '''Generate a repository dependency for emboss 5 with an invalid changeset revision.'''
         global running_standalone
@@ -134,19 +159,22 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
             owner = repository.user.username
             changeset_revision = '!?invalid?!'
             self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=False, description='This is invalid.' )
-            strings_displayed = [ 'Invalid changeset revision <b>%s</b> defined.' % changeset_revision ] 
+            strings_displayed = [ 'because the changeset revision is invalid.' ] 
             self.upload_file( emboss_repository, 
-                              'repository_dependencies.xml',
+                              filename='repository_dependencies.xml',
+                              filepath=dependency_path,
                               valid_tools_only=False,
-                              filepath=dependency_path, 
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
                               commit_message='Uploaded dependency on emboss_datatypes_0110 with invalid changeset revision.',
-                              strings_displayed=strings_displayed )
+                              strings_displayed=strings_displayed, 
+                              strings_not_displayed=[] )
     def test_0045_install_repository_with_invalid_repository_dependency( self ):
         '''Install the repository and verify that galaxy detects invalid repository dependencies.'''
         self.galaxy_logout()
         self.galaxy_login( email=common.admin_email, username=common.admin_username )
         repository = test_db_util.get_repository_by_name_and_owner( emboss_repository_name, common.test_user_1_name )
-        preview_strings_displayed = [ repository.name, self.get_repository_tip( repository ), 'will be ignored' ]
+        preview_strings_displayed = [ 'emboss_0110', self.get_repository_tip( repository ), 'Ignoring repository dependency definition' ]
         self.install_repository( emboss_repository_name, 
                                  common.test_user_1_name, 
                                  category_name,
@@ -154,6 +182,6 @@ class TestBasicRepositoryDependencies( ShedTwillTestCase ):
                                  install_repository_dependencies=True, 
                                  preview_strings_displayed=preview_strings_displayed,
                                  post_submit_strings_displayed=[ repository.name, repository.name, 'new' ],
-                                 includes_tools=True )
+                                 includes_tools_for_display_in_tool_panel=True )
         repository = test_db_util.get_installed_repository_by_name_owner( emboss_repository_name, common.test_user_1_name )
         self.display_installed_repository_manage_page( repository, strings_not_displayed=[ 'Repository dependencies' ] )

@@ -23,8 +23,8 @@ import simplejson
 
 import helpers
 
-pkg_resources.require( "PasteDeploy" )
-from paste.deploy.converters import asbool
+from galaxy.util import asbool
+
 import paste.httpexceptions
 
 pkg_resources.require( "Mako" )
@@ -99,7 +99,20 @@ def require_login( verb="perform this action", use_panels=False, webapp='galaxy'
         return decorator
     return argcatcher
 
-def expose_api( func ):
+def expose_api_raw( func ):
+    """
+    Expose this function via the API but don't dump the results
+    to JSON.
+    """
+    return expose_api( func, to_json=False )
+
+def expose_api_anonymous( func, to_json=True ):
+    """
+    Expose this function via the API but don't require an API key.
+    """
+    return expose_api( func, to_json=to_json, key_required=False )
+
+def expose_api( func, to_json=True, key_required=True ):
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
         def error( environ, start_response ):
@@ -107,7 +120,7 @@ def expose_api( func ):
             return error_message
         error_status = '403 Forbidden'
         ## If there is a user, we've authenticated a session.
-        if not trans.user and isinstance(trans.galaxy_session, Bunch):
+        if key_required and not trans.user and isinstance( trans.galaxy_session, Bunch ):
             # If trans.user is already set, don't check for a key.
             # This happens when we're authenticating using session instead of an API key.
             # The Bunch clause is used to prevent the case where there's no user, but there is a real session.
@@ -183,10 +196,12 @@ def expose_api( func ):
                 trans.response.status = 400
                 return "That user does not exist."
         try:
-            if trans.debug:
-                return simplejson.dumps( func( self, trans, *args, **kwargs ), indent=4, sort_keys=True )
-            else:
-                return simplejson.dumps( func( self, trans, *args, **kwargs ) )
+            rval = func( self, trans, *args, **kwargs)
+            if to_json and trans.debug:
+                rval = simplejson.dumps( rval, indent=4, sort_keys=True )
+            elif to_json:
+                rval = simplejson.dumps( rval )
+            return rval
         except paste.httpexceptions.HTTPException:
             raise # handled
         except:
@@ -599,7 +614,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # remote user authenticates, we'll look for this information, and if missing, create it.
             if not self.app.security_agent.get_private_user_role( user ):
                 self.app.security_agent.create_private_user_role( user )
-            if 'webapp' not in self.environ or self.environ['webapp'] != 'community':
+            if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
                 if not user.default_permissions:
                     self.app.security_agent.user_set_default_permissions( user )
                     self.app.security_agent.user_set_default_permissions( user, history=True, dataset=True )
@@ -623,7 +638,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             self.sa_session.flush()
             self.app.security_agent.create_private_user_role( user )
             # We set default user permissions, before we log in and set the default history permissions
-            if 'webapp' not in self.environ or self.environ['webapp'] != 'community':
+            if 'webapp' not in self.environ or self.environ['webapp'] != 'tool_shed':
                 self.app.security_agent.user_set_default_permissions( user )
             #self.log_event( "Automatically created account '%s'", user.email )
         return user
@@ -711,8 +726,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 other_galaxy_session.is_valid = False
                 self.sa_session.add( other_galaxy_session )
         self.sa_session.flush()
-        # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
-        self.__update_session_cookie( name='galaxysession' )
+        if self.webapp.name == 'galaxy':
+            # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
+            self.__update_session_cookie( name='galaxysession' )
+        elif self.webapp.name == 'tool_shed':
+            self.__update_session_cookie( name='galaxycommunitysession' )
     def get_galaxy_session( self ):
         """
         Return the current galaxy session
@@ -729,7 +747,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 history = self.new_history()
             else:
                 # Perhaps a bot is running a tool without having logged in to get a history
-                log.debug( "Error: this request returned None from get_history(): %s" % self.request.browser_url )
+                log.debug( "This request returned None from get_history(): %s" % self.request.browser_url )
                 return None
         return history
     def set_history( self, history ):

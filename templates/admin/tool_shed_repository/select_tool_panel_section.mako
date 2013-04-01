@@ -2,7 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_dependencies_section" />
 <%namespace file="/admin/tool_shed_repository/common.mako" import="render_readme_section" />
-<%namespace file="/webapps/community/repository/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
 
 <%def name="stylesheets()">
     ${parent.stylesheets()}
@@ -60,7 +60,7 @@
 </div>
 <div class="toolForm">
     <div class="toolFormBody">
-        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
+        <form name="select_tool_panel_section" id="select_tool_panel_section" action="${h.url_for( controller='admin_toolshed', action='prepare_for_install', tool_shed_url=tool_shed_url, encoded_repo_info_dicts=encoded_repo_info_dicts, includes_tools=includes_tools, includes_tools_for_display_in_tool_panel=includes_tools_for_display_in_tool_panel, includes_tool_dependencies=includes_tool_dependencies )}" method="post" >
             <div style="clear: both"></div>
             <% readme_files_dict = containers_dict.get( 'readme_files', None ) %>
             %if readme_files_dict:
@@ -81,12 +81,12 @@
                 ${render_dependencies_section( install_repository_dependencies_check_box, install_tool_dependencies_check_box, containers_dict )}
                 <div style="clear: both"></div>
             %endif
-            <div class="form-row">
-                <table class="colored" width="100%">
-                    <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
-                </table>
-            </div>
             %if shed_tool_conf_select_field:
+                <div class="form-row">
+                    <table class="colored" width="100%">
+                        <th bgcolor="#EBD9B2">Choose the tool panel section to contain the installed tools (optional)</th>
+                    </table>
+                </div>
                 <%
                     if len( shed_tool_conf_select_field.options ) == 1:
                         select_help = "Your Galaxy instance is configured with 1 shed-related tool configuration file, so repositories will be "

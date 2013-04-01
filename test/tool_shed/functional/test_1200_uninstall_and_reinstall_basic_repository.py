@@ -32,10 +32,42 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                                     owner=common.test_user_1_name,
                                                     category_id=self.security.encode_id( category.id ) )
         if self.repository_is_new( repository ):
-            self.upload_file( repository, 'filtering/filtering_1.1.0.tar', commit_message="Uploaded filtering 1.1.0" )
-            self.upload_file( repository, 'filtering/filtering_0000.txt', commit_message="Uploaded readme for 1.1.0", remove_repo_files_not_in_tar='No' )
-            self.upload_file( repository, 'filtering/filtering_2.2.0.tar', commit_message="Uploaded filtering 2.2.0", remove_repo_files_not_in_tar='No' )
-            self.upload_file( repository, 'readme.txt', commit_message="Uploaded readme for 2.2.0", remove_repo_files_not_in_tar='No' )
+            self.upload_file( repository, 
+                              filename='filtering/filtering_1.1.0.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded filtering 1.1.0 tarball.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
+            self.upload_file( repository, 
+                              filename='filtering/filtering_0000.txt',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded readme for 1.1.0',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
+            self.upload_file( repository, 
+                              filename='filtering/filtering_2.2.0.tar',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=True,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded filtering 2.2.0 tarball.',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
+            self.upload_file( repository, 
+                              filename='readme.txt',
+                              filepath=None,
+                              valid_tools_only=True,
+                              uncompress_file=False,
+                              remove_repo_files_not_in_tar=False, 
+                              commit_message='Uploaded readme for 2.2.0',
+                              strings_displayed=[], 
+                              strings_not_displayed=[] )
     def test_0010_install_filtering_repository( self ):
         '''Install the filtering repository into the Galaxy instance.'''
         self.galaxy_logout()
@@ -45,51 +77,51 @@ class UninstallingAndReinstallingRepositories( ShedTwillTestCase ):
                                  'Test 0000 Basic Repository Features 1', 
                                  new_tool_panel_section='test_1000' )
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'filtering_0000',
+                              "Galaxy's filtering tool for test 0000",
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
     def test_0015_uninstall_filtering_repository( self ):
         '''Uninstall the filtering repository.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
         self.uninstall_repository( installed_repository, remove_from_disk=True )
-        strings_not_displayed = [ installed_repository.name,
-                                  installed_repository.description,
+        strings_not_displayed = [ 'filtering_0000',
+                                  "Galaxy's filtering tool for test 0000",
                                   installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
     def test_0020_reinstall_filtering_repository( self ):
         '''Reinstall the filtering repository.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
         self.reinstall_repository( installed_repository )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'filtering_0000',
+                              "Galaxy's filtering tool for test 0000",
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
-        self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
+        strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )
     def test_0025_deactivate_filtering_repository( self ):
         '''Deactivate the filtering repository without removing it from disk.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
         self.uninstall_repository( installed_repository, remove_from_disk=False )
-        strings_not_displayed = [ installed_repository.name,
-                                  installed_repository.description,
+        strings_not_displayed = [ 'filtering_0000',
+                                  "Galaxy's filtering tool for test 0000",
                                   installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_not_displayed=strings_not_displayed )
     def test_0030_reactivate_filtering_repository( self ):
         '''Reactivate the filtering repository and verify that it now shows up in the list of installed repositories.'''
         installed_repository = test_db_util.get_installed_repository_by_name_owner( 'filtering_0000', common.test_user_1_name )
         self.reactivate_repository( installed_repository )
-        strings_displayed = [ installed_repository.name,
-                              installed_repository.description,
-                              installed_repository.owner, 
-                              installed_repository.tool_shed, 
+        strings_displayed = [ 'filtering_0000',
+                              "Galaxy's filtering tool for test 0000",
+                              'user1', 
+                              self.url.replace( 'http://', '' ), 
                               installed_repository.installed_changeset_revision ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed )
-        self.display_installed_repository_manage_page( installed_repository, 
-                                                       strings_displayed=[ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
+        strings_displayed.extend( [ 'Installed tool shed repository', 'Valid tools', 'Filter1' ] )
+        self.display_installed_repository_manage_page( installed_repository, strings_displayed=strings_displayed )
         self.verify_tool_metadata_for_installed_repository( installed_repository )

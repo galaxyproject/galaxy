@@ -1,13 +1,144 @@
-import os, logging, os.path
+"""
+Base classes for job runner plugins.
+"""
 
-from galaxy import model
-from Queue import Queue, Empty
+import os
 import time
+import string
+import logging
 import threading
+
+from Queue import Queue, Empty
+
+import galaxy.jobs
+from galaxy import model
 
 log = logging.getLogger( __name__ )
 
+STOP_SIGNAL = object()
+
 class BaseJobRunner( object ):
+    def __init__( self, app, nworkers ):
+        """Start the job runner
+        """
+        self.app = app
+        self.sa_session = app.model.context
+        self.nworkers = nworkers
+
+    def _init_worker_threads(self):
+        """Start ``nworkers`` worker threads.
+        """
+        self.work_queue = Queue()
+        self.work_threads = []
+        log.debug('Starting %s %s workers' % (self.nworkers, self.runner_name))
+        for i in range(self.nworkers):
+            worker = threading.Thread( name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next )
+            worker.setDaemon( True )
+            worker.start()
+            self.work_threads.append( worker )
+
+    def run_next(self):
+        """Run the next item in the work queue (a job waiting to run)
+        """
+        while 1:
+            ( method, arg ) = self.work_queue.get()
+            if method is STOP_SIGNAL:
+                return
+            # id and name are collected first so that the call of method() is the last exception.
+            try:
+                # arg should be a JobWrapper/TaskWrapper
+                job_id = arg.get_id_tag()
+            except:
+                job_id = 'unknown'
+            try:
+                name = method.__name__
+            except:
+                name = 'unknown'
+            try:
+                method(arg)
+            except:
+                log.exception( "(%s) Unhandled exception calling %s" % ( job_id, name ) )
+
+    # Causes a runner's `queue_job` method to be called from a worker thread
+    def put(self, job_wrapper):
+        """Add a job to the queue (by job identifier), indicate that the job is ready to run.
+        """
+        # Change to queued state before handing to worker thread so the runner won't pick it up again
+        job_wrapper.change_state( model.Job.states.QUEUED )
+        # Persist the destination so that the job will be included in counts if using concurrency limits
+        job_wrapper.set_job_destination( job_wrapper.job_destination, None )
+        self.mark_as_queued(job_wrapper)
+
+    def mark_as_queued(self, job_wrapper):
+        self.work_queue.put( ( self.queue_job, job_wrapper ) )
+    
+    def shutdown( self ):
+        """Attempts to gracefully shut down the worker threads
+        """
+        log.info( "%s: Sending stop signal to %s worker threads" % ( self.runner_name, len( self.work_threads ) ) )
+        for i in range( len( self.work_threads ) ):
+            self.work_queue.put( ( STOP_SIGNAL, None ) )
+
+    # Most runners should override the legacy URL handler methods and destination param method
+    def url_to_destination(self, url):
+        """
+        Convert a legacy URL to a JobDestination.
+
+        Job runner URLs are deprecated, JobDestinations should be used instead.
+        This base class method converts from a URL to a very basic
+        JobDestination without destination params.
+        """
+        return galaxy.jobs.JobDestination(runner=url.split(':')[0])
+
+    def parse_destination_params(self, params):
+        """Parse the JobDestination ``params`` dict and return the runner's native representation of those params.
+        """
+        raise NotImplementedError()
+
+    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True):
+        """Some sanity checks that all runners' queue_job() methods are likely to want to do
+        """
+        job_id = job_wrapper.get_id_tag()
+        job_state = job_wrapper.get_state()
+        job_wrapper.is_ready = False
+        job_wrapper.runner_command_line = None
+
+        # Make sure the job hasn't been deleted
+        if job_state == model.Job.states.DELETED:
+            log.debug( "(%s) Job deleted by user before it entered the %s queue"  % ( job_id, self.runner_name ) )
+            if self.app.config.cleanup_job in ( "always", "onsuccess" ):
+                job_wrapper.cleanup()
+            return False
+        elif job_state != model.Job.states.QUEUED:
+            log.info( "(%d) Job is in state %s, skipping execution"  % ( job_id, job_state ) ) 
+            # cleanup may not be safe in all states
+            return False
+
+        # Prepare the job
+        try:
+            job_wrapper.prepare()
+            job_wrapper.runner_command_line = self.build_command_line( job_wrapper, include_metadata=include_metadata, include_work_dir_outputs=include_work_dir_outputs )
+        except:
+            log.exception("(%s) Failure preparing job" % job_id)
+            job_wrapper.fail( "failure preparing job", exception=True )
+            return False
+
+        if not job_wrapper.runner_command_line:
+            job_wrapper.finish( '', '' )
+            return False
+
+        return True
+
+    # Runners must override the job handling methods
+    def queue_job(self, job_wrapper):
+        raise NotImplementedError()
+
+    def stop_job(self, job):
+        raise NotImplementedError()
+
+    def recover(self, job, job_wrapper):
+        raise NotImplementedError()
+
     def build_command_line( self, job_wrapper, include_metadata=False, include_work_dir_outputs=True ):
         """
         Compose the sequence of commands necessary to execute a job. This will
@@ -34,11 +165,12 @@ class BaseJobRunner( object ):
         if job_wrapper.dependency_shell_commands:
             commands = "; ".join( job_wrapper.dependency_shell_commands + [ commands ] ) 
 
-        # -- Append commands to copy job outputs based on from_work_dir attribute. --
+        # Append commands to copy job outputs based on from_work_dir attribute.
         if include_work_dir_outputs:
             work_dir_outputs = self.get_work_dir_outputs( job_wrapper )
             if work_dir_outputs:
-                commands += "; " + "; ".join( [ "cp %s %s" % ( source_file, destination ) for ( source_file, destination ) in work_dir_outputs ] )
+                commands += "; " + "; ".join( [ "if [ -f %s ] ; then cp %s %s ; fi" % 
+                    ( source_file, source_file, destination ) for ( source_file, destination ) in work_dir_outputs ] )
 
         # Append metadata setting commands, we don't want to overwrite metadata
         # that was copied over in init_meta(), as per established behavior
@@ -103,36 +235,68 @@ class BaseJobRunner( object ):
                                 log.exception( "from_work_dir specified a location not in the working directory: %s, %s" % ( source_file, job_wrapper.working_directory ) )
         return output_pairs
 
-
-class ClusterJobState( object ):
+class AsynchronousJobState( object ):
     """
-    Encapsulate the state of a cluster job, this should be subclassed as
+    Encapsulate the state of an asynchronous job, this should be subclassed as
     needed for various job runners to capture additional information needed
-    to communicate with cluster job manager.
+    to communicate with distributed resource manager.
     """
 
-    def __init__( self ):
-        self.job_wrapper = None
-        self.job_id = None
+    def __init__( self, files_dir=None, job_wrapper=None, job_id=None, job_file=None, output_file=None, error_file=None, exit_code_file=None, job_name=None, job_destination=None  ):
         self.old_state = None
         self.running = False
-        self.runner_url = None
+        self.check_count = 0
 
-STOP_SIGNAL = object()
+        self.job_wrapper = job_wrapper
+        # job_id is the DRM's job id, not the Galaxy job id
+        self.job_id = job_id
+        self.job_destination = job_destination
 
-JOB_STATUS_QUEUED = 'queue'
-JOB_STATUS_FAILED = 'fail'
-JOB_STATUS_FINISHED = 'finish'
+        self.job_file = job_file
+        self.output_file = output_file
+        self.error_file = error_file
+        self.exit_code_file = exit_code_file
+        self.job_name = job_name
 
-class ClusterJobRunner( BaseJobRunner ):
+        self.set_defaults( files_dir )
+
+        self.cleanup_file_attributes = [ 'job_file', 'output_file', 'error_file', 'exit_code_file' ]
+
+    def set_defaults( self, files_dir ):
+        if self.job_wrapper is not None:
+            id_tag = self.job_wrapper.get_id_tag()
+            if files_dir is not None:
+                self.job_file = os.path.join( files_dir, 'galaxy_%s.sh' % id_tag )
+                self.output_file = os.path.join( files_dir, 'galaxy_%s.o' % id_tag )
+                self.error_file = os.path.join( files_dir, 'galaxy_%s.e' % id_tag )
+                self.exit_code_file = os.path.join( files_dir, 'galaxy_%s.ec' % id_tag )
+            job_name = 'g%s' % id_tag
+            if self.job_wrapper.tool.old_id:
+                job_name += '_%s' % self.job_wrapper.tool.old_id
+            if self.job_wrapper.user:
+                job_name += '_%s' % self.job_wrapper.user
+            self.job_name = ''.join( map( lambda x: x if x in ( string.letters + string.digits + '_' ) else '_', job_name ) )
+
+    def cleanup( self ):
+        for file in [ getattr( self, a ) for a in self.cleanup_file_attributes if hasattr( self, a ) ]:
+            try:
+                os.unlink( file )
+            except Exception, e:
+                log.debug( "(%s/%s) Unable to cleanup %s: %s" % ( self.job_wrapper.get_id_tag(), self.job_id, file, str( e ) ) )
+
+    def register_cleanup_file_attribute( self, attribute ):
+        if attribute not in self.cleanup_file_attributes:
+            self.cleanup_file_attributes.append( attribute )
+
+class AsynchronousJobRunner( BaseJobRunner ):
+    """Parent class for any job runner that runs jobs asynchronously (e.g. via
+    a distributed resource manager).  Provides general methods for having a
+    thread to monitor the state of asynchronous jobs and submitting those jobs
+    to the correct methods (queue, finish, cleanup) at appropriate times..
     """
-    Not sure this is the best name for this class, but there is common code
-    shared between sge, pbs, drmaa, etc...
-    """
 
-    def __init__( self, app ):
-        self.app = app
-        self.sa_session = app.model.context
+    def __init__( self, app, nworkers ):
+        super( AsynchronousJobRunner, self ).__init__( app, nworkers )
         # 'watched' and 'queue' are both used to keep track of jobs to watch.
         # 'queue' is used to add new watched jobs, and can be called from
         # any thread (usually by the 'queue_job' method). 'watched' must only
@@ -146,82 +310,44 @@ class ClusterJobRunner( BaseJobRunner ):
         self.monitor_thread.setDaemon( True )
         self.monitor_thread.start()
 
-    def _init_worker_threads(self):
-        self.work_queue = Queue()
-        self.work_threads = []
-        nworkers = self.app.config.cluster_job_queue_workers
-        for i in range( nworkers ):
-            worker = threading.Thread( name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next )
-            worker.setDaemon( True )
-            worker.start()
-            self.work_threads.append( worker )
-
     def handle_stop(self):
         # DRMAA and SGE runners should override this and disconnect.
         pass
 
     def monitor( self ):
         """
-        Watches jobs currently in the cluster queue and deals with state changes
-        (queued to running) and job completion
+        Watches jobs currently in the monitor queue and deals with state
+        changes (queued to running) and job completion.
         """
         while 1:
             # Take any new watched jobs and put them on the monitor list
             try:
                 while 1: 
-                    cluster_job_state = self.monitor_queue.get_nowait()
-                    if cluster_job_state is STOP_SIGNAL:
+                    async_job_state = self.monitor_queue.get_nowait()
+                    if async_job_state is STOP_SIGNAL:
                         # TODO: This is where any cleanup would occur
                         self.handle_stop()
                         return
-                    self.watched.append( cluster_job_state )
+                    self.watched.append( async_job_state )
             except Empty:
                 pass
             # Iterate over the list of watched jobs and check state
-            self.check_watched_items()
+            try:
+                self.check_watched_items()
+            except Exception, e:
+                log.exception('Unhandled exception checking active jobs')
             # Sleep a bit before the next state check
             time.sleep( 1 )
-
-    def run_next( self ):
-        """
-        Run the next item in the queue (a job waiting to run or finish )
-        """
-        while 1:
-            ( op, obj ) = self.work_queue.get()
-            if op is STOP_SIGNAL:
-                return
-            try:
-                if op == JOB_STATUS_QUEUED:
-                    # If the next item is to be run, then only run it if the
-                    # job state is "queued". Otherwise the next item was either
-                    # cancelled or one of its siblings encountered an error.
-                    job_state = obj.get_state()
-                    if model.Job.states.QUEUED == job_state:
-                        self.queue_job( obj )
-                    else:
-                        log.debug( "Not executing job %d in state %s"  % ( obj.get_id_tag(), job_state ) ) 
-                elif op == JOB_STATUS_FINISHED:
-                    self.finish_job( obj )
-                elif op == JOB_STATUS_FAILED:
-                    self.fail_job( obj )
-            except:
-                log.exception( "Uncaught exception %sing job" % op )
 
     def monitor_job(self, job_state):
         self.monitor_queue.put( job_state )
 
-    def put( self, job_wrapper ):
-        """Add a job to the queue (by job identifier)"""
-        # Change to queued state before handing to worker thread so the runner won't pick it up again
-        job_wrapper.change_state( model.Job.states.QUEUED )
-        self.mark_as_queued(job_wrapper)
-
     def shutdown( self ):
         """Attempts to gracefully shut down the monitor thread"""
-        log.info( "sending stop signal to worker threads" )
+        log.info( "%s: Sending stop signal to monitor thread" % self.runner_name )
         self.monitor_queue.put( STOP_SIGNAL )
-        for i in range( len( self.work_threads ) ):
-            self.work_queue.put( ( STOP_SIGNAL, None ) )
+        # Call the parent's shutdown method to stop workers
+        super( AsynchronousJobRunner, self ).shutdown()
 
     def check_watched_items(self):
         """
@@ -232,30 +358,76 @@ class ClusterJobRunner( BaseJobRunner ):
         reuse the logic here.
         """
         new_watched = []
-        for cluster_job_state in self.watched:
-            new_cluster_job_state = self.check_watched_item(cluster_job_state)
-            if new_cluster_job_state:
-                new_watched.append(new_cluster_job_state)
+        for async_job_state in self.watched:
+            new_async_job_state = self.check_watched_item(async_job_state)
+            if new_async_job_state:
+                new_watched.append(new_async_job_state)
         self.watched = new_watched
 
     # Subclasses should implement this unless they override check_watched_items all together.
     def check_watched_item(self):
         raise NotImplementedError()
 
-    def queue_job(self, job_wrapper):
-        raise NotImplementedError()
+    def finish_job( self, job_state ):
+        """
+        Get the output/error for a finished job, pass to `job_wrapper.finish`
+        and cleanup all the job's temporary files.
+        """
+        galaxy_id_tag = job_state.job_wrapper.get_id_tag()
+        external_job_id = job_state.job_id
 
-    def finish_job(self, job_state):
-        raise NotImplementedError()
+        # To ensure that files below are readable, ownership must be reclaimed first
+        job_state.job_wrapper.reclaim_ownership()
 
-    def fail_job(self, job_state):
-        raise NotImplementedError()
+        # wait for the files to appear
+        which_try = 0
+        while which_try < (self.app.config.retry_job_output_collection + 1):
+            try:
+                stdout = file( job_state.output_file, "r" ).read( 32768 )
+                stderr = file( job_state.error_file, "r" ).read( 32768 )
+                which_try = (self.app.config.retry_job_output_collection + 1)
+            except Exception, e:
+                if which_try == self.app.config.retry_job_output_collection:
+                    stdout = ''
+                    stderr = 'Job output not returned from cluster'
+                    log.error( '(%s/%s) %s: %s' % ( galaxy_id_tag, external_job_id, stderr, str( e ) ) )
+                else:
+                    time.sleep(1)
+                which_try += 1
+
+        try:
+            # This should be an 8-bit exit code, but read ahead anyway: 
+            exit_code_str = file( job_state.exit_code_file, "r" ).read(32)
+        except:
+            # By default, the exit code is 0, which typically indicates success.
+            exit_code_str = "0"
+
+        try:
+            # Decode the exit code. If it's bogus, then just use 0.
+            exit_code = int(exit_code_str)
+        except:
+            log.warning( "(%s/%s) Exit code '%s' invalid. Using 0." % ( galaxy_id_tag, external_job_id, exit_code_str ) )
+            exit_code = 0
+
+        # clean up the job files
+        if self.app.config.cleanup_job == "always" or ( not stderr and self.app.config.cleanup_job == "onsuccess" ):
+            job_state.cleanup()
+
+        try:
+            job_state.job_wrapper.finish( stdout, stderr, exit_code )
+        except:
+            log.exception( "(%s/%s) Job wrapper finish method failed" % ( galaxy_id_tag, external_job_id ) )
+            job_state.job_wrapper.fail( "Unable to finish job", exception=True )
+
+    def fail_job( self, job_state ):
+        if getattr( job_state, 'stop_job', True ):
+            self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
+        job_state.job_wrapper.fail( getattr( job_state, 'fail_message', 'Job failed' ) )
+        if self.app.config.cleanup_job == "always":
+            job_state.cleanup()
 
     def mark_as_finished(self, job_state):
-        self.work_queue.put( ( JOB_STATUS_FINISHED, job_state ) )
+        self.work_queue.put( ( self.finish_job, job_state ) )
 
     def mark_as_failed(self, job_state):
-        self.work_queue.put( ( JOB_STATUS_FAILED, job_state ) )
-
-    def mark_as_queued(self, job_wrapper):
-        self.work_queue.put( ( JOB_STATUS_QUEUED, job_wrapper ) )
+        self.work_queue.put( ( self.fail_job, job_state ) )

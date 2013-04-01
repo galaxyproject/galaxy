@@ -22,7 +22,7 @@ if '-c' in sys.argv:
 if not os.path.exists( config_file ):
     print "Galaxy config file does not exist (hint: use '-c config.ini' for non-standard locations): %s" % config_file
     sys.exit( 1 )
-repo = 'lib/galaxy/tool_shed/migrate'
+repo = 'lib/tool_shed/galaxy_install/migrate'
 
 cp = SafeConfigParser()
 cp.read( config_file )

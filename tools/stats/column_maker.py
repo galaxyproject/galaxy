@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 # This tool takes a tab-delimited textfile as input and creates another column in the file which is the result of
 # a computation performed on every row in the original file.  The tool will skip over invalid lines within the file,
-# informing the user about the number of lines skipped.  
-import sys, re, os.path
-from galaxy import eggs
-from galaxy.tools import validation
-from galaxy.datatypes import metadata
+# informing the user about the number of lines skipped.
+
+import sys, re
+# These functions may be used in compute expression:
 from math import log,exp,sqrt,ceil,floor
+
 
 assert sys.version_info[:2] >= ( 2, 4 )
 

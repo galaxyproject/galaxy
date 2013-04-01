@@ -11,7 +11,7 @@ from galaxy.model.item_attrs import UsesAnnotations
 
 log = logging.getLogger( __name__ )
 
-class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
+class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
     
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
@@ -22,31 +22,30 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
         return trans.fill_template( "root/index.mako",
                                     tool_id=tool_id,
                                     workflow_id=workflow_id,
-                                    m_c=m_c, m_a=m_a )
+                                    m_c=m_c, m_a=m_a,
+                                    params=kwd )
         
     ## ---- Tool related -----------------------------------------------------
-    
+
     @web.expose
     def tool_menu( self, trans ):
         if trans.app.config.require_login and not trans.user:
-            return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy tools.' )
-        else:
-            ## Get most recently used tools.
-            toolbox = self.get_toolbox()
-            recent_tools = []
-            if trans.user:
-                for row in trans.sa_session.query( self.app.model.Job.tool_id ). \
-                                                            filter( self.app.model.Job.user==trans.user ). \
-                                                            order_by( self.app.model.Job.create_time.desc() ):
-                    tool_id = row[0]
-                    a_tool = toolbox.get_tool( tool_id )
-                    if a_tool and not a_tool.hidden and a_tool not in recent_tools:
-                        recent_tools.append( a_tool )
-                        ## TODO: make number of recently used tools a user preference.
-                        if len ( recent_tools ) == 5:
-                            break
-                        
-            return trans.fill_template('/root/tool_menu.mako', toolbox=toolbox, recent_tools=recent_tools )
+            return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy tools.' )
+        toolbox = self.get_toolbox()
+        ## Get most recently used tools.
+        # recent_tools = []
+        # if trans.user:
+        #     for row in trans.sa_session.query( self.app.model.Job.tool_id ) \
+        #                                 .filter( self.app.model.Job.user == trans.user ) \
+        #                                 .order_by( self.app.model.Job.create_time.desc() ):
+        #         tool_id = row[0]
+        #         a_tool = toolbox.get_tool( tool_id )
+        #         if a_tool and not a_tool.hidden and a_tool not in recent_tools:
+        #             recent_tools.append( a_tool )
+        #             ## TODO: make number of recently used tools a user preference.
+        #             if len( recent_tools ) == 5:
+        #                 break
+        return trans.fill_template( '/root/tool_menu.mako', toolbox=toolbox )
 
     @web.json
     def tool_search( self, trans, **kwd ):
@@ -131,8 +130,39 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
 
             else:
                 # get all datasets server-side, client-side will get flags and render appropriately
-                datasets = self.get_history_datasets( trans, history,
-                                                      show_deleted=True, show_hidden=True, show_purged=True )
+                hdas = self.get_history_datasets( trans, history,
+                    show_deleted=True, show_hidden=True, show_purged=True )
+
+                #TODO: would be good to re-use the hdas above to get the history data...
+                history_dictionary = self.get_history_dict( trans, history )
+
+                #TODO: blech - all here for now - duplication of hist. contents, index
+                hda_dictionaries = []
+                for hda in hdas:
+                    try:
+                        hda_dictionaries.append( self.get_hda_dict( trans, hda ) )
+
+                    except Exception, exc:
+                        # don't fail entire list if hda err's, record and move on
+                        # (making sure http recvr knows it's err'd)
+                        encoded_hda_id = trans.security.encode_id( hda.id )
+                        log.error( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
+                            history_dictionary[ 'id' ], encoded_hda_id, type( exc ), str( exc ) )
+                        return_val = {
+                            'id'        : encoded_hda_id,
+                            'name'      : hda.name,
+                            'hid'       : hda.hid,
+                            'history_id': history_dictionary[ 'id' ],
+                            'state'     : trans.model.Dataset.states.ERROR,
+                            'visible'   : True,
+                            'misc_info' : str( exc ),
+                            'misc_blurb': 'Failed to retrieve dataset information.',
+                            'error'     : str( exc )
+                        }
+                        hda_dictionaries.append( return_val )
+
+                history = history_dictionary
+                datasets = hda_dictionaries
 
             return trans.stream_template_mako( history_panel_template,
                                                history = history,
@@ -142,6 +172,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                                                show_deleted = show_deleted,
                                                show_hidden=show_hidden,
                                                over_quota=trans.app.quota_agent.get_percent( trans=trans ) >= 100,
+                                               log = log,
                                                message=message,
                                                status=status )
 
@@ -214,7 +245,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                         "html": unicode( trans.fill_template( "root/history_item.mako", data=data, hid=data.hid ), 'utf-8' ),
                         "force_history_refresh": force_history_refresh
                     }
-                    
+
         return rval
 
     @web.json
@@ -230,7 +261,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
 
     def __user_get_usage( self, trans ):
         usage = trans.app.quota_agent.get_usage( trans )
-        percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage ) 
+        percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
         rval = {}
         if percent is None:
             rval['usage'] = util.nice_size( usage )
@@ -238,20 +269,19 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
             rval['percent'] = percent
         return rval
 
-
     ## ---- Dataset display / editing ----------------------------------------
 
     @web.expose
     def display( self, trans, id=None, hid=None, tofile=None, toext=".txt", **kwd ):
         """
-        Returns data directly into the browser. 
+        Returns data directly into the browser.
         Sets the mime-type according to the extension
         """
         if hid is not None:
             try:
                 hid = int( hid )
             except:
-                return "hid '%s' is invalid" %str( hid )
+                return "hid '%s' is invalid" % str( hid )
             history = trans.get_history()
             for dataset in history.datasets:
                 if dataset.hid == hid:
@@ -263,7 +293,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
             try:
                 data = self.app.model.HistoryDatasetAssociation.get( id )
             except:
-                return "Dataset id '%s' is invalid" %str( id )
+                return "Dataset id '%s' is invalid" % str( id )
         if data:
             current_user_roles = trans.get_current_user_roles()
             if trans.app.security_agent.can_access_dataset( current_user_roles, data.dataset ):
@@ -280,7 +310,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                 trans.log_event( "Display dataset id: %s" % str(id) )
                 try:
                     return open( data.file_name )
-                except: 
+                except:
                     return "This dataset contains no content"
             else:
                 return "You are not allowed to access this dataset"
@@ -321,7 +351,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                 return data.as_display_type( display_app, **kwd )
             elif authz_method == 'display_at' and trans.app.host_security_agent.allow_action( trans.request.remote_addr,
                                                                                               data.permitted_actions.DATASET_ACCESS,
-                                                                                              dataset = data ):
+                                                                                              dataset=data ):
                 trans.response.set_content_type( data.get_mime() )
                 return data.as_display_type( display_app, **kwd )
             else:
@@ -348,12 +378,14 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
         return trans.fill_template( "/history/options.mako",
                                     user=trans.get_user(),
                                     history=trans.get_history( create=True ) )
+
     @web.expose
     def history_delete( self, trans, id ):
         """
         Backward compatibility with check_galaxy script.
         """
         return trans.webapp.controllers['history'].list( trans, id, operation='delete' )
+
     @web.expose
     def clear_history( self, trans ):
         """Clears the history for a user"""
@@ -364,6 +396,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
         trans.sa_session.flush()
         trans.log_event( "History id %s cleared" % (str(history.id)) )
         trans.response.send_redirect( url_for("/index" ) )
+
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):
         msg = ""
@@ -378,7 +411,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
             if import_history.user_id == user.id:
                 return trans.show_error_message( "You cannot import your own history.")
             new_history = import_history.copy( target_user=trans.user )
-            new_history.name = "imported: "+new_history.name
+            new_history.name = "imported: " + new_history.name
             new_history.user_id = user.id
             galaxy_session = trans.get_galaxy_session()
             try:
@@ -398,7 +431,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
                 to begin.""" % ( new_history.name, web.url_for( '/' ) ) )
         elif not user_history.datasets or confirm:
             new_history = import_history.copy()
-            new_history.name = "imported: "+new_history.name
+            new_history.name = "imported: " + new_history.name
             new_history.user_id = None
             galaxy_session = trans.get_galaxy_session()
             try:
@@ -418,23 +451,25 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
         return trans.show_warn_message( """
             Warning! If you import this history, you will lose your current
             history. Click <a href="%s">here</a> to confirm.
-            """ % web.url_for( id=id, confirm=True ) )
+            """ % web.url_for( controller='root', action='history_import', id=id, confirm=True ) )
+
     @web.expose
     def history_new( self, trans, name=None ):
         trans.new_history( name=name )
         trans.log_event( "Created new History, id: %s." % str(trans.history.id) )
-        return trans.show_message( "New history created", refresh_frames = ['history'] )
+        return trans.show_message( "New history created", refresh_frames=['history'] )
+
     @web.expose
-    def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History",info=None,ext="txt",dbkey="?",copy_access_from=None,**kwd ):
+    def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History", info=None, ext="txt", dbkey="?", copy_access_from=None, **kwd ):
         """Adds a POSTed file to a History"""
         try:
             history = trans.sa_session.query( trans.app.model.History ).get( history_id )
-            data = trans.app.model.HistoryDatasetAssociation( name = name,
-                                                              info = info,
-                                                              extension = ext,
-                                                              dbkey = dbkey,
-                                                              create_dataset = True,
-                                                              sa_session = trans.sa_session )
+            data = trans.app.model.HistoryDatasetAssociation( name=name,
+                                                              info=info,
+                                                              extension=ext,
+                                                              dbkey=dbkey,
+                                                              create_dataset=True,
+                                                              sa_session=trans.sa_session )
             if copy_access_from:
                 copy_access_from = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( copy_access_from )
                 trans.app.security_agent.copy_dataset_permissions( copy_access_from.dataset, data.dataset )
@@ -456,11 +491,12 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
             trans.sa_session.flush()
             data.set_peek()
             trans.sa_session.flush()
-            trans.log_event("Added dataset %d to history %d" %(data.id, trans.history.id))
-            return trans.show_ok_message("Dataset "+str(data.hid)+" added to history "+str(history_id)+".")
+            trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id))
+            return trans.show_ok_message( "Dataset " + str(data.hid) + " added to history " + str(history_id) + "." )
         except Exception, e:
             trans.log_event( "Failed to add dataset to history: %s" % ( e ) )
             return trans.show_error_message("Adding File to History has Failed")
+
     @web.expose
     def history_set_default_permissions( self, trans, id=None, **kwd ):
         """Sets the permissions on a history"""
@@ -493,6 +529,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
         else:
             #user not logged in, history group must be only public
             return trans.show_error_message( "You must be logged in to change a history's default permissions." )
+
     @web.expose
     def dataset_make_primary( self, trans, id=None):
         """Copies a dataset and makes primary"""
@@ -505,7 +542,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesAnnotations ):
             history.add_dataset(new_data)
             trans.sa_session.add( new_data )
             trans.sa_session.flush()
-            return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] ) 
+            return trans.show_message( "<p>Secondary dataset has been made primary.</p>", refresh_frames=['history'] )
         except:
             return trans.show_error_message( "<p>Failed to make secondary dataset primary.</p>" )
 

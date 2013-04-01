@@ -64,7 +64,7 @@
 <div class="toolForm">
     <div class="toolFormTitle">Create quota</div>
     <div class="toolFormBody">
-        <form name="associate_quota_group_user" id="associate_quota_group_user" action="${h.url_for( action='create_quota' )}" method="post" >
+        <form name="associate_quota_group_user" id="associate_quota_group_user" action="${h.url_for(controller='admin', action='create_quota' )}" method="post" >
             <div class="form-row">
                 <label>Name:</label>
                 <input  name="name" type="textfield" value="${name}" size=40"/>

@@ -16,7 +16,7 @@ new_path.extend( sys.path[1:] )
 sys.path = new_path
 
 from galaxy import eggs
-from galaxy.tool_shed.migrate.common import MigrateToolsApplication
+from tool_shed.galaxy_install.migrate.common import MigrateToolsApplication
 
 app = MigrateToolsApplication( sys.argv[ 1 ] )
 non_shed_tool_confs = app.install_manager.proprietary_tool_confs

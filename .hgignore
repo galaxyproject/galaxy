@@ -24,15 +24,21 @@ database/*.sqlite
 # Python bytecode
 *.pyc
 
+# Galaxy Runtime Files
+paster.lock
+paster.log
+paster.pid
+
 # Tool Shed Runtime Files
-community_webapp.log
-community_webapp.pid
+tool_shed_webapp.lock
+tool_shed_webapp.log
+tool_shed_webapp.pid
 hgweb.config*
 
 # Config files
 universe_wsgi.ini
 reports_wsgi.ini
-community_wsgi.ini
+tool_shed_wsgi.ini
 
 # Config files.
 datatypes_conf.xml
@@ -45,6 +51,9 @@ tool_sheds_conf.xml
 integrated_tool_panel.xml
 openid_conf.xml
 shed_tool_data_table_conf.xml
+job_conf.xml
+data_manager_conf.xml
+shed_data_manager_conf.xml
 
 static/welcome.html.*
 static/welcome.html
@@ -78,7 +87,7 @@ tool-data/shared/jars/
 
 # CSS build artifacts.
 */variables.less
-static/june_2007_style/blue/base_sprites.less
+static/style/blue/base_sprites.less
 
 # Testing
 selenium-server.jar

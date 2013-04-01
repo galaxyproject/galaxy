@@ -53,8 +53,14 @@ class StaticValueFilter( Filter ):
         self.keep = string_as_bool( elem.get( "keep", 'True' ) )
     def filter_options( self, options, trans, other_values ):
         rval = []
+        filter_value = self.value
+        try:
+            if trans.user.email:
+                filter_value = filter_value.replace('$__user_email__',trans.user.email)
+        except:
+            pass
         for fields in options:
-            if ( self.keep and fields[self.column] == self.value ) or ( not self.keep and fields[self.column] != self.value ):
+            if ( self.keep and fields[self.column] == filter_value ) or ( not self.keep and fields[self.column] != filter_value ):
                 rval.append( fields )
         return rval
 

@@ -22,7 +22,7 @@ def __main__():
     parser.add_option( '', '--mate-std-dev', dest='mate_std_dev', help='Standard deviation of distribution on inner distances between male pairs.' )
     parser.add_option( '', '--read-mismatches', dest='read_mismatches' )
     parser.add_option( '', '--bowtie-n', action="store_true", dest='bowtie_n' )
-    parser.add_option( '', '--report-discordant-pair-alignments', action="store_true", dest='report_discordant_pairs' )
+    parser.add_option( '', '--no-discordant', action="store_true", dest='report_concordant_pairs_only' )
     parser.add_option( '-a', '--min-anchor-length', dest='min_anchor_length', 
                         help='The "anchor length". TopHat will report junctions spanned by reads with at least this many bases on each side of the junction.' )
     parser.add_option( '-m', '--splice-mismatches', dest='splice_mismatches', help='The maximum number of mismatches that can appear in the anchor region of a spliced alignment.' )
@@ -141,8 +141,8 @@ def __main__():
     opts = '-p %s %s' % ( options.num_threads, space )
     if options.single_paired == 'paired':
         opts += ' -r %s' % options.mate_inner_dist
-        if options.report_discordant_pairs:
-            opts += ' --report-discordant-pair-alignments'
+        if options.report_concordant_pairs_only:
+            opts += ' --no-discordant'
     # Read group options.
     if options.rgid:
         if not options.rglb or not options.rgpl or not options.rgsm:
@@ -260,11 +260,6 @@ def __main__():
         if returncode != 0:
             raise Exception, stderr
             
-        # Copy output files from tmp directory to specified files.
-        shutil.copyfile( os.path.join( "tophat_out", "junctions.bed" ), options.junctions_output_file )
-        shutil.copyfile( os.path.join( "tophat_out", "accepted_hits.bam" ), options.accepted_hits_output_file )
-
-        # TODO: look for errors in program output.
     except Exception, e:
         stop_err( 'Error in tophat:\n' + str( e ) ) 
 

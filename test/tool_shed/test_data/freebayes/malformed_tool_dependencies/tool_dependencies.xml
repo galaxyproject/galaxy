@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<tool_dependency>
+    <package name="freebayes" version="0.9.5">
+        <install version="1.0">
+            <actions>
+                <action type="shell_command">git clone --recursive git://github.com/ekg/freebayes.git</action>
+                <action type="shell_command">git reset --hard 9696d0ce8a962f7bb61c4791be5ce44312b81cf8</action>
+                <action type="shell_command">make</action>
+                <action type="move_directory_files">
+                    <source_directory>bin</source_directory>
+                    <destination_directory>$INSTALL_DIR/bin</destination_directory>
+                </action>
+                <action type="set_environment">
+                    <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>
+FreeBayes requires g++ and the standard C and C++ development libraries.
+Additionally, cmake is required for building the BamTools API.
+        </readme>
+    </package>
+    <package name="samtools" version="0.2.15">
+        <install version="1.0">
+            <actions>
+                <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
+                <action type="shell_command">sed -i .bak -e 's/-lcurses/-lncurses/g' Makefile</action>
+                <action type="shell_command">make</action>
+                <action type="move_file">
+                    <source>samtools</source>
+                    <destination>$INSTALL_DIR/bin</destination>
+                </action>
+                <action type="move_file">
+                    <source>misc/maq2sam-long</source>
+                    <destination>$INSTALL_DIR/bin</destination>
+                </action>
+                <action type="set_environment">
+                    <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
+                </action>
+            </actions>
+        </install>
+        <readme>
+This readme tag has invalid XML ><
+        </readme>
+    </package>
+</tool_dependency>

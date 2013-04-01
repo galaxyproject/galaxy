@@ -2,30 +2,34 @@ import logging
 import subprocess
 
 from galaxy import model
-from galaxy.jobs.runners import ClusterJobState, ClusterJobRunner, STOP_SIGNAL
+from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
+from galaxy.jobs import JobDestination
 
 import errno
 from time import sleep
 
-from lwr_client import FileStager, Client
+from lwr_client import FileStager, Client, url_to_destination_params
 
 log = logging.getLogger( __name__ )
 
 __all__ = [ 'LwrJobRunner' ]
 
-
-class LwrJobRunner( ClusterJobRunner ):
+class LwrJobRunner( AsynchronousJobRunner ):
     """
     LWR Job Runner
     """
     runner_name = "LWRRunner"
 
-    def __init__( self, app ):
+    def __init__( self, app, nworkers, transport=None ):
         """Start the job runner """
-        super( LwrJobRunner, self ).__init__( app )
+        super( LwrJobRunner, self ).__init__( app, nworkers )
         self._init_monitor_thread()
-        log.info( "starting LWR workers" )
         self._init_worker_threads()
+        self.transport_type = transport
+
+    def url_to_destination( self, url ):
+        """Convert a legacy URL to a job destination"""
+        return JobDestination( runner="lwr", params=url_to_destination_params( url ) )
 
     def check_watched_item(self, job_state):
         try:
@@ -44,7 +48,7 @@ class LwrJobRunner( ClusterJobRunner ):
     def queue_job(self, job_wrapper):
         stderr = stdout = command_line = ''
 
-        runner_url = job_wrapper.get_job_runner_url()
+        job_destination = job_wrapper.job_destination
 
         try:
             job_wrapper.prepare()
@@ -71,11 +75,12 @@ class LwrJobRunner( ClusterJobRunner ):
             output_files = self.get_output_files(job_wrapper)
             input_files = job_wrapper.get_input_fnames()
             working_directory = job_wrapper.working_directory
-            file_stager = FileStager(client, command_line, job_wrapper.extra_filenames, input_files, output_files, job_wrapper.tool.tool_dir, working_directory)
+            tool = job_wrapper.tool
+            file_stager = FileStager(client, tool, command_line, job_wrapper.extra_filenames, input_files, output_files, working_directory)
             rebuilt_command_line = file_stager.get_rewritten_command_line()
             job_id = file_stager.job_id
             client.launch( rebuilt_command_line )
-            job_wrapper.set_runner( runner_url, job_id )
+            job_wrapper.set_job_destination( job_destination, job_id )
             job_wrapper.change_state( model.Job.states.RUNNING )
 
         except Exception, exc:
@@ -83,37 +88,31 @@ class LwrJobRunner( ClusterJobRunner ):
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
 
-        lwr_job_state = ClusterJobState()
+        lwr_job_state = AsynchronousJobState()
         lwr_job_state.job_wrapper = job_wrapper
         lwr_job_state.job_id = job_id
         lwr_job_state.old_state = True
         lwr_job_state.running = True
-        lwr_job_state.runner_url = runner_url
+        lwr_job_state.job_destination = job_destination
         self.monitor_job(lwr_job_state)
 
     def get_output_files(self, job_wrapper):
         output_fnames = job_wrapper.get_output_fnames()
         return [ str( o ) for o in output_fnames ]
 
-
-    def determine_lwr_url(self, url):
-        lwr_url = url[ len( 'lwr://' ) : ]
-        return  lwr_url 
-
     def get_client_from_wrapper(self, job_wrapper):
         job_id = job_wrapper.job_id
         if hasattr(job_wrapper, 'task_id'):
             job_id = "%s_%s" % (job_id, job_wrapper.task_id)
-        return self.get_client( job_wrapper.get_job_runner_url(), job_id )
+        return self.get_client( job_wrapper.job_destination.params, job_id )
 
     def get_client_from_state(self, job_state):
-        job_runner = job_state.runner_url
+        job_destination_params = job_state.job_destination.params
         job_id = job_state.job_id
-        return self.get_client(job_runner, job_id)
+        return self.get_client( job_destination_params, job_id )
 
-    def get_client(self, job_runner, job_id):
-        lwr_url = self.determine_lwr_url( job_runner )
-        return Client(lwr_url, job_id)   
+    def get_client( self, job_destination_params, job_id ):
+        return Client( job_destination_params, job_id, transport_type=self.transport_type )
 
     def finish_job( self, job_state ):
         stderr = stdout = command_line = ''
@@ -171,14 +170,6 @@ class LwrJobRunner( ClusterJobRunner ):
         self.stop_job( self.sa_session.query( self.app.model.Job ).get( job_state.job_wrapper.job_id ) )
         job_state.job_wrapper.fail( job_state.fail_message )
 
-    def shutdown( self ):
-        """Attempts to gracefully shut down the worker threads"""
-        log.info( "sending stop signal to worker threads" )
-        self.monitor_queue.put( STOP_SIGNAL )
-        for i in range( len( self.work_threads ) ):
-            self.work_queue.put( ( STOP_SIGNAL, None ) )
-        log.info( "local job runner stopped" )
-
     def check_pid( self, pid ):
         try:
             os.kill( pid, 0 )
@@ -193,7 +184,7 @@ class LwrJobRunner( ClusterJobRunner ):
     def stop_job( self, job ):
         #if our local job has JobExternalOutputMetadata associated, then our primary job has to have already finished
         job_ext_output_metadata = job.get_external_output_metadata()
-        if job_ext_output_metadata: 
+        if job_ext_output_metadata:
             pid = job_ext_output_metadata[0].job_runner_external_pid #every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             if pid in [ None, '' ]:
                 log.warning( "stop_job(): %s: no PID in database for job, unable to stop" % job.id )
@@ -219,15 +210,16 @@ class LwrJobRunner( ClusterJobRunner ):
             lwr_url = job.job_runner_name
             job_id = job.job_runner_external_id
             log.debug("Attempt remote lwr kill of job with url %s and id %s" % (lwr_url, job_id))
-            client = self.get_client(lwr_url, job_id)
+            client = self.get_client(job.destination_params, job_id)
             client.kill()
 
 
     def recover( self, job, job_wrapper ):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
-        job_state = ClusterJobState()
+        job_state = AsynchronousJobState()
         job_state.job_id = str( job.get_job_runner_external_id() )
         job_state.runner_url = job_wrapper.get_job_runner_url()
+        job_state.job_destination = job_wrapper.job_destination
         job_wrapper.command_line = job.get_command_line()
         job_state.job_wrapper = job_wrapper
         if job.get_state() == model.Job.states.RUNNING:

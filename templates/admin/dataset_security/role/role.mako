@@ -50,7 +50,7 @@ $().ready(function() {
 <div class="toolForm">
     <div class="toolFormTitle">Role '${role.name}'</div>
     <div class="toolFormBody">
-        <form name="associate_role_user_group" id="associate_role_user_group" action="${h.url_for( action='manage_users_and_groups_for_role', id=trans.security.encode_id( role.id ) )}" method="post" >
+        <form name="associate_role_user_group" id="associate_role_user_group" action="${h.url_for(controller='admin', action='manage_users_and_groups_for_role', id=trans.security.encode_id( role.id ) )}" method="post" >
             <div class="form-row">
                 <div style="float: left; margin-right: 10px;">
                     <label>Users associated with '${role.name}'</label>
