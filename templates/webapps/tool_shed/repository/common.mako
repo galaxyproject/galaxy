@@ -442,6 +442,16 @@
     <%
         encoded_id = trans.security.encode_id( invalid_tool_dependency.id )
     %>
+    <style type="text/css">
+        #readme_table{ table-layout:fixed;
+                       width:100%;
+                       overflow-wrap:normal;
+                       overflow:hidden;
+                       border:0px; 
+                       word-break:keep-all;
+                       word-wrap:break-word;
+                       line-break:strict; }
+    </style>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
