@@ -126,14 +126,6 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             }
         }, this );
 
-        // if an hda moves into the ready state and has the force_history_refresh flag (often via tool.xml)
-        //  then: refresh the panel
-        this.model.hdas.bind( 'state:ready', function( hda, newState, oldState ){
-            if( hda.get( 'force_history_refresh' ) ){
-                window.location.reload();
-            }
-        }, this );
-
         //this.bind( 'all', function(){
         //    this.log( arguments );
         //}, this );

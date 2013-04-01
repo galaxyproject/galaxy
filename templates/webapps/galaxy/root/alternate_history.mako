@@ -285,6 +285,9 @@ function galaxyPageSetUp(){
     top.Galaxy.$rightPanel      = top.Galaxy.$rightPanel    || $( top.document ).find( 'div#right' );
 
     //modals
+    top.Galaxy.show_modal       = top.show_modal;
+    top.Galaxy.hide_modal       = top.hide_modal;
+
     // other base functions
 
     // global backbone models

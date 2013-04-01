@@ -55,7 +55,11 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     if encoded_hda_id in ids:
                         #TODO: share code with show
                         try:
-                            rval.append( self.get_hda_dict( trans, hda ) )
+                            hda_dict = self.get_hda_dict( trans, hda )
+                            hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+                            hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+                            #rval.append( self.get_hda_dict( trans, hda ) )
+                            rval.append( hda_dict )
 
                         except Exception, exc:
                             # don't fail entire list if hda err's, record and move on

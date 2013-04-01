@@ -364,8 +364,8 @@ class UsesHistoryDatasetAssociationMixin:
         if meta_files:
             hda_dict[ 'meta_files' ] = meta_files
 
-        hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
-        hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+        #hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+        #hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
         hda_dict[ 'visualizations' ] = hda.get_visualizations()
 
         # ---- return here if deleted
@@ -899,8 +899,6 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         hda_dicts = []
         for hda_tuple in query.all():
             hda_dict = dict( zip( column_keys, hda_tuple ) )
-            #if hda_dict[ 'job_state' ] not in [ None, 'ok' ]:
-            #    print hda_dict[ 'hid' ], hda_dict[ 'name' ], hda_dict[ 'job_state' ]
             hda_dict[ 'history_id' ] = history.id
             trans.security.encode_dict_ids( hda_dict )
             hda_dicts.append( hda_dict )
