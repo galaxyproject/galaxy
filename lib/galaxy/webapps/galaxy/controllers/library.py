@@ -38,8 +38,8 @@ class LibraryListGrid( grids.Grid ):
                            attach_popup=False,
                            filterable="advanced" ),
     ]
-    columns.append( grids.MulticolFilterColumn( "search dataset name, info, message, dbkey", 
-                                                cols_to_filter=[ columns[0], columns[1] ], 
+    columns.append( grids.MulticolFilterColumn( "search dataset name, info, message, dbkey",
+                                                cols_to_filter=[ columns[0], columns[1] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
@@ -62,11 +62,11 @@ class LibraryListGrid( grids.Grid ):
                                                                                       .filter( and_( trans.model.LibraryPermissions.table.c.action == library_access_action,
                                                                                                      trans.model.LibraryPermissions.table.c.role_id.in_( current_user_role_ids ) ) ) ]
         if not trans.user:
-            # Filter to get only public libraries, a library whose id 
+            # Filter to get only public libraries, a library whose id
             # is not in restricted_library_ids is a public library
             return query.filter( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ) )
         else:
-            # Filter to get libraries accessible by the current user, get both 
+            # Filter to get libraries accessible by the current user, get both
             # public libraries and restricted libraries accessible by the current user.
             return query.filter( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ),
                                       trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
