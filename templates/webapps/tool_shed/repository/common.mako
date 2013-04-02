@@ -513,8 +513,12 @@
             else:
                 installation_status = None
         repository_name = str( repository_dependency.repository_name )
-        changeset_revision = str( repository_dependency.changeset_revision )
         repository_owner = str( repository_dependency.repository_owner )
+        changeset_revision = str( repository_dependency.changeset_revision )
+        if prior_installation_required:
+            prior_installation_required_str = " <i>(prior install required)</i>"
+        else:
+            prior_installation_required_str = ""
 
         if trans.webapp.name == 'galaxy':
             if row_is_header:
@@ -550,7 +554,7 @@
             </${cell_type}>
         %else:
             <td style="padding-left: ${pad+20}px;">
-                Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>
+                Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>${prior_installation_required_str}
             </td>
         %endif
     </tr>

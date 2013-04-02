@@ -272,8 +272,8 @@ def generate_clone_url_for_repository_in_tool_shed( trans, repository ):
 
 def generate_clone_url_from_repo_info_tup( repo_info_tup ):
     """Generate teh URL for cloning a repositoyr given a tuple of toolshed, name, owner, changeset_revision."""
-    # Example tuple: ['http://localhost:9009', 'blast_datatypes', 'test', '461a4216e8ab']
-    toolshed, name, owner, changeset_revision = repo_info_tup
+    # Example tuple: ['http://localhost:9009', 'blast_datatypes', 'test', '461a4216e8ab', False]
+    toolshed, name, owner, changeset_revision, prior_installation_required = parse_repository_dependency_tuple( repo_info_tup )
     # Don't include the changeset_revision in clone urls.
     return url_join( toolshed, 'repos', owner, name )
 
@@ -1019,6 +1019,28 @@ def open_repository_files_folder( trans, folder_path ):
             folder_contents.append( node )
     return folder_contents
 
+def parse_repository_dependency_tuple( repository_dependency_tuple, contains_error=False ):
+    if contains_error:
+        if len( repository_dependency_tuple ) == 5:
+            # Metadata should have been reset on the repository containing this repository_dependency definition.
+            tool_shed, name, owner, changeset_revision, error = repository_dependency_tuple
+            # Default prior_installation_required to False.
+            prior_installation_required = False
+        elif len( repository_dependency_tuple ) == 6:
+            toolshed, name, owner, changeset_revision, prior_installation_required, error = repository_dependency_tuple
+        prior_installation_required = util.asbool( str( prior_installation_required ) )
+        return toolshed, name, owner, changeset_revision, prior_installation_required, error
+    else:
+        if len( repository_dependency_tuple ) == 4:
+            # Metadata should have been reset on the repository containing this repository_dependency definition.
+            tool_shed, name, owner, changeset_revision = repository_dependency_tuple
+            # Default prior_installation_required to False.
+            prior_installation_required = False
+        elif len( repository_dependency_tuple ) == 5:
+            tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tuple
+        prior_installation_required = util.asbool( str( prior_installation_required ) )
+        return tool_shed, name, owner, changeset_revision, prior_installation_required
+
 def remove_dir( dir ):
     """Attempt to remove a directory from disk."""
     if os.path.exists( dir ):
@@ -1097,6 +1119,19 @@ def set_repository_attributes( trans, repository, status, error_message, deleted
     trans.sa_session.add( repository )
     trans.sa_session.flush()
 
+def set_prior_installation_required( repository, required_repository ):
+    """Return True if the received required_repository must be installed before the received repository."""
+    required_repository_tup = [ required_repository.tool_shed, required_repository.name, required_repository.owner, required_repository.changeset_revision ]
+    # Get the list of repository dependency tuples associated with the received repository where prior_installation_required is True.
+    required_rd_tups_that_must_be_installed = repository.requires_prior_installation_of
+    for required_rd_tup in required_rd_tups_that_must_be_installed:
+        # Repository dependency tuples in metadata include a prior_installation_required value, so strip it for comparision.
+        partial_required_rd_tup = required_rd_tup[ 0:4 ]
+        if partial_required_rd_tup == required_repository_tup:
+            # Return the boolean value of prior_installation_required, which defaults to False.
+            return required_rd_tup[ 4 ]
+    return False
+    
 def strip_path( fpath ):
     """Attempt to strip the path from a file name."""
     if not fpath:
