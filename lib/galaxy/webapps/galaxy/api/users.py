@@ -2,10 +2,9 @@
 API operations on User objects.
 """
 import logging
+from paste.httpexceptions import HTTPBadRequest, HTTPNotImplemented
+from galaxy import util, web
 from galaxy.web.base.controller import BaseAPIController, url_for
-from galaxy import web, util
-from elementtree.ElementTree import XML
-from paste.httpexceptions import *
 
 log = logging.getLogger( __name__ )
 
