@@ -85,10 +85,9 @@ def can_add_to_key_rd_dicts( key_rd_dict, key_rd_dicts ):
     for kr_dict in key_rd_dicts:
         key = kr_dict.keys()[ 0 ]
         if key == k:
-            val = kr_dict[ key ]
-            for repository_dependency in val:
-                if repository_dependency[ 0:3 ] == partial_rd:
-                    return False
+            repository_dependency = kr_dict[ key ]
+            if repository_dependency[ 0:3 ] == partial_rd:
+                return False
     return True
 
 def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_info_dicts, reinstalling=False, install_repository_dependencies=False,
