@@ -1,24 +1,27 @@
-import urllib, urllib2
-
-from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.model.orm import *
-from galaxy.datatypes import sniff
+import logging
 from galaxy import model, util
-from galaxy.util.odict import odict
+from galaxy import web
+from galaxy.model.orm import and_, not_, or_
+from galaxy.web.base.controller import BaseUIController
+from galaxy.web.framework.helpers import grids
 from library_common import get_comptypes, lucene_search, whoosh_search
+
 
 log = logging.getLogger( __name__ )
 
+
 class LibraryListGrid( grids.Grid ):
+
     class NameColumn( grids.TextColumn ):
         def get_value( self, trans, grid, library ):
             return library.name
+
     class DescriptionColumn( grids.TextColumn ):
         def get_value( self, trans, grid, library ):
             if library.description:
                 return library.description
             return ''
+
     # Grid definition
     title = "Data Libraries"
     model_class = model.Library
@@ -45,8 +48,10 @@ class LibraryListGrid( grids.Grid ):
     num_rows_per_page = 50
     preserve_state = False
     use_paging = True
+
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).filter( self.model_class.table.c.deleted == False )
+
     def apply_query_filter( self, trans, query, **kwd ):
         current_user_role_ids = [ role.id for role in trans.get_current_user_roles() ]
         library_access_action = trans.app.security_agent.permitted_actions.LIBRARY_ACCESS.action
@@ -65,8 +70,10 @@ class LibraryListGrid( grids.Grid ):
             # public libraries and restricted libraries accessible by the current user.
             return query.filter( or_( not_( trans.model.Library.table.c.id.in_( restricted_library_ids ) ),
                                       trans.model.Library.table.c.id.in_( accessible_restricted_library_ids ) ) )
+
+
 class Library( BaseUIController ):
-    
+
     library_list_grid = LibraryListGrid()
 
     @web.expose
