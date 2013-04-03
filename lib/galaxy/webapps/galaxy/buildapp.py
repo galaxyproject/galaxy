@@ -8,14 +8,12 @@ import sys, warnings
 
 from galaxy.util import asbool
 
-from paste.request import parse_formvars
-from paste.util import import_string
 from paste import httpexceptions
 import pkg_resources
 
 log = logging.getLogger( __name__ )
 
-from galaxy import config, jobs, util, tools
+from galaxy import util
 import galaxy.model
 import galaxy.model.mapping
 import galaxy.datatypes.registry
@@ -36,7 +34,7 @@ def app_factory( global_conf, **kwargs ):
             from galaxy.app import UniverseApplication
             app = UniverseApplication( global_conf = global_conf, **kwargs )
         except:
-            import traceback, sys
+            import traceback
             traceback.print_exc()
             sys.exit( 1 )
     # Call app's shutdown method when the interpeter exits, this cleanly stops
@@ -67,91 +65,91 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_api_controllers( 'galaxy.webapps.galaxy.api', app )
     # The /folders section is experimental at this point:
     log.debug( "app.config.api_folders: %s" % app.config.api_folders )
-    webapp.api_mapper.resource( 'folder', 'folders', path_prefix='/api' )
-    webapp.api_mapper.resource( 'content', 'contents',
+    webapp.mapper.resource( 'folder', 'folders', path_prefix='/api' )
+    webapp.mapper.resource( 'content', 'contents',
                                 controller='folder_contents',
                                 name_prefix='folder_',
                                 path_prefix='/api/folders/:folder_id',
                                 parent_resources=dict( member_name='folder', collection_name='folders' ) )
-    webapp.api_mapper.resource( 'content',
+    webapp.mapper.resource( 'content',
                                 'contents',
                                 controller='library_contents',
                                 name_prefix='library_',
                                 path_prefix='/api/libraries/:library_id', 
                                 parent_resources=dict( member_name='library', collection_name='libraries' ) )
-    webapp.api_mapper.resource( 'content',
+    webapp.mapper.resource( 'content',
                                 'contents',
                                 controller='history_contents',
                                 name_prefix='history_',
                                 path_prefix='/api/histories/:history_id', 
                                 parent_resources=dict( member_name='history', collection_name='histories' ) )
-    webapp.api_mapper.connect("history_contents_display",
+    webapp.mapper.connect("history_contents_display",
                               "/api/histories/:history_id/contents/:history_content_id/display",
                               controller="datasets",
                               action="display",
                               conditions=dict(method=["GET"]))
-    webapp.api_mapper.resource( 'permission',
+    webapp.mapper.resource( 'permission',
                                 'permissions',
                                 path_prefix='/api/libraries/:library_id',
                                 parent_resources=dict( member_name='library', collection_name='libraries' ) )
-    webapp.api_mapper.resource( 'user',
+    webapp.mapper.resource( 'user',
                                 'users',
                                 controller='group_users',
                                 name_prefix='group_',
                                 path_prefix='/api/groups/:group_id',
                                 parent_resources=dict( member_name='group', collection_name='groups' ) )
-    webapp.api_mapper.resource( 'role',
+    webapp.mapper.resource( 'role',
                                 'roles',
                                 controller='group_roles',
                                 name_prefix='group_',
                                 path_prefix='/api/groups/:group_id',
                                 parent_resources=dict( member_name='group', collection_name='groups' ) )
-    _add_item_tags_controller( webapp, 
+    _add_item_tags_controller( webapp,
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
-    _add_item_tags_controller( webapp, 
+    _add_item_tags_controller( webapp,
                                name_prefix="history_",
                                path_prefix='/api/histories/:history_id' )
-    _add_item_tags_controller( webapp, 
+    _add_item_tags_controller( webapp,
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
 
-    _add_item_annotation_controller( webapp, 
+    _add_item_annotation_controller( webapp,
                                name_prefix="history_content_",
                                path_prefix='/api/histories/:history_id/contents/:history_content_id' )
-    _add_item_annotation_controller( webapp, 
+    _add_item_annotation_controller( webapp,
                                name_prefix="history_",
                                path_prefix='/api/histories/:history_id' )
-    _add_item_annotation_controller( webapp, 
+    _add_item_annotation_controller( webapp,
                                name_prefix="workflow_",
                                path_prefix='/api/workflows/:workflow_id' )
 
-    webapp.api_mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
-    webapp.api_mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
-    webapp.api_mapper.resource( 'sample', 'samples', path_prefix='/api' )
-    webapp.api_mapper.resource( 'request', 'requests', path_prefix='/api' )
-    webapp.api_mapper.resource( 'form', 'forms', path_prefix='/api' )
-    webapp.api_mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
-    webapp.api_mapper.resource( 'role', 'roles', path_prefix='/api' )
-    webapp.api_mapper.resource( 'group', 'groups', path_prefix='/api' )
-    webapp.api_mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
-    webapp.api_mapper.resource( 'tool', 'tools', path_prefix='/api' )
-    webapp.api_mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
-    webapp.api_mapper.resource( 'genome', 'genomes', path_prefix='/api' )
-    webapp.api_mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
-    webapp.api_mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
-    webapp.api_mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
-    webapp.api_mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
-    #webapp.api_mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
+    webapp.mapper.resource( 'dataset', 'datasets', path_prefix='/api' )
+    webapp.mapper.resource_with_deleted( 'library', 'libraries', path_prefix='/api' )
+    webapp.mapper.resource( 'sample', 'samples', path_prefix='/api' )
+    webapp.mapper.resource( 'request', 'requests', path_prefix='/api' )
+    webapp.mapper.resource( 'form', 'forms', path_prefix='/api' )
+    webapp.mapper.resource( 'request_type', 'request_types', path_prefix='/api' )
+    webapp.mapper.resource( 'role', 'roles', path_prefix='/api' )
+    webapp.mapper.resource( 'group', 'groups', path_prefix='/api' )
+    webapp.mapper.resource_with_deleted( 'quota', 'quotas', path_prefix='/api' )
+    webapp.mapper.resource( 'tool', 'tools', path_prefix='/api' )
+    webapp.mapper.resource_with_deleted( 'user', 'users', path_prefix='/api' )
+    webapp.mapper.resource( 'genome', 'genomes', path_prefix='/api' )
+    webapp.mapper.resource( 'visualization', 'visualizations', path_prefix='/api' )
+    webapp.mapper.resource( 'workflow', 'workflows', path_prefix='/api' )
+    webapp.mapper.resource_with_deleted( 'history', 'histories', path_prefix='/api' )
+    webapp.mapper.resource( 'configuration', 'configuration', path_prefix='/api' )
+    #webapp.mapper.connect( 'run_workflow', '/api/workflow/{workflow_id}/library/{library_id}', controller='workflows', action='run', workflow_id=None, library_id=None, conditions=dict(method=["GET"]) )
 
     # "POST /api/workflows/import"  =>  ``workflows.import_workflow()``.
     # Defines a named route "import_workflow".
-    webapp.api_mapper.connect("import_workflow", "/api/workflows/upload", controller="workflows", action="import_new_workflow", conditions=dict(method=["POST"]))
-    webapp.api_mapper.connect("workflow_dict", '/api/workflows/{workflow_id}/download', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
+    webapp.mapper.connect("import_workflow", "/api/workflows/upload", controller="workflows", action="import_new_workflow", conditions=dict(method=["POST"]))
+    webapp.mapper.connect("workflow_dict", '/api/workflows/{workflow_id}/download', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
-    webapp.api_mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
+    webapp.mapper.connect("workflow_dict", '/api/workflows/download/{workflow_id}', controller='workflows', action='workflow_dict', conditions=dict(method=['GET']))
     # Galaxy API for tool shed features.
-    webapp.api_mapper.resource( 'tool_shed_repository',
+    webapp.mapper.resource( 'tool_shed_repository',
                                 'tool_shed_repositories',
                                 controller='tool_shed_repositories',
                                 name_prefix='tool_shed_repository_',
@@ -198,7 +196,7 @@ def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
     controller = "%stags" % name_prefix
     name = "%stag" % name_prefix
     path = "%s/tags" % path_prefix
-    map = webapp.api_mapper
+    map = webapp.mapper
     # Allow view items' tags.
     map.connect(name, path,
         controller=controller, action="index",
@@ -225,7 +223,7 @@ def _add_item_tags_controller( webapp, name_prefix, path_prefix, **kwd ):
 def _add_item_annotation_controller( webapp, name_prefix, path_prefix, **kwd ):
     controller = "%sannotations" % name_prefix
     name = "%sannotation" % name_prefix
-    webapp.api_mapper.resource(name, "annotation", path_prefix=path_prefix, controller=controller)
+    webapp.mapper.resource(name, "annotation", path_prefix=path_prefix, controller=controller)
 
 def wrap_in_middleware( app, global_conf, **local_conf ):
     """

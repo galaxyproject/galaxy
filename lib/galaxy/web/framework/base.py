@@ -2,33 +2,32 @@
 A simple WSGI application/framework.
 """
 
-import socket
-import types
+import cgi # For FieldStorage
 import logging
 import os.path
-import sys
+import socket
 import tarfile
-import threading
+import types
 
-from Cookie import SimpleCookie
+import pkg_resources
 
-import pkg_resources; 
-pkg_resources.require( "Paste" )
-pkg_resources.require( "Routes" )
-pkg_resources.require( "WebOb" )
+pkg_resources.require("Paste")
+pkg_resources.require("Routes")
+pkg_resources.require("WebOb")
 
 import routes
 import webob
 
+from Cookie import SimpleCookie
+
 # We will use some very basic HTTP/wsgi utilities from the paste library
-from paste.request import parse_headers, get_cookies, parse_formvars
+from paste.request import get_cookies
 from paste import httpexceptions
 from paste.response import HeaderDict
 
-# For FieldStorage
-import cgi
 
 log = logging.getLogger( __name__ )
+
 
 def __resource_with_deleted( self, member_name, collection_name, **kwargs ):
     """
@@ -62,12 +61,11 @@ class WebApplication( object ):
         """
         self.controllers = dict()
         self.api_controllers = dict()
-        self.mapper = routes.Mapper() 
+        self.mapper = routes.Mapper()
         # FIXME: The following two options are deprecated and should be
         # removed.  Consult the Routes documentation.
         self.mapper.minimization = True
-        self.mapper.explicit = False
-        self.api_mapper = routes.Mapper()
+        #self.mapper.explicit = False
         self.transaction_factory = DefaultWebTransaction
         # Set if trace logging is enabled
         self.trace_logger = None
@@ -108,7 +106,6 @@ class WebApplication( object ):
         """
         # Create/compile the regular expressions for route mapping
         self.mapper.create_regs( self.controllers.keys() )
-        self.api_mapper.create_regs( self.api_controllers.keys() )
     def trace( self, **fields ):
         if self.trace_logger:
             self.trace_logger.log( "WebApplication", **fields )
@@ -137,20 +134,17 @@ class WebApplication( object ):
         # Map url using routes
         path_info = environ.get( 'PATH_INFO', '' )
         map = self.mapper.match( path_info, environ )
-        if map is None:
+        if path_info.startswith('/api'):
             environ[ 'is_api_request' ] = True
-            map = self.api_mapper.match( path_info, environ )
-            mapper = self.api_mapper
             controllers = self.api_controllers
         else:
-            mapper = self.mapper
             controllers = self.controllers
         if map == None:
             raise httpexceptions.HTTPNotFound( "No route for " + path_info )
         self.trace( path_info=path_info, map=map )
         # Setup routes
         rc = routes.request_config()
-        rc.mapper = mapper
+        rc.mapper = self.mapper
         rc.mapper_dict = map
         rc.environ = environ
         # Setup the transaction
@@ -164,6 +158,10 @@ class WebApplication( object ):
             raise httpexceptions.HTTPNotFound( "No controller for " + path_info )
         # Resolve action method on controller
         action = map.pop( 'action', 'index' )
+        # This is the easiest way to make the controller/action accessible for
+        # url_for invocations.  Specifically, grids.
+        trans.controller = controller_name
+        trans.action = action
         method = getattr( controller, action, None )
         if method is None:
             method = getattr( controller, 'default', None )
@@ -280,7 +278,7 @@ class DefaultWebTransaction( object ):
 # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
 # but for performance reasons it's way better to use Paste's tempfile than to
 # create a new one and copy.
-import cgi, tempfile
+import tempfile
 class FieldStorage( cgi.FieldStorage ):
     def make_file(self, binary=None):
         return tempfile.NamedTemporaryFile()
