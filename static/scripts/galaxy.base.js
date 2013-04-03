@@ -239,6 +239,14 @@ function naturalSort(a, b) {
     return 0;
 }
 
+$.fn.refresh_select2 = function() {
+    var select_elt = $(this);
+    var options = { width: "resolve",
+                    closeOnSelect: !select_elt.is("[MULTIPLE]"),
+                  };
+    return select_elt.select2( options );
+}
+
 // Replace select box with a text input box + autocomplete.
 function replace_big_select_inputs(min_length, max_length, select_elts) {
     // To do replace, the select2 plugin must be loaded.
@@ -276,9 +284,7 @@ function replace_big_select_inputs(min_length, max_length, select_elts) {
          *
          * - should we still sort dbkey fields here? 
          */
-        
-        select_elt.select2( { width: "resolve" } );
-
+        select_elt.refresh_select2();
     });
 }
 

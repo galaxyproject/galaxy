@@ -242,7 +242,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_or_manage_repository',
                                                                   **kwd ) )
-        if 'user_id' not in kwd:
+        user_id = kwd.get( 'user_id', None )
+        if user_id is None:
             # The received id is the repository id, so we need to get the id of the user that uploaded the repository.
             repository_id = kwd.get( 'id', None )
             if repository_id:
@@ -256,8 +257,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                       action='view_or_manage_repository',
                                                                       id=trans.security.encode_id( repository.id ),
                                                                       changeset_revision=selected_changeset_revision ) )
-        user = suc.get_user( trans, kwd[ 'user_id' ] )
-        self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
+        if user_id:
+            user = suc.get_user( trans, user_id )
+            self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
         return self.repositories_by_user_grid( trans, **kwd )
 
     @web.expose
@@ -367,7 +369,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='browse_valid_repositories',
                                                                   **kwd ) )
-        log.debug("CCC In browse_valid_categories, just before returning valid_category_grid, kwd: %s" % str( kwd ))
         return self.valid_category_grid( trans, **kwd )
 
     @web.expose
@@ -744,6 +745,22 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                           changeset_revision=changeset_revision,
                                                           message=message,
                                                           status='error' ) )
+
+    @web.expose
+    def display_tool_help_image_in_repository( self, trans, **kwd ):
+        repository_id = kwd.get( 'repository_id', None )
+        image_file = kwd.get( 'image_file', None )
+        if repository_id and image_file:
+            repository = suc.get_repository_in_tool_shed( trans, repository_id )
+            repo_files_dir = os.path.join( repository.repo_path( trans.app ), repository.name )
+            default_path = os.path.abspath( os.path.join( repo_files_dir, 'static', 'images', image_file ) )
+            if os.path.exists( default_path ):
+                return open( default_path, 'r' )
+            else:
+                path_to_file = suc.get_absolute_path_to_file_in_repository( repo_files_dir, image_file )
+                if os.path.exists( path_to_file ):
+                    return open( path_to_file, 'r' )
+        return None
 
     @web.expose
     def download( self, trans, repository_id, changeset_revision, file_type, **kwd ):
@@ -1177,7 +1194,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         encoded_repository_ids = []
         changeset_revisions = []
         for required_repository_tup in decoded_required_repository_tups:
-            tool_shed, name, owner, changeset_revision = required_repository_tup
+            tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( required_repository_tup )
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
             changeset_revisions.append( changeset_revision )
@@ -2568,14 +2585,16 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                             if can_use_disk_file:
                                 trans.app.config.tool_data_path = work_dir
                                 tool, valid, message, sample_files = tool_util.handle_sample_files_and_load_tool_from_disk( trans,
-                                                                                                                      repo_files_dir,
-                                                                                                                      full_path_to_tool_config,
-                                                                                                                      work_dir )
+                                                                                                                            repo_files_dir,
+                                                                                                                            repository_id,
+                                                                                                                            full_path_to_tool_config,
+                                                                                                                            work_dir )
                                 if message:
                                     status = 'error'
                             else:
                                 tool, message, sample_files = tool_util.handle_sample_files_and_load_tool_from_tmp_config( trans,
                                                                                                                            repo,
+                                                                                                                           repository_id,
                                                                                                                            changeset_revision,
                                                                                                                            tool_config_filename,
                                                                                                                            work_dir )

@@ -29,7 +29,7 @@ database_file = database/community.sqlite
 # Where the hgweb.config file is stored.  The default is the Galaxy installation directory.
 #hgweb_config_dir = None
 
-# Where dataset files are saved
+# Where tool shed repositories are stored.
 file_path = database/community_files
 # Temporary storage for additional datasets, this should be shared through the cluster
 new_file_path = database/tmp

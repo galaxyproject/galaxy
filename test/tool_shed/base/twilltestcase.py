@@ -838,6 +838,11 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def load_page_for_installed_tool( self, tool_guid, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/tool_runner?tool_id=%s' % tool_guid
+        self.visit_galaxy_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def load_workflow_image_in_tool_shed( self, repository, workflow_name, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
         if not changeset_revision:
             changeset_revision = self.get_repository_tip( repository )

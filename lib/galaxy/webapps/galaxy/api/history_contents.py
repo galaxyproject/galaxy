@@ -12,7 +12,7 @@ log = logging.getLogger( __name__ )
 
 class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin,
                                  UsesLibraryMixin, UsesLibraryMixinItems ):
-    @web.expose_api
+    @web.expose_api_anonymous
     def index( self, trans, history_id, ids=None, **kwd ):
         """
         GET /api/histories/{encoded_history_id}/contents
@@ -35,7 +35,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         try:
             # get the history, if anon user and requesting current history - allow it
             if( ( trans.user == None )
-            and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
+                and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
                 #TODO:?? is secure?
                 history = trans.history
 
@@ -55,7 +55,11 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     if encoded_hda_id in ids:
                         #TODO: share code with show
                         try:
-                            rval.append( self.get_hda_dict( trans, hda ) )
+                            hda_dict = self.get_hda_dict( trans, hda )
+                            hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+                            hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
+                            #rval.append( self.get_hda_dict( trans, hda ) )
+                            rval.append( hda_dict )
 
                         except Exception, exc:
                             # don't fail entire list if hda err's, record and move on
@@ -113,7 +117,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'error'     : str( exception )
         }
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, history_id, **kwd ):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}
@@ -138,6 +142,8 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
                     check_ownership=True, check_accessible=True )
 
             hda_dict = self.get_hda_dict( trans, hda )
+            hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+            hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
 
         except Exception, e:
             msg = "Error in history API at listing dataset: %s" % ( str(e) )

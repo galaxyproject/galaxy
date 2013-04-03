@@ -446,6 +446,7 @@ class ToolBox( object ):
     def load_tool_tag_set( self, elem, panel_dict, integrated_panel_dict, tool_path, load_panel_dict, guid=None, index=None ):
         try:
             path = elem.get( "file" )
+            repository_id = None
             if guid is None:
                 tool_shed_repository = None
                 can_load_into_panel_dict = True
@@ -464,11 +465,12 @@ class ToolBox( object ):
                 if tool_shed_repository:
                     # Only load tools if the repository is not deactivated or uninstalled.
                     can_load_into_panel_dict = not tool_shed_repository.deleted
+                    repository_id = self.app.security.encode_id( tool_shed_repository.id )
                 else:
                     # If there is not yet a tool_shed_repository record, we're in the process of installing
                     # a new repository, so any included tools can be loaded into the tool panel.
                     can_load_into_panel_dict = True
-            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid )
+            tool = self.load_tool( os.path.join( tool_path, path ), guid=guid, repository_id=repository_id )
             key = 'tool_%s' % str( tool.id )
             if can_load_into_panel_dict:
                 if guid is not None:
@@ -574,7 +576,7 @@ class ToolBox( object ):
             self.integrated_tool_panel[ key ] = integrated_section
         else:
             self.integrated_tool_panel.insert( index, key, integrated_section )
-    def load_tool( self, config_file, guid=None, **kwds ):
+    def load_tool( self, config_file, guid=None, repository_id=None, **kwds ):
         """Load a single tool from the file named by `config_file` and return an instance of `Tool`."""
         # Parse XML configuration file and get the root element
         tree = self._load_and_preprocess_tool_xml( config_file )
@@ -590,7 +592,7 @@ class ToolBox( object ):
             ToolClass = tool_types.get( root.get( 'tool_type' ) )
         else:
             ToolClass = Tool
-        return ToolClass( config_file, root, self.app, guid=guid, **kwds )
+        return ToolClass( config_file, root, self.app, guid=guid, repository_id=repository_id, **kwds )
     def reload_tool_by_id( self, tool_id ):
         """
         Attempt to reload the tool identified by 'tool_id', if successful
@@ -1004,12 +1006,13 @@ class Tool( object ):
     tool_type = 'default'
     default_tool_action = DefaultToolAction
 
-    def __init__( self, config_file, root, app, guid=None ):
+    def __init__( self, config_file, root, app, guid=None, repository_id=None ):
         """Load a tool from the config named by `config_file`"""
         # Determine the full path of the directory where the tool config is
         self.config_file = config_file
         self.tool_dir = os.path.dirname( config_file )
         self.app = app
+        self.repository_id = repository_id
         #setup initial attribute values
         self.inputs = odict()
         self.stdio_exit_codes = list()
@@ -1354,6 +1357,19 @@ class Tool( object ):
         """
         # TODO: Allow raw HTML or an external link.
         self.help = root.find("help")
+        # Handle tool shelp image display for tools that are contained in repositories that are in the lool shed or installed into Galaxy.
+        # When tool config files use the speical string $PATH_TO_IMAGES, the folloing code will replace that string with the path on disk.
+        if self.repository_id and self.help.text.find( '$PATH_TO_IMAGES' ) >= 0:
+            if self.app.name == 'galaxy':
+                repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( self.app.security.decode_id( self.repository_id ) )
+                if repository:
+                    path_to_images = '/tool_runner/static/images/%s' % self.repository_id
+                    self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
+            elif self.app.name == 'tool_shed':
+                repository = self.sa_session.query( self.app.model.Repository ).get( self.app.security.decode_id( self.repository_id ) )
+                if repository:
+                    path_to_images = '/repository/static/images/%s' % self.repository_id
+                    self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
         self.help_by_page = list()
         help_header = ""
         help_footer = ""

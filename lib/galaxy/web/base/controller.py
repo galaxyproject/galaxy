@@ -28,6 +28,7 @@ from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all
 from galaxy.datatypes.data import Text
 
+from galaxy.model import ExtendedMetadata, ExtendedMetadataIndex, LibraryDatasetDatasetAssociation
 
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
@@ -332,6 +333,8 @@ class UsesHistoryDatasetAssociationMixin:
         return None
 
     def get_hda_dict( self, trans, hda ):
+        """Return full details of this HDA in dictionary form.
+        """
         hda_dict = hda.get_api_value( view='element' )
         history = hda.history
         hda_dict[ 'api_type' ] = "file"
@@ -341,9 +344,10 @@ class UsesHistoryDatasetAssociationMixin:
         can_access_hda = ( trans.user_is_admin() or can_access_hda )
         hda_dict[ 'accessible' ] = can_access_hda
 
-        # return here if deleted and purged or can't access
+        # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
         if ( hda.deleted and purged ) or not can_access_hda:
+            #TODO: get_api_value should really go AFTER this - only summary data
             return trans.security.encode_dict_ids( hda_dict )
 
         if trans.user_is_admin() or trans.app.config.expose_dataset_path:
@@ -353,6 +357,7 @@ class UsesHistoryDatasetAssociationMixin:
             history_id = trans.security.encode_id( history.id ),
             history_content_id = trans.security.encode_id( hda.id ) )
 
+        # indeces, assoc. metadata files, etc.
         meta_files = []
         for meta_type in hda.metadata.spec.keys():
             if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
@@ -360,15 +365,18 @@ class UsesHistoryDatasetAssociationMixin:
         if meta_files:
             hda_dict[ 'meta_files' ] = meta_files
 
-        hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
-        hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+        #hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+        #hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
         hda_dict[ 'visualizations' ] = hda.get_visualizations()
 
-        # return here if deleted
+        # ---- return here if deleted
         if hda.deleted and not purged:
             return trans.security.encode_dict_ids( hda_dict )
 
-        if hda.creating_job and hda.creating_job.tool_id:
+        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
+        # expensive
+        if( ( hda.state in [ 'running', 'queued' ] )
+        and ( hda.creating_job and hda.creating_job.tool_id ) ):
             tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
             if tool_used and tool_used.force_history_refresh:
                 hda_dict[ 'force_history_refresh' ] = True
@@ -877,32 +885,21 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """
         hda_model = trans.model.HistoryDatasetAssociation
 
-        # outer join with job output to get job_state or None
-        job_subq = ( trans.sa_session.query(
-                        trans.model.Job.id.label( 'job_id' ),
-                        trans.model.Job.state.label( 'job_state' ),
-                        trans.model.JobToOutputDatasetAssociation.dataset_id.label( 'hda_id' ) )
-                    .join( trans.model.JobToOutputDatasetAssociation ) ).subquery()
-
         # get state, name, etc.
         columns = ( hda_model.name, hda_model.hid, hda_model.id, hda_model.deleted,
-                    trans.model.Dataset.state,
-                    job_subq.c.job_state, job_subq.c.job_id )
-        column_keys = [ "name", "hid", "id", "deleted", "state", "job_state", "job_id" ]
+                    trans.model.Dataset.state )
+        column_keys = [ "name", "hid", "id", "deleted", "state" ]
 
         query = ( trans.sa_session.query( *columns )
                     .enable_eagerloads( False )
                     .filter( hda_model.history == history )
                     .join( trans.model.Dataset )
-                    .outerjoin(( job_subq, job_subq.c.hda_id == hda_model.id ))
                     .order_by( hda_model.hid ) )
 
         # build dictionaries, adding history id and encoding all ids
         hda_dicts = []
         for hda_tuple in query.all():
             hda_dict = dict( zip( column_keys, hda_tuple ) )
-            #if hda_dict[ 'job_state' ] not in [ None, 'ok' ]:
-            #    print hda_dict[ 'hid' ], hda_dict[ 'name' ], hda_dict[ 'job_state' ]
             hda_dict[ 'history_id' ] = history.id
             trans.security.encode_dict_ids( hda_dict )
             hda_dicts.append( hda_dict )
@@ -962,20 +959,6 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
         return state
 
-    def _are_jobs_still_running( self, trans, hda_summary_list ):
-        """Determine whether any jobs are running from the given
-        list of hda summary dictionaries.
-        """
-        job_states = trans.model.Job.states
-        def is_job_running( job_state ):
-            return ( ( job_state == job_states.NEW )
-                   or( job_state == job_states.UPLOAD )
-                   or( job_state == job_states.WAITING )
-                   or( job_state == job_states.QUEUED )
-                   or( job_state == job_states.RUNNING ) )
-
-        return len( filter( lambda hda: is_job_running( hda['job_state'] ), hda_summary_list ) )
-
     def get_history_dict( self, trans, history ):
         """Returns history data in the form of a dictionary.
         """
@@ -995,8 +978,6 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         history_dict[ 'state_details' ] = state_counts
         history_dict[ 'state_ids' ] = state_ids
         history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
-
-        history_dict[ 'jobs_running' ] = self._are_jobs_still_running( trans, hda_summaries )
 
         return history_dict
 
@@ -1932,24 +1913,19 @@ class UsesExtendedMetadataMixin( SharableItemSecurityMixin ):
         Given an item object (such as a LibraryDatasetDatasetAssociation), find the object 
         of the associated extended metadata
         """
-
-        extended_metadata = trans.sa_session.query( galaxy.model.ExtendedMetadata )
-        
-        if item.__class__ == galaxy.model.LibraryDatasetDatasetAssociation:
-            extended_metadata = extended_metadata.join( galaxy.model.LibraryDatasetDatasetAssociation ).filter( 
-                galaxy.model.LibraryDatasetDatasetAssociation.id == item.id )
-
-        return extended_metadata.first()
-
-
+        if item.extended_metadata:
+            return item.extended_metadata
+        return None
+ 
     def set_item_extended_metadata_obj( self, trans, item, extmeta_obj, check_writable=False):
-        if item.__class__ == galaxy.model.LibraryDatasetDatasetAssociation:
+        print "setting", extmeta_obj.data
+        if item.__class__ == LibraryDatasetDatasetAssociation:
             if not check_writable or trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item, trans.user ):
                 item.extended_metadata = extmeta_obj
                 trans.sa_session.flush()
 
     def unset_item_extended_metadata_obj( self, trans, item, check_writable=False):
-        if item.__class__ == galaxy.model.LibraryDatasetDatasetAssociation:
+        if item.__class__ == LibraryDatasetDatasetAssociation:
             if not check_writable or trans.app.security_agent.can_modify_library_item( trans.get_current_user_roles(), item, trans.user ):
                 item.extended_metadata = None
                 trans.sa_session.flush()
@@ -1959,17 +1935,17 @@ class UsesExtendedMetadataMixin( SharableItemSecurityMixin ):
         Create/index an extended metadata object. The returned object is
         not associated with any items
         """
-        ex_meta = galaxy.model.ExtendedMetadata(extmeta)
+        ex_meta = ExtendedMetadata(extmeta)
         trans.sa_session.add( ex_meta )
         trans.sa_session.flush()
         for path, value in self._scan_json_block(extmeta):
-            meta_i = galaxy.model.ExtendedMetadataIndex(ex_meta, path, value)
+            meta_i = ExtendedMetadataIndex(ex_meta, path, value)
             trans.sa_session.add(meta_i)
         trans.sa_session.flush()
         return ex_meta
 
     def delete_extended_metadata( self, trans, item):
-        if item.__class__ == galaxy.model.ExtendedMetadata:
+        if item.__class__ == ExtendedMetadata:
             trans.sa_session.delete( item )
             trans.sa_session.flush()
 

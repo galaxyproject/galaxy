@@ -95,35 +95,43 @@ class BaseJobRunner( object ):
         """
         raise NotImplementedError()
 
-    # Runners must override the job handling methods
-    def queue_job(self, job_wrapper):
+    def prepare_job(self, job_wrapper, include_metadata=False, include_work_dir_outputs=True):
         """Some sanity checks that all runners' queue_job() methods are likely to want to do
         """
         job_id = job_wrapper.get_id_tag()
         job_state = job_wrapper.get_state()
         job_wrapper.is_ready = False
+        job_wrapper.runner_command_line = None
 
         # Make sure the job hasn't been deleted
         if job_state == model.Job.states.DELETED:
             log.debug( "(%s) Job deleted by user before it entered the %s queue"  % ( job_id, self.runner_name ) )
             if self.app.config.cleanup_job in ( "always", "onsuccess" ):
                 job_wrapper.cleanup()
-            return
+            return False
         elif job_state != model.Job.states.QUEUED:
             log.info( "(%d) Job is in state %s, skipping execution"  % ( job_id, job_state ) ) 
             # cleanup may not be safe in all states
-            return
+            return False
 
         # Prepare the job
         try:
             job_wrapper.prepare()
-            job_wrapper.runner_command_line = self.build_command_line( job_wrapper )
+            job_wrapper.runner_command_line = self.build_command_line( job_wrapper, include_metadata=include_metadata, include_work_dir_outputs=include_work_dir_outputs )
         except:
             log.exception("(%s) Failure preparing job" % job_id)
             job_wrapper.fail( "failure preparing job", exception=True )
-            return
+            return False
 
-        job_wrapper.is_ready = True
+        if not job_wrapper.runner_command_line:
+            job_wrapper.finish( '', '' )
+            return False
+
+        return True
+
+    # Runners must override the job handling methods
+    def queue_job(self, job_wrapper):
+        raise NotImplementedError()
 
     def stop_job(self, job):
         raise NotImplementedError()

@@ -98,8 +98,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.expose
     def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
-        """
-        Display the current history, creating a new history if necessary.
+        """Display the current history, creating a new history if necessary.
+
         NOTE: No longer accepts "id" or "template" options for security reasons.
         """
         params = util.Params( kwd )
@@ -155,9 +155,9 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                             'history_id': history_dictionary[ 'id' ],
                             'state'     : trans.model.Dataset.states.ERROR,
                             'visible'   : True,
-                            'misc_info' : str( exception ),
+                            'misc_info' : str( exc ),
                             'misc_blurb': 'Failed to retrieve dataset information.',
-                            'error'     : str( exception )
+                            'error'     : str( exc )
                         }
                         hda_dictionaries.append( return_val )
 
@@ -165,6 +165,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                 datasets = hda_dictionaries
 
             return trans.stream_template_mako( history_panel_template,
+            #return trans.fill_template_mako( history_panel_template,
                                                history = history,
                                                annotation = self.get_item_annotation_str( trans.sa_session, trans.user, history ),
                                                datasets = datasets,
@@ -172,6 +173,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                                                show_deleted = show_deleted,
                                                show_hidden=show_hidden,
                                                over_quota=trans.app.quota_agent.get_percent( trans=trans ) >= 100,
+                                               log = log,
                                                message=message,
                                                status=status )
 
