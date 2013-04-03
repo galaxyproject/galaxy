@@ -44,7 +44,7 @@ class UserAPIController( BaseAPIController ):
             rval.append( item )
         return rval
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
         """
         GET /api/users/{encoded_user_id}
