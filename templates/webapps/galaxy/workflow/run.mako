@@ -1,11 +1,5 @@
 <%inherit file="/base.mako"/>
 
-<style>
-/* TODO: Move this block into base.less? base.css? Someone more familiar with GUI should move this. */
-.icon-button.link {background:url(../images/silk/link.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
-.icon-button.link-broken {background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
-</style>
-
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "libs/jquery/select2" )}
