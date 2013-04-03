@@ -1,7 +1,8 @@
 from tool_shed.base.twilltestcase import ShedTwillTestCase, common, os
 import tool_shed.base.test_db_util as test_db_util
 import logging
-log = logging.getLogger(__name__)
+
+log = logging.getLogger( __name__ )
 
 datatypes_repository_name = 'emboss_datatypes_0430'
 datatypes_repository_description = 'Galaxy applicable datatypes for EMBOSS for test 0430'
