@@ -11,7 +11,7 @@ log = logging.getLogger( __name__ )
 
 class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
         """
         GET /api/histories
@@ -42,7 +42,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             trans.response.status = 500
         return rval
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
         """
         GET /api/histories/{encoded_history_id}
