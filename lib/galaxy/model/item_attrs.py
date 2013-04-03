@@ -158,7 +158,6 @@ class UsesAnnotations:
         class_name = '%sAnnotationAssociation' % item.__class__.__name__
         return getattr( galaxy.model, class_name, None )
 
-
 class APIItem:
     """ Mixin for api representation. """
     #api_collection_visible_keys = ( 'id' )
