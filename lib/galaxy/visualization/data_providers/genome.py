@@ -981,15 +981,24 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 if op == 0: # Match
                     # Transform Ms to =s and Xs.
                     new_op = []
-                    while read_pos < op_len:
+                    total_count = 0
+                    while total_count < op_len and ref_seq_pos < len( ref_seq ):
                         match, count = counter( read_seq, read_pos, ref_seq, ref_seq_pos )
+                        # Use min because count cannot exceed remainder of operation.
+                        count = min( count, op_len - total_count )                        
                         if match:
                             new_op = 7
                         else:
                             new_op = 8
+                        new_cigar.append( ( new_op, count ) )
+                        total_count += count
                         read_pos += count
                         ref_seq_pos += count
-                        new_cigar.append( ( new_op, count ) )
+                    
+                    # If part of read falls outside of ref_seq dat, then leave 
+                    # part as M.
+                    if total_count < op_len:
+                        new_cigar.append( ( 0, op_len - total_count ) )                        
                 elif op == 1: # Insertion
                     new_cigar.append( op_tuple )
                 elif op in [ 2, 3, 5, 6 ]: # Deletion, Skip, Soft Clipping or Padding
