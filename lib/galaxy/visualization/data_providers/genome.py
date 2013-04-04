@@ -2,7 +2,7 @@
 Data providers for genome visualizations.
 """
 
-import os, sys
+import os, sys, operator
 from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
@@ -179,7 +179,7 @@ class GenomeDataProvider( BaseDataProvider ):
         """
         start, end = int( low ), int( high )
         iterator = self.get_iterator( chrom, start, end, **kwargs )
-        return self.process_data( iterator, start_val, max_vals, **kwargs )
+        return self.process_data( iterator, start_val, max_vals, start=start, end=end, **kwargs )
 
     def get_genome_data( self, chroms_info, **kwargs ):
         """
@@ -897,7 +897,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 return None
         return data
                 
-    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+    def process_data( self, iterator, start_val=0, max_vals=None, ref_seq=None, start=0, **kwargs ):
         """
         Returns a dict with the following attributes::
 
@@ -925,7 +925,86 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         # No iterator indicates no reads.
         if iterator is None:
             return { 'data': [], 'message': None }
-        
+
+        #
+        # Helper functions:
+        #
+
+        def counter( s1, p1, s2, p2 ):
+            '''
+            Count consecutive matches/mismatches between strings s1 and s2
+            starting at p1 and p2, respectively.
+            '''
+
+            # Do initial comparison to determine whether to count matches or
+            # mismatches.
+            if s1[ p1 ] == s2[ p2 ]:
+                cmp_fn = operator.eq
+                match = True
+            else:
+                cmp_fn = operator.ne
+                match = False
+
+            # Increment counts to move to next characters.
+            count = 1
+            p1 += 1
+            p2 += 1
+
+            # Count matches/mismatches.
+            while p1 < len( s1 ) and p2 < len( s2 ) and cmp_fn( s1[ p1 ], s2[ p2 ] ):
+                count += 1
+                p1 += 1
+                p2 += 1
+
+            return match, count
+
+        def transform_cigar( read_seq, read_start, ref_seq, cigar ):
+            '''
+            Returns a new cigar with =s and Xs replacing Ms; M operation is 
+            imprecise because it can denote a sequence match or mismatch.
+            New cigar can be used with reference to reconstruct read sequence.
+            '''
+
+            if not ref_seq:
+                return read_seq, cigar
+
+            # Set up position for reference, read.
+            ref_seq_pos = read_start - start
+            read_pos = 0
+
+            # Create new cigar.
+            new_cigar = []
+            for op_tuple in cigar:
+                op, op_len = op_tuple
+
+                # Op is index into string 'MIDNSHP=X'
+                if op == 0: # Match
+                    # Transform Ms to =s and Xs.
+                    new_op = []
+                    while read_pos < op_len:
+                        match, count = counter( read_seq, read_pos, ref_seq, ref_seq_pos )
+                        if match:
+                            new_op = 7
+                        else:
+                            new_op = 8
+                        read_pos += count
+                        ref_seq_pos += count
+                        new_cigar.append( ( new_op, count ) )
+                elif op == 1: # Insertion
+                    new_cigar.append( op_tuple )
+                elif op in [ 2, 3, 5, 6 ]: # Deletion, Skip, Soft Clipping or Padding
+                    ref_seq_pos += op_len
+                    new_cigar.append( op_tuple )
+                elif op == 4: # Soft clipping
+                    read_pos += op_len
+                    new_cigar.append( op_tuple )
+                elif op in [ 7, 8 ]: # Match or mismatch
+                    read_pos += op_len
+                    ref_seq_pos += op_len
+                    new_cigar.append( op_tuple )
+
+            return new_cigar
+
         # Decode strand from read flag.
         def decode_strand( read_flag, mask ):
             strand_flag = ( read_flag & mask == 0 )
@@ -934,7 +1013,11 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             else:
                 return "-"
                 
+        #     
         # Encode reads as list of lists.
+        #
+        if ref_seq:
+            ref_seq = ref_seq.upper()
         results = []
         paired_pending = {}
         unmapped = 0
