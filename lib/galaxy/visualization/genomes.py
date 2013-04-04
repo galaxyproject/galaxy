@@ -296,7 +296,7 @@ class Genomes( object ):
 
         return False
         
-    def reference( self, trans, dbkey, chrom, low, high, **kwargs ):
+    def reference( self, trans, dbkey, chrom, low, high ):
         """
         Return reference data for a build.
         """

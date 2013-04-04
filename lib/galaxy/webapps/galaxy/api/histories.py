@@ -1,25 +1,17 @@
 """
 API operations on a history.
 """
-import logging, os, string, shutil, urllib, re, socket
-from cgi import escape, FieldStorage
-from galaxy import util, datatypes, jobs, web, util
+import logging
+from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
 from galaxy.web import url_for
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.orm import *
-import galaxy.datatypes
-from galaxy.util.bunch import Bunch
-
-import pkg_resources
-pkg_resources.require( "Routes" )
-import routes
+from galaxy.model.orm import desc
 
 log = logging.getLogger( __name__ )
 
 class HistoriesController( BaseAPIController, UsesHistoryMixin ):
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def index( self, trans, deleted='False', **kwd ):
         """
         GET /api/histories
@@ -50,7 +42,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             trans.response.status = 500
         return rval
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, deleted='False', **kwd ):
         """
         GET /api/histories/{encoded_history_id}
@@ -59,7 +51,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         Displays information about a history.
         """
         history_id = id
-        params = util.Params( kwd )
         deleted = util.string_as_bool( deleted )
 
         # try to load the history, by most_recently_used or the given id
@@ -91,7 +82,6 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         POST /api/histories
         Creates a new history.
         """
-        params = util.Params( payload )
         hist_name = None
         if payload.get( 'name', None ):
             hist_name = util.restore_text( payload['name'] )

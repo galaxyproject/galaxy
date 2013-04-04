@@ -3,9 +3,37 @@
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
 
+<%!
+   def inherit(context):
+       if context.get('use_panels'):
+           return '/webapps/tool_shed/base_panels.mako'
+       else:
+           return '/base.mako'
+%>
+
+<%inherit file="${inherit(context)}"/>
+
+<%def name="render_functional_test_text( functional_test_text )">
+    <%
+        from tool_shed.util.shed_util_common import to_safe_string
+    %>
+    <style type="text/css">
+        #functional_test_table{ table-layout:fixed;
+                                width:100%;
+                                overflow-wrap:normal;
+                                overflow:hidden;
+                                border:0px; 
+                                word-break:keep-all;
+                                word-wrap:break-word;
+                                line-break:strict; }
+    </style>
+    <table id="functional_test_table">
+        <tr><td>${ to_safe_string( functional_test_text, to_html=True ) }</td></tr>
+    </table>
+</%def>
+
 <%
     from galaxy.web.framework.helpers import time_ago
-    from tool_shed.util.shed_util_common import to_safe_string
 
     changeset_revision = repository_metadata.changeset_revision
     has_metadata = repository.metadata_revisions
@@ -43,15 +71,6 @@
     else:
         browse_label = 'Browse repository tip files'
 %>
-
-<%!
-   def inherit(context):
-       if context.get('use_panels'):
-           return '/webapps/tool_shed/base_panels.mako'
-       else:
-           return '/base.mako'
-%>
-<%inherit file="${inherit(context)}"/>
 
 <br/><br/>
 <ul class="manage-table-actions">
@@ -198,13 +217,8 @@
                                 tool_id = test_results_dict.get( 'tool_id', 'unknown' )
                                 tool_version = test_results_dict.get( 'tool_version', 'unknown' )
                                 test_status = '<font color="red">Test failed</font>'
-    
                                 stderr = test_results_dict.get( 'stderr', '' )
-                                if stderr:
-                                    stderr = to_safe_string( stderr, to_html=True )
                                 traceback = test_results_dict.get( 'traceback', '' )
-                                if traceback:
-                                    traceback = to_safe_string( traceback, to_html=True )
                             %>
                             <tr>
                                 <td colspan="2" bgcolor="#FFFFCC">Tool id: <b>${tool_id}</b> version: <b>${tool_version}</b></td>
@@ -219,11 +233,11 @@
                             </tr>
                             <tr>
                                 <td><b>Stderr</b></td>
-                                <td>${stderr}</td>
+                                <td>${render_functional_test_text( stderr )}</td>
                             </tr>
                             <tr>
                                 <td><b>Traceback</b></td>
-                                <td>${traceback}</td>
+                                <td>${render_functional_test_text( traceback )}</td>
                             </tr>
                         %endfor
                     </table>
@@ -274,8 +288,6 @@
                                 tool_id = test_results_dict.get( 'tool_id', None )
                                 tool_version = test_results_dict.get( 'tool_version', None )
                                 reason_test_is_invalid = test_results_dict.get( 'reason_test_is_invalid', None )
-                                if reason_test_is_invalid:
-                                    reason_test_is_invalid = to_safe_string( reason_test_is_invalid, to_html=True )
                             %>
                             %if tool_id or tool_version:
                                 <tr>
@@ -285,7 +297,7 @@
                             %if reason_test_is_invalid:
                                 <tr>
                                     <td><b>Reason test is invalid</b></td>
-                                    <td>${reason_test_is_invalid}</td>
+                                    <td>${render_functional_test_text( reason_test_is_invalid )}</td>
                                 </tr>
                             %endif
                         %endfor

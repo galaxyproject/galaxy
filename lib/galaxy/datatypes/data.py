@@ -343,6 +343,7 @@ class Data( object ):
         max_peek_size = 1000000 # 1 MB
         if isinstance(data.datatype, datatypes.images.Html):
             max_peek_size = 10000000 # 10 MB for html
+        preview = util.string_as_bool( preview )
         if not preview or isinstance(data.datatype, datatypes.images.Image) or os.stat( data.file_name ).st_size < max_peek_size:
             if trans.app.config.sanitize_all_html and trans.response.get_content_type() == "text/html":
                 # Sanitize anytime we respond with plain text/html content.
@@ -738,6 +739,10 @@ class Text( Data ):
             raise
         f.close()
     split = classmethod(split)
+
+class GenericAsn1( Text ):
+    """Class for generic ASN.1 text format"""
+    file_ext = 'asn1'
 
 class LineCount( Text ):
     """

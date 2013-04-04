@@ -442,6 +442,16 @@
     <%
         encoded_id = trans.security.encode_id( invalid_tool_dependency.id )
     %>
+    <style type="text/css">
+        #readme_table{ table-layout:fixed;
+                       width:100%;
+                       overflow-wrap:normal;
+                       overflow:hidden;
+                       border:0px; 
+                       word-break:keep-all;
+                       word-wrap:break-word;
+                       line-break:strict; }
+    </style>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
@@ -503,8 +513,12 @@
             else:
                 installation_status = None
         repository_name = str( repository_dependency.repository_name )
-        changeset_revision = str( repository_dependency.changeset_revision )
         repository_owner = str( repository_dependency.repository_owner )
+        changeset_revision = str( repository_dependency.changeset_revision )
+        if prior_installation_required:
+            prior_installation_required_str = " <i>(prior install required)</i>"
+        else:
+            prior_installation_required_str = ""
 
         if trans.webapp.name == 'galaxy':
             if row_is_header:
@@ -540,7 +554,7 @@
             </${cell_type}>
         %else:
             <td style="padding-left: ${pad+20}px;">
-                Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>
+                Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>${prior_installation_required_str}
             </td>
         %endif
     </tr>

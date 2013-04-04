@@ -498,6 +498,21 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         return trans.fill_template( "history/display_structured.mako", items=items )
 
     @web.expose
+    def delete_hidden_datasets( self, trans ):
+        """
+        This method deletes all hidden datasets in the current history.
+        """
+        count = 0
+        for hda in trans.history.datasets:
+            if not hda.visible and not hda.deleted and not hda.purged:
+                hda.mark_deleted()
+                count += 1
+                trans.sa_session.add( hda )
+                trans.log_event( "HDA id %s has been deleted" % hda.id )
+        trans.sa_session.flush()
+        return trans.show_ok_message( "%d hidden datasets have been deleted" % count, refresh_frames=['history'] )
+
+    @web.expose
     def purge_deleted_datasets( self, trans ):
         count = 0
         if trans.app.config.allow_user_dataset_purge:

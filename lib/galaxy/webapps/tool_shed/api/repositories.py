@@ -31,50 +31,27 @@ class RepositoriesController( BaseAPIController ):
     """RESTful controller for interactions with repositories in the Tool Shed."""
 
     @web.expose_api_anonymous
-    def index( self, trans, deleted=False, **kwd ):
+    def get_ordered_installable_revisions( self, trans, name, owner, **kwd ):
         """
-        GET /api/repositories
-        Displays a collection (list) of repositories.
-        """
-        # Example URL: http://localhost:9009/api/repositories
-        repository_dicts = []
-        deleted = util.string_as_bool( deleted )
-        try:
-            query = trans.sa_session.query( trans.app.model.Repository ) \
-                                    .filter( trans.app.model.Repository.table.c.deleted == deleted ) \
-                                    .order_by( trans.app.model.Repository.table.c.name ) \
-                                    .all()
-            for repository in query:
-                repository_dict = repository.get_api_value( view='collection', value_mapper=default_repository_value_mapper( trans, repository ) )
-                repository_dict[ 'url' ] = web.url_for( controller='repositories',
-                                                        action='show',
-                                                        id=trans.security.encode_id( repository.id ) )
-                repository_dicts.append( repository_dict )
-            return repository_dicts
-        except Exception, e:
-            message = "Error in the Tool Shed repositories API in index: %s" % str( e )
-            log.error( message, exc_info=True )
-            trans.response.status = 500
-            return message
-
-    @web.expose_api_anonymous
-    def show( self, trans, id, **kwd ):
-        """
-        GET /api/repositories/{encoded_repository_id}
-        Returns information about a repository in the Tool Shed.
+        GET /api/repository/get_ordered_installable_revisions
         
-        :param id: the encoded id of the Repository object
+        :param name: the name of the Repository
+        :param owner: the owner of the Repository
+        
+        Returns the ordered list of changeset revision hash strings that are associated with installable revisions.  As in the changelog, the
+        list is ordered oldest to newest.
         """
-        # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
+        # Example URL: http://localhost:9009/api/repositories/get_installable_revisions?name=add_column&owner=test
         try:
-            repository = suc.get_repository_in_tool_shed( trans, id )
-            repository_dict = repository.get_api_value( view='element', value_mapper=default_repository_value_mapper( trans, repository ) )
-            repository_dict[ 'url' ] = web.url_for( controller='repositories',
-                                                    action='show',
-                                                    id=trans.security.encode_id( repository.id ) )
-            return repository_dict
+            # Get the repository information.
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+            encoded_repository_id = trans.security.encode_id( repository.id )
+            repo_dir = repository.repo_path( trans.app )
+            repo = hg.repository( suc.get_configured_ui(), repo_dir )
+            ordered_installable_revisions = suc.get_ordered_downloadable_changeset_revisions( repository, repo )
+            return ordered_installable_revisions
         except Exception, e:
-            message = "Error in the Tool Shed repositories API in show: %s" % str( e )
+            message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: %s" % str( e )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message
@@ -103,7 +80,7 @@ class RepositoriesController( BaseAPIController ):
             "url": "/api/repositories/f9cad7b01a472135", 
             "user_id": "f9cad7b01a472135"
         }
-        - a dictionary defining the Repsoitory revision (RepositoryMetadata).  For example:
+        - a dictionary defining the Repository revision (RepositoryMetadata).  For example:
         {
             "changeset_revision": "3a08cc21466f", 
             "downloadable": true, 
@@ -168,6 +145,55 @@ class RepositoriesController( BaseAPIController ):
                 return repository_dict, {}, {}
         except Exception, e:
             message = "Error in the Tool Shed repositories API in get_repository_revision_install_info: %s" % str( e )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+
+    @web.expose_api_anonymous
+    def index( self, trans, deleted=False, **kwd ):
+        """
+        GET /api/repositories
+        Displays a collection (list) of repositories.
+        """
+        # Example URL: http://localhost:9009/api/repositories
+        repository_dicts = []
+        deleted = util.string_as_bool( deleted )
+        try:
+            query = trans.sa_session.query( trans.app.model.Repository ) \
+                                    .filter( trans.app.model.Repository.table.c.deleted == deleted ) \
+                                    .order_by( trans.app.model.Repository.table.c.name ) \
+                                    .all()
+            for repository in query:
+                repository_dict = repository.get_api_value( view='collection', value_mapper=default_repository_value_mapper( trans, repository ) )
+                repository_dict[ 'url' ] = web.url_for( controller='repositories',
+                                                        action='show',
+                                                        id=trans.security.encode_id( repository.id ) )
+                repository_dicts.append( repository_dict )
+            return repository_dicts
+        except Exception, e:
+            message = "Error in the Tool Shed repositories API in index: %s" % str( e )
+            log.error( message, exc_info=True )
+            trans.response.status = 500
+            return message
+
+    @web.expose_api_anonymous
+    def show( self, trans, id, **kwd ):
+        """
+        GET /api/repositories/{encoded_repository_id}
+        Returns information about a repository in the Tool Shed.
+        
+        :param id: the encoded id of the Repository object
+        """
+        # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
+        try:
+            repository = suc.get_repository_in_tool_shed( trans, id )
+            repository_dict = repository.get_api_value( view='element', value_mapper=default_repository_value_mapper( trans, repository ) )
+            repository_dict[ 'url' ] = web.url_for( controller='repositories',
+                                                    action='show',
+                                                    id=trans.security.encode_id( repository.id ) )
+            return repository_dict
+        except Exception, e:
+            message = "Error in the Tool Shed repositories API in show: %s" % str( e )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return message

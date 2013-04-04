@@ -45,6 +45,11 @@
                     galaxy_main.location = "${h.url_for( controller='history', action='unhide_datasets', current=True )}";
                 }
             },
+            "${_("Delete Hidden Datasets")}": function() {
+                if ( confirm( "Really delete all hidden datasets?" ) ) {
+                    galaxy_main.location = "${h.url_for( controller='history', action='delete_hidden_datasets')}";
+                }
+            },
             "${_("Purge Deleted Datasets")}": function() {
                 if ( confirm( "Really delete all deleted datasets permanently? This cannot be undone." ) ) {
                     galaxy_main.location = "${h.url_for( controller='history', action='purge_deleted_datasets' )}";

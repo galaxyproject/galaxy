@@ -157,10 +157,7 @@
         else:
             menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
             menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
-            if app.config.require_login:
-                logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout' )
-            else:
-                logout_url = h.url_for( controller='/user', action='logout' )
+            logout_url = h.url_for( controller='/user', action='logout' )
             menu_options.append( [ 'Logout', logout_url, "_top" ] )
             menu_options.append( None )
         menu_options.append( [ _('Saved Histories'), h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
