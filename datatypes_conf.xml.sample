@@ -3,6 +3,8 @@
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
+    <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true" />
+    <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
     <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
