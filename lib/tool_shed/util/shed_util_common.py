@@ -1121,6 +1121,7 @@ def set_repository_attributes( trans, repository, status, error_message, deleted
 
 def set_prior_installation_required( repository, required_repository ):
     """Return True if the received required_repository must be installed before the received repository."""
+    # This method is called only from Galaxy when rendering repository dependencies for an installed tool shed repository.
     required_repository_tup = [ required_repository.tool_shed, required_repository.name, required_repository.owner, required_repository.changeset_revision ]
     # Get the list of repository dependency tuples associated with the received repository where prior_installation_required is True.
     required_rd_tups_that_must_be_installed = repository.requires_prior_installation_of
