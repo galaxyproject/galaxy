@@ -1,14 +1,17 @@
 """
 Contains the main interface in the Universe class
 """
-import logging, os, string, shutil, urllib, re, socket
+import os
+import urllib
 from cgi import escape, FieldStorage
+
 from galaxy import util, datatypes, jobs, web, util
 from galaxy.web.base.controller import *
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.model.orm import *
 from galaxy.model.item_attrs import UsesAnnotations
 
+import logging
 log = logging.getLogger( __name__ )
 
 class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
@@ -26,7 +29,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                                     params=kwd )
         
     ## ---- Tool related -----------------------------------------------------
-
     @web.expose
     def tool_menu( self, trans ):
         if trans.app.config.require_login and not trans.user:
@@ -88,7 +90,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         yield "</body></html>"
 
     ## ---- Root history display ---------------------------------------------
-    
     @web.expose
     def my_data( self, trans, **kwd ):
         """
@@ -105,78 +106,66 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         params = util.Params( kwd )
         message = params.get( 'message', None )
         status = params.get( 'status', 'done' )
+
         if trans.app.config.require_login and not trans.user:
             return trans.fill_template( '/no_access.mako', message = 'Please log in to access Galaxy histories.' )
+
         history = trans.get_history( create=True )
+
         if as_xml:
             trans.response.set_content_type('text/xml')
             return trans.fill_template_mako( "root/history_as_xml.mako", 
                                               history=history, 
                                               show_deleted=util.string_as_bool( show_deleted ),
                                               show_hidden=util.string_as_bool( show_hidden ) )
-        else:
-            show_deleted = util.string_as_bool_or_none( show_deleted )
-            show_purged  = show_deleted
-            show_hidden  = util.string_as_bool_or_none( show_hidden )
-            
-            datasets = []
-            history_panel_template = "root/alternate_history.mako"
 
-            # keeping this switch here for a while - uncomment the next line to use the original mako history panel
-            #USE_ORIGINAL = True
-            if 'USE_ORIGINAL' in locals():
-                datasets = self.get_history_datasets( trans, history, show_deleted, show_hidden, show_purged )
-                history_panel_template = "root/history.mako"
+        show_deleted = util.string_as_bool_or_none( show_deleted )
+        show_purged  = show_deleted
+        show_hidden  = util.string_as_bool_or_none( show_hidden )
 
-            else:
-                # get all datasets server-side, client-side will get flags and render appropriately
-                hdas = self.get_history_datasets( trans, history,
-                    show_deleted=True, show_hidden=True, show_purged=True )
+        # get all datasets server-side, client-side will get flags and render appropriately
+        hdas = self.get_history_datasets( trans, history,
+            show_deleted=True, show_hidden=True, show_purged=True )
 
-                #TODO: would be good to re-use the hdas above to get the history data...
-                history_dictionary = self.get_history_dict( trans, history )
+        #TODO: would be good to re-use the hdas above to get the history data...
+        history_dictionary = self.get_history_dict( trans, history )
 
-                #TODO: blech - all here for now - duplication of hist. contents, index
-                hda_dictionaries = []
-                for hda in hdas:
-                    try:
-                        hda_dictionaries.append( self.get_hda_dict( trans, hda ) )
+        #TODO: blech - all here for now - duplication of hist. contents, index
+        hda_dictionaries = []
+        for hda in hdas:
+            try:
+                hda_dictionaries.append( self.get_hda_dict( trans, hda ) )
 
-                    except Exception, exc:
-                        # don't fail entire list if hda err's, record and move on
-                        # (making sure http recvr knows it's err'd)
-                        encoded_hda_id = trans.security.encode_id( hda.id )
-                        log.error( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
-                            history_dictionary[ 'id' ], encoded_hda_id, type( exc ), str( exc ) )
-                        return_val = {
-                            'id'        : encoded_hda_id,
-                            'name'      : hda.name,
-                            'hid'       : hda.hid,
-                            'history_id': history_dictionary[ 'id' ],
-                            'state'     : trans.model.Dataset.states.ERROR,
-                            'visible'   : True,
-                            'misc_info' : str( exc ),
-                            'misc_blurb': 'Failed to retrieve dataset information.',
-                            'error'     : str( exc )
-                        }
-                        hda_dictionaries.append( return_val )
+            except Exception, exc:
+                # don't fail entire list if hda err's, record and move on
+                # (making sure http recvr knows it's err'd)
+                encoded_hda_id = trans.security.encode_id( hda.id )
+                log.error( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
+                    history_dictionary[ 'id' ], encoded_hda_id, type( exc ), str( exc ) )
+                return_val = {
+                    'id'        : encoded_hda_id,
+                    'name'      : hda.name,
+                    'hid'       : hda.hid,
+                    'history_id': history_dictionary[ 'id' ],
+                    'state'     : trans.model.Dataset.states.ERROR,
+                    'visible'   : True,
+                    'misc_info' : str( exc ),
+                    'misc_blurb': 'Failed to retrieve dataset information.',
+                    'error'     : str( exc )
+                }
+                hda_dictionaries.append( return_val )
 
-                history = history_dictionary
-                datasets = hda_dictionaries
+        return trans.stream_template_mako( "root/alternate_history.mako",
+            history_dictionary = history_dictionary,
+            hda_dictionaries = hda_dictionaries,
+            show_deleted = show_deleted,
+            show_hidden = show_hidden,
+            hda_id = hda_id,
+            log = log,
+            message = message,
+            status = status )
 
-            return trans.stream_template_mako( history_panel_template,
-            #return trans.fill_template_mako( history_panel_template,
-                                               history = history,
-                                               annotation = self.get_item_annotation_str( trans.sa_session, trans.user, history ),
-                                               datasets = datasets,
-                                               hda_id = hda_id,
-                                               show_deleted = show_deleted,
-                                               show_hidden=show_hidden,
-                                               over_quota=trans.app.quota_agent.get_percent( trans=trans ) >= 100,
-                                               log = log,
-                                               message=message,
-                                               status=status )
-
+    ## ---- Dataset display / editing ----------------------------------------
     @web.expose
     def dataset_state ( self, trans, id=None, stamp=None ):
         if id is not None:
@@ -203,74 +192,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             return trans.fill_template("root/history_item.mako", data=data, hid=hid)
         else:
             return trans.show_error_message( "Must specify a dataset id.")
-
-    @web.json
-    def history_item_updates( self, trans, ids=None, states=None ):
-        # Avoid caching
-        trans.response.headers['Pragma'] = 'no-cache'
-        trans.response.headers['Expires'] = '0'
-        # Create new HTML for any that have changed
-        rval = {}
-        if ids is not None and states is not None:
-            ids = ids.split( "," )
-            states = states.split( "," )
-            for encoded_id, state in zip( ids, states ):
-                try:
-                    # assume encoded and decode to int
-                    id = int( trans.app.security.decode_id( encoded_id ) )
-                except:
-                    # fallback to non-encoded id
-                    id = int( encoded_id )
-                    
-                # fetch new data for that id
-                data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
-                
-                # if the state has changed, 
-                if data.state != state:
-                    
-                    # find out if we need to force a refresh on this data
-                    job_hda = data
-                    while job_hda.copied_from_history_dataset_association:
-                        job_hda = job_hda.copied_from_history_dataset_association
-                    force_history_refresh = False
-                    if job_hda.creating_job_associations:
-                        tool = trans.app.toolbox.get_tool( job_hda.creating_job_associations[ 0 ].job.tool_id )
-                        if tool:
-                            force_history_refresh = tool.force_history_refresh
-                    if not job_hda.visible:
-                        force_history_refresh = True
-                        
-                    # add the new state html for the item, the refresh option and the new state, map to the id
-                    rval[encoded_id] = {
-                        "state": data.state,
-                        "html": unicode( trans.fill_template( "root/history_item.mako", data=data, hid=data.hid ), 'utf-8' ),
-                        "force_history_refresh": force_history_refresh
-                    }
-
-        return rval
-
-    @web.json
-    def history_get_disk_size( self, trans ):
-        rval = { 'history' : trans.history.get_disk_size( nice_size=True ) }
-        for k, v in self.__user_get_usage( trans ).items():
-            rval['global_' + k] = v
-        return rval
-
-    @web.json
-    def user_get_usage( self, trans ):
-        return self.__user_get_usage( trans )
-
-    def __user_get_usage( self, trans ):
-        usage = trans.app.quota_agent.get_usage( trans )
-        percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
-        rval = {}
-        if percent is None:
-            rval['usage'] = util.nice_size( usage )
-        else:
-            rval['percent'] = percent
-        return rval
-
-    ## ---- Dataset display / editing ----------------------------------------
 
     @web.expose
     def display( self, trans, id=None, hid=None, tofile=None, toext=".txt", **kwd ):
@@ -372,14 +293,12 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             yield "No data with id=%d" % id
 
     ## ---- History management -----------------------------------------------
-
     @web.expose
     def history_options( self, trans ):
         """Displays a list of history related actions"""
         return trans.fill_template( "/history/options.mako",
                                     user=trans.get_user(),
                                     history=trans.get_history( create=True ) )
-
     @web.expose
     def history_delete( self, trans, id ):
         """
@@ -556,7 +475,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         raise Exception("You must specify a bucket")
 
     # ---- Debug methods ----------------------------------------------------
-
     @web.expose
     def echo(self, trans, **kwd):
         """Echos parameters (debugging)"""

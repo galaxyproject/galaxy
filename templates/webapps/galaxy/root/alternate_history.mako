@@ -94,7 +94,6 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     encoded_id_template     = '<%= id %>'
 
     url_dict = {
-        ##TODO: into their own MVs
         'rename'        : h.url_for( controller="history", action="rename_async",
                             id=encoded_id_template ),
         'tag'           : h.url_for( controller='tag', action='get_tagging_elt_async',
@@ -115,7 +114,7 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 
     hda_class_name      = 'HistoryDatasetAssociation'
     encoded_id_template = '<%= id %>'
-    #username_template   = '<%= username %>'
+
     hda_ext_template    = '<%= file_ext %>'
     meta_type_template  = '<%= file_type %>'
 
@@ -124,8 +123,6 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 
     url_dict = {
         # ................................................................ warning message links
-        #'purge' : h.url_for( controller='dataset', action='purge',
-        #    dataset_id=encoded_id_template ),
         'purge' : h.url_for( controller='dataset', action='purge_async',
             dataset_id=encoded_id_template ),
         #TODO: hide (via api)
@@ -138,9 +135,6 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
         # ................................................................ title actions (display, edit, delete),
         'display' : h.url_for( controller='dataset', action='display',
             dataset_id=encoded_id_template, preview=True, filename='' ),
-        #TODO:
-        #'user_display_url' : h.url_for( controller='dataset', action='display_by_username_and_slug',
-        #    username=username_template, slug=encoded_id_template, filename='' ),
         'edit' : h.url_for( controller='dataset', action='edit',
             dataset_id=encoded_id_template ),
 
@@ -170,9 +164,6 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
                 item_class=hda_class_name, item_id=encoded_id_template ),
         },
         'annotation' : {
-            #TODO: needed? doesn't look like this is used (unless graceful degradation)
-            #'annotate_url' : h.url_for( controller='dataset', action='annotate',
-            #    id=encoded_id_template ),
             'get' : h.url_for( controller='dataset', action='get_annotation_async',
                 id=encoded_id_template ),
             'set' : h.url_for( controller='/dataset', action='annotate_async',
@@ -184,12 +175,7 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 </%def>
 
 ## -----------------------------------------------------------------------------
-## get the history, hda, user data from the api (as opposed to the web controllers/mako)
-
-## I'd rather do without these (esp. the get_hdas which hits the db twice)
-##   but we'd need a common map producer (something like get_api_value but more complete)
-##TODO: api/web controllers should use common code, and this section should call that code
-<%def name="get_history( history )">
+<%def name="get_history_json( history )">
 <%
     try:
         return h.to_json_string( history )
@@ -203,13 +189,11 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 <%def name="get_current_user()">
 <%
     user_json = trans.webapp.api_controllers[ 'users' ].show( trans, 'current' )
-    #assert isinstance( hdaDataList, list ), (
-    #    'Bootstrapped current user was expecting a dictionary: %s' %( str( user ) ) )
     return user_json
 %>
 </%def>
 
-<%def name="get_hdas( hdas )">
+<%def name="get_hda_json( hdas )">
 <%
     try:
         return h.to_json_string( hdas )
@@ -228,12 +212,7 @@ ${parent.javascripts()}
 ${h.js(
     "libs/jquery/jstorage",
     "libs/jquery/jquery.autocomplete", "galaxy.autocom_tagging",
-    ##"libs/json2",
-    ##"libs/bootstrap",
-    ## I think we can remove some of these
-    ##"libs/backbone/backbone-relational",
     "mvc/base-mvc",
-    ##"mvc/ui"
 )}
 
 ${h.templates(
@@ -258,13 +237,7 @@ ${h.templates(
 ##TODO: fix: curr hasta be _after_ h.templates bc these use those templates - move somehow
 ${h.js(
     "mvc/user/user-model", "mvc/user/user-quotameter",
-
-    "mvc/dataset/hda-model",
-    "mvc/dataset/hda-base",
-    "mvc/dataset/hda-edit",
-
-    ##"mvc/tags", "mvc/annotations"
-
+    "mvc/dataset/hda-model", "mvc/dataset/hda-base", "mvc/dataset/hda-edit",
     "mvc/history/history-model", "mvc/history/history-panel"
 )}
     
@@ -327,8 +300,8 @@ $(function(){
         page_show_hidden  = ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) },
 
         user    = ${ get_current_user() },
-        history = ${ get_history( history ) },
-        hdas    = ${ get_hdas( datasets ) };
+        history = ${ get_history_json( history_dictionary ) },
+        hdas    = ${ get_hda_json( hda_dictionaries ) };
 
     // add user data to history
     // i don't like this history+user relationship, but user authentication changes views/behaviour
@@ -344,17 +317,6 @@ $(function(){
         show_hidden     : page_show_hidden
     });
     historyPanel.render();
-
-    // ...or LOAD FROM THE API
-    //historyPanel = new HistoryPanel({
-    //    model: new History(),
-    //    urlTemplates    : galaxy_paths.attributes,
-    //    logger          : ( debugging )?( console ):( null ),
-    //    // is page sending in show settings? if so override history's
-    //    show_deleted    : page_show_deleted,
-    //    show_hidden     : page_show_hidden
-    //});
-    //historyPanel.model.loadFromApi( history.id );
 
     // set it up to be accessible across iframes
     //TODO:?? mem leak
@@ -416,7 +378,6 @@ $(function(){
             windowJQ = $( top )[0].jQuery,
             popupMenu = ( windowJQ && $historyMenuButton[0] )?( windowJQ.data( $historyMenuButton[0], 'PopupMenu' ) )
                                                              :( null );
-
         //console.debug(
         //    '$historyButtonWindow:', $historyButtonWindow,
         //    '$historyMenuButton:', $historyMenuButton,
@@ -556,15 +517,6 @@ $(function(){
         }
 
     </style>
-    
-    <noscript>
-        ## js disabled: degrade gracefully
-        <style>
-        .historyItemBody {
-            display: block;
-        }
-        </style>
-    </noscript>
 </%def>
 
 <body class="historyPage"></body>
