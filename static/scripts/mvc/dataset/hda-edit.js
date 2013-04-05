@@ -57,7 +57,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 ajaxPromise.error( function( error, status, message ){
                     //TODO: Exception messages are hidden within error page
                     //!NOTE: that includes the 'Removal of datasets by users is not allowed in this Galaxy instance.'
-                    alert( '(' + error.status + ') Unable to purge this dataset:\n' + message );
+                    alert( '(' + error.status + ') ' + _l( 'Unable to purge this dataset' ) + ':\n' + error );
                 });
             });
         }

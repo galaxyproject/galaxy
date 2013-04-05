@@ -45,18 +45,19 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         /** is the body of this hda view expanded/not. */
         this.expanded = attributes.expanded || false;
 
-        // re-render the entire view on any model change
-        //this.model.bind( 'change', this.render , this );
+        // re-rendering on any model changes
         this.model.bind( 'change', function( event, changed ){
-            //var withoutDisplayApps = _.omit( changed, [ 'display_apps', 'display_types' ] );
-            var nonDisplayAppChanges = _.without( _.keys( changed.changes ), [ 'display_apps', 'display_types' ] );
-
+            // find out if more has changed than just the display applications
+            //TODO: need a better handler for these sorts of partial rendering cases
+            var nonDisplayAppChanges = _.without( _.keys( changed.changes ), 'display_apps', 'display_types' );
             if( nonDisplayAppChanges.length ){
+                // if it's more, render everything
                 this.render();
 
-            //TODO: need a better handler for these sorts of rendering exceptions
+            // if it's just the display links, and it's already expanded
             } else {
                 if( this.expanded ){
+                    // render the links only
                     this._render_displayApps();
                 }
             }
