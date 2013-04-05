@@ -60,7 +60,9 @@ var History = BaseModel.extend( LoggableMixin ).extend(
                 this.hdas.reset( initialHdas );
                 this.checkForUpdates();
                 //TODO: don't call if force_history_refresh
-                this.updateDisplayApplications();
+                if( this.hdas.length > 0 ){
+                    this.updateDisplayApplications();
+                }
 
             // handle errors in initialHdas
             //TODO: errors from the api shouldn't be plain strings...
