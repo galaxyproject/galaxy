@@ -155,6 +155,9 @@ class FileStager(object):
 
         self.new_working_directory = job_config['working_directory']
         self.new_outputs_directory = job_config['outputs_directory']
+        # Default configs_directory to match remote working_directory to mimic
+        # behavior of older LWR servers.
+        self.new_configs_drectory = job_config.get('configs_directory', self.new_working_directory)
         self.remote_path_separator = job_config['path_separator']
         # If remote LWR server assigned job id, use that otherwise
         # just use local job_id assigned.
@@ -218,7 +221,7 @@ class FileStager(object):
 
     def __initialize_config_file_renames(self):
         for config_file in self.config_files:
-            self.file_renames[config_file] = r'%s%s%s' % (self.new_working_directory,
+            self.file_renames[config_file] = r'%s%s%s' % (self.new_configs_drectory,
                                                          self.remote_path_separator,
                                                          os.path.basename(config_file))
 
