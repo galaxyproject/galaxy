@@ -5,6 +5,8 @@ import os
 import urllib
 import cgi
 
+from paste.httpexceptions import HTTPNotFound
+
 from galaxy.web.base.controller import BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy import util, web
@@ -21,7 +23,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
     def default(self, trans, target1=None, target2=None, **kwd):
         """Called on any url that does not match a controller method.
         """
-        return 'This link may not be followed from within Galaxy.'
+        raise HTTPNotFound( 'This link may not be followed from within Galaxy.' )
     
     @web.expose
     def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, m_c=None, m_a=None, **kwd):
