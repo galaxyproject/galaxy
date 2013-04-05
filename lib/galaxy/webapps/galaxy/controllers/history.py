@@ -1307,9 +1307,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.expose
     @web.require_login( "switch to a history" )
     def switch_to_history( self, trans, hist_id=None ):
-        decoded_id = trans.security.decode_id(hist_id)
-        hist = trans.sa_session.query( trans.app.model.History ).get( decoded_id )
-        trans.set_history( hist )
+        history = self.get_history( trans, hist_id )
+        trans.set_history( history )
         return trans.response.send_redirect( url_for( "/" ) )
         
     def get_item( self, trans, id ):
