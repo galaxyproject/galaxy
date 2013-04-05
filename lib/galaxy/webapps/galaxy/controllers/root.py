@@ -3,25 +3,30 @@ Contains the main interface in the Universe class
 """
 import os
 import urllib
-from cgi import escape, FieldStorage
+import cgi
 
-from galaxy import util, datatypes, jobs, web, util
-from galaxy.web.base.controller import *
-from galaxy.util.sanitize_html import sanitize_html
-from galaxy.model.orm import *
+from galaxy.web.base.controller import BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy import util, web
+from galaxy.util.sanitize_html import sanitize_html
+#from galaxy.model.orm import *
 
 import logging
 log = logging.getLogger( __name__ )
 
 class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
+    """Controller class that maps to the url root of Galaxy (i.e. '/')."""
     
     @web.expose
     def default(self, trans, target1=None, target2=None, **kwd):
+        """Called on any url that does not match a controller method.
+        """
         return 'This link may not be followed from within Galaxy.'
     
     @web.expose
     def index(self, trans, id=None, tool_id=None, mode=None, workflow_id=None, m_c=None, m_a=None, **kwd):
+        """Called on the root url to display the main Galaxy page.
+        """
         return trans.fill_template( "root/index.mako",
                                     tool_id=tool_id,
                                     workflow_id=workflow_id,
@@ -31,6 +36,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
     ## ---- Tool related -----------------------------------------------------
     @web.expose
     def tool_menu( self, trans ):
+        """Renders the tool panel of the Galaxy UI.
+        """
         if trans.app.config.require_login and not trans.user:
             return trans.fill_template( '/no_access.mako', message='Please log in to access Galaxy tools.' )
         toolbox = self.get_toolbox()
@@ -51,6 +58,11 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.json
     def tool_search( self, trans, **kwd ):
+        """Searches the tool database and returns data for any tool
+        whose text matches the query.
+
+        Data are returned in JSON format.
+        """
         query = kwd.get( 'query', '' )
         tags = util.listify( kwd.get( 'tags[]', [] ) )
         trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query, "tags" : tags } )
@@ -77,11 +89,13 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.expose
     def tool_help( self, trans, id ):
-        """Return help page for tool identified by 'id' if available"""
+        """Return help page for tool identified by 'id' if available
+        """
         toolbox = self.get_toolbox()
         tool = toolbox.get_tool( id )
         yield "<html><body>"
         if not tool:
+            #TODO: arent tool ids strings now?
             yield "Unknown tool id '%d'" % id
         elif tool.help:
             yield tool.help
@@ -90,13 +104,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         yield "</body></html>"
 
     ## ---- Root history display ---------------------------------------------
-    @web.expose
-    def my_data( self, trans, **kwd ):
-        """
-        Display user's data.
-        """
-        return trans.fill_template_mako( "/my_data.mako" )
-
     @web.expose
     def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
         """Display the current history, creating a new history if necessary.
@@ -167,38 +174,13 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     ## ---- Dataset display / editing ----------------------------------------
     @web.expose
-    def dataset_state ( self, trans, id=None, stamp=None ):
-        if id is not None:
-            try: 
-                data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
-            except: 
-                return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
-            trans.response.headers['X-Dataset-State'] = data.state
-            trans.response.headers['Pragma'] = 'no-cache'
-            trans.response.headers['Expires'] = '0'
-            return data.state
-        else:
-            return trans.show_error_message( "Must specify a dataset id.")
-
-    @web.expose
-    def dataset_code( self, trans, id=None, hid=None, stamp=None ):
-        if id is not None:
-            try: 
-                data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
-            except: 
-                return trans.show_error_message( "Unable to check dataset %s." %str( id ) )
-            trans.response.headers['Pragma'] = 'no-cache'
-            trans.response.headers['Expires'] = '0'
-            return trans.fill_template("root/history_item.mako", data=data, hid=hid)
-        else:
-            return trans.show_error_message( "Must specify a dataset id.")
-
-    @web.expose
     def display( self, trans, id=None, hid=None, tofile=None, toext=".txt", **kwd ):
+        """Returns data directly into the browser.
+
+        Sets the mime-type according to the extension.
         """
-        Returns data directly into the browser.
-        Sets the mime-type according to the extension
-        """
+        #TODO: unused?
+        #TODO: unencoded id
         if hid is not None:
             try:
                 hid = int( hid )
@@ -241,9 +223,9 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.expose
     def display_child(self, trans, parent_id=None, designation=None, tofile=None, toext=".txt"):
+        """Returns child data directly into the browser, based upon parent_id and designation.
         """
-        Returns child data directly into the browser, based upon parent_id and designation.
-        """
+        #TODO: unencoded id
         try:
             data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( parent_id )
             if data:
@@ -260,7 +242,9 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.expose
     def display_as( self, trans, id=None, display_app=None, **kwd ):
-        """Returns a file in a format that can successfully be displayed in display_app"""
+        """Returns a file in a format that can successfully be displayed in display_app.
+        """
+        #TODO: unencoded id
         data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         authz_method = 'rbac'
         if 'authz_method' in kwd:
@@ -283,7 +267,10 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.expose
     def peek(self, trans, id=None):
-        """Returns a 'peek' at the data"""
+        """Returns a 'peek' at the data.
+        """
+        #TODO: unused?
+        #TODO: unencoded id
         data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
         if data:
             yield "<html><body><pre>"
@@ -295,20 +282,23 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
     ## ---- History management -----------------------------------------------
     @web.expose
     def history_options( self, trans ):
-        """Displays a list of history related actions"""
+        """Displays a list of history related actions.
+        """
         return trans.fill_template( "/history/options.mako",
                                     user=trans.get_user(),
                                     history=trans.get_history( create=True ) )
     @web.expose
     def history_delete( self, trans, id ):
+        """Backward compatibility with check_galaxy script.
         """
-        Backward compatibility with check_galaxy script.
-        """
+        #TODO: unused?
         return trans.webapp.controllers['history'].list( trans, id, operation='delete' )
 
     @web.expose
     def clear_history( self, trans ):
-        """Clears the history for a user"""
+        """Clears the history for a user.
+        """
+        #TODO: unused? (seems to only be used in TwillTestCase)
         history = trans.get_history()
         for dataset in history.datasets:
             dataset.deleted = True
@@ -319,6 +309,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.expose
     def history_import( self, trans, id=None, confirm=False, **kwd ):
+        #TODO: unused?
+        #TODO: unencoded id
         msg = ""
         user = trans.get_user()
         user_history = trans.get_history()
@@ -375,13 +367,19 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.expose
     def history_new( self, trans, name=None ):
+        """Create a new history with the given name
+        and refresh the history panel.
+        """
         trans.new_history( name=name )
         trans.log_event( "Created new History, id: %s." % str(trans.history.id) )
         return trans.show_message( "New history created", refresh_frames=['history'] )
 
     @web.expose
-    def history_add_to( self, trans, history_id=None, file_data=None, name="Data Added to History", info=None, ext="txt", dbkey="?", copy_access_from=None, **kwd ):
-        """Adds a POSTed file to a History"""
+    def history_add_to( self, trans, history_id=None, file_data=None,
+            name="Data Added to History", info=None, ext="txt", dbkey="?", copy_access_from=None, **kwd ):
+        """Adds a POSTed file to a History.
+        """
+        #TODO: unencoded id
         try:
             history = trans.sa_session.query( trans.app.model.History ).get( history_id )
             data = trans.app.model.HistoryDatasetAssociation( name=name,
@@ -414,12 +412,16 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id))
             return trans.show_ok_message( "Dataset " + str(data.hid) + " added to history " + str(history_id) + "." )
         except Exception, e:
-            trans.log_event( "Failed to add dataset to history: %s" % ( e ) )
+            msg = "Failed to add dataset to history: %s" % ( e )
+            log.error( msg )
+            trans.log_event( msg )
             return trans.show_error_message("Adding File to History has Failed")
 
     @web.expose
     def history_set_default_permissions( self, trans, id=None, **kwd ):
-        """Sets the permissions on a history"""
+        """Sets the permissions on a history.
+        """
+        #TODO: unencoded id
         if trans.user:
             if 'update_roles_button' in kwd:
                 history = None
@@ -443,7 +445,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                     permissions[ trans.app.security_agent.get_action( v.action ) ] = in_roles
                 dataset = 'dataset' in kwd
                 bypass_manage_permission = 'bypass_manage_permission' in kwd
-                trans.app.security_agent.history_set_default_permissions( history, permissions, dataset=dataset, bypass_manage_permission=bypass_manage_permission )
+                trans.app.security_agent.history_set_default_permissions( history, permissions,
+                    dataset=dataset, bypass_manage_permission=bypass_manage_permission )
                 return trans.show_ok_message( 'Default history permissions have been changed.' )
             return trans.fill_template( 'history/permissions.mako' )
         else:
@@ -452,7 +455,10 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.expose
     def dataset_make_primary( self, trans, id=None):
-        """Copies a dataset and makes primary"""
+        """Copies a dataset and makes primary.
+        """
+        #TODO: unused?
+        #TODO: unencoded id
         try:
             old_data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             new_data = old_data.copy()
@@ -477,23 +483,25 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
     # ---- Debug methods ----------------------------------------------------
     @web.expose
     def echo(self, trans, **kwd):
-        """Echos parameters (debugging)"""
+        """Echos parameters (debugging).
+        """
         rval = ""
         for k in trans.request.headers:
             rval += "%s: %s <br/>" % ( k, trans.request.headers[k] )
         for k in kwd:
             rval += "%s: %s <br/>" % ( k, kwd[k] )
-            if isinstance( kwd[k], FieldStorage ):
+            if isinstance( kwd[k], cgi.FieldStorage ):
                 rval += "-> %s" % kwd[k].file.read()
         return rval
 
     @web.json
     def echo_json( self, trans, **kwd ):
-        """Echos parameters as JSON (debugging)
+        """Echos parameters as JSON (debugging).
 
         Attempts to parse values passed as boolean, float, then int. Defaults
         to string. Non-recursive (will not parse lists).
         """
+        #TODO: use simplejson or json
         rval = {}
         for k in kwd:
             rval[ k ] = kwd[k]
@@ -508,4 +516,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
 
     @web.expose
     def generate_error( self, trans ):
+        """Raises an exception (debugging).
+        """
         raise Exception( "Fake error!" )
