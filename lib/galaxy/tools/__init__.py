@@ -54,7 +54,6 @@ from galaxy.util.hash_util import hmac_new
 from galaxy.util.none_like import NoneDataset
 from galaxy.util.odict import odict
 from galaxy.util.template import fill_template
-from galaxy.visualization.genome.visual_analytics import TracksterConfig
 from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
 from tool_shed.util import shed_util_common
@@ -1289,6 +1288,7 @@ class Tool( object ):
         # Trackster configuration.
         trackster_conf = root.find( "trackster_conf" )
         if trackster_conf is not None:
+            from galaxy.visualization.genome.visual_analytics import TracksterConfig
             self.trackster_conf = TracksterConfig.parse( trackster_conf )
         else:
             self.trackster_conf = None
