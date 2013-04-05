@@ -306,3 +306,41 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         # In this case, there should be two downloadable revisions, one for filtering 1.1.0 and one for filtering 2.2.0.
         assert True in [ metadata.downloadable for metadata in repository.metadata_revisions ]
         assert len( repository.downloadable_revisions ) == 2
+        
+    def test_0120_enable_email_notifications( self ):
+        '''Enable email notifications for test user 2 on filtering_0000.'''
+        # Log in as test_user_2
+        self.logout()
+        self.login( email=common.test_user_2_email, username=common.test_user_2_name )
+        # Get the repository, so we can pass the encoded repository id and browse_repositories method to the set_email_alerts method.
+        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        strings_displayed = [ 'Total alerts added: 1, total alerts removed: 0' ]
+        self.enable_email_alerts( repository, strings_displayed=strings_displayed )
+        
+    def test_0125_upload_new_readme_file( self ):
+        '''Upload a new readme file to the filtering_0000 repository and verify that there is no error.'''
+        self.logout()
+        self.login( email=common.test_user_1_email, username=common.test_user_1_name )
+        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        # Upload readme.txt to the filtering_0000 repository and verify that it is now displayed.
+        self.upload_file( repository, 
+                          filename='filtering/readme.txt', 
+                          filepath=None,
+                          valid_tools_only=True,
+                          uncompress_file=False,
+                          remove_repo_files_not_in_tar=False,
+                          commit_message="Uploaded new readme.txt with invalid ascii characters.",
+                          strings_displayed=[], 
+                          strings_not_displayed=[] )
+        self.display_manage_repository_page( repository, strings_displayed=[ 'These&nbsp;characters&nbsp;should&nbsp;not' ] )
+        
+    def test_0130_verify_handling_of_invalid_characters( self ):
+        '''Load the above changeset in the change log and confirm that there is no server error displayed.'''
+        repository = test_db_util.get_repository_by_name_and_owner( repository_name, common.test_user_1_name )
+        changeset_revision = self.get_repository_tip( repository )
+        repository_id = self.security.encode_id( repository.id )
+        # Check for the changeset revision, repository name, owner username, 'repos' in the clone url, and the captured
+        # unicode decoding error message. 
+        strings_displayed = [ 'Changeset %s' % changeset_revision, 'filtering_0000', 'user1', 'repos', 'added:',
+                              'Error&nbsp;decoding&nbsp;string:', "codec&nbsp;can't&nbsp;decode&nbsp;byte" ]
+        self.load_changeset_in_tool_shed( repository_id, changeset_revision, strings_displayed=strings_displayed )
