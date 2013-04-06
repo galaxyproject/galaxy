@@ -75,7 +75,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         zip_archive_extracted = common_util.extract_zip( downloaded_file_path, work_dir )
                         dir = common_util.zip_extraction_directory( work_dir, downloaded_filename )
                     else:
-                        dir = work_dir
+                        dir = os.path.curdir
                 elif action_type == 'shell_command':
                     # <action type="shell_command">git clone --recursive git://github.com/ekg/freebayes.git</action>
                     # Eliminate the shell_command clone action so remaining actions can be processed correctly.
