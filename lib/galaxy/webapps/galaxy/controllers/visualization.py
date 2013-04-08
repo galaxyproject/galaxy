@@ -696,6 +696,11 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         # Get dataset to add.
         new_dataset_id = kwargs.get( "dataset_id", None )
+
+        # Get gene region
+        new_chrom = kwargs.get( "chrom", None )
+        new_start = kwargs.get( "start", 0 )
+        new_end   = kwargs.get( "end", 0 )
         
         # Set up new browser if no id provided.
         if not id:
@@ -706,7 +711,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 if dbkey == '?':
                     dbkey = kwargs.get( "dbkey", None )
             
-            return trans.fill_template( "tracks/browser.mako", config={}, 
+            return trans.fill_template( "tracks/browser.mako", viewport_config={"chrom" : new_chrom, "start" : int(new_start), "end" : int(new_end)},
                                         add_dataset=new_dataset_id, 
                                         default_dbkey=dbkey )
 
