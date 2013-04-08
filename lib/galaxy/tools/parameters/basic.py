@@ -712,6 +712,8 @@ class SelectToolParameter( ToolParameter ):
                 rval.append( v )
             return rval
         else:
+            if self.multiple and value == "None" and "None" not in legal_values:
+                return []
             if value not in legal_values:
                 raise ValueError( "An invalid option was selected, please verify" )
             return value
