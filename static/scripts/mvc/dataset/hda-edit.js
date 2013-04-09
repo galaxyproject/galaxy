@@ -456,7 +456,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //BUG: broken with latest
         //TODO: this is a drop in from history.mako - should use MV as well
         this.log( this + '.loadAndDisplayTags', event );
-        var tagArea = this.$el.find( '.tag-area' ),
+        var view = this,
+            tagArea = this.$el.find( '.tag-area' ),
             tagElt = tagArea.find( '.tag-elt' );
 
         // Show or hide tag area; if showing tag area and it's empty, fill it.
@@ -466,7 +467,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 $.ajax({
                     //TODO: the html from this breaks a couple of times
                     url: this.urls.tags.get,
-                    error: function() { alert( _l( "Tagging failed" ) ); },
+                    error: function( xhr, status, error ){
+                        view.log( "Tagging failed", xhr, status, error );
+                        view.trigger( 'error', _l( "Tagging failed" ), xhr, status, error );
+                    },
                     success: function(tag_elt_html) {
                         tagElt.html(tag_elt_html);
                         tagElt.find(".tooltip").tooltip();

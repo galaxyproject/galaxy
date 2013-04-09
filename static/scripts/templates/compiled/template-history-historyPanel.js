@@ -184,7 +184,7 @@ function program26(depth0,data) {
 function program28(depth0,data) {
   
   var buffer = "", stack1;
-  buffer += "\n    <div id=\"message-container\">\n        <div class=\"";
+  buffer += "\n        <div class=\"";
   if (stack1 = helpers.status) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
   else { stack1 = depth0.status; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   buffer += escapeExpression(stack1)
@@ -192,7 +192,7 @@ function program28(depth0,data) {
   if (stack1 = helpers.message) { stack1 = stack1.call(depth0, {hash:{},data:data}); }
   else { stack1 = depth0.message; stack1 = typeof stack1 === functionType ? stack1.apply(depth0) : stack1; }
   buffer += escapeExpression(stack1)
-    + "</div>\n    </div>\n    ";
+    + "</div>\n        ";
   return buffer;
   }
 
@@ -228,10 +228,10 @@ function program32(depth0,data) {
   buffer += "\n\n    ";
   stack2 = helpers['if'].call(depth0, depth0.deleted, {hash:{},inverse:self.noop,fn:self.program(24, program24, data),data:data});
   if(stack2 || stack2 === 0) { buffer += stack2; }
-  buffer += "\n\n    ";
+  buffer += "\n\n    <div id=\"message-container\">\n        ";
   stack2 = helpers['if'].call(depth0, depth0.message, {hash:{},inverse:self.noop,fn:self.program(28, program28, data),data:data});
   if(stack2 || stack2 === 0) { buffer += stack2; }
-  buffer += "\n\n    <div id=\"quota-message-container\" style=\"display: none\">\n        <div id=\"quota-message\" class=\"errormessage\">\n            ";
+  buffer += "\n    </div>\n\n    <div id=\"quota-message-container\" style=\"display: none\">\n        <div id=\"quota-message\" class=\"errormessage\">\n            ";
   options = {hash:{},inverse:self.noop,fn:self.program(30, program30, data),data:data};
   if (stack2 = helpers.local) { stack2 = stack2.call(depth0, options); }
   else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }

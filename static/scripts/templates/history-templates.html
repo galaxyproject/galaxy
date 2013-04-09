@@ -62,11 +62,11 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
     {{#warningmessagesmall}}{{#local}}You are currently viewing a deleted history!{{/local}}{{/warningmessagesmall}}
     {{/if}}
 
-    {{#if message}}
     <div id="message-container">
+        {{#if message}}
         <div class="{{status}}message">{{message}}</div>
+        {{/if}}
     </div>
-    {{/if}}
 
     <div id="quota-message-container" style="display: none">
         <div id="quota-message" class="errormessage">

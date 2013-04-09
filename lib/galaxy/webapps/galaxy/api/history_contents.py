@@ -43,14 +43,10 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             else:
                 history = self.get_history( trans, history_id, check_ownership=True, check_accessible=True )
 
-            # build the return hda data list
+            # if ids, return _FULL_ data (as show) for each id passed
             if ids:
-                # if ids, return _FULL_ data (as show) for each id passed
-                #NOTE: this might not be the best form (passing all info),
-                #   but we(I?) need an hda collection with full data somewhere
                 ids = ids.split( ',' )
-                for hda in history.datasets:
-                    #TODO: curr. ordered by history, change to order from ids list
+                for index, hda in enumerate( history.datasets ):
                     encoded_hda_id = trans.security.encode_id( hda.id )
                     if encoded_hda_id in ids:
                         #TODO: share code with show
@@ -63,21 +59,19 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
                         except Exception, exc:
                             # don't fail entire list if hda err's, record and move on
-                            # (making sure http recvr knows it's err'd)
-                            trans.response.status = 500
                             log.error( "Error in history API at listing contents with history %s, hda %s: (%s) %s",
-                                history_id, encoded_hda_id, type( exc ), str( exc ) )
-                            rval.append( self._exception_as_hda_dict( trans, encoded_hda_id, exc ) )
+                                history_id, encoded_hda_id, type( exc ), str( exc ), exc_info=True )
+                            rval.append( self.get_hda_dict_with_error( trans, hda, str( exc ) ) )
 
+            # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
             else:
-                # if no ids passed, return a _SUMMARY_ of _all_ datasets in the history
                 for hda in history.datasets:
                     rval.append( self._summary_hda_dict( trans, history_id, hda ) )
 
         except Exception, e:
             # for errors that are not specific to one hda (history lookup or summary list)
             rval = "Error in history API at listing contents: " + str( e )
-            log.error( rval + ": %s, %s" % ( type( e ), str( e ) ) )
+            log.error( rval + ": %s, %s" % ( type( e ), str( e ) ), exc_info=True )
             trans.response.status = 500
 
         return rval
@@ -100,21 +94,6 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'name'  : hda.name,
             'type'  : api_type,
             'url'   : url_for( 'history_content', history_id=history_id, id=encoded_id, ),
-        }
-
-    #TODO: move to model or Mixin
-    def _exception_as_hda_dict( self, trans, hda_id, exception ):
-        """
-        Returns a dictionary for an HDA that raised an exception when it's
-        dictionary was being built.
-        """
-        return {
-            'id'        : hda_id,
-            'state'     : trans.app.model.Dataset.states.ERROR,
-            'visible'   : True,
-            'misc_info' : str( exception ),
-            'misc_blurb': 'Failed to retrieve dataset information.',
-            'error'     : str( exception )
         }
 
     @web.expose_api_anonymous

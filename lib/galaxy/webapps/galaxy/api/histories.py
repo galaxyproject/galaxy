@@ -59,6 +59,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
                 if trans.user and len( trans.user.galaxy_sessions ) > 0:
                     # Most recent active history for user sessions, not deleted
                     history = trans.user.galaxy_sessions[0].histories[-1].history
+                    history_id = trans.security.encode_id( history.id )
                 else:
                     return None
             else:

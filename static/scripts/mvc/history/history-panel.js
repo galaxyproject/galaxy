@@ -75,7 +75,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     /** event map
      */
     events : {
-        'click #history-tag'            : 'loadAndDisplayTags'
+        'click #history-tag'            : 'loadAndDisplayTags',
+        'click #message-container'      : 'removeMessage'
     },
 
     // ......................................................................... SET UP
@@ -104,10 +105,28 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
 
         this._setUpWebStorage( attributes.initiallyExpanded, attributes.show_deleted, attributes.show_hidden );
 
+        this._setUpEventHandlers();
+
+        // set up instance vars
+        /** map of hda model ids to hda views */
+        this.hdaViews = {};
+        /** map web controller urls for history related actions */
+        this.urls = {};
+    },
+
+    _setUpEventHandlers : function(){
+        // ---- model
         // don't need to re-render entire model on all changes, just render disk size when it changes
         //this.model.bind( 'change', this.render, this );
         this.model.bind( 'change:nice_size', this.updateHistoryDiskSize, this );
 
+        // don't need to re-render entire model on all changes, just render disk size when it changes
+        this.model.bind( 'error', function( msg, xhr, error, status ){
+            this.displayMessage( 'error', msg );
+            this.model.attributes.error = undefined;
+        }, this );
+
+        // ---- hdas
         // bind events from the model's hda collection
         this.model.hdas.bind( 'add',   this.add,    this );
         this.model.hdas.bind( 'reset', this.addAll, this );
@@ -126,15 +145,16 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             }
         }, this );
 
-        //this.bind( 'all', function(){
-        //    this.log( arguments );
-        //}, this );
+        // ---- self
+        this.bind( 'error', function( msg, xhr, error, status ){
+            this.displayMessage( 'error', msg );
+        });
 
-        // set up instance vars
-        /** map of hda model ids to hda views */
-        this.hdaViews = {};
-        /** map web controller urls for history related actions */
-        this.urls = {};
+        if( this.logger ){
+            this.bind( 'all', function( event ){
+                this.log( this + '', arguments );
+            }, this );
+        }
     },
 
     /** Set up client side storage. Currently PersistanStorage keyed under 'HistoryPanel.<id>'
@@ -341,6 +361,9 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         hdaView.bind( 'body-collapsed', function( id ){
             historyView.storage.get( 'expandedHdas' ).deleteKey( id );
         });
+        hdaView.bind( 'error', function( msg, xhr, status, error ){
+            historyView.displayMessage( 'error', msg );
+        });
     },
 
     /** Set up HistoryPanel js/widget behaviours
@@ -431,7 +454,8 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
     //TODO: into sub-MV
     loadAndDisplayTags : function( event ){
         this.log( this + '.loadAndDisplayTags', event );
-        var tagArea = this.$el.find( '#history-tag-area' ),
+        var panel = this,
+            tagArea = this.$el.find( '#history-tag-area' ),
             tagElt = tagArea.find( '.tag-elt' );
         this.log( '\t tagArea', tagArea, ' tagElt', tagElt );
 
@@ -443,7 +467,10 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
                 $.ajax({
                     //TODO: the html from this breaks a couple of times
                     url: view.urls.tag,
-                    error: function() { alert( _l( "Tagging failed" ) ); },
+                    error: function( xhr, error, status ) {
+                        panel.log( 'Error loading tag area html', xhr, error, status );
+                        panel.trigger( 'error', _l( "Tagging failed" ), xhr, error, status );
+                    },
                     success: function(tag_elt_html) {
                         //view.log( view + ' tag elt html (ajax)', tag_elt_html );
                         tagElt.html(tag_elt_html);
@@ -461,6 +488,23 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
             tagArea.slideUp("fast");
         }
         return false;
+    },
+
+    /** display a message in the top of the panel
+     *  @param {String} type    type of message ('done', 'error', 'warning')
+     *  @param {String} msg     the message to display
+     */
+    displayMessage : function( type, msg ){
+        var $msgContainer = this.$el.find( '#message-container' ),
+            $msg = $( '<div/>' ).addClass( type + 'message' ).text( msg );
+        $msgContainer.html( $msg );
+    },
+
+    /** Remove a message from the panel
+     */
+    removeMessage : function(){
+        var $msgContainer = this.$el.find( '#message-container' );
+        $msgContainer.html( null );
     },
 
     // ......................................................................... MISC

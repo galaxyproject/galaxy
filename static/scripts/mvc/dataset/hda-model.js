@@ -49,7 +49,6 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         deleted             : false,
         purged              : false,
         visible             : true,
-        // based on trans.user (is_admin or security_agent.can_access_dataset( <user_roles>, hda.dataset ))
         accessible          : true
     },
 
@@ -57,7 +56,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
     urlRoot: 'api/histories/',
     url : function(){
         //TODO: get this via url router
-        return 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
+        return this.urlRoot + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
         //TODO: this breaks on save()
     },
     

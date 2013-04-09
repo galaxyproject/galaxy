@@ -221,28 +221,25 @@ ${h.js(
 )}
     
 <script type="text/javascript">
-function modalAsAlert( title, body, buttons ){
-    alert( title + ':\n' + body );
-}
-
 function galaxyPageSetUp(){
     // moving global functions, objects into Galaxy namespace
     top.Galaxy                  = top.Galaxy || {};
     
-    // bad idea from memleak standpoint?
-    top.Galaxy.mainWindow       = top.Galaxy.mainWindow     || top.frames.galaxy_main;
-    top.Galaxy.toolWindow       = top.Galaxy.toolWindow     || top.frames.galaxy_tools;
-    top.Galaxy.historyWindow    = top.Galaxy.historyWindow  || top.frames.galaxy_history;
-    
-    top.Galaxy.$masthead        = top.Galaxy.$masthead      || $( top.document ).find( 'div#masthead' );
-    top.Galaxy.$messagebox      = top.Galaxy.$messagebox    || $( top.document ).find( 'div#messagebox' );
-    top.Galaxy.$leftPanel       = top.Galaxy.$leftPanel     || $( top.document ).find( 'div#left' );
-    top.Galaxy.$centerPanel     = top.Galaxy.$centerPanel   || $( top.document ).find( 'div#center' );
-    top.Galaxy.$rightPanel      = top.Galaxy.$rightPanel    || $( top.document ).find( 'div#right' );
+    if( top != window ){
+        top.Galaxy.mainWindow       = top.Galaxy.mainWindow     || top.frames.galaxy_main;
+        top.Galaxy.toolWindow       = top.Galaxy.toolWindow     || top.frames.galaxy_tools;
+        top.Galaxy.historyWindow    = top.Galaxy.historyWindow  || top.frames.galaxy_history;
 
-    //modals
-    top.Galaxy.show_modal       = top.show_modal || modalAsAlert;
-    top.Galaxy.hide_modal       = top.hide_modal || function(){};
+        top.Galaxy.$masthead        = top.Galaxy.$masthead      || $( top.document ).find( 'div#masthead' );
+        top.Galaxy.$messagebox      = top.Galaxy.$messagebox    || $( top.document ).find( 'div#messagebox' );
+        top.Galaxy.$leftPanel       = top.Galaxy.$leftPanel     || $( top.document ).find( 'div#left' );
+        top.Galaxy.$centerPanel     = top.Galaxy.$centerPanel   || $( top.document ).find( 'div#center' );
+        top.Galaxy.$rightPanel      = top.Galaxy.$rightPanel    || $( top.document ).find( 'div#right' );
+    
+        //modals
+        top.Galaxy.show_modal       = top.show_modal;
+        top.Galaxy.hide_modal       = top.hide_modal;
+    }
 
     // other base functions
 
@@ -297,7 +294,7 @@ $(function(){
     historyJson.user = userJson;
 
     // create the history panel
-    var history = new History( historyJson, hdaJson );
+    var history = new History( historyJson, hdaJson, ( debugging )?( console ):( null ) );
     var historyPanel = new HistoryPanel({
             model           : history,
             urlTemplates    : galaxy_paths.attributes,
@@ -445,11 +442,10 @@ $(function(){
         .warningmessagesmall {
             margin: 8px 0 0 0;
         }
-        #message-container {
-            margin: 8px 0 0 0;
+        #message-container div {
         }
         #message-container [class$="message"] {
-            margin: 0px;
+            margin: 8px 0 0 0;
         }
 
         /*---- history level */
