@@ -152,7 +152,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             repo_info_dict = items[ 2 ]
         else:
             message = "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
-                ( str( tool_shed_url ), str( name ), str( owner ), str( changeset_revision ) )
+                ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return dict( status='error', error=message )
