@@ -242,7 +242,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 return trans.response.send_redirect( web.url_for( controller='repository',
                                                                   action='view_or_manage_repository',
                                                                   **kwd ) )
-        if 'user_id' not in kwd:
+        user_id = kwd.get( 'user_id', None )
+        if user_id is None:
             # The received id is the repository id, so we need to get the id of the user that uploaded the repository.
             repository_id = kwd.get( 'id', None )
             if repository_id:
@@ -256,8 +257,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                       action='view_or_manage_repository',
                                                                       id=trans.security.encode_id( repository.id ),
                                                                       changeset_revision=selected_changeset_revision ) )
-        user = suc.get_user( trans, kwd[ 'user_id' ] )
-        self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
+        if user_id:
+            user = suc.get_user( trans, user_id )
+            self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
         return self.repositories_by_user_grid( trans, **kwd )
 
     @web.expose
@@ -1192,7 +1194,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         encoded_repository_ids = []
         changeset_revisions = []
         for required_repository_tup in decoded_required_repository_tups:
-            tool_shed, name, owner, changeset_revision = required_repository_tup
+            tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( required_repository_tup )
             repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
             encoded_repository_ids.append( trans.security.encode_id( repository.id ) )
             changeset_revisions.append( changeset_revision )

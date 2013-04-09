@@ -1,8 +1,15 @@
-%if trans.webapp.name == 'galaxy':
-    <%inherit file="/webapps/galaxy/base_panels.mako"/>
-%elif trans.webapp.name == 'tool_shed':
-    <%inherit file="/webapps/tool_shed/base_panels.mako"/>
-%endif
+<%!
+#This is a hack, we should restructure templates to avoid this.
+def inherit(context):
+    if context.get('trans').webapp.name == 'galaxy':
+        return '/webapps/galaxy/base_panels.mako'
+    elif context.get('trans').webapp.name == 'tool_shed':
+        return '/webapps/tool_shed/base_panels.mako'
+    else:
+        return '/base.mako'
+%>
+
+<%inherit file="${inherit(context)}"/>
 
 <%namespace file="/message.mako" import="render_msg" />
 

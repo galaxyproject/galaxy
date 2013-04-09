@@ -76,14 +76,15 @@ def app_factory( global_conf, **kwargs ):
     webapp.add_route( '/repos/*path_info', controller='hg', action='handle_request', path_info='/' )
     # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
     webapp.add_api_controllers( 'galaxy.webapps.tool_shed.api', app )
-    webapp.api_mapper.resource( 'repository',
+    webapp.mapper.resource( 'repository',
                                 'repositories',
                                 controller='repositories',
-                                collection={ 'get_repository_revision_install_info' : 'GET' },
+                                collection={ 'get_repository_revision_install_info' : 'GET',
+                                             'get_ordered_installable_revisions' : 'GET' },
                                 name_prefix='repository_',
                                 path_prefix='/api',
                                 parent_resources=dict( member_name='repository', collection_name='repositories' ) )
-    webapp.api_mapper.resource( 'repository_revision',
+    webapp.mapper.resource( 'repository_revision',
                                 'repository_revisions',
                                 controller='repository_revisions',
                                 name_prefix='repository_revision_',

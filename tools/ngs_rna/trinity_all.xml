@@ -20,9 +20,6 @@
             #else:
                 --seqType fq
             #end if
-            #if $inputs.library_type != 'None':
-                --SS_lib_type $inputs.library_type
-            #end if
         #else:
             --single $inputs.input
             #if  $inputs.input.ext == 'fa':
@@ -30,15 +27,16 @@
             #else:
                 --seqType fq
             #end if
-            #if $inputs.library_type != 'None':
-                --SS_lib_type $inputs.library_type
-            #end if
+        #end if
+
+        #if $strand.is_strand_specific == "yes":
+	    --SS_lib_type $strand.library_type
         #end if
         
-        --kmer_method meryl
-        
+        --JM 10G
+
         ## CPU and butterfly options.
-        --CPU 4 --bfly_opts "-V 10 --stderr" > $trinity_log 2>&amp;1 
+        --CPU 6 --bfly_opts "-V 10 --stderr" > $trinity_log 2>&amp;1
     </command>
     <inputs>
         <conditional name="inputs">
@@ -49,22 +47,28 @@
             <when value="paired">
                 <param format="fasta,fastq" name="left_input" type="data" label="Left/Forward strand reads" help=""/>
                 <param format="fasta,fastq" name="right_input" type="data" label="Right/Reverse strand reads" help=""/>
-                <param name="library_type" type="select" label="Strand-specific Library Type">
-                    <option value="None">None</option>
-                    <option value="FR">FR</option>
-                    <option value="RF">RF</option>
-                </param>
                 <param name="paired_fragment_length" type="integer" value="300" min="1" label="Paired Fragment Length" help="Maximum length expected between fragment pairs"/>
             </when>
             <when value="single">
                 <param format="fasta,fastq" name="input" type="data" label="Single-end reads" help=""/>
-                <param name="library_type" type="select" label="Strand-specific Library Type">
-                    <option value="None">None</option>
-                    <option value="F">F</option>
-                    <option value="R">R</option>
-                </param>
             </when>
         </conditional>
+	<conditional name="strand">
+	    <param name="is_strand_specific" type="select" label="Is it strand specific data?" help="">
+	    	<option value="no">No</option>
+	    	<option value="yes">Yes</option>
+	    </param>
+	    <when value="no">
+	    </when>
+	    <when value="yes">
+                <param name="library_type" type="select" label="Strand-specific Library Type">
+                    <option value="FR">Forward-Reverse</option>
+                    <option value="RF">Reverse-Forward</option>
+                    <option value="F">Forward</option>
+                    <option value="R">Reverse</option>
+                </param>
+	    </when>
+	</conditional>
         <conditional name="additional_params">
             <param name="use_additional" type="select" label="Use Additional Params?">
                 <option value="no">No</option>

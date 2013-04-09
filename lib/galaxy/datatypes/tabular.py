@@ -268,6 +268,7 @@ class Tabular( data.Text ):
         return to_json_string({'ck_data': ck_data, 'ck_index': ck_index+1})
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, chunk=None):
+        preview = util.string_as_bool( preview )
         if chunk:
             return self.get_chunk(trans, dataset, chunk)
         elif to_ext or not preview:

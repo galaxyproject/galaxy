@@ -12,7 +12,7 @@ log = logging.getLogger( __name__ )
 
 class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin,
                                  UsesLibraryMixin, UsesLibraryMixinItems ):
-    @web.expose_api
+    @web.expose_api_anonymous
     def index( self, trans, history_id, ids=None, **kwd ):
         """
         GET /api/histories/{encoded_history_id}/contents
@@ -35,7 +35,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         try:
             # get the history, if anon user and requesting current history - allow it
             if( ( trans.user == None )
-            and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
+                and ( history_id == trans.security.encode_id( trans.history.id ) ) ):
                 #TODO:?? is secure?
                 history = trans.history
 
@@ -117,7 +117,7 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
             'error'     : str( exception )
         }
 
-    @web.expose_api
+    @web.expose_api_anonymous
     def show( self, trans, id, history_id, **kwd ):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}
