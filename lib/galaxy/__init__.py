@@ -95,9 +95,14 @@ except:
     pkg_resources.Distribution._insert_on = pkg_resources.Distribution.insert_on
     pkg_resources.Distribution.insert_on = _insert_on
 
-# patch to add the NullHandler class to logging
-if sys.version_info[:2] < ( 2, 7 ):
-    import logging
+# compat: BadZipFile introduced in Python 2.7
+import zipfile
+if not hasattr( zipfile, 'BadZipFile' ):
+    zipfile.BadZipFile = zipfile.error
+
+# compat: patch to add the NullHandler class to logging
+import logging
+if not hasattr( logging, 'NullHandler' ):
     class NullHandler( logging.Handler ):
         def emit( self, record ):
             pass

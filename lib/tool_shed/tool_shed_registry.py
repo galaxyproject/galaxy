@@ -4,12 +4,7 @@ from galaxy.util.odict import odict
 
 log = logging.getLogger( __name__ )
 
-if sys.version_info[:2] == ( 2, 4 ):
-    from galaxy import eggs
-    eggs.require( 'ElementTree' )
-    from elementtree import ElementTree
-else:
-    from xml.etree import ElementTree
+from xml.etree import ElementTree
 
 class Registry( object ):
     def __init__( self, root_dir=None, config=None ):

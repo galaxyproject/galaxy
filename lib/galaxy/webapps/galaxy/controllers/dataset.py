@@ -20,11 +20,6 @@ import pkg_resources;
 pkg_resources.require( "Paste" )
 import paste.httpexceptions
 
-if sys.version_info[:2] < ( 2, 6 ):
-    zipfile.BadZipFile = zipfile.error
-if sys.version_info[:2] < ( 2, 5 ):
-    zipfile.LargeZipFile = zipfile.error
-
 tmpd = tempfile.mkdtemp()
 comptypes=[]
 ziptype = '32'

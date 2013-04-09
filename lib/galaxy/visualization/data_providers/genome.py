@@ -6,8 +6,6 @@ import os, sys, operator
 from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
-if sys.version_info[:2] == (2, 4):
-    pkg_resources.require( "ctypes" )
 pkg_resources.require( "pysam" )
 pkg_resources.require( "numpy" )
 import numpy

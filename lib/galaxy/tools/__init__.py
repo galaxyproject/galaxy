@@ -15,6 +15,8 @@ import traceback
 import types
 import urllib
 
+from math import isinf
+
 from galaxy import eggs
 eggs.require( "simplejson" )
 eggs.require( "MarkupSafe" ) #MarkupSafe must load before mako
@@ -46,7 +48,7 @@ from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
 from galaxy.tools.test import ToolTestBuilder
-from galaxy.util import isinf, listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
+from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
 from galaxy.util.bunch import Bunch
 from galaxy.util.expressions import ExpressionContext
 from galaxy.util.hash_util import hmac_new

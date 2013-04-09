@@ -285,12 +285,7 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
         # Not in interactive debug mode, just use the regular error middleware
-        if sys.version_info[:2] >= ( 2, 6 ):
-            warnings.filterwarnings( 'ignore', '.*', DeprecationWarning, '.*serial_number_generator', 11, True )
-            import galaxy.web.framework.middleware.error
-            warnings.filters.pop()
-        else:
-            import galaxy.web.framework.middleware.error
+        import galaxy.web.framework.middleware.error
         app = galaxy.web.framework.middleware.error.ErrorMiddleware( app, conf )
         log.debug( "Enabling 'error' middleware" )
     # Transaction logging (apache access.log style)
