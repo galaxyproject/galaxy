@@ -164,7 +164,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                 }
                 hda_dictionaries.append( return_val )
 
-        return trans.stream_template_mako( "root/alternate_history.mako",
+        return trans.stream_template_mako( "root/history.mako",
             history_dictionary = history_dictionary,
             hda_dictionaries = hda_dictionaries,
             show_deleted = show_deleted,
