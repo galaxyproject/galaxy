@@ -152,6 +152,25 @@ def pretty_print_xml( elem, level=0 ):
             elem.tail = i + pad
     return elem
 
+def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False ):
+    if len( value ) > size:
+        len_join_by = len( join_by )
+        min_size = len_join_by + 2
+        if size < min_size:
+            if beginning_on_size_error:
+                return value[:size]
+            elif end_on_size_error:
+                return value[-size:]
+            raise ValueError( 'With the provided join_by value (%s), the minimum size value is %i.' % ( join_by, min_size ) )
+        left_index = right_index = int( ( size - len_join_by ) / 2 )
+        if left_index + right_index + len_join_by < size:
+            if left_larger:
+                left_index += 1
+            else:
+                right_index += 1
+        value = "%s%s%s" % ( value[:left_index], join_by, value[-right_index:] )
+    return value
+
 # characters that are valid
 valid_chars  = set(string.letters + string.digits + " -=_.()/+*^,:?!")
 

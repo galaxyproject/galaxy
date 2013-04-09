@@ -34,6 +34,9 @@ log = logging.getLogger( __name__ )
 # and should eventually become API'd
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
 
+DATABASE_MAX_STRING_SIZE = 32768
+DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
+
 class Sleeper( object ):
     """
     Provides a 'sleep' method that sleeps for a number of seconds *unless*
@@ -774,13 +777,13 @@ class JobWrapper( object ):
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
             # (not duplicated with the finish method).
-            if ( len( stdout ) > 32768 ):
-                stdout = stdout[:32768]
-                log.info( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
+            if ( len( stdout ) > DATABASE_MAX_STRING_SIZE ):
+                stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                log.info( "stdout for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
             job.stdout = stdout
-            if ( len( stderr ) > 32768 ):
-                stderr = stderr[:32768]
-                log.info( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
+            if ( len( stderr ) > DATABASE_MAX_STRING_SIZE ):
+                stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
             job.stderr = stderr
             # Let the exit code be Null if one is not provided:
             if ( exit_code != None ):
@@ -998,12 +1001,12 @@ class JobWrapper( object ):
         # will now be seen by the user.
         self.sa_session.flush()
         # Save stdout and stderr
-        if len( job.stdout ) > 32768:
-            log.info( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
-        job.stdout = job.stdout[:32768]
-        if len( job.stderr ) > 32768:
-            log.info( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
-        job.stderr = job.stderr[:32768]
+        if len( job.stdout ) > DATABASE_MAX_STRING_SIZE:
+            log.info( "stdout for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        job.stdout = util.shrink_string_by_size( job.stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+        if len( job.stderr ) > DATABASE_MAX_STRING_SIZE:
+            log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        job.stderr = util.shrink_string_by_size( job.stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
         # is either incorrect or has the wrong semantics.
@@ -1652,12 +1655,12 @@ class TaskWrapper(JobWrapper):
             task.state = task.states.ERROR
 
         # Save stdout and stderr
-        if len( stdout ) > 32768:
-            log.error( "stdout for task %d is greater than 32K, only first part will be logged to database" % task.id )
-        task.stdout = stdout[:32768]
-        if len( stderr ) > 32768:
-            log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" % task.id )
-        task.stderr = stderr[:32768]
+        if len( stdout ) > DATABASE_MAX_STRING_SIZE:
+            log.error( "stdout for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        task.stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+        if len( stderr ) > DATABASE_MAX_STRING_SIZE:
+            log.error( "stderr for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        task.stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         task.exit_code = tool_exit_code
         task.command_line = self.command_line
         self.sa_session.flush()
