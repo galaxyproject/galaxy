@@ -382,6 +382,15 @@ class UsesHistoryDatasetAssociationMixin:
 
         return trans.security.encode_dict_ids( hda_dict )
 
+    def get_hda_dict_with_error( self, trans, hda, error_msg='' ):
+        return trans.security.encode_dict_ids({
+            'id'        : hda.id,
+            'history_id': hda.history.id,
+            'hid'       : hda.hid,
+            'name'      : hda.name,
+            'error'     : error_msg
+        })
+
     def get_display_apps( self, trans, hda ):
         #TODO: make more straightforward (somehow)
         display_apps = []

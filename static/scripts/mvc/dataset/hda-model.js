@@ -26,15 +26,14 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         history_id          : null,
         // often used with tagging
         model_class         : 'HistoryDatasetAssociation',
-        // index within history (??)
         hid                 : 0,
         
         // ---whereas these are Dataset related/inherited
 
-        id                  : null, 
+        id                  : null,
         name                : '(unnamed dataset)',
         // one of HistoryDatasetAssociation.STATES
-        state               : 'ok',
+        state               : 'new',
         // sniffed datatype (sam, tabular, bed, etc.)
         data_type           : null,
         // size in bytes
@@ -44,13 +43,12 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         // array of associated file types (eg. [ 'bam_index', ... ])
         meta_files          : [],
 
-        misc_blurb          : '', 
+        misc_blurb          : '',
         misc_info           : '',
 
-        deleted             : false, 
+        deleted             : false,
         purged              : false,
-        // aka. !hidden (start hidden)
-        visible             : false,
+        visible             : true,
         // based on trans.user (is_admin or security_agent.can_access_dataset( <user_roles>, hda.dataset ))
         accessible          : true
     },

@@ -67,8 +67,11 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             // handle errors in initialHdas
             //TODO: errors from the api shouldn't be plain strings...
             //TODO: remove when mappers and hda_dict are unified (or move to alt history)
-            } else if( _.isString( initialHdas ) && ( initialHdas.match( /error/i ) ) ){
-                alert( _l( 'Error loading bootstrapped history' ) + ':\n' + initialHdas );
+            } else if( _.isString( initialHdas ) ){
+                this.log( 'error in initialHdas: ', initialHdas );
+                Galaxy.show_modal( _l( 'Error loading datasets for history' ), initialHdas,
+                    { 'Ok': function(){ Galaxy.hide_modal(); } } );
+                //TODO: retry (via ajax), report
             }
         }
 

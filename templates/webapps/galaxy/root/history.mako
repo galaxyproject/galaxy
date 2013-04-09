@@ -174,33 +174,12 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 ${ unquote_plus( h.to_json_string( url_dict ) ) }
 </%def>
 
-## -----------------------------------------------------------------------------
-<%def name="get_history_json( history )">
-<%
-    try:
-        return h.to_json_string( history )
-    except TypeError, type_err:
-        log.error( 'Could not serialize history' )
-        log.debug( 'history data: %s', str( history ) )
-        return '{}'
-%>
-</%def>
 
+## -----------------------------------------------------------------------------
 <%def name="get_current_user()">
 <%
     user_json = trans.webapp.api_controllers[ 'users' ].show( trans, 'current' )
     return user_json
-%>
-</%def>
-
-<%def name="get_hda_json( hdas )">
-<%
-    try:
-        return h.to_json_string( hdas )
-    except TypeError, type_err:
-        log.error( 'Could not serialize hdas for history: %s', history['id'] )
-        log.debug( 'hda data: %s', str( hdas ) )
-        return '{}'
 %>
 </%def>
 
@@ -242,6 +221,10 @@ ${h.js(
 )}
     
 <script type="text/javascript">
+function modalAsAlert( title, body, buttons ){
+    alert( title + ':\n' + body );
+}
+
 function galaxyPageSetUp(){
     // moving global functions, objects into Galaxy namespace
     top.Galaxy                  = top.Galaxy || {};
@@ -258,8 +241,8 @@ function galaxyPageSetUp(){
     top.Galaxy.$rightPanel      = top.Galaxy.$rightPanel    || $( top.document ).find( 'div#right' );
 
     //modals
-    top.Galaxy.show_modal       = top.show_modal;
-    top.Galaxy.hide_modal       = top.hide_modal;
+    top.Galaxy.show_modal       = top.show_modal || modalAsAlert;
+    top.Galaxy.hide_modal       = top.hide_modal || function(){};
 
     // other base functions
 
@@ -288,6 +271,7 @@ $(function(){
     //  1. load history panel in own tab
     //  2. from console: new PersistantStorage( '__history_panel' ).set( 'debugging', true )
     //  -> history panel and hdas will display console logs in console
+
     var debugging = false;
     if( jQuery.jStorage.get( '__history_panel' ) ){
         debugging = new PersistantStorage( '__history_panel' ).get( 'debugging' );
@@ -299,29 +283,35 @@ $(function(){
     var page_show_deleted = ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
         page_show_hidden  = ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) },
 
-        user    = ${ get_current_user() },
-        history = ${ get_history_json( history_dictionary ) },
-        hdas    = ${ get_hda_json( hda_dictionaries ) };
+        userJson    = ${ get_current_user() },
+        historyJson = ${ history_json },
+        hdaJson     = ${ hda_json };
+
+    // set up messages passed in
+    %if message:
+    historyJson.message = "${_( message )}"; historyJson.status = "${status}";
+    %endif
 
     // add user data to history
     // i don't like this history+user relationship, but user authentication changes views/behaviour
-    history.user = user;
+    historyJson.user = userJson;
 
     // create the history panel
+    var history = new History( historyJson, hdaJson );
     var historyPanel = new HistoryPanel({
-        model           : new History( history, hdas ),
-        urlTemplates    : galaxy_paths.attributes,
-        logger          : ( debugging )?( console ):( null ),
-        // is page sending in show settings? if so override history's
-        show_deleted    : page_show_deleted,
-        show_hidden     : page_show_hidden
-    });
+            model           : history,
+            urlTemplates    : galaxy_paths.attributes,
+            logger          : ( debugging )?( console ):( null ),
+            // is page sending in show settings? if so override history's
+            show_deleted    : page_show_deleted,
+            show_hidden     : page_show_hidden
+        });
     historyPanel.render();
 
     // set it up to be accessible across iframes
     //TODO:?? mem leak
     top.Galaxy.currHistoryPanel = historyPanel;
-    var currUser = new User( user );
+    var currUser = new User( userJson );
     if( !Galaxy.currUser ){ Galaxy.currUser = currUser; }
 
     // QUOTA METER is a cross-frame ui element (meter in masthead, over quota message in history)
@@ -451,19 +441,25 @@ $(function(){
     )}
     <style>
         ## TODO: move to base.less
-        .historyItemBody {
-            display: none;
+        /*---- page level */
+        .warningmessagesmall {
+            margin: 8px 0 0 0;
+        }
+        #message-container {
+            margin: 8px 0 0 0;
+        }
+        #message-container [class$="message"] {
+            margin: 0px;
         }
 
+        /*---- history level */
         #history-controls {
-            /*border: 1px solid white;*/
             margin-bottom: 5px;
             padding: 5px;
         }
 
         #history-title-area {
             margin: 0px 0px 5px 0px;
-            /*border: 1px solid red;*/
         }
         #history-name {
             word-wrap: break-word;
@@ -477,7 +473,6 @@ $(function(){
             width: 90%;
             margin: -2px 0px -3px -4px;
             font-weight: bold;
-            /*color: gray;*/
         }
 
         #quota-message-container {
@@ -488,14 +483,12 @@ $(function(){
         }
 
         #history-subtitle-area {
-            /*border: 1px solid green;*/
         }
         #history-size {
         }
         #history-secondary-links {
         }
 
-        /*why this is getting underlined is beyond me*/
         #history-secondary-links #history-refresh {
             text-decoration: none;
         }
@@ -506,6 +499,19 @@ $(function(){
 
         #history-tag-area, #history-annotation-area {
             margin: 10px 0px 10px 0px;
+        }
+
+        /*---- HDA level */
+        .historyItem div.errormessagesmall {
+            font-size: small;
+            margin: 0px 0px 4px 0px;
+        }
+        .historyItem div.warningmessagesmall {
+            font-size: small;
+            margin: 0px 0px 4px 0px;
+        }
+        .historyItemBody {
+            display: none;
         }
 
         .historyItemTitle {

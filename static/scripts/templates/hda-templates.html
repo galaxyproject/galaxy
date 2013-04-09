@@ -1,5 +1,12 @@
 <!-- ---------------------------------------------------------------------- WARNING BOXES -->
 <script type="text/template" class="template-hda" id="template-hda-warning-messages">
+{{#if error}}
+<div class="errormessagesmall">
+    {{#local}}There was an error getting the data for this dataset{{/local}}:
+    {{#local}}{{error}}{{/local}}
+</div>
+{{/if}}
+
 {{#if deleted}}{{#unless purged}}
 {{#warningmessagesmall}}
     {{#local}}This dataset has been deleted.{{/local}}
