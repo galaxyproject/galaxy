@@ -1920,6 +1920,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
                      deleted = ldda.deleted,
                      visible = ldda.visible,
                      state = ldda.state,
+                     library_dataset_id = ldda.library_dataset_id,
                      file_size = file_size,
                      file_name = ldda.file_name,
                      data_type = ldda.ext,
@@ -1930,6 +1931,7 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
             rval['uuid'] = None
         else:
             rval['uuid'] = str(ldda.dataset.uuid)
+        rval['parent_library_id'] = ldda.library_dataset.folder.parent_library.id
         if ldda.extended_metadata is not None:
             rval['extended_metadata'] = ldda.extended_metadata.data
         for name, spec in ldda.metadata.spec.items():

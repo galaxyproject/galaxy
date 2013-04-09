@@ -99,7 +99,7 @@ class ViewQueryBaseClass(object):
                 field = self.FIELDS[left_base]
                 if field.sqlalchemy_field is not None:
                     if operator == "=":
-                        print field.sqlalchemy_field == right, field.sqlalchemy_field, right 
+                        #print field.sqlalchemy_field == right, field.sqlalchemy_field, right 
                         self.query = self.query.filter( field.sqlalchemy_field == right )
                     elif operator == "like":
                         self.query = self.query.filter( field.sqlalchemy_field.like(right) )
@@ -140,7 +140,7 @@ def library_extended_metadata_filter(view, left, operator, right):
         view.state['extended_metadata_joined'] = True
     alias = aliased( ExtendedMetadataIndex )
     field = "/%s" % ("/".join(left.split(".")[1:]))
-    print "FIELD", field
+    #print "FIELD", field
     view.query = view.query.filter( 
         and_( 
             ExtendedMetadata.id == alias.extended_metadata_id, 
@@ -148,6 +148,13 @@ def library_extended_metadata_filter(view, left, operator, right):
             alias.value == str(right) 
         )
     )
+
+def ldda_parent_library_filter(item, left, operator, right):
+    if operator == '=':
+        return right == item.library_dataset.folder.parent_library.id
+    elif operator == '!=':
+        return right != item.library_dataset.folder.parent_library.id
+    raise GalaxyParseError("Invalid comparison operator: %s" % (operator))
 
 
 class LibraryDatasetDatasetView(ViewQueryBaseClass):
@@ -157,6 +164,7 @@ class LibraryDatasetDatasetView(ViewQueryBaseClass):
         'name' : ViewField('name', sqlalchemy_field=LibraryDatasetDatasetAssociation.name ),
         'id' : ViewField('id', sqlalchemy_field=LibraryDatasetDatasetAssociation.id, id_decode=True),
         'deleted' : ViewField('deleted', sqlalchemy_field=LibraryDatasetDatasetAssociation.deleted),
+        'parent_library_id' : ViewField('parent_library_id', id_decode=True, post_filter=ldda_parent_library_filter),
     }
 
     def search(self, trans):
