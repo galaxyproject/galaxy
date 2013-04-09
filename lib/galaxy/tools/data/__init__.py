@@ -55,7 +55,7 @@ class ToolDataTableManager( object ):
                 self.data_table_elem_names.append( table_elem_name )
                 if from_shed_config:
                     self.shed_data_table_elems.append( table_elem )
-            table = tool_data_table_types[ type ]( table_elem, tool_data_path )
+            table = tool_data_table_types[ type ]( table_elem, tool_data_path, from_shed_config)
             if table.name not in self.data_tables:
                 self.data_tables[ table.name ] = table
                 log.debug( "Loaded tool data table '%s'", table.name )
@@ -132,7 +132,7 @@ class ToolDataTableManager( object ):
         os.chmod( full_path, 0644 )
     
 class ToolDataTable( object ):
-    def __init__( self, config_element, tool_data_path ):
+    def __init__( self, config_element, tool_data_path, from_shed_config = False):
         self.name = config_element.get( 'name' )
         self.comment_char = config_element.get( 'comment_char' )
         self.empty_field_value = config_element.get( 'empty_field_value', '' )
@@ -164,11 +164,11 @@ class TabularToolDataTable( ToolDataTable ):
     
     type_key = 'tabular'
     
-    def __init__( self, config_element, tool_data_path ):
-        super( TabularToolDataTable, self ).__init__( config_element, tool_data_path )
-        self.configure_and_load( config_element, tool_data_path )
+    def __init__( self, config_element, tool_data_path, from_shed_config = False):
+        super( TabularToolDataTable, self ).__init__( config_element, tool_data_path, from_shed_config)
+        self.configure_and_load( config_element, tool_data_path, from_shed_config)
 
-    def configure_and_load( self, config_element, tool_data_path ):
+    def configure_and_load( self, config_element, tool_data_path, from_shed_config = False):
         """
         Configure and load table from an XML element.
         """
@@ -180,7 +180,9 @@ class TabularToolDataTable( ToolDataTable ):
         all_rows = []
         for file_element in config_element.findall( 'file' ):
             found = False
-            if tool_data_path:
+            if tool_data_path and from_shed_config:
+                # Must identify with from_shed_config as well, because the
+                # regular galaxy app has and uses tool_data_path.
                 # We're loading a tool in the tool shed, so we cannot use the Galaxy tool-data
                 # directory which is hard-coded into the tool_data_table_conf.xml entries.
                 filepath = file_element.get( 'path' )
