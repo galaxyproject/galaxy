@@ -156,8 +156,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                 show_deleted=True, show_hidden=True, show_purged=True )
             for hda in hdas:
                 try:
-                    if hda.id >= 1058:
-                        raise Exception( 'Bler blah bler' )
                     hda_dictionaries.append( self.get_hda_dict( trans, hda ) )
 
                 except Exception, exc:
