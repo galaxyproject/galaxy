@@ -227,7 +227,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
  * creating the view so that scrolling event can be attached
  * to the correct container.
  */
-var BedDatasetChunkedView = TabularDatasetChunkedView.extend(
+var TabularDatasetChunkedViewWithButton = TabularDatasetChunkedView.extend(
 {
     // gene region columns
     col: {
@@ -242,13 +242,20 @@ var BedDatasetChunkedView = TabularDatasetChunkedView.extend(
     // dataset id
     dataset_id  : null,
 
+    // database key
+    genome_build: null,
+
+    get_type : function(obj) {
+        return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
+    },
+
     // backbone initialize
     initialize: function (options)
     {
         // verify that metadata exists
         var metadata = options.model.attributes.metadata.attributes;
         if (typeof metadata.chromCol === "undefined" || typeof metadata.startCol === "undefined" || typeof metadata.endCol === "undefined")
-            console.log("BedDatasetChunkedView:initialize() : Metadata for column identification is missing.");
+            console.log("TabularDatasetChunkedViewWithButton : Metadata for column identification is missing.");
         else
         {
             // read in columns
@@ -257,17 +264,25 @@ var BedDatasetChunkedView = TabularDatasetChunkedView.extend(
             this.col.end     = metadata.endCol - 1;
         }
         
+        // check
+        if(this.col.chrom == null)
+            return;
+     
         // get dataset id
         if (typeof options.model.attributes.id === "undefined")
-            console.log("BedDatasetChunkedView:initialize() : Dataset identification is missing.");
+            console.log("TabularDatasetChunkedViewWithButton : Dataset identification is missing.");
         else
             this.dataset_id = options.model.attributes.id;
         
         // get url
         if (typeof options.model.attributes.url_viz === "undefined")
-            console.log("BedDatasetChunkedView:initialize() : Url for visualization controller is missing.");
+            console.log("TabularDatasetChunkedViewWithButton : Url for visualization controller is missing.");
         else
             this.url_viz = options.model.attributes.url_viz;
+
+        // get genome_build / database key
+        if (typeof options.model.attributes.genome_build !== "undefined")
+            this.genome_build = options.model.attributes.genome_build;
     },
 
     // backbone events
@@ -280,19 +295,21 @@ var BedDatasetChunkedView = TabularDatasetChunkedView.extend(
     // show button
     btn_viz_show: function (e)
     {
+        // check
+        if(this.col.chrom == null)
+            return;
+            
         // get selected data line
         var row = $(e.target).parent();
            
         // get target gene region
         var btn_viz_pars = {
                 dataset_id  : this.dataset_id,
-                chrom       : row.children().eq(this.col.chrom).html(),
-                start       : row.children().eq(this.col.start).html(),
-                end         : row.children().eq(this.col.end).html()
+                gene_region : row.children().eq(this.col.chrom).html() + ":" + row.children().eq(this.col.start).html() + "-" + row.children().eq(this.col.end).html()
         };
         
         // verify that location has been found
-        if (btn_viz_pars.chrom != "")
+        if (row.children().eq(this.col.chrom).html() != "")
         {
             // get button position
             var offset = row.offset();
@@ -301,8 +318,9 @@ var BedDatasetChunkedView = TabularDatasetChunkedView.extend(
 
             // update css
             $('#btn_viz').css({'position': 'fixed', 'top': top + 'px', 'left': left + 'px'});
-            $('#btn_viz').attr('href', "javascript:window.parent.location.href = '" + this.url_viz + "/trackster?" + $.param(btn_viz_pars) + "';");
-        
+            $('#btn_viz').off('click');
+            $('#btn_viz').click(this.create_trackster_action(this.url_viz, btn_viz_pars, this.genome_build));
+
             // show the button
             $('#btn_viz').show();
         }
@@ -315,6 +333,59 @@ var BedDatasetChunkedView = TabularDatasetChunkedView.extend(
         $('#btn_viz').hide();
     },
     
+    
+    // create action
+    create_trackster_action_new : function (vis_url, dataset_params, dbkey)
+    {
+        return function () {
+            window.parent.location.href = vis_url + "/trackster?" + $.param(dataset_params);
+        }
+    },
+    
+    // create action
+    create_trackster_action : function (vis_url, dataset_params, dbkey) {
+        return function() {
+            var listTracksParams = {};
+            if (dbkey){
+                // list_tracks seems to use 'f-dbkey' (??)
+                listTracksParams[ 'f-dbkey' ] = dbkey;
+            }
+            $.ajax({
+                url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
+                dataType: "html",
+                error: function() { alert( ( "Could not add this dataset to browser" ) + '.' ); },
+                success: function(table_html) {
+                    var parent = window.parent;
+
+                    parent.show_modal( ( "View Data in a New or Saved Visualization" ), "", {
+                        "Cancel": function() {
+                            parent.hide_modal();
+                        },
+                        "View in saved visualization": function() {
+                            // Show new modal with saved visualizations.
+                            parent.show_modal( ( "Add Data to Saved Visualization" ), table_html, {
+                                "Cancel": function() {
+                                    parent.hide_modal();
+                                },
+                                "Add to visualization": function() {
+                                    $(parent.document).find('input[name=id]:checked').each(function() {
+                                        var vis_id = $(this).val();
+                                        dataset_params.id = vis_id;
+                                        parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                                    });
+                                }
+                            });
+                        },
+                        "View in new visualization": function() {
+                            parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                        }
+                    });
+                }
+            });
+            return false;
+        };
+    },
+
     // render frame
     render: function()
     {
@@ -333,7 +404,7 @@ var BedDatasetChunkedView = TabularDatasetChunkedView.extend(
         
         // call parent render
         TabularDatasetChunkedView.prototype.render.call(this);
-    }
+    }    
 });
 
 // -- Utility functions. --
@@ -364,20 +435,11 @@ var createTabularDatasetChunkedView = function(dataset_config, parent_elt) {
     // Create view element and add to parent.
     var view_div = $('<div/>').appendTo(parent_elt);
 
-    // Create view with model, render, and return.
-    if (dataset_config.data_type == 'bed')
-        // bed datatype viewer
-        return new BedDatasetChunkedView({
-            el: view_div,
-            model: new TabularDataset(dataset_config)
-        }).render();
-    else
-        // default viewer
-        return new TabularDatasetChunkedView({
-            el: view_div,
-            model: new TabularDataset(dataset_config)
-        }).render();
-       
+    // default viewer
+    return new TabularDatasetChunkedViewWithButton({
+        el: view_div,
+        model: new TabularDataset(dataset_config)
+    }).render();
 };
 
 return {
@@ -385,7 +447,6 @@ return {
     TabularDataset: TabularDataset,
 	DatasetCollection: DatasetCollection,
     TabularDatasetChunkedView: TabularDatasetChunkedView,
-    BedDatasetChunkedView: BedDatasetChunkedView,
     createTabularDatasetChunkedView: createTabularDatasetChunkedView
 };
 
