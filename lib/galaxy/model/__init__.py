@@ -16,6 +16,7 @@ from galaxy.security import get_permitted_actions
 from galaxy import util
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
+from galaxy.web.framework.helpers import to_unicode
 from galaxy.web.form_builder import (AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField,
                                     WorkflowField, WorkflowMappingField, HistoryField)
 from galaxy.model.item_attrs import UsesAnnotations, APIItem
@@ -574,8 +575,8 @@ class UserGroupAssociation( object ):
         self.group = group
 
 class History( object, UsesAnnotations ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name' )
+    api_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
+    api_element_visible_keys = ( 'id', 'name', 'published', 'deleted' )
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
         self.name = name or "Unnamed history"
@@ -692,6 +693,14 @@ class History( object, UsesAnnotations ):
                     rval[key] = value_mapper.get( key )( rval[key] )
             except AttributeError:
                 rval[key] = None
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        rval['tags'] = tags_str_list
+        rval['model_class'] = self.__class__.__name__
         return rval
     @property
     def get_disk_size_bytes( self ):
@@ -920,7 +929,10 @@ class Dataset( object ):
         return self.object_store.get_filename( self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id )
     def _calculate_size( self ):
         if self.external_filename:
-            return os.path.getsize(self.external_filename)
+            try:
+                return os.path.getsize(self.external_filename)
+            except OSError:
+                return 0
         else:
             return self.object_store.size(self)
     def get_size( self, nice_size=False ):
@@ -1517,7 +1529,6 @@ class HistoryDatasetAssociation( DatasetInstance ):
         hda = self
         rval = dict( id = hda.id,
                      uuid = ( lambda uuid: str( uuid ) if uuid else None )( hda.dataset.uuid ),
-                     history_id = hda.history.id,
                      hid = hda.hid,
                      file_ext = hda.ext,
                      peek = ( lambda hda: hda.display_peek() if hda.peek and hda.peek != 'no peek' else None )( hda ),
@@ -1532,6 +1543,11 @@ class HistoryDatasetAssociation( DatasetInstance ):
                      genome_build = hda.dbkey,
                      misc_info = hda.info,
                      misc_blurb = hda.blurb )
+
+        if hda.history is not None:
+            rval['history_id'] = hda.history.id,
+
+        rval[ 'peek' ] = to_unicode( hda.display_peek() )
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
@@ -1557,7 +1573,7 @@ class HistoryDatasetAssociationSubset( object ):
 class Library( object, APIItem ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'name', 'description', 'synopsis' )
+    api_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis' )
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
         self.description = description
@@ -1624,7 +1640,7 @@ class Library( object, APIItem ):
         return name
 
 class LibraryFolder( object, APIItem ):
-    api_element_visible_keys = ( 'id', 'name', 'description', 'item_count', 'genome_build' )
+    api_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description
@@ -1704,7 +1720,17 @@ class LibraryFolder( object, APIItem ):
             else:
                 template = info_association.template
             rval['data_template'] = template.name
+        rval['library_path'] = self.library_path
+        rval['parent_library_id'] = self.parent_library.id
         return rval
+    @property
+    def library_path(self):
+        l_path = []
+        f = self
+        while f.parent:
+            l_path.insert(0, f.name)
+            f = f.parent        
+        return l_path
     @property
     def parent_library( self ):
         f = self
@@ -1767,6 +1793,7 @@ class LibraryDataset( object ):
 
         rval = dict( id = self.id,
                      ldda_id = ldda.id,
+                     folder_id = self.folder_id,
                      model_class = self.__class__.__name__,
                      name = ldda.name,
                      file_name = ldda.file_name,
@@ -1880,6 +1907,44 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         if restrict:
             return None, inherited
         return self.library_dataset.folder.get_info_association( inherited=True )
+    def get_api_value( self, view='collection' ):
+        # Since this class is a proxy to rather complex attributes we want to
+        # display in other objects, we can't use the simpler method used by
+        # other model classes.
+        ldda = self
+        try:
+            file_size = int( ldda.get_size() )
+        except OSError:
+            file_size = 0
+        rval = dict( id = ldda.id,
+                     model_class = self.__class__.__name__,
+                     name = ldda.name,
+                     deleted = ldda.deleted,
+                     visible = ldda.visible,
+                     state = ldda.state,
+                     library_dataset_id = ldda.library_dataset_id,
+                     file_size = file_size,
+                     file_name = ldda.file_name,
+                     data_type = ldda.ext,
+                     genome_build = ldda.dbkey,
+                     misc_info = ldda.info,
+                     misc_blurb = ldda.blurb )
+        if ldda.dataset.uuid is None:
+            rval['uuid'] = None
+        else:
+            rval['uuid'] = str(ldda.dataset.uuid)
+        rval['parent_library_id'] = ldda.library_dataset.folder.parent_library.id
+        if ldda.extended_metadata is not None:
+            rval['extended_metadata'] = ldda.extended_metadata.data
+        for name, spec in ldda.metadata.spec.items():
+            val = ldda.metadata.get( name )
+            if isinstance( val, MetadataFile ):
+                val = val.file_name
+            # If no value for metadata, look in datatype for metadata.
+            elif val == None and hasattr( ldda.datatype, name ):
+                val = getattr( ldda.datatype, name )
+            rval['metadata_' + name] = val
+        return rval
     def get_template_widgets( self, trans, get_contents=True ):
         # See if we have any associated templatesThe get_contents
         # param is passed by callers that are inheriting a template - these
@@ -2069,8 +2134,8 @@ class UCI( object ):
         self.user = None
 
 class StoredWorkflow( object, APIItem):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name' )
+    api_collection_visible_keys = ( 'id', 'name', 'published' )
+    api_element_visible_keys = ( 'id', 'name', 'published' )
     def __init__( self ):
         self.id = None
         self.user = None
@@ -2085,6 +2150,18 @@ class StoredWorkflow( object, APIItem):
             new_swta = src_swta.copy()
             new_swta.user = target_user
             self.tags.append(new_swta)
+
+    def get_api_value( self, view='collection', value_mapper = None  ):
+        rval = APIItem.get_api_value(self, view=view, value_mapper = value_mapper)
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        rval['tags'] = tags_str_list
+        return rval
+
 
 class Workflow( object ):
     def __init__( self ):
@@ -3428,7 +3505,8 @@ class ToolDependency( object ):
                                  self.tool_shed_repository.name,
                                  self.tool_shed_repository.installed_changeset_revision )
 
-class ToolVersion( object ):
+class ToolVersion( object, APIItem ):
+    api_element_visible_keys = ( 'id', 'tool_shed_repository' )
     def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):
         self.id = id
         self.create_time = create_time
@@ -3484,6 +3562,15 @@ class ToolVersion( object ):
                 version_ids.insert( 0, tool_version.tool_id )
             return version_ids
         return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
+
+    def get_api_value( self, view='element' ):
+        rval = APIItem.get_api_value(self, view)
+        rval['tool_name'] = self.tool_id
+        for a in self.parent_tool_association:
+            rval['parent_tool_id'] = a.parent_id
+        for a in self.child_tool_association:
+            rval['child_tool_id'] = a.tool_id
+        return rval
 
 class ToolVersionAssociation( object ):
     def __init__( self, id=None, tool_id=None, parent_id=None ):

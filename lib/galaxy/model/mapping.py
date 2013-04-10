@@ -1793,7 +1793,14 @@ assign_mapper( context, RepositoryDependency, RepositoryDependency.table,
 
 assign_mapper( context, ToolDependency, ToolDependency.table )
 
-assign_mapper( context, ToolVersion, ToolVersion.table )
+assign_mapper( context, ToolVersion, ToolVersion.table,
+    properties=dict( 
+        parent_tool_association=relation( ToolVersionAssociation,
+            primaryjoin=( ToolVersion.table.c.id == ToolVersionAssociation.table.c.tool_id ) ),
+        child_tool_association=relation( ToolVersionAssociation,
+            primaryjoin=( ToolVersion.table.c.id == ToolVersionAssociation.table.c.parent_id ) )
+    )
+ )
 
 assign_mapper( context, ToolVersionAssociation, ToolVersionAssociation.table )
 
