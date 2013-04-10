@@ -212,7 +212,7 @@ def main():
 
     # ---- Run tool shed webserver ------------------------------------------------------
     tool_shed_server = None
-    toolshedwebapp = toolshedbuildapp.app_factory( dict( database_file=toolshed_database_connection ),
+    toolshedwebapp = toolshedbuildapp.app_factory( dict( database_connection=toolshed_database_connection ),
                                            use_translogger=False,
                                            static_enabled=False,
                                            app=toolshedapp )

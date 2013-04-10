@@ -1,9 +1,13 @@
 import logging
 import urllib2
-from galaxy.util import json
+
+from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
+
 from galaxy import util
 from galaxy import web
+from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
+
 from tool_shed.galaxy_install import repository_util
 from tool_shed.util import common_util
 import tool_shed.util.shed_util_common as suc
@@ -140,7 +144,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         except Exception, e:
             message = "Error attempting to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
-                ( str( tool_shed_url ), str( name ), str( owner ), str( changeset_revision ), str( e ) )
+                ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return dict( status='error', error=message )
@@ -151,7 +155,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
             repo_info_dict = items[ 2 ]
         else:
             message = "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
-                ( str( tool_shed_url ), str( name ), str( owner ), str( changeset_revision ) )
+                ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
             log.error( message, exc_info=True )
             trans.response.status = 500
             return dict( status='error', error=message )
@@ -181,6 +185,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         if shed_tool_conf:
             # Get the tool_path setting.
             index, shed_conf_dict = suc.get_shed_tool_conf_dict( trans.app, shed_tool_conf )
+            # BUG, FIXME: Shed config dict does not exist in this context
             tool_path = shed_config_dict[ 'tool_path' ]
         else:
             # Pick a semi-random shed-related tool panel configuration file and get the tool_path setting.
@@ -270,11 +275,13 @@ class ToolShedRepositoriesController( BaseAPIController ):
         It's questionable whether this method is needed as the above method for installing a single repository can probably cover all
         desired scenarios.  We'll keep this one around just in case...
         
+        :param key: the current Galaxy admin user's API key
+        
+        The following parameters are included in the payload.
         :param tool_shed_urls: the base URLs of the Tool Sheds from which to install a specified Repository
         :param names: the names of the Repositories to be installed
         :param owners: the owners of the Repositories to be installed
         :param changset_revisions: the changset_revisions of each RepositoryMetadata object associated with each Repository to be installed
-        :param key: the current Galaxy admin user's API key
         :param new_tool_panel_section_label: optional label of a new section to be added to the Galaxy tool panel in which to load
                                              tools contained in the Repository.  Either this parameter must be an empty string or
                                              the tool_panel_section_id parameter must be an empty string, as both cannot be used.
@@ -282,6 +289,16 @@ class ToolShedRepositoriesController( BaseAPIController ):
                                       If not set, tools will be loaded outside of any sections in the tool panel.  Either this
                                       parameter must be an empty string or the tool_panel_section_id parameter must be an empty string,
                                       as both cannot be used.
+        :param install_repository_dependencies (optional): Set to True if you want to install repository dependencies defined for the specified
+                                                           repository being installed.  The default setting is False.
+        :param install_tool_dependencies (optional): Set to True if you want to install tool dependencies defined for the specified repository being
+                                                     installed.  The default setting is False.
+        :param shed_tool_conf (optional): The shed-related tool panel configuration file configured in the "tool_config_file" setting in the Galaxy config file
+                                          (e.g., universe_wsgi.ini).  At least one shed-related tool panel config file is required to be configured. Setting
+                                          this parameter to a specific file enables you to choose where the specified repository will be installed because
+                                          the tool_path attribute of the <toolbox> from the specified file is used as the installation location
+                                          (e.g., <toolbox tool_path="../shed_tools">).  If this parameter is not set, a shed-related tool panel configuration
+                                          file will be selected automatically.
         """
         if not suc.have_shed_tool_conf_for_install( trans ):
             # This Galaxy instance is not configured with a shed-related tool panel configuration file.
@@ -311,7 +328,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
         # forcing all repositories to use the same settings.
         install_repository_dependencies = payload.get( 'install_repository_dependencies', False )
         install_tool_dependencies = payload.get( 'install_tool_dependencies', False )
-        new_tool_panel_section = payload.get( 'new_tool_panel_section_label', '' )
+        new_tool_panel_section_label = payload.get( 'new_tool_panel_section_label', '' )
         shed_tool_conf = payload.get( 'shed_tool_conf', None )
         tool_path = payload.get( 'tool_path', None )
         tool_panel_section_id = payload.get( 'tool_panel_section_id', '' )
@@ -322,12 +339,11 @@ class ToolShedRepositoriesController( BaseAPIController ):
             current_payload[ 'name' ] = names[ index ]
             current_payload[ 'owner' ] = owners[ index ]
             current_payload[ 'changeset_revision' ] = changeset_revisions[ index ]
+            current_payload[ 'new_tool_panel_section_label' ] = new_tool_panel_section_label
+            current_payload[ 'tool_panel_section_id' ] = tool_panel_section_id
             current_payload[ 'install_repository_dependencies' ] = install_repository_dependencies
             current_payload[ 'install_tool_dependencies' ] = install_tool_dependencies
-            current_payload[ 'new_tool_panel_section' ] = new_tool_panel_section
             current_payload[ 'shed_tool_conf' ] = shed_tool_conf
-            current_payload[ 'tool_path' ] = tool_path
-            current_payload[ 'tool_panel_section_id' ] = tool_panel_section_id
             installed_tool_shed_repositories = self.install_repository_revision( trans, **current_payload )
             if isinstance( installed_tool_shed_repositories, dict ):
                 # We encountered an error.

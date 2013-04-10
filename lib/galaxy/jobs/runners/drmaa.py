@@ -15,8 +15,6 @@ from galaxy import model
 from galaxy.jobs import JobDestination
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
 
-if sys.version_info[:2] == ( 2, 4 ):
-    eggs.require( "ctypes" )
 eggs.require( "drmaa" )
 # We foolishly named this file the same as the name exported by the drmaa
 # library... 'import drmaa' imports itself.

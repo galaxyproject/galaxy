@@ -332,6 +332,8 @@ class UsesHistoryDatasetAssociationMixin:
         return None
 
     def get_hda_dict( self, trans, hda ):
+        """Return full details of this HDA in dictionary form.
+        """
         hda_dict = hda.get_api_value( view='element' )
         history = hda.history
         hda_dict[ 'api_type' ] = "file"
@@ -341,9 +343,10 @@ class UsesHistoryDatasetAssociationMixin:
         can_access_hda = ( trans.user_is_admin() or can_access_hda )
         hda_dict[ 'accessible' ] = can_access_hda
 
-        # return here if deleted and purged or can't access
+        # ---- return here if deleted AND purged OR can't access
         purged = ( hda.purged or hda.dataset.purged )
         if ( hda.deleted and purged ) or not can_access_hda:
+            #TODO: get_api_value should really go AFTER this - only summary data
             return trans.security.encode_dict_ids( hda_dict )
 
         if trans.user_is_admin() or trans.app.config.expose_dataset_path:
@@ -353,6 +356,7 @@ class UsesHistoryDatasetAssociationMixin:
             history_id = trans.security.encode_id( history.id ),
             history_content_id = trans.security.encode_id( hda.id ) )
 
+        # indeces, assoc. metadata files, etc.
         meta_files = []
         for meta_type in hda.metadata.spec.keys():
             if isinstance( hda.metadata.spec[ meta_type ].param, FileParameter ):
@@ -360,14 +364,16 @@ class UsesHistoryDatasetAssociationMixin:
         if meta_files:
             hda_dict[ 'meta_files' ] = meta_files
 
-        hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
+        #hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
         #hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
         hda_dict[ 'visualizations' ] = hda.get_visualizations()
 
-        # return here if deleted
+        # ---- return here if deleted
         if hda.deleted and not purged:
             return trans.security.encode_dict_ids( hda_dict )
 
+        # if a tool declares 'force_history_refresh' in its xml, when the hda -> ready, reload the history panel
+        # expensive
         if( ( hda.state in [ 'running', 'queued' ] )
         and ( hda.creating_job and hda.creating_job.tool_id ) ):
             tool_used = trans.app.toolbox.get_tool( hda.creating_job.tool_id )
@@ -376,6 +382,15 @@ class UsesHistoryDatasetAssociationMixin:
 
         return trans.security.encode_dict_ids( hda_dict )
 
+    def get_hda_dict_with_error( self, trans, hda, error_msg='' ):
+        return trans.security.encode_dict_ids({
+            'id'        : hda.id,
+            'history_id': hda.history.id,
+            'hid'       : hda.hid,
+            'name'      : hda.name,
+            'error'     : error_msg
+        })
+
     def get_display_apps( self, trans, hda ):
         #TODO: make more straightforward (somehow)
         display_apps = []
@@ -383,7 +398,6 @@ class UsesHistoryDatasetAssociationMixin:
         def get_display_app_url( display_app_link, hda, trans ):
             web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
             dataset_hash, user_hash = da_util.encode_dataset_user( trans, hda, None )
-            return ''
             return web_url_for( controller='dataset',
                             action="display_application",
                             dataset_id=dataset_hash,
@@ -879,32 +893,21 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         """
         hda_model = trans.model.HistoryDatasetAssociation
 
-        # outer join with job output to get job_state or None
-        job_subq = ( trans.sa_session.query(
-                        trans.model.Job.id.label( 'job_id' ),
-                        trans.model.Job.state.label( 'job_state' ),
-                        trans.model.JobToOutputDatasetAssociation.dataset_id.label( 'hda_id' ) )
-                    .join( trans.model.JobToOutputDatasetAssociation ) ).subquery()
-
         # get state, name, etc.
         columns = ( hda_model.name, hda_model.hid, hda_model.id, hda_model.deleted,
-                    trans.model.Dataset.state,
-                    job_subq.c.job_state, job_subq.c.job_id )
-        column_keys = [ "name", "hid", "id", "deleted", "state", "job_state", "job_id" ]
+                    trans.model.Dataset.state )
+        column_keys = [ "name", "hid", "id", "deleted", "state" ]
 
         query = ( trans.sa_session.query( *columns )
                     .enable_eagerloads( False )
                     .filter( hda_model.history == history )
                     .join( trans.model.Dataset )
-                    .outerjoin(( job_subq, job_subq.c.hda_id == hda_model.id ))
                     .order_by( hda_model.hid ) )
 
         # build dictionaries, adding history id and encoding all ids
         hda_dicts = []
         for hda_tuple in query.all():
             hda_dict = dict( zip( column_keys, hda_tuple ) )
-            #if hda_dict[ 'job_state' ] not in [ None, 'ok' ]:
-            #    print hda_dict[ 'hid' ], hda_dict[ 'name' ], hda_dict[ 'job_state' ]
             hda_dict[ 'history_id' ] = history.id
             trans.security.encode_dict_ids( hda_dict )
             hda_dicts.append( hda_dict )
@@ -964,20 +967,6 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
         return state
 
-    def _are_jobs_still_running( self, trans, hda_summary_list ):
-        """Determine whether any jobs are running from the given
-        list of hda summary dictionaries.
-        """
-        job_states = trans.model.Job.states
-        def is_job_running( job_state ):
-            return ( ( job_state == job_states.NEW )
-                   or( job_state == job_states.UPLOAD )
-                   or( job_state == job_states.WAITING )
-                   or( job_state == job_states.QUEUED )
-                   or( job_state == job_states.RUNNING ) )
-
-        return len( filter( lambda hda: is_job_running( hda['job_state'] ), hda_summary_list ) )
-
     def get_history_dict( self, trans, history ):
         """Returns history data in the form of a dictionary.
         """
@@ -997,8 +986,6 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         history_dict[ 'state_details' ] = state_counts
         history_dict[ 'state_ids' ] = state_ids
         history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
-
-        history_dict[ 'jobs_running' ] = self._are_jobs_still_running( trans, hda_summaries )
 
         return history_dict
 

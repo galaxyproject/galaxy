@@ -3,8 +3,8 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
 -->
 <script type="text/template" class="template-history" id="template-history-historyPanel">
 <div id="history-controls">
-    <div id="history-title-area" class="historyLinks">
 
+    <div id="history-title-area" class="historyLinks">
         {{! history name (if any) }}
         <div id="history-name-container">
             {{! TODO: factor out conditional css }}
@@ -32,10 +32,6 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
         <div style="clear: both;"></div>
     </div>
 
-    {{#if deleted}}
-    {{#warningmessagesmall}}{{#local}}You are currently viewing a deleted history!{{/local}}{{/warningmessagesmall}}
-    {{/if}}
-
     {{! tags and annotations }}
     {{! TODO: move inline styles out }}
     {{#if user.email}}
@@ -62,13 +58,15 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
     </div>
     {{/if}}
 
-    {{#if message}}
-    <div id="message-container">
-        <div class="{{status}}message">
-        {{message}}
-        </div><br />
-    </div>
+    {{#if deleted}}
+    {{#warningmessagesmall}}{{#local}}You are currently viewing a deleted history!{{/local}}{{/warningmessagesmall}}
     {{/if}}
+
+    <div id="message-container">
+        {{#if message}}
+        <div class="{{status}}message">{{message}}</div>
+        {{/if}}
+    </div>
 
     <div id="quota-message-container" style="display: none">
         <div id="quota-message" class="errormessage">

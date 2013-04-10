@@ -1,14 +1,8 @@
 <%inherit file="/base.mako"/>
 
-<style>
-/* TODO: Move this block into base.less? base.css? Someone more familiar with GUI should move this. */
-.icon-button.link {background:url(../images/silk/link.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
-.icon-button.link-broken {background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
-</style>
-
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/jquery.autocomplete" )}
+    ${h.js( "libs/jquery/select2" )}
     <script type="text/javascript">
         $( function() {
             function show_tool_body(title){
@@ -40,12 +34,12 @@
                         select.val($('option:last', select).val());
                     }
                     select.closest('.form-row').children('label').children('span.mode-icon').hide();
-                    select.removeAttr('multiple').removeAttr('size');
+                    select.removeAttr('multiple').refresh_select2().removeAttr('size');
                     placeholder = 'type to filter';
                 } else {
                     $('.multiinput', select.closest('.form-row')).removeClass('disabled');
                     select.closest('.form-row').children('label').children('span.mode-icon').show();
-                    select.attr('multiple', 'multiple').attr('size', 8);
+                    select.attr('multiple', 'multiple').refresh_select2().attr('size', 8);
                     placeholder = 'type to filter, [enter] to select all';
                 }
                 $('input.multiinput-filter', select.parent()).attr(
@@ -79,7 +73,7 @@
             $("#new_history_cbx").click(function(){
                 $("#new_history_input").toggle(this.checked);
             });
-            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').each(function(i, s) {
+            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').refresh_select2().each(function(i, s) {
                 var select = $(s);
                 var new_width = Math.max(200, select.width()) + 20;
                 // Find the label for this element.

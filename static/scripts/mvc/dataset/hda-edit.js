@@ -57,7 +57,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 ajaxPromise.error( function( error, status, message ){
                     //TODO: Exception messages are hidden within error page
                     //!NOTE: that includes the 'Removal of datasets by users is not allowed in this Galaxy instance.'
-                    alert( '(' + error.status + ') Unable to purge this dataset:\n' + message );
+                    alert( '(' + error.status + ') ' + _l( 'Unable to purge this dataset' ) + ':\n' + error );
                 });
             });
         }
@@ -404,6 +404,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @see HDABaseView#_render_body_ok
      */
     _render_body_ok : function( parent ){
+        //TODO: should call super somehow and insert the needed...
         // most common state renderer and the most complicated
         parent.append( this._render_hdaSummary() );
 
@@ -434,7 +435,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         parent.append( this._render_tagArea() );
         parent.append( this._render_annotationArea() );
         
-        parent.append( this._render_displayApps() );
+        parent.append( this._render_displayAppArea() );
+        this._render_displayApps( parent );
         parent.append( this._render_peek() );
     },
 
@@ -454,7 +456,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //BUG: broken with latest
         //TODO: this is a drop in from history.mako - should use MV as well
         this.log( this + '.loadAndDisplayTags', event );
-        var tagArea = this.$el.find( '.tag-area' ),
+        var view = this,
+            tagArea = this.$el.find( '.tag-area' ),
             tagElt = tagArea.find( '.tag-elt' );
 
         // Show or hide tag area; if showing tag area and it's empty, fill it.
@@ -464,7 +467,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 $.ajax({
                     //TODO: the html from this breaks a couple of times
                     url: this.urls.tags.get,
-                    error: function() { alert( _l( "Tagging failed" ) ); },
+                    error: function( xhr, status, error ){
+                        view.log( "Tagging failed", xhr, status, error );
+                        view.trigger( 'error', _l( "Tagging failed" ), xhr, status, error );
+                    },
                     success: function(tag_elt_html) {
                         tagElt.html(tag_elt_html);
                         tagElt.find(".tooltip").tooltip();

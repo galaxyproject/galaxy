@@ -138,14 +138,15 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
     installed_repository_dependencies = {}
     has_repository_dependencies = repository.has_repository_dependencies
     if has_repository_dependencies:
+        # The repository dependencies container will include only the immediate repository dependencies of this repository, so the container
+        # will be only a single level in depth.
         metadata = repository.metadata
         installed_rd_tups = []
         missing_rd_tups = []
-        # The repository dependencies container will include only the immediate repository dependencies of this repository, so
-        # the container will be only a single level in depth.
-        for rd in repository.repository_dependencies:
-            rd_tup = [ rd.tool_shed, rd.name, rd.owner, rd.changeset_revision, rd.id, rd.status ]
-            if rd.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
+        for tsr in repository.repository_dependencies:
+            prior_installation_required = suc.set_prior_installation_required( repository, tsr )
+            rd_tup = [ tsr.tool_shed, tsr.name, tsr.owner, tsr.changeset_revision, prior_installation_required, tsr.id, tsr.status ]
+            if tsr.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
                 installed_rd_tups.append( rd_tup )
             else:
                missing_rd_tups.append( rd_tup )
@@ -153,12 +154,13 @@ def get_installed_and_missing_repository_dependencies( trans, repository ):
             # Get the description from the metadata in case it has a value.
             repository_dependencies = metadata.get( 'repository_dependencies', {} )
             description = repository_dependencies.get( 'description', None )
-            # We need to add a root_key entry to one or both of installed_repository_dependencies dictionary and the
-            # missing_repository_dependencies dictionary for proper display parsing.
+            # We need to add a root_key entry to one or both of installed_repository_dependencies dictionary and the missing_repository_dependencies
+            # dictionary for proper display parsing.
             root_key = container_util.generate_repository_dependencies_key_for_repository( repository.tool_shed,
                                                                                            repository.name,
                                                                                            repository.owner,
-                                                                                           repository.installed_changeset_revision )
+                                                                                           repository.installed_changeset_revision,
+                                                                                           prior_installation_required )
             if installed_rd_tups:
                 installed_repository_dependencies[ 'root_key' ] = root_key
                 installed_repository_dependencies[ root_key ] = installed_rd_tups
@@ -189,7 +191,7 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
             if key in [ 'description', 'root_key' ]:
                 continue
             for rd_tup in rd_tups:
-                tool_shed, name, owner, changeset_revision = rd_tup
+                tool_shed, name, owner, changeset_revision, prior_installation_required = suc.parse_repository_dependency_tuple( rd_tup )
                 # Updates to installed repository revisions may have occurred, so make sure to locate the appropriate repository revision if one exists.
                 # We need to create a temporary repo_info_tuple that includes the correct repository owner which we get from the current rd_tup.  The current
                 # tuple looks like: ( description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td )
@@ -197,7 +199,7 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                 tmp_repo_info_tuple = ( None, tmp_clone_url, changeset_revision, None, owner, None, None )
                 repository, current_changeset_revision = suc.repository_was_previously_installed( trans, tool_shed, name, tmp_repo_info_tuple )
                 if repository:
-                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, repository.id, repository.status ]
+                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, prior_installation_required, repository.id, repository.status ]
                     if repository.status == trans.model.ToolShedRepository.installation_status.INSTALLED:
                         if new_rd_tup not in installed_rd_tups:
                             installed_rd_tups.append( new_rd_tup )
@@ -205,7 +207,7 @@ def get_installed_and_missing_repository_dependencies_for_new_install( trans, re
                         if new_rd_tup not in missing_rd_tups:
                             missing_rd_tups.append( new_rd_tup )
                 else:
-                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, None, 'Never installed' ]
+                    new_rd_tup = [ tool_shed, name, owner, changeset_revision, prior_installation_required, None, 'Never installed' ]
                     if new_rd_tup not in missing_rd_tups:
                         missing_rd_tups.append( new_rd_tup )
     if installed_rd_tups:
@@ -261,8 +263,8 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                     for key, val in repository_dependencies.items():
                         if key in [ 'root_key', 'description' ]:
                             continue
-                        toolshed, name, owner, changeset_revision = container_util.get_components_from_key( key )
-                        components_list = [ toolshed, name, owner, changeset_revision ]
+                        toolshed, name, owner, changeset_revision, prior_installation_required = container_util.get_components_from_key( key )
+                        components_list = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
                         if components_list not in required_repository_tups:
                             required_repository_tups.append( components_list )
                         for components_list in val:
@@ -272,6 +274,8 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                 # The value of required_repository_tups is a list of tuples, so we need to encode it.
                 encoded_required_repository_tups = []
                 for required_repository_tup in required_repository_tups:
+                    # Convert every item in required_repository_tup to a string.
+                    required_repository_tup = [ str( item ) for item in required_repository_tup ]
                     encoded_required_repository_tups.append( encoding_util.encoding_sep.join( required_repository_tup ) )
                 encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
                 encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )

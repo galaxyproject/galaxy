@@ -13,8 +13,10 @@ category_name = 'Test 0100 Complex Repository Dependencies'
 category_description = 'Test 0100 Complex Repository Dependencies'
 running_standalone = False
 
+
 class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
     '''Test features related to installing repositories with complex repository dependencies.'''
+
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
@@ -27,6 +29,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
         admin_user = test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
         admin_user_private_role = test_db_util.get_private_role( admin_user )
+
     def test_0005_create_bwa_tool_repository( self ):
         '''Create and populate bwa_tool_0100.'''
         global running_standalone
@@ -56,6 +59,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               strings_displayed=[ 'The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool' ], 
                               strings_not_displayed=[] )
             self.display_manage_repository_page( repository, strings_displayed=[ 'Tool dependencies', 'may not be', 'in this repository' ] )
+
     def test_0010_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0100.'''
         global running_standalone
@@ -79,6 +83,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded bwa_base.tar with tool wrapper XML, but without tool dependency XML.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+
     def test_0015_generate_complex_repository_dependency_invalid_shed_url( self ):
         '''Generate and upload a complex repository definition that specifies an invalid tool shed URL.'''
         global running_standalone
@@ -102,6 +107,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded dependency on bwa_tool_0100 with invalid url.',
                               strings_displayed=strings_displayed, 
                               strings_not_displayed=[] )
+
     def test_0020_generate_complex_repository_dependency_invalid_repository_name( self ):
         '''Generate and upload a complex repository definition that specifies an invalid repository name.'''
         global running_standalone
@@ -125,6 +131,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded dependency on bwa_tool_0100 with invalid repository name.',
                               strings_displayed=strings_displayed, 
                               strings_not_displayed=[] )
+
     def test_0025_generate_complex_repository_dependency_invalid_owner_name( self ):
         '''Generate and upload a complex repository definition that specifies an invalid owner.'''
         global running_standalone
@@ -148,6 +155,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded dependency on bwa_tool_0100 with invalid owner.',
                               strings_displayed=strings_displayed, 
                               strings_not_displayed=[] )
+ 
     def test_0030_generate_complex_repository_dependency_invalid_changeset_revision( self ):
         '''Generate and upload a complex repository definition that specifies an invalid changeset revision.'''
         global running_standalone
@@ -171,6 +179,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               commit_message='Uploaded dependency on bwa_tool_0100 with invalid changeset revision.',
                               strings_displayed=strings_displayed, 
                               strings_not_displayed=[] )
+  
     def test_0035_generate_valid_complex_repository_dependency( self ):
         '''Generate and upload a valid tool_dependencies.xml file that specifies bwa_tool_repository_0100.'''
         global running_standalone
@@ -195,6 +204,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                               strings_not_displayed=[] )
             self.check_repository_dependency( base_repository, tool_repository )
             self.display_manage_repository_page( base_repository, strings_displayed=[ 'bwa', '0.5.9', 'package' ] )
+ 
     def test_0040_update_tool_repository( self ):
         '''Upload a new tool_dependencies.xml to the tool repository, and verify that the base repository displays the new changeset.'''
         global running_standalone
@@ -220,6 +230,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             self.display_manage_repository_page( base_repository, 
                                                  strings_displayed=[ self.get_repository_tip( tool_repository ), 'bwa', '0.5.9', 'package' ],
                                                  strings_not_displayed=[ previous_changeset ] )
+ 
     def test_0045_install_base_repository( self ):
         '''Verify installation of the repository with complex repository dependencies.'''
         self.galaxy_logout()
@@ -234,6 +245,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                                  preview_strings_displayed=preview_strings_displayed,
                                  post_submit_strings_displayed=[ base_repository.name, tool_repository.name, 'new' ],
                                  includes_tools_for_display_in_tool_panel=True )
+ 
     def test_0050_verify_installed_repositories( self ):
         '''Verify that the installed repositories are displayed properly.'''
         base_repository = test_db_util.get_installed_repository_by_name_owner( bwa_base_repository_name, common.test_user_1_name )
@@ -256,6 +268,7 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
         self.display_installed_repository_manage_page( base_repository, 
                                                        strings_displayed=strings_displayed, 
                                                        strings_not_displayed=strings_not_displayed )
+  
     def test_0055_verify_complex_tool_dependency( self ):
         '''Verify that the generated env.sh contains the right data.'''
         base_repository = test_db_util.get_installed_repository_by_name_owner( bwa_base_repository_name, common.test_user_1_name )
@@ -272,3 +285,22 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
         if tool_repository.installed_changeset_revision not in contents or tool_repository.name not in contents: 
             raise AssertionError( 'The env.sh file was not correctly generated. Contents: %s' % contents )
         
+    def test_0060_verify_tool_dependency_uninstallation( self ):
+        '''Uninstall the bwa_tool_repository_0100 repository.'''
+        '''
+        Uninstall the repository that defines an orphan tool dependency on BWA 0.5.9, and verify
+        that this results in the compiled binary package also being removed.
+        '''
+        base_repository = test_db_util.get_installed_repository_by_name_owner( bwa_base_repository_name, common.test_user_1_name )
+        tool_repository = test_db_util.get_installed_repository_by_name_owner( bwa_tool_repository_name, common.test_user_1_name )
+        self.uninstall_repository( tool_repository, remove_from_disk=True )
+        env_sh_path = os.path.join( self.galaxy_tool_dependency_dir, 
+                                    'bwa', 
+                                    '0.5.9', 
+                                    tool_repository.owner, 
+                                    tool_repository.name, 
+                                    tool_repository.installed_changeset_revision, 
+                                    'env.sh' )
+        if os.path.exists( env_sh_path ):
+            raise AssertionError( 'Path %s exists after uninstalling the repository that generated it.' % env_sh_path )
+       

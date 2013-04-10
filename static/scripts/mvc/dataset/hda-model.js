@@ -26,15 +26,14 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         history_id          : null,
         // often used with tagging
         model_class         : 'HistoryDatasetAssociation',
-        // index within history (??)
         hid                 : 0,
         
         // ---whereas these are Dataset related/inherited
 
-        id                  : null, 
+        id                  : null,
         name                : '(unnamed dataset)',
         // one of HistoryDatasetAssociation.STATES
-        state               : 'ok',
+        state               : 'new',
         // sniffed datatype (sam, tabular, bed, etc.)
         data_type           : null,
         // size in bytes
@@ -44,14 +43,12 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         // array of associated file types (eg. [ 'bam_index', ... ])
         meta_files          : [],
 
-        misc_blurb          : '', 
+        misc_blurb          : '',
         misc_info           : '',
 
-        deleted             : false, 
+        deleted             : false,
         purged              : false,
-        // aka. !hidden (start hidden)
-        visible             : false,
-        // based on trans.user (is_admin or security_agent.can_access_dataset( <user_roles>, hda.dataset ))
+        visible             : true,
         accessible          : true
     },
 
@@ -59,7 +56,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
     urlRoot: 'api/histories/',
     url : function(){
         //TODO: get this via url router
-        return 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
+        return this.urlRoot + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
         //TODO: this breaks on save()
     },
     
@@ -152,9 +149,9 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
     toString : function(){
         var nameAndId = this.get( 'id' ) || '';
         if( this.get( 'name' ) ){
-            nameAndId += ':"' + this.get( 'name' ) + '"';
+            nameAndId = this.get( 'hid' ) + ' :"' + this.get( 'name' ) + '",' + nameAndId;
         }
-        return 'HistoryDatasetAssociation(' + nameAndId + ')';
+        return 'HDA(' + nameAndId + ')';
     }
 });
 
@@ -300,8 +297,25 @@ var HDACollection = Backbone.Collection.extend( LoggableMixin ).extend(
         return idList;
     },
 
+    /** Set ea
+     *      Precondition: each data_array object must have an id
+     *  @param {Object[]} data_array    an array of attribute objects to update the models with
+     *  @see HistoryDatasetAssociation#set
+     */
+    set : function( data_array ){
+        var collection = this;
+        if( !data_array || !_.isArray( data_array ) ){ return; }
+
+        //TODO: remove when updated backbone >= 1.0
+        data_array.forEach( function( hda_data ){
+            var model = collection.get( hda_data.id );
+            if( model ){
+                model.set( hda_data );
+            }
+        });
+    },
+
     /** Update (fetch) the data of the hdas with the given ids.
-     *  @param {String} historyId the id of the history containing this collection
      *  @param {String[]} ids an array of hda ids to update
      *  @returns {HistoryDatasetAssociation[]} hda models that were updated
      *  @see HistoryDatasetAssociation#fetch

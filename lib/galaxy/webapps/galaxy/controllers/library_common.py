@@ -27,11 +27,6 @@ except ImportError, e:
     whoosh_search_enabled = False
     schema = None
 
-if sys.version_info[:2] < ( 2, 6 ):
-    zipfile.BadZipFile = zipfile.error
-if sys.version_info[:2] < ( 2, 5 ):
-    zipfile.LargeZipFile = zipfile.error
-
 log = logging.getLogger( __name__ )
 
 # Test for available compression types
@@ -94,7 +89,7 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
         return rval
 
     @web.expose
-    def browse_library( self, trans, cntrller, **kwd ):
+    def browse_library( self, trans, cntrller='library', **kwd ):
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )

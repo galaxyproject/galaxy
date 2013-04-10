@@ -886,7 +886,7 @@ ul.icons{list-style-type:none;text-indent:-0.75em;}ul.icons li [class^="fa-icon-
 .select2-result-selectable .select2-match,.select2-result-unselectable .select2-result-selectable .select2-match{text-decoration:underline;}
 .select2-result-unselectable .select2-match{text-decoration:none;}
 .select2-offscreen{position:absolute;left:-10000px;}
-@media only screen and (-webkit-min-device-pixel-ratio:1.5){.select2-search input,.select2-search-choice-close,.select2-container .select2-choice abbr,.select2-container .select2-choice div b{background-image:url(select2x2.png) !important;background-repeat:no-repeat !important;background-size:60px 40px !important;} .select2-search input{background-position:100% -21px !important;}}.select2-container{min-width:256px;}
+@media only screen and (-webkit-min-device-pixel-ratio:1.5){.select2-search input,.select2-search-choice-close,.select2-container .select2-choice abbr,.select2-container .select2-choice div b{background-image:url(../images/select2x2.png) !important;background-repeat:no-repeat !important;background-size:60px 40px !important;} .select2-search input{background-position:100% -21px !important;}}.select2-container{min-width:256px;}
 .unselectable{-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;}
 .parent-width{-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;width:100%;*width:90%;}
 .clear{*zoom:1;}.clear:before,.clear:after{display:table;content:"";line-height:0;}
@@ -1079,7 +1079,7 @@ ul.manage-table-actions li{display:block;float:left;margin-left:0.5em;}
 .action-button [class^="fa-icon-"].fa-icon-spin.icon-large,.action-button [class*=" fa-icon-"].fa-icon-spin.icon-large{height:.75em;}
 a.action-button{text-decoration:none;}
 .action-button>img{vertical-align:middle;}
-.action-button:active{color:inherit;}
+.action-button:active{background-image:none;outline:0;-webkit-box-shadow:inset 0 2px 4px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.05);-moz-box-shadow:inset 0 2px 4px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.05);box-shadow:inset 0 2px 4px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.05);color:inherit;}
 .menubutton{*display:inline;*zoom:1;padding:4px 12px;margin-bottom:0;font-size:12px;line-height:16px;text-align:center;vertical-align:middle;color:#333333;text-shadow:0 1px 1px rgba(255, 255, 255, 0.75);background-color:#f5f5f5;background-image:-moz-linear-gradient(top, #ffffff, #e6e6e6);background-image:-webkit-gradient(linear, 0 0, 0 100%, from(#ffffff), to(#e6e6e6));background-image:-webkit-linear-gradient(top, #ffffff, #e6e6e6);background-image:-o-linear-gradient(top, #ffffff, #e6e6e6);background-image:linear-gradient(to bottom, #ffffff, #e6e6e6);background-repeat:repeat-x;filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#ffffffff', endColorstr='#ffe6e6e6', GradientType=0);border-color:#e6e6e6 #e6e6e6 #bfbfbf;border-color:rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);*background-color:#e6e6e6;filter:progid:DXImageTransform.Microsoft.gradient(enabled = false);border:1px solid #999999;*border:0;border-bottom-color:#808080;-webkit-border-radius:4px;-moz-border-radius:4px;border-radius:4px;*margin-left:.3em;-webkit-box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 1px 2px rgba(0,0,0,.05);-moz-box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 1px 2px rgba(0,0,0,.05);box-shadow:inset 0 1px 0 rgba(255,255,255,.2), 0 1px 2px rgba(0,0,0,.05);border-color:#c5c5c5;border-color:rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.15) rgba(0, 0, 0, 0.25);padding:2px 10px 2px;border-color:#999999;border-color:rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.4) rgba(0, 0, 0, 0.4);display:inline-block;cursor:pointer;position:relative;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;-o-user-select:none;user-select:none;}.menubutton:hover,.menubutton:active,.menubutton.active,.menubutton.disabled,.menubutton[disabled]{color:#333333;background-color:#e6e6e6;*background-color:#d9d9d9;}
 .menubutton:active,.menubutton.active{background-color:#cccccc \9;}
 .menubutton:hover,.menubutton:active,.menubutton.active,.menubutton.disabled,.menubutton[disabled]{color:#333333;background-color:#e6e6e6;*background-color:#d9d9d9;}
@@ -1093,7 +1093,7 @@ a.action-button{text-decoration:none;}
 .menubutton [class^="fa-icon-"],.menubutton [class*=" fa-icon-"]{display:inline;line-height:.6em;}.menubutton [class^="fa-icon-"].fa-icon-spin,.menubutton [class*=" fa-icon-"].fa-icon-spin{display:inline-block;}
 .menubutton [class^="fa-icon-"].pull-left.fa-icon-2x,.menubutton [class*=" fa-icon-"].pull-left.fa-icon-2x,.menubutton [class^="fa-icon-"].pull-right.fa-icon-2x,.menubutton [class*=" fa-icon-"].pull-right.fa-icon-2x{margin-top:.35em;}
 .menubutton [class^="fa-icon-"].fa-icon-spin.icon-large,.menubutton [class*=" fa-icon-"].fa-icon-spin.icon-large{height:.75em;}
-.menubutton:active{color:inherit;}
+.menubutton:active{background-image:none;outline:0;-webkit-box-shadow:inset 0 2px 4px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.05);-moz-box-shadow:inset 0 2px 4px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.05);box-shadow:inset 0 2px 4px rgba(0,0,0,.15), 0 1px 2px rgba(0,0,0,.05);color:inherit;}
 .menubutton:focus{outline:thin dotted #333;outline:5px auto -webkit-focus-ring-color;outline-offset:-2px;}
 .menubutton a{text-decoration:none;}
 .menubutton .label,.menubutton>label{position:relative;display:inline-block;border-right:none;text-decoration:none;text-align:left;max-height:32px;line-height:16px;overflow:hidden;text-overflow:ellipsis;}
@@ -1116,7 +1116,9 @@ div.permissionContainer{padding-left:20px;}
 .editable-text{cursor:pointer;}
 .editable-text:hover{cursor:text;border:dotted #999999 1px;}
 .icon-button.multiinput{background:url(../images/documents-stack.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
-.icon-button.multiinput.disabled{background:url(../images/documents-stack-faded.png) no-repeat;cursor:auto;}
+.icon-button.multiinput.disabled{background:url(../images/documents-stack-faded.png) no-repeat;cursor:pointer;}
+.icon-button.link{background:url(../images/silk/link.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
+.icon-button.link-broken{background:url(../images/silk/link_break.png) no-repeat;cursor:pointer;float:none;display:inline-block;margin-left:10px;}
 .workflow-invocation-complete{border:solid 1px #6A6;border-left-width:5px;margin:10px 0;padding-left:5px;}
 body.historyPage{background:#dfe5f9;color:#303030;margin:5px;border:0;padding:0;}
 div.historyLinks{margin:5px 5px;}

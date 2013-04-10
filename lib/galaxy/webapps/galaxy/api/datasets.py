@@ -53,6 +53,9 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                 # Default: return dataset as dict.
                 if hda_ldda == 'hda':
                     rval = self.get_hda_dict( trans, dataset )
+                    # add these to match api/history_contents.py, show
+                    rval[ 'display_types' ] = self.get_old_display_applications( trans, dataset )
+                    rval[ 'display_apps' ] = self.get_display_apps( trans, dataset )
                 else:
                     rval = dataset.get_api_value()
                 
@@ -173,8 +176,16 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         if max_vals is None:
             max_vals = data_provider.get_default_max_vals()
 
+        # Get reference sequence for region; this is used by providers for aligned reads.
+        ref_seq = None
+        if dataset.dbkey:
+            data_dict = self.app.genomes.reference( trans, dbkey=dataset.dbkey, chrom=chrom, low=low, high=high )
+            if data_dict:
+                ref_seq = data_dict[ 'data' ]
+
         # Get and return data from data_provider.
-        result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ), **kwargs )
+        result = data_provider.get_data( chrom, int( low ), int( high ), int( start_val ), int( max_vals ), 
+                                         ref_seq=ref_seq, **kwargs )
         result.update( { 'dataset_type': data_provider.dataset_type, 'extra_info': extra_info } )
         return result
 

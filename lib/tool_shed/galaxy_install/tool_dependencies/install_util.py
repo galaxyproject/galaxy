@@ -259,7 +259,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                             install_and_build_package_via_fabric( app, tool_dependency, actions_dict )
                         else:
                             message = "Unable to locate required tool shed repository named %s owned by %s with revision %s." % \
-                                ( str( name ), str( owner ), str( changeset_revision ) )
+                                ( str( required_repository_name ), str( required_repository_owner ), str( required_repository_changeset_revision ) )
                             raise Exception( message )
                     elif package_elem.tag == 'install':
                         # <install version="1.0">

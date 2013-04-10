@@ -85,6 +85,12 @@ class Ab1( Binary ):
 
 Binary.register_unsniffable_binary_ext("ab1")
 
+class GenericAsn1Binary( Binary ):
+    """Class for generic ASN.1 binary format"""
+    file_ext = "asn1-binary"
+
+Binary.register_unsniffable_binary_ext("asn1-binary")
+
 class Bam( Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"

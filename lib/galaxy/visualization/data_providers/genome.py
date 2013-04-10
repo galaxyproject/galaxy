@@ -2,25 +2,21 @@
 Data providers for genome visualizations.
 """
 
-import os, sys
+import os, sys, operator
 from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
-if sys.version_info[:2] == (2, 4):
-    pkg_resources.require( "ctypes" )
 pkg_resources.require( "pysam" )
 pkg_resources.require( "numpy" )
 import numpy
-from galaxy.datatypes.util.gff_util import *
+from galaxy.datatypes.util.gff_util import GFFReaderWrapper, GFFInterval, GFFFeature, convert_gff_coords_to_bed
 from galaxy.util.json import from_json_string
 from bx.interval_index_file import Indexes
 from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
-from galaxy.visualization.tracks.summary import *
+from galaxy.visualization.tracks.summary import summary_tree_from_file
 from galaxy.visualization.data_providers.basic import BaseDataProvider
-import galaxy_utils.sequence.vcf
-from galaxy.datatypes.tabular import Tabular, Vcf
-from galaxy.datatypes.interval import Interval, Bed, Gff, Gtf, ENCODEPeak, ChromatinInteractions
+from galaxy.datatypes.interval import Bed, Gff, Gtf
 
 from pysam import csamtools, ctabix
 
@@ -181,7 +177,7 @@ class GenomeDataProvider( BaseDataProvider ):
         """
         start, end = int( low ), int( high )
         iterator = self.get_iterator( chrom, start, end, **kwargs )
-        return self.process_data( iterator, start_val, max_vals, **kwargs )
+        return self.process_data( iterator, start_val, max_vals, start=start, end=end, **kwargs )
 
     def get_genome_data( self, chroms_info, **kwargs ):
         """
@@ -899,7 +895,7 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 return None
         return data
                 
-    def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
+    def process_data( self, iterator, start_val=0, max_vals=None, ref_seq=None, start=0, **kwargs ):
         """
         Returns a dict with the following attributes::
 
@@ -927,7 +923,11 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
         # No iterator indicates no reads.
         if iterator is None:
             return { 'data': [], 'message': None }
-        
+
+        #
+        # Helper functions.
+        #
+
         # Decode strand from read flag.
         def decode_strand( read_flag, mask ):
             strand_flag = ( read_flag & mask == 0 )
@@ -936,7 +936,11 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             else:
                 return "-"
                 
+        #
         # Encode reads as list of lists.
+        #
+        if ref_seq:
+            ref_seq = ref_seq.upper()
         results = []
         paired_pending = {}
         unmapped = 0

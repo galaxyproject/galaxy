@@ -696,7 +696,24 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
 
         # Get dataset to add.
         new_dataset_id = kwargs.get( "dataset_id", None )
-        
+
+        # viewport configuration
+        gene_region_config = {"chrom" : None, "start" : 0, "end" : 0}
+
+        # Check for gene region
+        gene_region     = kwargs.get("gene_region", "").split(':')
+                
+        # Split gene region into components
+        if (len(gene_region) == 2):
+            gene_chrom      = gene_region[0];
+            gene_interval   = gene_region[1].split('-')
+            
+            # Check length
+            if (len(gene_interval) == 2):
+                gene_region_config['chrom'] = gene_chrom
+                gene_region_config['start'] = int(gene_interval[0])
+                gene_region_config['end']   = int(gene_interval[1])
+    
         # Set up new browser if no id provided.
         if not id:
             # Use dbkey from dataset to be added or from incoming parameter.
@@ -706,13 +723,17 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 if dbkey == '?':
                     dbkey = kwargs.get( "dbkey", None )
             
-            return trans.fill_template( "tracks/browser.mako", config={}, 
-                                        add_dataset=new_dataset_id, 
-                                        default_dbkey=dbkey )
+            return trans.fill_template( "tracks/browser.mako", viewport_config=gene_region_config, add_dataset=new_dataset_id, default_dbkey=dbkey )
 
         # Display saved visualization.
         vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         viz_config = self.get_visualization_config( trans, vis )
+        
+        # Update gene region of saved visualization if user parses a new gene region in the url
+        if gene_region_config['chrom'] is not None:
+            viz_config['viewport']['chrom'] = gene_region_config['chrom']
+            viz_config['viewport']['start'] = gene_region_config['start']
+            viz_config['viewport']['end']   = gene_region_config['end']
         
         '''
         FIXME:

@@ -6,6 +6,8 @@
 <%def name="javascripts()">
     ${parent.javascripts()}
     ${h.js( "libs/require" )}
+    ${h.templates("helpers-common-templates")}
+
     <script type="text/javascript">
         require.config({ 
             baseUrl: "${h.url_for('/static/scripts')}",
@@ -19,7 +21,8 @@
             data.createTabularDatasetChunkedView(
                 _.extend( ${h.to_json_string( trans.security.encode_dict_ids( dataset.get_api_value() ) )}, 
                         {
-                            chunk_url: "${h.url_for( controller='/dataset', action='display', 
+                            url_viz: "${h.url_for( controller='/visualization')}",
+                            chunk_url: "${h.url_for( controller='/dataset', action='display',
                                              dataset_id=trans.security.encode_id( dataset.id ))}",
                             first_data_chunk: ${chunk}
                         } 

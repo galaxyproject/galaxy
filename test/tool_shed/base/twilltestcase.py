@@ -2,12 +2,14 @@ import galaxy.webapps.tool_shed.util.hgweb_config
 import galaxy.model as galaxy_model
 import common, string, os, re, test_db_util, simplejson, logging, time
 import galaxy.util as util
+from tool_shed.util import shed_util_common as suc
 from base.twilltestcase import tc, from_json_string, TwillTestCase, security, urllib
 from tool_shed.util.encoding_util import tool_shed_encode, tool_shed_decode
 
 from galaxy import eggs
 eggs.require('mercurial')
-from mercurial import hg, ui
+from mercurial import hg, ui, commands
+from mercurial.util import Abort
 
 log = logging.getLogger( __name__ )
 
@@ -202,6 +204,24 @@ class ShedTwillTestCase( TwillTestCase ):
                      ( pattern_count, pattern, min_count, max_count, fname )
             raise AssertionError( errmsg )
         
+    def clone_repository( self, repository, destination_path ):
+        url = '%s/repos/%s/%s' % ( self.url, repository.user.username, repository.name )
+        success, message = suc.clone_repository( url, destination_path, self.get_repository_tip( repository ) )
+        assert success is True, message
+        
+    def commit_and_push( self, repository, hgrepo, options, username, password ):
+        url = 'http://%s:%s@%s:%s/repos/%s/%s' % ( username, password, self.host, self.port, repository.user.username, repository.name )
+        commands.commit( ui.ui(), hgrepo, **options )
+        try:
+            commands.push( ui.ui(), hgrepo, dest=url )
+        except Abort, e:
+            message = e
+            if 'authorization failed' in message:
+                return False
+            else:
+                raise
+        return True
+    
     def create_category( self, **kwd ):
         category = test_db_util.get_category_by_name( kwd[ 'name' ] )
         if category is None:
@@ -394,6 +414,11 @@ class ShedTwillTestCase( TwillTestCase ):
         self.visit_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def display_repository_reviews_by_user( self, user, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository_review/repository_reviews_by_user?id=%s' % self.security.encode_id( user.id )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        
     def edit_repository_categories( self, repository, categories_to_add=[], categories_to_remove=[], restore_original=True ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -419,11 +444,6 @@ class ShedTwillTestCase( TwillTestCase ):
             tc.submit( "manage_categories_button" )
             self.check_for_strings( strings_displayed, strings_not_displayed )
         
-    def display_repository_reviews_by_user( self, user, strings_displayed=[], strings_not_displayed=[] ):
-        url = '/repository_review/repository_reviews_by_user?id=%s' % self.security.encode_id( user.id )
-        self.visit_url( url )
-        self.check_for_strings( strings_displayed, strings_not_displayed )
-        
     def edit_repository_information( self, repository, **kwd ):
         url = '/repository/manage_repository?id=%s' % self.security.encode_id( repository.id )
         self.visit_url( url )
@@ -443,6 +463,11 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.submit( "edit_repository_button" )
         self.check_for_strings( strings_displayed )
         
+    def enable_email_alerts( self, repository, strings_displayed=[], strings_not_displayed=[] ):
+        repository_id = self.security.encode_id( repository.id )
+        self.visit_url( '/repository/browse_repositories?operation=Receive+email+alerts&id=%s' % repository_id )
+        self.check_for_strings( strings_displayed )
+
     def escape_html( self, string, unescape=False ):
         html_entities = [ ('&', 'X' ), ( "'", '&#39;' ), ( '"', '&#34;' ) ]
         for character, replacement in html_entities:
@@ -556,6 +581,9 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             return os.path.abspath( os.path.join( self.file_dir, filename ) )
         
+    def get_hg_repo( self, path ):
+        return hg.repository( ui.ui(), path )
+    
     def get_last_reviewed_revision_by_user( self, user, repository ):
         changelog_tuples = self.get_repository_changelog_tuples( repository )
         reviews = test_db_util.get_reviews_ordered_by_changeset_revision( repository.id, changelog_tuples, reviewer_user_id = user.id )
@@ -583,7 +611,7 @@ class ShedTwillTestCase( TwillTestCase ):
             raise Exception( "Entry for repository %s missing in hgweb config file %s." % ( lhs, self.hgweb_config_manager.hgweb_config ) )
         
     def get_repository_changelog_tuples( self, repository ):
-        repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
+        repo = self.get_hg_repo( self.get_repo_path( repository ) )
         changelog_tuples = []
         for changeset in repo.changelog:
             ctx = repo.changectx( changeset )
@@ -638,7 +666,7 @@ class ShedTwillTestCase( TwillTestCase ):
         return [ str( repository_metadata.changeset_revision ) for repository_metadata in repository.metadata_revisions ]
         
     def get_repository_tip( self, repository ):
-        repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
+        repo = self.get_hg_repo( self.get_repo_path( repository ) )
         return str( repo.changectx( repo.changelog.tip() ) )
         
     def get_tools_from_repository_metadata( self, repository, include_invalid=False ):
@@ -820,6 +848,11 @@ class ShedTwillTestCase( TwillTestCase ):
             url = '/repository/browse_repositories?user_id=%s&operation=repositories_by_user' % encoded_user_id
             self.visit_url( url )
             self.check_for_strings( strings_displayed_in_iframe, strings_not_displayed_in_iframe )
+
+    def load_changeset_in_tool_shed( self, repository_id, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/repository/view_changeset?ctx_str=%s&id=%s' % ( changeset_revision, repository_id )
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
         
     def load_display_tool_page( self, repository, tool_xml_path, changeset_revision, strings_displayed=[], strings_not_displayed=[] ):
         url = '/repository/display_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
@@ -836,6 +869,11 @@ class ShedTwillTestCase( TwillTestCase ):
         url = '/repository/load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s' % \
               ( self.security.encode_id( repository.id ), tool_xml, changeset_revision )
         self.visit_url( url )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+        
+    def load_page_for_installed_tool( self, tool_guid, strings_displayed=[], strings_not_displayed=[] ):
+        url = '/tool_runner?tool_id=%s' % tool_guid
+        self.visit_galaxy_url( url )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
     def load_workflow_image_in_tool_shed( self, repository, workflow_name, changeset_revision=None, strings_displayed=[], strings_not_displayed=[] ):
@@ -905,7 +943,7 @@ class ShedTwillTestCase( TwillTestCase ):
         self.wait_for_repository_installation( repository_ids )
         
     def repository_is_new( self, repository ):
-        repo = hg.repository( ui.ui(), self.get_repo_path( repository ) )
+        repo = self.get_hg_repo( self.get_repo_path( repository ) )
         tip_ctx = repo.changectx( repo.changelog.tip() )
         return tip_ctx.rev() < 0
         
