@@ -1063,11 +1063,7 @@ def handle_repository_elem( app, repository_elem ):
             return repository_dependencies_tup, is_valid, error_message
         else:
             # Send a request to the tool shed to retrieve appropriate additional changeset revisions with which the repository may have been installed.
-            #try:
-                # Hopefully the tool shed is accessible.
             text = get_updated_changeset_revisions_from_tool_shed( app, toolshed, name, owner, changeset_revision )
-            #except:
-            #    text = None
             if text:
                 updated_changeset_revisions = util.listify( text )
                 for updated_changeset_revision in updated_changeset_revisions:
