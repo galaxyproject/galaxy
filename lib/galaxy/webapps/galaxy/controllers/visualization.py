@@ -12,6 +12,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.visualization.genomes import decode_dbkey
 from galaxy.visualization.genome.visual_analytics import get_dataset_job
 from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
+from galaxy.visualization.genomes import GenomeRegion
 
 from .library import LibraryListGrid
 
@@ -697,22 +698,8 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
         # Get dataset to add.
         new_dataset_id = kwargs.get( "dataset_id", None )
 
-        # viewport configuration
-        gene_region_config = {"chrom" : None, "start" : 0, "end" : 0}
-
         # Check for gene region
-        gene_region     = kwargs.get("gene_region", "").split(':')
-                
-        # Split gene region into components
-        if (len(gene_region) == 2):
-            gene_chrom      = gene_region[0];
-            gene_interval   = gene_region[1].split('-')
-            
-            # Check length
-            if (len(gene_interval) == 2):
-                gene_region_config['chrom'] = gene_chrom
-                gene_region_config['start'] = int(gene_interval[0])
-                gene_region_config['end']   = int(gene_interval[1])
+        gene_region = GenomeRegion.from_str(kwargs.get("gene_region", ""))
     
         # Set up new browser if no id provided.
         if not id:
@@ -722,18 +709,19 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
                 dbkey = self.get_dataset( trans, new_dataset_id ).dbkey
                 if dbkey == '?':
                     dbkey = kwargs.get( "dbkey", None )
-            
-            return trans.fill_template( "tracks/browser.mako", viewport_config=gene_region_config, add_dataset=new_dataset_id, default_dbkey=dbkey )
+        
+            # fill template
+            return trans.fill_template( "tracks/browser.mako", viewport_config=gene_region.__dict__, add_dataset=new_dataset_id, default_dbkey=dbkey )
 
         # Display saved visualization.
         vis = self.get_visualization( trans, id, check_ownership=False, check_accessible=True )
         viz_config = self.get_visualization_config( trans, vis )
         
         # Update gene region of saved visualization if user parses a new gene region in the url
-        if gene_region_config['chrom'] is not None:
-            viz_config['viewport']['chrom'] = gene_region_config['chrom']
-            viz_config['viewport']['start'] = gene_region_config['start']
-            viz_config['viewport']['end']   = gene_region_config['end']
+        if gene_region.chrom is not None:
+            viz_config['viewport']['chrom'] = gene_region.chrom
+            viz_config['viewport']['start'] = gene_region.start
+            viz_config['viewport']['end']   = gene_region.end
         
         '''
         FIXME:
@@ -741,6 +729,7 @@ class VisualizationController( BaseUIController, SharableMixin, UsesAnnotations,
             if trans.security.decode_id(new_dataset) in [ d["dataset_id"] for d in viz_config.get("tracks") ]:
                 new_dataset = None # Already in browser, so don't add
         '''
+        # fill template
         return trans.fill_template( 'tracks/browser.mako', config=viz_config, add_dataset=new_dataset_id )
 
     @web.expose

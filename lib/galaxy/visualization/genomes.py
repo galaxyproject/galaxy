@@ -31,21 +31,38 @@ class GenomeRegion( object ):
     A genomic region on an individual chromosome.
     """
     
-    def __init__( self, chrom=None, start=None, end=None ):
+    def __init__( self, chrom = None, start = 0, end = 0 ):
         self.chrom = chrom
         self.start = int( start )
         self.end = int( end )
         
     def __str__( self ):
         return self.chrom + ":" + str( self.start ) + "-" + str( self.end )
-        
+
     @staticmethod
     def from_dict( obj_dict ):
-        return GenomeRegion( chrom=obj_dict[ 'chrom' ],
-                             start=obj_dict[ 'start' ],
-                             end=obj_dict[ 'end' ] )
+        return GenomeRegion( chrom = obj_dict[ 'chrom' ],
+                             start = obj_dict[ 'start' ],
+                             end   = obj_dict[ 'end' ] )
         
-        
+    @staticmethod
+    def from_str( obj_str ):
+        # check for gene region
+        gene_region = obj_str.split(':')
+                
+        # split gene region into components
+        if (len(gene_region) == 2):
+            gene_interval = gene_region[1].split('-')
+            
+            # check length
+            if (len(gene_interval) == 2):
+                return GenomeRegion(chrom = gene_region[0],
+                                    start = gene_interval[0],
+                                    end   = gene_interval[1])
+ 
+        # return genome region instance
+        return GenomeRegion()
+
 class Genome( object ):
     """
     Encapsulates information about a known genome/dbkey.

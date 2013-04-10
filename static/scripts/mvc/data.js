@@ -109,7 +109,11 @@ var DatasetCollection = Backbone.Collection.extend({
  */
 var TabularDatasetChunkedView = Backbone.View.extend({
 
-    initialize: function(options) {},
+    initialize: function(options)
+    {
+        // load trackster button
+        (new TabularButtonTrackster(options)).render();
+    },
 
     render: function()
     {
@@ -221,13 +225,8 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     }
 });
 
-/**
- * Provides table-based, dynamic view of a bed dataset.
- * NOTE: view's el must be in DOM already and provided when 
- * creating the view so that scrolling event can be attached
- * to the correct container.
- */
-var TabularDatasetChunkedViewWithButton = TabularDatasetChunkedView.extend(
+// button for trackster visualization
+var TabularButtonTrackster = Backbone.View.extend(
 {
     // gene region columns
     col: {
@@ -245,17 +244,13 @@ var TabularDatasetChunkedViewWithButton = TabularDatasetChunkedView.extend(
     // database key
     genome_build: null,
 
-    get_type : function(obj) {
-        return ({}).toString.call(obj).match(/\s([a-zA-Z]+)/)[1].toLowerCase()
-    },
-
     // backbone initialize
     initialize: function (options)
     {
         // verify that metadata exists
         var metadata = options.model.attributes.metadata.attributes;
         if (typeof metadata.chromCol === "undefined" || typeof metadata.startCol === "undefined" || typeof metadata.endCol === "undefined")
-            console.log("TabularDatasetChunkedViewWithButton : Metadata for column identification is missing.");
+            console.log("TabularButtonTrackster : Metadata for column identification is missing.");
         else
         {
             // read in columns
@@ -270,13 +265,13 @@ var TabularDatasetChunkedViewWithButton = TabularDatasetChunkedView.extend(
      
         // get dataset id
         if (typeof options.model.attributes.id === "undefined")
-            console.log("TabularDatasetChunkedViewWithButton : Dataset identification is missing.");
+            console.log("TabularButtonTrackster : Dataset identification is missing.");
         else
             this.dataset_id = options.model.attributes.id;
         
         // get url
         if (typeof options.model.attributes.url_viz === "undefined")
-            console.log("TabularDatasetChunkedViewWithButton : Url for visualization controller is missing.");
+            console.log("TabularButtonTrackster : Url for visualization controller is missing.");
         else
             this.url_viz = options.model.attributes.url_viz;
 
@@ -301,20 +296,23 @@ var TabularDatasetChunkedViewWithButton = TabularDatasetChunkedView.extend(
             
         // get selected data line
         var row = $(e.target).parent();
-           
-        // get target gene region
-        var btn_viz_pars = {
-                dataset_id  : this.dataset_id,
-                gene_region : row.children().eq(this.col.chrom).html() + ":" + row.children().eq(this.col.start).html() + "-" + row.children().eq(this.col.end).html()
-        };
         
         // verify that location has been found
-        if (row.children().eq(this.col.chrom).html() != "")
+        var chrom = row.children().eq(this.col.chrom).html();
+        var start = row.children().eq(this.col.start).html();
+        var end   = row.children().eq(this.col.end).html();
+        if (chrom != "" && start != "" && end != "")
         {
+            // get target gene region
+            var btn_viz_pars = {
+                dataset_id  : this.dataset_id,
+                gene_region : chrom + ":" + start + "-" + end
+            };
+        
             // get button position
-            var offset = row.offset();
-            var left = offset.left - 10;
-            var top = offset.top;
+            var offset  = row.offset();
+            var left    = offset.left - 10;
+            var top     = offset.top;
 
             // update css
             $('#btn_viz').css({'position': 'fixed', 'top': top + 'px', 'left': left + 'px'});
@@ -401,9 +399,6 @@ var TabularDatasetChunkedViewWithButton = TabularDatasetChunkedView.extend(
 
         // hide the button
         $('#btn_viz').hide();
-        
-        // call parent render
-        TabularDatasetChunkedView.prototype.render.call(this);
     }    
 });
 
@@ -436,7 +431,7 @@ var createTabularDatasetChunkedView = function(dataset_config, parent_elt) {
     var view_div = $('<div/>').appendTo(parent_elt);
 
     // default viewer
-    return new TabularDatasetChunkedViewWithButton({
+    return new TabularDatasetChunkedView({
         el: view_div,
         model: new TabularDataset(dataset_config)
     }).render();
