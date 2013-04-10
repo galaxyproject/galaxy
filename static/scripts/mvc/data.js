@@ -112,7 +112,7 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     initialize: function(options)
     {
         // load trackster button
-        (new TabularButtonTrackster(options)).render();
+        (new TabularButtonTracksterView(options)).render();
     },
 
     render: function()
@@ -226,13 +226,13 @@ var TabularDatasetChunkedView = Backbone.View.extend({
 });
 
 // button for trackster visualization
-var TabularButtonTrackster = Backbone.View.extend(
+var TabularButtonTracksterView = Backbone.View.extend(
 {
     // gene region columns
     col: {
         chrom   : null,
         start   : null,
-        end     : null,
+        end     : null
     },
 
     // url for trackster
@@ -251,8 +251,7 @@ var TabularButtonTrackster = Backbone.View.extend(
         var metadata = options.model.attributes.metadata.attributes;
         if (typeof metadata.chromCol === "undefined" || typeof metadata.startCol === "undefined" || typeof metadata.endCol === "undefined")
             console.log("TabularButtonTrackster : Metadata for column identification is missing.");
-        else
-        {
+        else {
             // read in columns
             this.col.chrom   = metadata.chromCol - 1;
             this.col.start   = metadata.startCol - 1;
@@ -260,7 +259,7 @@ var TabularButtonTrackster = Backbone.View.extend(
         }
         
         // check
-        if(this.col.chrom == null)
+        if(this.col.chrom)
             return;
      
         // get dataset id
@@ -291,7 +290,7 @@ var TabularButtonTrackster = Backbone.View.extend(
     btn_viz_show: function (e)
     {
         // check
-        if(this.col.chrom == null)
+        if(this.col.chrom)
             return;
             
         // get selected data line
@@ -301,7 +300,7 @@ var TabularButtonTrackster = Backbone.View.extend(
         var chrom = row.children().eq(this.col.chrom).html();
         var start = row.children().eq(this.col.start).html();
         var end   = row.children().eq(this.col.end).html();
-        if (chrom != "" && start != "" && end != "")
+        if (chrom !== "" && start !== "" && end !== "")
         {
             // get target gene region
             var btn_viz_pars = {
@@ -325,19 +324,10 @@ var TabularButtonTrackster = Backbone.View.extend(
     },
     
     // hide button
-    btn_viz_hide: function (e)
+    btn_viz_hide: function ()
     {
         // hide button from screen
         $('#btn_viz').hide();
-    },
-    
-    
-    // create action
-    create_trackster_action_new : function (vis_url, dataset_params, dbkey)
-    {
-        return function () {
-            window.parent.location.href = vis_url + "/trackster?" + $.param(dataset_params);
-        }
     },
     
     // create action
