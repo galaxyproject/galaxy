@@ -284,10 +284,10 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             },
             error : function( xhr, status, error ){
                 if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
-                    var msg = 'Error fetching display applications, ' + ids + ':' + ( xhr.responseText || error );
-                    Galaxy.show_modal( 'History panel error',
-                        msg, { 'Ok': function(){ Galaxy.hide_modal(); } });
-                    this.log( msg );
+                    history.log( 'Error fetching display applications:', ids, xhr, status, error );
+                    var msg = _l( 'An error occurred while getting display applications from the server.' ) + ' '
+                            + _l( 'Please contact a Galaxy administrator if the problem persists.' );
+                    history.trigger( 'error', msg, xhr, status, error );
                 }
             }
         });

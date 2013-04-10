@@ -887,7 +887,8 @@ var TracksterView = Backbone.View.extend({
                 { key: 'a_color', label: 'A Color', type: 'color', default_value: "#FF0000" },
                 { key: 'c_color', label: 'C Color', type: 'color', default_value: "#00FF00" },
                 { key: 'g_color', label: 'G Color', type: 'color', default_value: "#0000FF" },
-                { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" }
+                { key: 't_color', label: 'T Color', type: 'color', default_value: "#FF00FF" },
+                { key: 'n_color', label: 'N Color', type: 'color', default_value: "#AAAAAA" },
             ], 
             saved_values: obj_dict.prefs,
             onchange: function() {
@@ -1174,6 +1175,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
     /**
      * Load chrom data for the view. Returns a jQuery Deferred.
      */
+    // FIXME: instead of loading chrom data, should load and store genome object.
     load_chroms: function(url_parms) {
         url_parms.num = MAX_CHROMS_SELECTABLE;
 
@@ -4199,8 +4201,10 @@ var ReadTrack = function (view, container, obj_dict) {
         }
     });
     this.prefs = this.config.values;
-    
-    this.painter = painters.ReadPainter;
+
+    // Choose painter based on whether there is reference data.
+    this.painter = (view.reference_track ? painters.RefBasedReadPainter : painters.ReadPainter);
+
     this.update_icons();
 };
 extend(ReadTrack.prototype, Drawable.prototype, TiledTrack.prototype, FeatureTrack.prototype);

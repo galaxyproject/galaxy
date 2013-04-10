@@ -16,6 +16,7 @@ from bx.bbi.bigwig_file import BigWigFile
 from galaxy.util.lrucache import LRUCache
 from galaxy.visualization.tracks.summary import summary_tree_from_file
 from galaxy.visualization.data_providers.basic import BaseDataProvider
+from galaxy.visualization.data_providers.cigar import get_ref_based_read_seq_and_cigar
 from galaxy.datatypes.interval import Bed, Gff, Gtf
 
 from pysam import csamtools, ctabix
@@ -935,12 +936,10 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
                 return "+"
             else:
                 return "-"
-                
+        
         #
         # Encode reads as list of lists.
         #
-        if ref_seq:
-            ref_seq = ref_seq.upper()
         results = []
         paired_pending = {}
         unmapped = 0
@@ -1010,6 +1009,36 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
             
         # Clean up. TODO: is this needed? If so, we'll need a cleanup function after processing the data.
         # bamfile.close()
+
+        # If there are results and reference data, transform read sequence and cigar.
+        if len( results ) != 0 and ref_seq:
+            def process_se_read( read ):
+                '''
+                Process single-end read.
+                '''
+                read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ 6 ].upper(), read[ 1 ], 
+                                                                         ref_seq, start, read[ 4 ] )
+                read[ 6 ] = read_seq
+                read[ 4 ] = read_cigar
+
+            def process_pe_read( read ):
+                '''
+                Process paired-end read.
+                '''
+                process_se_read( read[ 4 ] )
+                process_se_read( read[ 5 ] )
+
+            # Uppercase for easy comparison.
+            ref_seq = ref_seq.upper()
+
+            # Choose correct function for processing reads.
+            process_fn = process_se_read
+            if isinstance( results[ 0 ][ 5 ], list ):
+                process_fn = process_pe_read
+
+            # Process reads.
+            for read in results:
+                process_fn( read )
         
         max_low, max_high = get_bounds( results, 1, 2 )
                 
