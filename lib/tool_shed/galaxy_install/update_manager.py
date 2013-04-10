@@ -1,10 +1,11 @@
 """
 Determine if installed tool shed repositories have updates available in their respective tool sheds.
 """
-import threading, urllib2, logging
+import threading, logging
 from galaxy.util import string_as_bool
 import tool_shed.util.shed_util_common as suc
 from galaxy.model.orm import and_
+from tool_shed.util   import common_util
 
 log = logging.getLogger( __name__ )
 
@@ -38,9 +39,7 @@ class UpdateManager( object ):
         url = '%s/repository/check_for_updates?name=%s&owner=%s&changeset_revision=%s&from_update_manager=True' % \
             ( tool_shed_url, repository.name, repository.owner, repository.changeset_revision )
         try:
-            response = urllib2.urlopen( url )
-            text = response.read()
-            response.close()
+            text = common_util.tool_shed_get( self.app, tool_shed_url, url )
         except Exception, e:
             # The required tool shed may be unavailable.
             text = 'False'

@@ -12,7 +12,7 @@ import svgfig
 import urllib2
 
 from sqlalchemy import and_
-from tool_shed.util import encoding_util
+from tool_shed.util import encoding_util, common_util
 
 from galaxy import model
 from galaxy import util
@@ -1070,11 +1070,9 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             import_button = True
         if tool_shed_url and not import_button:
             # Use urllib (send another request to the tool shed) to retrieve the workflow.
-            workflow_url = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&open_for_url=true' % \
+            workflow_url  = '%s/workflow/import_workflow?repository_metadata_id=%s&workflow_name=%s&open_for_url=true' % \
                 ( tool_shed_url, repository_metadata_id, encoding_util.tool_shed_encode( workflow_name ) )
-            response = urllib2.urlopen( workflow_url )
-            workflow_text = response.read()
-            response.close()
+            workflow_text = common_util.tool_shed_get( trans.app, tool_shed_url, workflow_url )
             import_button = True
         if import_button:
             workflow_data = None

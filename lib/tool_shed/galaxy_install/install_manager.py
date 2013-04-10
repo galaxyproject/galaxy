@@ -2,7 +2,7 @@
 Manage automatic installation of tools configured in the xxx.xml files in ~/scripts/migrate_tools (e.g., 0002_tools.xml).
 All of the tools were at some point included in the Galaxy distribution, but are now hosted in the main Galaxy tool shed.
 """
-import os, urllib2, tempfile
+import os, tempfile
 from galaxy import util
 from galaxy.tools import ToolSection
 from galaxy.util.json import from_json_string, to_json_string
@@ -283,7 +283,7 @@ class InstallManager( object ):
             repository_clone_url = os.path.join( tool_shed_url, 'repos', self.repository_owner, name )
             relative_install_dir = os.path.join( relative_clone_dir, name )
             install_dir = os.path.join( clone_dir, name )
-            ctx_rev = suc.get_ctx_rev( tool_shed_url, name, self.repository_owner, installed_changeset_revision )
+            ctx_rev = suc.get_ctx_rev( self.app, tool_shed_url, name, self.repository_owner, installed_changeset_revision )
             tool_shed_repository = suc.create_or_update_tool_shed_repository( app=self.app,
                                                                               name=name,
                                                                               description=description,
@@ -310,11 +310,9 @@ class InstallManager( object ):
                                                             tool_shed_repository,
                                                             self.app.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
                     # Get the tool_versions from the tool shed for each tool in the installed change set.
-                    url = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
+                    url  = '%s/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
                         ( tool_shed_url, tool_shed_repository.name, self.repository_owner, installed_changeset_revision )
-                    response = urllib2.urlopen( url )
-                    text = response.read()
-                    response.close()
+                    text = common_util.tool_shed_get( self.app, tool_shed_url, url )
                     if text:
                         tool_version_dicts = from_json_string( text )
                         tool_util.handle_tool_versions( self.app, tool_version_dicts, tool_shed_repository )

@@ -1,7 +1,6 @@
 import logging
 import os
 import shutil
-import urllib2
 from admin import AdminGalaxy
 from galaxy import eggs
 from galaxy import web
@@ -12,6 +11,7 @@ from galaxy.web.framework.helpers import iff
 from galaxy.util import json
 from galaxy.model.orm import or_
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
@@ -334,9 +334,7 @@ class AdminToolshed( AdminGalaxy ):
         url = suc.url_join( tool_shed_url,
                             'repository/get_repository_dependencies?name=%s&owner=%s&changeset_revision=%s' % \
                             ( repository_name, repository_owner, changeset_revision ) )
-        response = urllib2.urlopen( url )
-        raw_text = response.read()
-        response.close()
+        raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         if len( raw_text ) > 2:
             encoded_text = json.from_json_string( raw_text )
             text = encoding_util.tool_shed_decode( encoded_text )
@@ -357,9 +355,7 @@ class AdminToolshed( AdminGalaxy ):
         url = suc.url_join( tool_shed_url,
                             'repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s' % \
                             ( repository_name, repository_owner, changeset_revision ) )
-        response = urllib2.urlopen( url )
-        raw_text = response.read()
-        response.close()
+        raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         if len( raw_text ) > 2:
             encoded_text = json.from_json_string( raw_text )
             text = encoding_util.tool_shed_decode( encoded_text )
@@ -379,9 +375,7 @@ class AdminToolshed( AdminGalaxy ):
         url = suc.url_join( tool_shed_url,
                             'repository/get_updated_repository_information?name=%s&owner=%s&changeset_revision=%s' % \
                             ( repository_name, repository_owner, changeset_revision ) )
-        response = urllib2.urlopen( url )
-        raw_text = response.read()
-        response.close()
+        raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         repo_information_dict = json.from_json_string( raw_text )
         return repo_information_dict
 
@@ -819,9 +813,7 @@ class AdminToolshed( AdminGalaxy ):
             url = suc.url_join( tool_shed_url,
                                 'repository/get_repository_information?repository_ids=%s&changeset_revisions=%s' % \
                                 ( repository_ids, changeset_revisions ) )
-            response = urllib2.urlopen( url )
-            raw_text = response.read()
-            response.close()
+            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
             repo_information_dict = json.from_json_string( raw_text )
             includes_tools = util.string_as_bool( repo_information_dict.get( 'includes_tools', False ) )
             includes_tools_for_display_in_tool_panel = util.string_as_bool( repo_information_dict.get( 'includes_tools_for_display_in_tool_panel', False ) )
@@ -1018,7 +1010,7 @@ class AdminToolshed( AdminGalaxy ):
                                                                           tool_shed_repository.installed_changeset_revision,
                                                                           tool_shed_repository.owner,
                                                                           tool_shed_repository.dist_to_shed )
-        ctx_rev = suc.get_ctx_rev( tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.installed_changeset_revision )
+        ctx_rev = suc.get_ctx_rev( trans.app, tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.installed_changeset_revision )
         repo_info_dicts = []
         repo_info_dict = kwd.get( 'repo_info_dict', None )
         if repo_info_dict:
@@ -1368,9 +1360,7 @@ class AdminToolshed( AdminGalaxy ):
         url = suc.url_join( tool_shed_url,
                             'repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
                             ( repository.name, repository.owner, repository.changeset_revision ) )
-        response = urllib2.urlopen( url )
-        text = response.read()
-        response.close()
+        text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         if text:
             tool_version_dicts = json.from_json_string( text )
             tool_util.handle_tool_versions( trans.app, tool_version_dicts, repository )
@@ -1382,7 +1372,7 @@ class AdminToolshed( AdminGalaxy ):
             message ++ "from the installed repository's <b>Repository Actions</b> menu.  "
             status = 'error'
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
-        repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )        
+        repo_files_dir  = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
         containers_dict = metadata_util.populate_containers_dict_from_repository_metadata( trans=trans,
                                                                                            tool_shed_url=tool_shed_url,
                                                                                            tool_path=tool_path,
