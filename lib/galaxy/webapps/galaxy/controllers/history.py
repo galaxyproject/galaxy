@@ -1350,9 +1350,11 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
 
     @web.json
     def get_display_application_links( self, trans, hda_ids=None ):
-        """Returns external display application JSON data for all/given
+        """
+        Returns external display application JSON data for all/given
         HDAs within the current history.
         """
+        #TODO: fold into API and remove
         try:
             history = trans.get_history()
             #TODO: allow id for more flexibility? (the following doesn't work if anonymous...)
@@ -1363,7 +1365,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             hdas = self.get_history_datasets( trans, history, show_deleted=False, show_hidden=True, show_purged=False )
 
         except Exception, exc:
-            log.error( 'Error get_display_application_links (%s): %s', hda_ids, str( exc ) )
+            log.error( 'Failed loading data for ids (%s): %s', hda_ids, str( exc ), exc_info=True )
             trans.response.status = 500
             return str( exc )
 
@@ -1384,10 +1386,12 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
                 hda_link_data[ 'display_apps' ] = self.get_display_apps( trans, hda )
 
             except Exception, exc:
-                log.error( 'Error getting display applications, hda (%s): %s', hda_link_data[ 'id' ], str( exc ) )
+                log.error( 'Failed getting links, hda (%s): %s', hda_link_data[ 'id' ], str( exc ), exc_info=True )
                 hda_link_data[ 'error' ] = str( exc )
 
             hda_display_links.append( hda_link_data )
 
+        # send 'do not cache' headers to handle IE's caching of ajax get responses
+        trans.response.headers[ 'Cache-Control' ] = "max-age=0,no-cache,no-store"
         trans.response.set_content_type( 'application/json' )
         return hda_display_links

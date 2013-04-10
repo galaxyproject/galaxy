@@ -446,6 +446,7 @@ $(function(){
         }
         #message-container [class$="message"] {
             margin: 8px 0 0 0;
+            cursor: pointer;
         }
 
         /*---- history level */

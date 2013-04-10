@@ -388,8 +388,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     error = True
             elif params.save:
                 # The user clicked the Save button on the 'Edit Attributes' form
-                data.name  = params.name
-                data.info  = params.info
+                data.name  = params.name if params.name else ''
+                data.info  = params.info if params.info else ''
                 message = ''
                 if __ok_to_edit_metadata( data.id ):
                     # The following for loop will save all metadata_spec items
