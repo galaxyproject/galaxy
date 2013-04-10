@@ -371,7 +371,9 @@ var HDABaseView = BaseView.extend( LoggableMixin ).extend(
         if( this.expanded ){
             // only render the body html if it's being shown
             this._render_body_html( body );
-            body.show();
+            //TODO: switch back when jq -> 1.9
+            //body.show();
+            body.css( 'display', 'block' );
         }
         return body;
     },
