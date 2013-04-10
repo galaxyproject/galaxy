@@ -14,14 +14,14 @@
 
 function doSearch(query) {
 	if (query.length > 1) {
-		var url = "/api/search";	
-		$.ajax({ 
+		var url = "/api/search";
+		$.ajax({
 			type : 'POST',
-			url: url, 
+			url: url,
 			data: JSON.stringify({"query" : query }),
 			contentType : 'application/json',
 			dataType : 'json',
-			success : function(data) { 
+			success : function(data) {
 				var p = $("#output");
 				p.empty();
 				for(var i in data) {
@@ -42,7 +42,7 @@ $(document).ready( function() {
 			doSearch($("#search_text").val());
 		}
 	});
-	doSearch($("#search_text").val());	
+	doSearch($("#search_text").val());
 });
 
 var queryURL = function (query) {
