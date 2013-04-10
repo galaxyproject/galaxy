@@ -257,11 +257,11 @@ var TabularButtonTracksterView = Backbone.View.extend(
             this.col.start   = metadata.startCol - 1;
             this.col.end     = metadata.endCol - 1;
         }
-        
+
         // check
-        if(this.col.chrom)
+        if(this.col.chrom === null)
             return;
-     
+
         // get dataset id
         if (typeof options.model.attributes.id === "undefined")
             console.log("TabularButtonTrackster : Dataset identification is missing.");
@@ -290,7 +290,7 @@ var TabularButtonTracksterView = Backbone.View.extend(
     btn_viz_show: function (e)
     {
         // check
-        if(this.col.chrom)
+        if(this.col.chrom === null)
             return;
             
         // get selected data line
