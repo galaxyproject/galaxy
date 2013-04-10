@@ -58,6 +58,9 @@ class Registry( object ):
         If the tool shed is using external auth, the client to the toolshed must
         authenticate to that as well.  This provides access to the 
         urllib2.HTTPPasswordMgrWithdefaultRealm() object for the url passed in.
+
+        Following more what galaxy.demo_sequencer.controllers.common does might
+        be more appropriate at some stage...
         """
         log.debug( 'Looking for url %s' % url )
         
@@ -66,14 +69,3 @@ class Registry( object ):
                 log.debug( 'Found %s -> %s' % (shed_name, shed_url) )
                 return self.tool_sheds_auth[ shed_name ]
         return None
-
-    def transact_with_tool_shed(self, tool_shed_url, uri):
-        """
-        Make contact with the tool shed via the uri provided.
-        """
-        urlopener    = urllib2.build_opener()
-        password_mgr = self.password_manager_for_url( tool_shed_url )
-        if ( password_mgr is not None ):
-            auth_handler = urllib2.HTTPBasicAuthHandler( password_mgr )
-            urlopener.add_handler( auth_handler )
-        return urlopener.open( uri )
