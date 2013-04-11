@@ -546,12 +546,13 @@ class Vcf( Tabular ):
     def sniff( self, filename ):
         headers = get_headers( filename, '\n', count=1 )
         return headers[0][0].startswith("##fileformat=VCF")
+
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
 
     def get_track_type( self ):
-        return "VcfTrack", {"data": "tabix", "index": "summary_tree"}
+        return "VcfTrack", { "data": "tabix", "index": "summary_tree" }
 
 class Eland( Tabular ):
     """Support for the export.txt.gz file used by Illumina's ELANDv2e aligner"""
