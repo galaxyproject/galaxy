@@ -199,10 +199,16 @@ function program28(depth0,data) {
 function program30(depth0,data) {
   
   
-  return "You are over your disk quota.\n            Tool execution is on hold until your disk usage drops below your allocated quota.";
+  return "You are over your disk quota";
   }
 
 function program32(depth0,data) {
+  
+  
+  return "Tool execution is on hold until your disk usage drops below your allocated quota";
+  }
+
+function program34(depth0,data) {
   
   
   return "Your history is empty. Click 'Get Data' on the left pane to start";
@@ -237,12 +243,18 @@ function program32(depth0,data) {
   else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
   if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }
   if(stack2 || stack2 === 0) { buffer += stack2; }
-  buffer += "\n        </div>\n    </div>\n</div>\n\n<div id=\"";
+  buffer += ".\n            ";
+  options = {hash:{},inverse:self.noop,fn:self.program(32, program32, data),data:data};
+  if (stack2 = helpers.local) { stack2 = stack2.call(depth0, options); }
+  else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
+  if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }
+  if(stack2 || stack2 === 0) { buffer += stack2; }
+  buffer += ".\n        </div>\n    </div>\n</div>\n\n<div id=\"";
   if (stack2 = helpers.id) { stack2 = stack2.call(depth0, {hash:{},data:data}); }
   else { stack2 = depth0.id; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
   buffer += escapeExpression(stack2)
     + "-datasets\" class=\"history-datasets-list\"></div>\n\n<div class=\"infomessagesmall\" id=\"emptyHistoryMessage\" style=\"display: none;\">\n    ";
-  options = {hash:{},inverse:self.noop,fn:self.program(32, program32, data),data:data};
+  options = {hash:{},inverse:self.noop,fn:self.program(34, program34, data),data:data};
   if (stack2 = helpers.local) { stack2 = stack2.call(depth0, options); }
   else { stack2 = depth0.local; stack2 = typeof stack2 === functionType ? stack2.apply(depth0) : stack2; }
   if (!helpers.local) { stack2 = blockHelperMissing.call(depth0, stack2, options); }

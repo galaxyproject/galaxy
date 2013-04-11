@@ -63,15 +63,15 @@ History panel/page - the main container for hdas (gen. on the left hand of the g
     {{/if}}
 
     <div id="message-container">
-        {{#if message}}
+        {{#if message}}{{! should already be localized }}
         <div class="{{status}}message">{{message}}</div>
         {{/if}}
     </div>
 
     <div id="quota-message-container" style="display: none">
         <div id="quota-message" class="errormessage">
-            {{#local}}You are over your disk quota.
-            Tool execution is on hold until your disk usage drops below your allocated quota.{{/local}}
+            {{#local}}You are over your disk quota{{/local}}.
+            {{#local}}Tool execution is on hold until your disk usage drops below your allocated quota{{/local}}.
         </div>
     </div>
 </div>

@@ -436,7 +436,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_new : function( parent ){
-        var newMsg = 'This is a new dataset and not all of its data are available yet';
+        var newMsg = _l( 'This is a new dataset and not all of its data are available yet' );
         parent.append( $( '<div>' + _l( newMsg ) + '</div>' ) );
     },
 
@@ -512,7 +512,7 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
      *  @param {jQuery} parent DOM to which to append this body
      */
     _render_body_empty : function( parent ){
-        //TODO: replace i with dataset-misc-info class 
+        //TODO: replace i with dataset-misc-info class
         //?? why are we showing the file size when we know it's zero??
         parent.append( $( '<div>' + _l( 'No data' ) + ': <i>' + this.model.get( 'misc_blurb' ) + '</i></div>' ) );
         parent.append( this._render_primaryActionButtons( this.defaultPrimaryActionButtonRenderers ));

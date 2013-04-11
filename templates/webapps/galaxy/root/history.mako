@@ -65,10 +65,8 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
             'Delete',
             'Job is waiting to run',
             'View Details',
-            'Run this job again',
             'Job is currently running',
-            'View Details',
-            'Run this job again',
+            #'Run this job again',
             'Metadata is being Auto-Detected.',
             'No data: ',
             'format: ',
@@ -207,9 +205,6 @@ ${h.templates(
     "template-hda-tagArea",
     "template-hda-annotationArea",
     "template-hda-displayApps",
-    
-    "template-user-quotaMeter-quota",
-    "template-user-quotaMeter-usage"
 )}
 
 ##TODO: fix: curr hasta be _after_ h.templates bc these use those templates - move somehow
@@ -323,86 +318,16 @@ $(function(){
     // set it up to be accessible across iframes
     top.Galaxy.currHistoryPanel = historyPanel;
 
-    
     //ANOTHER cross-frame element is the history-options-button...
-    // in this case, we need to change the popupmenu options listed to include some functions for this history
-    // these include: current (1 & 2) 'show/hide' delete and hidden functions, and (3) the collapse all option
     //TODO: the options-menu stuff need to be moved out when iframes are removed
-    (function(){
-        // don't try this if the history panel is in it's own window
-        if( top.document === window.document ){
-            return;
-        }
-
-        // lots of wtf here...due to infernalframes
-        //TODO: this is way tooo acrobatic
-        var $historyButtonWindow = $( top.document ),
-            HISTORY_MENU_BUTTON_ID = 'history-options-button',
-            $historyMenuButton = $historyButtonWindow.find( '#' + HISTORY_MENU_BUTTON_ID ),
-            // jq data in another frame can only be accessed by the jQuery in that frame,
-            //  get the jQuery from the top frame (that contains the history-options-button)
-            START_INSERTING_AT_INDEX = 11,
-            COLLAPSE_OPTION_TEXT = _l("Collapse Expanded Datasets"),
-            DELETED_OPTION_TEXT  = _l("Include Deleted Datasets"),
-            HIDDEN_OPTION_TEXT   = _l("Include Hidden Datasets");
-            windowJQ = $( top )[0].jQuery,
-            popupMenu = ( windowJQ && $historyMenuButton[0] )?( windowJQ.data( $historyMenuButton[0], 'PopupMenu' ) )
-                                                             :( null );
-        //console.debug(
-        //    '$historyButtonWindow:', $historyButtonWindow,
-        //    '$historyMenuButton:', $historyMenuButton,
-        //    'windowJQ:', windowJQ,
-        //    'popupmenu:', popupMenu
-        //);
-        if( !popupMenu ){ return; }
-
-        // since the history frame reloads so often (compared to the main window),
-        //  we need to check whether these options are there already before we add them again
-        // In IE, however, NOT re-adding them creates a 'cant execute from freed script' error:
-        //  so...we need to re-add the function in either case (just not the option itself)
-        //NOTE: we use the global Galaxy.currHistoryPanel here
-        //  because these remain bound in the main window even if panel refreshes
-        //TODO: too much boilerplate
-        //TODO: ugh...(in general)
-        var collapseOption = popupMenu.findItemByHtml( COLLAPSE_OPTION_TEXT );
-        if( !collapseOption ){
-            collapseOption = {
-                html    : COLLAPSE_OPTION_TEXT
-            };
-            popupMenu.addItem( collapseOption, START_INSERTING_AT_INDEX )
-        }
-        collapseOption.func = function() {
-            Galaxy.currHistoryPanel.collapseAllHdaBodies();
-        };
-
-        var deletedOption = popupMenu.findItemByHtml( DELETED_OPTION_TEXT );
-        if( !deletedOption ){
-            deletedOption = {
-                html    : DELETED_OPTION_TEXT
-            };
-            popupMenu.addItem( deletedOption, START_INSERTING_AT_INDEX + 1 )
-        }
-        deletedOption.func = function( clickEvent, thisMenuOption ){
-            var show_deleted = Galaxy.currHistoryPanel.toggleShowDeleted();
-            thisMenuOption.checked = show_deleted;
-        };
-        // whether was there or added, update the checked option to reflect the panel's settings on the panel render
-        deletedOption.checked = Galaxy.currHistoryPanel.storage.get( 'show_deleted' );
-
-        var hiddenOption = popupMenu.findItemByHtml( HIDDEN_OPTION_TEXT );
-        if( !hiddenOption ){
-            hiddenOption = {
-                html    : HIDDEN_OPTION_TEXT
-            };
-            popupMenu.addItem( hiddenOption, START_INSERTING_AT_INDEX + 2 )
-        }
-        hiddenOption.func = function( clickEvent, thisMenuOption ){
-            var show_hidden = Galaxy.currHistoryPanel.toggleShowHidden();
-            thisMenuOption.checked = show_hidden;
-        };
-        // whether was there or added, update the checked option to reflect the panel's settings on the panel render
-        hiddenOption.checked = Galaxy.currHistoryPanel.storage.get( 'show_hidden' );
-    })();
+    //TODO: move to pub-sub
+    //TODO: same strings ("Include...") here as in index.mako - brittle
+    if( ( top.document !== window.document ) &&  ( Galaxy.historyOptionsMenu ) ){
+        Galaxy.historyOptionsMenu.findItemByHtml( "${"Include Deleted Datasets"}" ).checked =
+            Galaxy.currHistoryPanel.storage.get( 'show_deleted' );
+        Galaxy.historyOptionsMenu.findItemByHtml( "${"Include Hidden Datasets"}" ).checked =
+            Galaxy.currHistoryPanel.storage.get( 'show_hidden' );
+    }
 
     return;
 });

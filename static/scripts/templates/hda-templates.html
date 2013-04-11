@@ -46,8 +46,8 @@
 <script type="text/template" class="template-hda" id="template-hda-hdaSummary">
 <div class="hda-summary">
     {{ misc_blurb }}<br />
-    format: <span class="{{ data_type }}">{{ data_type }}</span>,
-    database:
+    {{#local}}format: {{/local}}<span class="{{ data_type }}">{{ data_type }}</span>,
+    {{#local}}database: {{/local}}
     {{#if dbkey_unknown_and_editable }}
         <a class="metadata-dbkey" href="{{ urls.edit }}" target="galaxy_main">{{ metadata_dbkey }}</a>
     {{else}}
