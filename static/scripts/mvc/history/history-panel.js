@@ -54,12 +54,12 @@ TODO:
  *      panel (current right hand panel).
  *  @name HistoryPanel
  *
- *  @augments BaseView
+ *  @augments Backbone.View
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
+var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
 /** @lends HistoryPanel.prototype */{
     
     ///** logger used to record this.log messages, commonly set to console */
@@ -132,9 +132,13 @@ var HistoryPanel = BaseView.extend( LoggableMixin ).extend(
         this.model.hdas.bind( 'reset', this.addAll, this );
 
         // when a hda model is (un)deleted or (un)hidden, re-render entirely
-        //TODO??: purged
-        //TODO??: could be more selective here
         this.model.hdas.bind( 'change:deleted', this.handleHdaDeletionChange, this );
+        // when an hda is purge the disk size changes
+        this.model.hdas.bind( 'change:purged', function( hda ){
+            // hafta get the new nice-size w/o the purged hda
+            //TODO: any beter way?
+            this.model.fetch();
+        }, this );
 
         // if an a hidden hda is created (gen. by a workflow), moves thru the updater to the ready state,
         //  then: remove it from the collection if the panel is set to NOT show hidden datasets

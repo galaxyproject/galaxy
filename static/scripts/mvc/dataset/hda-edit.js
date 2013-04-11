@@ -53,11 +53,12 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 var ajaxPromise = jQuery.ajax( purge_url );
                 ajaxPromise.success( function( message, status, responseObj ){
                     hdaView.model.set( 'purged', true );
+                    hdaView.trigger( 'purged', hdaView );
                 });
                 ajaxPromise.error( function( error, status, message ){
                     //TODO: Exception messages are hidden within error page
                     //!NOTE: that includes the 'Removal of datasets by users is not allowed in this Galaxy instance.'
-                    alert( '(' + error.status + ') ' + _l( 'Unable to purge this dataset' ) + ':\n' + error );
+                    hdaView.trigger( 'error', _l( "Unable to purge this dataset" ), error, status, message );
                 });
             });
         }
@@ -152,7 +153,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             icon_class  : 'delete',
             on_click    : function() {
                 // Delete the dataset on the server and update HDA + view depending on success/failure.
-                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly 
+                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly
                 // on the model.
                 $.ajax({
                     url: delete_url,
@@ -485,7 +486,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             // Hide.
             tagArea.slideUp("fast");
         }
-        return false;        
+        return false;
     },
     
     /** Find the annotation area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
@@ -504,7 +505,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 // Need to fill annotation element.
                 $.ajax({
                     url: this.urls.annotation.get,
-                    error: function(){ alert( _l( "Annotations failed" ) ); },
+                    error: function(){
+                        view.log( "Annotation failed", xhr, status, error );
+                        view.trigger( 'error', _l( "Annotation failed" ), xhr, status, error );
+                    },
                     success: function( htmlFromAjax ){
                         if( htmlFromAjax === "" ){
                             htmlFromAjax = "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
@@ -528,7 +532,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             // Hide.
             annotationArea.slideUp("fast");
         }
-        return false;        
+        return false;
     },
 
     // ......................................................................... UTILTIY

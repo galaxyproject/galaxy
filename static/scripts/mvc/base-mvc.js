@@ -1,5 +1,5 @@
 /**
- * Simple base model for any visible element. Includes useful attributes and ability 
+ * Simple base model for any visible element. Includes useful attributes and ability
  * to set and track visibility.
  */
 var BaseModel = Backbone.RelationalModel.extend({
@@ -38,7 +38,7 @@ var BaseView = Backbone.View.extend({
         } else {
             this.$el.show();
         }
-    }    
+    }
 });
 
 
@@ -79,7 +79,7 @@ var LoggableMixin =  /** @lends LoggableMixin# */{
     log : function(){
         if( this.logger ){
             var log = this.logger.log;
-            if( typeof this.logger.log == 'object' ){
+            if( typeof this.logger.log === 'object' ){
                 log = Function.prototype.bind.call( this.logger.log, this.logger );
             }
             return log.apply( this.logger, arguments );
@@ -136,7 +136,7 @@ var GalaxyLocalization = jQuery.extend( {}, {
             });
             
         } else {
-            throw( 'Localization.setLocalizedString needs either a string or object as the first argument,' + 
+            throw( 'Localization.setLocalizedString needs either a string or object as the first argument,' +
                    ' given: ' + str_or_obj );
         }
     },
@@ -165,11 +165,6 @@ var GalaxyLocalization = jQuery.extend( {}, {
 
 // global localization alias
 window[ GalaxyLocalization.ALIAS_NAME ] = function( str ){ return GalaxyLocalization.localize( str ); };
-
-//TEST: setLocalizedString( string, string ), _l( string )
-//TEST: setLocalizedString( hash ), _l( string )
-//TEST: setLocalizedString( string === string ), _l( string )
-//TEST: _l( non assigned string )
 
 
 //==============================================================================

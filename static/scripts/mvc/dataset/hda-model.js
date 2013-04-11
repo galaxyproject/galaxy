@@ -6,12 +6,12 @@
  *      related to a history.
  *  @name HistoryDatasetAssociation
  *
- *  @augments BaseModel
+ *  @augments Backbone.Model
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
+var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
 /** @lends HistoryDatasetAssociation.prototype */{
     
     ///** logger used to record this.log messages, commonly set to console */

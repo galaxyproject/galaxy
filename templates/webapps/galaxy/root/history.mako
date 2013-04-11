@@ -118,9 +118,6 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
     hda_ext_template    = '<%= file_ext %>'
     meta_type_template  = '<%= file_type %>'
 
-    display_app_name_template = '<%= name %>'
-    display_app_link_template = '<%= link %>'
-
     url_dict = {
         # ................................................................ warning message links
         'purge' : h.url_for( controller='dataset', action='purge_async',
@@ -139,7 +136,8 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
             dataset_id=encoded_id_template ),
 
         #TODO: via api
-        'delete' : h.url_for( controller='dataset', action='delete_async', dataset_id=encoded_id_template ),
+        'delete' : h.url_for( controller='dataset', action='delete_async',
+            dataset_id=encoded_id_template ),
 
         # ................................................................ download links (and associated meta files),
         'download' : h.url_for( controller='dataset', action='display',
@@ -178,6 +176,7 @@ ${ unquote_plus( h.to_json_string( url_dict ) ) }
 ## -----------------------------------------------------------------------------
 <%def name="get_current_user()">
 <%
+    #TODO: move to root.history, using base.controller.usesUser, unify that with users api
     user_json = trans.webapp.api_controllers[ 'users' ].show( trans, 'current' )
     return user_json
 %>
@@ -222,6 +221,7 @@ ${h.js(
     
 <script type="text/javascript">
 function galaxyPageSetUp(){
+    //TODO: move to base.mako
     // moving global functions, objects into Galaxy namespace
     top.Galaxy                  = top.Galaxy || {};
     
@@ -230,24 +230,10 @@ function galaxyPageSetUp(){
         top.Galaxy.toolWindow       = top.Galaxy.toolWindow     || top.frames.galaxy_tools;
         top.Galaxy.historyWindow    = top.Galaxy.historyWindow  || top.frames.galaxy_history;
 
-        top.Galaxy.$masthead        = top.Galaxy.$masthead      || $( top.document ).find( 'div#masthead' );
-        top.Galaxy.$messagebox      = top.Galaxy.$messagebox    || $( top.document ).find( 'div#messagebox' );
-        top.Galaxy.$leftPanel       = top.Galaxy.$leftPanel     || $( top.document ).find( 'div#left' );
-        top.Galaxy.$centerPanel     = top.Galaxy.$centerPanel   || $( top.document ).find( 'div#center' );
-        top.Galaxy.$rightPanel      = top.Galaxy.$rightPanel    || $( top.document ).find( 'div#right' );
-    
         //modals
         top.Galaxy.show_modal       = top.show_modal;
         top.Galaxy.hide_modal       = top.hide_modal;
     }
-
-    // other base functions
-
-    // global backbone models
-    top.Galaxy.currUser         = top.Galaxy.currUser;
-    top.Galaxy.currHistoryPanel = top.Galaxy.currHistoryPanel;
-
-    //top.Galaxy.paths            = galaxy_paths;
 
     top.Galaxy.localization     = GalaxyLocalization;
     window.Galaxy = top.Galaxy;
@@ -263,35 +249,37 @@ galaxy_paths.set( 'history', ${get_history_url_templates()} );
 
 $(function(){
     galaxyPageSetUp();
+    // ostensibly, this is the App
 
     //NOTE: for debugging on non-local instances (main/test)
     //  1. load history panel in own tab
     //  2. from console: new PersistantStorage( '__history_panel' ).set( 'debugging', true )
     //  -> history panel and hdas will display console logs in console
-
     var debugging = false;
     if( jQuery.jStorage.get( '__history_panel' ) ){
         debugging = new PersistantStorage( '__history_panel' ).get( 'debugging' );
     }
 
-    // ostensibly, this is the App
-    // LOAD INITIAL DATA IN THIS PAGE - since we're already sending it...
-    //  ...use mako to 'bootstrap' the models
+    // get the current user (either from the top frame's Galaxy or if in tab via the bootstrap)
+    Galaxy.currUser = Galaxy.currUser || new User(${ get_current_user() });
+    if( debugging ){ Galaxy.currUser.logger = console; }
+
     var page_show_deleted = ${ 'true' if show_deleted == True else ( 'null' if show_deleted == None else 'false' ) },
         page_show_hidden  = ${ 'true' if show_hidden  == True else ( 'null' if show_hidden  == None else 'false' ) },
 
-        userJson    = ${ get_current_user() },
+    //  ...use mako to 'bootstrap' the models
         historyJson = ${ history_json },
         hdaJson     = ${ hda_json };
+
+    //TODO: add these two in root.history
+    // add user data to history
+    // i don't like this history+user relationship, but user authentication changes views/behaviour
+    historyJson.user = Galaxy.currUser.toJSON();
 
     // set up messages passed in
     %if message:
     historyJson.message = "${_( message )}"; historyJson.status = "${status}";
     %endif
-
-    // add user data to history
-    // i don't like this history+user relationship, but user authentication changes views/behaviour
-    historyJson.user = userJson;
 
     // create the history panel
     var history = new History( historyJson, hdaJson, ( debugging )?( console ):( null ) );
@@ -305,46 +293,41 @@ $(function(){
         });
     historyPanel.render();
 
-    // set it up to be accessible across iframes
-    //TODO:?? mem leak
-    top.Galaxy.currHistoryPanel = historyPanel;
-    var currUser = new User( userJson );
-    if( !Galaxy.currUser ){ Galaxy.currUser = currUser; }
-
-    // QUOTA METER is a cross-frame ui element (meter in masthead, over quota message in history)
-    //  create it and join them here for now (via events)
-    //TODO: this really belongs in the masthead
-    //TODO: and the quota message (curr. in the history panel) belongs somewhere else
-
-    //window.currUser.logger = console;
-    var quotaMeter = new UserQuotaMeter({
-        model   : currUser,
-        //logger  : ( debugging )?( console ):( null ),
-        el      : $( top.document ).find( '.quota-meter-container' )
-    });
-    //quotaMeter.logger = console; window.quotaMeter = quotaMeter
-    quotaMeter.render();
-
-    // show/hide the 'over quota message' in the history when the meter tells it to
-    quotaMeter.bind( 'quota:over',  historyPanel.showQuotaMessage, historyPanel );
-    quotaMeter.bind( 'quota:under', historyPanel.hideQuotaMessage, historyPanel );
-    // having to add this to handle re-render of hview while overquota (the above do not fire)
-    historyPanel.on( 'rendered rendered:initial', function(){
-        if( quotaMeter.isOverQuota() ){
-            historyPanel.showQuotaMessage();
+    // QUOTA METER is a cross-frame ui element (meter in masthead, watches hist. size built here)
+    //TODO: the quota message (curr. in the history panel) belongs somewhere else
+    //TODO: does not display if in own tab
+    if( Galaxy.quotaMeter ){
+        // unbind prev. so we don't build up massive no.s of event handlers as history refreshes
+        if( top.Galaxy.currHistoryPanel ){
+            Galaxy.quotaMeter.unbind( 'quota:over',  top.Galaxy.currHistoryPanel.showQuotaMessage );
+            Galaxy.quotaMeter.unbind( 'quota:under', top.Galaxy.currHistoryPanel.hideQuotaMessage );
         }
-    });
-    //TODO: this _is_ sent to the page (over_quota)...
 
-    // update the quota meter when current history changes size
-    historyPanel.model.bind( 'change:nice_size', function(){
-        quotaMeter.update()
-    }, quotaMeter );
+        // show/hide the 'over quota message' in the history when the meter tells it to
+        Galaxy.quotaMeter.bind( 'quota:over',  historyPanel.showQuotaMessage, historyPanel );
+        Galaxy.quotaMeter.bind( 'quota:under', historyPanel.hideQuotaMessage, historyPanel );
 
+        // update the quota meter when current history changes size
+        //TODO: can we consolidate the two following?
+        historyPanel.model.bind( 'rendered:initial change:nice_size', function(){
+            if( Galaxy.quotaMeter ){ Galaxy.quotaMeter.update() }
+        });
 
+        // having to add this to handle re-render of hview while overquota (the above do not fire)
+        historyPanel.on( 'rendered rendered:initial', function(){
+            if( Galaxy.quotaMeter && Galaxy.quotaMeter.isOverQuota() ){
+                historyPanel.showQuotaMessage();
+            }
+        });
+    }
+    // set it up to be accessible across iframes
+    top.Galaxy.currHistoryPanel = historyPanel;
+
+    
     //ANOTHER cross-frame element is the history-options-button...
     // in this case, we need to change the popupmenu options listed to include some functions for this history
     // these include: current (1 & 2) 'show/hide' delete and hidden functions, and (3) the collapse all option
+    //TODO: the options-menu stuff need to be moved out when iframes are removed
     (function(){
         // don't try this if the history panel is in it's own window
         if( top.document === window.document ){
@@ -420,8 +403,6 @@ $(function(){
         // whether was there or added, update the checked option to reflect the panel's settings on the panel render
         hiddenOption.checked = Galaxy.currHistoryPanel.storage.get( 'show_hidden' );
     })();
-
-    //TODO: both the quota meter and the options-menu stuff need to be moved out when iframes are removed
 
     return;
 });

@@ -2,17 +2,17 @@
 //    "../mvc/base-mvc"
 //], function(){
 
-/* global BaseView, LoggableMixin, HistoryDatasetAssociation, HDABaseView */
+/* global Backbone, LoggableMixin, HistoryDatasetAssociation, HDABaseView */
 //==============================================================================
 /** @class Read only view for HistoryDatasetAssociation.
  *  @name HDABaseView
  * 
- *  @augments BaseView
+ *  @augments Backbone.View
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HDABaseView = BaseView.extend( LoggableMixin ).extend(
+var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
 /** @lends HDABaseView.prototype */{
 
     ///** logger used to record this.log messages, commonly set to console */

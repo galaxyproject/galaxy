@@ -6,12 +6,12 @@
  *      tool use and a collection of the datasets those tools produced.
  *  @name History
  *
- *  @augments BaseModel
+ *  @augments Backbone.Model
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var History = BaseModel.extend( LoggableMixin ).extend(
+var History = Backbone.Model.extend( LoggableMixin ).extend(
 /** @lends History.prototype */{
     //TODO: bind change events from items and collection to this (itemLengths, states)
 

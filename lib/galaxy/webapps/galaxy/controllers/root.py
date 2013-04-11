@@ -134,6 +134,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         show_hidden  = util.string_as_bool_or_none( show_hidden )
         params = util.Params( kwd )
         message = params.get( 'message', '' )
+        #TODO: ugh...
+        message = message if message != 'None' else ''
         status = params.get( 'status', 'done' )
 
         if trans.app.config.require_login and not trans.user:

@@ -2,11 +2,14 @@
 
 <%def name="late_javascripts()">
     ${parent.late_javascripts()}
+
     <script type="text/javascript">
     // Set up GalaxyAsync object.
     var galaxy_async = new GalaxyAsync();
-    galaxy_async.set_func_url(galaxy_async.set_user_pref, "${h.url_for( controller='user', action='set_user_pref_async' )}");
+    galaxy_async.set_func_url( galaxy_async.set_user_pref,
+        "${h.url_for( controller='user', action='set_user_pref_async' )}");
     
+    // set up history options menu
     $(function(){
         // Init history options.
         $("#history-options-button").css( "position", "relative" );

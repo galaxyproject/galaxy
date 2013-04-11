@@ -126,6 +126,8 @@ def expose_api( func, to_json=True, key_required=True ):
         #If no key supplied, we use the existing session which may be an anonymous user.
         if key_required and not trans.user:
             try:
+                if 'key' not in kwargs:
+                    raise NoResultFound( 'No key provided' )
                 provided_key = trans.sa_session.query( trans.app.model.APIKeys ).filter( trans.app.model.APIKeys.table.c.key == kwargs['key'] ).one()
             except NoResultFound:
                 error_message = 'Provided API key is not valid.'
