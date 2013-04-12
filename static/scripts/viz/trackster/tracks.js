@@ -1578,6 +1578,7 @@ var Tool = function(track, tool_dict, tool_state_dict) {
     // Unpack tool information from dictionary.
     //
     this.track = track;
+    this.id = tool_dict.id;
     this.name = tool_dict.name;
     this.params = [];
     var params_dict = tool_dict.params;
@@ -1712,7 +1713,8 @@ extend(Tool.prototype, {
                  // URL params.
                  { 
                      target_dataset_id: this.track.original_dataset_id,
-                     tool_id: tool.name
+                     action: 'rerun',
+                     tool_id: tool.id
                  },
                  null,
                  // Success callback.
@@ -1741,7 +1743,7 @@ extend(Tool.prototype, {
             { 
                 target_dataset_id: this.track.original_dataset_id,
                 action: 'rerun',
-                tool_id: this.name,
+                tool_id: this.id,
                 regions: [
                     region.toJSON()
                 ]

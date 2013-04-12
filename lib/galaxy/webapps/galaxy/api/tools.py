@@ -223,11 +223,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
                 data_provider = data_provider_registry.get_data_provider( trans, original_dataset=input_dataset, source='data' )
-                if data_provider:
-                    if not data_provider.converted_dataset:
-                        msg = self.convert_dataset( trans, input_dataset, data_source )
-                        if msg is not None:
-                            messages_list.append( msg )
+                if data_provider and not data_provider.converted_dataset:
+                    # Can convert but no converted dataset yet, so return message about why.
+                    _, data_sources = input_dataset.datatype.get_track_type()
+                    msg = input_dataset.convert_dataset( trans, data_sources[ 'data' ] )
+                    if msg is not None:
+                        messages_list.append( msg )
 
         # Return any messages generated during conversions.
         return_message = self._get_highest_priority_msg( messages_list )
