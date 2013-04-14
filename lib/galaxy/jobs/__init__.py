@@ -1470,6 +1470,14 @@ class JobWrapper( object ):
             self.__galaxy_system_pwent = pwd.getpwuid(os.getuid())
         return self.__galaxy_system_pwent
 
+    def get_output_destination( self, output_path ):
+        """
+        Destination for outputs marked as from_work_dir. This is the normal case,
+        just copy these files directly to the ulimate destination.
+        """
+        return output_path
+
+
 class TaskWrapper(JobWrapper):
     """
     Extension of JobWrapper intended for running tasks.
@@ -1690,6 +1698,15 @@ class TaskWrapper(JobWrapper):
     def setup_external_metadata( self, exec_dir=None, tmp_dir=None, dataset_files_path=None, config_root=None, config_file=None, datatypes_config=None, set_extension=True, **kwds ):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
         return ""
+
+    def get_output_destination( self, output_path ):
+        """
+        Destination for outputs marked as from_work_dir. These must be copied with
+        the same basenme as the path for the ultimate output destination. This is
+        required in the task case so they can be merged.
+        """
+        return os.path.join( self.working_directory, os.path.basename( output_path ) )
+
 
 class NoopQueue( object ):
     """
