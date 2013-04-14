@@ -623,6 +623,8 @@ class SelectToolParameter( ToolParameter ):
     def __init__( self, tool, elem, context=None ):
         ToolParameter.__init__( self, tool, elem )
         self.multiple = string_as_bool( elem.get( 'multiple', False ) )
+        # Multiple selects are optional by default, single selection is the inverse.
+        self.optional = string_as_bool( elem.get( 'optional', self.multiple ) )
         self.display = elem.get( 'display', None )
         self.separator = elem.get( 'separator', ',' )
         self.legal_values = set()
@@ -712,8 +714,13 @@ class SelectToolParameter( ToolParameter ):
                 rval.append( v )
             return rval
         else:
-            if self.multiple and value == "None" and "None" not in legal_values:
-                return []
+            value_is_none =  ( value == "None" and "None" not in legal_values )
+            if value_is_none:
+                if self.multiple:
+                    if self.optional:
+                        return []
+                    else:
+                        raise ValueError( "No option was selected but input is not optional." )
             if value not in legal_values:
                 raise ValueError( "An invalid option was selected, please verify" )
             return value
