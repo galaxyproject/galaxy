@@ -50,6 +50,13 @@ API.prototype._ajax = function _ajax( url, options ){
     options = options || {};
     options.async = false;
 
+    // PUT data needs to be stringified in jq.ajax and the content changed
+    //TODO: server side handling could change this?
+    if( ( options.type && options.type === 'PUT' ) && ( options.data ) ){
+        options.contentType = 'application/json';
+        options.data = JSON.stringify( options.data );
+    }
+
     this.ensureJQuery( '../../static/scripts/libs/jquery/jquery.js' );
     var resp = this.spaceghost.evaluate( function( url, options ){
         return jQuery.ajax( url, options );
@@ -189,10 +196,8 @@ HDAAPI.prototype.toString = function toString(){
 HDAAPI.prototype.urlTpls = {
     index   : 'api/histories/%s/contents',
     show    : 'api/histories/%s/contents/%s',
-    create  : 'api/histories/%s/contents'//,
-    // not implemented
-    //delete_ : 'api/histories/%s',
-    //undelete: 'api/histories/deleted/%s/undelete'
+    create  : 'api/histories/%s/contents',
+    update  : 'api/histories/%s/contents/%s'
 };
 
 HDAAPI.prototype.index = function index( historyId, ids ){
@@ -213,7 +218,7 @@ HDAAPI.prototype.show = function show( historyId, id, deleted ){
 
     id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
     deleted = deleted || false;
-    return this.api._ajax( utils.format( this.urlTpls.show, id ), {
+    return this.api._ajax( utils.format( this.urlTpls.show, this.api.ensureId( historyId ), id ), {
         data : { deleted: deleted }
     });
 };
@@ -223,8 +228,23 @@ HDAAPI.prototype.create = function create( historyId, payload ){
 
     // py.payload <-> ajax.data
     payload = this.api.ensureObject( payload );
-    return this.api._ajax( utils.format( this.urlTpls.create ), {
+    return this.api._ajax( utils.format( this.urlTpls.create, this.api.ensureId( historyId ) ), {
         type : 'POST',
+        data : payload
+    });
+};
+
+HDAAPI.prototype.update = function create( historyId, id, payload ){
+    this.api.spaceghost.info( 'history.update: ' + this.api.spaceghost.jsonStr( payload ) );
+
+    // py.payload <-> ajax.data
+    historyId = this.api.ensureId( historyId );
+    id = this.api.ensureId( id );
+    payload = this.api.ensureObject( payload );
+    url = utils.format( this.urlTpls.update, historyId, id );
+
+    return this.api._ajax( url, {
+        type : 'PUT',
         data : payload
     });
 };

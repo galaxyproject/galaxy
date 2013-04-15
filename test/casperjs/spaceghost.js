@@ -551,6 +551,7 @@ SpaceGhost.prototype.waitForNavigation = function waitForNavigation( urlToWaitFo
 };
 
 /** Wait for a multiple navigation requests then call a function.
+ *      NOTE: waitFor time is set to <number of urls> * options.waitTimeout
  *      NOTE: uses string indexOf - doesn't play well with urls like [ 'history', 'history/bler' ]
  *  @param {String[]} urlsToWaitFor the relative urls to wait for
  *  @param {Function} then          the function to call after the nav request
@@ -563,7 +564,7 @@ SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigat
 
     function catchNavReq( url ){
         //this.debug( 'nav.req: ' + url );
-        for( var i=( urlsToWaitFor.length - 1 ); i>=0; i-- ){
+        for( var i=( urlsToWaitFor.length - 1 ); i>=0; i -= 1 ){
             //this.debug( '\t checking: ' + urlsToWaitFor[i] );
             if( urlMatches( urlsToWaitFor[i], url ) ){
                 this.info( 'Navigation (' + urlsToWaitFor[i] + ') found: ' + url );
@@ -584,7 +585,8 @@ SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigat
         },
         function callThen(){
             if( utils.isFunction( then ) ){ then.call( this ); }
-        }
+        },
+        this.options.waitTimeout * urlsToWaitFor.length
     );
     return this;
 };
@@ -779,7 +781,7 @@ SpaceGhost.prototype.assertStepsRaise = function assertStepsRaise( msgContains, 
     //TODO:  *  @param {Boolean} removeOtherListeners option to remove other listeners while this fires
     var spaceghost = this;
     function testTheError( msg, backtrace ){
-        spaceghost.test.assert( msg.indexOf( msgContains ) != -1, 'Raised correct error: ' + msg );
+        spaceghost.test.assert( msg.indexOf( msgContains ) !== -1, 'Raised correct error: ' + msg );
     }
     this.tryStepsCatch( stepsFn, testTheError );
 };
@@ -824,7 +826,7 @@ SpaceGhost.prototype.assertTextContains = function assertTextContains( toSearch,
  *  @param {String} className  the class to test for (classes passed in with a leading '.' will have it trimmed)
  */
 SpaceGhost.prototype.assertHasClass = function assertHasClass( selector, className, msg ){
-    className = ( className[0] == '.' )?( className.slice( 1 ) ):( className );
+    className = ( className[0] === '.' )?( className.slice( 1 ) ):( className );
     msg = msg || 'selector "' + selector + '" has class: "' + className + '"';
     var classes = this.getElementAttribute( selector, 'class' );
     this.test.assert( classes.indexOf( className ) !== -1, msg );
@@ -835,7 +837,7 @@ SpaceGhost.prototype.assertHasClass = function assertHasClass( selector, classNa
  *  @param {String} className  the class to test for (classes passed in with a leading '.' will have it trimmed)
  */
 SpaceGhost.prototype.assertDoesntHaveClass = function assertDoesntHaveClass( selector, className, msg ){
-    className = ( className[0] == '.' )?( className.slice( 1 ) ):( className );
+    className = ( className[0] === '.' )?( className.slice( 1 ) ):( className );
     msg = msg || 'selector "' + selector + '" has class: "' + className + '"';
     var classes = this.getElementAttribute( selector, 'class' );
     this.test.assert( classes.indexOf( className ) === -1, msg );
@@ -908,6 +910,7 @@ SpaceGhost.prototype.captureProgression = function captureProgression( filepath,
             count -= 1;
             if( count <= 0 ){ clearInterval( interval ); }
         }, delay );
+    return this;
 };
 
 /** Pop all handlers for eventName from casper and return them in order.

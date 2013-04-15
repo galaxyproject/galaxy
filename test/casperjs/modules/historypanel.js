@@ -315,7 +315,7 @@ HistoryPanel.prototype.data = {
         // mixing text and selectors here
         display : {
             selector : '.icon-button.display',
-            tooltip  : 'Display data in browser',
+            tooltip  : 'View data',
             hrefTpl  : '/datasets/%s/display',
             nodeName : 'a'
         },
