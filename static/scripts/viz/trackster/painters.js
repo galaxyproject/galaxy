@@ -864,7 +864,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                     }
                                     // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
                                     else if (w_scale > 0.05) {
-                                        ctx.fillRect(c_start, 
+                                        ctx.fillRect(c_start - gap, 
                                                      y_center + (pack_mode ? 1 : 4), 
                                                      Math.max( 1, Math.round(w_scale) ),
                                                      (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
@@ -1172,7 +1172,7 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
                                 }
                                 // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
                                 else if (w_scale > 0.05) {
-                                    ctx.fillRect(c_start, 
+                                    ctx.fillRect(c_start - gap, 
                                                  y_center + (pack_mode ? 1 : 4), 
                                                  Math.max( 1, Math.round(w_scale) ),
                                                  (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
