@@ -2,7 +2,7 @@
 Data providers for genome visualizations.
 """
 
-import os, sys, operator
+import os, sys, operator, re
 from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
@@ -601,12 +601,22 @@ class VcfDataProvider( GenomeDataProvider ):
     """
     Abstract class that processes VCF data from native format to payload format.
 
-    Payload format: TODO
+    Payload format: An array of entries for each locus in the file. Each array 
+    has the following entries:
+        1. GUID (unused)
+        2. location (0-based) 
+        3. reference base(s)
+        4. alternative base(s)
+        5. quality score
+        6. whether variant passed filter
+        7. sample genotypes -- a single string with samples separated by commas; empty string
+           denotes the reference genotype
+        8-end: allele counts for each alternative
     """
     
     col_name_data_attr_mapping = { 'Qual' : { 'index': 6 , 'name' : 'Qual' } }
 
-    dataset_type = 'bai'
+    dataset_type = 'variant'
     
     def process_data( self, iterator, start_val=0, max_vals=None, **kwargs ):
         """
@@ -621,7 +631,7 @@ class VcfDataProvider( GenomeDataProvider ):
             message - error/informative message
 
         """
-        rval = []
+        data = []
         message = None
 
         def get_mapping( ref, alt ):
@@ -651,6 +661,7 @@ class VcfDataProvider( GenomeDataProvider ):
                 return ref_in_alt_index, alt[ ref_in_alt_index + 1: ], [ [ cig_ops.find( "I" ), alt_len - ref_len ] ]
 
         # Pack data.
+        genotype_re = re.compile( '/|\|' )
         for count, line in enumerate( iterator ):
             if count < start_val:
                 continue
@@ -658,37 +669,61 @@ class VcfDataProvider( GenomeDataProvider ):
                 message = self.error_max_vals % ( max_vals, "features" )
                 break
 
+            # Split line and aggregate data.
             feature = line.split()
-            start = int( feature[1] ) - 1
-            ref = feature[3]
-            alts = feature[4]
+            pos, c_id, ref, alt, qual, c_filter, info = feature[ 1:8 ]
+            format = feature[ 8 ]
+            samples_data = feature [ 9: ]
+            # VCF is 1-based.
+            pos = int( pos ) - 1
+            
+            # FIXME: OK to skip?
+            if alt == '.':
+                count -= 1
+                continue
 
-            # HACK? alts == '.' --> monomorphism.
-            if alts == '.':
-                alts = ref
+            # Count number of samples matching each allele.
+            allele_counts = [ 0 for i in range ( alt.count( ',' ) + 1 ) ]
 
-            # Pack variants.
-            for alt in alts.split(","):
-                offset, new_seq, cigar = get_mapping( ref, alt )
-                start += offset
-                end = start + len( new_seq )
+            # Process and pack sample genotype.
+            sample_gts = []
+            alleles_seen = {}
+            has_alleles = False
 
-                # Pack line.
-                payload = [ 
-                            hash( line ), 
-                            start, 
-                            end,
-                            # ID:
-                            feature[2],
-                            cigar,
-                            # TODO? VCF does not have strand, so default to positive.
-                            "+",
-                            new_seq,
-                            None if feature[5] == '.' else float( feature[5] ) 
-                          ]
-                rval.append(payload)
+            for i, sample in enumerate( samples_data ):
+                # Parse and count alleles.
+                genotype = sample.split( ':' )[ 0 ]
+                has_alleles = False
+                alleles_seen.clear()
+                for allele in genotype_re.split( genotype ):
+                    allele = int( allele )
+                    # Only count allele if it hasn't been seen yet.
+                    if allele != 0 and allele not in alleles_seen:
+                        allele_counts[ allele - 1 ] += 1
+                        alleles_seen[ allele ] = True
+                        has_alleles = True
+                
+                # If no alleles, use empty string as proxy.
+                if not has_alleles:
+                    genotype = ''
 
-        return { 'data': rval, 'message': message }
+                sample_gts.append( genotype )
+
+            # Add locus data.
+            locus_data = [
+                -1,
+                pos,
+                c_id,
+                ref,
+                alt,
+                qual,
+                c_filter,
+                ','.join( sample_gts )
+            ]
+            locus_data.extend( allele_counts )
+            data.append( locus_data )
+
+        return { 'data': data, 'message': message }
 
     def write_data_to_file( self, regions, filename ):
         out = open( filename, "w" )
@@ -707,7 +742,8 @@ class VcfTabixDataProvider( TabixDataProvider, VcfDataProvider ):
     """
     Provides data from a VCF file indexed via tabix.
     """
-    pass
+    
+    dataset_type = 'variant'
 
 class RawVcfDataProvider( VcfDataProvider ):
     """

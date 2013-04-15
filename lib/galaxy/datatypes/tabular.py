@@ -552,7 +552,7 @@ class Vcf( Tabular ):
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
 
     def get_track_type( self ):
-        return "VcfTrack", { "data": "tabix", "index": "summary_tree" }
+        return "VariantTrack", { "data": "tabix", "index": "summary_tree" }
 
 class Eland( Tabular ):
     """Support for the export.txt.gz file used by Illumina's ELANDv2e aligner"""
