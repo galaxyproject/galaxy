@@ -159,7 +159,9 @@
 	  <converter file="encodepeak_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
 	</datatype>
     <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf"/>
-    <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true" />
+    <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true">
+      <converter file="pileup_to_interval_index_converter.xml" target_datatype="interval_index"/>
+    </datatype>
     <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png"/>
     <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" />
     <datatype extension="qualsolexa" type="galaxy.datatypes.qualityscore:QualityScoreSolexa" display_in_upload="true"/>

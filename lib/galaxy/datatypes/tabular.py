@@ -527,6 +527,10 @@ class Pileup( Tabular ):
             return True
         except:
             return False
+
+    def get_track_type( self ):
+        return self.track_type, { "data": "interval_index" }
+
             
 class ElandMulti( Tabular ):
     file_ext = 'elandmulti'
