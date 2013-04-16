@@ -713,7 +713,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         """
         Update the session cookie to match the current session.
         """
-        self.set_cookie( self.security.encode_guid( self.galaxy_session.session_key ), name=name, path=self.app.config.cookie_path )
+        self.set_cookie( self.security.encode_guid(self.galaxy_session.session_key ),
+                         name=name, path=self.app.config.cookie_path )
 
     def handle_user_login( self, user ):
         """
@@ -800,11 +801,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             self.__update_session_cookie( name='galaxysession' )
         elif self.webapp.name == 'tool_shed':
             self.__update_session_cookie( name='galaxycommunitysession' )
+
     def get_galaxy_session( self ):
         """
         Return the current galaxy session
         """
         return self.galaxy_session
+
     def get_history( self, create=False ):
         """
         Load the current history, creating a new one only if there is not
@@ -819,12 +822,15 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 log.debug( "This request returned None from get_history(): %s" % self.request.browser_url )
                 return None
         return history
+
     def set_history( self, history ):
         if history and not history.deleted:
             self.galaxy_session.current_history = history
         self.sa_session.add( self.galaxy_session )
         self.sa_session.flush()
+
     history = property( get_history, set_history )
+
     def new_history( self, name=None ):
         """
         Create a new history and associate it with the current session and
@@ -849,6 +855,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.add_all( ( self.galaxy_session, history ) )
         self.sa_session.flush()
         return history
+
     def get_current_user_roles( self ):
         user = self.get_user()
         if user:
@@ -856,27 +863,34 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         else:
             roles = []
         return roles
+
     def user_is_admin( self ):
         if self.api_inherit_admin:
             return True
         admin_users = [ x.strip() for x in self.app.config.get( "admin_users", "" ).split( "," ) ]
         return self.user and admin_users and self.user.email in admin_users
+
     def user_can_do_run_as( self ):
         run_as_users = self.app.config.get( "api_allow_run_as", "" ).split( "," )
         return self.user and run_as_users and self.user.email in run_as_users
+
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox
+
     @base.lazy_property
     def template_context( self ):
         return dict()
+
     @property
     def model( self ):
         return self.app.model
+
     def make_form_data( self, name, **kwargs ):
         rval = self.template_context[name] = FormData()
         rval.values.update( kwargs )
         return rval
+
     def set_message( self, message, type=None ):
         """
         Convenience method for setting the 'message' and 'message_type'
@@ -885,12 +899,14 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.template_context['message'] = message
         if type:
             self.template_context['status'] = type
+
     def get_message( self ):
         """
         Convenience method for getting the 'message' element of the template
         context.
         """
         return self.template_context['message']
+
     def show_message( self, message, type='info', refresh_frames=[], cont=None, use_panels=False, active_view="" ):
         """
         Convenience method for displaying a simple page with a single message.
@@ -902,21 +918,25 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                           refreshed when the message is displayed
         """
         return self.fill_template( "message.mako", status=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view )
+
     def show_error_message( self, message, refresh_frames=[], use_panels=False, active_view="" ):
         """
         Convenience method for displaying an error message. See `show_message`.
         """
         return self.show_message( message, 'error', refresh_frames, use_panels=use_panels, active_view=active_view )
+
     def show_ok_message( self, message, refresh_frames=[], use_panels=False, active_view="" ):
         """
         Convenience method for displaying an ok message. See `show_message`.
         """
         return self.show_message( message, 'done', refresh_frames, use_panels=use_panels, active_view=active_view )
+
     def show_warn_message( self, message, refresh_frames=[], use_panels=False, active_view="" ):
         """
         Convenience method for displaying an warn message. See `show_message`.
         """
         return self.show_message( message, 'warning', refresh_frames, use_panels=use_panels, active_view=active_view )
+
     def show_form( self, form, header=None, template="form.mako", use_panels=False, active_view="" ):
         """
         Convenience method for displaying a simple page with a single HTML
@@ -924,6 +944,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         """
         return self.fill_template( template, form=form, header=header, use_panels=( form.use_panels or use_panels ),
                                     active_view=active_view )
+
     def fill_template(self, filename, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
@@ -937,6 +958,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             template = Template( file=os.path.join(self.app.config.template_path, filename),
                                  searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)] )
             return str( template )
+
     def fill_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
@@ -944,6 +966,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )
+
     def stream_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
@@ -961,6 +984,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             template.render_context( context )
             return []
         return render
+
     def fill_template_string(self, template_string, context=None, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
