@@ -1,5 +1,4 @@
 import logging
-import urllib2
 
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 

@@ -2,7 +2,7 @@ import logging
 import os
 from galaxy.util import json
 import tool_shed.util.shed_util_common as suc
-from   tool_shed.util import common_util
+from tool_shed.util import common_util
 
 log = logging.getLogger( __name__ )
 
@@ -28,17 +28,16 @@ def build_readme_files_dict( metadata, tool_path=None ):
 
 def get_readme_files_dict_for_display( trans, tool_shed_url, repo_info_dict ):
     """
-    Return a dictionary of README files contained in the single repository 
-    being installed so they can be displayed on the tool panel section 
+    Return a dictionary of README files contained in the single repository being installed so they can be displayed on the tool panel section 
     selection page.
     """
     name = repo_info_dict.keys()[ 0 ]
     repo_info_tuple = repo_info_dict[ name ]
-    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = suc.get_repo_info_tuple_contents( repo_info_tuple )
+    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, installed_td = \
+        suc.get_repo_info_tuple_contents( repo_info_tuple )
     # Handle README files.
     url = suc.url_join( tool_shed_url,
-                       'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
-                       ( name, repository_owner, changeset_revision ) )
-    raw_text          = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+                       'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % ( name, repository_owner, changeset_revision ) )
+    raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
     readme_files_dict = json.from_json_string( raw_text )
     return readme_files_dict

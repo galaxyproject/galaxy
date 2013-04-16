@@ -1010,7 +1010,11 @@ class AdminToolshed( AdminGalaxy ):
                                                                           tool_shed_repository.installed_changeset_revision,
                                                                           tool_shed_repository.owner,
                                                                           tool_shed_repository.dist_to_shed )
-        ctx_rev = suc.get_ctx_rev( trans.app, tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.installed_changeset_revision )
+        ctx_rev = suc.get_ctx_rev( trans.app,
+                                   tool_shed_url,
+                                   tool_shed_repository.name,
+                                   tool_shed_repository.owner,
+                                   tool_shed_repository.installed_changeset_revision )
         repo_info_dicts = []
         repo_info_dict = kwd.get( 'repo_info_dict', None )
         if repo_info_dict:
@@ -1372,7 +1376,7 @@ class AdminToolshed( AdminGalaxy ):
             message ++ "from the installed repository's <b>Repository Actions</b> menu.  "
             status = 'error'
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir( trans.app, repository )
-        repo_files_dir  = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
+        repo_files_dir = os.path.abspath( os.path.join( relative_install_dir, repository.name ) )
         containers_dict = metadata_util.populate_containers_dict_from_repository_metadata( trans=trans,
                                                                                            tool_shed_url=tool_shed_url,
                                                                                            tool_path=tool_path,

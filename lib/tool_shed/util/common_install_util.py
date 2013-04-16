@@ -282,7 +282,7 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                 url  = suc.url_join( tool_shed_url, '/repository/get_required_repo_info_dict?encoded_str=%s' % encoded_required_repository_str )
                 text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 if text:
-                    required_repo_info_dict  = json.from_json_string( text )
+                    required_repo_info_dict = json.from_json_string( text )
                     required_repo_info_dicts = []
                     encoded_dict_strings = required_repo_info_dict[ 'repo_info_dicts' ]
                     for encoded_dict_str in encoded_dict_strings:

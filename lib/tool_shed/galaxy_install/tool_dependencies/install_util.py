@@ -1,7 +1,13 @@
-import sys, os, subprocess, tempfile
+import os
+import sys
+import subprocess
+import tempfile
 import common_util
 import fabric_util
-from tool_shed.util import encoding_util, tool_dependency_util, common_util
+import tool_shed.util.shed_util_common as suc
+import tool_shed.util.common_util as cu
+from tool_shed.util import encoding_util
+from tool_shed.util import tool_dependency_util
 from galaxy.model.orm import and_
 from galaxy.web import url_for
 
@@ -9,21 +15,20 @@ from galaxy import eggs
 import pkg_resources
 
 pkg_resources.require( 'elementtree' )
-from elementtree import ElementTree, ElementInclude
-from elementtree.ElementTree import Element, SubElement
+from elementtree import ElementTree
+from elementtree import ElementInclude
+from elementtree.ElementTree import Element
+from elementtree.ElementTree import SubElement
 
 def clean_tool_shed_url( base_url ):
     protocol, base = base_url.split( '://' )
     return base.rstrip( '/' )
 
 def create_temporary_tool_dependencies_config( app, tool_shed_url, name, owner, changeset_revision ):
-    """
-    Make a call to the tool shed to get the required repository's tool_dependencies.xml file.
-    """
-    url  = url_join( tool_shed_url,
-                     'repository/get_tool_dependencies_config_contents?name=%s&owner=%s&changeset_revision=%s' % \
-                         ( name, owner, changeset_revision ) )
-    text = common_util.tool_shed_get( app, tool_shed_url, url )
+    """Make a call to the tool shed to get the required repository's tool_dependencies.xml file."""
+    url = url_join( tool_shed_url,
+                    'repository/get_tool_dependencies_config_contents?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
+    text = cu.tool_shed_get( app, tool_shed_url, url )
     if text:
         # Write the contents to a temporary file on disk so it can be reloaded and parsed.
         fh = tempfile.NamedTemporaryFile( 'wb' )
@@ -102,12 +107,10 @@ def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, ow
     Get all appropriate newer changeset revisions for the repository defined by 
     the received tool_shed_url / name / owner combination.
     """
-    url  = suc.url_join( tool_shed_url,
-                         'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' %
-                         ( name, owner, changeset_revision ) )
-    text = common_util.tool_shed_get( app, tool_shed_url, url )
+    url = suc.url_join( tool_shed_url,
+                        'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
+    text = cu.tool_shed_get( app, tool_shed_url, url )
     return text
-
 
 def handle_set_environment_entry_for_package( app, install_dir, tool_shed_repository, package_name, package_version, elem ):
     action_dict = {}
@@ -220,7 +223,8 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                             else:
                                 # Make a call to the tool shed to get the changeset revision to which the current value of required_repository_changeset_revision
                                 # should be updated if it's not current.
-                                text = get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url=tool_shed,
+                                text = get_updated_changeset_revisions_from_tool_shed( app=app,
+                                                                                       tool_shed_url=tool_shed,
                                                                                        name=required_repository_name,
                                                                                        owner=required_repository_owner,
                                                                                        changeset_revision=required_repository_changeset_revision )
@@ -238,7 +242,8 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                                                                      tool_dependency_name=package_name,
                                                                      tool_dependency_version=package_version )
                                 # Make a call to the tool shed to get the required repository's tool_dependencies.xml file.
-                                tmp_filename = create_temporary_tool_dependencies_config( app, tool_shed,
+                                tmp_filename = create_temporary_tool_dependencies_config( app,
+                                                                                          tool_shed,
                                                                                           required_repository_name,
                                                                                           required_repository_owner,
                                                                                           required_repository_changeset_revision )

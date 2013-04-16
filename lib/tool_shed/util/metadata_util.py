@@ -1010,8 +1010,7 @@ def get_sample_files_from_disk( repository_files_dir, tool_path=None, relative_i
 
 def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, owner, changeset_revision ):
     """
-    Get all appropriate newer changeset revisions for the repository defined by 
-    the received tool_shed_url / name / owner combination.
+    Get all appropriate newer changeset revisions for the repository defined by the received tool_shed_url / name / owner combination.
     """
     url  = suc.url_join( tool_shed_url,
                          'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' %

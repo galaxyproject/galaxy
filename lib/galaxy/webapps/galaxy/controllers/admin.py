@@ -712,7 +712,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                     tool_dependencies_dict = {}
                     repository_name = elem.get( 'name' )
                     changeset_revision = elem.get( 'changeset_revision' )
-                    url  = '%s/repository/get_tool_dependencies?name=%s&owner=devteam&changeset_revision=%s&from_install_manager=True' % \
+                    url = '%s/repository/get_tool_dependencies?name=%s&owner=devteam&changeset_revision=%s&from_install_manager=True' % \
                         ( tool_shed_url, repository_name, changeset_revision )
                     text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                     if text:
