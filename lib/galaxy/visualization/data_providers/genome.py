@@ -759,29 +759,41 @@ class RawVcfDataProvider( VcfDataProvider ):
     """
 
     def get_iterator( self, chrom, start, end, **kwargs ):
-        # Read first line in order to match chrom naming format.
-        line = source.readline()
-        dataset_chrom = line.split()[0]
-        if not _chrom_naming_matches( chrom, dataset_chrom ):
-            chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
-        # Undo read.
-        source.seek( 0 )
+        source = open( self.original_dataset.file_name )
+
+        # Skip comments.
+        pos = 0
+        line = None
+        for line in source:
+            if not line.startswith("#"):
+                break
+            else:
+                pos = source.tell()
+
+        # Match chrom naming format.
+        if line:
+            dataset_chrom = line.split()[0]
+            if not _chrom_naming_matches( chrom, dataset_chrom ):
+                chrom = _convert_between_ucsc_and_ensemble_naming( chrom )
+
+        def line_in_region( vcf_line, chrom, start, end ):
+            """ Returns true if line is in region. """
+            variant_chrom, variant_start = vcf_line.split()[ 0:2 ]
+            # VCF format is 1-based.
+            variant_start = int( variant_start ) - 1
+            return variant_chrom == chrom and variant_start >= start and variant_start <= end
 
         def line_filter_iter():
-            for line in open( self.original_dataset.file_name ):
-                if line.startswith("#"):
-                    continue
-                variant = line.split()
-                variant_chrom, variant_start, id, ref, alts = variant[ 0:5 ]
-                variant_start = int( variant_start )
-                longest_alt = -1
-                for alt in alts:
-                    if len( alt ) > longest_alt:
-                        longest_alt = len( alt )
-                variant_end = variant_start + abs( len( ref ) - longest_alt )
-                if variant_chrom != chrom or variant_start > end or variant_end < start:
-                    continue
+            """ Yields lines in source that are in region chrom:start-end """
+            # Yield data line read above.
+            if line_in_region( line, chrom, start, end ):
                 yield line
+
+            # Search for and yield other data lines.
+            for data_line in source:
+                if line_in_region( data_line, chrom, start, end ):
+                    print chrom, start, end, ">>>", data_line,
+                    yield data_line
         
         return line_filter_iter()
 
