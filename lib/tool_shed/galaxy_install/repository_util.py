@@ -354,7 +354,11 @@ def initiate_repository_installation( trans, installation_dict ):
 def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, tool_panel_section_key, shed_tool_conf, tool_path, install_tool_dependencies,
                                   reinstalling=False ):
     if tool_panel_section_key:
-        tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+        try:
+            tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
+        except KeyError:
+            log.debug( 'Invalid tool_panel_section_key "%s" specified.  Tools will be loaded outside of sections in the tool panel.' )
+            tool_section = None
     else:
         tool_section = None
     if isinstance( repo_info_dict, basestring ):
