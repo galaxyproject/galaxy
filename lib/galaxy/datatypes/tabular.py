@@ -358,6 +358,8 @@ class Taxonomy( Tabular ):
 
 class Sam( Tabular ):
     file_ext = 'sam'
+    track_type = "ReadTrack"
+
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
         Tabular.__init__( self, **kwd )
@@ -468,7 +470,7 @@ class Sam( Tabular ):
     merge = staticmethod(merge)
 
     def get_track_type( self ):
-        return "ReadTrack", {"data": "bam", "index": "summary_tree"}
+        return self.track_type, {"data": "bam", "index": "summary_tree"}
 
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
@@ -525,8 +527,7 @@ class Pileup( Tabular ):
             return True
         except:
             return False
-
-
+            
 class ElandMulti( Tabular ):
     file_ext = 'elandmulti'
 
@@ -535,6 +536,7 @@ class ElandMulti( Tabular ):
 
 class Vcf( Tabular ):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
+    track_type = "VariantTrack"
 
     file_ext = 'vcf'
     column_names = [ 'Chrom', 'Pos', 'ID', 'Ref', 'Alt', 'Qual', 'Filter', 'Info', 'Format', 'data' ]
@@ -552,7 +554,7 @@ class Vcf( Tabular ):
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
 
     def get_track_type( self ):
-        return "VariantTrack", { "data": "tabix", "index": "summary_tree" }
+        return self.track_type, { "data": "tabix", "index": "summary_tree" }
 
 class Eland( Tabular ):
     """Support for the export.txt.gz file used by Illumina's ELANDv2e aligner"""

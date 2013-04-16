@@ -97,6 +97,9 @@ class Data( object ):
     #A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
 
+    # Trackster track type.
+    track_type = None
+
     def __init__(self, **kwd):
         """Initialize the datatype"""
         object.__init__(self, **kwd)
@@ -561,7 +564,7 @@ class Data( object ):
         Returns a list of visualizations for datatype.
         """
 
-        if hasattr( self, 'get_track_type' ):
+        if self.track_type:
             return [ 'trackster', 'circster' ]
         return []
 

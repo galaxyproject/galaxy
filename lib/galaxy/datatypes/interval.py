@@ -46,6 +46,7 @@ class Interval( Tabular ):
     """Tab delimited data containing interval information"""
     file_ext = "interval"
     line_class = "region"
+    track_type = "FeatureTrack"
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
@@ -330,15 +331,16 @@ class Interval( Tabular ):
         return None
         
     def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
+        return self.track_type, {"data": "tabix", "index": "summary_tree"}
 
 class BedGraph( Interval ):
     """Tab delimited chrom/start/end/datavalue dataset"""
 
     file_ext = "bedgraph"
+    track_type = "LineTrack"
 
     def get_track_type( self ):
-        return "LineTrack", { "data": "bigwig", "index": "bigwig" }
+        return self.track_type, { "data": "bigwig", "index": "bigwig" }
         
     def as_ucsc_display_file( self, dataset, **kwd ):
         """
@@ -512,7 +514,7 @@ class Bed( Interval ):
         except: return False
     
     def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree", "feature_search": "fli"}
+        return self.track_type, {"data": "tabix", "index": "summary_tree", "feature_search": "fli"}
 
 class BedStrict( Bed ):
     """Tab delimited data in strict BED format - no non-standard columns allowed"""
@@ -785,7 +787,7 @@ class Gff( Tabular, _RemoteCallMixin ):
             return False
             
     def get_track_type( self ):
-        return "FeatureTrack", {"data": "interval_index", "index": "summary_tree", "feature_search": "fli"}
+        return self.track_type, {"data": "interval_index", "index": "summary_tree", "feature_search": "fli"}
             
 
 class Gff3( Gff ):
@@ -966,6 +968,7 @@ class Gtf( Gff ):
 class Wiggle( Tabular, _RemoteCallMixin ):
     """Tab delimited data in wiggle format"""
     file_ext = "wig"
+    track_type = "LineTrack"
 
     MetadataElement( name="columns", default=3, desc="Number of columns", readonly=True, visible=False )
     
@@ -1148,7 +1151,7 @@ class Wiggle( Tabular, _RemoteCallMixin ):
         return resolution
         
     def get_track_type( self ):
-        return "LineTrack", { "data": "bigwig", "index": "bigwig" }
+        return self.track_type, { "data": "bigwig", "index": "bigwig" }
 
 class CustomTrack ( Tabular ):
     """UCSC CustomTrack"""
@@ -1304,7 +1307,7 @@ class ENCODEPeak( Interval ):
         return False
         
     def get_track_type( self ):
-        return "FeatureTrack", {"data": "tabix", "index": "summary_tree"}
+        return self.track_type, {"data": "tabix", "index": "summary_tree"}
         
 class ChromatinInteractions( Interval ):
     '''
@@ -1312,6 +1315,7 @@ class ChromatinInteractions( Interval ):
     '''
     
     file_ext = "chrint"
+    track_type = "DiagonalHeatmapTrack"
     
     column_names = [ 'Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value' ]
     
@@ -1330,7 +1334,7 @@ class ChromatinInteractions( Interval ):
         return False
         
     def get_track_type( self ):
-        return "DiagonalHeatmapTrack", {"data": "tabix", "index": "summary_tree"}
+        return self.track_type, {"data": "tabix", "index": "summary_tree"}
     
     
 
