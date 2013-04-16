@@ -960,6 +960,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def ncbi_builds( self ):
         return util.dlnames['ncbi']
 
+    @property
+    def user_ftp_dir( self ):
+        identifier = self.app.config.ftp_upload_dir_identifier
+        return os.path.join( self.app.config.ftp_upload_dir, getattr(self.user, identifier) )
+
     def db_dataset_for( self, dbkey ):
         """
         Returns the db_file dataset associated/needed by `dataset`, or `None`.
