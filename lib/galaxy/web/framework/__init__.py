@@ -960,7 +960,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
 
     @property
     def user_ftp_dir( self ):
-        return os.path.join( self.app.config.ftp_upload_dir, self.user.email )
+        identifier = self.app.config.ftp_upload_dir_identifier
+        return os.path.join( self.app.config.ftp_upload_dir, getattr(self.user, identifier) )
 
     def db_dataset_for( self, dbkey ):
         """
