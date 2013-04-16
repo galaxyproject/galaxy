@@ -475,7 +475,7 @@ class FTPFileToolParameter( ToolParameter ):
         if trans is None or trans.user is None:
             user_ftp_dir = None
         else:
-            user_ftp_dir = os.path.join( trans.app.config.ftp_upload_dir, trans.user.email )
+            user_ftp_dir = trans.user_ftp_dir
         return form_builder.FTPFileField( self.name, user_ftp_dir, trans.app.config.ftp_upload_site, value = value )
     def from_html( self, value, trans=None, other_values={} ):
         try:
