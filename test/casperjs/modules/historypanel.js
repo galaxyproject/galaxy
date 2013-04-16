@@ -332,6 +332,28 @@ HistoryPanel.prototype.data = {
             nodeName : 'a'
         }
     },
+    hdaPrimaryActionButtons : {
+        download : {
+            selector : '.icon-button.disk',
+            tooltip  : 'Download',
+            hrefTpl  : '/datasets/%s/display?to_ext=',
+            nodeName : 'a'
+        },
+        info : {
+            selector : '.icon-button.information',
+            tooltip  : 'View details',
+            hrefTpl  : '/datasets/%s/show_params',
+            nodeName : 'a'
+        },
+        rerun : {
+            selector : '.icon-button.arrow-circle',
+            tooltip  : 'Run this job again',
+            hrefTpl  : '/tool_runner/rerun?id=%s',
+            nodeName : 'a'
+        },
+        downloadDropdownButtonIdTpl : 'dataset-%s-popup',
+        downloadDropdownMenuIdTpl : 'dataset-%s-popup-menu'
+    },
     selectors : {
         history : {
             name        : 'div#history-name',
@@ -354,14 +376,18 @@ HistoryPanel.prototype.data = {
                     'new'   : 'historyItem-new'
                 }
             },
+            errorMessage    : '.errormessagesmall',
+
             title           : '.historyItemTitle',
             titleButtonArea : '.historyItemButtons',
             body            : '.historyItemBody',
             summary         : '.hda-summary',
             dbkey           : '.metadata-dbkey',
             info            : '.hda-info',
+            
             primaryActionButtons    : 'div[id^="primary-actions"]',
             secondaryActionButtons  : 'div[id^="secondary-actions"]',
+
             peek            : 'pre.peek'
         }
     },
@@ -388,6 +414,9 @@ HistoryPanel.prototype.data = {
             newName  : 'Unnamed history',
             newSize  : '0 bytes',
             emptyMsg : "Your history is empty. Click 'Get Data' on the left pane to start"
+        },
+        hda : {
+            datasetFetchErrorMsg : 'There was an error getting the data for this dataset'
         }
     }
 };

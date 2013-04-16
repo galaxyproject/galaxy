@@ -755,7 +755,17 @@ SpaceGhost.prototype.assertSelectorAndTextInFrame = function assertSelectorAndTe
     } else {
         assertSelectorAndText( selector, text );
     }
-}
+};
+
+/** Test helper - assert selector exists, is visible, and has text
+ *  @param {CasperJS selector} selector     what element in which to search for the text
+ *  @param {String} text                    what text to search for (optional)
+ */
+SpaceGhost.prototype.assertVisibleWithText = function assertVisibleWithText( selector, text, msg ){
+    var visible = this.test.casper.visible( selector ),
+        hasText = this.test.casper.fetchText( selector ).indexOf( text ) !== -1;
+    this.test.assert( visible && hasText, msg );
+};
 
 /** Test helper - within frame, assert errormessage, and assert text in errormessage
  *      *message is a common UI feedback motif in Galaxy (often displayed in the main panel)
