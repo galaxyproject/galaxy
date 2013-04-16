@@ -91,8 +91,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     # </action>
                     filtered_actions = [ a for a in actions ]
                     dir = install_dir
-                if not os.path.exists( dir ):
-                    os.makedirs( dir )
+                # We need to be careful in determining if the value of dir is a valid directory because we're dealing with 2 environments, the fabric local
+                # environment and the python environment.  Checking the path as follows should work.
+                full_path_to_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+                if not os.path.exists( full_path_to_dir ):
+                    os.makedirs( full_path_to_dir )
                 # The package has been down-loaded, so we can now perform all of the actions defined for building it.
                 with lcd( dir ):
                     for action_tup in filtered_actions:
