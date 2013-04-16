@@ -112,34 +112,25 @@ def expose_api_raw( func ):
 
 def expose_api_anonymous( func, to_json=True ):
     """
-    Expose this function via the API but don't require an API key.
+    Expose this function via the API but don't require a set user.
     """
-    return expose_api( func, to_json=to_json, key_required=False )
+    return expose_api( func, to_json=to_json, user_required=False )
 
-def expose_api( func, to_json=True, key_required=True ):
+def expose_api( func, to_json=True, user_required=True ):
+    """
+    Expose this function via the API.
+    """
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
         def error( environ, start_response ):
             start_response( error_status, [('Content-type', 'text/plain')] )
             return error_message
         error_status = '403 Forbidden'
-        #If no key supplied, we use the existing session which may be an anonymous user.
-        if key_required and not trans.user:
-            try:
-                if 'key' not in kwargs:
-                    raise NoResultFound( 'No key provided' )
-                provided_key = trans.sa_session.query( trans.app.model.APIKeys ).filter( trans.app.model.APIKeys.table.c.key == kwargs['key'] ).one()
-            except NoResultFound:
-                error_message = 'Provided API key is not valid.'
-                return error
-            if provided_key.user.deleted:
-                error_message = 'User account is deactivated, please contact an administrator.'
-                return error
-            newest_key = provided_key.user.api_keys[0]
-            if newest_key.key != provided_key.key:
-                error_message = 'Provided API key has expired.'
-                return error
-            trans.set_user( provided_key.user )
+        if trans.error_message:
+            return trans.error_message
+        if user_required and trans.user is None:
+            error_message = "API Authentication Required for this request"
+            return error
         if trans.request.body:
             def extract_payload_from_request(trans, func, kwargs):
                 content_type = trans.request.headers['content-type']
@@ -238,6 +229,7 @@ def error( message ):
 def form( *args, **kwargs ):
     return FormBuilder( *args, **kwargs )
 
+
 class WebApplication( base.WebApplication ):
 
     def __init__( self, galaxy_app, session_cookie='galaxysession', name=None ):
@@ -326,6 +318,7 @@ class WebApplication( base.WebApplication ):
                         controller_name = getattr( T, "controller_name", name )
                         self.add_api_controller( controller_name, T( app ) )
 
+
 class GalaxyWebTransaction( base.DefaultWebTransaction ):
     """
     Encapsulates web transaction specific state for the Galaxy application
@@ -346,13 +339,26 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # Flag indicating whether this is an API call and the API key user is an administrator
         self.api_inherit_admin = False
         self.__user = None
-        # Always have a valid galaxy session
-        self._ensure_valid_session( session_cookie )
-        # Prevent deleted users from accessing Galaxy
-        if self.app.config.use_remote_user and self.galaxy_session.user.deleted:
-            self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
-        if self.app.config.require_login:
-            self._ensure_logged_in_user( environ, session_cookie )
+        self.galaxy_session = None
+        self.error_message = None
+        if self.environ.get('is_api_request', False):
+            # With API requests, if there's a key, use it and associate the
+            # user with the transaction.
+            # If not, check for an active session but do not create one.
+            # If an error message is set here, it's sent back using
+            # trans.show_error in the response -- in expose_api.
+            self.error_message = self._authenticate_api( session_cookie )
+        else:
+            #This is a web request, get or create session.
+            self._ensure_valid_session( session_cookie )
+        if self.galaxy_session:
+            # When we've authenticated by session, we have to check the
+            # following.
+            # Prevent deleted users from accessing Galaxy
+            if self.app.config.use_remote_user and self.galaxy_session.user.deleted:
+                self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
+            if self.app.config.require_login:
+                self._ensure_logged_in_user( environ, session_cookie )
 
     def setup_i18n( self ):
         locales = []
@@ -382,16 +388,17 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
 
     def get_user( self ):
         """Return the current user if logged in or None."""
-        if self.__user:
-            return self.__user
-        else:
+        if self.galaxy_session:
             return self.galaxy_session.user
+        else:
+            return self.__user
 
     def set_user( self, user ):
         """Set the current user."""
-        self.galaxy_session.user = user
-        self.sa_session.add( self.galaxy_session )
-        self.sa_session.flush()
+        if self.galaxy_session:
+            self.galaxy_session.user = user
+            self.sa_session.add( self.galaxy_session )
+            self.sa_session.flush()
         self.__user = user
 
     user = property( get_user, set_user )
@@ -473,6 +480,33 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         except CookieError, e:
             log.warning( "Error setting httponly attribute in cookie '%s': %s" % ( name, e ) )
 
+    def _authenticate_api( self, session_cookie ):
+        """
+        Authenticate for the API via key or session (if available).
+        """
+        api_key = self.request.params.get('key', None)
+        secure_id = self.get_cookie( name=session_cookie )
+        if self.environ.get('is_api_request', False) and api_key:
+            # Sessionless API transaction, we just need to associate a user.
+            try:
+                provided_key = self.sa_session.query( self.app.model.APIKeys ).filter( self.app.model.APIKeys.table.c.key == api_key ).one()
+            except NoResultFound:
+                return 'Provided API key is not valid.'
+            if provided_key.user.deleted:
+                return 'User account is deactivated, please contact an administrator.'
+            newest_key = provided_key.user.api_keys[0]
+            if newest_key.key != provided_key.key:
+                return 'Provided API key has expired.'
+            self.set_user( provided_key.user )
+        elif secure_id:
+            # API authentication via active session
+            # Associate user using existing session
+            self._ensure_valid_session( session_cookie )
+        else:
+            # Anonymous API interaction -- anything but @expose_api_anonymous will fail past here.
+            self.user = None
+            self.galaxy_session = None
+
     def _ensure_valid_session( self, session_cookie, create=True):
         """
         Ensure that a valid Galaxy session exists and is available as
@@ -505,26 +539,27 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                                                 .filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key,
                                                                self.app.model.GalaxySession.table.c.is_valid==True ) ) \
                                                 .first()
-        # If remote user is in use it can invalidate the session, so we need to to check some things now.
-        if self.app.config.use_remote_user:
-            assert "HTTP_REMOTE_USER" in self.environ, \
-                "use_remote_user is set but no HTTP_REMOTE_USER variable"
-            remote_user_email = self.environ[ 'HTTP_REMOTE_USER' ]
-            if galaxy_session:
-                # An existing session, make sure correct association exists
-                if galaxy_session.user is None:
-                    # No user, associate
-                    galaxy_session.user = self.get_or_create_remote_user( remote_user_email )
-                    galaxy_session_requires_flush = True
-                elif galaxy_session.user.email != remote_user_email:
-                    # Session exists but is not associated with the correct remote user
-                    invalidate_existing_session = True
+            # If remote user is in use it can invalidate the session, so we need to to check some things now.
+            if self.app.config.use_remote_user:
+                #If this is an api request, and they've passed a key, we let this go.
+                assert "HTTP_REMOTE_USER" in self.environ, \
+                    "use_remote_user is set but no HTTP_REMOTE_USER variable"
+                remote_user_email = self.environ[ 'HTTP_REMOTE_USER' ]
+                if galaxy_session:
+                    # An existing session, make sure correct association exists
+                    if galaxy_session.user is None:
+                        # No user, associate
+                        galaxy_session.user = self.get_or_create_remote_user( remote_user_email )
+                        galaxy_session_requires_flush = True
+                    elif galaxy_session.user.email != remote_user_email:
+                        # Session exists but is not associated with the correct remote user
+                        invalidate_existing_session = True
+                        user_for_new_session = self.get_or_create_remote_user( remote_user_email )
+                        log.warning( "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
+                                     remote_user_email, galaxy_session.user.email )
+                else:
+                    # No session exists, get/create user for new session
                     user_for_new_session = self.get_or_create_remote_user( remote_user_email )
-                    log.warning( "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
-                                 remote_user_email, galaxy_session.user.email )
-            else:
-                # No session exists, get/create user for new session
-                user_for_new_session = self.get_or_create_remote_user( remote_user_email )
         else:
             if galaxy_session is not None and galaxy_session.user and galaxy_session.user.external:
                 # Remote user support is not enabled, but there is an existing
@@ -605,6 +640,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                     pass
             if self.request.path not in allowed_paths:
                 self.response.send_redirect( url_for( controller='root', action='index' ) )
+
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """
         Create a new GalaxySession for this request, possibly with a connection
@@ -627,6 +663,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # The new session should be associated with the user
             galaxy_session.user = user_for_new_session
         return galaxy_session
+
     def get_or_create_remote_user( self, remote_user_email ):
         """
         Create a remote user with the email remote_user_email and return it
@@ -671,11 +708,13 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 self.app.security_agent.user_set_default_permissions( user )
             #self.log_event( "Automatically created account '%s'", user.email )
         return user
+
     def __update_session_cookie( self, name='galaxysession' ):
         """
         Update the session cookie to match the current session.
         """
         self.set_cookie( self.security.encode_guid( self.galaxy_session.session_key ), name=name, path=self.app.config.cookie_path )
+
     def handle_user_login( self, user ):
         """
         Login a new user (possibly newly created)
@@ -701,9 +740,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             except:
                 users_last_session = None
                 last_accessed = False
-            if prev_galaxy_session.current_history and \
-                not prev_galaxy_session.current_history.deleted and \
-                prev_galaxy_session.current_history.datasets:
+            if (prev_galaxy_session.current_history and not
+                    prev_galaxy_session.current_history.deleted and
+                    prev_galaxy_session.current_history.datasets):
                 if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
                     # If the previous galaxy session had a history, associate it with the new
                     # session, but only if it didn't belong to a different user.
@@ -714,10 +753,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                             user.total_disk_usage += hda.quota_amount( user )
             elif self.galaxy_session.current_history:
                 history = self.galaxy_session.current_history
-            if not history and \
-                users_last_session and \
-                users_last_session.current_history and \
-                not users_last_session.current_history.deleted:
+            if (not history and users_last_session and
+                    users_last_session.current_history and not
+                    users_last_session.current_history.deleted):
                 history = users_last_session.current_history
             elif not history:
                 history = self.get_history( create=True )
@@ -736,6 +774,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name=cookie_name )
+
+
     def handle_user_logout( self, logout_all=False ):
         """
         Logout the current user:
@@ -988,6 +1028,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             return True
         return False
 
+
 class FormBuilder( object ):
     """
     Simple class describing an HTML form
@@ -999,16 +1040,21 @@ class FormBuilder( object ):
         self.submit_text = submit_text
         self.inputs = []
         self.use_panels = use_panels
+
     def add_input( self, type, name, label, value=None, error=None, help=None, use_label=True  ):
         self.inputs.append( FormInput( type, label, name, value, error, help, use_label ) )
         return self
+
     def add_text( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'text', label, name, value, error, help )
+
     def add_password( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'password', label, name, value, error, help )
+
     def add_select( self, name, label, value=None, options=[], error=None, help=None, use_label=True ):
         self.inputs.append( SelectInput( name, label, value=value, options=options, error=error, help=help, use_label=use_label   ) )
         return self
+
 
 class FormInput( object ):
     """
@@ -1023,11 +1069,13 @@ class FormInput( object ):
         self.help = help
         self.use_label = use_label
 
+
 class SelectInput( FormInput ):
     """ A select form input. """
     def __init__( self, name, label, value=None, options=[], error=None, help=None, use_label=True ):
         FormInput.__init__( self, "select", name, label, value=value, error=error, help=help, use_label=use_label )
         self.options = options
+
 
 class FormData( object ):
     """
@@ -1038,6 +1086,7 @@ class FormData( object ):
         self.values = Bunch()
         self.errors = Bunch()
 
+
 class Bunch( dict ):
     """
     Bunch based on a dict
@@ -1047,3 +1096,4 @@ class Bunch( dict ):
         return self[key]
     def __setattr__( self, key, value ):
         self[key] = value
+

@@ -138,6 +138,7 @@ class WebApplication( object ):
             environ[ 'is_api_request' ] = True
             controllers = self.api_controllers
         else:
+            environ[ 'is_api_request' ] = False
             controllers = self.controllers
         if map == None:
             raise httpexceptions.HTTPNotFound( "No route for " + path_info )
