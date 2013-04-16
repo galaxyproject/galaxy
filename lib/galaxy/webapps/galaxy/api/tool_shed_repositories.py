@@ -9,6 +9,7 @@ from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
 
 from tool_shed.galaxy_install import repository_util
+from tool_shed.util import common_util
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -140,9 +141,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                             'api/repositories/get_repository_revision_install_info?name=%s&owner=%s&changeset_revision=%s' % \
                             ( name, owner, changeset_revision ) )
         try:
-            response = urllib2.urlopen( url )
-            raw_text = response.read()
-            response.close()
+            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         except Exception, e:
             message = "Error attempting to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )

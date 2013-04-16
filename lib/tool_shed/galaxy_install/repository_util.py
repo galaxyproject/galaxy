@@ -3,13 +3,13 @@ import os
 import shutil
 import tempfile
 import threading
-import urllib2
 from galaxy import tools
 from galaxy.util import json
 from galaxy import web
 from galaxy.model.orm import or_
 from galaxy.webapps.tool_shed.util import container_util
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import data_manager_util
 from tool_shed.util import datatype_util
@@ -135,8 +135,7 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
     url = suc.url_join( tool_shed_url, 'repository/get_changeset_revision_and_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % \
         ( repository.name, repository.owner, repository.installed_changeset_revision ) )
     try:
-        response = urllib2.urlopen( url )
-        encoded_update_dict = response.read()
+        encoded_update_dict = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         if encoded_update_dict:
             update_dict = encoding_util.tool_shed_decode( encoded_update_dict )
             includes_data_managers = update_dict.get( 'includes_data_managers', False )
@@ -148,7 +147,6 @@ def get_update_to_changeset_revision_and_ctx_rev( trans, repository ):
             has_repository_dependencies = update_dict.get( 'has_repository_dependencies', False )
             changeset_revision = update_dict.get( 'changeset_revision', None )
             ctx_rev = update_dict.get( 'ctx_rev', None )
-        response.close()
         changeset_revision_dict[ 'includes_data_managers' ] = includes_data_managers
         changeset_revision_dict[ 'includes_datatypes' ] = includes_datatypes
         changeset_revision_dict[ 'includes_tools' ] = includes_tools
@@ -399,12 +397,10 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                                                     tool_shed_repository,
                                                     trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
             tool_shed_url = suc.get_url_from_tool_shed( trans.app, tool_shed_repository.tool_shed )
-            url = suc.url_join( tool_shed_url,
-                                '/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % \
-                                ( tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.changeset_revision ) )
-            response = urllib2.urlopen( url )
-            text = response.read()
-            response.close()
+            url  = suc.url_join( tool_shed_url,
+                                 '/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % 
+                                 ( tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.changeset_revision ) )
+            text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
             if text:
                 tool_version_dicts = json.from_json_string( text )
                 tool_util.handle_tool_versions( trans.app, tool_version_dicts, tool_shed_repository )

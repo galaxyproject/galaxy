@@ -111,7 +111,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     filtered_repo_info_dicts = []
     # Discover all repository dependencies and retrieve information for installing them.  Even if the user elected to not install repository dependencies we have
     # to make sure all repository dependency objects exist so that the appropriate repository dependency relationships can be built.
-    all_repo_info_dicts = common_install_util.get_required_repo_info_dicts( tool_shed_url, repo_info_dicts )
+    all_repo_info_dicts = common_install_util.get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts )
     if not all_repo_info_dicts:
         # No repository dependencies were discovered so process the received repositories.
         all_repo_info_dicts = [ rid for rid in repo_info_dicts ]
