@@ -770,6 +770,10 @@ class RawVcfDataProvider( VcfDataProvider ):
             else:
                 pos = source.tell()
 
+        # If last line is a comment, there are no data lines.
+        if line.startswith( "#" ):
+            return []
+
         # Match chrom naming format.
         if line:
             dataset_chrom = line.split()[0]
@@ -1272,7 +1276,7 @@ class BigWigDataProvider ( BBIDataProvider ):
             
 class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
     """
-    Interval index files used only for GFF files.
+    Interval index files used for GFF, Pileup files.
     """
     col_name_data_attr_mapping = { 4 : { 'index': 4 , 'name' : 'Score' } }
 
@@ -1282,20 +1286,26 @@ class IntervalIndexDataProvider( FilterableMixin, GenomeDataProvider ):
         source = open( self.original_dataset.file_name )
         index = Indexes( self.converted_dataset.file_name )
         out = open( filename, 'w' )
-        
+
         for region in regions:
             # Write data from region.
             chrom = region.chrom
             start = region.start
             end = region.end
-            for start, end, offset in index.find(chrom, start, end):
+            for start, end, offset in index.find( chrom, start, end ):
                 source.seek( offset )
-            
-                reader = GFFReaderWrapper( source, fix_strand=True )
-                feature = reader.next()
-                for interval in feature.intervals:
-                    out.write( '\t'.join( interval.fields ) + '\n' )
-                    
+
+                # HACK: write differently depending on original dataset format.
+                if self.original_dataset.ext not in [ 'gff', 'gff3', 'gtf' ]:
+                    line = source.readline()
+                    out.write( line )
+                else:
+                    reader = GFFReaderWrapper( source, fix_strand=True )
+                    feature = reader.next()
+                    for interval in feature.intervals:
+                        out.write( '\t'.join( interval.fields ) + '\n' )
+                        
+        source.close()
         out.close()
         
     def get_iterator( self, chrom, start, end, **kwargs ):
