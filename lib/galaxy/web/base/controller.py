@@ -590,12 +590,11 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                 except KeyError:
                     prefs = {}
 
-                track_type, _ = dataset.datatype.get_track_type()
                 track_data_provider = trans.app.data_provider_registry.get_data_provider( trans,
                                                                                           original_dataset=dataset,
                                                                                           source='data' )
                 return {
-                    "track_type": track_type,
+                    "track_type": dataset.datatype.track_type,
                     "name": track_dict['name'],
                     "hda_ldda": track_dict.get("hda_ldda", "hda"),
                     "dataset_id": trans.security.encode_id( dataset.id ),
@@ -666,9 +665,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         Returns track configuration dict for a dataset.
         """
         # Get data provider.
-        track_type, _ = dataset.datatype.get_track_type()
         track_data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset=dataset )
-
 
         if isinstance( dataset, trans.app.model.HistoryDatasetAssociation ):
             hda_ldda = "hda"
@@ -677,7 +674,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
 
         # Get track definition.
         return {
-            "track_type": track_type,
+            "track_type": dataset.datatype.track_type,
             "name": dataset.name,
             "hda_ldda": hda_ldda,
             "dataset_id": trans.security.encode_id( dataset.id ),

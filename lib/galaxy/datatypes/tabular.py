@@ -359,6 +359,7 @@ class Taxonomy( Tabular ):
 class Sam( Tabular ):
     file_ext = 'sam'
     track_type = "ReadTrack"
+    data_sources = { "data": "bam", "index": "summary_tree" }
 
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
@@ -469,13 +470,11 @@ class Sam( Tabular ):
             raise Exception('Result %s from %s' % (result, cmd))
     merge = staticmethod(merge)
 
-    def get_track_type( self ):
-        return self.track_type, {"data": "bam", "index": "summary_tree"}
-
 class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
     file_ext = "pileup"
     line_class = "genomic coordinate"
+    data_sources = { "data": "interval_index" }
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
@@ -527,10 +526,6 @@ class Pileup( Tabular ):
             return True
         except:
             return False
-
-    def get_track_type( self ):
-        return self.track_type, { "data": "interval_index" }
-
             
 class ElandMulti( Tabular ):
     file_ext = 'elandmulti'
@@ -541,6 +536,7 @@ class ElandMulti( Tabular ):
 class Vcf( Tabular ):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
     track_type = "VariantTrack"
+    data_sources = { "data": "tabix", "index": "summary_tree" }
 
     file_ext = 'vcf'
     column_names = [ 'Chrom', 'Pos', 'ID', 'Ref', 'Alt', 'Qual', 'Filter', 'Info', 'Format', 'data' ]
@@ -556,9 +552,6 @@ class Vcf( Tabular ):
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
-
-    def get_track_type( self ):
-        return self.track_type, { "data": "tabix", "index": "summary_tree" }
 
 class Eland( Tabular ):
     """Support for the export.txt.gz file used by Illumina's ELANDv2e aligner"""

@@ -100,6 +100,9 @@ class Data( object ):
     # Trackster track type.
     track_type = None
 
+    # Data sources.
+    data_sources = {}
+
     def __init__(self, **kwd):
         """Initialize the datatype"""
         object.__init__(self, **kwd)

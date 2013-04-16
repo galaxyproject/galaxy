@@ -1333,10 +1333,9 @@ class DatasetInstance( object ):
         with entries of type
         (<datasource_type> : {<datasource_name>, <indexing_message>}).
         """
-        track_type, data_sources = self.datatype.get_track_type()
         data_sources_dict = {}
         msg = None
-        for source_type, source_list in data_sources.iteritems():
+        for source_type, source_list in self.datatype.data_sources.iteritems():
             data_source = None
             if source_type == "data_standalone":
                 # Nothing to do.

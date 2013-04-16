@@ -83,12 +83,12 @@ class DataProviderRegistry( object ):
             elif original_dataset:
                 # No name, so look up a provider name from datatype's information.
 
-                # Dataset must have get_track_type function to get data.
-                if not hasattr( original_dataset.datatype, 'get_track_type'):
+                # Dataset must have data sources to get data.
+                if not original_dataset.datatype.data_sources:
                     return None
                 
                 # Get data provider mapping and data provider.
-                _ , data_provider_mapping = original_dataset.datatype.get_track_type()
+                data_provider_mapping = original_dataset.datatype.data_sources
                 if 'data_standalone' in data_provider_mapping:
                     data_provider = self.get_data_provider( trans, 
                                                             name=data_provider_mapping[ 'data_standalone' ], 

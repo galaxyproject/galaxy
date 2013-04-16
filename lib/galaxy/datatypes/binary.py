@@ -95,6 +95,7 @@ class Bam( Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"
     track_type = "ReadTrack"
+    data_sources = { "data": "bai", "index": [ "bigwig", "summary_tree" ] }
 
     MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True )
 
@@ -246,9 +247,7 @@ class Bam( Binary ):
             return dataset.peek
         except:
             return "Binary bam alignments file (%s)" % ( data.nice_size( dataset.get_size() ) )
-    def get_track_type( self ):
-        return self.track_type, { "data": "bai", "index": [ "bigwig", "summary_tree" ] }
-
+    
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
 
 class H5( Binary ):
@@ -327,6 +326,7 @@ class BigWig(Binary):
     http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btq351v1
     """
     track_type = "LineTrack"
+    data_sources = { "data_standalone": "bigwig" }
 
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
@@ -352,20 +352,18 @@ class BigWig(Binary):
             return dataset.peek
         except:
             return "Binary UCSC %s file (%s)" % ( self._name, data.nice_size( dataset.get_size() ) )
-    def get_track_type( self ):
-        return self.track_type, {"data_standalone": "bigwig"}
-
+    
 Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
 
 class BigBed(BigWig):
     """BigBed support from UCSC."""
 
+    data_sources = { "data_standalone": "bigbed" }
+
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
         self._magic = 0x8789F2EB
         self._name = "BigBed"
-    def get_track_type( self ):
-        return self.track_type, {"data_standalone": "bigbed"}
 
 Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 
