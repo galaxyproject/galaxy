@@ -1031,14 +1031,18 @@ def get_components_from_key( key ):
     changeset_revision = items[ 3 ]
     if len( items ) == 5:
         prior_installation_required = asbool( str( items[ 4 ] ) )
+        return toolshed_base_url, repository_name, repository_owner, changeset_revision, prior_installation_required
     else:
-        # Metadata should have been reset on the repository that contains the definition for this repository_dependency.  In the meantime we'll
-        # default the prior_installation_required to False.
-        prior_installation_required = False   
-    return toolshed_base_url, repository_name, repository_owner, changeset_revision, prior_installation_required
+        # For backward compatibility to the 12/20/12 Galaxy release we have to return the following, and callers must handle exceptions.
+        return toolshed_base_url, repository_name, repository_owner, changeset_revision
 
 def handle_repository_dependencies_container_entry( trans, repository_dependencies_folder, rd_key, rd_value, folder_id, repository_dependency_id, folder_keys ):
-    toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = get_components_from_key( rd_key )
+    try:
+        toolshed, repository_name, repository_owner, changeset_revision, prior_installation_required = get_components_from_key( rd_key )
+    except ValueError:
+        # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required to False.
+        toolshed, repository_name, repository_owner, changeset_revision = get_components_from_key( rd_key )
+        prior_installation_required = False
     folder = get_folder( repository_dependencies_folder, rd_key )
     label = generate_repository_dependencies_folder_label_from_key( repository_name,
                                                                     repository_owner,
@@ -1114,7 +1118,12 @@ def is_subfolder_of( folder, repository_dependency ):
     return False
 
 def key_is_current_repositorys_key( repository_name, repository_owner, changeset_revision, prior_installation_required, key ):
-    toolshed_base_url, key_name, key_owner, key_changeset_revision, key_prior_installation_required = get_components_from_key( key )
+    try:
+        toolshed_base_url, key_name, key_owner, key_changeset_revision, key_prior_installation_required = get_components_from_key( key )
+    except ValueError:
+        # For backward compatibility to the 12/20/12 Galaxy release, default key_prior_installation_required to False.
+        toolshed_base_url, key_name, key_owner, key_changeset_revision = get_components_from_key( key )
+        key_prior_installation_required = False
     return repository_name == key_name and \
         repository_owner == key_owner and \
         changeset_revision == key_changeset_revision and \

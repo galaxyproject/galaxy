@@ -478,8 +478,12 @@ def merge_containers_dicts_for_new_install( containers_dicts ):
                     old_container_repository_dependencies_folder.id = folder_id
                     folder_id += 1
                     # Generate the label by retrieving the repository name.
-                    toolshed, name, owner, changeset_revision, prior_installation_required = \
-                        container_util.get_components_from_key( old_container_repository_dependencies_folder.key )
+                    try:
+                        toolshed, name, owner, changeset_revision, prior_installation_required = \
+                            container_util.get_components_from_key( old_container_repository_dependencies_folder.key )
+                    except ValueError:
+                        # For backward compatibility to the 12/20/12 Galaxy release.
+                        toolshed, name, owner, changeset_revision = container_util.get_components_from_key( old_container_repository_dependencies_folder.key )
                     old_container_repository_dependencies_folder.label = str( name )
                     repository_dependencies_folder.folders.append( old_container_repository_dependencies_folder )
                 # Merge tool_dependencies.

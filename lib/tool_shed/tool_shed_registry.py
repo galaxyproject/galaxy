@@ -42,9 +42,8 @@ class Registry( object ):
 
         Following more what galaxy.demo_sequencer.controllers.common does might be more appropriate at some stage...
         """
-        log.debug( 'Looking for url %s' % url )
         for shed_name, shed_url in self.tool_sheds.items():
             if shed_url.find( url ) >= 0:
-                log.debug( 'Found %s -> %s' % ( shed_name, shed_url ) )
                 return self.tool_sheds_auth[ shed_name ]
+        log.debug( "Invalid url '%s' received by tool shed registry's password_manager_for_url method." % str( url ) )
         return None
