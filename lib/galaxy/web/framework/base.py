@@ -44,20 +44,21 @@ def __resource_with_deleted( self, member_name, collection_name, **kwargs ):
     self.resource( member_name, collection_name, **kwargs )
 routes.Mapper.resource_with_deleted = __resource_with_deleted
 
+
 class WebApplication( object ):
     """
     A simple web application which maps requests to objects using routes,
-    and to methods on those objects in the CherryPy style. Thus simple 
+    and to methods on those objects in the CherryPy style. Thus simple
     argument mapping in the CherryPy style occurs automatically, but more
     complicated encoding of arguments in the PATH_INFO can be performed
     with routes.
     """
     def __init__( self ):
         """
-        Create a new web application object. To actually connect some 
-        controllers use `add_controller` and `add_route`. Call 
+        Create a new web application object. To actually connect some
+        controllers use `add_controller` and `add_route`. Call
         `finalize_config` when all controllers and routes have been added
-        and `__call__` to handle a request (WSGI style). 
+        and `__call__` to handle a request (WSGI style).
         """
         self.controllers = dict()
         self.api_controllers = dict()
@@ -69,36 +70,41 @@ class WebApplication( object ):
         self.transaction_factory = DefaultWebTransaction
         # Set if trace logging is enabled
         self.trace_logger = None
+
     def add_ui_controller( self, controller_name, controller ):
         """
         Add a controller class to this application. A controller class has
         methods which handle web requests. To connect a URL to a controller's
         method use `add_route`.
         """
-        log.debug( "Enabling '%s' controller, class: %s", 
+        log.debug( "Enabling '%s' controller, class: %s",
             controller_name, controller.__class__.__name__ )
         self.controllers[ controller_name ] = controller
+
     def add_api_controller( self, controller_name, controller ):
         log.debug( "Enabling '%s' API controller, class: %s",
             controller_name, controller.__class__.__name__ )
         self.api_controllers[ controller_name ] = controller
+
     def add_route( self, route, **kwargs ):
         """
         Add a route to match a URL with a method. Accepts all keyword
         arguments of `routes.Mapper.connect`. Every route should result in
-        at least a controller value which corresponds to one of the 
-        objects added with `add_controller`. It optionally may yield an 
+        at least a controller value which corresponds to one of the
+        objects added with `add_controller`. It optionally may yield an
         `action` argument which will be used to locate the method to call
         on the controller. Additional arguments will be passed to the
-        method as keyword args. 
+        method as keyword args.
         """
         self.mapper.connect( route, **kwargs )
+
     def set_transaction_factory( self, transaction_factory ):
         """
         Use the callable `transaction_factory` to create the transaction
         which will be passed to requests.
         """
         self.transaction_factory = transaction_factory
+
     def finalize_config( self ):
         """
         Call when application is completely configured and ready to serve
@@ -106,6 +112,7 @@ class WebApplication( object ):
         """
         # Create/compile the regular expressions for route mapping
         self.mapper.create_regs( self.controllers.keys() )
+
     def trace( self, **fields ):
         if self.trace_logger:
             self.trace_logger.log( "WebApplication", **fields )
@@ -173,7 +180,7 @@ class WebApplication( object ):
             raise httpexceptions.HTTPNotFound( "Action not exposed for " + path_info )
         # Is the method callable
         if not callable( method ):
-            raise httpexceptions.HTTPNotFound( "Action not callable for " + path_info ) 
+            raise httpexceptions.HTTPNotFound( "Action not callable for " + path_info )
         # Combine mapper args and query string / form args and call
         kwargs = trans.request.params.mixed()
         kwargs.update( map )
@@ -196,14 +203,14 @@ class WebApplication( object ):
         elif isinstance( body, tarfile.ExFileObject ):
             # Stream the tarfile member back to the browser
             body = iterate_file( body )
-            start_response( trans.response.wsgi_status(), 
+            start_response( trans.response.wsgi_status(),
                             trans.response.wsgi_headeritems() )
             return body
         else:
-            start_response( trans.response.wsgi_status(), 
+            start_response( trans.response.wsgi_status(),
                             trans.response.wsgi_headeritems() )
             return self.make_body_iterable( trans, body )
-        
+
     def make_body_iterable( self, trans, body ):
         if isinstance( body, ( types.GeneratorType, list, tuple ) ):
             # Recursively stream the iterable
@@ -223,7 +230,8 @@ class WebApplication( object ):
         Allow handling of exceptions raised in controller methods.
         """
         return False
-        
+
+
 class WSGIEnvironmentProperty( object ):
     """
     Descriptor that delegates a property to a key in the environ member of the
@@ -236,6 +244,7 @@ class WSGIEnvironmentProperty( object ):
     def __get__( self, obj, type = None ):
         if obj is None: return self
         return obj.environ.get( self.key, self.default )
+
 
 class LazyProperty( object ):
     """
@@ -250,12 +259,13 @@ class LazyProperty( object ):
         setattr( obj, self.func.func_name, value )
         return value
 lazy_property = LazyProperty
-        
+
+
 class DefaultWebTransaction( object ):
     """
-    Wraps the state of a single web transaction (request/response cycle). 
+    Wraps the state of a single web transaction (request/response cycle).
 
-    TODO: Provide hooks to allow application specific state to be included 
+    TODO: Provide hooks to allow application specific state to be included
           in here.
     """
     def __init__( self, environ ):
@@ -274,7 +284,7 @@ class DefaultWebTransaction( object ):
             return self.environ['beaker.session']
         else:
             return None
-    
+
 # For request.params, override cgi.FieldStorage.make_file to create persistent
 # tempfiles.  Necessary for externalizing the upload tool.  It's a little hacky
 # but for performance reasons it's way better to use Paste's tempfile than to
@@ -290,12 +300,13 @@ class FieldStorage( cgi.FieldStorage ):
         if self.outerboundary:
             self.read_lines_to_outerboundary()
         else:
-            self.read_lines_to_eof() 
+            self.read_lines_to_eof()
 cgi.FieldStorage = FieldStorage
+
 
 class Request( webob.Request ):
     """
-    Encapsulates an HTTP request. 
+    Encapsulates an HTTP request.
     """
     def __init__( self, environ ):
         """
@@ -330,7 +341,7 @@ class Request( webob.Request ):
         return self.environ['SCRIPT_NAME'] + self.environ['PATH_INFO']
     @lazy_property
     def browser_url( self ):
-        return self.base + self.path        
+        return self.base + self.path
     # Descriptors that map properties to the associated environment
     ## scheme = WSGIEnvironmentProperty( 'wsgi.url_scheme' )
     ## remote_addr = WSGIEnvironmentProperty( 'REMOTE_ADDR' )
@@ -340,6 +351,7 @@ class Request( webob.Request ):
     protocol = WSGIEnvironmentProperty( 'SERVER_PROTOCOL' )
     ## query_string = WSGIEnvironmentProperty( 'QUERY_STRING' )
     ## path_info = WSGIEnvironmentProperty( 'PATH_INFO' )
+
 
 class Response( object ):
     """
@@ -353,18 +365,22 @@ class Response( object ):
         self.status = "200 OK"
         self.headers = HeaderDict( { "content-type": "text/html" } )
         self.cookies = SimpleCookie()
+
     def set_content_type( self, type ):
         """
         Sets the Content-Type header
         """
         self.headers[ "content-type" ] = type
+
     def get_content_type( self ):
         return self.headers[ "content-type" ]
+
     def send_redirect( self, url ):
         """
         Send an HTTP redirect response to (target `url`)
         """
         raise httpexceptions.HTTPFound( url, headers=self.wsgi_headeritems() )
+
     def wsgi_headeritems( self ):
         """
         Return headers in format appropriate for WSGI `start_response`
@@ -376,10 +392,11 @@ class Response( object ):
             header, value = str( crumb ).split( ': ', 1 )
             result.append( ( header, value ) )
         return result
+
     def wsgi_status( self ):
         """
         Return status line in format appropriate for WSGI `start_response`
-        """        
+        """
         if isinstance( self.status, int ):
             exception = httpexceptions.get_exception( self.status )
             return "%d %s" % ( exception.code, exception.title )
@@ -404,7 +421,7 @@ def send_file( start_response, trans, body ):
     # Fall back on sending the file in chunks
     else:
         body = iterate_file( body )
-    start_response( trans.response.wsgi_status(), 
+    start_response( trans.response.wsgi_status(),
                     trans.response.wsgi_headeritems() )
     return body
 
