@@ -2,7 +2,7 @@
 Data providers for genome visualizations.
 """
 
-import os, sys, operator, re
+import os, sys, re
 from math import ceil, log
 import pkg_resources
 pkg_resources.require( "bx-python" )
@@ -696,12 +696,17 @@ class VcfDataProvider( GenomeDataProvider ):
                 has_alleles = False
                 alleles_seen.clear()
                 for allele in genotype_re.split( genotype ):
-                    allele = int( allele )
-                    # Only count allele if it hasn't been seen yet.
-                    if allele != 0 and allele not in alleles_seen:
-                        allele_counts[ allele - 1 ] += 1
-                        alleles_seen[ allele ] = True
-                        has_alleles = True
+                    try:
+                        # This may throw a ValueError if allele is missing.
+                        allele = int( allele )
+
+                        # Only count allele if it hasn't been seen yet.
+                        if allele != 0 and allele not in alleles_seen:
+                            allele_counts[ allele - 1 ] += 1
+                            alleles_seen[ allele ] = True
+                            has_alleles = True
+                    except ValueError:
+                        pass
                 
                 # If no alleles, use empty string as proxy.
                 if not has_alleles:
@@ -1048,34 +1053,44 @@ class BamDataProvider( GenomeDataProvider, FilterableMixin ):
 
         # If there are results and reference data, transform read sequence and cigar.
         if len( results ) != 0 and ref_seq:
+            def process_read( read, start_field, cigar_field, seq_field ):
+                '''
+                Process a read using the designated fields.
+                '''
+                read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ seq_field ].upper(), 
+                                                                         read[ start_field ], 
+                                                                         ref_seq, 
+                                                                         start, 
+                                                                         read[ cigar_field ] )
+                read[ seq_field ] = read_seq
+                read[ cigar_field ] = read_cigar
+
             def process_se_read( read ):
                 '''
                 Process single-end read.
                 '''
-                read_seq, read_cigar = get_ref_based_read_seq_and_cigar( read[ 6 ].upper(), read[ 1 ], 
-                                                                         ref_seq, start, read[ 4 ] )
-                read[ 6 ] = read_seq
-                read[ 4 ] = read_cigar
-
+                process_read( read, 1, 4, 6)
+                
             def process_pe_read( read ):
                 '''
                 Process paired-end read.
                 '''
-                process_se_read( read[ 4 ] )
-                process_se_read( read[ 5 ] )
+                if len( read[4] ) > 2:
+                    process_read( read[4], 0, 2, 4 )
+                if len( read[5] ) > 2:
+                    process_read( read[5], 0, 2, 4 )
 
             # Uppercase for easy comparison.
             ref_seq = ref_seq.upper()
 
-            # Choose correct function for processing reads.
-            process_fn = process_se_read
-            if isinstance( results[ 0 ][ 5 ], list ):
-                process_fn = process_pe_read
-
             # Process reads.
             for read in results:
-                process_fn( read )
-        
+                # Use correct function for processing reads.
+                if isinstance( read[ 5 ], list ):
+                    process_pe_read( read )
+                else:
+                    process_se_read( read )
+
         max_low, max_high = get_bounds( results, 1, 2 )
                 
         return { 'data': results, 'message': message, 'max_low': max_low, 'max_high': max_high }
@@ -1086,14 +1101,16 @@ class SamDataProvider( BamDataProvider ):
     
     def __init__( self, converted_dataset=None, original_dataset=None, dependencies=None ):
         """ Create SamDataProvider. """
+        super( SamDataProvider, self ).__init__( converted_dataset=converted_dataset,
+                                                 original_dataset=original_dataset,
+                                                 dependencies=dependencies )
         
-        # HACK: to use BamDataProvider, original dataset must be BAM and 
+        # To use BamDataProvider, original dataset must be BAM and 
         # converted dataset must be BAI. Use BAI from BAM metadata.
         if converted_dataset:
-            self.converted_dataset = converted_dataset.metadata.bam_index
             self.original_dataset = converted_dataset
-        self.dependencies = dependencies
-
+            self.converted_dataset = converted_dataset.metadata.bam_index
+        
 class BBIDataProvider( GenomeDataProvider ):
     """
     BBI data provider for the Galaxy track browser. 

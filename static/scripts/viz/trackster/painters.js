@@ -1660,7 +1660,10 @@ extend(VariantPainter.prototype, Painter.prototype, {
                 // Get variant to draw and set drawing properties.
                 variant = null;
                 if (genotype[0] === genotype[1]) {
-                    if (genotype[0] !== '0') {
+                    if (genotype[0] === '.') {
+                        // TODO: draw uncalled variant.
+                    }
+                    else if (genotype[0] !== '0') {
                         // Homozygous for variant.
                         variant = alt[ parseInt(genotype[0], 10) - 1 ];
                         ctx.globalAlpha = 1;

@@ -2421,15 +2421,18 @@ extend(Track.prototype, Drawable.prototype, {
         // Remove track.
         Drawable.prototype.action_icons_def[2]
     ],
+
     can_draw: function() {        
         if ( this.dataset_id && Drawable.prototype.can_draw.call(this) ) { 
             return true;
         }
         return false;
     },
+
     build_container_div: function () {
         return $("<div/>").addClass('track').attr("id", "track_" + this.id).css("position", "relative");
     },
+
     build_header_div: function() {
         var header_div = $("<div class='track-header'/>");
         if (this.view.editor) { this.drag_div = $("<div/>").addClass(this.drag_handle_class).appendTo(header_div); }
@@ -2437,10 +2440,22 @@ extend(Track.prototype, Drawable.prototype, {
                         .attr( "id", this.name.replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'').toLowerCase() );
         return header_div;
     },
+
+    /** 
+     * Set track's dataset.
+     */
+    set_dataset: function(dataset) {
+        this.dataset = dataset;
+        this.data_manager.set('dataset', dataset);
+        this.dataset_id = dataset.get('id');
+        this.hda_ldda = dataset.get('hda_ldda');
+    },
+
     /**
      * Action to take during resize.
      */
     on_resize: function() {},
+
     /**
      * Add resizing handle to drawable's container_div.
      */
@@ -2477,6 +2492,7 @@ extend(Track.prototype, Drawable.prototype, {
             track.changed();
         }).appendTo(track.container_div);
     },
+
     /**
      * Set track's modes and update mode icon popup.
      */
@@ -2508,6 +2524,7 @@ extend(Track.prototype, Drawable.prototype, {
 
         make_popupmenu(this.action_icons.mode_icon, mode_mapping);
     },
+
     build_action_icons: function() {
         Drawable.prototype.build_action_icons.call(this, this.action_icons_def);
         
@@ -2516,6 +2533,7 @@ extend(Track.prototype, Drawable.prototype, {
             this.set_display_modes(this.display_modes);
         }
     },
+
     /**
      * Hide any elements that are part of the tracks contents area. Should
      * remove as approprite, the track will be redrawn by show_contents.
@@ -2526,6 +2544,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Hide any y axis labels (common to several track types)
         this.container_div.find(".yaxislabel, .track-resize").hide();
     },
+
     show_contents: function() {
         // Show the contents div and labels (if present)
         this.tiles_div.show();
@@ -2533,6 +2552,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Request a redraw of the content
         this.request_draw();
     },
+
     /** 
      * Returns track type. 
      */
@@ -2561,6 +2581,7 @@ extend(Track.prototype, Drawable.prototype, {
         }
         return "";
     },
+
     /**
      * Initialize and draw the track.
      */
@@ -2652,6 +2673,7 @@ extend(Track.prototype, Drawable.prototype, {
         this.update_icons();
         return init_deferred;
     },
+
     /**
      * Additional initialization required before drawing track for the first time.
      */
@@ -3817,13 +3839,7 @@ var FeatureTrack = function(view, container, obj_dict) {
     this.set_painter_from_config();
 };
 extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
-    set_dataset: function(dataset) {
-        this.dataset_id = dataset.get('id');
-        this.hda_ldda = dataset.get('hda_ldda');
-        this.dataset = dataset;
-        this.data_manager.set('dataset', dataset);
-    },
-    
+
     set_painter_from_config: function() {
         if ( this.config.values['connector_style'] === 'arcs' ) {
             this.painter = painters.ArcLinkedFeaturePainter;
