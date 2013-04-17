@@ -151,11 +151,9 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         hda_dictionaries   = []
         try:
             history = trans.get_history( create=True )
-            history_dictionary = self.get_history_dict( trans, history )
-
-            #TODO: would be good to re-use the hdas above to get the history data...
             hdas = self.get_history_datasets( trans, history,
                 show_deleted=True, show_hidden=True, show_purged=True )
+
             for hda in hdas:
                 try:
                     hda_dictionaries.append( self.get_hda_dict( trans, hda ) )
@@ -164,6 +162,9 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                     # don't fail entire list if hda err's, record and move on
                     log.error( 'Error bootstrapping hda %d: %s', hda.id, str( exc ), exc_info=True )
                     hda_dictionaries.append( self.get_hda_dict_with_error( trans, hda, str( exc ) ) )
+
+            # re-use the hdas above to get the history data...
+            history_dictionary = self.get_history_dict( trans, history, hda_dictionaries=hda_dictionaries )
 
         except Exception, exc:
             log.error( 'Error bootstrapping history for user %d: %s', trans.user.id, str( exc ), exc_info=True )

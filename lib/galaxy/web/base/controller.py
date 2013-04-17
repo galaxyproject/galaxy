@@ -962,7 +962,7 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
         return state
 
-    def get_history_dict( self, trans, history ):
+    def get_history_dict( self, trans, history, hda_dictionaries=None ):
         """Returns history data in the form of a dictionary.
         """
         history_dict = history.get_api_value( view='element', value_mapper={ 'id':trans.security.encode_id })
@@ -974,8 +974,7 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         if not history_dict[ 'annotation' ]:
             history_dict[ 'annotation' ] = ''
 
-        #TODO: allow passing as arg
-        hda_summaries = self.get_hda_summary_dicts( trans, history )
+        hda_summaries = hda_dictionaries if hda_dictionaries else self.get_hda_summary_dicts( trans, history )
         #TODO remove the following in v2
         ( state_counts, state_ids ) = self._get_hda_state_summaries( trans, hda_summaries )
         history_dict[ 'state_details' ] = state_counts
