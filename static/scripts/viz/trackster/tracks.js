@@ -3271,20 +3271,25 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             }
         }
     ].concat(TiledTrack.prototype.action_icons_def),
+    
     // HACK: CompositeTrack should inherit from DrawableCollection as well.
     /** 
      * Returns representation of object in a dictionary for easy saving. 
      * Use from_dict to recreate object.
      */
     to_dict: DrawableCollection.prototype.to_dict,
+
     add_drawable: DrawableCollection.prototype.add_drawable,
+
     unpack_drawables: DrawableCollection.prototype.unpack_drawables,
+
     change_mode: function(new_mode) {
         TiledTrack.prototype.change_mode.call(this, new_mode);
         for (var i = 0; i < this.drawables.length; i++) {
             this.drawables[i].change_mode(new_mode);
         }
     },
+
     /**
      * Initialize component tracks and draw composite track when all components are initialized.
      */
@@ -3302,13 +3307,16 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             track.request_draw();
         });
     },
+
     update_icons: function() {
         // For now, hide filters and tool.
         this.action_icons.filters_icon.hide();
         this.action_icons.tools_icon.hide();  
         this.action_icons.param_space_viz_icon.hide();
     },
+
     can_draw: Drawable.prototype.can_draw,
+
     draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
         // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
         var track = this,
@@ -3421,6 +3429,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // Returned Deferred that is resolved when tile can be drawn.
         return can_draw;
     },
+
     /**
      * Replace this track with group that includes individual tracks.
      */
@@ -3442,6 +3451,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         var index = this.container.replace_drawable(this, group, true);
         group.request_draw();
     },
+
     /**
      * Actions taken before drawing a tile.
      */
@@ -3474,6 +3484,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             track.prefs.max_value = max;
         }
     },
+
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
