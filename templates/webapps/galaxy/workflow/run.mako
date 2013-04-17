@@ -135,13 +135,15 @@
             $(function(){
                 $(".multi-mode").each(function(){
                     if($(this).val() == "matched") { 
-                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link mode-icon"></span>')
+                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link mode-icon" title="This input is linked and will be run in matched order with other input datasets (ex: use this for matching forward and reverse reads)."></span>')
                             .attr({id:$(this).attr("id")})
-                            .css("display", $(this).css("display")));
+                            .css("display", $(this).css("display"))
+                            .tooltip({placement: 'bottom'}));
                     } else {
-                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link-broken mode-icon"></span>')
+                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link-broken mode-icon" title="This input is not linked and each selection will be run against *all* other inputs."></span>')
                             .attr({id:$(this).attr("id")})
-                            .css("display", $(this).css("display"))); 
+                            .css("display", $(this).css("display"))
+                            .tooltip({placement: 'bottom'}));
                     }
                 });
                 $("span.mode-icon").click(function(){
