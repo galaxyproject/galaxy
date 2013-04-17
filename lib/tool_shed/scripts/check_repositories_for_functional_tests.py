@@ -382,6 +382,9 @@ def check_for_missing_test_files( test_definition, test_data_path ):
                 required_test_files.append( input_file )
         for output in test_dict[ 'outputs' ]:
             fieldname, filename = output
+            # In rare cases, the filename may be None. If that is the case, skip that output definition.
+            if filename is None:
+                continue
             if filename not in required_test_files:
                 required_test_files.append( filename )
     # Make sure each specified file actually does exist in the test data path of the cloned repository.
