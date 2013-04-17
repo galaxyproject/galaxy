@@ -543,7 +543,8 @@ class Vcf( Tabular ):
 
     MetadataElement( name="columns", default=10, desc="Number of columns", readonly=True, visible=False )
     MetadataElement( name="column_types", default=['str','int','str','str','str','int','str','list','str','str'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
-    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, multiple=True )
+    MetadataElement( name="viz_filter_cols", desc="Score column for visualization", default=[5], param=metadata.ColumnParameter, multiple=True, visible=False )
+    MetadataElement( name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[] )
 
     def sniff( self, filename ):
         headers = get_headers( filename, '\n', count=1 )
@@ -552,6 +553,21 @@ class Vcf( Tabular ):
     def display_peek( self, dataset ):
         """Returns formated html of peek"""
         return Tabular.make_html_table( self, dataset, column_names=self.column_names )
+
+    def set_meta( self, dataset, **kwd ):
+        Tabular.set_meta( self, dataset, **kwd )
+        source = open( dataset.file_name )
+
+        # Skip comments.
+        line = None
+        for line in source:
+            if not line.startswith( '##' ):
+                break
+
+        if line and line.startswith( '#' ):
+            # Found header line, get sample names.
+            dataset.metadata.sample_names = line.split()[ 9: ]
+
 
 class Eland( Tabular ):
     """Support for the export.txt.gz file used by Illumina's ELANDv2e aligner"""

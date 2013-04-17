@@ -2248,10 +2248,7 @@ var Track = function(view, container, obj_dict) {
     //
     // Attribute init.
     //
-    this.dataset = new data.Dataset({
-        id: obj_dict.dataset_id,
-        hda_ldda: obj_dict.hda_ldda
-    });
+    this.dataset = new data.Dataset(obj_dict.dataset);
     this.dataset_id = this.dataset.get('id');
     this.hda_ldda = this.dataset.get('hda_ldda');
     this.dataset_check_type = 'converted_datasets_state';
