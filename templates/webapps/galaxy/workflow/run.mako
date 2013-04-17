@@ -91,7 +91,7 @@
                         if ($(this).hasClass('disabled')) return;
                         toggle_multiinput(select);
                         select.focus();
-                    }).attr('original-title',
+                    }).attr('title',
                             'Enable/disable selection of multiple input ' +
                             'files. Each selected file will have an ' +
                             'instance of the workflow.').tooltip({placement: 'bottom'})
