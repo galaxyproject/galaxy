@@ -634,8 +634,9 @@ class AdminToolshed( AdminGalaxy ):
                                                                   action='browse_repository',
                                                                   **kwd ) )
             elif operation == 'uninstall':
+                # TODO: I believe this block should be removed, but make sure..
                 repositories_for_uninstallation = []
-                for repository_id in tool_shed_repository_id:
+                for repository_id in tsridslist:
                     repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( repository_id ) )
                     if repository.status in [ trans.model.ToolShedRepository.installation_status.INSTALLED,
                                               trans.model.ToolShedRepository.installation_status.ERROR ]:
@@ -657,13 +658,21 @@ class AdminToolshed( AdminGalaxy ):
                 filtered_repo_info_dicts = []
                 filtered_tool_panel_section_keys = []
                 repositories_for_installation = []
-                for index, tsr_id in enumerate( tsr_ids ):
+                # Some repositories may have repository dependencies that are required to be installed before the dependent repository, so we'll
+                # order the list of tsr_ids to ensure all repositories install in the required order.
+                ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
+                    repository_util.order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys )
+                for tsr_id in ordered_tsr_ids:
                     repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
                     if repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
                                               trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
                         repositories_for_installation.append( repository )
-                        filtered_repo_info_dicts.append( repo_info_dicts[ index ] )
-                        filtered_tool_panel_section_keys.append( tool_panel_section_keys[ index ] )
+                        repo_info_dict, tool_panel_section_key = repository_util.get_repository_components_for_installation( tsr_id,
+                                                                                                                             ordered_tsr_ids,
+                                                                                                                             ordered_repo_info_dicts,
+                                                                                                                             ordered_tool_panel_section_keys )
+                        filtered_repo_info_dicts.append( repo_info_dict )
+                        filtered_tool_panel_section_keys.append( tool_panel_section_key )
                 if repositories_for_installation:
                     decoded_kwd[ 'repo_info_dicts' ] = filtered_repo_info_dicts
                     decoded_kwd[ 'tool_panel_section_keys' ] = filtered_tool_panel_section_keys
@@ -840,6 +849,7 @@ class AdminToolshed( AdminGalaxy ):
             created_or_updated_tool_shed_repositories, tool_panel_section_keys, repo_info_dicts, filtered_repo_info_dicts, message = \
                 repository_util.handle_tool_shed_repositories( trans, installation_dict, using_api=False )
             if message and len( repo_info_dicts ) == 1:
+                # We're undoubtedly attempting to install a repository that has been previously installed.
                 return trans.response.send_redirect( web.url_for( controller='admin_toolshed',
                                                                   action='browse_repositories',
                                                                   message=message,

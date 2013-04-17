@@ -79,7 +79,7 @@ def get_dependencies_for_repository( trans, tool_shed_url, repo_info_dict, inclu
         suc.get_repo_info_tuple_contents( repo_info_tuple )
     if repository_dependencies:
         missing_td = {}
-        # Handle the scenario where a repository was installed, then uninstalled and an error occurred during the reinstallation process.
+        # Handle the scenario where a repository was installed, then uninstalled and an error occurred during the re-installation process.
         # In this case, a record for the repository will exist in the database with the status of 'New'.
         repository = suc.get_repository_for_dependency_relationship( trans.app, tool_shed_url, name, repository_owner, changeset_revision )
         if repository and repository.metadata:

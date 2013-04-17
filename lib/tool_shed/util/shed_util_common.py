@@ -640,11 +640,11 @@ def get_repository_by_name_and_owner( app, name, owner ):
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
     """Return a tool shed repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
     # This method is used only in Galaxy, not the tool shed.
-    repository =  get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app=app,
-                                                                                            tool_shed=tool_shed,
-                                                                                            name=name,
-                                                                                            owner=owner,
-                                                                                            installed_changeset_revision=changeset_revision )
+    repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app=app,
+                                                                                           tool_shed=tool_shed,
+                                                                                           name=name,
+                                                                                           owner=owner,
+                                                                                           installed_changeset_revision=changeset_revision )
     if not repository:
         repository = get_tool_shed_repository_by_shed_name_owner_changeset_revision( app=app,
                                                                                      tool_shed=tool_shed,
@@ -1056,7 +1056,8 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
     in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one
     that was previously installed.  We'll look in the database instead of on disk since the repository may be uninstalled.
     """
-    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = get_repo_info_tuple_contents( repo_info_tuple )
+    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+        get_repo_info_tuple_contents( repo_info_tuple )
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
     # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
     # revision to see if it was previously installed using one of them.
