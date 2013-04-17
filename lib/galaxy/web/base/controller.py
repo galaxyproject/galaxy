@@ -32,8 +32,6 @@ from galaxy.datatypes.data import Text
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
 
-from galaxy.datatypes.display_applications.link_generator import get_display_app_link_generator
-
 log = logging.getLogger( __name__ )
 
 # States for passing messages
@@ -392,28 +390,18 @@ class UsesHistoryDatasetAssociationMixin:
         })
 
     def get_display_apps( self, trans, hda ):
-        #TODO: make more straightforward (somehow)
         display_apps = []
-
-        def get_display_app_url( display_app_link, hda, trans ):
-            web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
-            dataset_hash, user_hash = da_util.encode_dataset_user( trans, hda, None )
-            return web_url_for( controller='dataset',
-                            action="display_application",
-                            dataset_id=dataset_hash,
-                            user_id=user_hash,
-                            app_name=urllib.quote_plus( display_app_link.display_application.id ),
-                            link_name=urllib.quote_plus( display_app_link.id ) )
-
         for display_app in hda.get_display_applications( trans ).itervalues():
+
             app_links = []
-            for display_app_link in display_app.links.itervalues():
+            for link_app in display_app.links.itervalues():
                 app_links.append({
-                    'target' : display_app_link.url.get( 'target_frame', '_blank' ),
-                    'href' : get_display_app_url( display_app_link, hda, trans ),
-                    'text' : gettext( display_app_link.name )
+                    'target': link_app.url.get( 'target_frame', '_blank' ),
+                    'href'  : link_app.get_display_url( hda, trans ),
+                    'text'  : gettext( link_app.name )
                 })
-            display_apps.append( dict( label=display_app.name, links=app_links ) )
+            if app_links:
+                display_apps.append( dict( label=display_app.name, links=app_links ) )
 
         return display_apps
 
@@ -421,19 +409,23 @@ class UsesHistoryDatasetAssociationMixin:
         display_apps = []
         if not trans.app.config.enable_old_display_applications:
             return display_apps
-        for display_app_name in hda.datatype.get_display_types():
-            link_generator = get_display_app_link_generator( display_app_name )
-            display_links = link_generator.generate_links( trans, hda )
+        
+        for display_app in hda.datatype.get_display_types():
+            target_frame, display_links = hda.datatype.get_display_links( hda,
+                display_app, trans.app, trans.request.base )
 
-            app_links = []
-            for display_name, display_link in display_links:
-                app_links.append({
-                    'target' : '_blank',
-                    'href' : display_link,
-                    'text' : display_name
-                })
-            if app_links:
-                display_apps.append( dict( label=hda.datatype.get_display_label( display_app_name ), links=app_links ) )
+            if len( display_links ) > 0:
+                display_label = hda.datatype.get_display_label( display_app )
+
+                app_links = []
+                for display_name, display_link in display_links:
+                    app_links.append({
+                        'target': target_frame,
+                        'href'  : display_link,
+                        'text'  : gettext( display_name )
+                    })
+                if app_links:
+                    display_apps.append( dict( label=display_label, links=app_links ) )
 
         return display_apps
 
