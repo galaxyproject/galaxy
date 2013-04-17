@@ -811,16 +811,18 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def get_history( self, create=False ):
         """
         Load the current history, creating a new one only if there is not
-        current history and we're told to create"
+        current history and we're told to create.
+        Transactions will not always have an active history (API requests), so
+        None is a valid response.
         """
-        history = self.galaxy_session.current_history
-        if not history:
-            if util.string_as_bool( create ):
-                history = self.new_history()
-            else:
-                # Perhaps a bot is running a tool without having logged in to get a history
-                log.debug( "This request returned None from get_history(): %s" % self.request.browser_url )
-                return None
+        history = None
+        if self.galaxy_session:
+            history = self.galaxy_session.current_history
+        if not history and util.string_as_bool( create ):
+            history = self.new_history()
+        else:
+            # Perhaps a bot is running a tool without having logged in to get a history
+            log.debug( "This request returned None from get_history(): %s" % self.request.browser_url )
         return history
 
     def set_history( self, history ):
