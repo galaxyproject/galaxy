@@ -1616,7 +1616,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
 
         // Draw divider between summary and samples.
         if (this.prefs.show_sample_data) {
-            ctx.fillStyle = '#DDDDDD';
+            ctx.fillStyle = '#F3F3F3';
             ctx.globalAlpha = 1;
             ctx.fillRect(0, this.prefs.summary_height - this.divider_height, width, this.divider_height);
         }   
@@ -1636,7 +1636,7 @@ extend(VariantPainter.prototype, Painter.prototype, {
             char_x_start = Math.floor( Math.max(0, (pos - this.view_start) * w_scale) );
             
             //  Draw summary.
-            ctx.fillStyle = '#AAAAAA';
+            ctx.fillStyle = '#999999';
             // Draw background for summary.
             ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
             draw_y_start = this.prefs.summary_height;

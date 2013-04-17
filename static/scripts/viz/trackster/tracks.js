@@ -4166,6 +4166,7 @@ var VariantTrack = function(view, container, obj_dict) {
         params: [
             { key: 'name', label: 'Name', type: 'text', default_value: this.name },
             { key: 'show_sample_data', label: 'Show sample data', type: 'bool', default_value: true },
+            { key: 'show_labels', label: 'Show summary and sample labels', type: 'bool', default_value: true },
             { key: 'summary_height', label: 'Locus summary height', type: 'float', default_value: 20 },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
         ], 
@@ -4224,6 +4225,61 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     before_draw: function() {
         // Clear because this is set when drawing.
         this.max_height_px = 0;
+    },
+
+    /**
+     * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
+     * drawn/fetched and shown.
+     */
+    postdraw_actions: function(tiles, width, w_scale, clear_after) {
+        TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
+
+        // Add labels if needed and not already included.
+        if (this.prefs.show_labels) {
+            // Add and/or style labels.
+            if (this.container_div.find('.yaxislabel').length === 0) {
+                // Add summary and sample labels.
+
+                // FIXME: label attributes could be cleaner by using CSS classes.
+
+                // Add summary label.
+                var summary_div_font_size = 10,
+                    summary_div = $("<div/>").text('Summary').addClass('yaxislabel top').css({
+                        'font-size': summary_div_font_size + 'px'
+                });
+                this.container_div.prepend(summary_div);
+
+                // Adjust summary label to middle of summary.
+                var base_offset = summary_div.position().top;
+                summary_div.css('top', base_offset + (this.prefs.summary_height - summary_div_font_size) / 2 + 'px');
+
+                // Show sample labels.
+                if (this.prefs.show_sample_data) {
+                    var samples_div_html = '';
+                    _.each(this.dataset.get('metadata').get('sample_names'), function(name) {
+                        samples_div_html += (name + '<br>');    
+                    });
+
+                    var samples_div = $("<div/>").html(samples_div_html).addClass('yaxislabel top sample').css({
+                        // +2 for padding
+                        'top': base_offset + this.prefs.summary_height + 2,
+                    });
+                    this.container_div.prepend(samples_div);
+                }
+            }
+
+            // Style labels.
+
+            // Match sample font size to mode.
+            $(this.container_div).find('.sample').css('font-size', (this.mode === 'Squish' ? 5 : 10) + 'px');
+            // Color labels to preference color.
+            $(this.container_div).find('.yaxislabel').css('color', this.prefs.label_color);
+
+        }
+        else {
+            // Remove all labels.
+            this.container_div.find('.yaxislabel').remove();
+        }
     }
 });
 
