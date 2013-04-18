@@ -1,7 +1,6 @@
 import logging
 import os
 import tempfile
-import urllib2
 from galaxy import eggs
 from galaxy import util
 from galaxy import web
@@ -12,6 +11,7 @@ from galaxy.util import inflector
 from galaxy.util import json
 from galaxy.webapps.tool_shed.util import container_util
 import tool_shed.util.shed_util_common as suc
+from tool_shed.util import common_util
 from tool_shed.util import common_install_util
 from tool_shed.util import readme_util
 from tool_shed.util import tool_dependency_util
@@ -1008,13 +1008,14 @@ def get_sample_files_from_disk( repository_files_dir, tool_path=None, relative_i
                         sample_file_metadata_paths.append( relative_path_to_sample_file )
     return sample_file_metadata_paths, sample_file_copy_paths
 
-def get_updated_changeset_revisions_from_tool_shed( tool_shed_url, name, owner, changeset_revision ):
-    """Get all appropriate newer changeset revisions for the repository defined by the received tool_shed_url / name / owner combination."""
-    url = suc.url_join( tool_shed_url,
-                        'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
-    response = urllib2.urlopen( url )
-    text = response.read()
-    response.close()
+def get_updated_changeset_revisions_from_tool_shed( app, tool_shed_url, name, owner, changeset_revision ):
+    """
+    Get all appropriate newer changeset revisions for the repository defined by the received tool_shed_url / name / owner combination.
+    """
+    url  = suc.url_join( tool_shed_url,
+                         'repository/updated_changeset_revisions?name=%s&owner=%s&changeset_revision=%s' %
+                         ( name, owner, changeset_revision ) )
+    text = common_util.tool_shed_get( app, tool_shed_url, url )
     return text
 
 def handle_existing_tool_dependencies_that_changed_in_update( app, repository, original_dependency_dict, new_dependency_dict ):
@@ -1063,7 +1064,7 @@ def handle_repository_elem( app, repository_elem ):
             return repository_dependency_tup, is_valid, error_message
         else:
             # Send a request to the tool shed to retrieve appropriate additional changeset revisions with which the repository may have been installed.
-            text = get_updated_changeset_revisions_from_tool_shed( toolshed, name, owner, changeset_revision )
+            text = get_updated_changeset_revisions_from_tool_shed( app, toolshed, name, owner, changeset_revision )
             if text:
                 updated_changeset_revisions = util.listify( text )
                 for updated_changeset_revision in updated_changeset_revisions:
@@ -1374,9 +1375,7 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
                 url = suc.url_join( tool_shed_url,
                                     'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
                                     ( repository.name, repository.owner, repository.installed_changeset_revision ) )
-                response = urllib2.urlopen( url )
-                raw_text = response.read()
-                response.close()
+                raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 readme_files_dict = json.from_json_string( raw_text )
             else:
                 readme_files_dict = readme_util.build_readme_files_dict( repository.metadata, tool_path )

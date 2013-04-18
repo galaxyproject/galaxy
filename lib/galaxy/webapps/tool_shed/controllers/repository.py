@@ -2440,15 +2440,20 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
 
     @web.expose
     def view_or_manage_repository( self, trans, **kwd ):
-        repository = suc.get_repository_in_tool_shed( trans, kwd[ 'id' ] )
-        if trans.user_is_admin() or repository.user == trans.user:
-            return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='manage_repository',
-                                                              **kwd ) )
-        else:
-            return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='view_repository',
-                                                              **kwd ) )
+        repository_id = kwd.get( 'id', None )
+        if repository_id:
+            repository = suc.get_repository_in_tool_shed( trans, repository_id )
+            if repository:
+                if trans.user_is_admin() or repository.user == trans.user:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='manage_repository',
+                                                                      **kwd ) )
+                else:
+                    return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                      action='view_repository',
+                                                                      **kwd ) )
+            return trans.show_error_message( "Invalid repository id '%s' received." % repository_id )
+        return trans.show_error_message( "The repository id was not received." )
 
     @web.expose
     def view_repository( self, trans, id, **kwd ):

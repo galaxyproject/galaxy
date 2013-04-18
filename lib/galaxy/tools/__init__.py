@@ -1094,7 +1094,7 @@ class Tool( object ):
         self.version_string_cmd = None
         version_cmd = root.find("version_command")
         if version_cmd is not None:
-            self.version_string_cmd = version_cmd.text
+            self.version_string_cmd = version_cmd.text.strip()
             version_cmd_interpreter = version_cmd.get( "interpreter", None )
             if version_cmd_interpreter:
                 executable = self.version_string_cmd.split()[0]

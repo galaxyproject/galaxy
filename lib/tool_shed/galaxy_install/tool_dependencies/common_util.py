@@ -28,6 +28,7 @@ def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repos
         # </environment_variable>
         return dict( name=env_var_name, action=env_var_action, value=elem.text)
     return None
+
 def create_or_update_env_shell_file( install_dir, env_var_dict ):
     env_var_name = env_var_dict[ 'name' ]
     env_var_action = env_var_dict[ 'action' ]
@@ -50,6 +51,7 @@ def create_or_update_env_shell_file( install_dir, env_var_dict ):
                                                           env_shell_file_path,
                                                           env_shell_file_path )
     return cmd
+
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):
         # Open for reading with transparent compression.
@@ -58,6 +60,7 @@ def extract_tar( file_name, file_path ):
         tar = tarfile.open( file_name )
     tar.extractall( path=file_path )
     tar.close()
+
 def extract_zip( archive_path, extraction_path ):
     # TODO: change this method to use zipfile.Zipfile.extractall() when we stop supporting Python 2.5.
     if not zipfile_ok( archive_path ):
@@ -72,17 +75,23 @@ def extract_zip( archive_path, extraction_path ):
             file( uncompressed_path, 'wb' ).write( zip_archive.read( name ) )
     zip_archive.close()
     return True
+
 def isbz2( file_path ):
     return checkers.is_bz2( file_path )
+
 def isgzip( file_path ):
     return checkers.is_gzip( file_path )
+
 def istar( file_path ):
     return tarfile.is_tarfile( file_path )
+
 def iszip( file_path ):
     return checkers.check_zip( file_path )
+
 def make_directory( full_path ):
     if not os.path.exists( full_path ):
         os.makedirs( full_path )
+
 def move_directory_files( current_dir, source_dir, destination_dir ):
     source_directory = os.path.abspath( os.path.join( current_dir, source_dir ) )
     destination_directory = os.path.join( destination_dir )
@@ -92,12 +101,14 @@ def move_directory_files( current_dir, source_dir, destination_dir ):
         source_file = os.path.join( source_directory, file_name )
         destination_file = os.path.join( destination_directory, file_name )
         shutil.move( source_file, destination_file )
+
 def move_file( current_dir, source, destination_dir ):
     source_file = os.path.abspath( os.path.join( current_dir, source ) )
     destination_directory = os.path.join( destination_dir )
     if not os.path.isdir( destination_directory ):
         os.makedirs( destination_directory )
     shutil.move( source_file, destination_directory )
+
 def tar_extraction_directory( file_path, file_name ):
     """Try to return the correct extraction directory."""
     file_name = file_name.strip()
@@ -110,6 +121,7 @@ def tar_extraction_directory( file_path, file_name ):
     if os.path.exists( os.path.abspath( os.path.join( file_path, file_name ) ) ):
         return os.path.abspath( file_path )
     raise ValueError( 'Could not find path to file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
+
 def url_download( install_dir, downloaded_file_name, download_url ):
     file_path = os.path.join( install_dir, downloaded_file_name )
     src = None
@@ -125,6 +137,7 @@ def url_download( install_dir, downloaded_file_name, download_url ):
         if dst:
             dst.close()
     return os.path.abspath( file_path )
+
 def zip_extraction_directory( file_path, file_name ):
     """Try to return the correct extraction directory."""
     files = [ filename for filename in os.listdir( file_path ) if not filename.endswith( '.zip' ) ]
@@ -135,6 +148,7 @@ def zip_extraction_directory( file_path, file_name ):
         if os.path.isdir( os.path.join( file_path, files[ 0 ] ) ):
             return os.path.abspath( os.path.join( file_path, files[ 0 ] ) )
     raise ValueError( 'Could not find directory for the extracted file %s' % os.path.abspath( os.path.join( file_path, file_name ) ) )
+
 def zipfile_ok( path_to_archive ):
     """
     This function is a bit pedantic and not functionally necessary.  It checks whether there is no file pointing outside of the extraction, 

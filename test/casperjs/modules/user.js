@@ -1,11 +1,4 @@
 // =================================================================== module object, exports
-/** Creates a new user module object.
- *  @exported
- */
-exports.create = function createUser( spaceghost ){
-    return new User( spaceghost );
-};
-
 /** User object constructor.
  *  @param {SpaceGhost} spaceghost a spaceghost instance
  */
@@ -14,6 +7,13 @@ var User = function User( spaceghost ){
     this.spaceghost = spaceghost;
 };
 exports.User = User;
+
+/** Creates a new user module object.
+ *  @exported
+ */
+exports.create = function createUser( spaceghost ){
+    return new User( spaceghost );
+};
 
 User.prototype.toString = function toString(){
     return this.spaceghost + '.User';

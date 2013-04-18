@@ -270,7 +270,7 @@ class UploadDataset( Group ):
                 if file_bunch.path and ftp_files is not None:
                     warnings.append( "All FTP uploaded file selections were ignored." )
             elif ftp_files is not None and trans.user is not None: # look for files uploaded via FTP
-                user_ftp_dir = os.path.join( trans.app.config.ftp_upload_dir, trans.user.email )
+                user_ftp_dir = trans.user_ftp_dir
                 for ( dirpath, dirnames, filenames ) in os.walk( user_ftp_dir ):
                     for filename in filenames:
                         for ftp_filename in ftp_files:
@@ -318,7 +318,7 @@ class UploadDataset( Group ):
                     ftp_files = []
                     # TODO: warning to the user (could happen if session has become invalid)
                 else:
-                    user_ftp_dir = os.path.join( trans.app.config.ftp_upload_dir, trans.user.email )
+                    user_ftp_dir = trans.user_ftp_dir
                     for ( dirpath, dirnames, filenames ) in os.walk( user_ftp_dir ):
                         for filename in filenames:
                             path = relpath( os.path.join( dirpath, filename ), user_ftp_dir )

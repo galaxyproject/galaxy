@@ -15,40 +15,7 @@ ${ h.to_json_string( dict([ ( string, _(string) ) for string in strings_to_local
     ## a list of localized strings used in the backbone views, etc. (to be loaded and cached)
     ##! change on per page basis
     <%
-        ## havent been localized
-        ##[
-        ##    "anonymous user",
-        ##    "Click to rename history",
-        ##    "Click to see more actions",
-        ##    "Edit history tags",
-        ##    "Edit history annotation",
-        ##    "Tags",
-        ##    "Annotation",
-        ##    "Click to edit annotation",
-        ##    "You are over your disk ...w your allocated quota.",
-        ##    "Show deleted",
-        ##    "Show hidden",
-        ##    "View data",
-        ##    "Edit Attributes",
-        ##    "Download",
-        ##    "View details",
-        ##    "Run this job again",
-        ##    "Visualize",
-        ##    "Edit dataset tags",
-        ##    "Edit dataset annotation",
-        ##    "Trackster",
-        ##    "Circster",
-        ##    "Scatterplot",
-        ##    "GeneTrack",
-        ##    "Local",
-        ##    "Web",
-        ##    "Current",
-        ##    "main",
-        ##    "Using"
-        ##]
         strings_to_localize = [
-            
-            # from history.mako
             # not needed?: "Galaxy History",
             'refresh',
             'collapse all',
@@ -287,6 +254,16 @@ $(function(){
             show_hidden     : page_show_hidden
         });
     historyPanel.render();
+
+    // set up messages passed in
+    %if hda_id:
+    var hdaId = "${hda_id}";
+    // have to fake 'once' here - simplify when bbone >= 1.0
+    historyPanel.on( 'rendered:initial', function scrollOnce(){
+        this.off( 'rendered:initial', scrollOnce, this );
+        this.scrollToId( hdaId );
+    }, historyPanel );
+    %endif
 
     // QUOTA METER is a cross-frame ui element (meter in masthead, watches hist. size built here)
     //TODO: the quota message (curr. in the history panel) belongs somewhere else

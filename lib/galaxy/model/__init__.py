@@ -1344,10 +1344,9 @@ class DatasetInstance( object ):
         with entries of type
         (<datasource_type> : {<datasource_name>, <indexing_message>}).
         """
-        track_type, data_sources = self.datatype.get_track_type()
         data_sources_dict = {}
         msg = None
-        for source_type, source_list in data_sources.iteritems():
+        for source_type, source_list in self.datatype.data_sources.iteritems():
             data_source = None
             if source_type == "data_standalone":
                 # Nothing to do.
@@ -3305,16 +3304,16 @@ class ToolShedRepository( object ):
         be installed in order for this repository to function correctly.  However, those repository dependencies that are defined for this
         repository with prior_installation_required set to True place them in a special category in that the required repositories must be
         installed before this repository is installed.  Among other things, this enables these "special" repository dependencies to include
-        information that enables the successful intallation of this repository.
+        information that enables the successful intallation of this repository.  This method is not used during the initial installation of
+        this repository, but only after it has been installed (metadata must be set for this repository in order for this method to be useful).
         """
         required_rd_tups_that_must_be_installed = []
         if self.has_repository_dependencies:
             rd_tups = self.metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
             for rd_tup in rd_tups:
                 if len( rd_tup ) == 4:
-                    # Metadata should have been reset on this installed tool_shed_repository, but it wasn't.
+                    # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required to False.
                     tool_shed, name, owner, changeset_revision = rd_tup
-                    # Default prior_installation_required to False.
                     prior_installation_required = False
                 elif len( rd_tup ) == 5:
                     tool_shed, name, owner, changeset_revision, prior_installation_required = rd_tup

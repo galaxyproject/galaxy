@@ -1,5 +1,4 @@
 import logging
-import urllib2
 
 from paste.httpexceptions import HTTPBadRequest, HTTPForbidden
 
@@ -9,6 +8,7 @@ from galaxy.util import json
 from galaxy.web.base.controller import BaseAPIController
 
 from tool_shed.galaxy_install import repository_util
+from tool_shed.util import common_util
 import tool_shed.util.shed_util_common as suc
 
 log = logging.getLogger( __name__ )
@@ -140,9 +140,7 @@ class ToolShedRepositoriesController( BaseAPIController ):
                             'api/repositories/get_repository_revision_install_info?name=%s&owner=%s&changeset_revision=%s' % \
                             ( name, owner, changeset_revision ) )
         try:
-            response = urllib2.urlopen( url )
-            raw_text = response.read()
-            response.close()
+            raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
         except Exception, e:
             message = "Error attempting to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s: %s" % \
                 ( str( tool_shed_url ), str( changeset_revision ), str( name ), str( owner ), str( e ) )
@@ -242,10 +240,16 @@ class ToolShedRepositoriesController( BaseAPIController ):
             # changeset_revision, there may be multiple repositories for installation at this point because repository dependencies may have added
             # additional repositories for installation along with the single specified repository.
             encoded_kwd, query, tool_shed_repositories, encoded_repository_ids = repository_util.initiate_repository_installation( trans, installation_dict )
+            # Some repositories may have repository dependencies that are required to be installed before the dependent repository, so we'll
+            # order the list of tsr_ids to ensure all repositories install in the required order.
+            tsr_ids = [ trans.security.encode_id( tool_shed_repository.id ) for tool_shed_repository in tool_shed_repositories ]
+            ordered_tsr_ids, ordered_repo_info_dicts, ordered_tool_panel_section_keys = \
+                repository_util.order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_panel_section_keys )
             # Install the repositories, keeping track of each one for later display.
-            for index, tool_shed_repository in enumerate( tool_shed_repositories ):
-                repo_info_dict = repo_info_dicts[ index ]
-                tool_panel_section_key = tool_panel_section_keys[ index ]
+            for index, tsr_id in enumerate( ordered_tsr_ids ):
+                tool_shed_repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
+                repo_info_dict = ordered_repo_info_dicts[ index ]
+                tool_panel_section_key = ordered_tool_panel_section_keys[ index ]
                 repository_util.install_tool_shed_repository( trans,
                                                               tool_shed_repository,
                                                               repo_info_dict,

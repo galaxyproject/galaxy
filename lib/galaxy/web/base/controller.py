@@ -32,8 +32,6 @@ from galaxy.datatypes.data import Text
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
 
-from galaxy.datatypes.display_applications.link_generator import get_display_app_link_generator
-
 log = logging.getLogger( __name__ )
 
 # States for passing messages
@@ -392,28 +390,18 @@ class UsesHistoryDatasetAssociationMixin:
         })
 
     def get_display_apps( self, trans, hda ):
-        #TODO: make more straightforward (somehow)
         display_apps = []
-
-        def get_display_app_url( display_app_link, hda, trans ):
-            web_url_for = routes.URLGenerator( trans.webapp.mapper, trans.environ )
-            dataset_hash, user_hash = da_util.encode_dataset_user( trans, hda, None )
-            return web_url_for( controller='dataset',
-                            action="display_application",
-                            dataset_id=dataset_hash,
-                            user_id=user_hash,
-                            app_name=urllib.quote_plus( display_app_link.display_application.id ),
-                            link_name=urllib.quote_plus( display_app_link.id ) )
-
         for display_app in hda.get_display_applications( trans ).itervalues():
+
             app_links = []
-            for display_app_link in display_app.links.itervalues():
+            for link_app in display_app.links.itervalues():
                 app_links.append({
-                    'target' : display_app_link.url.get( 'target_frame', '_blank' ),
-                    'href' : get_display_app_url( display_app_link, hda, trans ),
-                    'text' : gettext( display_app_link.name )
+                    'target': link_app.url.get( 'target_frame', '_blank' ),
+                    'href'  : link_app.get_display_url( hda, trans ),
+                    'text'  : gettext( link_app.name )
                 })
-            display_apps.append( dict( label=display_app.name, links=app_links ) )
+            if app_links:
+                display_apps.append( dict( label=display_app.name, links=app_links ) )
 
         return display_apps
 
@@ -421,19 +409,23 @@ class UsesHistoryDatasetAssociationMixin:
         display_apps = []
         if not trans.app.config.enable_old_display_applications:
             return display_apps
-        for display_app_name in hda.datatype.get_display_types():
-            link_generator = get_display_app_link_generator( display_app_name )
-            display_links = link_generator.generate_links( trans, hda )
+        
+        for display_app in hda.datatype.get_display_types():
+            target_frame, display_links = hda.datatype.get_display_links( hda,
+                display_app, trans.app, trans.request.base )
 
-            app_links = []
-            for display_name, display_link in display_links:
-                app_links.append({
-                    'target' : '_blank',
-                    'href' : display_link,
-                    'text' : display_name
-                })
-            if app_links:
-                display_apps.append( dict( label=hda.datatype.get_display_label( display_app_name ), links=app_links ) )
+            if len( display_links ) > 0:
+                display_label = hda.datatype.get_display_label( display_app )
+
+                app_links = []
+                for display_name, display_link in display_links:
+                    app_links.append({
+                        'target': target_frame,
+                        'href'  : display_link,
+                        'text'  : gettext( display_name )
+                    })
+                if app_links:
+                    display_apps.append( dict( label=display_label, links=app_links ) )
 
         return display_apps
 
@@ -590,15 +582,13 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
                 except KeyError:
                     prefs = {}
 
-                track_type, _ = dataset.datatype.get_track_type()
                 track_data_provider = trans.app.data_provider_registry.get_data_provider( trans,
                                                                                           original_dataset=dataset,
                                                                                           source='data' )
                 return {
-                    "track_type": track_type,
+                    "track_type": dataset.datatype.track_type,
+                    "dataset": trans.security.encode_dict_ids( dataset.get_api_value() ),
                     "name": track_dict['name'],
-                    "hda_ldda": track_dict.get("hda_ldda", "hda"),
-                    "dataset_id": trans.security.encode_id( dataset.id ),
                     "prefs": prefs,
                     "mode": track_dict.get( 'mode', 'Auto' ),
                     "filters": track_dict.get( 'filters', { 'filters' : track_data_provider.get_filters() } ),
@@ -666,9 +656,7 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         Returns track configuration dict for a dataset.
         """
         # Get data provider.
-        track_type, _ = dataset.datatype.get_track_type()
         track_data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset=dataset )
-
 
         if isinstance( dataset, trans.app.model.HistoryDatasetAssociation ):
             hda_ldda = "hda"
@@ -677,10 +665,9 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
 
         # Get track definition.
         return {
-            "track_type": track_type,
+            "track_type": dataset.datatype.track_type,
             "name": dataset.name,
-            "hda_ldda": hda_ldda,
-            "dataset_id": trans.security.encode_id( dataset.id ),
+            "dataset": trans.security.encode_dict_ids( dataset.get_api_value() ),
             "prefs": {},
             "filters": { 'filters' : track_data_provider.get_filters() },
             "tool": get_tool_def( trans, dataset ),
@@ -967,7 +954,7 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
         return state
 
-    def get_history_dict( self, trans, history ):
+    def get_history_dict( self, trans, history, hda_dictionaries=None ):
         """Returns history data in the form of a dictionary.
         """
         history_dict = history.get_api_value( view='element', value_mapper={ 'id':trans.security.encode_id })
@@ -979,8 +966,7 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
         if not history_dict[ 'annotation' ]:
             history_dict[ 'annotation' ] = ''
 
-        #TODO: allow passing as arg
-        hda_summaries = self.get_hda_summary_dicts( trans, history )
+        hda_summaries = hda_dictionaries if hda_dictionaries else self.get_hda_summary_dicts( trans, history )
         #TODO remove the following in v2
         ( state_counts, state_ids ) = self._get_hda_state_summaries( trans, hda_summaries )
         history_dict[ 'state_details' ] = state_counts

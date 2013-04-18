@@ -494,7 +494,8 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         return false;
     },
 
-    /** display a message in the top of the panel
+    // ......................................................................... MISC
+    /** Display a message in the top of the panel.
      *  @param {String} type    type of message ('done', 'error', 'warning')
      *  @param {String} msg     the message to display
      */
@@ -504,14 +505,68 @@ var HistoryPanel = Backbone.View.extend( LoggableMixin ).extend(
         $msgContainer.html( $msg );
     },
 
-    /** Remove a message from the panel
+    /** Remove a message from the panel.
      */
     removeMessage : function(){
         var $msgContainer = this.$el.find( '#message-container' );
         $msgContainer.html( null );
     },
 
-    // ......................................................................... MISC
+    /** Scrolls the panel to the top.
+     *  @returns {HistoryPanel} the panel
+     */
+    scrollToTop : function(){
+        $( document ).scrollTop( 0 );
+        return this;
+    },
+
+    /** Scrolls the panel (the enclosing container - in gen., the page) so that some object
+     *      is displayed in the vertical middle.
+     *      NOTE: if no size is given the panel will scroll to objTop (putting it at the top).
+     *  @param {Number} objTop  the top offset of the object to view
+     *  @param {Number} objSize the size of the object to view
+     *  @returns {HistoryPanel} the panel
+     */
+    scrollIntoView : function( where, size ){
+        if( !size ){
+            $( document ).scrollTop( where );
+            return this;
+        }
+        // otherwise, place the object in the vertical middle
+        var viewport = window,
+            panelContainer = this.$el.parent(),
+            containerHeight = $( viewport ).innerHeight(),
+            middleOffset = ( containerHeight / 2 ) - ( size / 2 );
+
+        $( panelContainer ).scrollTop( where - middleOffset );
+        return this;
+    },
+
+    /** Scrolls the panel to show the HDA with the given id.
+     *  @param {String} id  the id of HDA to scroll into view
+     *  @returns {HistoryPanel} the panel
+     */
+    scrollToId : function( id ){
+        // do nothing if id not found
+        if( ( !id ) || ( !this.hdaViews[ id ] ) ){
+            return this;
+        }
+        var $viewEl = this.hdaViews[ id ].$el;
+        this.scrollIntoView( $viewEl.offset().top, $viewEl.outerHeight() );
+        return this;
+    },
+
+    /** Scrolls the panel to show the HDA with the given hid.
+     *  @param {Integer} hid    the hid of HDA to scroll into view
+     *  @returns {HistoryPanel} the panel
+     */
+    scrollToHid : function( hid ){
+        var hda = this.model.hdas.getByHid( hid );
+        // do nothing if hid not found
+        if( !hda ){ return this; }
+        return this.scrollToId( hda.id );
+    },
+
     /** Return a string rep of the history
      */
     toString    : function(){

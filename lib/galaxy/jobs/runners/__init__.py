@@ -226,7 +226,7 @@ class BaseJobRunner( object ):
                             # Copy from working dir to HDA.
                             # TODO: move instead of copy to save time?
                             source_file = os.path.join( os.path.abspath( job_wrapper.working_directory ), hda_tool_output.from_work_dir )
-                            destination = output_paths[ dataset.dataset_id ]
+                            destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
                             if in_directory( source_file, job_wrapper.working_directory ):
                                 output_pairs.append( ( source_file, destination ) )
                                 log.debug( "Copying %s to %s as directed by from_work_dir" % ( source_file, destination ) )

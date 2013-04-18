@@ -97,6 +97,12 @@ class Data( object ):
     #A per datatype setting (inherited): max file size (in bytes) for setting optional metadata
     _max_optional_metadata_filesize = None
 
+    # Trackster track type.
+    track_type = None
+
+    # Data sources.
+    data_sources = {}
+
     def __init__(self, **kwd):
         """Initialize the datatype"""
         object.__init__(self, **kwd)
@@ -539,21 +545,21 @@ class Data( object ):
         return False
 
 
-
     def merge( split_files, output_file):
         """
-        TODO: Do we need to merge gzip files using gzjoin? cat seems to work,
-        but might be brittle. Need to revisit this.
+            Merge files with copy.copyfileobj() will not hit the
+            max argument limitation of cat. gz and bz2 files are also working.
         """
         if not split_files:
             raise ValueError('Asked to merge zero files as %s' % output_file)
         elif len(split_files) == 1:
-            cmd = 'mv -f %s %s' % ( split_files[0], output_file )
+            shutil.copyfileobj(open(split_files[0], 'rb'), open(output_file, 'wb'))
         else:
-            cmd = 'cat %s > %s' % ( ' '.join(split_files), output_file )
-        result = os.system(cmd)
-        if result != 0:
-            raise Exception('Result %s from %s' % (result, cmd))
+            fdst = open(output_file, 'wb')
+            for fsrc in split_files:
+                shutil.copyfileobj(open(fsrc, 'rb'), fdst)
+            fdst.close()
+
     merge = staticmethod(merge)
 
     def get_visualizations( self, dataset ):
@@ -561,7 +567,7 @@ class Data( object ):
         Returns a list of visualizations for datatype.
         """
 
-        if hasattr( self, 'get_track_type' ):
+        if self.track_type:
             return [ 'trackster', 'circster' ]
         return []
 

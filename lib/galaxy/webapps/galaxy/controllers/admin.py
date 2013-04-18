@@ -11,8 +11,9 @@ from galaxy.web.params import QuotaParamParser
 from galaxy.exceptions import *
 from galaxy.util.odict import *
 from tool_shed.util import encoding_util
+from tool_shed.util import common_util
 import galaxy.datatypes.registry
-import logging, imp, subprocess, urllib2
+import logging, imp, subprocess
 
 log = logging.getLogger( __name__ )
 
@@ -713,9 +714,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                     changeset_revision = elem.get( 'changeset_revision' )
                     url = '%s/repository/get_tool_dependencies?name=%s&owner=devteam&changeset_revision=%s&from_install_manager=True' % \
                         ( tool_shed_url, repository_name, changeset_revision )
-                    response = urllib2.urlopen( url )
-                    text = response.read()
-                    response.close()
+                    text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                     if text:
                         tool_dependencies_dict = encoding_util.tool_shed_decode( text )
                         for dependency_key, requirements_dict in tool_dependencies_dict.items():

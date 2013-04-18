@@ -3,7 +3,6 @@ import os
 import shutil
 import string
 import tempfile
-import urllib2
 from datetime import datetime
 from time import gmtime
 from time import strftime
@@ -14,7 +13,7 @@ from galaxy.web.form_builder import SelectField
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 import sqlalchemy.orm.exc
-
+from tool_shed.util import common_util
 from galaxy import eggs
 import pkg_resources
 
@@ -444,12 +443,14 @@ def get_configured_ui():
     _ui.setconfig( 'ui', 'quiet', True )
     return _ui
 
-def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
-    """Send a request to the tool shed to retrieve the ctx_rev for a repository defined by the combination of a name, owner and changeset revision."""
-    url = url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
-    response = urllib2.urlopen( url )
-    ctx_rev = response.read()
-    response.close()
+def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
+    """
+    Send a request to the tool shed to retrieve the ctx_rev for a repository defined by the combination of a name, owner and changeset
+    revision.
+    """
+    url = url_join( tool_shed_url, 
+                    'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
+    ctx_rev = common_util.tool_shed_get( app, tool_shed_url, url )
     return ctx_rev
 
 def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
@@ -544,7 +545,7 @@ def get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset
     if not repository:
         tool_shed_url = get_url_from_tool_shed( trans.app, tool_shed )
         repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
-        ctx_rev = get_ctx_rev( tool_shed_url, name, owner, changeset_revision )
+        ctx_rev = get_ctx_rev( trans.app, tool_shed_url, name, owner, changeset_revision )
         repository = create_or_update_tool_shed_repository( app=trans.app,
                                                             name=name,
                                                             description=None,
@@ -639,11 +640,11 @@ def get_repository_by_name_and_owner( app, name, owner ):
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
     """Return a tool shed repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
     # This method is used only in Galaxy, not the tool shed.
-    repository =  get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app=app,
-                                                                                            tool_shed=tool_shed,
-                                                                                            name=name,
-                                                                                            owner=owner,
-                                                                                            installed_changeset_revision=changeset_revision )
+    repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app=app,
+                                                                                           tool_shed=tool_shed,
+                                                                                           name=name,
+                                                                                           owner=owner,
+                                                                                           installed_changeset_revision=changeset_revision )
     if not repository:
         repository = get_tool_shed_repository_by_shed_name_owner_changeset_revision( app=app,
                                                                                      tool_shed=tool_shed,
@@ -1055,16 +1056,15 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
     in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one
     that was previously installed.  We'll look in the database instead of on disk since the repository may be uninstalled.
     """
-    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = get_repo_info_tuple_contents( repo_info_tuple )
+    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+        get_repo_info_tuple_contents( repo_info_tuple )
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
     # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
     # revision to see if it was previously installed using one of them.
     url = url_join( tool_shed_url,
                     'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
                     ( url_for( '/', qualified=True ), repository_name, repository_owner, changeset_revision ) )
-    response = urllib2.urlopen( url )
-    text = response.read()
-    response.close()
+    text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
     if text:
         changeset_revisions = util.listify( text )
         for previous_changeset_revision in changeset_revisions:

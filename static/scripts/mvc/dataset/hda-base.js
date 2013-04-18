@@ -589,10 +589,12 @@ var HDABaseView = Backbone.View.extend( LoggableMixin ).extend(
         }
     },
 
+    // ......................................................................... DELETION
     remove : function( callback ){
         var hdaView = this;
         this.$el.fadeOut( 'fast', function(){
             hdaView.$el.remove();
+            hdaView.off();
             if( callback ){ callback(); }
         });
     },

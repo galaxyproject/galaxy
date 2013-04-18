@@ -163,7 +163,7 @@ class DisplayParameterValueWrapper( object ):
         if self.parameter.strip_https and base_url[ : 5].lower() == 'https':
             base_url = "http%s" % base_url[ 5: ]
         return "%s%s" % ( base_url,
-                          url_for( controller='/dataset',
+                          url_for( controller='dataset',
                                    action="display_application",
                                    dataset_id=self._dataset_hash,
                                    user_id=self._user_hash,

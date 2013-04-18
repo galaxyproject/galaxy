@@ -149,7 +149,7 @@ SummaryTreePainter.prototype.draw = function(ctx, width, height, w_scale) {
         // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
         // start. However, height of each rectangle is relative to required_height; hence, the
         // max rectangle is required_height.
-        base_y = height;
+        base_y = height,
         delta_x_px = Math.ceil(this.data.delta * w_scale);
     ctx.save();
     
@@ -864,7 +864,7 @@ extend(ReadPainter.prototype, FeaturePainter.prototype, {
                                     }
                                     // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
                                     else if (w_scale > 0.05) {
-                                        ctx.fillRect(c_start, 
+                                        ctx.fillRect(c_start - gap, 
                                                      y_center + (pack_mode ? 1 : 4), 
                                                      Math.max( 1, Math.round(w_scale) ),
                                                      (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
@@ -1172,7 +1172,7 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
                                 }
                                 // Require a minimum w_scale so that variants are only drawn when somewhat zoomed in.
                                 else if (w_scale > 0.05) {
-                                    ctx.fillRect(c_start, 
+                                    ctx.fillRect(c_start - gap, 
                                                  y_center + (pack_mode ? 1 : 4), 
                                                  Math.max( 1, Math.round(w_scale) ),
                                                  (pack_mode ? PACK_FEATURE_HEIGHT : SQUISH_FEATURE_HEIGHT));
@@ -1285,7 +1285,7 @@ extend(RefBasedReadPainter.prototype, ReadPainter.prototype, FeaturePainter, {
                 drawDownwardEquilateralTriangle(ctx, data[0], data[1], data[2]);
             }
         }
-    },
+    }
 });
 
 var ArcLinkedFeaturePainter = function(data, view_start, view_end, prefs, mode, alpha_scaler, height_scaler) {
@@ -1544,6 +1544,153 @@ DiagonalHeatmapPainter.prototype.draw = function(ctx, width, height, w_scale) {
     ctx.restore();
 };
 
+/**
+ * Paints variant data onto canvas.
+ */
+var VariantPainter = function(data, view_start, view_end, prefs, mode, base_color_fn) {
+    Painter.call(this, data, view_start, view_end, prefs, mode);
+    this.base_color_fn = base_color_fn;
+    this.divider_height = 1;
+};
+
+extend(VariantPainter.prototype, Painter.prototype, {
+    /**
+     * Height of a single row, depends on mode
+     */
+    get_row_height: function() {
+        var mode = this.mode, height;
+        if (mode === "Dense") {
+            height = DENSE_TRACK_HEIGHT;            
+        }
+        else if (mode === "Squish") {
+            height = SQUISH_TRACK_HEIGHT;
+        }
+        else { // mode === "Pack"
+            height = PACK_TRACK_HEIGHT;
+        }
+        return height;
+    },
+
+    get_required_height: function(rows_required, width) {
+        var height = this.prefs.summary_height;
+        if (this.prefs.show_sample_data) {
+            height += this.divider_height;
+            if (this.data.length !== 0) {
+                // Sample data is separated by commas, so this computes # of samples:
+                height += (this.data[0][7].match(/,/g).length + 1) * this.get_row_height();
+            }
+        }
+        return height;
+    },
+
+    /**
+     * Draw on the context using a rectangle of width x height. w_scale is 
+     * needed because it cannot be computed from width and view size alone
+     * as a left_offset may be present.
+     */
+    draw: function(ctx, width, height, w_scale) {
+        var locus_data,
+            pos,
+            id,
+            ref,
+            alt,
+            qual,
+            filter,
+            sample_gts,
+            allele_counts,
+            variant,
+            draw_x_start,
+            char_x_start,   
+            draw_y_start,
+            genotype,
+            // Always draw variants at least 1 pixel wide.
+            base_px = Math.max(1, Math.floor(w_scale)),
+            row_height = (this.mode === 'Squish' ? SQUISH_TRACK_HEIGHT : PACK_TRACK_HEIGHT),
+            // If zoomed out, fill the whole row with feature to make it easier to read;
+            // when zoomed in, use feature height so that there are gaps in sample rows.
+            feature_height = (w_scale < 0.1 ? 
+                              row_height :
+                              (this.mode === 'Squish' ? SQUISH_FEATURE_HEIGHT : PACK_FEATURE_HEIGHT)
+                             ),
+            j;
+
+        // Draw divider between summary and samples.
+        if (this.prefs.show_sample_data) {
+            ctx.fillStyle = '#F3F3F3';
+            ctx.globalAlpha = 1;
+            ctx.fillRect(0, this.prefs.summary_height - this.divider_height, width, this.divider_height);
+        }   
+
+        // Draw variants.
+        ctx.textAlign = "center";
+        for (var i = 0; i < this.data.length; i++) {
+            // Get locus data.
+            locus_data = this.data[i];
+            pos = locus_data[1];
+            alt = locus_data[4].split(',');
+            sample_gts = locus_data[7].split(',');
+            allele_counts = locus_data.slice(8);
+
+            // Compute start for drawing variants marker, text.            
+            draw_x_start = Math.floor( Math.max(-0.5 * w_scale, (pos - this.view_start - 0.5) * w_scale) );
+            char_x_start = Math.floor( Math.max(0, (pos - this.view_start) * w_scale) );
+            
+            //  Draw summary.
+            ctx.fillStyle = '#999999';
+            // Draw background for summary.
+            ctx.fillRect(draw_x_start, 0, base_px, this.prefs.summary_height);
+            draw_y_start = this.prefs.summary_height;
+            // Draw allele fractions onto summary.
+            for (j = 0; j < alt.length; j++) {
+                ctx.fillStyle = this.base_color_fn(alt[j]);
+                allele_frac = allele_counts / sample_gts.length;
+                draw_height = Math.ceil(this.prefs.summary_height * allele_frac);
+                ctx.fillRect(draw_x_start, draw_y_start - draw_height, base_px, draw_height);
+                draw_y_start -= draw_height;
+            }
+
+            // Done drawing if not showing samples data.
+            if (!this.prefs.show_sample_data) { continue; }
+
+            // Draw sample genotypes.
+            draw_y_start = this.prefs.summary_height + this.divider_height;
+            for (j = 0; j < sample_gts.length; j++, draw_y_start += row_height) {
+                genotype = (sample_gts[j] ? sample_gts[j].split(/\/|\|/) : ['0', '0']);
+                
+                // Get variant to draw and set drawing properties.
+                variant = null;
+                if (genotype[0] === genotype[1]) {
+                    if (genotype[0] === '.') {
+                        // TODO: draw uncalled variant.
+                    }
+                    else if (genotype[0] !== '0') {
+                        // Homozygous for variant.
+                        variant = alt[ parseInt(genotype[0], 10) - 1 ];
+                        ctx.globalAlpha = 1;
+                    }
+                    // else reference
+                }
+                else { // Heterozygous for variant.
+                    variant = (genotype[0] !== '0' ? genotype[0] : genotype[1]);
+                    variant = alt[ parseInt(variant, 10) - 1 ];
+                    ctx.globalAlpha = 0.4;
+                }
+
+                // If there's a variant, draw it.
+                if (variant) {
+                    ctx.fillStyle = this.base_color_fn(variant);
+                    if (this.mode === 'Squish' || w_scale < ctx.canvas.manager.char_width_px) {
+                        ctx.fillRect(draw_x_start, draw_y_start + 1, base_px, feature_height);
+                    }
+                    else {
+                        ctx.fillText(variant, char_x_start, draw_y_start + row_height);
+                    }
+                }
+            }
+        }
+    }
+});
+
 return {
     Scaler: Scaler,
     SummaryTreePainter: SummaryTreePainter,
@@ -1552,7 +1699,8 @@ return {
     ReadPainter: ReadPainter,
     RefBasedReadPainter: RefBasedReadPainter,
     ArcLinkedFeaturePainter: ArcLinkedFeaturePainter,
-    DiagonalHeatmapPainter: DiagonalHeatmapPainter
+    DiagonalHeatmapPainter: DiagonalHeatmapPainter,
+    VariantPainter: VariantPainter
 };
 
 

@@ -265,9 +265,8 @@ def get_tool_info_from_test_id( test_id ):
     tool_id = parts[ -2 ]
     return tool_id, tool_version
 
-def get_tool_test_errors_from_api( tool_shed_url, metadata_dict ):
-    params = dict()
-    api_path = metadata_dict[ 'url' ].split( '/' )
+def get_tool_test_errors_from_api( tool_shed_url, metadata_revision_id ):
+    api_path = [ 'api', 'repository_revisions', metadata_revision_id ]
     api_url = get_api_url( base=tool_shed_url, parts=api_path )
     repository_metadata = json_from_url( api_url )
     if repository_metadata[ 'tool_test_errors' ] is None:
@@ -292,7 +291,10 @@ def register_test_result( url, metadata_id, test_results_dict, tests_passed=Fals
         params[ 'tools_functionally_correct' ] = 'false'
         params[ 'do_not_test' ] = 'false'
     params[ 'tool_test_errors' ] = test_results_dict
-    return update( tool_shed_api_key, '%s' % ( url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params, return_formatted=False )
+    if '-info_only' in sys.argv:
+        return {}
+    else:
+        return update( tool_shed_api_key, '%s' % ( url_join( galaxy_tool_shed_url, 'api', 'repository_revisions', metadata_id ) ), params, return_formatted=False )
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
@@ -332,8 +334,6 @@ def main():
     galaxy_test_file_dir = os.environ.get( 'GALAXY_INSTALL_TEST_FILE_DIR', default_galaxy_test_file_dir )
     if not os.path.isabs( galaxy_test_file_dir ):
         galaxy_test_file_dir = os.path.abspath( galaxy_test_file_dir )
-    # Set up the tool dependency path for the Galaxy instance.
-    tool_dependency_dir = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR', None )
     use_distributed_object_store = os.environ.get( 'GALAXY_INSTALL_TEST_USE_DISTRIBUTED_OBJECT_STORE', False )
     if not os.path.isdir( galaxy_test_tmp_dir ):
         os.mkdir( galaxy_test_tmp_dir )
@@ -363,9 +363,12 @@ def main():
     new_repos_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     galaxy_tempfiles = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
     galaxy_shed_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir, prefix='shed_tools' ) 
-    galaxy_migrated_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir ) 
-    galaxy_tool_dependency_dir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir ) 
-    os.environ[ 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR' ] = galaxy_tool_dependency_dir
+    galaxy_migrated_tool_path = tempfile.mkdtemp( dir=galaxy_test_tmp_dir )
+    # Set up the tool dependency path for the Galaxy instance.
+    tool_dependency_dir = os.environ.get( 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR', None )
+    if tool_dependency_dir is None:
+        tool_dependency_dir = tempfile.mkdtemp( dir=galaxy_test_tmp_dir ) 
+        os.environ[ 'GALAXY_INSTALL_TEST_TOOL_DEPENDENCY_DIR' ] = tool_dependency_dir
     if 'GALAXY_INSTALL_TEST_DBURI' in os.environ:
         database_connection = os.environ[ 'GALAXY_INSTALL_TEST_DBURI' ]
     else:
@@ -422,7 +425,7 @@ def main():
                                tool_config_file = [ galaxy_tool_conf_file, galaxy_shed_tool_conf_file ],
                                tool_data_path = tool_data_path,
                                tool_data_table_config_path = galaxy_tool_data_table_conf_file,
-                               tool_dependency_dir = galaxy_tool_dependency_dir,
+                               tool_dependency_dir = tool_dependency_dir,
                                tool_path = tool_path,
                                tool_parse_help = False,
                                tool_sheds_config_file = galaxy_tool_sheds_conf_file,
@@ -625,7 +628,7 @@ def main():
                 #             },
                 #         ]
                 # }
-                repository_status = get_tool_test_errors_from_api( galaxy_tool_shed_url, repository_info_dict )
+                repository_status = get_tool_test_errors_from_api( galaxy_tool_shed_url, metadata_revision_id )
                 if 'test_environment' not in repository_status:
                     repository_status[ 'test_environment' ] = {}
                 test_environment = get_test_environment( repository_status[ 'test_environment' ] )
@@ -775,6 +778,8 @@ def main():
     print "####################################################################################"
     print "# %s - repository installation and testing script completed." % now
     print "# Repository revisions tested: %d" % repositories_tested
+    if '-info_only' in sys.argv:
+        print "# -info_only set, not updating the tool shed."
     if repositories_tested > 0:
         if repositories_passed:
             print '# ----------------------------------------------------------------------------------'

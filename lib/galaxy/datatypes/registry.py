@@ -163,7 +163,7 @@ class Registry( object ):
                             # Use default mime type as per datatype spec
                             mimetype = self.datatypes_by_extension[ extension ].get_mime()
                         self.mimetypes_by_extension[ extension ] = mimetype
-                        if hasattr( datatype_class, "get_track_type" ):
+                        if datatype_class.track_type:
                             self.available_tracks.append( extension )
                         if display_in_upload:
                             self.upload_file_formats.append( extension )

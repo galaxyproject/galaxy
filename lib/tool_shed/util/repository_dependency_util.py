@@ -33,8 +33,12 @@ def build_repository_dependency_relationships( trans, repo_info_dicts, tool_shed
                     if key in [ 'root_key', 'description' ]:
                         continue
                     dependent_repository = None
-                    dependent_toolshed, dependent_name, dependent_owner, dependent_changeset_revision, dependent_prior_installation_required = \
-                        container_util.get_components_from_key( key )
+                    try:
+                        dependent_toolshed, dependent_name, dependent_owner, dependent_changeset_revision, dependent_prior_installation_required = \
+                            container_util.get_components_from_key( key )
+                    except ValueError:
+                        # For backward compatibility to the 12/20/12 Galaxy release.
+                        dependent_toolshed, dependent_name, dependent_owner, dependent_changeset_revision = container_util.get_components_from_key( key )
                     for tsr in tool_shed_repositories:
                         # Get the the tool_shed_repository defined by name, owner and changeset_revision.  This is the repository that will be
                         # dependent upon each of the tool shed repositories contained in val.
@@ -111,7 +115,7 @@ def create_repository_dependency_objects( trans, tool_path, tool_shed_url, repo_
     filtered_repo_info_dicts = []
     # Discover all repository dependencies and retrieve information for installing them.  Even if the user elected to not install repository dependencies we have
     # to make sure all repository dependency objects exist so that the appropriate repository dependency relationships can be built.
-    all_repo_info_dicts = common_install_util.get_required_repo_info_dicts( tool_shed_url, repo_info_dicts )
+    all_repo_info_dicts = common_install_util.get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts )
     if not all_repo_info_dicts:
         # No repository dependencies were discovered so process the received repositories.
         all_repo_info_dicts = [ rid for rid in repo_info_dicts ]
@@ -350,13 +354,22 @@ def get_updated_changeset_revisions_for_repository_dependencies( trans, key_rd_d
                         # We have the updated changset revision.
                         updated_key_rd_dicts.append( new_key_rd_dict )
                     else:
-                        toolshed, repository_name, repository_owner, repository_changeset_revision, prior_installation_required = \
-                            container_util.get_components_from_key( key )
+                        try:
+                            toolshed, repository_name, repository_owner, repository_changeset_revision, prior_installation_required = \
+                                container_util.get_components_from_key( key )
+                        except ValueError:
+                            # For backward compatibility to the 12/20/12 Galaxy release.
+                            toolshed, repository_name, repository_owner, repository_changeset_revision = container_util.get_components_from_key( key )
                         message = "The revision %s defined for repository %s owned by %s is invalid, so repository dependencies defined for repository %s will be ignored." % \
                             ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ), str( repository_name ) )
                         log.debug( message )
             else:
-                toolshed, repository_name, repository_owner, repository_changeset_revision, prior_installation_required = container_util.get_components_from_key( key )
+                try:
+                    toolshed, repository_name, repository_owner, repository_changeset_revision, prior_installation_required = \
+                        container_util.get_components_from_key( key )
+                except ValueError:
+                    # For backward compatibility to the 12/20/12 Galaxy release.
+                    toolshed, repository_name, repository_owner, repository_changeset_revision = container_util.get_components_from_key( key )
                 message = "The revision %s defined for repository %s owned by %s is invalid, so repository dependencies defined for repository %s will be ignored." % \
                     ( str( rd_changeset_revision ), str( rd_name ), str( rd_owner ), str( repository_name ) )
                 log.debug( message )

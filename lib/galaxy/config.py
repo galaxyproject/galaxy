@@ -166,6 +166,7 @@ class Configuration( object ):
         self.enable_whoosh_library_search = string_as_bool( kwargs.get( 'enable_whoosh_library_search', False ) )
         self.whoosh_index_dir = resolve_path( kwargs.get( "whoosh_index_dir", "database/whoosh_indexes" ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
+        self.ftp_upload_dir_identifier = kwargs.get( 'ftp_upload_dir_identifier', 'email' )  # attribute on user - email, username, id, etc...
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )
