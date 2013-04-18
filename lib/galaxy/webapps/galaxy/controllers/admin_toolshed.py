@@ -830,8 +830,8 @@ class AdminToolshed( AdminGalaxy ):
             includes_tool_dependencies = util.string_as_bool( repo_information_dict.get( 'includes_tool_dependencies', False ) )
             encoded_repo_info_dicts = util.listify( repo_information_dict.get( 'repo_info_dicts', [] ) )
         repo_info_dicts = [ encoding_util.tool_shed_decode( encoded_repo_info_dict ) for encoded_repo_info_dict in encoded_repo_info_dicts ]
-        if ( ( not includes_tools_for_display_in_tool_panel and not has_repository_dependencies ) and kwd.get( 'select_shed_tool_panel_config_button', False ) ) or \
-            ( ( includes_tools_for_display_in_tool_panel or has_repository_dependencies ) and kwd.get( 'select_tool_panel_section_button', False ) ):
+        if ( not includes_tools_for_display_in_tool_panel and kwd.get( 'select_shed_tool_panel_config_button', False ) ) or \
+            ( includes_tools_for_display_in_tool_panel and kwd.get( 'select_tool_panel_section_button', False ) ):
             install_repository_dependencies = CheckboxField.is_checked( install_repository_dependencies )
             if includes_tool_dependencies:
                 install_tool_dependencies = CheckboxField.is_checked( install_tool_dependencies )
@@ -938,7 +938,7 @@ class AdminToolshed( AdminGalaxy ):
         install_tool_dependencies_check_box = CheckboxField( 'install_tool_dependencies', checked=install_tool_dependencies_check_box_checked )
         # Handle repository dependencies check box.
         install_repository_dependencies_check_box = CheckboxField( 'install_repository_dependencies', checked=True )
-        if includes_tools_for_display_in_tool_panel or has_repository_dependencies:
+        if includes_tools_for_display_in_tool_panel:
             return trans.fill_template( '/admin/tool_shed_repository/select_tool_panel_section.mako',
                                         encoded_repo_info_dicts=encoded_repo_info_dicts,
                                         includes_tools=includes_tools,

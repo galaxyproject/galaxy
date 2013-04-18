@@ -25,7 +25,8 @@ def tool_shed_decode( value ):
     try:
         values = simplejson.loads( value )
     except Exception, e:
-        log.debug( "Decoding json value from tool shed for value '%s' threw exception: %s" % ( str( value ), str( e ) ) )
+        #log.debug( "Decoding json value from tool shed for value '%s' threw exception: %s" % ( str( value ), str( e ) ) )
+        pass
     if values is not None:
         try:
             return json_fix( values )
