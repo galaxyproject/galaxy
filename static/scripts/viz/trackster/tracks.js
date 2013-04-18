@@ -1120,7 +1120,7 @@ var TracksterView = Backbone.View.extend({
     },
 
     get_base_color: function(base) {
-        return this.config.values[ base.toLowerCase() + '_color' ];
+        return this.config.values[ base.toLowerCase() + '_color' ] || this.config.values[ 'n_color' ];
     }
 
 });
