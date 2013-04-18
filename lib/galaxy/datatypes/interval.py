@@ -244,7 +244,7 @@ class Interval( Tabular ):
         # Accumulate links for valid sites
         ret_val = []
         for site_name, site_url in valid_sites:
-            internal_url = url_for( controller='/dataset', dataset_id=dataset.id, 
+            internal_url = url_for( controller='dataset', dataset_id=dataset.id, 
                                     action='display_at', filename='ucsc_' + site_name )
             display_url = urllib.quote_plus( "%s%s/display_as?id=%i&display_app=%s&authz_method=display_at" 
                     % (base_url, url_for( controller='root' ), dataset.id, type) )
