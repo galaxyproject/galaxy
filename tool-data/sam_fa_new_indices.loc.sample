@@ -1,0 +1,30 @@
+#This is a sample file distributed with Galaxy that enables tools
+#to use a directory of Samtools indexed sequences data files.  You will need
+#to create these data files and then create a sam_fa_new_indices.loc file
+#similar to this one (store it in this directory) that points to
+#the directories in which those files are stored. The sam_fa_new_indices.loc
+#file has this format (white space characters are TAB characters):
+#
+# <unique_build_id>	<dbkey>	<display_name>	<file_base_path>
+#
+#So, for example, if you had hg19 Canonical indexed stored in
+#
+# /depot/data2/galaxy/hg19/sam/,
+#
+#then the sam_fa_new_indices.loc entry would look like this:
+#
+#hg19canon	hg19	Human (Homo sapiens): hg19 Canonical	/depot/data2/galaxy/hg19/sam/hg19canon.fa
+#
+#and your /depot/data2/galaxy/hg19/sam/ directory
+#would contain hg19canon.fa and hg19canon.fa.fai files.
+#
+#Your sam_fa_new_indices.loc file should include an entry per line for
+#each index set you have stored.  The file in the path does actually
+#exist, but it should never be directly used. Instead, the name serves
+#as a prefix for the index file.  For example:
+#
+#hg18canon	hg18	Human (Homo sapiens): hg18 Canonical	/depot/data2/galaxy/hg18/sam/hg18canon.fa
+#hg18full	hg18	Human (Homo sapiens): hg18 Full	/depot/data2/galaxy/hg18/sam/hg18full.fa
+#hg19canon	hg19	Human (Homo sapiens): hg19 Canonical	/depot/data2/galaxy/hg19/sam/hg19canon.fa
+#hg19full	hg19	Human (Homo sapiens): hg19 Full	/depot/data2/galaxy/hg19/sam/hg19full.fa
+
