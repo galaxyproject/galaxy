@@ -539,27 +539,29 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                                                 .filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key,
                                                                self.app.model.GalaxySession.table.c.is_valid==True ) ) \
                                                 .first()
-            # If remote user is in use it can invalidate the session, so we need to to check some things now.
-            if self.app.config.use_remote_user:
-                #If this is an api request, and they've passed a key, we let this go.
-                assert "HTTP_REMOTE_USER" in self.environ, \
-                    "use_remote_user is set but no HTTP_REMOTE_USER variable"
-                remote_user_email = self.environ[ 'HTTP_REMOTE_USER' ]
-                if galaxy_session:
-                    # An existing session, make sure correct association exists
-                    if galaxy_session.user is None:
-                        # No user, associate
-                        galaxy_session.user = self.get_or_create_remote_user( remote_user_email )
-                        galaxy_session_requires_flush = True
-                    elif galaxy_session.user.email != remote_user_email:
-                        # Session exists but is not associated with the correct remote user
-                        invalidate_existing_session = True
-                        user_for_new_session = self.get_or_create_remote_user( remote_user_email )
-                        log.warning( "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
-                                     remote_user_email, galaxy_session.user.email )
-                else:
-                    # No session exists, get/create user for new session
+        # If remote user is in use it can invalidate the session and in some
+        # cases won't have a cookie set above, so we need to to check some
+        # things now.
+        if self.app.config.use_remote_user:
+            #If this is an api request, and they've passed a key, we let this go.
+            assert "HTTP_REMOTE_USER" in self.environ, \
+                "use_remote_user is set but no HTTP_REMOTE_USER variable"
+            remote_user_email = self.environ[ 'HTTP_REMOTE_USER' ]
+            if galaxy_session:
+                # An existing session, make sure correct association exists
+                if galaxy_session.user is None:
+                    # No user, associate
+                    galaxy_session.user = self.get_or_create_remote_user( remote_user_email )
+                    galaxy_session_requires_flush = True
+                elif galaxy_session.user.email != remote_user_email:
+                    # Session exists but is not associated with the correct remote user
+                    invalidate_existing_session = True
                     user_for_new_session = self.get_or_create_remote_user( remote_user_email )
+                    log.warning( "User logged in as '%s' externally, but has a cookie as '%s' invalidating session",
+                                 remote_user_email, galaxy_session.user.email )
+            else:
+                # No session exists, get/create user for new session
+                user_for_new_session = self.get_or_create_remote_user( remote_user_email )
         else:
             if galaxy_session is not None and galaxy_session.user and galaxy_session.user.external:
                 # Remote user support is not enabled, but there is an existing
