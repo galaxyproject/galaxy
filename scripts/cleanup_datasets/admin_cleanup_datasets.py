@@ -17,7 +17,7 @@ Required Arguments:
 
 Optional Arguments:
     -d --days - number of days old the dataset must be (default: 60)
-    --tool_id - string to search for in dataset tool_id
+    --tool_id - string to search for in dataset tool_id (default: all)
     --template - Mako template file to use for email notification
     -i --info_only - Print results, but don't email or delete anything
     -e --email_only - Email notifications, but don't delete anything
@@ -47,8 +47,8 @@ log.setLevel(10)
 log.addHandler(logging.StreamHandler(sys.stdout))
 
 from cleanup_datasets import CleanupDatasetsApplication
-import pkg_resources
-pkg_resources.require("SQLAlchemy >= 0.4")
+#import pkg_resources
+#pkg_resources.require("SQLAlchemy >= 0.4")
 
 #pkg_resources.require("Mako")
 from mako.template import Template
@@ -77,8 +77,9 @@ def main():
     parser = OptionParser()
     parser.add_option("-d", "--days", dest="days", action="store",
                       type="int", help="number of days (60)", default=60)
-    parser.add_option("--tool_id", default="",
-                      help="Text to match against tool_id")
+    parser.add_option("--tool_id", default=None,
+                      help="Text to match against tool_id"
+                      "Default: match all")
     parser.add_option("--template", default=None,
                       help="Mako Template file to use as email "
                       "Variables are 'cutoff' for the cutoff in days, "
@@ -168,6 +169,7 @@ def administrative_delete_datasets(app, cutoff_time, cutoff_days,
                                    info_only=False):
     # Marks dataset history association deleted and email users
     start = time.time()
+    # Get HDAs older than cutoff time (ignore tool_id at this point)
     # We really only need the id column here, but sqlalchemy barfs when
     # trying to select only 1 column
     hda_ids_query = sa.select(
@@ -177,20 +179,28 @@ def administrative_delete_datasets(app, cutoff_time, cutoff_days,
             app.model.Dataset.table.c.deleted == False,
             app.model.HistoryDatasetAssociation.table.c.update_time
             < cutoff_time,
-            app.model.Job.table.c.tool_id.like("%%%s%%" % tool_id),
             app.model.HistoryDatasetAssociation.table.c.deleted == False),
         from_obj=[sa.outerjoin(
                   app.model.Dataset.table,
-                  app.model.HistoryDatasetAssociation.table)
-                  .outerjoin(app.model.JobToOutputDatasetAssociation.table)
-                  .outerjoin(app.model.Job.table)])
-    deleted_instance_count = 0
-    # skip = []
-    user_notifications = defaultdict(list)
-    # Add all datasets associated with Histories to our list
+                  app.model.HistoryDatasetAssociation.table)])
+
+   # Add all datasets associated with Histories to our list
     hda_ids = []
     hda_ids.extend(
         [row.id for row in hda_ids_query.execute()])
+
+    # Now find the tool_id that generated the dataset (even if it was copied)
+    tool_matched_ids = []
+    if tool_id is not None:
+        for hda_id in hda_ids:
+            this_tool_id = _get_tool_id_for_hda(app, hda_id)
+            if this_tool_id is not None and tool_id in this_tool_id:
+                tool_matched_ids.append(hda_id)
+        hda_ids = tool_matched_ids
+
+    deleted_instance_count = 0
+    user_notifications = defaultdict(list)
+
     # Process each of the Dataset objects
     for hda_id in hda_ids:
         user_query = sa.select(
@@ -250,6 +260,23 @@ def administrative_delete_datasets(app, cutoff_time, cutoff_days,
     print "Marked %d dataset instances as deleted" % deleted_instance_count
     print "Total elapsed time: ", stop - start
     print "##########################################"
+
+
+def _get_tool_id_for_hda(app, hda_id):
+    # TODO Some datasets don't seem to have an entry in jtod or a copied_from
+    if hda_id is None:
+        return None
+    job = app.sa_session.query(app.model.Job).\
+        join(app.model.JobToOutputDatasetAssociation).\
+        filter(app.model.JobToOutputDatasetAssociation.table.c.dataset_id ==
+               hda_id).first()
+    if job is not None:
+        return job.tool_id
+    else:
+        hda = app.sa_session.query(app.model.HistoryDatasetAssociation).\
+            get(hda_id)
+        return _get_tool_id_for_hda(app, hda.
+                                    copied_from_history_dataset_association_id)
 
 
 if __name__ == "__main__":
