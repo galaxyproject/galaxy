@@ -1,0 +1,11 @@
+Galaxy Server Cleanup
+---------------------
+The following datasets you own on Galaxy are older than ${cutoff} days and have been DELETED:
+
+% for dataset, history in datasets:
+    "${dataset}" in history "${history}"
+% endfor
+
+You may be able to undelete them by logging into Galaxy, navigating to the appropriate history, selecting "Include Deleted Datasets" from the history options menu, and clicking on the link to undelete each dataset that you want to keep.  You can then download the datasets.  Thank you for your understanding and cooporation in this necessary cleanup in order to keep the Galaxy resource available.  Please don't hesitate to contact us if you have any questions.
+
+ -- Galaxy Administrators

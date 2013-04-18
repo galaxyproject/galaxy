@@ -1,0 +1,11 @@
+Galaxy Server Cleanup
+---------------------
+The following datasets you own on Galaxy are older than ${cutoff} days and will be deleted soon. Be sure to download any datasets you need to keep.
+
+% for dataset, history in datasets:
+    "${dataset}" in history "${history}"
+% endfor
+
+Please contact us if you have any questions.
+
+ -- Galaxy Administrators
