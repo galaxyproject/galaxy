@@ -1577,7 +1577,14 @@ extend(VariantPainter.prototype, Painter.prototype, {
             height += this.divider_height;
             if (this.data.length !== 0) {
                 // Sample data is separated by commas, so this computes # of samples:
-                height += (this.data[0][7].match(/,/g).length + 1) * this.get_row_height();
+                var comma_match = this.data[0][7].match(/,/g);
+                if ( comma_match === null ) {
+                    comma_match = 1;
+                }
+                else {
+                    comma_match = comma_match.length + 1;
+                }
+                height += ( comma_match * this.get_row_height() );
             }
         }
         return height;
