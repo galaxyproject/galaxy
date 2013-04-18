@@ -11,9 +11,7 @@ from galaxy.model.custom_types import JSONType
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
-
+metadata = MetaData()
 
 ExtendedMetadata_table = Table("extended_metadata", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -32,11 +30,11 @@ extended_metadata_ldda_col = Column( "extended_metadata_id", Integer, ForeignKey
 
 
 def display_migration_details():
-    print ""
-    print "This migration script adds a 'handler' column to the Job table."
+    print "This migration script adds a ExtendedMetadata tables"
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         ExtendedMetadata_table.create()
@@ -46,8 +44,6 @@ def upgrade():
         ExtendedMetadataIndex_table.create()
     except:
         log.debug("Could not create ExtendedMetadataIndex Table.")
-
-    
     # Add the extended_metadata_id to the ldda table
     try:
         ldda_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
@@ -56,10 +52,10 @@ def upgrade():
     except Exception, e:
         print str(e)
         log.error( "Adding column 'extended_metadata_id' to library_dataset_dataset_association table failed: %s" % str( e ) )
-        return 
 
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         ExtendedMetadataIndex_table.drop()

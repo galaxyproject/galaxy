@@ -10,41 +10,43 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     
     LibraryInfoAssociation_table = Table( "library_info_association", metadata, autoload=True )
     c = Column( "deleted", Boolean, index=True, default=False )
-    c.create( LibraryInfoAssociation_table )
+    c.create( LibraryInfoAssociation_table, index_name='ix_library_info_association_deleted')
     assert c is LibraryInfoAssociation_table.c.deleted
     cmd = "UPDATE library_info_association SET deleted = false"
     try:
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "deleted to false in library_info_association failed: %s" % ( str( e ) ) )
     
     LibraryFolderInfoAssociation_table = Table( "library_folder_info_association", metadata, autoload=True )
     c = Column( "deleted", Boolean, index=True, default=False )
-    c.create( LibraryFolderInfoAssociation_table )
+    c.create( LibraryFolderInfoAssociation_table, index_name='ix_library_folder_info_association_deleted')
     assert c is LibraryFolderInfoAssociation_table.c.deleted
     cmd = "UPDATE library_folder_info_association SET deleted = false"
     try:
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "deleted to false in library_folder_info_association failed: %s" % ( str( e ) ) )
 
     LibraryDatasetDatasetInfoAssociation_table = Table( "library_dataset_dataset_info_association", metadata, autoload=True )
     c = Column( "deleted", Boolean, index=True, default=False )
-    c.create( LibraryDatasetDatasetInfoAssociation_table )
+    c.create( LibraryDatasetDatasetInfoAssociation_table, index_name='ix_library_dataset_dataset_info_association_deleted')
     assert c is LibraryDatasetDatasetInfoAssociation_table.c.deleted
     cmd = "UPDATE library_dataset_dataset_info_association SET deleted = false"
     try:
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "deleted to false in library_dataset_dataset_info_association failed: %s" % ( str( e ) ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

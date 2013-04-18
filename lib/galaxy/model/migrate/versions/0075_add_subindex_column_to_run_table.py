@@ -9,21 +9,22 @@ from migrate.changeset import *
 
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
         Run_table = Table( "run", metadata, autoload=True )
         c = Column( "subindex", TrimmedString( 255 ), index=True )
-        c.create( Run_table )
+        c.create( Run_table, index_name="ix_run_subindex")
         assert c is Run_table.c.subindex
     except Exception, e:
         print "Adding the subindex column to the run table failed: ", str( e )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         Run_table = Table( "run", metadata, autoload=True )

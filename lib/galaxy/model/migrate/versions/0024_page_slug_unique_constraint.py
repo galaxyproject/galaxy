@@ -13,9 +13,10 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -37,7 +38,8 @@ def upgrade():
 
         Page_table.c.slug.alter( unique=False )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     #Page_table = Table( "page", metadata, autoload=True )
     #Page_table.c.slug.alter( unique=True )

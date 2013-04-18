@@ -248,7 +248,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             to = to_address + ", " + email
         else:
             to = to_address
-        subject = "Galaxy tool error report from " + email
+        subject = "Galaxy tool error report from %s" % email
         # Send it
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )

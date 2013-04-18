@@ -21,10 +21,11 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     ToolDependency_table = Table( "tool_dependency", metadata, autoload=True )
@@ -44,7 +45,8 @@ def upgrade():
         ToolDependency_table.c.uninstalled.drop()
     except Exception, e:
         print "Dropping uninstalled column from the tool_dependency table failed: %s" % str( e )
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     ToolDependency_table = Table( "tool_dependency", metadata, autoload=True )
     try:

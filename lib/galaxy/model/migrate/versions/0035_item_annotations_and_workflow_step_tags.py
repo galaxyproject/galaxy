@@ -10,8 +10,8 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 # Annotation tables.
 
@@ -50,7 +50,8 @@ WorkflowStepTagAssociation_table = Table( "workflow_step_tag_association", metad
     Column( "value", Unicode(255), index=True),
     Column( "user_value", Unicode(255), index=True) )
     
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -89,7 +90,8 @@ def upgrade():
         print str(e)
         log.debug( "Creating workflow_step_tag_association table failed: %s" % str( e ) )
         
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
         
     # Drop history_annotation_association table.

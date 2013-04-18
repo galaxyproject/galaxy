@@ -11,8 +11,7 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 # Columns to add.
 
@@ -28,22 +27,23 @@ JobImportHistoryArchive_table = Table( "job_import_history_archive", metadata,
     Column( "archive_dir", TEXT )
     )
     
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     
     # Add column to history table and initialize.
     try:
         History_table = Table( "history", metadata, autoload=True )
-        importing_col.create( History_table )
+        importing_col.create( History_table, index_name="ix_history_importing")
         assert importing_col is History_table.c.importing
         
         # Initialize column to false.
         if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
             default_false = "0"
-        elif migrate_engine.name == 'postgres':
+        elif migrate_engine.name in ['postgres', 'postgresql']:
             default_false = "false"
-        db_session.execute( "UPDATE history SET importing=%s" % default_false )
+        migrate_engine.execute( "UPDATE history SET importing=%s" % default_false )
     except Exception, e:
         print str(e)
         log.debug( "Adding column 'importing' to history table failed: %s" % str( e ) )
@@ -54,7 +54,8 @@ def upgrade():
     except Exception, e:
         log.debug( "Creating job_import_history_archive table failed: %s" % str( e ) )
                         
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     
     # Drop 'importing' column from history table.

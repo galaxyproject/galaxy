@@ -15,8 +15,8 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 # Tables to add
 
@@ -51,7 +51,8 @@ DefaultQuotaAssociation_table = Table( "default_quota_association", metadata,
     Column( "type", String( 32 ), index=True, unique=True ),
     Column( "quota_id", Integer, ForeignKey( "quota.id" ), index=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     
@@ -92,7 +93,8 @@ def upgrade():
     #db_session.flush()
 
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     
     # Drop default_quota_association table

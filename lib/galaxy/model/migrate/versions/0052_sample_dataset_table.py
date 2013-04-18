@@ -18,8 +18,7 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 
 def nextval( table, col='id' ):
@@ -49,7 +48,8 @@ SampleDataset_table = Table('sample_dataset', metadata,
                             Column( "error_msg", TEXT ),
                             Column( "size", TrimmedString( 255 ) ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -58,7 +58,7 @@ def upgrade():
         log.debug( "Creating sample_dataset table failed: %s" % str( e ) )
         
     cmd = "SELECT id, dataset_files FROM sample"
-    result = db_session.execute( cmd )
+    result = migrate_engine.execute( cmd )
     for r in result:
         sample_id = r[0]
         if r[1]:
@@ -75,7 +75,7 @@ def upgrade():
                                   df.get('status', '').replace('"', '').replace("'", ""),
                                   "",
                                   df.get('size', '').replace('"', '').replace("'", "").replace(df.get('filepath', ''), '').strip() )
-                db_session.execute( cmd )
+                migrate_engine.execute( cmd )
             
     # Delete the dataset_files column in the Sample table
     try:
@@ -83,12 +83,13 @@ def upgrade():
     except NoSuchTableError:
         Sample_table = None
         log.debug( "Failed loading table sample" )
-    if Sample_table:
+    if Sample_table is not None:
         try:
             Sample_table.c.dataset_files.drop()
         except Exception, e:
             log.debug( "Deleting column 'dataset_files' from the 'sample' table failed: %s" % ( str( e ) ) )   
 
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

@@ -8,7 +8,6 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-from migrate import migrate_engine
 from sqlalchemy import and_
 
 from sqlalchemy import *
@@ -22,7 +21,7 @@ from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
 
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 context = scoped_session( sessionmaker( autoflush=False, autocommit=True ) )
 
 
@@ -663,7 +662,8 @@ def __guess_dataset_by_filename( filename ):
         pass #some parsing error, we can't guess Dataset
     return None
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     log.debug( "Fixing a discrepancy concerning deleted shared history items." )
     affected_items = 0
     start_time = time.time()
@@ -705,6 +705,7 @@ def upgrade():
     log.debug( "%i items affected, and restored." % ( changed_associations ) )
     log.debug( "Time elapsed: %s" % ( time.time() - start_time ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     log.debug( "Downgrade is not possible." )
     

@@ -4,6 +4,8 @@ Migration script to create missing indexes.  Adding new columns to existing tabl
 
 from sqlalchemy import *
 from sqlalchemy.orm import *
+from sqlalchemy.exc import ProgrammingError
+from sqlalchemy.engine import reflection
 from migrate import *
 from migrate.changeset import *
 
@@ -16,8 +18,8 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 indexes = (
     ( "ix_metadata_file_lda_id", 'metadata_file', 'lda_id' ),                                   # 0003
@@ -56,22 +58,27 @@ indexes = (
     ( "ix_galaxy_user_email", 'galaxy_user', 'email' )                                          # 0106
 )
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
-
+    insp = reflection.Inspector.from_engine(migrate_engine)
     # Create missing indexes
     for ix, table, col in indexes:
         try:
             log.debug("Creating index '%s' on column '%s' in table '%s'" % (ix, col, table))
             t = Table( table, metadata, autoload=True )
-            Index( ix, t.c[col] ).create()
+            if ix not in [ins_ix.get('name', None) for ins_ix in insp.get_indexes(table)]:
+                Index( ix, t.c[col] ).create()
+            else:
+                pass #Index already exists, don't recreate.
         except Exception, e:
             log.error("Unable to create index '%s': %s" % (ix, str(e)))
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     # Drop indexes
     for ix, table, col in indexes:
         try:

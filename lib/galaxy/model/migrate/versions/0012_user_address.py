@@ -7,13 +7,13 @@ which is a string, allowing for more flexibility with request states.
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from sqlalchemy.exc import *
+from galaxy.model.custom_types import *
 from migrate import *
 from migrate.changeset import *
 import datetime
 now = datetime.datetime.utcnow
 import sys, logging
 # Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
 
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
@@ -23,8 +23,8 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def display_migration_details():
     print "========================================"
@@ -51,7 +51,9 @@ UserAddress_table = Table( "user_address", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    #raise Exception
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
@@ -66,10 +68,10 @@ def upgrade():
     except NoSuchTableError:
         RequestType_table = None
         log.debug( "Failed loading table request_type" )
-    if RequestType_table:
+    if RequestType_table is not None:
         try:
             col = Column( "deleted", Boolean, index=True, default=False )
-            col.create( RequestType_table )
+            col.create( RequestType_table, index_name='ix_request_type_deleted')
             assert col is RequestType_table.c.deleted
         except Exception, e:
             log.debug( "Adding column 'deleted' to request_type table failed: %s" % ( str( e ) ) )
@@ -79,17 +81,13 @@ def upgrade():
     except NoSuchTableError:
         Request_table = None
         log.debug( "Failed loading table request" )
-    if Request_table:
-        try:
-            Request_table.c.submitted.drop()
-        except Exception, e:
-            log.debug( "Deleting column 'submitted' to request table failed: %s" % ( str( e ) ) )   
-        try:
-            col = Column( "state", TrimmedString( 255 ), index=True  )
-            col.create( Request_table )
-            assert col is Request_table.c.state
-        except Exception, e:
-            log.debug( "Adding column 'state' to request table failed: %s" % ( str( e ) ) )
+    if Request_table is not None:
+        #DBTODO Re-try
+        Request_table.c.submitted.drop(alter_metadata=True)
+        col = Column( "state", TrimmedString( 255 ), index=True  )
+        col.create( Request_table, index_name='ix_request_state')
+        assert col is Request_table.c.state
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

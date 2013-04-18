@@ -2,7 +2,8 @@
 API operations on a history.
 """
 import logging
-from galaxy import web, util
+from galaxy import web
+from galaxy.util import string_as_bool, restore_text
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
 from galaxy.web import url_for
 from galaxy.model.orm import desc
@@ -19,7 +20,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         Displays a collection (list) of histories.
         """
         rval = []
-        deleted = util.string_as_bool( deleted )
+        deleted = string_as_bool( deleted )
         try:
             if trans.user:
                 query = trans.sa_session.query(trans.app.model.History ).filter_by( user=trans.user, deleted=deleted ).order_by(
@@ -51,7 +52,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         Displays information about a history.
         """
         history_id = id
-        deleted = util.string_as_bool( deleted )
+        deleted = string_as_bool( deleted )
 
         # try to load the history, by most_recently_used or the given id
         try:
@@ -85,7 +86,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         """
         hist_name = None
         if payload.get( 'name', None ):
-            hist_name = util.restore_text( payload['name'] )
+            hist_name = restore_text( payload['name'] )
         new_history = trans.app.model.History( user=trans.user, name=hist_name )
 
         trans.sa_session.add( new_history )
@@ -104,7 +105,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         # a request body is optional here
         purge = False
         if kwd.get( 'payload', None ):
-            purge = util.string_as_bool( kwd['payload'].get( 'purge', False ) )
+            purge = string_as_bool( kwd['payload'].get( 'purge', False ) )
 
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False, deleted=True )

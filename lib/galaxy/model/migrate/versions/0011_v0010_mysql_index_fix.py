@@ -24,8 +24,8 @@ log.addHandler( handler )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def display_migration_details():
     print "========================================"
@@ -42,7 +42,8 @@ HistoryDatasetAssociationDisplayAtAuthorization_table = Table( "history_dataset_
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "site", TrimmedString( 255 ) ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     if migrate_engine.name == 'mysql':
         # Load existing tables
@@ -53,7 +54,8 @@ def upgrade():
         except Exception, e:
             log.debug( "Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )  
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     if migrate_engine.name == 'mysql':
         # Load existing tables
         metadata.reflect()

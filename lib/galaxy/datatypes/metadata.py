@@ -1,17 +1,30 @@
-import sys, logging, copy, shutil, weakref, cPickle, tempfile, os
+"""
+Galaxy Metadata
+
+"""
+from galaxy import eggs
+eggs.require("simplejson")
+
+
+import copy
+import cPickle
+import logging
+import os
+import shutil
+import simplejson
+import sys
+import tempfile
+import weakref
+
 from os.path import abspath
 
-from galaxy.util import string_as_bool, stringify_dictionary_keys, listify
+import galaxy.model
+from galaxy.util import listify, stringify_dictionary_keys, string_as_bool
 from galaxy.util.odict import odict
 from galaxy.web import form_builder
-import galaxy.model
 from sqlalchemy.orm import object_session
 
-import pkg_resources
-pkg_resources.require("simplejson")
-import simplejson
-
-log = logging.getLogger( __name__ )
+log = logging.getLogger(__name__)
 
 STATEMENTS = "__galaxy_statements__" #this is the name of the property in a Datatype class where new metadata spec element Statements are stored
 

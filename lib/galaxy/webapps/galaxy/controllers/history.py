@@ -2,6 +2,7 @@ from galaxy.web.base.controller import *
 from galaxy.web.framework.helpers import time_ago, iff, grids
 from galaxy.datatypes.data import nice_size
 from galaxy import model, util
+from galaxy.util import Params
 from galaxy.util.odict import odict
 from galaxy.model.mapping import desc
 from galaxy.model.orm import *
@@ -979,7 +980,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
         # If a history contains both datasets that can be shared and others that cannot be shared with the desired user,
         # then the entire history is shared, and the protected datasets will be visible, but inaccessible ( greyed out )
         # in the copyd history
-        params = util.Params( kwd )
+        params = Params( kwd )
         user = trans.get_user()
         # TODO: we have too many error messages floating around in here - we need
         # to incorporate the messaging system used by the libraries that will display
@@ -1298,7 +1299,7 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
     @web.require_login( "copy shared Galaxy history" )
     def copy( self, trans, id=None, **kwd ):
         """Copy one or more histories"""
-        params = util.Params( kwd )
+        params = Params( kwd )
         # If copy_choice was not specified, display form passing along id
         # argument
         copy_choice = params.get( 'copy_choice', None )

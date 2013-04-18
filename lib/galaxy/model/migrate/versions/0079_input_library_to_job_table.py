@@ -10,8 +10,8 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 JobToInputLibraryDatasetAssociation_table = Table( "job_to_input_library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -19,7 +19,8 @@ JobToInputLibraryDatasetAssociation_table = Table( "job_to_input_library_dataset
     Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -30,7 +31,8 @@ def upgrade():
         print "Creating job_to_input_library_dataset table failed: %s" % str( e )
         log.debug( "Creating job_to_input_library_dataset table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     # Drop the job_to_input_library_dataset table

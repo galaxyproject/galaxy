@@ -10,7 +10,7 @@ from galaxy.model.custom_types import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 def display_migration_details():
     print
@@ -127,7 +127,8 @@ CloudProvider_table = Table( "cloud_provider", metadata,
     Column( "path", TEXT ),
     Column( "deleted", Boolean, default=False ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
@@ -142,7 +143,8 @@ def upgrade():
     CloudStore_table.create()
     CloudSnapshot_table.create()
     
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     
     CloudInstance_table.drop()

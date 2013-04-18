@@ -3,8 +3,11 @@ Tags Controller: handles tagging/untagging of entities
 and provides autocomplete support.
 """
 
-from sqlalchemy.sql.expression import func, and_
+from galaxy import web
+from galaxy.web.base.controller import BaseUIController, UsesTagsMixin
+
 from sqlalchemy.sql import select
+from sqlalchemy.sql.expression import and_, func
 
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController, UsesTagsMixin

@@ -9,9 +9,10 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     
     print __doc__
     metadata.reflect()
@@ -20,7 +21,7 @@ def upgrade():
     
     # Create slug column.
     c = Column( "slug", TEXT, index=True )
-    c.create( StoredWorkflow_table )
+    c.create( StoredWorkflow_table, index_name='ix_stored_workflow_slug' )
     assert c is StoredWorkflow_table.c.slug
     
     # Create slug index.
@@ -31,7 +32,8 @@ def upgrade():
         # Mysql doesn't have a named index, but alter should work
         StoredWorkflow_table.c.slug.alter( unique=False )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     StoredWorkflow_table = Table( "stored_workflow", metadata, autoload=True )

@@ -10,8 +10,8 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 # Table to add.
 
@@ -26,7 +26,8 @@ JobExportHistoryArchive_table = Table( "job_export_history_archive", metadata,
     Column( "jobs_attrs_filename", TEXT )
     )
     
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -37,7 +38,8 @@ def upgrade():
         print str(e)
         log.debug( "Creating job_export_history_archive table failed: %s" % str( e ) )
                         
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     
     # Drop job_export_history_archive table.

@@ -11,10 +11,11 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -22,7 +23,7 @@ def upgrade():
     History_table = Table( "history", metadata, autoload=True )
     c = Column( "published", Boolean, index=True )
     try:
-        c.create( History_table )
+        c.create( History_table, index_name='ix_history_published')
         assert c is History_table.c.published
     except Exception, e:
         print "Adding published column to history table failed: %s" % str( e )
@@ -41,7 +42,7 @@ def upgrade():
     StoredWorkflow_table = Table( "stored_workflow", metadata, autoload=True )
     c = Column( "published", Boolean, index=True )
     try:
-        c.create( StoredWorkflow_table )
+        c.create( StoredWorkflow_table, index_name='ix_stored_workflow_published')
         assert c is StoredWorkflow_table.c.published
     except Exception, e:
         print "Adding published column to stored_workflow table failed: %s" % str( e )
@@ -59,7 +60,7 @@ def upgrade():
     Page_table = Table( "page", metadata, autoload=True )
     c = Column( "importable", Boolean, index=True )
     try:
-        c.create( Page_table )
+        c.create( Page_table, index_name='ix_page_importable')
         assert c is Page_table.c.importable
     except Exception, e:
         print "Adding importable column to page table failed: %s" % str( e )
@@ -73,7 +74,8 @@ def upgrade():
         # Mysql doesn't have a named index, but alter should work
         Page_table.c.importable.alter( unique=False )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     # Drop published column from history table.

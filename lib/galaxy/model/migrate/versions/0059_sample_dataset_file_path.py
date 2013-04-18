@@ -18,11 +18,10 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -31,9 +30,9 @@ def upgrade():
         SampleDataset_table = None
         log.debug( "Failed loading table 'sample_dataset'" )
 
-    if SampleDataset_table:
+    if SampleDataset_table is not None:
         cmd = "SELECT id, file_path FROM sample_dataset"
-        result = db_session.execute( cmd )
+        result = migrate_engine.execute( cmd )
         filepath_dict = {}
         for r in result:
             id = int(r[0])
@@ -53,7 +52,8 @@ def upgrade():
 
         for id, file_path in filepath_dict.items():
             cmd = "update sample_dataset set file_path='%s' where id=%i" % (file_path, id)
-            db_session.execute( cmd )            
+            migrate_engine.execute( cmd )            
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

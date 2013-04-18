@@ -2762,8 +2762,10 @@ class Tool( object ):
                 parent_id = int(fields.pop(0))
                 designation = fields.pop(0)
                 visible = fields.pop(0).lower()
-                if visible == "visible": visible = True
-                else: visible = False
+                if visible == "visible":
+                    visible = True
+                else:
+                    visible = False
                 ext = fields.pop(0).lower()
                 child_dataset = self.app.model.HistoryDatasetAssociation( extension=ext,
                                                                           parent_id=outdata.id,

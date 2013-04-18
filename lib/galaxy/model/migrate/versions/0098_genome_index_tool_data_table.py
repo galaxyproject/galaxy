@@ -20,7 +20,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 # New table in changeset TODO:TODO
 GenomeIndexToolData_table = Table( "genome_index_tool_data", metadata,
@@ -36,7 +36,8 @@ GenomeIndexToolData_table = Table( "genome_index_tool_data", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     )
     
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     
     metadata.reflect()
@@ -45,7 +46,8 @@ def upgrade():
     except Exception, e:
         log.debug( "Creating genome_index_tool_data table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         GenomeIndexToolData_table.drop()

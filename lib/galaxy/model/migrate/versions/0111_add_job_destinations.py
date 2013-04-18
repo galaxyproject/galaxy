@@ -11,14 +11,14 @@ from galaxy.model.custom_types import JSONType
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-
 def display_migration_details():
     print ""
     print "This migration script adds 'destination_id' and 'destination_params' columns to the Job table."
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata = MetaData()
+    metadata.bind = migrate_engine
     metadata.reflect()
     Job_table = Table( "job", metadata, autoload=True )
 
@@ -36,7 +36,9 @@ def upgrade():
     except Exception, e:
         log.error( "Adding column 'destination_params' to job table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata = MetaData()
+    metadata.bind = migrate_engine
     metadata.reflect()
     Job_table = Table( "job", metadata, autoload=True )
     

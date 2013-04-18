@@ -5,21 +5,32 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import pkg_resources
-pkg_resources.require("simplejson")
-pkg_resources.require("pexpect")
-import simplejson, os, errno, codecs, operator, socket, pexpect, logging, time
+from galaxy import eggs
+eggs.require("simplejson")
+eggs.require("pexpect")
+
+import codecs
+import errno
+import logging
+import operator
+import os
+import pexpect
+import simplejson
+import socket
+import time
+
 import galaxy.datatypes
 import galaxy.datatypes.registry
 from galaxy.datatypes.metadata import MetadataCollection
+from galaxy.model.item_attrs import APIItem, UsesAnnotations
 from galaxy.security import get_permitted_actions
-from galaxy import util
+from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
 from galaxy.web.framework.helpers import to_unicode
-from galaxy.web.form_builder import (AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField,
-                                    WorkflowField, WorkflowMappingField, HistoryField)
-from galaxy.model.item_attrs import UsesAnnotations, APIItem
+from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
+        PasswordField, SelectField, TextArea, TextField, WorkflowField,
+        WorkflowMappingField)
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.expression import func
 
@@ -804,7 +815,7 @@ class Quota( object, APIItem ):
         if self.bytes == -1:
             return "unlimited"
         else:
-            return util.nice_size( self.bytes )
+            return nice_size( self.bytes )
 
 class DefaultQuotaAssociation( Quota, APIItem ):
     api_element_visible_keys = ( 'type', )
@@ -977,7 +988,7 @@ class Dataset( object ):
         if not self.has_data():
             return False
         try:
-            return util.is_multi_byte( codecs.open( self.file_name, 'r', 'utf-8' ).read( 100 ) )
+            return is_multi_byte( codecs.open( self.file_name, 'r', 'utf-8' ).read( 100 ) )
         except UnicodeDecodeError:
             return False
     # FIXME: sqlalchemy will replace this
@@ -2275,7 +2286,7 @@ class FormDefinition( object, APIItem ):
         Return the list of widgets that comprise a form definition,
         including field contents if any.
         '''
-        params = util.Params( kwd )
+        params = Params( kwd )
         widgets = []
         for index, field in enumerate( self.fields ):
             field_type = field[ 'type' ]
@@ -2291,7 +2302,7 @@ class FormDefinition( object, APIItem ):
                 if field_type == 'CheckboxField':
                     value = CheckboxField.is_checked( params.get( field_name, False ) )
                 else:
-                    value = util.restore_text( params.get( field_name, '' ) )
+                    value = restore_text( params.get( field_name, '' ) )
             elif contents:
                 try:
                     # This field has a saved value.
@@ -2506,7 +2517,7 @@ All samples in state:     %(sample_state)s
             frm = 'galaxy-no-reply@' + host
             subject = "Galaxy Sample Tracking notification: '%s' sequencing request" % self.name
             try:
-                util.send_mail( frm, to, subject, body, trans.app.config )
+                send_mail( frm, to, subject, body, trans.app.config )
                 comments = "Email notification sent to %s." % ", ".join( to ).strip().strip( ',' )
             except Exception,e:
                 comments = "Email notification failed. (%s)" % str(e)
@@ -2548,7 +2559,7 @@ class ExternalService( object ):
             if data_transfer_protocol == self.data_transfer_protocol.SCP:
                 scp_configs = {}
                 automatic_transfer = data_transfer_obj.config.get( 'automatic_transfer', 'false' )
-                scp_configs[ 'automatic_transfer' ] = util.string_as_bool( automatic_transfer )
+                scp_configs[ 'automatic_transfer' ] = galaxy.util.string_as_bool( automatic_transfer )
                 scp_configs[ 'host' ] = self.form_values.content.get( data_transfer_obj.config.get( 'host', '' ), '' )
                 scp_configs[ 'user_name' ] = self.form_values.content.get( data_transfer_obj.config.get( 'user_name', '' ), '' )
                 scp_configs[ 'password' ] = self.form_values.content.get( data_transfer_obj.config.get( 'password', '' ), '' )
@@ -2558,7 +2569,7 @@ class ExternalService( object ):
             if data_transfer_protocol == self.data_transfer_protocol.HTTP:
                 http_configs = {}
                 automatic_transfer = data_transfer_obj.config.get( 'automatic_transfer', 'false' )
-                http_configs[ 'automatic_transfer' ] = util.string_as_bool( automatic_transfer )
+                http_configs[ 'automatic_transfer' ] = galaxy.util.string_as_bool( automatic_transfer )
                 self.data_transfer[ self.data_transfer_protocol.HTTP ] = http_configs
     def populate_actions( self, trans, item, param_dict=None ):
         return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )

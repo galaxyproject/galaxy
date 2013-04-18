@@ -17,8 +17,8 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def display_migration_details():
     print ""
@@ -36,7 +36,8 @@ JobToOutputLibraryDatasetAssociation_table = Table( "job_to_output_library_datas
     Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
@@ -52,10 +53,10 @@ def upgrade():
     except NoSuchTableError:
         Job_table = None
         log.debug( "Failed loading table job" )
-    if Job_table:
+    if Job_table is not None:
         try:
             col = Column( "library_folder_id", Integer, index=True )
-            col.create( Job_table )
+            col.create( Job_table, index_name='ix_job_library_folder_id')
             assert col is Job_table.c.library_folder_id
         except Exception, e:
             log.debug( "Adding column 'library_folder_id' to job table failed: %s" % ( str( e ) ) )
@@ -65,7 +66,7 @@ def upgrade():
             LibraryFolder_table = None
             log.debug( "Failed loading table library_folder" )
         # Add 1 foreign key constraint to the job table
-        if Job_table and LibraryFolder_table:
+        if Job_table is not None and LibraryFolder_table is not None:
             try:
                 cons = ForeignKeyConstraint( [Job_table.c.library_folder_id],
                                              [LibraryFolder_table.c.id],
@@ -87,7 +88,8 @@ def upgrade():
         print str(e)
         log.debug( "Adding index 'ix_dataset_state' to dataset table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Drop the library_folder_id column
     try:
@@ -95,7 +97,7 @@ def downgrade():
     except NoSuchTableError:
         Job_table = None
         log.debug( "Failed loading table job" )
-    if Job_table:
+    if Job_table is not None:
         try:
             col = Job_table.c.library_folder_id
             col.drop()

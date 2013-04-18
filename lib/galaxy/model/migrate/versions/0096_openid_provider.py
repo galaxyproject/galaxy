@@ -13,10 +13,10 @@ from galaxy.model.custom_types import TrimmedString
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -31,11 +31,12 @@ def upgrade():
         
     try:
         cmd = "DELETE FROM galaxy_user_openid WHERE openid='%s'" % ( BAD_IDENTIFIER )
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "Deleting bad Identifiers from galaxy_user_openid failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         OpenID_table = Table( "galaxy_user_openid", metadata, autoload=True )

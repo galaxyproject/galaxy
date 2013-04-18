@@ -19,7 +19,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 # New table to store information about cloned tool shed repositories.
 ToolDependency_table = Table( "tool_dependency", metadata,
@@ -33,7 +33,8 @@ ToolDependency_table = Table( "tool_dependency", metadata,
     Column( "type", TrimmedString( 40 ) ),
     Column( "uninstalled", Boolean, default=False ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -41,7 +42,8 @@ def upgrade():
     except Exception, e:
         log.debug( "Creating tool_dependency table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         ToolDependency_table.drop()

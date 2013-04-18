@@ -2,18 +2,25 @@
 Binary classes
 """
 
-import data, logging, binascii
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes import metadata
-from galaxy.datatypes.sniff import *
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "bx-python" )
-from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
-from urllib import urlencode, quote_plus
-import zipfile, gzip
-import os, subprocess, tempfile
+
+import binascii
+import data
+import gzip
+import logging
+import os
+import shutil
 import struct
+import subprocess
+import tempfile
+
+from galaxy import eggs
+eggs.require( "bx-python" )
+
+from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
+
+from galaxy.datatypes import metadata
+from galaxy.datatypes.metadata import MetadataElement
+
 
 log = logging.getLogger(__name__)
 

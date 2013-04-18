@@ -10,8 +10,8 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 PageUserShareAssociation_table = Table( "page_user_share_association", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -19,7 +19,8 @@ PageUserShareAssociation_table = Table( "page_user_share_association", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
     )
     
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -30,7 +31,8 @@ def upgrade():
         print str(e)
         log.debug( "Creating page_user_share_association table failed: %s" % str( e ) )
         
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
         
     # Drop workflow_tag_association table.

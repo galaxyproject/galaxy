@@ -22,7 +22,7 @@ from galaxy.model.custom_types import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 def display_migration_details():
     print ""
@@ -66,7 +66,8 @@ HistoryDatasetAssociationTagAssociation_table = Table( "history_dataset_associat
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     metadata.reflect()
     try:
@@ -90,7 +91,8 @@ def upgrade():
         print str(e)
         log.debug( "Creating history_dataset_association_tag_association table failed: %s" % str( e ) )
     
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         Tag_table.drop()

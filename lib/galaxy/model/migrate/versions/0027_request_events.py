@@ -23,30 +23,13 @@ log.addHandler( handler )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
     print "This migration script adds the request_event table and" 
     print "removes the state field in the request table"
     print "========================================"
-    
-def localtimestamp():
-   if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
-       return "LOCALTIMESTAMP"
-   elif migrate_engine.name == 'sqlite':
-       return "current_date || ' ' || current_time"
-   else:
-       raise Exception( 'Unable to convert data for unknown database type: %s' % db )
-   
-def nextval( table, col='id' ):
-    if migrate_engine.name == 'postgres':
-        return "nextval('%s_%s_seq')" % ( table, col )
-    elif migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
-        return "null"
-    else:
-        raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
 
 
 RequestEvent_table = Table('request_event', metadata,
@@ -57,8 +40,23 @@ RequestEvent_table = Table('request_event', metadata,
     Column( "state", TrimmedString( 255 ),  index=True ),
     Column( "comment", TEXT ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
+    def localtimestamp():
+       if migrate_engine.name == 'postgresql' or migrate_engine.name == 'mysql':
+           return "LOCALTIMESTAMP"
+       elif migrate_engine.name == 'sqlite':
+           return "current_date || ' ' || current_time"
+       else:
+           raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
+    def nextval( table, col='id' ):
+        if migrate_engine.name == 'postgresql':
+            return "nextval('%s_%s_seq')" % ( table, col )
+        elif migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+            return "null"
+        else:
+            raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
     # Load existing tables
     metadata.reflect()
     # Add new request_event table
@@ -77,7 +75,7 @@ def upgrade():
         "'%s' AS comment " + \
         "FROM request;" 
     cmd = cmd % ( nextval('request_event'), localtimestamp(), localtimestamp(), 'Imported from request table')
-    db_session.execute( cmd )
+    migrate_engine.execute( cmd )
     
     # Delete the state column
     try:
@@ -85,11 +83,12 @@ def upgrade():
     except NoSuchTableError:
         Request_table = None
         log.debug( "Failed loading table request" )
-    if Request_table:
+    if Request_table is not None:
         try:
             Request_table.c.state.drop()
         except Exception, e:
             log.debug( "Deleting column 'state' to request table failed: %s" % ( str( e ) ) )   
     
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

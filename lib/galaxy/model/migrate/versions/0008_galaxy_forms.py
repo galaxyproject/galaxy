@@ -30,8 +30,7 @@ log.addHandler( handler )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
@@ -116,7 +115,9 @@ SampleEvent_table = Table('sample_event', metadata,
     Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ),
     Column( "comment", TEXT ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
@@ -131,7 +132,7 @@ def upgrade():
     except Exception, e:
         log.debug( "Creating form_definition table failed: %s" % str( e ) )
     # Add 1 foreign key constraint to the form_definition_current table
-    if FormDefinitionCurrent_table and FormDefinition_table:
+    if FormDefinitionCurrent_table is not None and FormDefinition_table is not None:
         try:
             cons = ForeignKeyConstraint( [FormDefinitionCurrent_table.c.latest_form_id],
                                          [FormDefinition_table.c.id],
@@ -165,7 +166,9 @@ def upgrade():
     except Exception, e:
         log.debug( "Creating sample_event table failed: %s" % str( e ) )  
 
-def downgrade():
+def downgrade(migrate_engine):
+    db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+    metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
     try:

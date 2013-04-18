@@ -18,11 +18,10 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -32,7 +31,7 @@ def upgrade():
         log.debug( "Failed loading table 'request'" )
         
 
-    if Request_table:
+    if Request_table is not None:
         # create the column again as JSONType
         try:
             col = Column( "notification", JSONType() )
@@ -42,16 +41,16 @@ def upgrade():
             log.debug( "Creating column 'notification' in the 'request' table failed: %s" % ( str( e ) ) )   
 
         cmd = "SELECT id, user_id, notify FROM request"
-        result = db_session.execute( cmd )
+        result = migrate_engine.execute( cmd )
         for r in result:
             id = int(r[0])
             notify_old = r[1]
             notify_new = dict(email=[], sample_states=[], body='', subject='')
             cmd = "update request set notification='%s' where id=%i" % (to_json_string(notify_new), id)
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
         
         cmd = "SELECT id, notification FROM request"
-        result = db_session.execute( cmd )
+        result = migrate_engine.execute( cmd )
         for r in result:
             rr = from_json_string(str(r[1]))
 
@@ -63,5 +62,6 @@ def upgrade():
      
             
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

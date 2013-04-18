@@ -4,6 +4,7 @@ Support for running a tool in Galaxy via an internal job management system
 
 import copy
 import datetime
+import galaxy
 import logging
 import os
 import pwd
@@ -14,17 +15,15 @@ import subprocess
 import sys
 import threading
 import traceback
-
-import galaxy
-from galaxy import util, model
-from galaxy.util.bunch import Bunch
+from galaxy import model, util
 from galaxy.datatypes import metadata
-from galaxy.util.json import from_json_string
-from galaxy.util.expressions import ExpressionContext
-from galaxy.jobs.actions.post import ActionBox
 from galaxy.exceptions import ObjectInvalid
+from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner
+from galaxy.util.bunch import Bunch
+from galaxy.util.expressions import ExpressionContext
+from galaxy.util.json import from_json_string
 
 log = logging.getLogger( __name__ )
 
@@ -917,7 +916,8 @@ class JobWrapper( object ):
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
 
         job_context = ExpressionContext( dict( stdout = job.stdout, stderr = job.stderr ) )
-
+        #DBTODO unused
+        #job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur

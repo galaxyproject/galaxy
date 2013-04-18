@@ -16,8 +16,8 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 # Table to add
 Sequencer_table = Table( 'sequencer', metadata,
@@ -32,7 +32,8 @@ Sequencer_table = Table( 'sequencer', metadata,
                          Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ),
                          Column( "deleted", Boolean, index=True, default=False ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     # create the sequencer table
@@ -42,7 +43,8 @@ def upgrade():
         log.debug( "Creating 'sequencer' table failed: %s" % str( e ) )
         
         
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     # delete sequencer table
     try:

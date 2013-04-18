@@ -10,8 +10,8 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 # Rating tables.
 
@@ -45,7 +45,8 @@ VisualizationRatingAssociation_table = Table( "visualization_rating_association"
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
     
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
 
@@ -94,7 +95,8 @@ def upgrade():
         print str(e)
         log.debug( "Creating visualization_rating_association table failed: %s" % str( e ) )
                 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
         
     # Drop history_rating_association table.

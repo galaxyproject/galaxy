@@ -15,8 +15,8 @@ now = datetime.datetime.utcnow
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 # Table to add
 
@@ -29,7 +29,8 @@ ToolTagAssociation_table = Table( "tool_tag_association", metadata,
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     
@@ -39,7 +40,8 @@ def upgrade():
     except Exception, e:
         log.error( "Creating tool_tag_association table failed: %s" % str( e ) )
         
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     
     # Drop tool_tag_association table

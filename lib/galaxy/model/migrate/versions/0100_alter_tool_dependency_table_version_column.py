@@ -21,10 +21,11 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     ToolDependency_table = Table( "tool_dependency", metadata, autoload=True )
@@ -48,6 +49,7 @@ def upgrade():
             db_session.execute( cmd )
         except Exception, e:
             log.debug( "Altering tool_dependency.version column from TrimmedString(40) to Text failed: %s" % str( e ) )
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     # Not necessary to change column type Text to TrimmedString(40).
     pass

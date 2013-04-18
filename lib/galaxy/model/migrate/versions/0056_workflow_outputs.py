@@ -14,8 +14,8 @@ log = logging.getLogger( __name__ )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 WorkflowOutput_table = Table( "workflow_output", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -24,7 +24,8 @@ WorkflowOutput_table = Table( "workflow_output", metadata,
 
 tables = [WorkflowOutput_table]
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     for table in tables:
@@ -33,7 +34,8 @@ def upgrade():
         except:
             log.warn( "Failed to create table '%s', ignoring (might result in wrong schema)" % table.name )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     for table in tables:
         table.drop()

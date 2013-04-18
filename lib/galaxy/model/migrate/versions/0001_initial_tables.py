@@ -10,7 +10,7 @@ from galaxy.model.custom_types import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 # Tables as of changeset 1464:c7acaa1bb88f
 User_table = Table( "galaxy_user", metadata,
@@ -203,9 +203,11 @@ StoredWorkflowMenuEntry_table = Table( "stored_workflow_menu_entry", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),                              
     Column( "order_index", Integer ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.create_all()
 
-## def downgrade():
+## def downgrade(migrate_engine):
+##    metadata.bind = migrate_engine
 ##     # Operations to reverse the above upgrade go here.
 ##     pass

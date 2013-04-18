@@ -1,20 +1,20 @@
 """
 Contains the main interface in the Universe class
 """
+import cgi
+import logging
 import os
 import urllib
-import cgi
 
 from paste.httpexceptions import HTTPNotFound
 
-from galaxy.web.base.controller import BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin
+from galaxy import web
+from galaxy.web import url_for
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy import util, web
-from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util import listify, Params, string_as_bool, string_as_bool_or_none
+from galaxy.web.base.controller import BaseUIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.util.json import to_json_string
-#from galaxy.model.orm import *
 
-import logging
 log = logging.getLogger( __name__ )
 
 class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin, UsesAnnotations ):
@@ -67,7 +67,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         Data are returned in JSON format.
         """
         query = kwd.get( 'query', '' )
-        tags = util.listify( kwd.get( 'tags[]', [] ) )
+        tags = listify( kwd.get( 'tags[]', [] ) )
         trans.log_action( trans.get_user(), "tool_search.search", "", { "query" : query, "tags" : tags } )
         results = []
         if tags:
@@ -115,8 +115,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         trans.response.set_content_type('text/xml')
         return trans.fill_template_mako( "root/history_as_xml.mako",
                                           history=history,
-                                          show_deleted=util.string_as_bool( show_deleted ),
-                                          show_hidden=util.string_as_bool( show_hidden ) )
+                                          show_deleted=string_as_bool( show_deleted ),
+                                          show_hidden=string_as_bool( show_hidden ) )
 
     @web.expose
     def history( self, trans, as_xml=False, show_deleted=None, show_hidden=None, hda_id=None, **kwd ):
@@ -126,13 +126,13 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
         """
         if as_xml:
             return self.history_as_xml( trans,
-                show_deleted=util.string_as_bool( show_deleted ), show_hidden=util.string_as_bool( show_hidden ) )
+                show_deleted=string_as_bool( show_deleted ), show_hidden=string_as_bool( show_hidden ) )
 
         # get all datasets server-side, client-side will get flags and render appropriately
-        show_deleted = util.string_as_bool_or_none( show_deleted )
+        show_deleted = string_as_bool_or_none( show_deleted )
         show_purged  = show_deleted
-        show_hidden  = util.string_as_bool_or_none( show_hidden )
-        params = util.Params( kwd )
+        show_hidden  = string_as_bool_or_none( show_hidden )
+        params = Params( kwd )
         message = params.get( 'message', '' )
         #TODO: ugh...
         message = message if message != 'None' else ''
@@ -313,7 +313,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
     def history_import( self, trans, id=None, confirm=False, **kwd ):
         #TODO: unused?
         #TODO: unencoded id
-        msg = ""
         user = trans.get_user()
         user_history = trans.get_history()
         if not id:
@@ -437,7 +436,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                 if not history:
                     # If we haven't retrieved a history, use the current one
                     history = trans.get_history()
-                p = util.Params( kwd )
+                p = Params( kwd )
                 permissions = {}
                 for k, v in trans.app.model.Dataset.permitted_actions.items():
                     in_roles = p.get( k + '_in', [] )
@@ -509,7 +508,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             rval[ k ] = kwd[k]
             try:
                 if rval[ k ] in [ 'true', 'True', 'false', 'False' ]:
-                    rval[ k ] = util.string_as_bool( rval[ k ] )
+                    rval[ k ] = string_as_bool( rval[ k ] )
                 rval[ k ] = float( rval[ k ] )
                 rval[ k ] = int( rval[ k ] )
             except:

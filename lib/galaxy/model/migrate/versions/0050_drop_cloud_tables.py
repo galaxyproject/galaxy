@@ -10,7 +10,7 @@ from galaxy.model.custom_types import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 def display_migration_details():
     print
@@ -127,10 +127,24 @@ CloudProvider_table = Table( "cloud_provider", metadata,
     Column( "path", TEXT ),
     Column( "deleted", Boolean, default=False ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
+    if migrate_engine.name == 'postgres':
+        # http://blog.pythonisito.com/2008/01/cascading-drop-table-with-sqlalchemy.html
+        from sqlalchemy.databases import postgres
+        class PGCascadeSchemaDropper(postgres.PGSchemaDropper):
+            def visit_table(self, table):
+                for column in table.columns:
+                    if column.default is not None:
+                        self.traverse_single(column.default)
+                self.append("\nDROP TABLE " +
+                            self.preparer.format_table(table) +
+                            " CASCADE")
+                self.execute()
+        postgres.dialect.schemadropper = PGCascadeSchemaDropper
     try:
         CloudProvider_table.drop()
         CloudUserCredentials_table.drop()
@@ -143,5 +157,6 @@ def upgrade():
         log.debug( "Dropping cloud tables failed: %s" % str( e ) )
         
     
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

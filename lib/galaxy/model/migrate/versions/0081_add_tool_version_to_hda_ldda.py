@@ -9,10 +9,11 @@ from migrate.changeset import *
 
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -29,7 +30,8 @@ def upgrade():
     except Exception, e:
         print "Adding the tool_version column to the hda/ldda tables failed: ", str( e )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         hda_table = Table( "history_dataset_association", metadata, autoload=True )

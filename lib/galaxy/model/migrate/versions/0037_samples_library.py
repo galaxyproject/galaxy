@@ -22,10 +22,11 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     # Load existing tables
     metadata.reflect()
@@ -35,7 +36,7 @@ def upgrade():
     except NoSuchTableError:
         RequestType_table = None
         log.debug( "Failed loading table request_type" )
-    if RequestType_table:
+    if RequestType_table is not None:
         # Add the datatx_info column in 'request_type' table
         try:
             col = Column( "datatx_info", JSONType() )
@@ -49,7 +50,7 @@ def upgrade():
     except NoSuchTableError:
         Request_table = None
         log.debug( "Failed loading table request" )
-    if Request_table:
+    if Request_table is not None:
         # Delete library_id & folder_id columns in the table 'request'.
         # if Galaxy is running on sqlite, the delete/recreate the table
         # otherwise remove the specific columns
@@ -108,7 +109,7 @@ def upgrade():
     except NoSuchTableError:
         Sample_table = None
         log.debug( "Failed loading table sample" )
-    if Sample_table:
+    if Sample_table is not None:
         # Add the dataset_files column in 'sample' table
         try:
             col = Column( "dataset_files", JSONType() )
@@ -122,11 +123,11 @@ def upgrade():
         except NoSuchTableError:
             Library_table = None
             log.debug( "Failed loading table library" )
-        if Library_table:
+        if Library_table is not None:
             # Add the library_id column in 'sample' table
             try:
                 col = Column( "library_id", Integer, ForeignKey( "library.id" ), index=True )
-                col.create( Sample_table )
+                col.create( Sample_table, index_name='ix_sample_library_id')
                 assert col is Sample_table.c.library_id
             except Exception, e:
                 log.debug( "Adding column 'library_id' to sample table failed: %s" % ( str( e ) ) )
@@ -136,14 +137,15 @@ def upgrade():
         except NoSuchTableError:
             LibraryFolder_table = None
             log.debug( "Failed loading table library_folder" )
-        if LibraryFolder_table:
+        if LibraryFolder_table is not None:
             # Add the library_id column in 'sample' table
             try:
                 col = Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True )
-                col.create( Sample_table )
+                col.create( Sample_table, index_name='ix_sample_library_folder_id')
                 assert col is Sample_table.c.folder_id
             except Exception, e:
                 log.debug( "Adding column 'folder_id' to sample table failed: %s" % ( str( e ) ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

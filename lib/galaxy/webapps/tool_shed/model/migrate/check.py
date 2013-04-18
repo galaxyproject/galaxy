@@ -4,6 +4,7 @@ from galaxy import eggs
 
 import pkg_resources
 pkg_resources.require( "sqlalchemy-migrate" )
+pkg_resources.require( "Tempita" )
 
 from migrate.versioning import repository, schema
 from sqlalchemy import *
