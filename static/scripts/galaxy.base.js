@@ -705,4 +705,9 @@ $(document).ready( function() {
         return anchor;
     });
 
+    // Auto Focus on first item on form
+    if ( $("*:focus").html() == null ) {
+        $(":input:not([type=hidden]):visible:enabled:first").focus();
+    }
+
 });
