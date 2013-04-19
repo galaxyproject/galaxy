@@ -1,9 +1,12 @@
 # For Python 2.5
 from __future__ import with_statement
 
-import os, shutil, tempfile
-from contextlib import contextmanager
 import common_util
+import logging
+import os
+import shutil
+import tempfile
+from contextlib import contextmanager
 
 from galaxy import eggs
 import pkg_resources
@@ -11,7 +14,12 @@ import pkg_resources
 pkg_resources.require('ssh' )
 pkg_resources.require( 'Fabric' )
 
-from fabric.api import env, lcd, local, settings
+from fabric.api import env
+from fabric.api import lcd
+from fabric.api import local
+from fabric.api import settings
+
+log = logging.getLogger( __name__ )
 
 INSTALLATION_LOG = 'INSTALLATION.log'
 
@@ -19,6 +27,7 @@ def check_fabric_version():
     version = env.version
     if int( version.split( "." )[ 0 ] ) < 1:
         raise NotImplementedError( "Install Fabric version 1.0 or later." )
+
 def set_galaxy_environment( galaxy_user, tool_dependency_dir, host='localhost', shell='/bin/bash -l -c' ):
     """General Galaxy environment configuration"""
     env.user = galaxy_user
@@ -28,12 +37,14 @@ def set_galaxy_environment( galaxy_user, tool_dependency_dir, host='localhost', 
     env.use_sudo = False
     env.safe_cmd = local
     return env
+
 @contextmanager
 def make_tmp_dir():
     work_dir = tempfile.mkdtemp()
     yield work_dir
     if os.path.exists( work_dir ):
         local( 'rm -rf %s' % work_dir )
+
 def handle_command( app, tool_dependency, install_dir, cmd ):
     sa_session = app.model.context.current
     output = local( cmd, capture=True )
@@ -44,6 +55,7 @@ def handle_command( app, tool_dependency, install_dir, cmd ):
         sa_session.add( tool_dependency )
         sa_session.flush()
     return output.return_code
+
 def install_and_build_package( app, tool_dependency, actions_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
     sa_session = app.model.context.current
@@ -126,6 +138,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 return_code = handle_command( app, tool_dependency, install_dir, action_dict[ 'command' ] )
                                 if return_code:
                                     return
+
 def log_results( command, fabric_AttributeString, file_path ):
     """
     Write attributes of fabric.operations._AttributeString (which is the output of executing command using fabric's local() method)
