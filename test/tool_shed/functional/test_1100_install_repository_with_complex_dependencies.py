@@ -90,23 +90,21 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
         if running_standalone:
             dependency_path = self.generate_temp_path( 'test_0100', additional_paths=[ 'complex', 'shed' ] )
             xml_filename = self.get_filename( 'tool_dependencies.xml', filepath=dependency_path )
-            repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
+            base_repository = test_db_util.get_repository_by_name_and_owner( bwa_base_repository_name, common.test_user_1_name )
             tool_repository = test_db_util.get_repository_by_name_and_owner( bwa_tool_repository_name, common.test_user_1_name )
             url = 'http://http://this is not an url!'
             name = tool_repository.name
             owner = tool_repository.user.username
             changeset_revision = self.get_repository_tip( tool_repository )
-            self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
             strings_displayed = [ 'Repository dependencies are currently supported only within the same tool shed' ] 
-            self.upload_file( repository, 
-                              filename='tool_dependencies.xml',
-                              filepath=dependency_path, 
-                              valid_tools_only=False,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False, 
-                              commit_message='Uploaded dependency on bwa_tool_0100 with invalid url.',
-                              strings_displayed=strings_displayed, 
-                              strings_not_displayed=[] )
+            repository_tuple = ( url, name, owner, changeset_revision )
+            self.create_repository_dependency( repository=base_repository, 
+                                               filepath=dependency_path, 
+                                               repository_tuples=[ repository_tuple ],
+                                               strings_displayed=strings_displayed,
+                                               complex=True,
+                                               package='bwa',
+                                               version='0.5.9' )
 
     def test_0020_generate_complex_repository_dependency_invalid_repository_name( self ):
         '''Generate and upload a complex repository definition that specifies an invalid repository name.'''
@@ -120,17 +118,15 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             name = 'invalid_repository!?'
             owner = tool_repository.user.username
             changeset_revision = self.get_repository_tip( tool_repository )
-            self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
             strings_displayed = [ 'because the name is invalid.' ]
-            self.upload_file( base_repository, 
-                              filename='tool_dependencies.xml',
-                              filepath=dependency_path, 
-                              valid_tools_only=False,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False, 
-                              commit_message='Uploaded dependency on bwa_tool_0100 with invalid repository name.',
-                              strings_displayed=strings_displayed, 
-                              strings_not_displayed=[] )
+            repository_tuple = ( url, name, owner, changeset_revision )
+            self.create_repository_dependency( repository=base_repository, 
+                                               filepath=dependency_path, 
+                                               repository_tuples=[ repository_tuple ],
+                                               strings_displayed=strings_displayed,
+                                               complex=True,
+                                               package='bwa',
+                                               version='0.5.9' )
 
     def test_0025_generate_complex_repository_dependency_invalid_owner_name( self ):
         '''Generate and upload a complex repository definition that specifies an invalid owner.'''
@@ -144,17 +140,15 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             name = tool_repository.name
             owner = 'invalid_owner!?'
             changeset_revision = self.get_repository_tip( tool_repository )
-            self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
             strings_displayed = [ 'because the owner is invalid.' ]
-            self.upload_file( base_repository, 
-                              filename='tool_dependencies.xml',
-                              filepath=dependency_path, 
-                              valid_tools_only=False,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False, 
-                              commit_message='Uploaded dependency on bwa_tool_0100 with invalid owner.',
-                              strings_displayed=strings_displayed, 
-                              strings_not_displayed=[] )
+            repository_tuple = ( url, name, owner, changeset_revision )
+            self.create_repository_dependency( repository=base_repository, 
+                                               filepath=dependency_path, 
+                                               repository_tuples=[ repository_tuple ],
+                                               strings_displayed=strings_displayed,
+                                               complex=True,
+                                               package='bwa',
+                                               version='0.5.9' )
  
     def test_0030_generate_complex_repository_dependency_invalid_changeset_revision( self ):
         '''Generate and upload a complex repository definition that specifies an invalid changeset revision.'''
@@ -168,17 +162,15 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             name = tool_repository.name
             owner = tool_repository.user.username
             changeset_revision = '1234abcd'
-            self.generate_invalid_dependency_xml( xml_filename, url, name, owner, changeset_revision, complex=True, package='bwa', version='0.5.9' )
             strings_displayed = [ 'because the changeset revision is invalid.' ]
-            self.upload_file( base_repository, 
-                              filename='tool_dependencies.xml',
-                              filepath=dependency_path, 
-                              valid_tools_only=False,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False, 
-                              commit_message='Uploaded dependency on bwa_tool_0100 with invalid changeset revision.',
-                              strings_displayed=strings_displayed, 
-                              strings_not_displayed=[] )
+            repository_tuple = ( url, name, owner, changeset_revision )
+            self.create_repository_dependency( repository=base_repository, 
+                                               filepath=dependency_path, 
+                                               repository_tuples=[ repository_tuple ],
+                                               strings_displayed=strings_displayed,
+                                               complex=True,
+                                               package='bwa',
+                                               version='0.5.9' )
   
     def test_0035_generate_valid_complex_repository_dependency( self ):
         '''Generate and upload a valid tool_dependencies.xml file that specifies bwa_tool_repository_0100.'''
@@ -192,16 +184,13 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
             name = tool_repository.name
             owner = tool_repository.user.username
             changeset_revision = self.get_repository_tip( tool_repository )
-            self.generate_repository_dependency_xml( [ tool_repository ], xml_filename, complex=True, package='bwa', version='0.5.9' )
-            self.upload_file( base_repository, 
-                              filename='tool_dependencies.xml',
-                              filepath=dependency_path, 
-                              valid_tools_only=True,
-                              uncompress_file=False,
-                              remove_repo_files_not_in_tar=False, 
-                              commit_message='Uploaded valid complex dependency on bwa_tool_0100.',
-                              strings_displayed=[], 
-                              strings_not_displayed=[] )
+            repository_tuple = ( url, name, owner, changeset_revision )
+            self.create_repository_dependency( repository=base_repository, 
+                                               filepath=dependency_path, 
+                                               repository_tuples=[ repository_tuple ],
+                                               complex=True,
+                                               package='bwa',
+                                               version='0.5.9' )
             self.check_repository_dependency( base_repository, tool_repository )
             self.display_manage_repository_page( base_repository, strings_displayed=[ 'bwa', '0.5.9', 'package' ] )
  
@@ -282,8 +271,11 @@ class TestInstallingComplexRepositoryDependencies( ShedTwillTestCase ):
                                     'env.sh' )
         assert os.path.exists( env_sh_path ), 'env.sh was not generated in %s for this dependency.' % env_sh_path
         contents = file( env_sh_path, 'r' ).read()
-        if tool_repository.installed_changeset_revision not in contents or tool_repository.name not in contents: 
-            raise AssertionError( 'The env.sh file was not correctly generated. Contents: %s' % contents )
+        if tool_repository.installed_changeset_revision not in contents:
+            raise AssertionError( 'Installed changeset revision %s not found in env.sh.\nContents of env.sh: %s' % \
+                                  ( tool_repository.installed_changeset_revision, contents ) )
+        if 'bwa_tool_repository_0100' not in contents:
+            raise AssertionError( 'Repository name bwa_tool_repository_0100 not found in env.sh.\nContents of env.sh: %s' % contents )
         
     def test_0060_verify_tool_dependency_uninstallation( self ):
         '''Uninstall the bwa_tool_repository_0100 repository.'''
