@@ -1349,7 +1349,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             view.high -= delta_chrom;
             view.low -= delta_chrom;
         }
-                
+
         view.request_redraw();
         
         // Navigate.
@@ -2893,19 +2893,18 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var 
             // Index of first tile that overlaps visible region.
             tile_index = Math.floor( low / (resolution * TILE_SIZE) ),
-            // If any tile could not be drawn yet, this will be set to false.
-            all_tiles_drawn = true,
-            drawn_tiles = [],
-            is_tile = function(o) { return (o && 'track' in o); };
+            tile_region,
+            tile_promise,
+            tile_promises = [],
+            tiles = [];
         // Draw tiles.
         while ( ( tile_index * TILE_SIZE * resolution ) < high ) {
-            var tile_region = this._get_tile_bounds(tile_index, resolution),
-                draw_result = this.draw_helper( force, tile_region, resolution, this.tiles_div, w_scale );
-            if ( is_tile(draw_result) ) {
-                drawn_tiles.push( draw_result );
-            } else {
-                all_tiles_drawn = false;
-            }
+            tile_region = this._get_tile_bounds(tile_index, resolution);
+            tile_promise = this.draw_helper( force, tile_region, resolution, this.tiles_div, w_scale );
+            tile_promises.push(tile_promise);
+            $.when(tile_promise).then(function(tile) {
+                tiles.push(tile);
+            });
             tile_index += 1;
         }
         
@@ -2914,11 +2913,15 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 
         // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
         var track = this;
-        if (all_tiles_drawn) {
+        $.when.apply($, tile_promises).then(function() {
             // Step (c) for (re)moving tiles when clear_after is true:
-            this.tiles_div.children(".remove").remove();
-            track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);
-        } 
+            track.tiles_div.children(".remove").remove();
+
+            // HACK: only do postdraw actions when there are tiles; ReferenceTrack may not return tiles.
+            if (tiles[0]) {
+                track.postdraw_actions(tiles, width, w_scale, clear_after);
+            }
+        });
     },
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
@@ -2970,7 +2973,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */ 
     draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
         var track = this,
-            key = this._gen_tile_cache_key(w_scale, region);
+            key = this._gen_tile_cache_key(w_scale, region),
+            is_tile = function(o) { return (o && 'track' in o); };
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
@@ -2978,7 +2982,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Check tile cache, if found show existing tile in correct position
         var tile = (force ? undefined : track.tile_cache.get_elt(key));
         if (tile) {
-            track.show_tile(tile, parent_element, w_scale);
+            if (is_tile(tile)) {
+                track.show_tile(tile, parent_element, w_scale);
+            }
             return tile;
         }
                 
@@ -3039,15 +3045,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             return tile;
         }
          
-        // Can't draw now, so trigger another redraw when the data is ready
-        var can_draw = $.Deferred();
+        // Can't draw now, so put Deferred in cache and draw tile when data is available.
+        var tile_drawn = $.Deferred();
+        track.tile_cache.set_elt(key, tile_drawn);
         $.when( tile_data, seq_data ).then( function() {
-            view.request_redraw(false, false, false, track);
-            can_draw.resolve();
+            // Draw tile--force to clear Deferred from cache--and resolve.
+            tile = track.draw_helper(true, region, resolution, parent_element, w_scale, kwargs);
+            tile_drawn.resolve(tile);
         });
         
-        // Returned Deferred is resolved when tile can be drawn.
-        return can_draw;
+        return tile_drawn;
     },
 
     /**
