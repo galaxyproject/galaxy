@@ -182,14 +182,15 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                 tool_shed = package_elem.attrib[ 'toolshed' ]
                 required_repository_name = package_elem.attrib[ 'name' ]
                 required_repository_owner = package_elem.attrib[ 'owner' ]
-                required_repository_changeset_revision = package_elem.attrib[ 'changeset_revision' ]
+                default_required_repository_changeset_revision = package_elem.attrib[ 'changeset_revision' ]
                 required_repository = get_tool_shed_repository_by_tool_shed_name_owner_changeset_revision( app,
                                                                                                            tool_shed,
                                                                                                            required_repository_name,
                                                                                                            required_repository_owner,
-                                                                                                           required_repository_changeset_revision )
+                                                                                                           default_required_repository_changeset_revision )
                 tmp_filename = None
                 if required_repository:
+                    required_repository_changeset_revision = required_repository.installed_changeset_revision
                     # Define the installation directory for the required tool dependency package in the required repository.
                     required_repository_package_install_dir = \
                         get_tool_dependency_install_dir( app=app,
@@ -257,7 +258,7 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                     install_and_build_package_via_fabric( app, tool_dependency, actions_dict )
                 else:
                     message = "Unable to locate required tool shed repository named %s owned by %s with revision %s." % \
-                        ( str( required_repository_name ), str( required_repository_owner ), str( required_repository_changeset_revision ) )
+                        ( str( required_repository_name ), str( required_repository_owner ), str( default_required_repository_changeset_revision ) )
                     raise Exception( message )
             elif package_elem.tag == 'install':
                 # <install version="1.0">
