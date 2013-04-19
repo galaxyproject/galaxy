@@ -2940,6 +2940,28 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 }
             });
         }
+
+        //
+        // If using SummaryTree tiles, show max and make it editable.
+        //
+        this.container_div.find(".yaxislabel").remove();
+        var track = this,
+            first_tile = tiles[0];
+        if (first_tile instanceof SummaryTreeTile) {
+            var max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val),
+                max_label = $("<div/>").text(max_val).make_text_editable({
+                    num_cols: 12,
+                    on_finish: function(new_val) {
+                        $(".bs-tooltip").remove();
+                        var new_val = parseFloat(new_val);
+                        track.prefs.histogram_max = (!isNaN(new_val) ? new_val : null);
+                        track.tile_cache.clear();
+                        track.request_draw();
+                    },
+                    help_text: "Set max value; leave blank to use default"
+                }).addClass('yaxislabel top').css("color", this.prefs.label_color);
+            this.container_div.prepend(max_label);
+        }
     },
 
     /**
@@ -3924,30 +3946,9 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
         
         //
-        // If using SummaryTree tiles, show max and make it editable.
-        //
-        this.container_div.find(".yaxislabel").remove();
-        var first_tile = tiles[0];
-        if (first_tile instanceof SummaryTreeTile) {
-            var max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val),
-                max_label = $("<div/>").text(max_val).make_text_editable({
-                    num_cols: 12,
-                    on_finish: function(new_val) {
-                        $(".bs-tooltip").remove();
-                        var new_val = parseFloat(new_val);
-                        track.prefs.histogram_max = (!isNaN(new_val) ? new_val : null);
-                        track.tile_cache.clear();
-                        track.request_draw();
-                    },
-                    help_text: "Set max value; leave blank to use default"
-                }).addClass('yaxislabel top').css("color", this.prefs.label_color);
-            this.container_div.prepend(max_label);
-        }
-        
-        //
         // If not all features slotted, show icon for showing more rows (slots).
         //
-        if (first_tile instanceof FeatureTrackTile) {
+        if (tiles[0] instanceof FeatureTrackTile) {
             var all_slotted = true;
             for (i = 0; i < tiles.length; i++) {
                 if (!tiles[i].all_slotted) {
@@ -4234,17 +4235,17 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
 
-        // Add labels if needed and not already included.
-        if (this.prefs.show_labels) {
+        // Add summary/sample labels if needed and not already included.
+        if ( !(tiles[0] instanceof SummaryTreeTile) && this.prefs.show_labels) {
             // Add and/or style labels.
-            if (this.container_div.find('.yaxislabel').length === 0) {
+            if (this.container_div.find('.yaxislabel.variant').length === 0) {
                 // Add summary and sample labels.
 
                 // FIXME: label attributes could be cleaner by using CSS classes.
 
                 // Add summary label.
                 var summary_div_font_size = 10,
-                    summary_div = $("<div/>").text('Summary').addClass('yaxislabel top').css({
+                    summary_div = $("<div/>").text('Summary').addClass('yaxislabel variant top').css({
                         'font-size': summary_div_font_size + 'px'
                 });
                 this.container_div.prepend(summary_div);
@@ -4260,7 +4261,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                         samples_div_html += (name + '<br>');    
                     });
 
-                    var samples_div = $("<div/>").html(samples_div_html).addClass('yaxislabel top sample').css({
+                    var samples_div = $("<div/>").html(samples_div_html).addClass('yaxislabel variant top sample').css({
                         // +2 for padding
                         'top': base_offset + this.prefs.summary_height + 2,
                     });
@@ -4278,7 +4279,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
         else {
             // Remove all labels.
-            this.container_div.find('.yaxislabel').remove();
+            this.container_div.find('.yaxislabel.variant').remove();
         }
     }
 });
