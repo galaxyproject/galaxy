@@ -694,7 +694,7 @@ def main():
                         log.debug( 'Revision %s of repository %s installed and passed functional tests.' % ( changeset_revision, name ) )
                     else:
                         # If the functional tests fail, log the output and update the failed changeset revision's metadata record in the tool shed via the API.
-                        for failure in result.failures:
+                        for failure in result.failures + result.errors:
                             # Record the twill test identifier and information about the tool, so the repository owner can discover which test is failing.
                             test_id = str( failure[0] )
                             tool_id, tool_version = get_tool_info_from_test_id( test_id )
