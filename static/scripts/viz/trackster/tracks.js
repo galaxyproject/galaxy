@@ -4226,8 +4226,8 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             return this.summary_draw_height;
         }
         else {
-            var dummy_painter = new (this.painter)(result.data, null, null, this.prefs, mode);
-            return dummy_painter.get_required_height();
+            var dummy_painter = new (this.painter)(null, null, null, this.prefs, mode);
+            return dummy_painter.get_required_height(this.dataset.get_metadata('sample_names').length);
         }
     },
 

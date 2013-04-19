@@ -1571,21 +1571,13 @@ extend(VariantPainter.prototype, Painter.prototype, {
         return height;
     },
 
-    get_required_height: function(rows_required, width) {
+    /**
+     * Returns required height to draw a particular number of samples in a given mode.
+     */
+    get_required_height: function(num_samples) {
         var height = this.prefs.summary_height;
         if (this.prefs.show_sample_data) {
-            height += this.divider_height;
-            if (this.data.length !== 0) {
-                // Sample data is separated by commas, so this computes # of samples:
-                var comma_match = this.data[0][7].match(/,/g);
-                if ( comma_match === null ) {
-                    comma_match = 1;
-                }
-                else {
-                    comma_match = comma_match.length + 1;
-                }
-                height += ( comma_match * this.get_row_height() );
-            }
+            height += this.divider_height + num_samples * this.get_row_height();
         }
         return height;
     },
