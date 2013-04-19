@@ -387,7 +387,9 @@ class RepositoriesWithInvalidTestsGrid( RepositoriesWithoutReviewsGrid ):
                                                           attach_popup=False ),
         RepositoriesWithoutReviewsGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoriesWithoutReviewsGrid.UserColumn( "Owner",
-                                                   attach_popup=False )
+                                                   model_class=model.User,
+                                                   attach_popup=False,
+                                                   key="User.username" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
