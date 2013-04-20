@@ -474,11 +474,12 @@ class Pileup( Tabular ):
     """Tab delimited data in pileup (6- or 10-column) format"""
     file_ext = "pileup"
     line_class = "genomic coordinate"
-    data_sources = { "data": "interval_index" }
+    data_sources = { "data": "tabix" }
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
     MetadataElement( name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter )
+    MetadataElement( name="endCol", default=2, desc="End column", param=metadata.ColumnParameter )
     MetadataElement( name="baseCol", default=3, desc="Reference base column", param=metadata.ColumnParameter )
 
     def init_meta( self, dataset, copy_from=None ):

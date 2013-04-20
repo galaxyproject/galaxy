@@ -160,7 +160,8 @@
 	</datatype>
     <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf"/>
     <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true">
-      <converter file="pileup_to_interval_index_converter.xml" target_datatype="interval_index"/>
+      <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
     </datatype>
     <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png"/>
     <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" />
