@@ -1821,7 +1821,7 @@ extend(Tool.prototype, {
         
         // Start with this status message.
         //new_track.container_div.addClass("pending");
-        //new_track.content_div.text("Converting input data so that it can be used quickly with tool.");
+        //new_track.content_div.html(DATA_PENDING);
         
         $.when(ss_deferred.go()).then(function(response) {
             if (response === "no converter") {
@@ -4234,7 +4234,23 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
         else {
             var dummy_painter = new (this.painter)(null, null, null, this.prefs, mode);
-            return dummy_painter.get_required_height(this.dataset.get_metadata('sample_names').length);
+            // HACK: sample_names is not be defined when dataset definition is fetched before
+            // dataset is complete (as is done when running tools). In that case, fall back on 
+            // # of samples in data. This can be fixed by re-requesting dataset definition
+            // in init.
+            var num_samples = ( this.dataset.get_metadata('sample_names') ? this.dataset.get_metadata('sample_names').length : 0);
+            if (num_samples === 0 && result.data.length !== 0) {
+                // Sample data is separated by commas, so this computes # of samples:
+                num_samples = result.data[0][7].match(/,/g);
+                if ( num_samples === null ) {
+                    num_samples = 1;
+                }
+                else {
+                    num_samples = num_samples.length + 1;
+                }
+            }
+            
+            return dummy_painter.get_required_height(num_samples);
         }
     },
 
