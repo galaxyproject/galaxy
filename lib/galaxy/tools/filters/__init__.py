@@ -45,12 +45,12 @@ class FilterFactory( object ):
         if ":" in filter_name:
             # Should be a submodule of filters (e.g. examples:restrict_development_tools)
             (module_name, function_name) = filter_name.rsplit(":", 1)
-            module = __import__( module_name, globals() )
-            function = getattr( module, function_name )
+            module = __import__( module_name.strip(), globals() )
+            function = getattr( module, function_name.strip() )
         else:
             # No module found, just load a function from this file or
             # one that has be explicitly imported.
-            function = getattr( globals(), filter_name )
+            function = getattr( globals(), filter_name.strip() )
         return function
 
 
