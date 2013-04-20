@@ -47,6 +47,7 @@ from galaxy.tools.parameters.grouping import Conditional, ConditionalWhen, Repea
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.output import ToolOutputActionGroup
 from galaxy.tools.parameters.validation import LateValidationError
+from galaxy.tools.filters import FilterFactory
 from galaxy.tools.test import ToolTestBuilder
 from galaxy.util import listify, parse_xml, rst_to_html, string_as_bool, string_to_object, xml_text, xml_to_string
 from galaxy.util.bunch import Bunch
@@ -119,6 +120,7 @@ class ToolBox( object ):
         # (e.g., shed_tool_conf.xml) files include the tool_path attribute within the <toolbox> tag.
         self.tool_root_dir = tool_root_dir
         self.app = app
+        self.filter_factory = FilterFactory( self )
         self.init_dependency_manager()
         config_filenames = listify( config_filenames )
         for config_filename in config_filenames:
@@ -679,76 +681,19 @@ class ToolBox( object ):
         """
         return self.app.model.context
 
-    def to_dict( self, trans, in_panel=True, trackster=False ):
-
-        def filter_for_panel( item, filters ):
-            """
-            Filters tool panel elements so that only those that are compatible
-            with provided filters are kept.
-            """
-            def _apply_filter( filter_item, filter_list ):
-                for filter_method in filter_list:
-                    if not filter_method( filter_item ):
-                        return False
-                return True
-            if isinstance( item, Tool ):
-                if _apply_filter( item, filters[ 'tool' ] ):
-                    return item
-            elif isinstance( item, ToolSectionLabel ):
-                if _apply_filter( item, filters[ 'label' ] ):
-                    return item
-            elif isinstance( item, ToolSection ):
-                # Filter section item-by-item. Only show a label if there are
-                # non-filtered tools below it.
-
-                if _apply_filter( item, filters[ 'section' ] ):
-                    cur_label_key = None
-                    tools_under_label = False
-                    filtered_elems = item.elems.copy()
-                    for key, section_item in item.elems.items():
-                        if isinstance( section_item, Tool ):
-                            # Filter tool.
-                            if _apply_filter( section_item, filters[ 'tool' ] ):
-                                tools_under_label = True
-                            else:
-                                del filtered_elems[ key ]
-                        elif isinstance( section_item, ToolSectionLabel ):
-                            # If there is a label and it does not have tools,
-                            # remove it.
-                            if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
-                                del filtered_elems[ cur_label_key ]
-
-                            # Reset attributes for new label.
-                            cur_label_key = key
-                            tools_under_label = False
-
-
-                    # Handle last label.
-                    if cur_label_key and not tools_under_label:
-                        del filtered_elems[ cur_label_key ]
-
-                    # Only return section if there are elements.
-                    if len( filtered_elems ) != 0:
-                        copy = item.copy()
-                        copy.elems = filtered_elems
-                        return copy
-
-            return None
-
+    def to_dict( self, trans, in_panel=True, **kwds ):
         #
         # Dictify toolbox.
         #
-
+        context = Bunch( toolbox=self, trans=trans, **kwds )
         if in_panel:
             panel_elts = [ val for val in self.tool_panel.itervalues() ]
 
-            # Filter if necessary.
-            filters = dict( tool=[ lambda x: not x._is_hidden_for_user( trans.user ) ], section=[], label=[] ) #hidden tools filter
-            if trackster:
-                filters[ 'tool' ].append( lambda x: x.trackster_conf ) # If tool has a trackster config, it can be used in Trackster.
+            filters = self.filter_factory.build_filters( trans, **kwds )
+
             filtered_panel_elts = []
             for index, elt in enumerate( panel_elts ):
-                elt = filter_for_panel( elt, filters )
+                elt = _filter_for_panel( elt, filters, context )
                 if elt:
                     filtered_panel_elts.append( elt )
             panel_elts = filtered_panel_elts
@@ -759,11 +704,66 @@ class ToolBox( object ):
                 rval.append( elt.to_dict( trans, for_link=True ) )
         else:
             tools = []
-            for id, tool in self.app.toolbox.tools_by_id.items():
+            for id, tool in self.toolbox.tools_by_id.items():
                 tools.append( tool.to_dict( trans ) )
             rval = tools
 
         return rval
+
+
+def _filter_for_panel( item, filters, context ):
+    """
+    Filters tool panel elements so that only those that are compatible
+    with provided filters are kept.
+    """
+    def _apply_filter( filter_item, filter_list ):
+        for filter_method in filter_list:
+            if not filter_method( context, filter_item ):
+                return False
+        return True
+    if isinstance( item, Tool ):
+        if _apply_filter( item, filters[ 'tool' ] ):
+            return item
+    elif isinstance( item, ToolSectionLabel ):
+        if _apply_filter( item, filters[ 'label' ] ):
+            return item
+    elif isinstance( item, ToolSection ):
+        # Filter section item-by-item. Only show a label if there are
+        # non-filtered tools below it.
+
+        if _apply_filter( item, filters[ 'section' ] ):
+            cur_label_key = None
+            tools_under_label = False
+            filtered_elems = item.elems.copy()
+            for key, section_item in item.elems.items():
+                if isinstance( section_item, Tool ):
+                    # Filter tool.
+                    if _apply_filter( section_item, filters[ 'tool' ] ):
+                        tools_under_label = True
+                    else:
+                        del filtered_elems[ key ]
+                elif isinstance( section_item, ToolSectionLabel ):
+                    # If there is a label and it does not have tools,
+                    # remove it.
+                    if ( cur_label_key and not tools_under_label ) or not _apply_filter( section_item, filters[ 'label' ] ):
+                        del filtered_elems[ cur_label_key ]
+
+                    # Reset attributes for new label.
+                    cur_label_key = key
+                    tools_under_label = False
+
+            # Handle last label.
+            if cur_label_key and not tools_under_label:
+                del filtered_elems[ cur_label_key ]
+
+            # Only return section if there are elements.
+            if len( filtered_elems ) != 0:
+                copy = item.copy()
+                copy.elems = filtered_elems
+                return copy
+
+    return None
+
 
 
 class ToolSection( object ):
@@ -2896,11 +2896,6 @@ class Tool( object ):
                     self.sa_session.add( new_data )
                     self.sa_session.flush()
         return primary_datasets
-
-    def _is_hidden_for_user( self, user ):
-        if self.hidden or ( not user and self.require_login ):
-            return True
-        return False
 
     def to_dict( self, trans, for_link=False, for_display=False ):
         """ Returns dict of tool. """
