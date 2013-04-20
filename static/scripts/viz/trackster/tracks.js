@@ -4271,45 +4271,44 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
         // Add summary/sample labels if needed and not already included.
         if ( !(tiles[0] instanceof SummaryTreeTile) && this.prefs.show_labels) {
+            var font_size;
+
             // Add and/or style labels.
             if (this.container_div.find('.yaxislabel.variant').length === 0) {
                 // Add summary and sample labels.
 
-                // FIXME: label attributes could be cleaner by using CSS classes.
-
-                // Add summary label.
-                var summary_div_font_size = 10,
-                    summary_div = $("<div/>").text('Summary').addClass('yaxislabel variant top').css({
-                        'font-size': summary_div_font_size + 'px'
-                });
-                this.container_div.prepend(summary_div);
-
-                // Adjust summary label to middle of summary.
-                var base_offset = summary_div.position().top;
-                summary_div.css('top', base_offset + (this.prefs.summary_height - summary_div_font_size) / 2 + 'px');
-
+                // Add summary label to middle of summary area.
+                font_size = this.prefs.summary_height / 2;
+                this.tiles_div.prepend(
+                    $("<div/>").text('Summary').addClass('yaxislabel variant top').css({
+                        'font-size': font_size + 'px',
+                        'top': (this.prefs.summary_height - font_size) / 2 + 'px'
+                    })
+                );
+                
                 // Show sample labels.
                 if (this.prefs.show_sample_data) {
-                    var samples_div_html = '';
-                    _.each(this.dataset.get('metadata').get('sample_names'), function(name) {
-                        samples_div_html += (name + '<br>');    
-                    });
+                    var samples_div_html = this.dataset.get('metadata').get('sample_names').join('<br/>');
 
-                    var samples_div = $("<div/>").html(samples_div_html).addClass('yaxislabel variant top sample').css({
-                        // +2 for padding
-                        'top': base_offset + this.prefs.summary_height + 2,
-                    });
-                    this.container_div.prepend(samples_div);
+                    this.tiles_div.prepend( 
+                        $("<div/>").html(samples_div_html).addClass('yaxislabel variant top sample').css({
+                            // +2 for padding
+                            'top': this.prefs.summary_height + 2,
+                        })
+                    );
                 }
             }
 
             // Style labels.
 
             // Match sample font size to mode.
-            $(this.container_div).find('.sample').css('font-size', (this.mode === 'Squish' ? 5 : 10) + 'px');
+            font_size = (this.mode === 'Squish' ? 5 : 10) + 'px';
+            $(this.tiles_div).find('.sample').css({
+                'font-size': font_size,
+                'line-height': font_size
+            });
             // Color labels to preference color.
-            $(this.container_div).find('.yaxislabel').css('color', this.prefs.label_color);
-
+            $(this.tiles_div).find('.yaxislabel').css('color', this.prefs.label_color);
         }
         else {
             // Remove all labels.
