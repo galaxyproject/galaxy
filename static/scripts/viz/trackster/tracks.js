@@ -4263,6 +4263,15 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     },
 
     /**
+     * Additional initialization required before drawing track for the first time.
+     */
+    predraw_init: function() {
+        if (!this.dataset.get_metadata('sample_names')) {
+            return this.dataset.fetch();
+        }
+    },
+
+    /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
      */
