@@ -796,7 +796,6 @@ class RawVcfDataProvider( VcfDataProvider ):
             # Search for and yield other data lines.
             for data_line in source:
                 if line_in_region( data_line, chrom, start, end ):
-                    print chrom, start, end, ">>>", data_line,
                     yield data_line
         
         return line_filter_iter()
