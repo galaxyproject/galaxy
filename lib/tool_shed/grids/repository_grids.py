@@ -143,6 +143,19 @@ class RepositoryGrid( grids.Grid ):
             return escape_html( repository.revision( trans.app ) )
 
 
+    class ToolsFunctionallyCorrectColumn( grids.BooleanColumn ):
+
+        def get_value( self, trans, grid, repository ):
+            # This column will display the value associated with the currently displayed metadata revision.
+            displayed_metadata_revision = repository.metadata_revisions[ -1 ]
+            if displayed_metadata_revision.includes_tools:
+                if displayed_metadata_revision.tools_functionally_correct:
+                    return 'yes'
+                else:
+                    return 'no'
+            return 'not applicable'
+
+
     class DescriptionColumn( grids.TextColumn ):
 
         def get_value( self, trans, grid, repository ):
@@ -261,6 +274,60 @@ class RepositoryGrid( grids.Grid ):
                                .outerjoin( model.Category.table )
 
 
+class RepositoriesInCategoryGrid( RepositoryGrid ):
+    title = "Category"
+
+    columns = [
+        RepositoryGrid.NameColumn( "Name",
+                                   key="name",
+                                   link=( lambda item: dict( controller="repository", operation="view_or_manage_repository", id=item.id ) ),
+                                   attach_popup=False ),
+        RepositoryGrid.DescriptionColumn( "Synopsis",
+                                          key="description",
+                                          attach_popup=False ),
+        RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
+        RepositoryGrid.UserColumn( "Owner",
+                                   model_class=model.User,
+                                   link=( lambda item: dict( controller="repository", operation="repositories_by_user", id=item.id ) ),
+                                   attach_popup=False,
+                                   key="User.username" ),
+        # Columns that are valid for filtering but are not visible.
+        RepositoryGrid.EmailColumn( "Email",
+                                    model_class=model.User,
+                                    key="email",
+                                    visible=False )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
+                                                cols_to_filter=[ columns[0], columns[1] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = [ grids.GridOperation( "Receive email alerts",
+                                        allow_multiple=False,
+                                        condition=( lambda item: not item.deleted ),
+                                        async_compatible=False ) ]
+
+    def build_initial_query( self, trans, **kwd ):
+        category_id = kwd.get( 'id', None )
+        if category_id:
+            category = suc.get_category( trans, category_id )
+            if category:
+                return trans.sa_session.query( model.Repository ) \
+                                       .filter( and_( model.Repository.table.c.deleted == False,
+                                                      model.Repository.table.c.deprecated == False ) ) \
+                                       .join( model.User.table ) \
+                                       .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                                       .outerjoin( model.Category.table ) \
+                                       .filter( model.Category.table.c.name == category.name )
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( and_( model.Repository.table.c.deleted == False,
+                                              model.Repository.table.c.deprecated == False ) ) \
+                               .join( model.User.table ) \
+                               .outerjoin( model.RepositoryCategoryAssociation.table ) \
+                               .outerjoin( model.Category.table )
+
+
 class RepositoriesByUserGrid( RepositoryGrid ):
     title = "Repositories by user"
     columns = [
@@ -268,11 +335,11 @@ class RepositoriesByUserGrid( RepositoryGrid ):
                                    key="name",
                                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                    attach_popup=False ),
-        RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
-        RepositoryGrid.TipRevisionColumn( "Tip Revision" ),
         RepositoryGrid.DescriptionColumn( "Synopsis",
                                           key="description",
                                           attach_popup=False ),
+        RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
         RepositoryGrid.CategoryColumn( "Category",
                                        model_class=model.Category,
                                        key="Category.name",
@@ -304,7 +371,7 @@ class RepositoriesIOwnGrid( RepositoryGrid ):
                                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                    attach_popup=True ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
-        RepositoryGrid.TipRevisionColumn( "Tip Revision" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
         RepositoryGrid.CategoryColumn( "Category",
                                        model_class=model.Category,
                                        key="Category.name",
@@ -343,7 +410,7 @@ class DeprecatedRepositoriesIOwnGrid( RepositoriesIOwnGrid ):
                                          link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                          attach_popup=True ),
         RepositoriesIOwnGrid.MetadataRevisionColumn( "Metadata Revisions" ),
-        RepositoriesIOwnGrid.TipRevisionColumn( "Tip Revision" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
         RepositoriesIOwnGrid.CategoryColumn( "Category",
                                              model_class=model.Category,
                                              key="Category.name",
@@ -403,7 +470,7 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
                                    link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                    attach_popup=True ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
-        RepositoryGrid.TipRevisionColumn( "Tip Revision" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
@@ -480,7 +547,7 @@ class ValidRepositoryGrid( RepositoryGrid ):
             return query.filter( model.Category.name == column_filter )
 
 
-    class RevisionColumn( grids.GridColumn ):
+    class InstallableRevisionColumn( grids.GridColumn ):
 
         def __init__( self, col_name ):
             grids.GridColumn.__init__( self, col_name )
@@ -502,7 +569,8 @@ class ValidRepositoryGrid( RepositoryGrid ):
         RepositoryGrid.DescriptionColumn( "Synopsis",
                                           key="description",
                                           attach_popup=False ),
-        RevisionColumn( "Installable Revisions" ),
+        InstallableRevisionColumn( "Installable Revisions" ),
+        RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
         RepositoryGrid.UserColumn( "Owner",
                                    model_class=model.User,
                                    attach_popup=False ),
@@ -668,9 +736,12 @@ class RepositoryMetadataGrid( grids.Grid ):
 
     class ToolsFunctionallyCorrectColumn( grids.BooleanColumn ):
         def get_value( self, trans, grid, repository_metadata ):
-            if repository_metadata.tools_functionally_correct:
-                return 'yes'
-            return ''
+            if repository_metadata.includes_tools:
+                if repository_metadata.tools_functionally_correct:
+                    return 'yes'
+                else:
+                    return 'no'
+            return 'not applicable'
 
 
     class DoNotTestColumn( grids.BooleanColumn ):

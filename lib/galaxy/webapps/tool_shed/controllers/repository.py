@@ -61,6 +61,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     my_writable_repositories_grid = repository_grids.MyWritableRepositoriesGrid()
     repositories_by_user_grid = repository_grids.RepositoriesByUserGrid()
     repositories_i_own_grid = repository_grids.RepositoriesIOwnGrid()
+    repositories_in_category_grid = repository_grids.RepositoriesInCategoryGrid()
     repository_dependencies_grid = repository_grids.RepositoryDependenciesGrid()
     repository_grid = repository_grids.RepositoryGrid()
     # The repository_metadata_grid is not currently displayed, but is sub-classed by several grids.
@@ -202,13 +203,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             elif operation == "my_writable_repositories":
                 return self.my_writable_repositories_grid( trans, **kwd )
             elif operation == "repositories_by_category":
-                # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
-                    if k.startswith( 'f-' ):
-                        del kwd[ k ]
                 category_id = kwd.get( 'id', None )
-                category = suc.get_category( trans, category_id )
-                kwd[ 'f-Category.name' ] = category.name
+                message = kwd.get( 'message', '' )
+                status = kwd.get( 'status', 'done' )
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_in_category',
+                                                                  id=category_id,
+                                                                  message=message,
+                                                                  status=status ) )
             elif operation == "receive email alerts":
                 if trans.user:
                     if kwd[ 'id' ]:
@@ -244,7 +246,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                   **kwd ) )
         user_id = kwd.get( 'user_id', None )
         if user_id is None:
-            # The received id is the repository id, so we need to get the id of the user that uploaded the repository.
+            # The received id is the repository id, so we need to get the id of the user that owns the repository.
             repository_id = kwd.get( 'id', None )
             if repository_id:
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
@@ -261,6 +263,40 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             user = suc.get_user( trans, user_id )
             self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
         return self.repositories_by_user_grid( trans, **kwd )
+
+    @web.expose
+    def browse_repositories_in_category( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            if operation == 'repositories_by_user':
+                user_id = kwd.get( 'user_id', None )
+                if user_id is None:
+                    # The received id is the repository id, so we need to get the id of the user that owns the repository.
+                    repository_id = kwd.get( 'id', None )
+                    if repository_id:
+                        repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                        user_id = trans.security.encode_id( repository.user.id )
+                        user = suc.get_user( trans, user_id )
+                        self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
+                        kwd[ 'user_id' ] = user_id
+                        return self.repositories_by_user_grid( trans, **kwd )
+        selected_changeset_revision, repository = self.__get_repository_from_refresh_on_change( trans, **kwd )
+        if repository:
+            # The user selected a repository revision which results in a refresh_on_change.
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='view_or_manage_repository',
+                                                              id=trans.security.encode_id( repository.id ),
+                                                              changeset_revision=selected_changeset_revision ) )
+        category_id = kwd.get( 'id', None )
+        if category_id:
+            category = suc.get_category( trans, category_id )
+            if category:
+                self.repositories_in_category_grid.title = 'Category %s' % str( category.name )
+        return self.repositories_in_category_grid( trans, **kwd )
 
     @web.expose
     def browse_repository( self, trans, id, **kwd ):
