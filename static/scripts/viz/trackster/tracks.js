@@ -1349,7 +1349,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             view.high -= delta_chrom;
             view.low -= delta_chrom;
         }
-                
+
         view.request_redraw();
         
         // Navigate.
@@ -1821,7 +1821,7 @@ extend(Tool.prototype, {
         
         // Start with this status message.
         //new_track.container_div.addClass("pending");
-        //new_track.content_div.text("Converting input data so that it can be used quickly with tool.");
+        //new_track.content_div.html(DATA_PENDING);
         
         $.when(ss_deferred.go()).then(function(response) {
             if (response === "no converter") {
@@ -2893,19 +2893,18 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var 
             // Index of first tile that overlaps visible region.
             tile_index = Math.floor( low / (resolution * TILE_SIZE) ),
-            // If any tile could not be drawn yet, this will be set to false.
-            all_tiles_drawn = true,
-            drawn_tiles = [],
-            is_tile = function(o) { return (o && 'track' in o); };
+            tile_region,
+            tile_promise,
+            tile_promises = [],
+            tiles = [];
         // Draw tiles.
         while ( ( tile_index * TILE_SIZE * resolution ) < high ) {
-            var tile_region = this._get_tile_bounds(tile_index, resolution),
-                draw_result = this.draw_helper( force, tile_region, resolution, this.tiles_div, w_scale );
-            if ( is_tile(draw_result) ) {
-                drawn_tiles.push( draw_result );
-            } else {
-                all_tiles_drawn = false;
-            }
+            tile_region = this._get_tile_bounds(tile_index, resolution);
+            tile_promise = this.draw_helper( force, tile_region, resolution, this.tiles_div, w_scale );
+            tile_promises.push(tile_promise);
+            $.when(tile_promise).then(function(tile) {
+                tiles.push(tile);
+            });
             tile_index += 1;
         }
         
@@ -2914,11 +2913,15 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 
         // Use interval to check if tiles have been drawn. When all tiles are drawn, call post-draw actions.
         var track = this;
-        if (all_tiles_drawn) {
+        $.when.apply($, tile_promises).then(function() {
             // Step (c) for (re)moving tiles when clear_after is true:
-            this.tiles_div.children(".remove").remove();
-            track.postdraw_actions(drawn_tiles, width, w_scale, clear_after);
-        } 
+            track.tiles_div.children(".remove").remove();
+
+            // HACK: only do postdraw actions when there are tiles; ReferenceTrack may not return tiles.
+            if (tiles[0]) {
+                track.postdraw_actions(tiles, width, w_scale, clear_after);
+            }
+        });
     },
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
@@ -2940,6 +2943,28 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 }
             });
         }
+
+        //
+        // If using SummaryTree tiles, show max and make it editable.
+        //
+        this.container_div.find(".yaxislabel").remove();
+        var track = this,
+            first_tile = tiles[0];
+        if (first_tile instanceof SummaryTreeTile) {
+            var max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val),
+                max_label = $("<div/>").text(max_val).make_text_editable({
+                    num_cols: 12,
+                    on_finish: function(new_val) {
+                        $(".bs-tooltip").remove();
+                        var new_val = parseFloat(new_val);
+                        track.prefs.histogram_max = (!isNaN(new_val) ? new_val : null);
+                        track.tile_cache.clear();
+                        track.request_draw();
+                    },
+                    help_text: "Set max value; leave blank to use default"
+                }).addClass('yaxislabel top').css("color", this.prefs.label_color);
+            this.container_div.prepend(max_label);
+        }
     },
 
     /**
@@ -2948,7 +2973,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */ 
     draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
         var track = this,
-            key = this._gen_tile_cache_key(w_scale, region);
+            key = this._gen_tile_cache_key(w_scale, region),
+            is_tile = function(o) { return (o && 'track' in o); };
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
@@ -2956,7 +2982,9 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Check tile cache, if found show existing tile in correct position
         var tile = (force ? undefined : track.tile_cache.get_elt(key));
         if (tile) {
-            track.show_tile(tile, parent_element, w_scale);
+            if (is_tile(tile)) {
+                track.show_tile(tile, parent_element, w_scale);
+            }
             return tile;
         }
                 
@@ -3017,15 +3045,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             return tile;
         }
          
-        // Can't draw now, so trigger another redraw when the data is ready
-        var can_draw = $.Deferred();
+        // Can't draw now, so put Deferred in cache and draw tile when data is available.
+        var tile_drawn = $.Deferred();
+        track.tile_cache.set_elt(key, tile_drawn);
         $.when( tile_data, seq_data ).then( function() {
-            view.request_redraw(false, false, false, track);
-            can_draw.resolve();
+            // Draw tile--force to clear Deferred from cache--and resolve.
+            tile = track.draw_helper(true, region, resolution, parent_element, w_scale, kwargs);
+            tile_drawn.resolve(tile);
         });
         
-        // Returned Deferred is resolved when tile can be drawn.
-        return can_draw;
+        return tile_drawn;
     },
 
     /**
@@ -3271,20 +3300,25 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             }
         }
     ].concat(TiledTrack.prototype.action_icons_def),
+    
     // HACK: CompositeTrack should inherit from DrawableCollection as well.
     /** 
      * Returns representation of object in a dictionary for easy saving. 
      * Use from_dict to recreate object.
      */
     to_dict: DrawableCollection.prototype.to_dict,
+
     add_drawable: DrawableCollection.prototype.add_drawable,
+
     unpack_drawables: DrawableCollection.prototype.unpack_drawables,
+
     change_mode: function(new_mode) {
         TiledTrack.prototype.change_mode.call(this, new_mode);
         for (var i = 0; i < this.drawables.length; i++) {
             this.drawables[i].change_mode(new_mode);
         }
     },
+
     /**
      * Initialize component tracks and draw composite track when all components are initialized.
      */
@@ -3302,13 +3336,16 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             track.request_draw();
         });
     },
+
     update_icons: function() {
         // For now, hide filters and tool.
         this.action_icons.filters_icon.hide();
         this.action_icons.tools_icon.hide();  
         this.action_icons.param_space_viz_icon.hide();
     },
+
     can_draw: Drawable.prototype.can_draw,
+
     draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
         // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
         var track = this,
@@ -3421,6 +3458,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         // Returned Deferred that is resolved when tile can be drawn.
         return can_draw;
     },
+
     /**
      * Replace this track with group that includes individual tracks.
      */
@@ -3442,6 +3480,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         var index = this.container.replace_drawable(this, group, true);
         group.request_draw();
     },
+
     /**
      * Actions taken before drawing a tile.
      */
@@ -3474,6 +3513,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             track.prefs.max_value = max;
         }
     },
+
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
@@ -3924,30 +3964,9 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
         
         //
-        // If using SummaryTree tiles, show max and make it editable.
-        //
-        this.container_div.find(".yaxislabel").remove();
-        var first_tile = tiles[0];
-        if (first_tile instanceof SummaryTreeTile) {
-            var max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val),
-                max_label = $("<div/>").text(max_val).make_text_editable({
-                    num_cols: 12,
-                    on_finish: function(new_val) {
-                        $(".bs-tooltip").remove();
-                        var new_val = parseFloat(new_val);
-                        track.prefs.histogram_max = (!isNaN(new_val) ? new_val : null);
-                        track.tile_cache.clear();
-                        track.request_draw();
-                    },
-                    help_text: "Set max value; leave blank to use default"
-                }).addClass('yaxislabel top').css("color", this.prefs.label_color);
-            this.container_div.prepend(max_label);
-        }
-        
-        //
         // If not all features slotted, show icon for showing more rows (slots).
         //
-        if (first_tile instanceof FeatureTrackTile) {
+        if (tiles[0] instanceof FeatureTrackTile) {
             var all_slotted = true;
             for (i = 0; i < tiles.length; i++) {
                 if (!tiles[i].all_slotted) {
@@ -4214,8 +4233,24 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             return this.summary_draw_height;
         }
         else {
-            var dummy_painter = new (this.painter)(result.data, null, null, this.prefs, mode);
-            return dummy_painter.get_required_height();
+            var dummy_painter = new (this.painter)(null, null, null, this.prefs, mode);
+            // HACK: sample_names is not be defined when dataset definition is fetched before
+            // dataset is complete (as is done when running tools). In that case, fall back on 
+            // # of samples in data. This can be fixed by re-requesting dataset definition
+            // in init.
+            var num_samples = ( this.dataset.get_metadata('sample_names') ? this.dataset.get_metadata('sample_names').length : 0);
+            if (num_samples === 0 && result.data.length !== 0) {
+                // Sample data is separated by commas, so this computes # of samples:
+                num_samples = result.data[0][7].match(/,/g);
+                if ( num_samples === null ) {
+                    num_samples = 1;
+                }
+                else {
+                    num_samples = num_samples.length + 1;
+                }
+            }
+            
+            return dummy_painter.get_required_height(num_samples);
         }
     },
 
@@ -4228,57 +4263,65 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     },
 
     /**
+     * Additional initialization required before drawing track for the first time.
+     */
+    predraw_init: function() {
+        if (!this.dataset.get_metadata('sample_names')) {
+            return this.dataset.fetch();
+        }
+    },
+
+    /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
 
-        // Add labels if needed and not already included.
-        if (this.prefs.show_labels) {
+        // Add summary/sample labels if needed and not already included.
+        if ( !(tiles[0] instanceof SummaryTreeTile) && this.prefs.show_labels) {
+            var font_size;
+
             // Add and/or style labels.
-            if (this.container_div.find('.yaxislabel').length === 0) {
+            if (this.container_div.find('.yaxislabel.variant').length === 0) {
                 // Add summary and sample labels.
 
-                // FIXME: label attributes could be cleaner by using CSS classes.
-
-                // Add summary label.
-                var summary_div_font_size = 10,
-                    summary_div = $("<div/>").text('Summary').addClass('yaxislabel top').css({
-                        'font-size': summary_div_font_size + 'px'
-                });
-                this.container_div.prepend(summary_div);
-
-                // Adjust summary label to middle of summary.
-                var base_offset = summary_div.position().top;
-                summary_div.css('top', base_offset + (this.prefs.summary_height - summary_div_font_size) / 2 + 'px');
-
+                // Add summary label to middle of summary area.
+                font_size = this.prefs.summary_height / 2;
+                this.tiles_div.prepend(
+                    $("<div/>").text('Summary').addClass('yaxislabel variant top').css({
+                        'font-size': font_size + 'px',
+                        'top': (this.prefs.summary_height - font_size) / 2 + 'px'
+                    })
+                );
+                
                 // Show sample labels.
                 if (this.prefs.show_sample_data) {
-                    var samples_div_html = '';
-                    _.each(this.dataset.get('metadata').get('sample_names'), function(name) {
-                        samples_div_html += (name + '<br>');    
-                    });
+                    var samples_div_html = this.dataset.get('metadata').get('sample_names').join('<br/>');
 
-                    var samples_div = $("<div/>").html(samples_div_html).addClass('yaxislabel top sample').css({
-                        // +2 for padding
-                        'top': base_offset + this.prefs.summary_height + 2,
-                    });
-                    this.container_div.prepend(samples_div);
+                    this.tiles_div.prepend( 
+                        $("<div/>").html(samples_div_html).addClass('yaxislabel variant top sample').css({
+                            // +2 for padding
+                            'top': this.prefs.summary_height + 2,
+                        })
+                    );
                 }
             }
 
             // Style labels.
 
             // Match sample font size to mode.
-            $(this.container_div).find('.sample').css('font-size', (this.mode === 'Squish' ? 5 : 10) + 'px');
+            font_size = (this.mode === 'Squish' ? 5 : 10) + 'px';
+            $(this.tiles_div).find('.sample').css({
+                'font-size': font_size,
+                'line-height': font_size
+            });
             // Color labels to preference color.
-            $(this.container_div).find('.yaxislabel').css('color', this.prefs.label_color);
-
+            $(this.tiles_div).find('.yaxislabel').css('color', this.prefs.label_color);
         }
         else {
             // Remove all labels.
-            this.container_div.find('.yaxislabel').remove();
+            this.container_div.find('.yaxislabel.variant').remove();
         }
     }
 });

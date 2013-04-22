@@ -254,29 +254,37 @@ class ShedTwillTestCase( TwillTestCase ):
         else:
             return '%s=%s' % ( field_name, field_value )
         
-    def create_repository_complex_dependency( self, repository, xml_filename, depends_on={} ):
-        self.generate_repository_dependency_xml( depends_on[ 'repositories' ], 
-                                                         xml_filename, 
-                                                         complex=True, 
-                                                         package=depends_on[ 'package' ], 
-                                                         version=depends_on[ 'version' ] )
+    def create_repository_dependency( self, 
+                                      repository=None, 
+                                      repository_tuples=[], 
+                                      filepath=None, 
+                                      prior_installation_required=False, 
+                                      complex=False,
+                                      package=None,
+                                      version=None,
+                                      strings_displayed=[],
+                                      strings_not_displayed=[] ):
+        repository_names = []
+        if complex:
+            filename = 'tool_dependencies.xml'
+            self.generate_complex_dependency_xml( filename=filename, filepath=filepath, repository_tuples=repository_tuples, package=package, version=version )
+        else:
+            for toolshed_url, name, owner, changeset_revision in repository_tuples:
+                repository_names.append( name )
+            dependency_description = '%s depends on %s.' % ( repository.name, ', '.join( repository_names ) )
+            filename = 'repository_dependencies.xml'
+            self.generate_simple_dependency_xml( repository_tuples=repository_tuples, 
+                                                 filename=filename, 
+                                                 filepath=filepath,
+                                                 dependency_description=dependency_description,
+                                                 prior_installation_required=prior_installation_required )
         self.upload_file( repository, 
-                          'tool_dependencies.xml', 
-                          filepath=os.path.split( xml_filename )[0], 
-                          commit_message='Uploaded dependency on %s.' % ', '.join( repo.name for repo in depends_on[ 'repositories' ] ) )
-        
-    def create_repository_dependency( self, repository=None, depends_on=[], filepath=None ):
-        dependency_description = '%s depends on %s.' % ( repository.name, ', '.join( repo.name for repo in depends_on ) )
-        self.generate_repository_dependency_xml( depends_on, 
-                                                 self.get_filename( 'repository_dependencies.xml', filepath=filepath ), 
-                                                 dependency_description=dependency_description )
-        self.upload_file( repository, 
-                          'repository_dependencies.xml', 
+                          filename=filename, 
                           filepath=filepath,
-                          valid_tools_only=True,
+                          valid_tools_only=False,
                           uncompress_file=False,
                           remove_repo_files_not_in_tar=False, 
-                          commit_message='Uploaded dependency on %s.' % ', '.join( repo.name for repo in depends_on ),
+                          commit_message='Uploaded dependency on %s.' % ', '.join( repository_names ),
                           strings_displayed=[], 
                           strings_not_displayed=[] )
         
@@ -512,53 +520,55 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_page_for_string( "You have been logged out" )
         self.home()
         
-    def generate_invalid_dependency_xml( self, xml_filename, url, name, owner, changeset_revision, complex=True, package=None, version=None, description=None ):
-        file_path = os.path.split( xml_filename )[0]
+    def generate_complex_dependency_xml( self, filename, filepath, repository_tuples, package, version ):
+        file_path = os.path.join( filepath, filename )
         dependency_entries = []
         template = string.Template( common.new_repository_dependencies_line )
-        dependency_entries.append( template.safe_substitute( toolshed_url=url,
-                                                             owner=owner,
-                                                             repository_name=name,
-                                                             changeset_revision=changeset_revision ) )
-        if not os.path.exists( file_path ):
-            os.makedirs( file_path )
-        if complex:
-            dependency_template = string.Template( common.complex_repository_dependency_template )
-            repository_dependency_xml = dependency_template.safe_substitute( package=package, version=version, dependency_lines='\n'.join( dependency_entries ) )
-        else:
-            if not description:
-                description = ' description=""'
-            else:
-                description = ' description="%s"' % description
-            template_parser = string.Template( common.new_repository_dependencies_xml )
-            repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
+        for toolshed_url, name, owner, changeset_revision in repository_tuples:
+            dependency_entries.append( template.safe_substitute( toolshed_url=toolshed_url,
+                                                                 owner=owner,
+                                                                 repository_name=name,
+                                                                 changeset_revision=changeset_revision,
+                                                                 prior_installation_required='' ) )
+        if not os.path.exists( filepath ):
+            os.makedirs( filepath )
+        dependency_template = string.Template( common.complex_repository_dependency_template )
+        repository_dependency_xml = dependency_template.safe_substitute( package=package, version=version, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
-        file( xml_filename, 'w' ).write( repository_dependency_xml )
+        file( file_path, 'w' ).write( repository_dependency_xml )
         
-    def generate_repository_dependency_xml( self, repositories, xml_filename, dependency_description='', complex=False, package=None, version=None ):
-        file_path = os.path.split( xml_filename )[0]
-        if not os.path.exists( file_path ):
-            os.makedirs( file_path )
+    def generate_simple_dependency_xml( self, 
+                                        repository_tuples, 
+                                        filename,
+                                        filepath, 
+                                        dependency_description='', 
+                                        complex=False, 
+                                        package=None, 
+                                        version=None,
+                                        prior_installation_required=False ):
+        if not os.path.exists( filepath ):
+            os.makedirs( filepath )
         dependency_entries = []
-        for repository in repositories:
-            changeset_revision = self.get_repository_tip( repository )
+        if prior_installation_required:
+            prior_installation_value = ' prior_installation_required="True"'
+        else:
+            prior_installation_value = ''
+        for toolshed_url, name, owner, changeset_revision in repository_tuples:
             template = string.Template( common.new_repository_dependencies_line )
-            dependency_entries.append( template.safe_substitute( toolshed_url=self.url,
-                                                                 owner=repository.user.username,
-                                                                 repository_name=repository.name,
-                                                                 changeset_revision=changeset_revision ) )
+            dependency_entries.append( template.safe_substitute( toolshed_url=toolshed_url,
+                                                                 owner=owner,
+                                                                 repository_name=name,
+                                                                 changeset_revision=changeset_revision,
+                                                                 prior_installation_required=prior_installation_value ) )
         if dependency_description:
             description = ' description="%s"' % dependency_description
         else:
             description = dependency_description
-        if complex:
-            dependency_template = string.Template( common.complex_repository_dependency_template )
-            repository_dependency_xml = dependency_template.safe_substitute( package=package, version=version, dependency_lines='\n'.join( dependency_entries ) )
-        else:
-            template_parser = string.Template( common.new_repository_dependencies_xml )
-            repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
+        template_parser = string.Template( common.new_repository_dependencies_xml )
+        repository_dependency_xml = template_parser.safe_substitute( description=description, dependency_lines='\n'.join( dependency_entries ) )
         # Save the generated xml to the specified location.
-        file( xml_filename, 'w' ).write( repository_dependency_xml )
+        full_path = os.path.join( filepath, filename )
+        file( full_path, 'w' ).write( repository_dependency_xml )
         
     def generate_temp_path( self, test_script_path, additional_paths=[] ):
         temp_path = os.path.join( self.tool_shed_test_tmp_dir, test_script_path, os.sep.join( additional_paths ) )

@@ -30,8 +30,10 @@ category_description = 'Test 0090 Tool Search And Installation'
 
 running_standalone = False
 
+
 class TestToolSearchAndInstall( ShedTwillTestCase ):
     '''Verify that the code correctly handles circular dependencies down to n levels.'''
+  
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
@@ -44,6 +46,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         admin_user = test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
         admin_user_private_role = test_db_util.get_private_role( admin_user )
+ 
     def test_0005_create_bwa_base_repository( self ):
         '''Create and populate bwa_base_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -67,6 +70,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                               commit_message='Uploaded BWA tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+  
     def test_0010_create_bwa_color_repository( self ):
         '''Create and populate bwa_color_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -88,6 +92,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                               commit_message='Uploaded BWA color tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+  
     def test_0015_create_emboss_datatypes_repository( self ):
         '''Create and populate emboss_datatypes_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -109,6 +114,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                               commit_message='Uploaded datatypes_conf.xml.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+  
     def test_0020_create_emboss_repository( self ):
         '''Create and populate emboss_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -130,6 +136,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                               commit_message='Uploaded emboss tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+  
     def test_0025_create_filtering_repository( self ):
         '''Create and populate filtering_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -151,6 +158,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                               commit_message='Uploaded filtering 1.1.0 tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+ 
     def test_0030_create_freebayes_repository( self ):
         '''Create and populate freebayes_0090.'''
         category = self.create_category( name=category_name, description=category_description )
@@ -172,6 +180,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
                               commit_message='Uploaded freebayes tarball.',
                               strings_displayed=[], 
                               strings_not_displayed=[] )
+ 
     def test_0035_create_and_upload_dependency_definitions( self ):
         '''Create and upload repository dependency definitions.'''
         global running_standalone
@@ -183,10 +192,15 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
             filtering_repository = test_db_util.get_repository_by_name_and_owner( filtering_repository_name, common.test_user_1_name )
             freebayes_repository = test_db_util.get_repository_by_name_and_owner( freebayes_repository_name, common.test_user_1_name )
             dependency_xml_path = self.generate_temp_path( 'test_0090', additional_paths=[ 'freebayes' ] )
-            self.create_repository_dependency( emboss_repository, depends_on=[ emboss_datatypes_repository ], filepath=dependency_xml_path )
-            self.create_repository_dependency( filtering_repository, depends_on=[ freebayes_repository ], filepath=dependency_xml_path )
-            self.create_repository_dependency( bwa_base_repository, depends_on=[ emboss_repository ], filepath=dependency_xml_path )
-            self.create_repository_dependency( bwa_color_repository, depends_on=[ filtering_repository ], filepath=dependency_xml_path )
+            freebayes_tuple = ( self.url, freebayes_repository.name, freebayes_repository.user.username, self.get_repository_tip( freebayes_repository ) )
+            emboss_tuple = ( self.url, emboss_repository.name, emboss_repository.user.username, self.get_repository_tip( emboss_repository ) )
+            datatypes_tuple = ( self.url, emboss_datatypes_repository.name, emboss_datatypes_repository.user.username, self.get_repository_tip( emboss_datatypes_repository ) )
+            filtering_tuple = ( self.url, filtering_repository.name, filtering_repository.user.username, self.get_repository_tip( filtering_repository ) )
+            self.create_repository_dependency( repository=emboss_repository, repository_tuples=[ datatypes_tuple ], filepath=dependency_xml_path )
+            self.create_repository_dependency( repository=filtering_repository, repository_tuples=[ freebayes_tuple ], filepath=dependency_xml_path )
+            self.create_repository_dependency( repository=bwa_base_repository, repository_tuples=[ emboss_tuple ], filepath=dependency_xml_path )
+            self.create_repository_dependency( repository=bwa_color_repository, repository_tuples=[ filtering_tuple ], filepath=dependency_xml_path )
+ 
     def test_0040_verify_repository_dependencies( self ):
         '''Verify the generated dependency structure.'''
         bwa_color_repository = test_db_util.get_repository_by_name_and_owner( bwa_color_repository_name, common.test_user_1_name )
@@ -199,6 +213,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         self.check_repository_dependency( filtering_repository, freebayes_repository )
         self.check_repository_dependency( bwa_base_repository, emboss_repository )
         self.check_repository_dependency( bwa_color_repository, filtering_repository )
+ 
     def test_0045_install_freebayes_repository( self ):
         '''Install freebayes without repository dependencies.'''
         self.galaxy_logout()
@@ -217,6 +232,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         strings_not_displayed = [ 'filtering_0090', 'emboss_0090', 'emboss_datatypes_0090', 'bwa_color_0090', 'bwa_base_0090' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
         self.verify_installed_repositories( installed_repositories )
+  
     def test_0050_install_deactivate_filtering_repository( self ):
         '''Install and deactivate filtering.'''
         global running_standalone
@@ -242,6 +258,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         strings_displayed = [ 'freebayes_0090' ]
         strings_not_displayed = [ 'filtering_0090', 'emboss_0090', 'emboss_datatypes_0090', 'bwa_color_0090', 'bwa_base_0090' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
+  
     def test_0055_install_uninstall_datatypes_repository( self ):
         '''Install and uninstall emboss_datatypes.'''
         # After this test, the repositories should be in the following states:
@@ -268,6 +285,7 @@ class TestToolSearchAndInstall( ShedTwillTestCase ):
         strings_displayed = [ 'freebayes_0090' ]
         strings_not_displayed = [ 'emboss_datatypes_0090', 'filtering_0090', 'emboss_0090', 'bwa_color_0090', 'bwa_base_0090' ]
         self.display_galaxy_browse_repositories_page( strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed )
+
     def test_0060_search_for_bwa_tools( self ):
         '''Search for and install the repositories with BWA tools, and verify that this reinstalls emboss_datatypes and reactivates filtering.'''
         bwa_color_repository = test_db_util.get_repository_by_name_and_owner( bwa_color_repository_name, common.test_user_1_name )

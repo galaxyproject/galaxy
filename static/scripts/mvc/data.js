@@ -20,8 +20,15 @@ var Dataset = Backbone.RelationalModel.extend({
     },
 
     initialize: function() {
-        // -- Create and initialize metadata. --
+        // Set metadata.
+        // FIXME: pass back a metadata dict and then Backbone-relational
+        // can be used unpack metadata automatically.
+        this._set_metadata();
+        // Update metadata on change.
+        this.on('change', this._set_metadata, this);
+    },
 
+    _set_metadata: function() {
         var metadata = new DatasetMetadata();
 
         // Move metadata from dataset attributes to metadata object.
@@ -34,7 +41,8 @@ var Dataset = Backbone.RelationalModel.extend({
             }
         }, this);
 
-        this.set('metadata', metadata);
+        // Because this is an internal change, silence it.
+        this.set('metadata', metadata, { 'silent': true });
     },
 
     /**

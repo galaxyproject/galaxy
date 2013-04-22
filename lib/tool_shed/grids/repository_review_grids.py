@@ -136,7 +136,10 @@ class RepositoriesWithReviewsGrid( RepositoryGrid ):
                                     key="name",
                                     link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
                                     attach_popup=True ),
-        RepositoryGrid.UserColumn( "Owner", attach_popup=False ),
+        RepositoryGrid.UserColumn( "Owner",
+                                   model_class=model.User,
+                                   attach_popup=False,
+                                   key="User.username" ),
         WithReviewsRevisionColumn( "Reviewed revisions" ),
         ReviewersColumn( "Reviewers", attach_popup=False ),
         RatingColumn( "Rating", attach_popup=False ),
@@ -177,7 +180,9 @@ class RepositoriesWithoutReviewsGrid( RepositoriesWithReviewsGrid ):
                                                        attach_popup=False ),
         RepositoriesWithReviewsGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoriesWithReviewsGrid.UserColumn( "Owner",
-                                                attach_popup=False )
+                                                model_class=model.User,
+                                                attach_popup=False,
+                                                key="User.username" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
@@ -213,7 +218,9 @@ class RepositoriesReadyForReviewGrid( RepositoriesWithoutReviewsGrid ):
                                                           attach_popup=False ),
         RepositoriesWithoutReviewsGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoriesWithoutReviewsGrid.UserColumn( "Owner",
-                                                   attach_popup=False )
+                                                   model_class=model.User,
+                                                   attach_popup=False,
+                                                   key="User.username" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],
@@ -240,6 +247,23 @@ class RepositoriesReadyForReviewGrid( RepositoriesWithoutReviewsGrid ):
 
 class RepositoriesReviewedByMeGrid( RepositoriesWithReviewsGrid ):
     # This grid filters out repositories that have been marked as either deprecated or deleted.
+
+    columns = [
+        RepositoriesWithReviewsGrid.NameColumn( "Repository name",
+                                                key="name",
+                                                link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                                attach_popup=True ),
+        RepositoriesWithReviewsGrid.UserColumn( "Owner", attach_popup=False ),
+        RepositoriesWithReviewsGrid.WithReviewsRevisionColumn( "Reviewed revisions" ),
+        RepositoriesWithReviewsGrid.ReviewersColumn( "Reviewers", attach_popup=False ),
+        RepositoriesWithReviewsGrid.RatingColumn( "Rating", attach_popup=False ),
+        RepositoriesWithReviewsGrid.ApprovedColumn( "Approved", attach_popup=False )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[ 0 ] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
 
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
@@ -387,7 +411,9 @@ class RepositoriesWithInvalidTestsGrid( RepositoriesWithoutReviewsGrid ):
                                                           attach_popup=False ),
         RepositoriesWithoutReviewsGrid.WithoutReviewsRevisionColumn( "Revisions for review" ),
         RepositoriesWithoutReviewsGrid.UserColumn( "Owner",
-                                                   attach_popup=False )
+                                                   model_class=model.User,
+                                                   attach_popup=False,
+                                                   key="User.username" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name, description", 
                                                 cols_to_filter=[ columns[ 0 ], columns[ 1 ] ],

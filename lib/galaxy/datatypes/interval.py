@@ -354,7 +354,8 @@ class BedGraph( Interval ):
 class Bed( Interval ):
     """Tab delimited data in BED format"""
     file_ext = "bed"
-    data_sources = {"data": "tabix", "index": "summary_tree", "feature_search": "fli"}
+    data_sources = { "data": "tabix", "index": "summary_tree", "feature_search": "fli" }
+    track_type = Interval.track_type
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
@@ -569,6 +570,7 @@ class Gff( Tabular, _RemoteCallMixin ):
     file_ext = "gff"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
     data_sources = { "data": "interval_index", "index": "summary_tree", "feature_search": "fli" }
+    track_type = Interval.track_type
 
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )
@@ -787,6 +789,7 @@ class Gff3( Gff ):
     valid_gff3_strand = ['+', '-', '.', '?']
     valid_gff3_phase = ['.', '0', '1', '2']
     column_names = [ 'Seqid', 'Source', 'Type', 'Start', 'End', 'Score', 'Strand', 'Phase', 'Attributes' ]
+    track_type = Interval.track_type
         
     """Add metadata elements"""
     MetadataElement( name="column_types", default=['str','str','str','int','int','float','str','int','list'], param=metadata.ColumnTypesParameter, desc="Column types", readonly=True, visible=False )
@@ -891,6 +894,7 @@ class Gtf( Gff ):
     """Tab delimited data in Gtf format"""
     file_ext = "gtf"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Attributes' ]
+    track_type = Interval.track_type
     
     """Add metadata elements"""
     MetadataElement( name="columns", default=9, desc="Number of columns", readonly=True, visible=False )

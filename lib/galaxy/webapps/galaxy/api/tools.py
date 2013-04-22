@@ -193,7 +193,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         original_dataset = self.get_dataset( trans, payload[ 'target_dataset_id' ], check_ownership=False, check_accessible=True )
         msg = self.check_dataset_state( trans, original_dataset )
         if msg:
-            return to_json_string( msg )
+            return msg
 
         #
         # Set tool parameters--except non-hidden dataset parameters--using combination of
@@ -223,7 +223,8 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
             for jida in original_job.input_datasets:
                 input_dataset = jida.dataset
                 data_provider = data_provider_registry.get_data_provider( trans, original_dataset=input_dataset, source='data' )
-                if data_provider and not data_provider.converted_dataset:
+                if data_provider and ( not data_provider.converted_dataset 
+                                       or data_provider.converted_dataset.state != trans.app.model.Dataset.states.OK ):
                     # Can convert but no converted dataset yet, so return message about why.
                     data_sources = input_dataset.datatype.data_sources
                     msg = input_dataset.convert_dataset( trans, data_sources[ 'data' ] )
@@ -233,7 +234,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         # Return any messages generated during conversions.
         return_message = self._get_highest_priority_msg( messages_list )
         if return_message:
-            return to_json_string( return_message )
+            return return_message
 
         #
         # Set target history (the history that tool will use for inputs/outputs).
@@ -371,7 +372,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
                 # Add dataset to tool's parameters.
                 if not set_param_value( tool_params, jida.name, subset_dataset ):
-                    return to_json_string( { "error" : True, "message" : "error setting parameter %s" % jida.name } )
+                    return { "error" : True, "message" : "error setting parameter %s" % jida.name }
 
         #        
         # Execute tool and handle outputs.
@@ -382,7 +383,7 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
                                                            job_params={ "source" : "trackster" } )
         except Exception, e:
             # Lots of things can go wrong when trying to execute tool.
-            return to_json_string( { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) } )
+            return { "error" : True, "message" : e.__class__.__name__ + ": " + str(e) }
         if run_on_regions:
             for output in subset_job_outputs.values():
                 output.visible = False
