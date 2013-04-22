@@ -154,9 +154,9 @@ class RepositoryGrid( grids.Grid ):
                         return 'yes'
                     else:
                         return 'no'
-                return 'not applicable'
+                return 'n/a'
             except:
-                return 'not applicable'
+                return 'n/a'
 
 
     class DescriptionColumn( grids.TextColumn ):
@@ -748,9 +748,9 @@ class RepositoryMetadataGrid( grids.Grid ):
                         return 'yes'
                     else:
                         return 'no'
-                return 'not applicable'
+                return 'n/a'
             except:
-                return 'not applicable'
+                return 'n/a'
 
 
     class DoNotTestColumn( grids.BooleanColumn ):
