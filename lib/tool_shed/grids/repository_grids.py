@@ -63,7 +63,7 @@ class CategoryGrid( grids.Grid ):
     standard_filters = []
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
 
 class ValidCategoryGrid( CategoryGrid ):
@@ -105,7 +105,7 @@ class ValidCategoryGrid( CategoryGrid ):
     standard_filters = []
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
 
 class RepositoryGrid( grids.Grid ):
@@ -310,6 +310,7 @@ class RepositoriesInCategoryGrid( RepositoryGrid ):
                                         allow_multiple=False,
                                         condition=( lambda item: not item.deleted ),
                                         async_compatible=False ) ]
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         category_id = kwd.get( 'id', None )
@@ -353,7 +354,7 @@ class RepositoriesByUserGrid( RepositoryGrid ):
     default_filter = dict( deleted="False" )
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         decoded_user_id = trans.security.decode_id( kwd[ 'user_id' ] )
@@ -395,6 +396,7 @@ class RepositoriesIOwnGrid( RepositoryGrid ):
                                         allow_multiple=False,
                                         condition=( lambda item: not item.deleted and item.deprecated ),
                                         async_compatible=False ) ]
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
@@ -424,6 +426,7 @@ class DeprecatedRepositoriesIOwnGrid( RepositoriesIOwnGrid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
@@ -462,7 +465,7 @@ class EmailAlertsRepositoryGrid( RepositoryGrid ):
                                         async_compatible=False ) ]
     global_actions = [
             grids.GridAction( "User preferences", dict( controller='user', action='index', cntrller='repository' ) )
-        ]
+    ]
 
 
 class MyWritableRepositoriesGrid( RepositoryGrid ):
@@ -499,6 +502,7 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
                                         allow_multiple=False,
                                         condition=( lambda item: not item.deleted ),
                                         async_compatible=False ) ]
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         # TODO: improve performance by adding a db table associating users with repositories for which they have write access.
@@ -589,6 +593,7 @@ class ValidRepositoryGrid( RepositoryGrid ):
                                                 visible=False,
                                                 filterable="standard" ) )
     operations = []
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         if 'id' in kwd:
@@ -665,7 +670,7 @@ class MatchedRepositoryGrid( grids.Grid ):
     default_filter = {}
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         match_tuples = kwd.get( 'match_tuples', [] )
@@ -823,7 +828,7 @@ class RepositoryMetadataGrid( grids.Grid ):
     default_filter = dict( malicious="False" )
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.RepositoryMetadata ) \
