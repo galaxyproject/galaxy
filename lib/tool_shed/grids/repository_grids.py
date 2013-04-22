@@ -147,13 +147,16 @@ class RepositoryGrid( grids.Grid ):
 
         def get_value( self, trans, grid, repository ):
             # This column will display the value associated with the currently displayed metadata revision.
-            displayed_metadata_revision = repository.metadata_revisions[ -1 ]
-            if displayed_metadata_revision.includes_tools:
-                if displayed_metadata_revision.tools_functionally_correct:
-                    return 'yes'
-                else:
-                    return 'no'
-            return 'not applicable'
+            try:
+                displayed_metadata_revision = repository.metadata_revisions[ -1 ]
+                if displayed_metadata_revision.includes_tools:
+                    if displayed_metadata_revision.tools_functionally_correct:
+                        return 'yes'
+                    else:
+                        return 'no'
+                return 'not applicable'
+            except:
+                return 'not applicable'
 
 
     class DescriptionColumn( grids.TextColumn ):
@@ -735,13 +738,19 @@ class RepositoryMetadataGrid( grids.Grid ):
 
 
     class ToolsFunctionallyCorrectColumn( grids.BooleanColumn ):
-        def get_value( self, trans, grid, repository_metadata ):
-            if repository_metadata.includes_tools:
-                if repository_metadata.tools_functionally_correct:
-                    return 'yes'
-                else:
-                    return 'no'
-            return 'not applicable'
+
+        def get_value( self, trans, grid, repository ):
+            # This column will display the value associated with the currently displayed metadata revision.
+            try:
+                displayed_metadata_revision = repository.metadata_revisions[ -1 ]
+                if displayed_metadata_revision.includes_tools:
+                    if displayed_metadata_revision.tools_functionally_correct:
+                        return 'yes'
+                    else:
+                        return 'no'
+                return 'not applicable'
+            except:
+                return 'not applicable'
 
 
     class DoNotTestColumn( grids.BooleanColumn ):
