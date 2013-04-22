@@ -800,8 +800,12 @@ class ShedTwillTestCase( TwillTestCase ):
         self.check_for_strings( strings_displayed, strings_not_displayed )
         # This section is tricky, due to the way twill handles form submission. The tool dependency checkbox needs to 
         # be hacked in through tc.browser, putting the form field in kwd doesn't work.
+        form = tc.browser.get_form( 'select_tool_panel_section' )
+        submit_button = 'select_tool_panel_section_button'
+        if form is None:
+            form = tc.browser.get_form( 'select_shed_tool_panel_config' )
+            submit_button = 'select_shed_tool_panel_config_button'
         if 'install_tool_dependencies' in self.last_page():
-            form = tc.browser.get_form( 'select_tool_panel_section' )
             checkbox = form.find_control( id="install_tool_dependencies" )
             checkbox.disabled = False
             if install_tool_dependencies:
@@ -816,14 +820,10 @@ class ShedTwillTestCase( TwillTestCase ):
             kwd[ 'shed_tool_conf' ] = self.shed_tool_conf
         if new_tool_panel_section:
             kwd[ 'new_tool_panel_section' ] =  new_tool_panel_section
-        if includes_tools_for_display_in_tool_panel:
-            self.submit_form( 1, 'select_tool_panel_section_button', **kwd )
-            self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
-        else:
-            self.check_for_strings( strings_displayed=[ 'Choose the configuration file whose tool_path setting will be used for installing repositories' ] )
-            args = dict( shed_tool_conf=self.shed_tool_conf )
-            self.submit_form( 1, 'select_shed_tool_panel_config_button', **args )
-            self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
+        if not includes_tools_for_display_in_tool_panel:
+            self.check_for_strings( strings_displayed=[ 'Choose the configuration file' ] )
+        self.submit_form( 1, submit_button, **kwd )
+        self.check_for_strings( post_submit_strings_displayed, strings_not_displayed )
         repository_ids = self.initiate_installation_process( new_tool_panel_section=new_tool_panel_section )
         self.wait_for_repository_installation( repository_ids )
         
