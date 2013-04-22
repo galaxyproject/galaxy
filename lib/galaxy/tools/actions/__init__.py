@@ -342,9 +342,10 @@ class DefaultToolAction( object ):
                     params['on_string'] = on_text
                     data.name = fill_template( output.label, context=params )
                 else:
-                    data.name = tool.name 
-                    if on_text:
-                        data.name += ( " on " + on_text )
+                    if params is None:
+                        params = make_dict_copy( incoming )
+                        wrap_values( tool.inputs, params, skip_missing_values = not tool.check_values )
+                    data.name = self._get_default_data_name( data, tool, on_text=on_text, trans=trans, incoming=incoming, history=history, params=params, job_params=job_params )
                 # Store output 
                 out_data[ name ] = data
                 if output.actions:
@@ -430,3 +431,9 @@ class DefaultToolAction( object ):
             trans.app.job_queue.put( job.id, job.tool_id )
             trans.log_event( "Added job to the job queue, id: %s" % str(job.id), tool_id=job.tool_id )
             return job, out_data
+
+    def _get_default_data_name( self, dataset, tool, on_text=None, trans=None, incoming=None, history=None, params=None, job_params=None, **kwd ):
+        name = tool.name
+        if on_text:
+            name += ( " on " + on_text )
+        return name
