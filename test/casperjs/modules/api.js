@@ -32,11 +32,13 @@ API.prototype.toString = function toString(){
 APIError.prototype = new Error();
 APIError.prototype.constructor = Error;
 /** @class Thrown when Galaxy the API returns an error from a request */
-function APIError( msg ){
+function APIError( msg, status ){
     Error.apply( this, arguments );
     this.name = "APIError";
     this.message = msg;
+    this.status = status;
 }
+API.prototype.APIError = APIError;
 exports.APIError = APIError;
 
 /* ------------------------------------------------------------------- TODO:
@@ -65,7 +67,8 @@ API.prototype._ajax = function _ajax( url, options ){
 
     if( resp.status !== 200 ){
         // grrr... this doesn't lose the \n\r\t
-        throw new APIError( resp.responseText.replace( /[\s\n\r\t]+/gm, ' ' ).replace( /"/, '' ) );
+        //throw new APIError( resp.responseText.replace( /[\s\n\r\t]+/gm, ' ' ).replace( /"/, '' ) );
+        throw new APIError( resp.responseText, resp.status );
     }
     return JSON.parse( resp.responseText );
 };
@@ -130,7 +133,8 @@ HistoriesAPI.prototype.urlTpls = {
     show    : 'api/histories/%s',
     create  : 'api/histories',
     delete_ : 'api/histories/%s',
-    undelete: 'api/histories/deleted/%s/undelete'
+    undelete: 'api/histories/deleted/%s/undelete',
+    update  : 'api/histories/%s'
 };
 
 HistoriesAPI.prototype.index = function index( deleted ){
@@ -183,6 +187,20 @@ HistoriesAPI.prototype.undelete = function undelete( id ){
     });
 };
 
+HistoriesAPI.prototype.update = function create( id, payload ){
+    this.api.spaceghost.info( 'history.update: ' + id + ',' + this.api.spaceghost.jsonStr( payload ) );
+
+    // py.payload <-> ajax.data
+    id = this.api.ensureId( id );
+    payload = this.api.ensureObject( payload );
+    url = utils.format( this.urlTpls.update, id );
+
+    return this.api._ajax( url, {
+        type : 'PUT',
+        data : payload
+    });
+};
+
 
 // =================================================================== HDAS
 var HDAAPI = function HDAAPI( api ){
@@ -201,7 +219,7 @@ HDAAPI.prototype.urlTpls = {
 };
 
 HDAAPI.prototype.index = function index( historyId, ids ){
-    this.api.spaceghost.info( 'history.index: ' + [ historyId, ids ] );
+    this.api.spaceghost.info( 'hda.index: ' + [ historyId, ids ] );
     var data = {};
     if( ids ){
         ids = ( utils.isArray( ids ) )?( ids.join( ',' ) ):( ids );
@@ -214,7 +232,7 @@ HDAAPI.prototype.index = function index( historyId, ids ){
 };
 
 HDAAPI.prototype.show = function show( historyId, id, deleted ){
-    this.api.spaceghost.info( 'history.show: ' + [ id, (( deleted )?( 'w deleted' ):( '' )) ] );
+    this.api.spaceghost.info( 'hda.show: ' + [ id, (( deleted )?( 'w deleted' ):( '' )) ] );
 
     id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
     deleted = deleted || false;
@@ -224,7 +242,7 @@ HDAAPI.prototype.show = function show( historyId, id, deleted ){
 };
 
 HDAAPI.prototype.create = function create( historyId, payload ){
-    this.api.spaceghost.info( 'history.create: ' + this.api.spaceghost.jsonStr( payload ) );
+    this.api.spaceghost.info( 'hda.create: ' + this.api.spaceghost.jsonStr( payload ) );
 
     // py.payload <-> ajax.data
     payload = this.api.ensureObject( payload );
@@ -235,7 +253,8 @@ HDAAPI.prototype.create = function create( historyId, payload ){
 };
 
 HDAAPI.prototype.update = function create( historyId, id, payload ){
-    this.api.spaceghost.info( 'history.update: ' + this.api.spaceghost.jsonStr( payload ) );
+    this.api.spaceghost.info( 'hda.update: ' + historyId + ',' + id + ','
+        + this.api.spaceghost.jsonStr( payload ) );
 
     // py.payload <-> ajax.data
     historyId = this.api.ensureId( historyId );

@@ -545,9 +545,10 @@ SpaceGhost.prototype.hoverOver = function hoverOver( selector, whenHovering ){
  *      NOTE: uses string indexOf - doesn't play well with urls like [ 'history', 'history/bler' ]
  *  @param {String} urlToWaitFor    the url to wait for (rel. to spaceghost.baseUrl)
  *  @param {Function} then          the function to call after the nav request
+ *  @param {Function} timeoutFn     the function to call on timeout (optional)
  */
-SpaceGhost.prototype.waitForNavigation = function waitForNavigation( urlToWaitFor, then ){
-    return this.waitForMultipleNavigation( [ urlToWaitFor ], then );
+SpaceGhost.prototype.waitForNavigation = function waitForNavigation( urlToWaitFor, then, timeoutFn ){
+    return this.waitForMultipleNavigation( [ urlToWaitFor ], then, timeoutFn );
 };
 
 /** Wait for a multiple navigation requests then call a function.
@@ -555,8 +556,9 @@ SpaceGhost.prototype.waitForNavigation = function waitForNavigation( urlToWaitFo
  *      NOTE: uses string indexOf - doesn't play well with urls like [ 'history', 'history/bler' ]
  *  @param {String[]} urlsToWaitFor the relative urls to wait for
  *  @param {Function} then          the function to call after the nav request
+ *  @param {Function} timeoutFn     the function to call on timeout (optional)
  */
-SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigation( urlsToWaitFor, then ){
+SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigation( urlsToWaitFor, then, timeoutFn ){
     this.info( 'waiting for navigation: ' + this.jsonStr( urlsToWaitFor ) );
     function urlMatches( urlToMatch, url ){
         return ( url.indexOf( spaceghost.baseUrl + '/' + urlToMatch ) !== -1 );
@@ -585,6 +587,9 @@ SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigat
         },
         function callThen(){
             if( utils.isFunction( then ) ){ then.call( this ); }
+        },
+        function timeout(){
+            if( utils.isFunction( timeoutFn ) ){ timeoutFn.call( this ); }
         },
         this.options.waitTimeout * urlsToWaitFor.length
     );
@@ -731,8 +736,9 @@ SpaceGhost.prototype.assertDoesntRaise = function assertDoesntRaise( testFn, err
 
 /** Casper has an (undocumented?) skip test feature. This is a conv. wrapper for that.
  */
-SpaceGhost.prototype.skipTest = function skipTest(){
-    throw this.test.SKIP_MESSAGE;
+SpaceGhost.prototype.skipTest = function skipTest( msg ){
+    this.warn( 'Skipping test. ' + msg );
+    //throw this.test.SKIP_MESSAGE;
 };
 
 /** Test helper - within frame, assert selector, and assert text in selector

@@ -575,8 +575,10 @@ class UserGroupAssociation( object ):
         self.group = group
 
 class History( object, UsesAnnotations ):
+
     api_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
-    api_element_visible_keys = ( 'id', 'name', 'published', 'deleted' )
+    api_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
+
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
         self.name = name or "Unnamed history"
@@ -589,6 +591,7 @@ class History( object, UsesAnnotations ):
         self.user = user
         self.datasets = []
         self.galaxy_sessions = []
+
     def _next_hid( self ):
         # TODO: override this with something in the database that ensures
         # better integrity
@@ -600,18 +603,21 @@ class History( object, UsesAnnotations ):
                 if dataset.hid > last_hid:
                     last_hid = dataset.hid
             return last_hid + 1
+
     def add_galaxy_session( self, galaxy_session, association=None ):
         if association is None:
             self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
         else:
             self.galaxy_sessions.append( association )
+
     def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid=True, quota=True ):
         if isinstance( dataset, Dataset ):
             dataset = HistoryDatasetAssociation(dataset=dataset)
             object_session( self ).add( dataset )
             object_session( self ).flush()
         elif not isinstance( dataset, HistoryDatasetAssociation ):
-            raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history ( you tried to add %s )." % str( dataset )
+            raise TypeError, ( "You can only add Dataset and HistoryDatasetAssociation instances to a history" +
+                               " ( you tried to add %s )." % str( dataset ) )
         if parent_id:
             for data in self.datasets:
                 if data.id == parent_id:
@@ -630,6 +636,7 @@ class History( object, UsesAnnotations ):
             self.genome_build = genome_build
         self.datasets.append( dataset )
         return dataset
+
     def copy( self, name=None, target_user=None, activatable=False ):
         # Create new history.
         if not name:
@@ -647,7 +654,7 @@ class History( object, UsesAnnotations ):
         # Copy annotation.
         self.copy_item_annotation( db_session, self.user, self, target_user, new_history )
 
-        #Copy Tags
+        # Copy Tags
         new_history.copy_tags_from(target_user=target_user, source_history=self)
 
         # Copy HDAs.
@@ -667,12 +674,17 @@ class History( object, UsesAnnotations ):
         db_session.add( new_history )
         db_session.flush()
         return new_history
+
     @property
     def activatable_datasets( self ):
         # This needs to be a list
         return [ hda for hda in self.datasets if not hda.dataset.deleted ]
+
     def get_display_name( self ):
-        """ History name can be either a string or a unicode object. If string, convert to unicode object assuming 'utf-8' format. """
+        """
+        History name can be either a string or a unicode object.
+        If string, convert to unicode object assuming 'utf-8' format.
+        """
         history_name = self.name
         if isinstance(history_name, str):
             history_name = unicode(history_name, 'utf-8')
@@ -682,6 +694,7 @@ class History( object, UsesAnnotations ):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
+
         try:
             visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
         except AttributeError:
@@ -693,6 +706,7 @@ class History( object, UsesAnnotations ):
                     rval[key] = value_mapper.get( key )( rval[key] )
             except AttributeError:
                 rval[key] = None
+
         tags_str_list = []
         for tag in self.tags:
             tag_str = tag.user_tname
@@ -702,25 +716,51 @@ class History( object, UsesAnnotations ):
         rval['tags'] = tags_str_list
         rval['model_class'] = self.__class__.__name__
         return rval
+
+    def set_from_dict( self, new_data ):
+        #AKA: set_api_value
+        """
+        Set object attributes to the values in dictionary new_data limiting
+        to only those keys in api_element_visible_keys.
+
+        Returns a dictionary of the keys, values that have been changed.
+        """
+        # precondition: keys are proper, values are parsed and validated
+        changed = {}
+        for key in [ k for k in new_data.keys() if k in self.api_element_visible_keys ]:
+            new_val = new_data[ key ]
+            old_val = self.__getattribute__( key )
+            if new_val == old_val:
+                continue
+
+            self.__setattr__( key, new_val )
+            changed[ key ] = new_val
+
+        return changed
+
     @property
     def get_disk_size_bytes( self ):
         return self.get_disk_size( nice_size=False )
+
     def unhide_datasets( self ):
         for dataset in self.datasets:
             dataset.mark_unhidden()
+
     def resume_paused_jobs( self ):
         for dataset in self.datasets:
             job = dataset.creating_job
             if job is not None and job.state == Job.states.PAUSED:
                 job.set_state(Job.states.NEW)
+
     def get_disk_size( self, nice_size=False ):
         # unique datasets only
         db_session = object_session( self )
-        rval = db_session.query( func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
-                                                     .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
-                                                     .filter( HistoryDatasetAssociation.purged != True )
-                                                     .filter( Dataset.purged != True )
-                                                     .distinct().subquery().c.total_size ) ).first()[0]
+        rval = db_session.query(
+            func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
+                                            .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
+                                            .filter( HistoryDatasetAssociation.purged != True )
+                                            .filter( Dataset.purged != True )
+                                            .distinct().subquery().c.total_size ) ).first()[0]
         if rval is None:
             rval = 0
         if nice_size:
@@ -732,6 +772,7 @@ class History( object, UsesAnnotations ):
             new_shta = src_shta.copy()
             new_shta.user = target_user
             self.tags.append(new_shta)
+
 
 class HistoryUserShareAssociation( object ):
     def __init__( self ):

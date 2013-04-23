@@ -1,12 +1,18 @@
 """
 API operations on a history.
 """
-import logging
+
+import pkg_resources
+pkg_resources.require("Paste")
+from paste.httpexceptions import HTTPBadRequest
+
 from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
 from galaxy.web import url_for
 from galaxy.model.orm import desc
+from galaxy.util.bunch import Bunch
 
+import logging
 log = logging.getLogger( __name__ )
 
 class HistoriesController( BaseAPIController, UsesHistoryMixin ):
@@ -18,6 +24,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         GET /api/histories/deleted
         Displays a collection (list) of histories.
         """
+        #TODO: query (by name, date, etc.)
         rval = []
         deleted = util.string_as_bool( deleted )
         try:
@@ -50,6 +57,8 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         GET /api/histories/most_recently_used
         Displays information about a history.
         """
+        #TODO: GET /api/histories/{encoded_history_id}?as_archive=True
+        #TODO: GET /api/histories/s/{username}/{slug}
         history_id = id
         deleted = util.string_as_bool( deleted )
 
@@ -92,6 +101,10 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         trans.sa_session.flush()
         item = new_history.get_api_value(view='element', value_mapper={'id':trans.security.encode_id})
         item['url'] = url_for( 'history', id=item['id'] )
+
+        #TODO: copy own history
+        #TODO: import an importable history
+        #TODO: import from archive
         return item
 
     @web.expose_api
@@ -146,3 +159,66 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         trans.sa_session.add( history )
         trans.sa_session.flush()
         return 'OK'
+
+    @web.expose_api
+    def update( self, trans, id, payload, **kwd ):
+        """
+        PUT /api/histories/{encoded_history_id}
+        Changes an existing history.
+        """
+        #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
+        try:
+            history = self.get_history( trans, id, check_ownership=True, check_accessible=True, deleted=True )
+            # validation handled here and some parsing, processing, and conversion
+            payload = self._validate_and_parse_update_payload( payload )
+            # additional checks here (security, etc.)
+            changed = self.set_history_from_dict( trans, history, payload )
+
+        except Exception, exception:
+            log.error( 'Update of history (%s) failed: %s', id, str( exception ), exc_info=True )
+            # convert to appropo HTTP code
+            if( isinstance( exception, ValueError )
+            or  isinstance( exception, AttributeError ) ):
+                # bad syntax from the validater/parser
+                trans.response.status = 400
+            else:
+                trans.response.status = 500
+            return { 'error': str( exception ) }
+
+        return changed
+
+    def _validate_and_parse_update_payload( self, payload ):
+        """
+        Validate and parse incomming data payload for a history.
+        """
+        # This layer handles (most of the stricter idiot proofing):
+        #   - unknown/unallowed keys
+        #   - changing data keys from api key to attribute name
+        #   - protection against bad data form/type
+        #   - protection against malicious data content
+        # all other conversions and processing (such as permissions, etc.) should happen down the line
+        for key, val in payload.items():
+            # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
+            if   key == 'name':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
+                payload[ 'name' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+                #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
+            elif key == 'deleted':
+                if not isinstance( val, bool ):
+                    raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
+            elif key == 'published':
+                if not isinstance( payload[ 'published' ], bool ):
+                    raise ValueError( 'published must be a boolean: %s' %( str( type( val ) ) ) )
+            elif key == 'genome_build':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
+                payload[ 'genome_build' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            elif key == 'annotation':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
+                payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            else:
+                raise AttributeError( 'unknown key: %s' %( str( key ) ) )
+        return payload
+

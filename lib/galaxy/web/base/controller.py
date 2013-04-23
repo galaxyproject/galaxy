@@ -245,6 +245,187 @@ class SharableItemSecurityMixin:
         return item
 
 
+class UsesHistoryMixin( SharableItemSecurityMixin ):
+    """ Mixin for controllers that use History objects. """
+
+    def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
+        """Get a History from the database by id, verifying ownership."""
+        history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
+        return self.security_check( trans, history, check_ownership, check_accessible )
+
+    def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
+        """ Returns history's datasets. """
+        query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
+            .filter( trans.model.HistoryDatasetAssociation.history == history ) \
+            .options( eagerload( "children" ) ) \
+            .join( "dataset" ) \
+            .options( eagerload_all( "dataset.actions" ) ) \
+            .order_by( trans.model.HistoryDatasetAssociation.hid )
+        if not show_deleted:
+            query = query.filter( trans.model.HistoryDatasetAssociation.deleted == False )
+        if not show_purged:
+            query = query.filter( trans.model.Dataset.purged == False )
+        return query.all()
+
+    def get_hda_state_counts( self, trans, history, include_deleted=False, include_hidden=False ):
+        """
+        Returns a dictionary with state counts for history's HDAs. Key is a
+        dataset state, value is the number of states in that count.
+        """
+        # Build query to get (state, count) pairs.
+        cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ]
+        from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
+
+        conditions = [ trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id ]
+        if not include_deleted:
+            # Only count datasets that have not been deleted.
+            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.deleted == False )
+        if not include_hidden:
+            # Only count datasets that are visible.
+            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.visible == True )
+
+        group_by = trans.app.model.Dataset.table.c.state
+        query = select( columns=cols_to_select,
+                        from_obj=from_obj,
+                        whereclause=and_( *conditions ),
+                        group_by=group_by )
+
+        # Initialize count dict with all states.
+        state_count_dict = {}
+        for k, state in trans.app.model.Dataset.states.items():
+            state_count_dict[ state ] = 0
+
+        # Process query results, adding to count dict.
+        for row in trans.sa_session.execute( query ):
+            state, count = row
+            state_count_dict[ state ] = count
+
+        return state_count_dict
+
+    def get_hda_summary_dicts( self, trans, history ):
+        """Returns a list of dictionaries containing summary information
+        for each HDA in the given history.
+        """
+        hda_model = trans.model.HistoryDatasetAssociation
+
+        # get state, name, etc.
+        columns = ( hda_model.name, hda_model.hid, hda_model.id, hda_model.deleted,
+                    trans.model.Dataset.state )
+        column_keys = [ "name", "hid", "id", "deleted", "state" ]
+
+        query = ( trans.sa_session.query( *columns )
+                    .enable_eagerloads( False )
+                    .filter( hda_model.history == history )
+                    .join( trans.model.Dataset )
+                    .order_by( hda_model.hid ) )
+
+        # build dictionaries, adding history id and encoding all ids
+        hda_dicts = []
+        for hda_tuple in query.all():
+            hda_dict = dict( zip( column_keys, hda_tuple ) )
+            hda_dict[ 'history_id' ] = history.id
+            trans.security.encode_dict_ids( hda_dict )
+            hda_dicts.append( hda_dict )
+        return hda_dicts
+
+    def _get_hda_state_summaries( self, trans, hda_dict_list ):
+        """Returns two dictionaries (in a tuple): state_counts and state_ids.
+        Each is keyed according to the possible hda states:
+            _counts contains a sum of the datasets in each state
+            _ids contains a list of the encoded ids for each hda in that state
+
+        hda_dict_list should be a list of hda data in dictionary form.
+        """
+        #TODO: doc to rst
+        # init counts, ids for each state
+        state_counts = {}
+        state_ids = {}
+        for key, state in trans.app.model.Dataset.states.items():
+            state_counts[ state ] = 0
+            state_ids[ state ] = []
+
+        for hda_dict in hda_dict_list:
+            item_state = hda_dict['state']
+            if not hda_dict['deleted']:
+                state_counts[ item_state ] = state_counts[ item_state ] + 1
+            # needs to return all ids (no deleted check)
+            state_ids[ item_state ].append( hda_dict['id'] )
+
+        return ( state_counts, state_ids )
+
+    def _get_history_state_from_hdas( self, trans, history, hda_state_counts ):
+        """Returns the history state based on the states of the HDAs it contains.
+        """
+        states = trans.app.model.Dataset.states
+
+        num_hdas = sum( hda_state_counts.values() )
+        # (default to ERROR)
+        state = states.ERROR
+        if num_hdas == 0:
+            state = states.NEW
+
+        else:
+            if( ( hda_state_counts[ states.RUNNING ] > 0 )
+            or  ( hda_state_counts[ states.SETTING_METADATA ] > 0 )
+            or  ( hda_state_counts[ states.UPLOAD ] > 0 ) ):
+                state = states.RUNNING
+
+            elif hda_state_counts[ states.QUEUED ] > 0:
+                state = states.QUEUED
+
+            elif( ( hda_state_counts[ states.ERROR ] > 0 )
+            or    ( hda_state_counts[ states.FAILED_METADATA ] > 0 ) ):
+                state = states.ERROR
+
+            elif hda_state_counts[ states.OK ] == num_hdas:
+                state = states.OK
+
+        return state
+
+    def get_history_dict( self, trans, history, hda_dictionaries=None ):
+        """Returns history data in the form of a dictionary.
+        """
+        history_dict = history.get_api_value( view='element', value_mapper={ 'id':trans.security.encode_id })
+
+        history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
+        history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
+        if not history_dict[ 'annotation' ]:
+            history_dict[ 'annotation' ] = ''
+        #TODO: item_slug url
+
+        hda_summaries = hda_dictionaries if hda_dictionaries else self.get_hda_summary_dicts( trans, history )
+        #TODO remove the following in v2
+        ( state_counts, state_ids ) = self._get_hda_state_summaries( trans, hda_summaries )
+        history_dict[ 'state_details' ] = state_counts
+        history_dict[ 'state_ids' ] = state_ids
+        history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
+
+        return history_dict
+
+    def set_history_from_dict( self, trans, history, new_data ):
+        """
+        Changes history data using the given dictionary new_data.
+        """
+        # precondition: access of the history has already been checked
+
+        # send what we can down into the model
+        changed = history.set_from_dict( new_data )
+        # the rest (often involving the trans) - do here
+        if 'annotation' in new_data.keys() and trans.get_user():
+            history.add_item_annotation( trans.sa_session, trans.get_user(), history, new_data[ 'annotation' ] )
+            changed[ 'annotation' ] = new_data[ 'annotation' ]
+        # tags
+        # importable (ctrl.history.set_accessible_async)
+        # sharing/permissions?
+        # slugs?
+        # purged - duh duh duhhhhhhnnnnnnnnnn
+
+        if changed.keys():
+            trans.sa_session.flush()
+
+        return changed
+
+
 class UsesHistoryDatasetAssociationMixin:
     """ Mixin for controllers that use HistoryDatasetAssociation objects. """
 
@@ -815,165 +996,6 @@ class UsesStoredWorkflowMixin( SharableItemSecurityMixin ):
                 step.state = step.module.get_runtime_state()
             # Connections by input name
             step.input_connections_by_name = dict( ( conn.input_name, conn ) for conn in step.input_connections )
-
-
-class UsesHistoryMixin( SharableItemSecurityMixin ):
-    """ Mixin for controllers that use History objects. """
-
-    def get_history( self, trans, id, check_ownership=True, check_accessible=False, deleted=None ):
-        """Get a History from the database by id, verifying ownership."""
-        history = self.get_object( trans, id, 'History', check_ownership=check_ownership, check_accessible=check_accessible, deleted=deleted )
-        return self.security_check( trans, history, check_ownership, check_accessible )
-
-    def get_history_datasets( self, trans, history, show_deleted=False, show_hidden=False, show_purged=False ):
-        """ Returns history's datasets. """
-        query = trans.sa_session.query( trans.model.HistoryDatasetAssociation ) \
-            .filter( trans.model.HistoryDatasetAssociation.history == history ) \
-            .options( eagerload( "children" ) ) \
-            .join( "dataset" ) \
-            .options( eagerload_all( "dataset.actions" ) ) \
-            .order_by( trans.model.HistoryDatasetAssociation.hid )
-        if not show_deleted:
-            query = query.filter( trans.model.HistoryDatasetAssociation.deleted == False )
-        if not show_purged:
-            query = query.filter( trans.model.Dataset.purged == False )
-        return query.all()
-
-    def get_hda_state_counts( self, trans, history, include_deleted=False, include_hidden=False ):
-        """
-        Returns a dictionary with state counts for history's HDAs. Key is a
-        dataset state, value is the number of states in that count.
-        """
-        # Build query to get (state, count) pairs.
-        cols_to_select = [ trans.app.model.Dataset.table.c.state, func.count( '*' ) ]
-        from_obj = trans.app.model.HistoryDatasetAssociation.table.join( trans.app.model.Dataset.table )
-
-        conditions = [ trans.app.model.HistoryDatasetAssociation.table.c.history_id == history.id ]
-        if not include_deleted:
-            # Only count datasets that have not been deleted.
-            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.deleted == False )
-        if not include_hidden:
-            # Only count datasets that are visible.
-            conditions.append( trans.app.model.HistoryDatasetAssociation.table.c.visible == True )
-
-        group_by = trans.app.model.Dataset.table.c.state
-        query = select( columns=cols_to_select,
-                        from_obj=from_obj,
-                        whereclause=and_( *conditions ),
-                        group_by=group_by )
-
-        # Initialize count dict with all states.
-        state_count_dict = {}
-        for k, state in trans.app.model.Dataset.states.items():
-            state_count_dict[ state ] = 0
-
-        # Process query results, adding to count dict.
-        for row in trans.sa_session.execute( query ):
-            state, count = row
-            state_count_dict[ state ] = count
-
-        return state_count_dict
-
-    def get_hda_summary_dicts( self, trans, history ):
-        """Returns a list of dictionaries containing summary information
-        for each HDA in the given history.
-        """
-        hda_model = trans.model.HistoryDatasetAssociation
-
-        # get state, name, etc.
-        columns = ( hda_model.name, hda_model.hid, hda_model.id, hda_model.deleted,
-                    trans.model.Dataset.state )
-        column_keys = [ "name", "hid", "id", "deleted", "state" ]
-
-        query = ( trans.sa_session.query( *columns )
-                    .enable_eagerloads( False )
-                    .filter( hda_model.history == history )
-                    .join( trans.model.Dataset )
-                    .order_by( hda_model.hid ) )
-
-        # build dictionaries, adding history id and encoding all ids
-        hda_dicts = []
-        for hda_tuple in query.all():
-            hda_dict = dict( zip( column_keys, hda_tuple ) )
-            hda_dict[ 'history_id' ] = history.id
-            trans.security.encode_dict_ids( hda_dict )
-            hda_dicts.append( hda_dict )
-        return hda_dicts
-
-    def _get_hda_state_summaries( self, trans, hda_dict_list ):
-        """Returns two dictionaries (in a tuple): state_counts and state_ids.
-        Each is keyed according to the possible hda states:
-            _counts contains a sum of the datasets in each state
-            _ids contains a list of the encoded ids for each hda in that state
-
-        hda_dict_list should be a list of hda data in dictionary form.
-        """
-        #TODO: doc to rst
-        # init counts, ids for each state
-        state_counts = {}
-        state_ids = {}
-        for key, state in trans.app.model.Dataset.states.items():
-            state_counts[ state ] = 0
-            state_ids[ state ] = []
-
-        for hda_dict in hda_dict_list:
-            item_state = hda_dict['state']
-            if not hda_dict['deleted']:
-                state_counts[ item_state ] = state_counts[ item_state ] + 1
-            # needs to return all ids (no deleted check)
-            state_ids[ item_state ].append( hda_dict['id'] )
-
-        return ( state_counts, state_ids )
-
-    def _get_history_state_from_hdas( self, trans, history, hda_state_counts ):
-        """Returns the history state based on the states of the HDAs it contains.
-        """
-        states = trans.app.model.Dataset.states
-
-        num_hdas = sum( hda_state_counts.values() )
-        # (default to ERROR)
-        state = states.ERROR
-        if num_hdas == 0:
-            state = states.NEW
-
-        else:
-            if( ( hda_state_counts[ states.RUNNING ] > 0 )
-            or  ( hda_state_counts[ states.SETTING_METADATA ] > 0 )
-            or  ( hda_state_counts[ states.UPLOAD ] > 0 ) ):
-                state = states.RUNNING
-
-            elif hda_state_counts[ states.QUEUED ] > 0:
-                state = states.QUEUED
-
-            elif( ( hda_state_counts[ states.ERROR ] > 0 )
-            or    ( hda_state_counts[ states.FAILED_METADATA ] > 0 ) ):
-                state = states.ERROR
-
-            elif hda_state_counts[ states.OK ] == num_hdas:
-                state = states.OK
-
-        return state
-
-    def get_history_dict( self, trans, history, hda_dictionaries=None ):
-        """Returns history data in the form of a dictionary.
-        """
-        history_dict = history.get_api_value( view='element', value_mapper={ 'id':trans.security.encode_id })
-
-        history_dict[ 'nice_size' ] = history.get_disk_size( nice_size=True )
-
-        #TODO: separate, move to annotation api, fill on the client
-        history_dict[ 'annotation' ] = history.get_item_annotation_str( trans.sa_session, trans.user, history )
-        if not history_dict[ 'annotation' ]:
-            history_dict[ 'annotation' ] = ''
-
-        hda_summaries = hda_dictionaries if hda_dictionaries else self.get_hda_summary_dicts( trans, history )
-        #TODO remove the following in v2
-        ( state_counts, state_ids ) = self._get_hda_state_summaries( trans, hda_summaries )
-        history_dict[ 'state_details' ] = state_counts
-        history_dict[ 'state_ids' ] = state_ids
-        history_dict[ 'state' ] = self._get_history_state_from_hdas( trans, history, state_counts )
-
-        return history_dict
 
 
 class UsesFormDefinitionsMixin:
