@@ -42,11 +42,20 @@ class Binary( data.Data ):
         Binary.unsniffable_binary_formats.append(ext)
 
     @staticmethod
-    def is_sniffable_binary(filename):
+    def is_sniffable_binary( filename ):
+        format_information = None
         for format in Binary.sniffable_binary_formats:
-            if format["class"]().sniff(filename):
-                return (format["type"], format["ext"])
-        return None
+            format_instance = format[ "class" ]()
+            try:
+                if format_instance.sniff(filename):
+                    format_information = ( format["type"], format[ "ext" ] )
+                    break
+            except Exception:
+                # Sniffer raised exception, could be any number of
+                # reasons for this so there is not much to do besides
+                # trying next sniffer.
+                pass
+        return format_information
 
     @staticmethod
     def is_ext_unsniffable(ext):
