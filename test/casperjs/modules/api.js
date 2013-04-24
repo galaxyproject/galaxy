@@ -232,7 +232,7 @@ HDAAPI.prototype.index = function index( historyId, ids ){
 };
 
 HDAAPI.prototype.show = function show( historyId, id, deleted ){
-    this.api.spaceghost.info( 'hda.show: ' + [ id, (( deleted )?( 'w deleted' ):( '' )) ] );
+    this.api.spaceghost.info( 'hda.show: ' + [ historyId, id, (( deleted )?( 'w deleted' ):( '' )) ] );
 
     id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
     deleted = deleted || false;
@@ -242,7 +242,7 @@ HDAAPI.prototype.show = function show( historyId, id, deleted ){
 };
 
 HDAAPI.prototype.create = function create( historyId, payload ){
-    this.api.spaceghost.info( 'hda.create: ' + this.api.spaceghost.jsonStr( payload ) );
+    this.api.spaceghost.info( 'hda.create: ' + [ historyId, this.api.spaceghost.jsonStr( payload ) ] );
 
     // py.payload <-> ajax.data
     payload = this.api.ensureObject( payload );
@@ -253,8 +253,7 @@ HDAAPI.prototype.create = function create( historyId, payload ){
 };
 
 HDAAPI.prototype.update = function create( historyId, id, payload ){
-    this.api.spaceghost.info( 'hda.update: ' + historyId + ',' + id + ','
-        + this.api.spaceghost.jsonStr( payload ) );
+    this.api.spaceghost.info( 'hda.update: ' + [ historyId, id, this.api.spaceghost.jsonStr( payload ) ] );
 
     // py.payload <-> ajax.data
     historyId = this.api.ensureId( historyId );

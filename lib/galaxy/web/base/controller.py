@@ -427,10 +427,15 @@ class UsesHistoryMixin( SharableItemSecurityMixin ):
 
 
 class UsesHistoryDatasetAssociationMixin:
-    """ Mixin for controllers that use HistoryDatasetAssociation objects. """
+    """
+    Mixin for controllers that use HistoryDatasetAssociation objects.
+    """
 
     def get_dataset( self, trans, dataset_id, check_ownership=True, check_accessible=False, check_state=True ):
-        """ Get an HDA object by id. """
+        """
+        Get an HDA object by id performing security checks using
+        the current transaction.
+        """
         # DEPRECATION: We still support unencoded ids for backward compatibility
         try:
             # encoded id?
@@ -466,7 +471,10 @@ class UsesHistoryDatasetAssociationMixin:
 
     def get_history_dataset_association( self, trans, history, dataset_id,
                                          check_ownership=True, check_accessible=False, check_state=False ):
-        """Get a HistoryDatasetAssociation from the database by id, verifying ownership."""
+        """
+        Get a HistoryDatasetAssociation from the database by id, verifying ownership.
+        """
+        #TODO: duplicate of above? alias to above (or vis-versa)
         self.security_check( trans, history, check_ownership=check_ownership, check_accessible=check_accessible )
         hda = self.get_object( trans, dataset_id, 'HistoryDatasetAssociation', check_ownership=False, check_accessible=False, deleted=False )
 
@@ -479,8 +487,9 @@ class UsesHistoryDatasetAssociationMixin:
         return hda
 
     def get_data( self, dataset, preview=True ):
-        """ Gets a dataset's data. """
-
+        """
+        Gets a dataset's data.
+        """
         # Get data from file, truncating if necessary.
         truncated = False
         dataset_data = None
@@ -609,6 +618,27 @@ class UsesHistoryDatasetAssociationMixin:
                     display_apps.append( dict( label=display_label, links=app_links ) )
 
         return display_apps
+
+    def set_hda_from_dict( self, trans, hda, new_data ):
+        """
+        Changes HDA data using the given dictionary new_data.
+        """
+        # precondition: access of the hda has already been checked
+
+        # send what we can down into the model
+        changed = hda.set_from_dict( new_data )
+        # the rest (often involving the trans) - do here
+        if 'annotation' in new_data.keys() and trans.get_user():
+            hda.add_item_annotation( trans.sa_session, trans.get_user(), hda, new_data[ 'annotation' ] )
+            changed[ 'annotation' ] = new_data[ 'annotation' ]
+        # tags
+        # sharing/permissions?
+        # purged
+
+        if changed.keys():
+            trans.sa_session.flush()
+
+        return changed
 
 
 class UsesLibraryMixin:

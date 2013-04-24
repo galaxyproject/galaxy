@@ -2,15 +2,10 @@
 API operations on a history.
 """
 
-import pkg_resources
-pkg_resources.require("Paste")
-from paste.httpexceptions import HTTPBadRequest
-
 from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
 from galaxy.web import url_for
 from galaxy.model.orm import desc
-from galaxy.util.bunch import Bunch
 
 import logging
 log = logging.getLogger( __name__ )
@@ -197,28 +192,39 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
         #   - protection against bad data form/type
         #   - protection against malicious data content
         # all other conversions and processing (such as permissions, etc.) should happen down the line
+
+        # keys listed here don't error when attempting to set, but fail silently
+        #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
+        valid_but_uneditable_keys = (
+            'id', 'model_class', 'nice_size', 'contents_url', 'purged', 'tags',
+            'state', 'state_details', 'state_ids'
+        )
+
+        validated_payload = {}
         for key, val in payload.items():
             # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
             if   key == 'name':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
-                payload[ 'name' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+                validated_payload[ 'name' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
                 #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
             elif key == 'deleted':
                 if not isinstance( val, bool ):
                     raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'deleted' ] = val
             elif key == 'published':
-                if not isinstance( payload[ 'published' ], bool ):
+                if not isinstance( val, bool ):
                     raise ValueError( 'published must be a boolean: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'published' ] = val
             elif key == 'genome_build':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
-                payload[ 'genome_build' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+                validated_payload[ 'genome_build' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
             elif key == 'annotation':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
-                payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
-            else:
+                validated_payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            elif key not in valid_but_uneditable_keys:
                 raise AttributeError( 'unknown key: %s' %( str( key ) ) )
-        return payload
+        return validated_payload
 

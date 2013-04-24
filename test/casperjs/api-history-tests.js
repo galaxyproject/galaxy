@@ -36,7 +36,10 @@ spaceghost.user.loginOrRegisterUser( email, password );
 function hasKeys( object, keysArray ){
     if( !utils.isObject( object ) ){ return false; }
     for( var i=0; i<keysArray.length; i += 1 ){
-        if( !object.hasOwnProperty( keysArray[i] ) ){ return false; }
+        if( !object.hasOwnProperty( keysArray[i] ) ){
+            spaceghost.debug( 'object missing key: ' + keysArray[i] );
+            return false;
+        }
     }
     return true;
 }
@@ -361,6 +364,10 @@ spaceghost.thenOpen( spaceghost.baseUrl ).then( function(){
     this.test.assert( historyShow.annotation === quotedAnnotation,
         "Update accepted escaped quotations in annotation: " + historyShow.annotation );
 
+
+    // ------------------------------------------------------------------------------------------- ERRORS
+    //TODO: make sure expected errors are being passed back (but no permissions checks here - different suite)
+    // bad ids: index, show, update, delete, undelete
 
 /*
 */

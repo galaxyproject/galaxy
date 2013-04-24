@@ -546,9 +546,10 @@ SpaceGhost.prototype.hoverOver = function hoverOver( selector, whenHovering ){
  *  @param {String} urlToWaitFor    the url to wait for (rel. to spaceghost.baseUrl)
  *  @param {Function} then          the function to call after the nav request
  *  @param {Function} timeoutFn     the function to call on timeout (optional)
+ *  @param {Integer} waitMs         manual setting of ms to wait (optional)
  */
-SpaceGhost.prototype.waitForNavigation = function waitForNavigation( urlToWaitFor, then, timeoutFn ){
-    return this.waitForMultipleNavigation( [ urlToWaitFor ], then, timeoutFn );
+SpaceGhost.prototype.waitForNavigation = function waitForNavigation( urlToWaitFor, then, timeoutFn, waitMs ){
+    return this.waitForMultipleNavigation( [ urlToWaitFor ], then, timeoutFn, waitMs );
 };
 
 /** Wait for a multiple navigation requests then call a function.
@@ -557,9 +558,13 @@ SpaceGhost.prototype.waitForNavigation = function waitForNavigation( urlToWaitFo
  *  @param {String[]} urlsToWaitFor the relative urls to wait for
  *  @param {Function} then          the function to call after the nav request
  *  @param {Function} timeoutFn     the function to call on timeout (optional)
+ *  @param {Integer} waitMs         manual setting of ms to wait (optional)
  */
-SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigation( urlsToWaitFor, then, timeoutFn ){
-    this.info( 'waiting for navigation: ' + this.jsonStr( urlsToWaitFor ) );
+SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigation( urlsToWaitFor,
+        then, timeoutFn, waitMs ){
+    waitMs = waitMs || ( this.options.waitTimeout * urlsToWaitFor.length );
+
+    this.info( 'waiting for navigation: ' + this.jsonStr( urlsToWaitFor ) + ', timeout after: ' + waitMs );
     function urlMatches( urlToMatch, url ){
         return ( url.indexOf( spaceghost.baseUrl + '/' + urlToMatch ) !== -1 );
     }
@@ -589,9 +594,10 @@ SpaceGhost.prototype.waitForMultipleNavigation = function waitForMultipleNavigat
             if( utils.isFunction( then ) ){ then.call( this ); }
         },
         function timeout(){
-            if( utils.isFunction( timeoutFn ) ){ timeoutFn.call( this ); }
+            this.removeListener( 'navigation.requested', catchNavReq );
+            if( utils.isFunction( timeoutFn ) ){ timeoutFn.call( this, urlsToWaitFor ); }
         },
-        this.options.waitTimeout * urlsToWaitFor.length
+        waitMs
     );
     return this;
 };
