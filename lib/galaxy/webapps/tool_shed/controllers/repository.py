@@ -1127,14 +1127,17 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
 
     @web.expose
     def get_functional_test_rss( self, trans, **kwd ):
-        '''Return an RSS feed of the functional test results for the provided user ID, optionally filtered by the 'status' parameter.'''
-        encoded_user_id = kwd.get( 'user_id', None )
-        if encoded_user_id:
-            user_id = trans.security.decode_id( encoded_user_id )
+        '''Return an RSS feed of the functional test results for the provided user, optionally filtered by the 'status' parameter.'''
+        owner = kwd.get( 'owner', None )
+        status = kwd.get( 'status', 'all' )
+        if owner:
+            user = suc.get_user_by_username( trans.app, owner )
         else:
             trans.response.status = 404
-            return 'Unknown or missing user ID.'
-        status = kwd.get( 'status', 'all' )
+            return 'Missing owner parameter.'
+        if user is None:
+            trans.response.status = 404
+            return 'No user found with username %s.' % owner
         if status == 'passed':
             # Return only metadata revisions where tools_functionally_correct is set to True.
             metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
@@ -1150,6 +1153,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
                                     trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
 
+        tool_shed_url = web.url_for( '/', qualified=True )
         functional_test_results = []
         for metadata_row in trans.sa_session.query( trans.model.RepositoryMetadata ) \
                                             .filter( metadata_filter ) \
@@ -1157,17 +1161,15 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                             .filter( and_( trans.model.Repository.table.c.deleted == False,
                                                            trans.model.Repository.table.c.private == False,
                                                            trans.model.Repository.table.c.deprecated == False,
-                                                           trans.model.Repository.table.c.user_id == user_id ) ):
+                                                           trans.model.Repository.table.c.user_id == user.id ) ):
             if not metadata_row.tool_test_errors:
                 continue
             # Per the RSS 2.0 specification, all dates in RSS feeds must be formatted as specified in RFC 822
             # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
             time_tested = metadata_row.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
-            link = web.url_for( '/', qualified=True )
             repository = metadata_row.repository
-            user = repository.user
             # Generate a citable URL for this repository with owner and changeset revision.
-            repository_citable_url = suc.url_join( link, 'view', user.username, repository.name, metadata_row.changeset_revision )
+            repository_citable_url = suc.url_join( tool_shed_url, 'view', user.username, repository.name, metadata_row.changeset_revision )
             title = 'Functional test results for changeset revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
             tests_passed = len( metadata_row.tool_test_errors[ 'tests_passed' ] )
             tests_failed = len( metadata_row.tool_test_errors[ 'invalid_tests' ] )
@@ -1184,7 +1186,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         trans.response.set_content_type( 'application/rss+xml' )
         return trans.fill_template( '/rss.mako', 
                                     title='Tool functional test results', 
-                                    link=link, 
+                                    link=tool_shed_url, 
                                     description='Functional test results for repositories owned by %s.' % user.username,
                                     pubdate=strftime( '%a, %d %b %Y %H:%M:%S UT', gmtime() ),
                                     items=functional_test_results )
