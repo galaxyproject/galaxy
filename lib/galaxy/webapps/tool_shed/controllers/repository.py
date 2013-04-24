@@ -1125,6 +1125,70 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         named_tmp_file = suc.get_named_tmpfile_from_ctx( ctx, file_name, dir )
         return named_tmp_file
 
+    @web.expose
+    def get_functional_test_rss( self, trans, **kwd ):
+        '''Return an RSS feed of the functional test results for the provided user ID, optionally filtered by the 'status' parameter.'''
+        encoded_user_id = kwd.get( 'user_id', None )
+        if encoded_user_id:
+            user_id = trans.security.decode_id( encoded_user_id )
+        else:
+            trans.response.status = 404
+            return 'Unknown or missing user ID.'
+        status = kwd.get( 'status', 'all' )
+        if status == 'passed':
+            # Return only metadata revisions where tools_functionally_correct is set to True.
+            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
+                                    trans.model.RepositoryMetadata.table.c.tools_functionally_correct == True,
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+        elif status == 'failed':
+            # Return only metadata revisions where tools_functionally_correct is set to False.
+            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
+                                    trans.model.RepositoryMetadata.table.c.tools_functionally_correct == False,
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+        else:
+            # Return all metadata entries for this user's repositories.
+            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+
+        functional_test_results = []
+        for metadata_row in trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                            .filter( metadata_filter ) \
+                                            .join( trans.model.Repository ) \
+                                            .filter( and_( trans.model.Repository.table.c.deleted == False,
+                                                           trans.model.Repository.table.c.private == False,
+                                                           trans.model.Repository.table.c.deprecated == False,
+                                                           trans.model.Repository.table.c.user_id == user_id ) ):
+            if not metadata_row.tool_test_errors:
+                continue
+            # Per the RSS 2.0 specification, all dates in RSS feeds must be formatted as specified in RFC 822
+            # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
+            time_tested = metadata_row.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
+            link = web.url_for( '/', qualified=True )
+            repository = metadata_row.repository
+            user = repository.user
+            # Generate a citable URL for this repository with owner and changeset revision.
+            repository_citable_url = suc.url_join( link, 'view', user.username, repository.name, metadata_row.changeset_revision )
+            title = 'Functional test results for changeset revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
+            tests_passed = len( metadata_row.tool_test_errors[ 'tests_passed' ] )
+            tests_failed = len( metadata_row.tool_test_errors[ 'invalid_tests' ] )
+            invalid_tests = len( metadata_row.tool_test_errors[ 'test_errors' ] )
+            description = '%d tests passed, %d tests failed, %d tests determined to be invalid.' % ( tests_passed, tests_failed, invalid_tests )
+            # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
+            # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable
+            # that behavior.
+            functional_test_results.append( dict( title=title, 
+                                                  guid=repository_citable_url, 
+                                                  link=repository_citable_url, 
+                                                  description=description, 
+                                                  pubdate=time_tested ) )
+        trans.response.set_content_type( 'application/rss+xml' )
+        return trans.fill_template( '/rss.mako', 
+                                    title='Tool functional test results', 
+                                    link=link, 
+                                    description='Functional test results for repositories owned by %s.' % user.username,
+                                    pubdate=strftime( '%a, %d %b %Y %H:%M:%S UT', gmtime() ),
+                                    items=functional_test_results )
+
     def get_metadata( self, trans, repository_id, changeset_revision ):
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata and repository_metadata.metadata:
