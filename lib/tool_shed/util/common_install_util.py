@@ -307,6 +307,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
     will be installed in:
     ~/<app.config.tool_dependency_dir>/<package_name>/<package_version>/<repo_owner>/<repo_name>/<repo_installed_changeset_revision>
     """
+    sa_session = app.model.context.current
     installed_tool_dependencies = []
     # Parse the tool_dependencies.xml config.
     try:
@@ -327,12 +328,30 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                     if tool_dependency.name==package_name and tool_dependency.version==package_version:
                         break
                 if tool_dependency.can_install:
-                    tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
+                    try:
+                        tool_dependency = install_package( app, elem, tool_shed_repository, tool_dependencies=tool_dependencies )
+                    except Exception, e:
+                        error_message = "Error installing tool dependency %s version %s: %s" % ( str( package_name ), str( package_version ), str( e ) )
+                        log.debug( error_message )
+                        if tool_dependency:
+                            tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+                            tool_dependency.error_message = error_message
+                            sa_session.add( tool_dependency )
+                            sa_session.flush()
                     if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
                                                                        app.model.ToolDependency.installation_status.ERROR ]:
                         installed_tool_dependencies.append( tool_dependency )
         elif elem.tag == 'set_environment':
-            tool_dependency = set_environment( app, elem, tool_shed_repository )
+            try:
+                tool_dependency = set_environment( app, elem, tool_shed_repository )
+            except Exception, e:
+                error_message = "Error setting environment for tool dependency: %s" % str( e )
+                log.debug( error_message )
+                if tool_dependency:
+                    tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
+                    tool_dependency.error_message = error_message
+                    sa_session.add( tool_dependency )
+                    sa_session.flush()
             if tool_dependency and tool_dependency.status in [ app.model.ToolDependency.installation_status.INSTALLED,
                                                                app.model.ToolDependency.installation_status.ERROR ]:
                 installed_tool_dependencies.append( tool_dependency )

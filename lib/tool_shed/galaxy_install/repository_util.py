@@ -478,7 +478,7 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                                                     tool_shed_repository,
                                                     trans.model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES )
             # Get the tool_dependencies.xml file from the repository.
-            tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', install_dir )#relative_install_dir )
+            tool_dependencies_config = suc.get_config_from_disk( 'tool_dependencies.xml', install_dir )
             installed_tool_dependencies = common_install_util.handle_tool_dependencies( app=trans.app,
                                                                                         tool_shed_repository=tool_shed_repository,
                                                                                         tool_dependencies_config=tool_dependencies_config,

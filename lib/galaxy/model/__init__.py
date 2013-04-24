@@ -3443,7 +3443,7 @@ class ToolShedRepository( object ):
         """Return the repository's tool dependencies that are currently installed."""
         installed_dependencies = []
         for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status == ToolDependency.installation_status.INSTALLED:
+            if tool_dependency.status in [ ToolDependency.installation_status.INSTALLED, ToolDependency.installation_status.ERROR ]:
                 installed_dependencies.append( tool_dependency )
         return installed_dependencies
     @property

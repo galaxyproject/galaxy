@@ -32,7 +32,8 @@ import markupsafe
 log = logging.getLogger( __name__ )
 
 INITIAL_CHANGELOG_HASH = '000000000000'
-MAX_CONTENT_SIZE = 32768
+MAX_CONTENT_SIZE = 1048576
+MAX_DISPLAY_SIZE = 32768
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
 
 new_repo_email_alert_template = """
@@ -667,10 +668,17 @@ def get_repository_file_contents( file_path ):
         safe_str = ''
         for i, line in enumerate( open( file_path ) ):
             safe_str = '%s%s' % ( safe_str, to_safe_string( line ) )
+            # Stop reading after string is larger than MAX_CONTENT_SIZE.
             if len( safe_str ) > MAX_CONTENT_SIZE:
-                large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
-                safe_str = '%s%s' % ( safe_str, to_safe_string( large_str ) )
+                large_str = \
+                    to_safe_string( '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE ) )
+                safe_str = '%s%s' % ( safe_str, large_str )
                 break
+        if len( safe_str ) > MAX_DISPLAY_SIZE:
+            # Eliminate the middle of the file to display a file no larger than MAX_DISPLAY_SIZE.  This may not be ideal if the file is larger than MAX_CONTENT_SIZE.
+            join_by_str = \
+                to_safe_string( "\n\n...some text eliminated here because file size is larger than maximum viewing size of %s...\n\n" % util.nice_size( MAX_DISPLAY_SIZE ) )
+            safe_str = util.shrink_string_by_size( safe_str, MAX_DISPLAY_SIZE, join_by=join_by_str, left_larger=True, beginning_on_size_error=True )
     return safe_str
 
 def get_repository_files( trans, folder_path ):
@@ -787,9 +795,8 @@ def get_tool_panel_config_tool_path_install_dir( app, repository ):
     This method assumes all repository tools are defined in a single shed-related tool panel config.
     """
     tool_shed = clean_tool_shed_url( repository.tool_shed )
-    partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
+    relative_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
     # Get the relative tool installation paths from each of the shed tool configs.
-    relative_install_dir = None
     shed_config_dict = repository.get_shed_config_dict( app )
     if not shed_config_dict:
         # Just pick a semi-random shed config.
@@ -799,7 +806,6 @@ def get_tool_panel_config_tool_path_install_dir( app, repository ):
                 break
     shed_tool_conf = shed_config_dict[ 'config_filename' ]
     tool_path = shed_config_dict[ 'tool_path' ]
-    relative_install_dir = partial_install_dir
     return shed_tool_conf, tool_path, relative_install_dir
 
 def get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf ):
@@ -1188,13 +1194,13 @@ def tool_shed_is_this_tool_shed( toolshed_base_url ):
     return toolshed_base_url.rstrip( '/' ) == str( url_for( '/', qualified=True ) ).rstrip( '/' )
 
 def translate_string( raw_text, to_html=True ):
-    """Return a subset of a string (up to MAX_CONTENT_SIZE) translated to a safe string for display in a browser."""
+    """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""
     if raw_text:
-        if len( raw_text ) <= MAX_CONTENT_SIZE:
+        if len( raw_text ) <= MAX_DISPLAY_SIZE:
             translated_string = to_safe_string( raw_text, to_html=to_html )
         else:
-            large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
-            translated_string = to_safe_string( '%s%s' % ( raw_text[ 0:MAX_CONTENT_SIZE ], large_str ), to_html=to_html )
+            large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_DISPLAY_SIZE )
+            translated_string = to_safe_string( '%s%s' % ( raw_text[ 0:MAX_DISPLAY_SIZE ], large_str ), to_html=to_html )
     else:
         translated_string = ''
     return translated_string

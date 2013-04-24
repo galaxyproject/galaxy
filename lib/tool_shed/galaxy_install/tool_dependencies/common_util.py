@@ -1,5 +1,13 @@
-import os, shutil, tarfile, urllib2, zipfile
+import logging
+import os
+import shutil
+import tarfile
+import urllib2
+import zipfile
+import tool_shed.util.shed_util_common as suc
 from galaxy.datatypes import checkers
+
+log = logging.getLogger( __name__ )
 
 def create_env_var_dict( elem, tool_dependency_install_dir=None, tool_shed_repository_install_dir=None ):
     env_var_name = elem.get( 'name', 'PATH' )
@@ -75,6 +83,67 @@ def extract_zip( archive_path, extraction_path ):
             file( uncompressed_path, 'wb' ).write( zip_archive.read( name ) )
     zip_archive.close()
     return True
+
+def get_env_shell_file_path( installation_directory ):
+    env_shell_file_name = 'env.sh'
+    default_location = os.path.abspath( os.path.join( installation_directory, env_shell_file_name ) )
+    if os.path.exists( default_location ):
+        return default_location
+    for root, dirs, files in os.walk( installation_directory ):
+        for name in files:
+            if name == env_shell_file_name:
+                return os.path.abspath( os.path.join( root, name ) )
+    return None
+
+def get_env_shell_file_paths( app, elem ):
+    # Currently only the following tag set is supported.
+    #    <repository toolshed="http://localhost:9009/" name="package_numpy_1_7" owner="test" changeset_revision="c84c6a8be056">
+    #        <package name="numpy" version="1.7.1" />
+    #    </repository>
+    env_shell_file_paths = []
+    toolshed = elem.get( 'toolshed', None )
+    repository_name = elem.get( 'name', None )
+    repository_owner = elem.get( 'owner', None )
+    changeset_revision = elem.get( 'changeset_revision', None )
+    if toolshed and repository_name and repository_owner and changeset_revision:
+        repository = suc.get_repository_for_dependency_relationship( app, toolshed, repository_name, repository_owner, changeset_revision )
+        if repository:
+            for sub_elem in elem:
+                tool_dependency_type = sub_elem.tag
+                tool_dependency_name = sub_elem.get( 'name' )
+                tool_dependency_version = sub_elem.get( 'version' )
+                if tool_dependency_type and tool_dependency_name and tool_dependency_version:
+                    # Get the tool_dependency so we can get it's installation directory.
+                    tool_dependency = None
+                    for tool_dependency in repository.tool_dependencies:
+                        if tool_dependency.type == tool_dependency_type and tool_dependency.name == tool_dependency_name and tool_dependency.version == tool_dependency_version:
+                            break
+                    if tool_dependency:
+                        tool_dependency_key = '%s/%s' % ( tool_dependency_name, tool_dependency_version )
+                        installation_directory = tool_dependency.installation_directory( app )
+                        env_shell_file_path = get_env_shell_file_path( installation_directory )
+                        env_shell_file_paths.append( env_shell_file_path )
+                    else:
+                        error_message = "Skipping tool dependency definition because unable to locate tool dependency "
+                        error_message += "type %s, name %s, version %s for repository %s" % \
+                            ( str( tool_dependency_type ), str( tool_dependency_name ), str( tool_dependency_version ), str( repository.name ) )
+                        log.debug( error_message )
+                        continue
+                else:
+                    error_message = "Skipping invalid tool dependency definition: type %s, name %s, version %s." % \
+                        ( str( tool_dependency_type ), str( tool_dependency_name ), str( tool_dependency_version ) )
+                    log.debug( error_message )
+                    continue
+        else:
+            error_message = "Skipping set_environment_for_install definition because unable to locate required installed tool shed repository: "
+            error_message += "toolshed %s, name %s, owner %s, changeset_revision %s." % \
+                ( str( toolshed ), str( repository_name ), str( repository_owner ), str( changeset_revision ) )
+            log.debug( error_message )
+    else:
+        error_message = "Skipping invalid set_environment_for_install definition: toolshed %s, name %s, owner %s, changeset_revision %s." % \
+            ( str( toolshed ), str( repository_name ), str( repository_owner ), str( changeset_revision ) )
+        log.debug( error_message )
+    return env_shell_file_paths
 
 def isbz2( file_path ):
     return checkers.is_bz2( file_path )
