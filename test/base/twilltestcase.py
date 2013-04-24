@@ -1180,9 +1180,16 @@ class TwillTestCase( unittest.TestCase ):
                 # Check for refresh_on_change attribute, submit a change if required
                 if hasattr( control, 'attrs' ) and 'refresh_on_change' in control.attrs.keys():
                     changed = False
-                    item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] #For DataToolParameter, control.value is the HDA id, but kwd contains the filename.  This loop gets the filename/label for the selected values.
+                    # For DataToolParameter, control.value is the HDA id, but kwd contains the filename. 
+                    # This loop gets the filename/label for the selected values.
+                    item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] 
                     for value in kwd[ control.name ]:
-                        if value not in control.value and True not in [ value in item_label for item_label in item_labels ]:
+                        # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
+                        if len( value ) > 30 and control.is_of_kind( 'singlelist' ):
+                            field_value = '%s..%s' % ( elem[:17], elem[-11:] )
+                        else:
+                            field_value = value
+                        if field_value not in control.value and True not in [ field_value in item_label for item_label in item_labels ]:
                             changed = True
                             break
                     if changed:
@@ -1190,7 +1197,11 @@ class TwillTestCase( unittest.TestCase ):
                         control.clear()
                         # kwd[control.name] should be a singlelist
                         for elem in kwd[ control.name ]:
-                            tc.fv( f.name, control.name, str( elem ) )
+                            if len( elem ) > 30 and control.is_of_kind( 'singlelist' ):
+                                elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
+                            else:
+                                elem_name = elem
+                            tc.fv( f.name, control.name, str( elem_name ) )
                         # Create a new submit control, allows form to refresh, instead of going to next page
                         control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name':'refresh_grouping'} )
                         control.add_to_form( f )
@@ -1241,7 +1252,7 @@ class TwillTestCase( unittest.TestCase ):
                                 tc.fv( f.name, control.name, str( elem ) )
                             except Exception, e2:
                                 print "Attempting to set control '", control.name, "' to value '", elem, "' threw exception: ", e2
-                                # Galaxy truncates long file names in the dataset_collector in ~/parameters/basic.py
+                                # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
                                 if len( elem ) > 30:
                                     elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
                                 else:
