@@ -924,7 +924,13 @@ class JobWrapper( object ):
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations: #need to update all associated output hdas, i.e. history was shared with job running
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
-                dataset.info = ( dataset.info  or '' ) + context['stdout'] + context['stderr']
+                dataset.info = (dataset.info or '')
+                if context['stdout'].strip():
+                    #Ensure white space between entries
+                    dataset.info = dataset.info.rstrip() + "\n" + context['stdout'].strip()
+                if context['stderr'].strip():
+                    #Ensure white space between entries
+                    dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
                 dataset.tool_version = self.version_string
                 dataset.set_size()
                 if 'uuid' in context:
