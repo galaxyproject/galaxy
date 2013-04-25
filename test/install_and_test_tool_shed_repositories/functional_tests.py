@@ -291,6 +291,17 @@ def register_test_result( url, metadata_id, test_results_dict, passed_tests=Fals
         params[ 'tools_functionally_correct' ] = 'false'
         params[ 'do_not_test' ] = 'false'
     params[ 'tool_test_results' ] = test_results_dict
+    # BEGIN compatibility code.
+    # TODO: The repository_revisions API controller ignores any received parameter that is not present in the database schema,
+    # but the compatibility code here should be removed when the main tool shed is updated with the new database migration version.
+    params[ 'tool_test_errors' ] = test_results_dict
+    if test_results_dict[ 'failed_tests' ]:
+        params[ 'tool_test_errors' ][ 'test_errors' ] = test_results_dict[ 'failed_tests' ]
+    if test_results_dict[ 'passed_tests' ]:
+        params[ 'tool_test_errors' ][ 'tests_passed' ] = test_results_dict[ 'passed_tests' ]
+    # Copying the missing_test_components key is not necessary, since the main tool shed is running its own version of the
+    # check repositories script, which correctly updates the invalid_tests key.
+    # END compatibility code.
     if '-info_only' in sys.argv:
         return {}
     else:
@@ -636,7 +647,8 @@ def main():
                 repository_status[ 'test_environment' ] = test_environment
                 repository_status[ 'passed_tests' ] = []
                 repository_status[ 'failed_tests' ] = []
-                repository_status[ 'missing_test_components' ] = []
+                if 'missing_test_components' not in repository_status:
+                    repository_status[ 'missing_test_components' ] = []
                 if not has_test_data:
                     log.error( 'Test data is missing for this repository. Updating repository and skipping functional tests.' )
                     # Record the lack of test data.
