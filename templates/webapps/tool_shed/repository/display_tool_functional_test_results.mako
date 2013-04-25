@@ -51,16 +51,16 @@
     can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
     can_upload = can_push
     can_view_change_log = trans.webapp.name == 'tool_shed' and not is_new
-    if repository_metadata.tool_test_errors:
-        # The tool_test_errors is mis-named (it should have been named tool_test_results) it will contain a dictionary that includes information
-        # about the test environment even if all tests passed and the repository_metadata.tools_functionally_correct column is set to True.
-        tool_test_errors = repository_metadata.tool_test_errors
-        test_environment_dict = tool_test_errors.get( 'test_environment', None )
-        invalid_tests = tool_test_errors.get( 'invalid_tests', [] )
-        test_errors = tool_test_errors.get( 'test_errors', [] )
-        tests_passed = tool_test_errors.get( 'tests_passed', [] )
+    if repository_metadata.tool_test_results:
+        # The tool_test_results will contain a dictionary that includes information about the test environment even if all tests passed and the
+        # repository_metadata.tools_functionally_correct column is set to True.
+        tool_test_results = repository_metadata.tool_test_results
+        test_environment_dict = tool_test_results.get( 'test_environment', None )
+        invalid_tests = tool_test_results.get( 'invalid_tests', [] )
+        test_errors = tool_test_results.get( 'test_errors', [] )
+        tests_passed = tool_test_results.get( 'tests_passed', [] )
     else:
-        tool_test_errors = None
+        tool_test_results = None
         test_environment_dict = {}
         invalid_tests = []
         test_errors = []
@@ -144,7 +144,7 @@
     <b>Repository name:</b><br/>
     ${repository.name}
 %endif
-%if invalid_tests or tool_test_errors or tests_passed:
+%if invalid_tests or tool_test_results or tests_passed:
     <p/>
     <div class="toolForm">
         <div class="toolFormTitle">Tool functional test results</div>

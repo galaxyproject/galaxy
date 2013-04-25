@@ -117,7 +117,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     and test repositories script to process. If the tested changeset revision does not have a test-data directory, this script will also mark the revision
     not to be tested.
     
-    If any error is encountered, the script will update the repository_metadata.tool_test_errors attribute following this structure:
+    If any error is encountered, the script will update the repository_metadata.tool_test_results attribute following this structure:
     {
         "test_environment":
             {
@@ -178,8 +178,8 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
     for metadata_record in metadata_records_to_check:
         # Initialize the repository_status dict with the test environment, but leave the test_errors empty. 
         repository_status = {}
-        if metadata_record.tool_test_errors:
-            repository_status = metadata_record.tool_test_errors
+        if metadata_record.tool_test_results:
+            repository_status = metadata_record.tool_test_results
         # Clear any old invalid tests for this metadata revision, since this could lead to duplication of invalid test rows,
         # or tests incorrectly labeled as invalid.
         repository_status[ 'invalid_tests' ] = []
@@ -271,7 +271,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                     problem_found = True
                 test_errors = dict( tool_id=tool_id, tool_version=tool_version, tool_guid=tool_guid,
                                     reason_test_is_invalid=failure_reason )
-                # The repository_metadata.tool_test_errors attribute should always have the following structure:
+                # The repository_metadata.tool_test_results attribute should always have the following structure:
                 # {
                 #     "test_environment":
                 #         {
@@ -348,7 +348,7 @@ def check_and_flag_repositories( app, info_only=False, verbosity=1 ):
                     if should_set_do_not_test_flag( app, metadata_record.repository, changeset_revision ):
                         metadata_record.do_not_test = True
                     metadata_record.tools_functionally_correct = False
-                metadata_record.tool_test_errors = repository_status
+                metadata_record.tool_test_results = repository_status
                 metadata_record.time_last_tested = datetime.utcnow()
                 app.sa_session.add( metadata_record )
                 app.sa_session.flush()

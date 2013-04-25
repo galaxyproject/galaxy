@@ -27,7 +27,7 @@
     can_upload = can_push
     can_view_change_log = not is_new
     if repository_metadata:
-        if repository_metadata.includes_tools and repository_metadata.tool_test_errors is not None:
+        if repository_metadata.includes_tools and repository_metadata.tool_test_results is not None:
             can_display_tool_functional_test_results = True
         else:
             can_display_tool_functional_test_results = False

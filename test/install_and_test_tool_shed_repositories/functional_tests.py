@@ -265,13 +265,13 @@ def get_tool_info_from_test_id( test_id ):
     tool_id = parts[ -2 ]
     return tool_id, tool_version
 
-def get_tool_test_errors_from_api( tool_shed_url, metadata_revision_id ):
+def get_tool_test_results_from_api( tool_shed_url, metadata_revision_id ):
     api_path = [ 'api', 'repository_revisions', metadata_revision_id ]
     api_url = get_api_url( base=tool_shed_url, parts=api_path )
     repository_metadata = json_from_url( api_url )
-    if repository_metadata[ 'tool_test_errors' ] is None:
+    if repository_metadata[ 'tool_test_results' ] is None:
         return {}
-    return repository_metadata[ 'tool_test_errors' ]
+    return repository_metadata[ 'tool_test_results' ]
 
 def json_from_url( url ):
     url_handle = urllib.urlopen( url )
@@ -290,7 +290,7 @@ def register_test_result( url, metadata_id, test_results_dict, tests_passed=Fals
     else:
         params[ 'tools_functionally_correct' ] = 'false'
         params[ 'do_not_test' ] = 'false'
-    params[ 'tool_test_errors' ] = test_results_dict
+    params[ 'tool_test_results' ] = test_results_dict
     if '-info_only' in sys.argv:
         return {}
     else:
@@ -583,7 +583,7 @@ def main():
                 log.debug( 'Installation of %s succeeded, running all defined functional tests.' % name )
                 # Generate the shed_tools_dict that specifies the location of test data contained within this repository. If the repository 
                 # does not have a test-data directory, this will return has_test_data = False, and we will set the do_not_test flag to True,
-                # and the tools_functionally_correct flag to False, as well as updating tool_test_errors.
+                # and the tools_functionally_correct flag to False, as well as updating tool_test_results.
                 file( galaxy_shed_tools_dict, 'w' ).write( to_json_string( dict() ) )
                 has_test_data, shed_tools_dict = parse_tool_panel_config( galaxy_shed_tool_conf_file, from_json_string( file( galaxy_shed_tools_dict, 'r' ).read() ) )
                 # The repository_status dict should always have the following structure:
@@ -628,7 +628,7 @@ def main():
                 #             },
                 #         ]
                 # }
-                repository_status = get_tool_test_errors_from_api( galaxy_tool_shed_url, metadata_revision_id )
+                repository_status = get_tool_test_results_from_api( galaxy_tool_shed_url, metadata_revision_id )
                 if 'test_environment' not in repository_status:
                     repository_status[ 'test_environment' ] = {}
                 test_environment = get_test_environment( repository_status[ 'test_environment' ] )
@@ -731,7 +731,7 @@ def main():
                                     test_status[ output_type ] = '\n'.join( tmp_output[ output_type ] )
                             repository_status[ 'test_errors' ].append( test_status )
                         # Call the register_test_result method, which executes a PUT request to the repository_revisions API controller with the outcome 
-                        # of the tests, and updates tool_test_errors with the relevant log data.
+                        # of the tests, and updates tool_test_results with the relevant log data.
                         # This also sets the do_not_test and tools_functionally correct flags to the appropriate values, and updates the time_last_tested
                         # field to today's date.
                         repositories_failed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )

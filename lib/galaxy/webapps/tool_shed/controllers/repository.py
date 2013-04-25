@@ -738,12 +738,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         """
         The test framework in ~/test/install_and_test_tool_shed_repositories can be executed on a regularly defined schedule (e.g., via cron) to install appropriate
         repositories from a tool shed into a Galaxy instance and run defined functional tests for the tools included in the repository.  This process affects the values
-        if these columns in the repository_metadata table: tools_functionally_correct, do_not_test, time_last_tested and tool_test_errors.  The tool_test_errors is
-        slightly mis-named (it should have been named tool_test_results) it will contain a dictionary that includes information about the test environment even if all
-        tests passed and the tools_functionally_correct column is set to True.
-        The value of the tool_test_errors column will be a dictionary with the key / value pairs: 
-        "test_environment", {"architecture": "i386", "python_version": "2.5.4", "system": "Darwin 10.8.0"}
-        "test_errors" [ { "test_id":<some test id>, "stdout":<stdout of running the test>, "stderr":<stderr of running the test>, "traceback":<traceback of running the test>]
+        if these columns in the repository_metadata table: do_not_test, missing_test_components, time_last_tested, tools_functionally_correct and tool_test_results.
         """
         params = util.Params( kwd )
         message = util.restore_text( params.get( 'message', ''  ) )
@@ -1162,7 +1157,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                            trans.model.Repository.table.c.private == False,
                                                            trans.model.Repository.table.c.deprecated == False,
                                                            trans.model.Repository.table.c.user_id == user.id ) ):
-            if not metadata_row.tool_test_errors:
+            if not metadata_row.tool_test_results:
                 continue
             # Per the RSS 2.0 specification, all dates in RSS feeds must be formatted as specified in RFC 822
             # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
@@ -1171,9 +1166,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             # Generate a citable URL for this repository with owner and changeset revision.
             repository_citable_url = suc.url_join( tool_shed_url, 'view', user.username, repository.name, metadata_row.changeset_revision )
             title = 'Functional test results for changeset revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
-            tests_passed = len( metadata_row.tool_test_errors.get( 'tests_passed', [] ) )
-            tests_failed = len( metadata_row.tool_test_errors.get( 'test_errors', [] ) )
-            invalid_tests = len( metadata_row.tool_test_errors.get( 'invalid_tests', [] ) )
+            tests_passed = len( metadata_row.tool_test_results.get( 'tests_passed', [] ) )
+            tests_failed = len( metadata_row.tool_test_results.get( 'test_errors', [] ) )
+            invalid_tests = len( metadata_row.tool_test_results.get( 'invalid_tests', [] ) )
             description = '%d tests passed, %d tests failed, %d tests determined to be invalid.' % ( tests_passed, tests_failed, invalid_tests )
             # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
             # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable
@@ -2674,10 +2669,10 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id )
             # TODO: Fix this when the install and test framework is completed.
-            # if repository_metadata.tool_test_errors:
-            #    tool_test_errors = json.from_json_string( repository_metadata.tool_test_errors )
+            # if repository_metadata.tool_test_results:
+            #    tool_test_results = json.from_json_string( repository_metadata.tool_test_results )
             # else:
-            #    tool_test_errors = None
+            #    tool_test_results = None
             metadata = repository_metadata.metadata
             if metadata:
                 if 'tools' in metadata:
@@ -2713,7 +2708,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         else:
             repository_metadata_id = None
             metadata = None
-            #tool_test_errors = None
+            #tool_test_results = None
         is_malicious = suc.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field( trans,
                                                                                             repository,
@@ -2737,7 +2732,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     tool=tool,
                                     tool_metadata_dict=tool_metadata_dict,
                                     tool_lineage=tool_lineage,
-                                    #tool_test_errors=tool_test_errors,
+                                    #tool_test_results=tool_test_results,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
