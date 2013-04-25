@@ -1041,11 +1041,11 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
             for failed_tests_dict in failed_tests_dicts:
                 failed_test_id += 1
                 failed_test = FailedTest( id=failed_test_id,
-                                          stderr=failed_tests_dict[ 'stderr' ],
-                                          test_id=failed_tests_dict[ 'test_id' ],
-                                          tool_id=failed_tests_dict[ 'tool_id' ],
-                                          tool_version=failed_tests_dict[ 'tool_version' ],
-                                          traceback=failed_tests_dict[ 'traceback' ] )
+                                          stderr=failed_tests_dict.get( 'stderr', '' ),
+                                          test_id=failed_tests_dict.get( 'test_id', '' ),
+                                          tool_id=failed_tests_dict.get( 'tool_id', '' ),
+                                          tool_version=failed_tests_dict.get( 'tool_version', '' ),
+                                          traceback=failed_tests_dict.get( 'traceback', '' ) )
                 folder.failed_tests.append( failed_test )
         missing_test_components_dicts = tool_test_results_dict[ 'missing_test_components' ]
         if missing_test_components_dicts:
