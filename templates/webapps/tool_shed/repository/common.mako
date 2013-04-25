@@ -325,6 +325,26 @@
             ${render_invalid_data_manager( data_manager, pad, my_row, row_counter, row_is_header )}
         %endfor
     %endif
+    %if folder.test_environments:
+        %for test_environment in folder.test_environments:
+            ${render_test_environment( test_environment, pad, my_row, row_counter )}
+        %endfor
+    %endif
+    %if folder.failed_tests:
+        %for failed_test in folder.failed_tests:
+            ${render_failed_test( failed_test, pad, my_row, row_counter )}
+        %endfor
+    %endif
+    %if folder.passed_tests:
+        %for passed_test in folder.passed_tests:
+            ${render_passed_test( passed_test, pad, my_row, row_counter )}
+        %endfor
+    %endif
+    %if folder.missing_test_components:
+        %for missing_test_component in folder.missing_test_components:
+            ${render_missing_test_component( missing_test_component, pad, my_row, row_counter )}
+        %endfor
+    %endif
 </%def>
 
 <%def name="render_datatype( datatype, pad, parent, row_counter, row_is_header=False )">
@@ -351,22 +371,22 @@
     %>
 </%def>
 
-<%def name="render_valid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False )">
-    <%
-        encoded_id = trans.security.encode_id( data_manager.id )
-        if row_is_header:
-            cell_type = 'th'
-        else:
-            cell_type = 'td'
-    %>
+<%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False )">
+    <% encoded_id = trans.security.encode_id( failed_test.id ) %>
     <tr class="datasetRow"
         %if parent is not None:
             parent="${parent}"
         %endif
         id="libraryItem-${encoded_id}">
-        <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.name | h}</${cell_type}>
-        <${cell_type}>${data_manager.version | h}</${cell_type}>
-        <${cell_type}>${data_manager.data_tables | h}</${cell_type}>
+        <td style="padding-left: ${pad+20}px;">
+            <table class="grid" id="readme_table">
+                <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${failed_test.tool_id | h}</td></tr>
+                <tr><td><b>Tool version:</b> ${failed_test.tool_id | h}</td></tr>
+                <tr><td><b>Test:</b> ${failed_test.test_id | h}</td></tr>
+                <tr><td><b>Stderr:</b> <br/>${failed_test.stderr | h}</td></tr>
+                <tr><td><b>Traceback:</b> <br/>${failed_test.traceback | h}</td></tr>
+            </table>
+        </td>
     </tr>
     <%
         my_row = row_counter.count
@@ -467,6 +487,28 @@
     %>
 </%def>
 
+<%def name="render_missing_test_component( missing_test_component, pad, parent, row_counter, row_is_header=False )">
+    <% encoded_id = trans.security.encode_id( missing_test_component.id ) %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table class="grid" id="readme_table">
+                <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${missing_test_component.tool_id | h}</td></tr>
+                <tr><td><b>Tool version:</b> ${missing_test_component.tool_version | h}</td></tr>
+                <tr><td><b>Tool guid:</b> ${missing_test_component.tool_guid | h}</td></tr>
+                <tr><td><b>Missing components:</b> <br/>${missing_test_component.missing_components | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
 <%def name="render_readme( readme, pad, parent, row_counter )">
     <%
         from tool_shed.util.shed_util_common import to_safe_string
@@ -557,6 +599,28 @@
                 Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>${prior_installation_required_str}
             </td>
         %endif
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_passed_test( passed_test, pad, parent, row_counter, row_is_header=False )">
+    <% encoded_id = trans.security.encode_id( passed_test.id ) %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table class="grid" id="readme_table">
+                <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${passed_test.tool_id | h}</td></tr>
+                <tr><td><b>Tool version:</b> ${passed_test.tool_id | h}</td></tr>
+                <tr><td><b>Test:</b> ${passed_test.test_id | h}</td></tr>
+                <tr><td><b>Stderr:</b> <br/>${passed_test.stderr | h}</td></tr>
+            </table>
+        </td>
     </tr>
     <%
         my_row = row_counter.count
@@ -672,6 +736,56 @@
     %>
 </%def>
 
+<%def name="render_test_environment( test_environment, pad, parent, row_counter, row_is_header=False )">
+    <% encoded_id = trans.security.encode_id( test_environment.id ) %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table class="grid" id="readme_table">
+                <tr><td><b>Time tested:</b> ${test_environment.time_last_tested | h}</td></tr>
+                <tr><td><b>System:</b> ${test_environment.system | h}</td></tr>
+                <tr><td><b>Architecture:</b> ${test_environment.architecture | h}</td></tr>
+                <tr><td><b>Python version:</b> ${test_environment.python_version | h}</td></tr>
+                <tr><td><b>Galaxy revision:</b> ${test_environment.galaxy_revision | h}</td></tr>
+                <tr><td><b>Galaxy database version:</b> ${test_environment.galaxy_database_version | h}</td></tr>
+                <tr><td><b>Tool shed revision:</b> ${test_environment.tool_shed_revision | h}</td></tr>
+                <tr><td><b>Tool shed database version:</b> ${test_environment.tool_shed_database_version | h}</td></tr>
+                <tr><td><b>Tool shed mercurial version:</b> ${test_environment.tool_shed_mercurial_version | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_valid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False )">
+    <%
+        encoded_id = trans.security.encode_id( data_manager.id )
+        if row_is_header:
+            cell_type = 'th'
+        else:
+            cell_type = 'td'
+    %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <${cell_type} style="padding-left: ${pad+20}px;">${data_manager.name | h}</${cell_type}>
+        <${cell_type}>${data_manager.version | h}</${cell_type}>
+        <${cell_type}>${data_manager.data_tables | h}</${cell_type}>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
 <%def name="render_workflow( workflow, pad, parent, row_counter, row_is_header=False )">
     <%
         from tool_shed.util.encoding_util import tool_shed_encode
@@ -723,18 +837,20 @@
         has_workflows = metadata and 'workflows' in metadata
         
         datatypes_root_folder = containers_dict.get( 'datatypes', None )
-        invalid_tools_root_folder = containers_dict.get( 'invalid_tools', None )
+        invalid_data_managers_root_folder = containers_dict.get( 'invalid_data_managers', None )
         invalid_repository_dependencies_root_folder = containers_dict.get( 'invalid_repository_dependencies', None )
+        invalid_tool_dependencies_root_folder = containers_dict.get( 'invalid_tool_dependencies', None )
+        invalid_tools_root_folder = containers_dict.get( 'invalid_tools', None )
+        missing_repository_dependencies_root_folder = containers_dict.get( 'missing_repository_dependencies', None )
+        missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
         readme_files_root_folder = containers_dict.get( 'readme_files', None )
         repository_dependencies_root_folder = containers_dict.get( 'repository_dependencies', None )
-        missing_repository_dependencies_root_folder = containers_dict.get( 'missing_repository_dependencies', None )
-        invalid_tool_dependencies_root_folder = containers_dict.get( 'invalid_tool_dependencies', None )
+        test_environment_root_folder = containers_dict.get( 'test_environment', None )
         tool_dependencies_root_folder = containers_dict.get( 'tool_dependencies', None )
-        missing_tool_dependencies_root_folder = containers_dict.get( 'missing_tool_dependencies', None )
+        tool_test_results_root_folder = containers_dict.get( 'tool_test_results', None )
+        valid_data_managers_root_folder = containers_dict.get( 'valid_data_managers', None )
         valid_tools_root_folder = containers_dict.get( 'valid_tools', None )
         workflows_root_folder = containers_dict.get( 'workflows', None )
-        valid_data_managers_root_folder = containers_dict.get( 'valid_data_managers', None )
-        invalid_data_managers_root_folder = containers_dict.get( 'invalid_data_managers', None )
         
         has_contents = datatypes_root_folder or invalid_tools_root_folder or valid_tools_root_folder or workflows_root_folder
         has_dependencies = \
@@ -861,6 +977,18 @@
                         ${render_folder( datatypes_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
                     </table>
                 %endif
+            </div>
+        </div>
+    %endif
+    %if tool_test_results_root_folder:
+        <div class="toolForm">
+            <div class="toolFormTitle">Automated tool test results</div>
+            <div class="toolFormBody">
+                    <p/>
+                    <% row_counter = RowCounter() %>
+                    <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table" id="test_environment">
+                        ${render_folder( tool_test_results_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
+                    </table>
             </div>
         </div>
     %endif

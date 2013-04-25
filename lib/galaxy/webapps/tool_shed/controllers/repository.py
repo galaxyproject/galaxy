@@ -734,50 +734,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                           status='error' ) )
 
     @web.expose
-    def display_tool_functional_test_results( self, trans, repository_id, repository_metadata_id, **kwd ):
-        """
-        The test framework in ~/test/install_and_test_tool_shed_repositories can be executed on a regularly defined schedule (e.g., via cron) to install appropriate
-        repositories from a tool shed into a Galaxy instance and run defined functional tests for the tools included in the repository.  This process affects the values
-        if these columns in the repository_metadata table: do_not_test, missing_test_components, time_last_tested, tools_functionally_correct and tool_test_results.
-        """
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        repository = suc.get_repository_by_id( trans, repository_id )
-        if repository:
-            repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
-            changeset_revision = repository_metadata.changeset_revision
-            if repository_metadata:
-                metadata = repository_metadata.metadata
-                if metadata:
-                    revision_label = suc.get_revision_label( trans, repository, repository_metadata.changeset_revision )
-                    return trans.fill_template( '/webapps/tool_shed/repository/display_tool_functional_test_results.mako',
-                                                repository=repository,
-                                                repository_metadata=repository_metadata,
-                                                revision_label=revision_label,
-                                                message=message,
-                                                status=status )
-                else:
-                    message = 'Missing metadata for revision <b>%s</b> of repository <b>%s</b> owned by <b>%s</b>.' % \
-                        ( str( changeset_revision ), str( repository.name ), str( repository.user.username ) )
-            else:
-                message = 'Invalid repository_metadata_id <b>%s</b> received for displaying functional test errors for repository <b>%s</b>.' % \
-                    ( str( repository_metadata_id ), str( repository.name ) )
-        else:
-            message = 'Invalid repository_id received for displaying functional test errors.<b>%s</b>.' % str( repository_id )
-            return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='browse_repositories',
-                                                              message=message,
-                                                              status='error' ) )
-        return trans.response.send_redirect( web.url_for( controller='repository',
-                                                          action='browse_repository',
-                                                          operation='view_or_manage_repository',
-                                                          id=repository_id,
-                                                          changeset_revision=changeset_revision,
-                                                          message=message,
-                                                          status='error' ) )
-
-    @web.expose
     def display_tool_help_image_in_repository( self, trans, **kwd ):
         repository_id = kwd.get( 'repository_id', None )
         image_file = kwd.get( 'image_file', None )
@@ -2668,11 +2624,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id )
-            # TODO: Fix this when the install and test framework is completed.
-            # if repository_metadata.tool_test_results:
-            #    tool_test_results = json.from_json_string( repository_metadata.tool_test_results )
-            # else:
-            #    tool_test_results = None
             metadata = repository_metadata.metadata
             if metadata:
                 if 'tools' in metadata:
@@ -2708,7 +2659,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         else:
             repository_metadata_id = None
             metadata = None
-            #tool_test_results = None
         is_malicious = suc.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field( trans,
                                                                                             repository,
@@ -2732,7 +2682,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     tool=tool,
                                     tool_metadata_dict=tool_metadata_dict,
                                     tool_lineage=tool_lineage,
-                                    #tool_test_results=tool_test_results,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
