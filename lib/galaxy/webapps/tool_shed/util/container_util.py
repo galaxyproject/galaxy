@@ -999,7 +999,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
     if tool_test_results_dict:
         folder_id += 1
         tool_test_results_root_folder = Folder( id=folder_id, key='root', label='root', parent=None )
-        test_environment_dict = tool_test_results_dict[ 'test_environment' ]
+        test_environment_dict = tool_test_results_dict.get( 'test_environment', None )
         if test_environment_dict:
             folder_id += 1
             test_results_folder = Folder( id=folder_id, key='test_results', label=label, parent=tool_test_results_root_folder )
@@ -1008,17 +1008,17 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
             folder = Folder( id=folder_id, key='test_environment', label='Automated test environment', parent=test_results_folder )
             test_results_folder.folders.append( folder )
             test_environment = TestEnvironment( id=1,
-                                                architecture=test_environment_dict[ 'architecture' ],
-                                                galaxy_database_version=test_environment_dict[ 'galaxy_database_version' ],
-                                                galaxy_revision=test_environment_dict[ 'galaxy_revision' ],
-                                                python_version=test_environment_dict[ 'python_version' ],
-                                                system=test_environment_dict[ 'system' ],
+                                                architecture=test_environment_dict.get( 'architecture', '' ),
+                                                galaxy_database_version=test_environment_dict.get( 'galaxy_database_version', '' ),
+                                                galaxy_revision=test_environment_dict.get( 'galaxy_revision', '' ),
+                                                python_version=test_environment_dict.get( 'python_version', '' ),
+                                                system=test_environment_dict.get( 'system', '' ),
                                                 time_last_tested=time_last_tested,
-                                                tool_shed_database_version=test_environment_dict[ 'tool_shed_database_version' ],
-                                                tool_shed_mercurial_version=test_environment_dict[ 'tool_shed_mercurial_version' ],
-                                                tool_shed_revision=test_environment_dict[ 'tool_shed_revision' ] )
+                                                tool_shed_database_version=test_environment_dict.get( 'tool_shed_database_version', '' ),
+                                                tool_shed_mercurial_version=test_environment_dict.get( 'tool_shed_mercurial_version', '' ),
+                                                tool_shed_revision=test_environment_dict.get( 'tool_shed_revision', '' ) )
             folder.test_environments.append( test_environment )
-        passed_tests_dicts = tool_test_results_dict[ 'passed_tests' ]
+        passed_tests_dicts = tool_test_results_dict.get( 'passed_tests', [] )
         if passed_tests_dicts:
             folder_id += 1
             folder = Folder( id=folder_id, key='passed_tests', label='Tests that passed successfully', parent=test_results_folder )
@@ -1032,7 +1032,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
                                           tool_id=passed_tests_dict.get( 'tool_id', '' ),
                                           tool_version=passed_tests_dict.get( 'tool_version', '' ) )
                 folder.passed_tests.append( passed_test )
-        failed_tests_dicts = tool_test_results_dict[ 'failed_tests' ]
+        failed_tests_dicts = tool_test_results_dict.get( 'failed_tests', [] )
         if failed_tests_dicts:
             folder_id += 1
             folder = Folder( id=folder_id, key='failed_tests', label='Tests that failed', parent=test_results_folder )
