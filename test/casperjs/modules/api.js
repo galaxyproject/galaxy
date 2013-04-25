@@ -20,6 +20,7 @@ var API = function API( spaceghost, apikey ){
 
     this.histories  = new HistoriesAPI( this );
     this.hdas       = new HDAAPI( this );
+    this.tools      = new ToolsAPI( this );
 };
 exports.API = API;
 
@@ -219,7 +220,7 @@ HDAAPI.prototype.urlTpls = {
 };
 
 HDAAPI.prototype.index = function index( historyId, ids ){
-    this.api.spaceghost.info( 'hda.index: ' + [ historyId, ids ] );
+    this.api.spaceghost.info( 'hdas.index: ' + [ historyId, ids ] );
     var data = {};
     if( ids ){
         ids = ( utils.isArray( ids ) )?( ids.join( ',' ) ):( ids );
@@ -232,7 +233,7 @@ HDAAPI.prototype.index = function index( historyId, ids ){
 };
 
 HDAAPI.prototype.show = function show( historyId, id, deleted ){
-    this.api.spaceghost.info( 'hda.show: ' + [ historyId, id, (( deleted )?( 'w deleted' ):( '' )) ] );
+    this.api.spaceghost.info( 'hdas.show: ' + [ historyId, id, (( deleted )?( 'w deleted' ):( '' )) ] );
 
     id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
     deleted = deleted || false;
@@ -242,7 +243,7 @@ HDAAPI.prototype.show = function show( historyId, id, deleted ){
 };
 
 HDAAPI.prototype.create = function create( historyId, payload ){
-    this.api.spaceghost.info( 'hda.create: ' + [ historyId, this.api.spaceghost.jsonStr( payload ) ] );
+    this.api.spaceghost.info( 'hdas.create: ' + [ historyId, this.api.spaceghost.jsonStr( payload ) ] );
 
     // py.payload <-> ajax.data
     payload = this.api.ensureObject( payload );
@@ -253,7 +254,7 @@ HDAAPI.prototype.create = function create( historyId, payload ){
 };
 
 HDAAPI.prototype.update = function create( historyId, id, payload ){
-    this.api.spaceghost.info( 'hda.update: ' + [ historyId, id, this.api.spaceghost.jsonStr( payload ) ] );
+    this.api.spaceghost.info( 'hdas.update: ' + [ historyId, id, this.api.spaceghost.jsonStr( payload ) ] );
 
     // py.payload <-> ajax.data
     historyId = this.api.ensureId( historyId );
@@ -266,4 +267,54 @@ HDAAPI.prototype.update = function create( historyId, id, payload ){
         data : payload
     });
 };
+
+// =================================================================== TOOLS
+var ToolsAPI = function HDAAPI( api ){
+    this.api = api;
+};
+ToolsAPI.prototype.toString = function toString(){
+    return this.api + '.ToolsAPI';
+};
+
+// -------------------------------------------------------------------
+ToolsAPI.prototype.urlTpls = {
+    index   : 'api/tools',
+    show    : 'api/tools/%s',
+    create  : 'api/tools'
+};
+
+ToolsAPI.prototype.index = function index( in_panel, trackster ){
+    this.api.spaceghost.info( 'tools.index: ' + [ in_panel, trackster ] );
+    var data = {};
+    // in_panel defaults to true, trackster defaults to false
+    if( in_panel !== undefined ){
+        data.in_panel = ( in_panel )?( true ):( false );
+    }
+    if( in_panel !== undefined ){
+        data.trackster = ( trackster )?( true ):( false );
+    }
+    return this.api._ajax( utils.format( this.urlTpls.index ), {
+        data : data
+    });
+};
+
+ToolsAPI.prototype.show = function show( id ){
+    this.api.spaceghost.info( 'tools.show: ' + [ id ] );
+    var data = {};
+
+    return this.api._ajax( utils.format( this.urlTpls.show, id ), {
+        data : data
+    });
+};
+
+//ToolsAPI.prototype.create = function create( payload ){
+//    this.api.spaceghost.info( 'tools.create: ' + [ this.api.spaceghost.jsonStr( payload ) ] );
+//
+//    // py.payload <-> ajax.data
+//    payload = this.api.ensureObject( payload );
+//    return this.api._ajax( utils.format( this.urlTpls.create, this.api.ensureId( historyId ) ), {
+//        type : 'POST',
+//        data : payload
+//    });
+//};
 

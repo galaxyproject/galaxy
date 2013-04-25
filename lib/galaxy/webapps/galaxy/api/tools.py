@@ -5,6 +5,9 @@ from galaxy.visualization.genomes import GenomeRegion
 from galaxy.util.json import to_json_string, from_json_string
 from galaxy.visualization.data_providers.genome import *
 
+import logging
+log = logging.getLogger( __name__ )
+
 class ToolsController( BaseAPIController, UsesVisualizationMixin ):
     """
     RESTful controller for interactions with tools.
@@ -29,7 +32,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         trackster = util.string_as_bool( kwds.get( 'trackster', 'False' ) )
         
         # Create return value.
-        return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster )
+        try:
+            return self.app.toolbox.to_dict( trans, in_panel=in_panel, trackster=trackster )
+        except Exception, exc:
+            log.error( 'could not convert toolbox to dictionary: %s', str( exc ), exc_info=True )
+            trans.response.status = 500
+            return { 'error': str( exc ) }
 
     @web.expose_api
     def show( self, trans, id, **kwd ):
@@ -37,7 +45,12 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         GET /api/tools/{tool_id}
         Returns tool information, including parameters and inputs.
         """
-        return self.app.toolbox.tools_by_id[ id ].to_dict( trans, for_display=True )
+        try:
+            return self.app.toolbox.tools_by_id[ id ].to_dict( trans, for_display=True )
+        except Exception, exc:
+            log.error( 'could not convert tool (%s) to dictionary: %s', id, str( exc ), exc_info=True )
+            trans.response.status = 500
+            return { 'error': str( exc ) }
         
     @web.expose_api
     def create( self, trans, payload, **kwd ):
@@ -45,7 +58,6 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
         POST /api/tools
         Executes tool using specified inputs and returns tool's outputs.
         """
-        
         # HACK: for now, if action is rerun, rerun tool.
         action = payload.get( 'action', None )
         if action == 'rerun':
