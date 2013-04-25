@@ -1027,10 +1027,10 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
             for passed_tests_dict in passed_tests_dicts:
                 passed_test_id += 1
                 passed_test = PassedTest( id=passed_test_id,
-                                          stderr=passed_tests_dict[ 'stderr' ],
-                                          test_id=passed_tests_dict[ 'test_id' ],
-                                          tool_id=passed_tests_dict[ 'tool_id' ],
-                                          tool_version=passed_tests_dict[ 'tool_version' ] )
+                                          stderr=passed_tests_dict.get( 'stderr', '' ),
+                                          test_id=passed_tests_dict.get( 'test_id' '' ),
+                                          tool_id=passed_tests_dict.get( 'tool_id', '' ),
+                                          tool_version=passed_tests_dict.get( 'tool_version', '' ) )
                 folder.passed_tests.append( passed_test )
         failed_tests_dicts = tool_test_results_dict[ 'failed_tests' ]
         if failed_tests_dicts:
@@ -1047,7 +1047,7 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
                                           tool_version=failed_tests_dict.get( 'tool_version', '' ),
                                           traceback=failed_tests_dict.get( 'traceback', '' ) )
                 folder.failed_tests.append( failed_test )
-        missing_test_components_dicts = tool_test_results_dict[ 'missing_test_components' ]
+        missing_test_components_dicts = tool_test_results_dict.get( 'missing_test_components', [] )
         if missing_test_components_dicts:
             folder_id += 1
             folder = Folder( id=folder_id, key='missing_test_components', label='Tools missing tests or test data', parent=test_results_folder )
@@ -1056,10 +1056,10 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
             for missing_test_components_dict in missing_test_components_dicts:
                 missing_test_component_id += 1
                 missing_test_component = MissingTestComponent( id=missing_test_component_id,
-                                                               missing_components=missing_test_components_dict[ 'missing_components' ],
-                                                               tool_guid=missing_test_components_dict[ 'tool_guid' ],
-                                                               tool_id=missing_test_components_dict[ 'tool_id' ],
-                                                               tool_version=missing_test_components_dict[ 'tool_version' ] )
+                                                               missing_components=missing_test_components_dict.get( 'missing_components', '' ),
+                                                               tool_guid=missing_test_components_dict.get( 'tool_guid', '' ),
+                                                               tool_id=missing_test_components_dict.get( 'tool_id', '' ),
+                                                               tool_version=missing_test_components_dict.get( 'tool_version', '' ) )
                 folder.missing_test_components.append( missing_test_component )
     else:
         tool_test_results_root_folder = None
@@ -1098,10 +1098,10 @@ def build_workflows_folder( trans, folder_id, workflows, repository_metadata_id=
                 steps = 'unknown'
             workflow_id += 1
             workflow = Workflow( id=workflow_id,
-                                 workflow_name=workflow_dict[ 'name' ],
+                                 workflow_name=workflow_dict.get( 'name', '' ),
                                  steps=steps,
-                                 format_version=workflow_dict[ 'format-version' ],
-                                 annotation=workflow_dict[ 'annotation' ],
+                                 format_version=workflow_dict.get( 'format-version', '' ),
+                                 annotation=workflow_dict.get( 'annotation', '' ),
                                  repository_metadata_id=repository_metadata_id,
                                  repository_id=repository_id )
             folder.workflows.append( workflow )
