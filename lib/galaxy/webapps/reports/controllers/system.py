@@ -91,7 +91,7 @@ class System( BaseUIController ):
                             pass
                 history_count += 1
             message = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged, " \
-                    "disk space: %s (%d bytes)." % ( history_count, dataset_count, deleted_histories_days, nice_size( disk_space ), disk_space )
+                    "disk space: %s." % ( history_count, dataset_count, deleted_histories_days, nice_size( disk_space, True ) )
         else:
             message = "Enter the number of days."
         return str( deleted_histories_days ), message
@@ -114,7 +114,7 @@ class System( BaseUIController ):
                 except:
                     pass
             message =  "%d datasets were deleted more than %d days ago, but have not yet been purged," \
-                " disk space: %s (%d bytes)." % ( dataset_count, deleted_datasets_days, nice_size( disk_space ), disk_space )
+                " disk space: %s." % ( dataset_count, deleted_datasets_days, nice_size( disk_space, True ))
         else:
             message = "Enter the number of days."
         return str( deleted_datasets_days ), message
@@ -180,14 +180,23 @@ class System( BaseUIController ):
                                    .order_by( desc( model.Dataset.table.c.file_size ) )
         return file_path, disk_usage, datasets, file_size_str
 
-def nice_size(size):
+def nice_size(size, include_bytes=False):
     """Returns a readably formatted string with the size"""
+    niced = False
+    nice_string = "%s bytes" % size
     try:
-        nsize = size
+        nsize = Decimal(size)
         for x in ['bytes','KB','MB','GB']:
-            if nsize < 1024.0:
-                return "%3.1f%s" % (size, x)
+            if nsize.compare(Decimal("1024.0")) == Decimal("-1"):
+                nice_string = "%3.1f %s" % (nsize, x)
+                niced = True
+                break
             nsize /= Decimal("1024.0")
-        return "%.1f%s" % (nsize, 'TB')
+        if not niced:
+            nice_string = "%3.1f %s" % (nsize, 'TB')
+            niced = True
+        if include_bytes and x != 'bytes':
+            nice_string = "%s (%s bytes)" % (nice_string, size)
     except:
-        return "%s bytes" % size
+        pass
+    return nice_string
