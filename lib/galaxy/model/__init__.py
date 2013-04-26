@@ -48,9 +48,17 @@ def set_datatypes_registry( d_registry ):
     global datatypes_registry
     datatypes_registry = d_registry
 
+
 class User( object, APIItem ):
+    """
+    Data for a Galaxy user or admin and relations to their
+    histories, credentials, and roles.
+    """
+    # attributes that will be accessed and returned when calling get_api_value( view='collection' )
     api_collection_visible_keys = ( 'id', 'email' )
+    # attributes that will be accessed and returned when calling get_api_value( view='element' )
     api_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
+
     def __init__( self, email=None, password=None ):
         self.email = email
         self.password = password
@@ -61,44 +69,77 @@ class User( object, APIItem ):
         # Relationships
         self.histories = []
         self.credentials = []
+        #? self.roles = []
 
     def set_password_cleartext( self, cleartext ):
-        """Set 'self.password' to the digest of 'cleartext'."""
+        """
+        Set user password to the digest of `cleartext`.
+        """
         self.password = new_secure_hash( text_type=cleartext )
+
     def check_password( self, cleartext ):
-        """Check if 'cleartext' matches 'self.password' when hashed."""
+        """
+        Check if `cleartext` matches user password when hashed.
+        """
         return self.password == new_secure_hash( text_type=cleartext )
+
     def all_roles( self ):
+        """
+        Return a unique list of Roles associated with this user or any of their groups.
+        """
         roles = [ ura.role for ura in self.roles ]
         for group in [ uga.group for uga in self.groups ]:
             for role in [ gra.role for gra in group.roles ]:
                 if role not in roles:
                     roles.append( role )
         return roles
+
     def get_disk_usage( self, nice_size=False ):
+        """
+        Return byte count of disk space used by user or a human-readable
+        string if `nice_size` is `True`.
+        """
         rval = 0
         if self.disk_usage is not None:
             rval = self.disk_usage
         if nice_size:
             rval = galaxy.datatypes.data.nice_size( rval )
         return rval
+
     def set_disk_usage( self, bytes ):
+        """
+        Manually set the disk space used by a user to `bytes`.
+        """
         self.disk_usage = bytes
+
     total_disk_usage = property( get_disk_usage, set_disk_usage )
+
     @property
     def nice_total_disk_usage( self ):
+        """
+        Return byte count of disk space used in a human-readable string.
+        """
         return self.get_disk_usage( nice_size=True )
+
     def calculate_disk_usage( self ):
+        """
+        Return byte count total of disk space used by all non-purged, non-library
+        HDAs in non-purged histories.
+        """
+        # maintain a list so that we don't double count
         dataset_ids = []
         total = 0
         # this can be a huge number and can run out of memory, so we avoid the mappers
         db_session = object_session( self )
         for history in db_session.query( History ).enable_eagerloads( False ).filter_by( user_id=self.id, purged=False ).yield_per( 1000 ):
             for hda in db_session.query( HistoryDatasetAssociation ).enable_eagerloads( False ).filter_by( history_id=history.id, purged=False ).yield_per( 1000 ):
+                #TODO: def hda.counts_toward_disk_usage():
+                #   return ( not self.dataset.purged and not self.dataset.library_associations )
                 if not hda.dataset.id in dataset_ids and not hda.dataset.purged and not hda.dataset.library_associations:
                     dataset_ids.append( hda.dataset.id )
                     total += hda.dataset.get_total_size()
         return total
+
 
 class Job( object ):
     """
