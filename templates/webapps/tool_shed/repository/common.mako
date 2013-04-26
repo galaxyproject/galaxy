@@ -618,7 +618,6 @@
                 <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${passed_test.tool_id | h}</td></tr>
                 <tr><td><b>Tool version:</b> ${passed_test.tool_id | h}</td></tr>
                 <tr><td><b>Test:</b> ${passed_test.test_id | h}</td></tr>
-                <tr><td><b>Stderr:</b> <br/>${passed_test.stderr | h}</td></tr>
             </table>
         </td>
     </tr>

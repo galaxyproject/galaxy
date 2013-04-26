@@ -160,9 +160,8 @@ class MissingTestComponent( object ):
 class PassedTest( object ):
     """Passed tool tests object"""
 
-    def __init__( self, id=None, stderr=None, test_id=None, tool_id=None, tool_version=None ):
+    def __init__( self, id=None, test_id=None, tool_id=None, tool_version=None ):
         self.id = id
-        self.stderr = stderr
         self.test_id = test_id
         self.tool_id = tool_id
         self.tool_version = tool_version
@@ -1027,7 +1026,6 @@ def build_tool_test_results_folder( trans, folder_id, tool_test_results_dict, la
             for passed_tests_dict in passed_tests_dicts:
                 passed_test_id += 1
                 passed_test = PassedTest( id=passed_test_id,
-                                          stderr=passed_tests_dict.get( 'stderr', '' ),
                                           test_id=passed_tests_dict.get( 'test_id' '' ),
                                           tool_id=passed_tests_dict.get( 'tool_id', '' ),
                                           tool_version=passed_tests_dict.get( 'tool_version', '' ) )
