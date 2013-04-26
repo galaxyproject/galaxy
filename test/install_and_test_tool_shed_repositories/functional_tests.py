@@ -269,9 +269,11 @@ def get_tool_test_results_from_api( tool_shed_url, metadata_revision_id ):
     api_path = [ 'api', 'repository_revisions', metadata_revision_id ]
     api_url = get_api_url( base=tool_shed_url, parts=api_path )
     repository_metadata = json_from_url( api_url )
-    if repository_metadata[ 'tool_test_results' ] is None:
-        return {}
-    return repository_metadata[ 'tool_test_results' ]
+    tool_test_results = repository_metadata.get( 'tool_test_results', {} )
+    # Compatibility code, remove before next release.
+    if not tool_test_results:
+        tool_test_results = repository_metadata.get( 'tool_test_errors', {} )
+    return tool_test_results
 
 def json_from_url( url ):
     url_handle = urllib.urlopen( url )
