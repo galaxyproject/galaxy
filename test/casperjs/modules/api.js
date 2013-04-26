@@ -21,6 +21,7 @@ var API = function API( spaceghost, apikey ){
     this.histories  = new HistoriesAPI( this );
     this.hdas       = new HDAAPI( this );
     this.tools      = new ToolsAPI( this );
+    this.workflows  = new WorkflowsAPI( this );
 };
 exports.API = API;
 
@@ -317,4 +318,79 @@ ToolsAPI.prototype.show = function show( id ){
 //        data : payload
 //    });
 //};
+
+// =================================================================== WORKFLOWS
+var WorkflowsAPI = function WorkflowsAPI( api ){
+    this.api = api;
+};
+WorkflowsAPI.prototype.toString = function toString(){
+    return this.api + '.WorkflowsAPI';
+};
+
+// -------------------------------------------------------------------
+WorkflowsAPI.prototype.urlTpls = {
+    index   : 'api/workflows',
+    show    : 'api/workflows/%s',
+    // run a workflow
+    create  : 'api/workflows',
+    update  : 'api/workflows/%s',
+
+    upload  : 'api/workflows/upload', // POST
+    download: 'api/workflows/download/%s' // GET
+};
+
+WorkflowsAPI.prototype.index = function index(){
+    this.api.spaceghost.info( 'workflows.index: ' + [] );
+    var data = {};
+
+    return this.api._ajax( utils.format( this.urlTpls.index ), {
+        data : data
+    });
+};
+
+WorkflowsAPI.prototype.show = function show( id ){
+    this.api.spaceghost.info( 'workflows.show: ' + [ id ] );
+    var data = {};
+
+    id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
+    return this.api._ajax( utils.format( this.urlTpls.show, this.api.ensureId( id ) ), {
+        data : data
+    });
+};
+
+//WorkflowsAPI.prototype.create = function create( payload ){
+//    this.api.spaceghost.info( 'workflows.create: ' + [ this.api.spaceghost.jsonStr( payload ) ] );
+//
+//    // py.payload <-> ajax.data
+//    payload = this.api.ensureObject( payload );
+//    return this.api._ajax( utils.format( this.urlTpls.create ), {
+//        type : 'POST',
+//        data : payload
+//    });
+//};
+//
+//WorkflowsAPI.prototype.update = function create( id, payload ){
+//    this.api.spaceghost.info( 'workflows.update: ' + [ id, this.api.spaceghost.jsonStr( payload ) ] );
+//
+//    // py.payload <-> ajax.data
+//    historyId = this.api.ensureId( historyId );
+//    id = this.api.ensureId( id );
+//    payload = this.api.ensureObject( payload );
+//    url = utils.format( this.urlTpls.update, id );
+//
+//    return this.api._ajax( url, {
+//        type : 'PUT',
+//        data : payload
+//    });
+//};
+
+WorkflowsAPI.prototype.upload = function upload( filepath ){
+    this.api.spaceghost.info( 'workflows.show: ' + [ id ] );
+    var data = {};
+
+    id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
+    return this.api._ajax( utils.format( this.urlTpls.show, this.api.ensureId( id ) ), {
+        data : data
+    });
+};
 
