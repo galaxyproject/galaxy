@@ -1,5 +1,6 @@
 import operator, os
 from datetime import datetime, timedelta
+from decimal import Decimal
 from galaxy.web.base.controller import *
 from galaxy import model
 from galaxy.model.orm import *
@@ -89,7 +90,8 @@ class System( BaseUIController ):
                         except:
                             pass
                 history_count += 1
-            message = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged.  Disk space: " %( history_count, dataset_count, deleted_histories_days ) + str( disk_space )
+            message = "%d histories ( including a total of %d datasets ) were deleted more than %d days ago, but have not yet been purged, " \
+                    "disk space: %s (%d bytes)." % ( history_count, dataset_count, deleted_histories_days, nice_size( disk_space ), disk_space )
         else:
             message = "Enter the number of days."
         return str( deleted_histories_days ), message
@@ -111,8 +113,8 @@ class System( BaseUIController ):
                     disk_space += dataset.file_size
                 except:
                     pass
-            message = str( dataset_count ) + " datasets were deleted more than " + str( deleted_datasets_days ) + \
-            " days ago, but have not yet been purged, disk space: " + nice_size( disk_space ) + "."
+            message =  "%d datasets were deleted more than %d days ago, but have not yet been purged," \
+                " disk space: %s (%d bytes)." % ( dataset_count, deleted_datasets_days, nice_size( disk_space ), disk_space )
         else:
             message = "Enter the number of days."
         return str( deleted_datasets_days ), message
@@ -178,17 +180,14 @@ class System( BaseUIController ):
                                    .order_by( desc( model.Dataset.table.c.file_size ) )
         return file_path, disk_usage, datasets, file_size_str
 
-def nice_size( size ):
+def nice_size(size):
     """Returns a readably formatted string with the size"""
-    words = [ 'bytes', 'Kb', 'Mb', 'Gb' ]
     try:
-        size = float( size )
+        nsize = size
+        for x in ['bytes','KB','MB','GB']:
+            if nsize < 1024.0:
+                return "%3.1f%s" % (size, x)
+            nsize /= Decimal("1024.0")
+        return "%.1f%s" % (nsize, 'TB')
     except:
-        return '??? bytes'
-    for ind, word in enumerate( words ):
-        step  = 1024 ** ( ind + 1 )
-        if step > size:
-            size = size / float( 1024 ** ind )
-            out  = "%.1f %s" % ( size, word )
-            return out
-    return '??? bytes'
+        return "%s bytes" % size
