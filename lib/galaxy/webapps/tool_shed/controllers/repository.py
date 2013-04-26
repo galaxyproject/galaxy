@@ -1122,10 +1122,11 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             # Generate a citable URL for this repository with owner and changeset revision.
             repository_citable_url = suc.url_join( tool_shed_url, 'view', user.username, repository.name, metadata_row.changeset_revision )
             title = 'Functional test results for changeset revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
-            tests_passed = len( metadata_row.tool_test_results.get( 'tests_passed', [] ) )
-            tests_failed = len( metadata_row.tool_test_results.get( 'test_errors', [] ) )
-            invalid_tests = len( metadata_row.tool_test_results.get( 'invalid_tests', [] ) )
-            description = '%d tests passed, %d tests failed, %d tests determined to be invalid.' % ( tests_passed, tests_failed, invalid_tests )
+            passed_tests = len( metadata_row.tool_test_results.get( 'passed_tests', [] ) )
+            failed_tests = len( metadata_row.tool_test_results.get( 'failed_tests', [] ) )
+            missing_test_components = len( metadata_row.tool_test_results.get( 'missing_test_components', [] ) )
+            description = '%d tests passed, %d tests failed, %d tests missing test components.' % \
+                ( passed_tests, failed_tests, missing_test_components )
             # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
             # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable
             # that behavior.
