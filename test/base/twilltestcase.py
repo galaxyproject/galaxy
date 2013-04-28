@@ -255,6 +255,13 @@ class TwillTestCase( unittest.TestCase ):
 
     def get_latest_history( self ):
         return self.json_from_url( '/api/histories' )[ 0 ]
+    
+    def find_hda_by_dataset_name( self, name, history=None ):
+        if history is None:
+            history = self.get_history_from_api()
+        for hda in history:
+            if hda[ 'name' ] == name:
+                return hda
 
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
