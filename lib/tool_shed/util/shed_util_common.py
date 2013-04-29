@@ -255,6 +255,29 @@ def create_or_update_tool_shed_repository( app, name, description, installed_cha
     sa_session.flush()
     return tool_shed_repository
 
+def filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_components( trans, repository ):
+    """
+    Inspect the latest installable changeset revision for the received repository to see if it includes tool that are either missing functional tests
+    or functional test data.  If the changset revision includes tools, but is missing tool test components, return the changeset revision hash.  Otherwise
+    return the INITIAL_CHANGELOG_HASH.
+    """
+    print_debug = repository.name == 'convert_chars'
+    encoded_repository_id = trans.security.encode_id( repository.id )
+    repo = hg.repository( get_configured_ui(), repository.repo_path( trans.app ) )
+    tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
+    repository_metadata = None
+    try:
+        repository_metadata = get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, tip_ctx )
+    except:
+        latest_installable_revision = get_previous_downloadable_changeset_revision( repository, repo, tip_ctx )
+        if latest_installable_revision != INITIAL_CHANGELOG_HASH:
+            repository_metadata = get_repository_metadata_by_changeset_revision( trans, encoded_repository_id, latest_installable_revision )
+        else:
+            repository_metadata = None
+    if repository_metadata and repository_metadata.downloadable and repository_metadata.missing_test_components:
+        return repository_metadata.changeset_revision
+    return INITIAL_CHANGELOG_HASH
+
 def generate_clone_url_for_installed_repository( app, repository ):
     """Generate the URL for cloning a repository that has been installed into a Galaxy instance."""
     tool_shed_url = get_url_from_tool_shed( app, repository.tool_shed )

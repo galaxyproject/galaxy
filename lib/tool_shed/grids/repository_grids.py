@@ -133,6 +133,19 @@ class RepositoryGrid( grids.Grid ):
             return ''
 
 
+    class LatestInstallableRevisionColumn( grids.GridColumn ):
+
+        def __init__( self, col_name ):
+            grids.GridColumn.__init__( self, col_name )
+
+        def get_value( self, trans, grid, repository ):
+            """Display the latest installable revision label (may not be the repository tip)."""
+            select_field = grids_util.build_changeset_revision_select_field( trans, repository, downloadable=False )
+            if select_field.options:
+                return select_field.options[ 0 ][ 0 ]
+            return ''
+
+
     class TipRevisionColumn( grids.GridColumn ):
 
         def __init__( self, col_name ):
@@ -258,15 +271,12 @@ class RepositoryGrid( grids.Grid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ grids.GridOperation( "Receive email alerts",
-                                        allow_multiple=False,
-                                        condition=( lambda item: not item.deleted ),
-                                        async_compatible=False ) ]
+    operations = []
     standard_filters = []
     default_filter = dict( deleted="False" )
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
@@ -306,10 +316,7 @@ class RepositoriesInCategoryGrid( RepositoryGrid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ grids.GridOperation( "Receive email alerts",
-                                        allow_multiple=False,
-                                        condition=( lambda item: not item.deleted ),
-                                        async_compatible=False ) ]
+    operations = []
     use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
@@ -376,10 +383,6 @@ class RepositoriesIOwnGrid( RepositoryGrid ):
                                    attach_popup=True ),
         RepositoryGrid.MetadataRevisionColumn( "Metadata Revisions" ),
         RepositoryGrid.ToolsFunctionallyCorrectColumn( "Tools Verified" ),
-        RepositoryGrid.CategoryColumn( "Category",
-                                       model_class=model.Category,
-                                       key="Category.name",
-                                       attach_popup=False ),
         RepositoryGrid.DeprecatedColumn( "Deprecated" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name", 
@@ -387,15 +390,7 @@ class RepositoriesIOwnGrid( RepositoryGrid ):
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ grids.GridOperation( "Mark as deprecated",
-                                        allow_multiple=False,
-                                        condition=( lambda item: not item.deleted and not item.deprecated ),
-                                        async_compatible=False,
-                                        confirm="Are you sure that you want to deprecate this repository?" ),
-                   grids.GridOperation( "Mark as not deprecated",
-                                        allow_multiple=False,
-                                        condition=( lambda item: not item.deleted and item.deprecated ),
-                                        async_compatible=False ) ]
+    operations = []
     use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
@@ -459,10 +454,7 @@ class EmailAlertsRepositoryGrid( RepositoryGrid ):
                              visible=False,
                              filterable="advanced" )
     ]
-    operations = [ grids.GridOperation( "Receive email alerts",
-                                        allow_multiple=True,
-                                        condition=( lambda item: not item.deleted ),
-                                        async_compatible=False ) ]
+    operations = []
     global_actions = [
             grids.GridAction( "User preferences", dict( controller='user', action='index', cntrller='repository' ) )
     ]
@@ -470,6 +462,7 @@ class EmailAlertsRepositoryGrid( RepositoryGrid ):
 
 class MyWritableRepositoriesGrid( RepositoryGrid ):
     # This grid filters out repositories that have been marked as either deprecated or deleted.
+    title = 'Repositories that I can change'
     columns = [
         RepositoryGrid.NameColumn( "Name",
                                    key="name",
@@ -481,27 +474,14 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
                                    model_class=model.User,
                                    link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
                                    attach_popup=False,
-                                   key="User.username" ),
-        RepositoryGrid.EmailAlertsColumn( "Alert", attach_popup=False ),
-        # Columns that are valid for filtering but are not visible.
-        RepositoryGrid.EmailColumn( "Email",
-                                    model_class=model.User,
-                                    key="email",
-                                    visible=False ),
-        RepositoryGrid.RepositoryCategoryColumn( "Category",
-                                                 model_class=model.Category,
-                                                 key="Category.name",
-                                                 visible=False )
+                                   key="User.username" )
     ]
     columns.append( grids.MulticolFilterColumn( "Search repository name", 
-                                                cols_to_filter=[ columns[0] ],
+                                                cols_to_filter=[ columns[ 0 ] ],
                                                 key="free-text-search",
                                                 visible=False,
                                                 filterable="standard" ) )
-    operations = [ grids.GridOperation( "Receive email alerts",
-                                        allow_multiple=False,
-                                        condition=( lambda item: not item.deleted ),
-                                        async_compatible=False ) ]
+    operations = []
     use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
@@ -519,9 +499,171 @@ class MyWritableRepositoriesGrid( RepositoryGrid ):
         if clause_list:
             return trans.sa_session.query( model.Repository ) \
                                    .filter( or_( *clause_list ) ) \
-                                   .join( model.User.table ) \
-                                   .outerjoin( model.RepositoryCategoryAssociation.table ) \
-                                   .outerjoin( model.Category.table )
+                                   .join( model.User.table )
+        # Return an empty query.
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.id < 0 )
+
+
+class MyWritableRepositoriesMissingToolTestComponentsGrid( MyWritableRepositoriesGrid ):
+    title = "Repositories that I can change with missing tool test components"
+    columns = [
+        RepositoriesIOwnGrid.NameColumn( "Name",
+                                         key="name",
+                                         link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                         attach_popup=True ),
+        RepositoryGrid.LatestInstallableRevisionColumn( "Latest Installable Revision" ),
+        RepositoryGrid.UserColumn( "Owner",
+                                   model_class=model.User,
+                                   link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
+                                   attach_popup=False,
+                                   key="User.username" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[0] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = []
+    use_paging = False
+
+    def build_initial_query( self, trans, **kwd ):
+        # First get all repositories that the current user is authorized to update.
+        username = trans.user.username
+        user_clause_list = []
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deprecated == False,
+                                                         model.Repository.table.c.deleted == False ) ):
+            allow_push = repository.allow_push( trans.app )
+            if allow_push:
+                allow_push_usernames = allow_push.split( ',' )
+                if username in allow_push_usernames:
+                    user_clause_list.append( model.Repository.table.c.id == repository.id )
+        if user_clause_list:
+            # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
+            # tools with missing tool test components.
+            revision_clause_list = []
+            for repository in trans.sa_session.query( model.Repository ) \
+                                              .filter( or_( *user_clause_list ) ):
+                changeset_revision = suc.filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_components( trans, repository )
+                if changeset_revision not in [ None, suc.INITIAL_CHANGELOG_HASH ]:
+                    revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
+            if revision_clause_list:
+                return trans.sa_session.query( model.Repository ) \
+                                       .join( model.User.table ) \
+                                       .filter( or_( *user_clause_list ) ) \
+                                       .join( model.RepositoryMetadata ) \
+                                       .filter( or_( *revision_clause_list ) )
+        # Return an empty query.
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.id < 0 )
+
+
+class MyWritableRepositoriesWithFailingToolTestsGrid( MyWritableRepositoriesMissingToolTestComponentsGrid ):
+    title = "Repositories that I can change with failing tool tests"
+    columns = [
+        RepositoriesIOwnGrid.NameColumn( "Name",
+                                         key="name",
+                                         link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                         attach_popup=True ),
+        RepositoryGrid.LatestInstallableRevisionColumn( "Latest Installable Revision" ),
+        RepositoryGrid.UserColumn( "Owner",
+                                   model_class=model.User,
+                                   link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
+                                   attach_popup=False,
+                                   key="User.username" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[0] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = []
+    use_paging = False
+
+    def build_initial_query( self, trans, **kwd ):
+        # First get all repositories that the current user is authorized to update.
+        username = trans.user.username
+        user_clause_list = []
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deprecated == False,
+                                                         model.Repository.table.c.deleted == False ) ):
+            allow_push = repository.allow_push( trans.app )
+            if allow_push:
+                allow_push_usernames = allow_push.split( ',' )
+                if username in allow_push_usernames:
+                    user_clause_list.append( model.Repository.table.c.id == repository.id )
+        if user_clause_list:
+            # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
+            # tools with missing tool test components.
+            revision_clause_list = []
+            for repository in trans.sa_session.query( model.Repository ) \
+                                              .filter( or_( *user_clause_list ) ):
+                changeset_revision = suc.filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_components( trans, repository )
+                if changeset_revision not in [ None, suc.INITIAL_CHANGELOG_HASH ]:
+                    revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
+            if revision_clause_list:
+                return trans.sa_session.query( model.Repository ) \
+                                       .join( model.User.table ) \
+                                       .filter( or_( *user_clause_list ) ) \
+                                       .join( model.RepositoryMetadata ) \
+                                       .filter( or_( *revision_clause_list ) ) \
+                                       .filter( model.RepositoryMetadata.table.c.tools_functionally_correct == False )
+        # Return an empty query.
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.id < 0 )
+
+
+class MyWritableRepositoriesWithNoFailingToolTestsGrid( MyWritableRepositoriesMissingToolTestComponentsGrid ):
+    title = "Repositories that I can change with failing tool tests"
+    columns = [
+        RepositoriesIOwnGrid.NameColumn( "Name",
+                                         key="name",
+                                         link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                         attach_popup=True ),
+        RepositoryGrid.LatestInstallableRevisionColumn( "Latest Installable Revision" ),
+        RepositoryGrid.UserColumn( "Owner",
+                                   model_class=model.User,
+                                   link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
+                                   attach_popup=False,
+                                   key="User.username" )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[0] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = []
+    use_paging = False
+
+    def build_initial_query( self, trans, **kwd ):
+        # First get all repositories that the current user is authorized to update.
+        username = trans.user.username
+        user_clause_list = []
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deprecated == False,
+                                                         model.Repository.table.c.deleted == False ) ):
+            allow_push = repository.allow_push( trans.app )
+            if allow_push:
+                allow_push_usernames = allow_push.split( ',' )
+                if username in allow_push_usernames:
+                    user_clause_list.append( model.Repository.table.c.id == repository.id )
+        if user_clause_list:
+            # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
+            # tools with missing tool test components.
+            revision_clause_list = []
+            for repository in trans.sa_session.query( model.Repository ) \
+                                              .filter( or_( *user_clause_list ) ):
+                changeset_revision = suc.filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_components( trans, repository )
+                if changeset_revision not in [ None, suc.INITIAL_CHANGELOG_HASH ]:
+                    revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
+            if revision_clause_list:
+                return trans.sa_session.query( model.Repository ) \
+                                       .join( model.User.table ) \
+                                       .filter( or_( *user_clause_list ) ) \
+                                       .join( model.RepositoryMetadata ) \
+                                       .filter( or_( *revision_clause_list ) ) \
+                                       .filter( model.RepositoryMetadata.table.c.tools_functionally_correct == True )
         # Return an empty query.
         return trans.sa_session.query( model.Repository ) \
                                .filter( model.Repository.table.c.id < 0 )
