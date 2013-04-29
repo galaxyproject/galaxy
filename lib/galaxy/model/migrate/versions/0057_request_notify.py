@@ -54,11 +54,12 @@ def upgrade(migrate_engine):
         for r in result:
             rr = from_json_string(str(r[1]))
 
-        # remove the 'notify' column
-        try:
-            Request_table.c.notify.drop()
-        except Exception, e:
-            log.debug( "Deleting column 'notify' from the 'request' table failed: %s" % ( str( e ) ) )   
+        # remove the 'notify' column for non-sqlite databases.
+        if migrate_engine.name != 'sqlite':
+            try:
+                Request_table.c.notify.drop()
+            except Exception, e:
+                log.debug( "Deleting column 'notify' from the 'request' table failed: %s" % ( str( e ) ) )   
      
             
 

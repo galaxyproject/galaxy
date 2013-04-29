@@ -2,6 +2,7 @@
 This migration script adds the request_event table and 
 removes the state field in the request table
 """
+# Need our custom types, but don't import anything else from model
 from sqlalchemy import *
 from sqlalchemy.orm import *
 from sqlalchemy.exc import *
@@ -9,9 +10,13 @@ from migrate import *
 from migrate.changeset import *
 
 import datetime
+import sys
+import logging
+
 now = datetime.datetime.utcnow
 
-import sys, logging
+from galaxy.model.custom_types import TrimmedString
+
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )
@@ -20,8 +25,6 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-# Need our custom types, but don't import anything else from model
-from galaxy.model.custom_types import *
 
 metadata = MetaData()
 
@@ -65,6 +68,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         log.debug( "Creating request_event table failed: %s" % str( e ) )
     # move the current state of all existing requests to the request_event table
+
     cmd = \
         "INSERT INTO request_event " + \
         "SELECT %s AS id," + \
@@ -77,17 +81,18 @@ def upgrade(migrate_engine):
     cmd = cmd % ( nextval('request_event'), localtimestamp(), localtimestamp(), 'Imported from request table')
     migrate_engine.execute( cmd )
     
-    # Delete the state column
-    try:
-        Request_table = Table( "request", metadata, autoload=True )
-    except NoSuchTableError:
-        Request_table = None
-        log.debug( "Failed loading table request" )
-    if Request_table is not None:
+    if migrate_engine.name != 'sqlite':
+        # Delete the state column
         try:
-            Request_table.c.state.drop()
-        except Exception, e:
-            log.debug( "Deleting column 'state' to request table failed: %s" % ( str( e ) ) )   
+            Request_table = Table( "request", metadata, autoload=True )
+        except NoSuchTableError:
+            Request_table = None
+            log.debug( "Failed loading table request" )
+        if Request_table is not None:
+            try:
+                Request_table.c.state.drop()
+            except Exception, e:
+                log.debug( "Deleting column 'state' to request table failed: %s" % ( str( e ) ) )   
     
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

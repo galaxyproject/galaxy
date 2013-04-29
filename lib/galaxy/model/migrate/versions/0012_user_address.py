@@ -24,7 +24,6 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def display_migration_details():
     print "========================================"
@@ -75,15 +74,18 @@ def upgrade(migrate_engine):
             assert col is RequestType_table.c.deleted
         except Exception, e:
             log.debug( "Adding column 'deleted' to request_type table failed: %s" % ( str( e ) ) )
+
     # Delete the submitted column
+    # This fails for sqlite, so skip the drop -- no conflicts in the future
     try:
         Request_table = Table( "request", metadata, autoload=True )
     except NoSuchTableError:
         Request_table = None
         log.debug( "Failed loading table request" )
     if Request_table is not None:
-        #DBTODO Re-try
-        Request_table.c.submitted.drop(alter_metadata=True)
+        if migrate_engine.name != 'sqlite':
+            #DBTODO drop from table doesn't work in sqlite w/ sqlalchemy-migrate .6+
+            Request_table.c.submitted.drop()
         col = Column( "state", TrimmedString( 255 ), index=True  )
         col.create( Request_table, index_name='ix_request_state')
         assert col is Request_table.c.state

@@ -27,8 +27,8 @@ JobExportHistoryArchive_table = Table( "job_export_history_archive", metadata,
     )
     
 def upgrade(migrate_engine):
-    metadata.bind = migrate_engine
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
 
     # Create job_export_history_archive table.

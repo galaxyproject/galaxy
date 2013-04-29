@@ -23,7 +23,6 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -83,7 +82,7 @@ def upgrade(migrate_engine):
                     "user_id," + \
                     "deleted " + \
                 "FROM request;" 
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
             # delete the 'request' table
             try:
                 Request_table.drop()
@@ -91,7 +90,7 @@ def upgrade(migrate_engine):
                 log.debug( "Dropping request table failed: %s" % str( e ) )
             # rename table request_temp to request
             cmd = "ALTER TABLE request_temp RENAME TO request" 
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
         else:
             # Delete the library_id column in 'request' table
             try:

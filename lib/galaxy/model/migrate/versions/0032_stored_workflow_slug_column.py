@@ -19,18 +19,24 @@ def upgrade(migrate_engine):
     
     StoredWorkflow_table = Table( "stored_workflow", metadata, autoload=True )
     
-    # Create slug column.
-    c = Column( "slug", TEXT, index=True )
-    c.create( StoredWorkflow_table, index_name='ix_stored_workflow_slug' )
+    if migrate_engine.name != 'sqlite':
+        # Create slug column.
+        c = Column( "slug", TEXT, index=True )
+        c.create( StoredWorkflow_table, index_name='ix_stored_workflow_slug' )
+    else:
+        # Create slug column.
+        c = Column( "slug", TEXT )
+        c.create( StoredWorkflow_table )
     assert c is StoredWorkflow_table.c.slug
     
     # Create slug index.
-    try:
-        i = Index( "ix_stored_workflow_slug", StoredWorkflow_table.c.slug )
-        i.create()
-    except:
-        # Mysql doesn't have a named index, but alter should work
-        StoredWorkflow_table.c.slug.alter( unique=False )
+    if migrate_engine.name != 'sqlite':
+        try:
+            i = Index( "ix_stored_workflow_slug", StoredWorkflow_table.c.slug )
+            i.create()
+        except:
+            # Mysql doesn't have a named index, but alter should work
+            StoredWorkflow_table.c.slug.alter( unique=False )
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

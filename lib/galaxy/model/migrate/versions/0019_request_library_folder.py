@@ -50,7 +50,7 @@ def upgrade(migrate_engine):
             LibraryFolder_table = None
             log.debug( "Failed loading table library_folder" )
         # Add 1 foreign key constraint to the library_folder table
-        if Request_table is not None and LibraryFolder_table is not None:
+        if migrate_engine.name != 'sqlite' and Request_table is not None and LibraryFolder_table is not None:
             try:
                 cons = ForeignKeyConstraint( [Request_table.c.folder_id],
                                              [LibraryFolder_table.c.id],
