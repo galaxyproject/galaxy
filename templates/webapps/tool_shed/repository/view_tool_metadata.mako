@@ -23,7 +23,7 @@
     can_upload = can_push
     can_view_change_log = trans.webapp.name == 'tool_shed' and not is_new
     # TODO: fix the following when the install and test buildbot is functional.
-    #can_view_tool_test_errors = tool_test_errors is not None
+    #can_view_tool_test_results = tool_test_results is not None
 
     if can_push:
         browse_label = 'Browse or delete repository tip files'

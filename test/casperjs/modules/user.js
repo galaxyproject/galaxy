@@ -134,7 +134,7 @@ User.prototype.login = function login( email, password ){
 
     this._submitLogin( email, password );
     spaceghost.withMainPanel( function mainAfterLogin(){
-        if( spaceghost.getCurrentUrl().search( spaceghost.data.selectors.loginPage.url_regex ) != -1 ){
+        if( spaceghost.getCurrentUrl().search( spaceghost.data.selectors.loginPage.url_regex ) !== -1 ){
             var messageInfo = spaceghost.getElementInfo( spaceghost.data.selectors.messages.all );
             if( messageInfo && messageInfo.attributes[ 'class' ] === 'errormessage' ){
                 this.warning( 'Login failed: ' + messageInfo.text );
@@ -171,6 +171,7 @@ User.prototype.loggedInAs = function loggedInAs(){
 User.prototype.logout = function logout(){
     var spaceghost = this.spaceghost;
     spaceghost.thenOpen( spaceghost.baseUrl, function(){
+        this.info( 'user logging out' );
         //TODO: handle already logged out
         spaceghost.clickLabel( spaceghost.data.labels.masthead.menus.user );
         spaceghost.clickLabel( spaceghost.data.labels.masthead.userMenu.logout );
@@ -196,6 +197,63 @@ User.prototype.loginOrRegisterUser = function loginOrRegisterUser( email, passwo
     return spaceghost;
 };
 
+// ------------------------------------------------------------------- Admin
+/** Gets the admin user data from spaceghost if set and checks the universe_wsgi.ini file for the email.
+ *  @returns {Object|null} the admin data object (email, pasword, username)
+ *      or null if no admin is set in both the universe_wsgi.ini and spaceghost.
+ */
+User.prototype.getAdminData = function getAdminData(){
+    //TODO: this might be better inside sg
+    // check for the setting in sg and the universe_wsgi.ini file
+    var adminData = this.spaceghost.options.adminUser,
+        iniAdminEmails = this.spaceghost.getUniverseSetting( 'admin_users' );
+    iniAdminEmails = ( iniAdminEmails )?( iniAdminEmails.split( ',' ) ):( null );
+
+    //TODO: seems like we only need the wsgi setting - that's the only thing we can't change
+    if( adminData ){
+        if( iniAdminEmails.indexOf( adminData.email ) !== -1 ){ return adminData; }
+
+    // if not set in options, but there are entries in the ini and a default admin pass:
+    //  return the first email with the default pass
+    //  Hopefully this is no less secure than the user/pwd in twilltestcase
+    } else if( iniAdminEmails.length && this.spaceghost.options.adminPassword ){
+        return { email: iniAdminEmails[0], password: this.spaceghost.options.adminPassword };
+    }
+
+    return null;
+};
+
+/** Logs in the admin user (if available) as the current user.
+ *      Note: logs out any other current users.
+ *  @throws {GalaxyError} err   if specified user is not admin or no admin found
+ *  @returns {SpaceGhost} the spaceghost instance (for chaining)
+ */
+User.prototype.loginAdmin = function loginAdmin(){
+    this.spaceghost.then( function(){
+        var adminData = this.user.getAdminData();
+        if( !adminData ){
+            throw new this.GalaxyError( 'No admin users found' );
+        }
+        this.info( 'logging in administrator' );
+        return this.user.loginOrRegisterUser( adminData.email, adminData.password );
+    });
+};
+
+/** Is the currently logged in user an admin?
+ *  @returns {Boolean} true if the currently logged in user is admin, false if not.
+ */
+User.prototype.userIsAdmin = function userIsAdmin(){
+    // simple test of whether the Admin tab is displayed in the masthead
+    return this.spaceghost.jumpToTop( function(){
+        if( this.visible( this.data.selectors.masthead.adminLink ) ){
+            return true;
+        }
+        return false;
+    });
+};
+
+
+// ------------------------------------------------------------------- Utility
 /** Gets a psuedo-random (unique?) email based on the time stamp.
  *      Helpful for testing registration.
  *  @param {String} username    email user (defaults to 'test')
@@ -207,3 +265,4 @@ User.prototype.getRandomEmail = function getRandomEmail( username, domain ){
     domain = domain || 'test.test';
     return username + Date.now() + '@' + domain;
 };
+

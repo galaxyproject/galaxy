@@ -151,6 +151,8 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                                 action_dict[ env_elem.tag ] = env_var_dicts
                                 actions.append( ( action_type, action_dict ) )
                             return tool_dependency, actions
+            else:
+                raise NotImplementedError( 'Only install version 1.0 is currently supported (i.e., change your tag to be <install version="1.0">).' )
     return None, actions
 
 def install_and_build_package_via_fabric( app, tool_dependency, actions_dict ):
@@ -280,9 +282,6 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                     tool_dependency.status = app.model.ToolDependency.installation_status.INSTALLED
                     sa_session.add( tool_dependency )
                     sa_session.flush()
-
-
-
                 else:
                     package_install_version = package_elem.get( 'version', '1.0' )
                     tool_dependency = tool_dependency_util.create_or_update_tool_dependency( app=app,
@@ -299,6 +298,8 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
                             sa_session.refresh( tool_dependency )
                             if tool_dependency.status != app.model.ToolDependency.installation_status.ERROR:
                                 print package_name, 'version', package_version, 'installed in', install_dir
+                    else:
+                        raise NotImplementedError( 'Only install version 1.0 is currently supported (i.e., change your tag to be <install version="1.0">).' )
             elif package_elem.tag == 'readme':
                 # Nothing to be done.
                 continue
@@ -374,7 +375,28 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                 action_dict[ env_elem.tag ] = env_var_dicts
             else:
                 continue
+        elif action_type == 'set_environment_for_install':
+            # <action type="set_environment_for_install">
+            #    <repository toolshed="http://localhost:9009/" name="package_numpy_1_7" owner="test" changeset_revision="c84c6a8be056">
+            #        <package name="numpy" version="1.7.1" />
+            #    </repository>
+            # </action>
+            # This action type allows for defining an environment that will properly compile a tool dependency.  Currently, tag set definitions like
+            # that above are supported, but in the future other approaches to setting environment variables or other environment attributes can be 
+            # supported.  The above tag set will result in the installed and compiled numpy version 1.7.1 binary to be used when compiling the current
+            # tool dependency package.  See the package_matplotlib_1_2 repository in the test tool shed for a real-world example.
+            all_env_shell_file_paths = []
+            for env_elem in action_elem:
+                if env_elem.tag == 'repository':
+                    env_shell_file_paths = common_util.get_env_shell_file_paths( app, env_elem )
+                    if env_shell_file_paths:
+                        all_env_shell_file_paths.extend( env_shell_file_paths )
+            if all_env_shell_file_paths:
+                action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
+            else:
+                continue
         else:
+            log.debug( "Skipping unsupported action type '%s'." % str( action_type ) )
             continue
         actions.append( ( action_type, action_dict ) )
     if actions:
@@ -550,6 +572,8 @@ def set_environment( app, elem, tool_shed_repository ):
                         sa_session.add( tool_dependency )
                         sa_session.flush()
                         print 'Environment variable ', env_var_name, 'set in', install_dir
+                else:
+                    raise NotImplementedError( 'Only set_environment version 1.0 is currently supported (i.e., change your tag to be <set_environment version="1.0">).' )
 
 def strip_path( fpath ):
     if not fpath:

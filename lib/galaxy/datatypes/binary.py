@@ -2,7 +2,6 @@
 Binary classes
 """
 
-
 import binascii
 import data
 import gzip
@@ -12,15 +11,17 @@ import shutil
 import struct
 import subprocess
 import tempfile
+import zipfile
 
+from urllib import urlencode, quote_plus
 from galaxy import eggs
 eggs.require( "bx-python" )
 
 from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
 
-from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
-
+from galaxy.datatypes import metadata
+from galaxy.datatypes.sniff import *
 
 log = logging.getLogger(__name__)
 

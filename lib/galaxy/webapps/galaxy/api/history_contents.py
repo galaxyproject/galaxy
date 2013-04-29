@@ -1,13 +1,13 @@
 """
 API operations on the contents of a history.
 """
-import logging
 
-from galaxy import web
+from galaxy import web, util
 from galaxy.web.base.controller import BaseAPIController, url_for
 from galaxy.web.base.controller import UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
 from galaxy.web.base.controller import UsesLibraryMixin, UsesLibraryMixinItems
 
+import logging
 log = logging.getLogger( __name__ )
 
 class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin,
@@ -138,11 +138,14 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
         POST /api/histories/{encoded_history_id}/contents
         Creates a new history content item (file, aka HistoryDatasetAssociation).
         """
+        #TODO: copy existing, accessible hda - dataset controller, copy_datasets
+        #TODO: convert existing, accessible hda - model.DatasetInstance(or hda.datatype).get_converter_types
         from_ld_id = payload.get( 'from_ld_id', None )
-
         try:
             history = self.get_history( trans, history_id, check_ownership=True, check_accessible=False )
         except Exception, e:
+            #TODO: no way to tell if it failed bc of perms or other (all MessageExceptions)
+            trans.response.status = 500
             return str( e )
 
         if from_ld_id:
@@ -164,6 +167,90 @@ class HistoryContentsController( BaseAPIController, UsesHistoryDatasetAssociatio
 
         else:
             # TODO: implement other "upload" methods here.
-            trans.response.status = 403
+            trans.response.status = 501
             return "Not implemented."
+
+    @web.expose_api
+    def update( self, trans, history_id, id, payload, **kwd ):
+        """
+        PUT /api/histories/{encoded_history_id}/contents/{encoded_content_id}
+        Changes an existing history dataset.
+        """
+        #TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
+        changed = {}
+        try:
+            hda = self.get_dataset( trans, id,
+                check_ownership=True, check_accessible=True, check_state=True )
+            # validation handled here and some parsing, processing, and conversion
+            payload = self._validate_and_parse_update_payload( payload )
+            # additional checks here (security, etc.)
+            changed = self.set_hda_from_dict( trans, hda, payload )
+
+        except Exception, exception:
+            log.error( 'Update of history (%s), HDA (%s) failed: %s',
+                        history_id, id, str( exception ), exc_info=True )
+            # convert to appropo HTTP code
+            if( isinstance( exception, ValueError )
+            or  isinstance( exception, AttributeError ) ):
+                # bad syntax from the validater/parser
+                trans.response.status = 400
+            else:
+                trans.response.status = 500
+            return { 'error': str( exception ) }
+
+        return changed
+
+    def _validate_and_parse_update_payload( self, payload ):
+        """
+        Validate and parse incomming data payload for an HDA.
+        """
+        # This layer handles (most of the stricter idiot proofing):
+        #   - unknown/unallowed keys
+        #   - changing data keys from api key to attribute name
+        #   - protection against bad data form/type
+        #   - protection against malicious data content
+        # all other conversions and processing (such as permissions, etc.) should happen down the line
+
+        # keys listed here don't error when attempting to set, but fail silently
+        #   this allows PUT'ing an entire model back to the server without attribute errors on uneditable attrs
+        valid_but_uneditable_keys = (
+            'id', 'name', 'type', 'api_type', 'model_class', 'history_id', 'hid',
+            'accessible', 'purged', 'state', 'data_type', 'file_ext', 'file_size', 'misc_blurb',
+            'download_url', 'visualizations', 'display_apps', 'display_types',
+            'metadata_dbkey', 'metadata_column_names', 'metadata_column_types', 'metadata_columns',
+            'metadata_comment_lines', 'metadata_data_lines'
+        )
+
+        validated_payload = {}
+        for key, val in payload.items():
+            # TODO: lots of boilerplate here, but overhead on abstraction is equally onerous
+            # typecheck, parse, remap key
+            if   key == 'name':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'name' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+                #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
+            elif key == 'deleted':
+                if not isinstance( val, bool ):
+                    raise ValueError( 'deleted must be a boolean: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'deleted' ] = val
+            elif key == 'visible':
+                if not isinstance( val, bool ):
+                    raise ValueError( 'visible must be a boolean: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'visible' ] = val
+            elif key == 'genome_build':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'dbkey' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            elif key == 'annotation':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            elif key == 'misc_info':
+                if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
+                    raise ValueError( 'misc_info must be a string or unicode: %s' %( str( type( val ) ) ) )
+                validated_payload[ 'info' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+            elif key not in valid_but_uneditable_keys:
+                raise AttributeError( 'unknown key: %s' %( str( key ) ) )
+        return validated_payload
 

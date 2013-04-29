@@ -242,7 +242,27 @@ class TwillTestCase( unittest.TestCase ):
         # Wait for upload processing to finish (TODO: this should be done in each test case instead)
         self.wait()
 
+    def json_from_url( self, url ):
+        self.visit_url( url )
+        return from_json_string( self.last_page() )
+        
     # Functions associated with histories
+    def get_history_from_api( self, encoded_history_id=None ):
+        if encoded_history_id is None:
+            history = self.get_latest_history()
+            encoded_history_id = history[ 'id' ]
+        return self.json_from_url( '/api/histories/%s/contents' % encoded_history_id )
+
+    def get_latest_history( self ):
+        return self.json_from_url( '/api/histories' )[ 0 ]
+    
+    def find_hda_by_dataset_name( self, name, history=None ):
+        if history is None:
+            history = self.get_history_from_api()
+        for hda in history:
+            if hda[ 'name' ] == name:
+                return hda
+
     def check_history_for_errors( self ):
         """Raises an exception if there are errors in a history"""
         self.home()
@@ -317,43 +337,29 @@ class TwillTestCase( unittest.TestCase ):
         Uses history page JSON to determine whether this history is empty
         (i.e. has no undeleted datasets).
         """
-        def has_no_undeleted_hdas( hda_list ):
-            if not len( hda_list ):
-                return True
-            for hda in hda_list:
-                if not( hda[ 'deleted' ] or hda[ 'purged' ] ):
-                    return False
-            return True
-        try:
-            self.check_history_json( r'\bhdas\s*=\s*(.*);', has_no_undeleted_hdas )
-        except AssertionError, exc:
-            log.error( 'history is not empty' )
-            raise exc
+        return len( self.get_history_from_api() ) == 0
 
     def check_hda_json_for_key_value( self, hda_id, key, value, use_string_contains=False ):
         """
-        Uses history page JSON to determine whether the current history:
-        (1) has an hda with hda_id,
-        (2) that hda has a JSON var named 'key',
-        (3) that var 'key' == value
-        If use_string_contains=True, this will search for value in var 'key'
-        instead of testing for an entire, exact match (string only).
+        Uses the history API to determine whether the current history:
+        (1) Has a history dataset with the required ID.
+        (2) That dataset has the required key.
+        (3) The contents of that key match the provided value.
+        If use_string_contains=True, this will perform a substring match, otherwise an exact match.
         """
         #TODO: multi key, value
-        def hda_has_key_value( hda_list ):
-            for hda in hda_list:
-                # if we found the hda and there's a var in the json named key
-                if( ( hda[ 'id' ] == hda_id )
-                and ( key in hda ) ):
-                    var = hda[ key ]
-                    # test for partial string containment if str and requested
-                    if( ( type( var ) == str )
-                    and ( use_string_contains ) ):
-                        return ( value in var )
-                    # otherwise, test for equivalence
-                    return ( var == value )
-            return False
-        self.check_history_json( r'\bhdas\s*=\s*(.*);', hda_has_key_value )
+        hda = dict()
+        for history_item in self.get_history_from_api():
+            if history_item[ 'id' ] == hda_id:
+                hda = self.json_from_url( history_item[ 'url' ] )
+                break
+        if hda:
+            if key in hda:
+                if use_string_contains:
+                    return value in hda[ key ]
+                else:
+                    return value == hda[ key ]
+        return False
 
     def clear_history( self ):
         """Empties a history of all datasets"""
@@ -1180,9 +1186,16 @@ class TwillTestCase( unittest.TestCase ):
                 # Check for refresh_on_change attribute, submit a change if required
                 if hasattr( control, 'attrs' ) and 'refresh_on_change' in control.attrs.keys():
                     changed = False
-                    item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] #For DataToolParameter, control.value is the HDA id, but kwd contains the filename.  This loop gets the filename/label for the selected values.
+                    # For DataToolParameter, control.value is the HDA id, but kwd contains the filename. 
+                    # This loop gets the filename/label for the selected values.
+                    item_labels = [ item.attrs[ 'label' ] for item in control.get_items() if item.selected ] 
                     for value in kwd[ control.name ]:
-                        if value not in control.value and True not in [ value in item_label for item_label in item_labels ]:
+                        # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
+                        if len( value ) > 30 and control.is_of_kind( 'singlelist' ):
+                            field_value = '%s..%s' % ( elem[:17], elem[-11:] )
+                        else:
+                            field_value = value
+                        if field_value not in control.value and True not in [ field_value in item_label for item_label in item_labels ]:
                             changed = True
                             break
                     if changed:
@@ -1190,7 +1203,11 @@ class TwillTestCase( unittest.TestCase ):
                         control.clear()
                         # kwd[control.name] should be a singlelist
                         for elem in kwd[ control.name ]:
-                            tc.fv( f.name, control.name, str( elem ) )
+                            if len( elem ) > 30 and control.is_of_kind( 'singlelist' ):
+                                elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
+                            else:
+                                elem_name = elem
+                            tc.fv( f.name, control.name, str( elem_name ) )
                         # Create a new submit control, allows form to refresh, instead of going to next page
                         control = ClientForm.SubmitControl( 'SubmitControl', '___refresh_grouping___', {'name':'refresh_grouping'} )
                         control.add_to_form( f )
@@ -1241,7 +1258,7 @@ class TwillTestCase( unittest.TestCase ):
                                 tc.fv( f.name, control.name, str( elem ) )
                             except Exception, e2:
                                 print "Attempting to set control '", control.name, "' to value '", elem, "' threw exception: ", e2
-                                # Galaxy truncates long file names in the dataset_collector in ~/parameters/basic.py
+                                # Galaxy truncates long file names in the dataset_collector in galaxy/tools/parameters/basic.py
                                 if len( elem ) > 30:
                                     elem_name = '%s..%s' % ( elem[:17], elem[-11:] )
                                 else:

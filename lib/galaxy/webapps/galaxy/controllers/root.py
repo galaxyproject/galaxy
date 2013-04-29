@@ -167,7 +167,8 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             history_dictionary = self.get_history_dict( trans, history, hda_dictionaries=hda_dictionaries )
 
         except Exception, exc:
-            log.error( 'Error bootstrapping history for user %d: %s', trans.user.id, str( exc ), exc_info=True )
+            user_id = str( trans.user.id ) if trans.user else '(anonymous)'
+            log.error( 'Error bootstrapping history for user %s: %s', user_id, str( exc ), exc_info=True )
             message, status = err_msg()
             history_dictionary[ 'error' ] = message
 

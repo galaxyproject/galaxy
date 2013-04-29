@@ -61,6 +61,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     my_writable_repositories_grid = repository_grids.MyWritableRepositoriesGrid()
     repositories_by_user_grid = repository_grids.RepositoriesByUserGrid()
     repositories_i_own_grid = repository_grids.RepositoriesIOwnGrid()
+    repositories_in_category_grid = repository_grids.RepositoriesInCategoryGrid()
     repository_dependencies_grid = repository_grids.RepositoryDependenciesGrid()
     repository_grid = repository_grids.RepositoryGrid()
     # The repository_metadata_grid is not currently displayed, but is sub-classed by several grids.
@@ -202,13 +203,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             elif operation == "my_writable_repositories":
                 return self.my_writable_repositories_grid( trans, **kwd )
             elif operation == "repositories_by_category":
-                # Eliminate the current filters if any exist.
-                for k, v in kwd.items():
-                    if k.startswith( 'f-' ):
-                        del kwd[ k ]
                 category_id = kwd.get( 'id', None )
-                category = suc.get_category( trans, category_id )
-                kwd[ 'f-Category.name' ] = category.name
+                message = kwd.get( 'message', '' )
+                status = kwd.get( 'status', 'done' )
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_in_category',
+                                                                  id=category_id,
+                                                                  message=message,
+                                                                  status=status ) )
             elif operation == "receive email alerts":
                 if trans.user:
                     if kwd[ 'id' ]:
@@ -244,7 +246,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                   **kwd ) )
         user_id = kwd.get( 'user_id', None )
         if user_id is None:
-            # The received id is the repository id, so we need to get the id of the user that uploaded the repository.
+            # The received id is the repository id, so we need to get the id of the user that owns the repository.
             repository_id = kwd.get( 'id', None )
             if repository_id:
                 repository = suc.get_repository_in_tool_shed( trans, repository_id )
@@ -261,6 +263,40 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             user = suc.get_user( trans, user_id )
             self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
         return self.repositories_by_user_grid( trans, **kwd )
+
+    @web.expose
+    def browse_repositories_in_category( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            if operation == 'repositories_by_user':
+                user_id = kwd.get( 'user_id', None )
+                if user_id is None:
+                    # The received id is the repository id, so we need to get the id of the user that owns the repository.
+                    repository_id = kwd.get( 'id', None )
+                    if repository_id:
+                        repository = suc.get_repository_in_tool_shed( trans, repository_id )
+                        user_id = trans.security.encode_id( repository.user.id )
+                        user = suc.get_user( trans, user_id )
+                        self.repositories_by_user_grid.title = "Repositories owned by %s" % user.username
+                        kwd[ 'user_id' ] = user_id
+                        return self.repositories_by_user_grid( trans, **kwd )
+        selected_changeset_revision, repository = self.__get_repository_from_refresh_on_change( trans, **kwd )
+        if repository:
+            # The user selected a repository revision which results in a refresh_on_change.
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='view_or_manage_repository',
+                                                              id=trans.security.encode_id( repository.id ),
+                                                              changeset_revision=selected_changeset_revision ) )
+        category_id = kwd.get( 'id', None )
+        if category_id:
+            category = suc.get_category( trans, category_id )
+            if category:
+                self.repositories_in_category_grid.title = 'Category %s' % str( category.name )
+        return self.repositories_in_category_grid( trans, **kwd )
 
     @web.expose
     def browse_repository( self, trans, id, **kwd ):
@@ -698,55 +734,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                           status='error' ) )
 
     @web.expose
-    def display_tool_functional_test_results( self, trans, repository_id, repository_metadata_id, **kwd ):
-        """
-        The test framework in ~/test/install_and_test_tool_shed_repositories can be executed on a regularly defined schedule (e.g., via cron) to install appropriate
-        repositories from a tool shed into a Galaxy instance and run defined functional tests for the tools included in the repository.  This process affects the values
-        if these columns in the repository_metadata table: tools_functionally_correct, do_not_test, time_last_tested and tool_test_errors.  The tool_test_errors is
-        slightly mis-named (it should have been named tool_test_results) it will contain a dictionary that includes information about the test environment even if all
-        tests passed and the tools_functionally_correct column is set to True.
-        The value of the tool_test_errors column will be a dictionary with the key / value pairs: 
-        "test_environment", {"architecture": "i386", "python_version": "2.5.4", "system": "Darwin 10.8.0"}
-        "test_errors" [ { "test_id":<some test id>, "stdout":<stdout of running the test>, "stderr":<stderr of running the test>, "traceback":<traceback of running the test>]
-        """
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        repository = suc.get_repository_by_id( trans, repository_id )
-        if repository:
-            repository_metadata = metadata_util.get_repository_metadata_by_id( trans, repository_metadata_id )
-            changeset_revision = repository_metadata.changeset_revision
-            if repository_metadata:
-                metadata = repository_metadata.metadata
-                if metadata:
-                    revision_label = suc.get_revision_label( trans, repository, repository_metadata.changeset_revision )
-                    return trans.fill_template( '/webapps/tool_shed/repository/display_tool_functional_test_results.mako',
-                                                repository=repository,
-                                                repository_metadata=repository_metadata,
-                                                revision_label=revision_label,
-                                                message=message,
-                                                status=status )
-                else:
-                    message = 'Missing metadata for revision <b>%s</b> of repository <b>%s</b> owned by <b>%s</b>.' % \
-                        ( str( changeset_revision ), str( repository.name ), str( repository.user.username ) )
-            else:
-                message = 'Invalid repository_metadata_id <b>%s</b> received for displaying functional test errors for repository <b>%s</b>.' % \
-                    ( str( repository_metadata_id ), str( repository.name ) )
-        else:
-            message = 'Invalid repository_id received for displaying functional test errors.<b>%s</b>.' % str( repository_id )
-            return trans.response.send_redirect( web.url_for( controller='repository',
-                                                              action='browse_repositories',
-                                                              message=message,
-                                                              status='error' ) )
-        return trans.response.send_redirect( web.url_for( controller='repository',
-                                                          action='browse_repository',
-                                                          operation='view_or_manage_repository',
-                                                          id=repository_id,
-                                                          changeset_revision=changeset_revision,
-                                                          message=message,
-                                                          status='error' ) )
-
-    @web.expose
     def display_tool_help_image_in_repository( self, trans, **kwd ):
         repository_id = kwd.get( 'repository_id', None )
         image_file = kwd.get( 'image_file', None )
@@ -1088,6 +1075,73 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         ctx = suc.get_changectx_for_changeset( repo, changeset_revision )
         named_tmp_file = suc.get_named_tmpfile_from_ctx( ctx, file_name, dir )
         return named_tmp_file
+
+    @web.expose
+    def get_functional_test_rss( self, trans, **kwd ):
+        '''Return an RSS feed of the functional test results for the provided user, optionally filtered by the 'status' parameter.'''
+        owner = kwd.get( 'owner', None )
+        status = kwd.get( 'status', 'all' )
+        if owner:
+            user = suc.get_user_by_username( trans.app, owner )
+        else:
+            trans.response.status = 404
+            return 'Missing owner parameter.'
+        if user is None:
+            trans.response.status = 404
+            return 'No user found with username %s.' % owner
+        if status == 'passed':
+            # Return only metadata revisions where tools_functionally_correct is set to True.
+            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
+                                    trans.model.RepositoryMetadata.table.c.tools_functionally_correct == True,
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+        elif status == 'failed':
+            # Return only metadata revisions where tools_functionally_correct is set to False.
+            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
+                                    trans.model.RepositoryMetadata.table.c.tools_functionally_correct == False,
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+        else:
+            # Return all metadata entries for this user's repositories.
+            metadata_filter = and_( trans.model.RepositoryMetadata.table.c.includes_tools == True,
+                                    trans.model.RepositoryMetadata.table.c.time_last_tested is not None )
+
+        tool_shed_url = web.url_for( '/', qualified=True )
+        functional_test_results = []
+        for metadata_row in trans.sa_session.query( trans.model.RepositoryMetadata ) \
+                                            .filter( metadata_filter ) \
+                                            .join( trans.model.Repository ) \
+                                            .filter( and_( trans.model.Repository.table.c.deleted == False,
+                                                           trans.model.Repository.table.c.private == False,
+                                                           trans.model.Repository.table.c.deprecated == False,
+                                                           trans.model.Repository.table.c.user_id == user.id ) ):
+            if not metadata_row.tool_test_results:
+                continue
+            # Per the RSS 2.0 specification, all dates in RSS feeds must be formatted as specified in RFC 822
+            # section 5.1, e.g. Sat, 07 Sep 2002 00:00:01 UT
+            time_tested = metadata_row.time_last_tested.strftime( '%a, %d %b %Y %H:%M:%S UT' )
+            repository = metadata_row.repository
+            # Generate a citable URL for this repository with owner and changeset revision.
+            repository_citable_url = suc.url_join( tool_shed_url, 'view', user.username, repository.name, metadata_row.changeset_revision )
+            title = 'Functional test results for changeset revision %s of %s' % ( metadata_row.changeset_revision, repository.name )
+            passed_tests = len( metadata_row.tool_test_results.get( 'passed_tests', [] ) )
+            failed_tests = len( metadata_row.tool_test_results.get( 'failed_tests', [] ) )
+            missing_test_components = len( metadata_row.tool_test_results.get( 'missing_test_components', [] ) )
+            description = '%d tests passed, %d tests failed, %d tests missing test components.' % \
+                ( passed_tests, failed_tests, missing_test_components )
+            # The guid attribute in an RSS feed's list of items allows a feed reader to choose not to show an item as updated
+            # if the guid is unchanged. For functional test results, the citable URL is sufficiently unique to enable
+            # that behavior.
+            functional_test_results.append( dict( title=title, 
+                                                  guid=repository_citable_url, 
+                                                  link=repository_citable_url, 
+                                                  description=description, 
+                                                  pubdate=time_tested ) )
+        trans.response.set_content_type( 'application/rss+xml' )
+        return trans.fill_template( '/rss.mako', 
+                                    title='Tool functional test results', 
+                                    link=tool_shed_url, 
+                                    description='Functional test results for repositories owned by %s.' % user.username,
+                                    pubdate=strftime( '%a, %d %b %Y %H:%M:%S UT', gmtime() ),
+                                    items=functional_test_results )
 
     def get_metadata( self, trans, repository_id, changeset_revision ):
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
@@ -2571,11 +2625,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, repository_id, changeset_revision )
         if repository_metadata:
             repository_metadata_id = trans.security.encode_id( repository_metadata.id )
-            # TODO: Fix this when the install and test framework is completed.
-            # if repository_metadata.tool_test_errors:
-            #    tool_test_errors = json.from_json_string( repository_metadata.tool_test_errors )
-            # else:
-            #    tool_test_errors = None
             metadata = repository_metadata.metadata
             if metadata:
                 if 'tools' in metadata:
@@ -2611,7 +2660,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         else:
             repository_metadata_id = None
             metadata = None
-            #tool_test_errors = None
         is_malicious = suc.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field( trans,
                                                                                             repository,
@@ -2635,7 +2683,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     tool=tool,
                                     tool_metadata_dict=tool_metadata_dict,
                                     tool_lineage=tool_lineage,
-                                    #tool_test_errors=tool_test_errors,
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,

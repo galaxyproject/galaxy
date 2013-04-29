@@ -725,10 +725,10 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             'include_hidden' : include_hidden,
             'include_deleted' : include_deleted }
         history_exp_tool.execute( trans, incoming = params, set_output_hid = True )
+        url = url_for( controller='history', action="export_archive", id=id, qualified=True )
         return trans.show_message( "Exporting History '%(n)s'. Use this link to download \
                                     the archive or import it to another Galaxy server: \
-                                    <a href='%(u)s'>%(u)s</a>" \
-                                    % ( { 'n' : history.name, 'u' : url_for(controller='history', action="export_archive", id=id, qualified=True ) } ) )
+                                    <a href='%(u)s'>%(u)s</a>" % ( { 'n' : history.name, 'u' : url } ) )
 
     @web.expose
     @web.json
@@ -740,7 +740,8 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             trans.sa_session.flush()
         return_dict = {
             "name" : history.name,
-            "link" : url_for(controller='history', action="display_by_username_and_slug", username=history.user.username, slug=history.slug ) }
+            "link" : url_for(controller='history', action="display_by_username_and_slug",
+                username=history.user.username, slug=history.slug ) }
         return return_dict
 
     @web.expose

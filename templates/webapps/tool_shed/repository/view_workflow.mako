@@ -35,7 +35,7 @@
 <%inherit file="${inherit(context)}"/>
 
 <%def name="render_workflow( workflow_name, repository_metadata_id )">
-    <% center_url = h.url_for( controller='repository', action='generate_workflow_image', workflow_name=tool_shed_encode( workflow_name ), repository_metadata_id=repository_metadata_id, repository_id=None ) %>
+    <% center_url = h.url_for( controller='repository', action='generate_workflow_image', workflow_name=tool_shed_encode( workflow_name ), repository_metadata_id=repository_metadata_id ) %>
     <iframe name="galaxy_main" id="galaxy_main" frameborder="0" style="position: absolute; width: 100%; height: 100%;" src="${center_url}"> </iframe>
 </%def>
 

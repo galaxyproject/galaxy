@@ -395,12 +395,12 @@ class ReviewedRepositoriesIOwnGrid( RepositoriesWithReviewsGrid ):
                                .outerjoin( ( model.Component.table, model.Component.table.c.id == model.ComponentReview.table.c.component_id ) )
 
 
-class RepositoriesWithInvalidTestsGrid( RepositoriesWithoutReviewsGrid ):
+class RepositoriesWithNoToolTestsGrid( RepositoriesWithoutReviewsGrid ):
     # Repositories that are ready for human review are those that either:
     # 1) Have no tools
     # 2) Have tools that have been proven to be functionally correct within Galaxy.
     # This grid filters out repositories that have been marked as either deprecated or deleted.
-    title = "Repositories that contain tools with invalid functional tests"
+    title = "Repositories that contain tools with no tests or test data"
     columns = [
         RepositoriesWithoutReviewsGrid.NameColumn( "Repository name",
                                                    key="name",
@@ -428,8 +428,7 @@ class RepositoriesWithInvalidTestsGrid( RepositoriesWithoutReviewsGrid ):
     def build_initial_query( self, trans, **kwd ):
         return trans.sa_session.query( model.Repository ) \
                                .filter( and_( model.Repository.table.c.deleted == False,
-                                              model.Repository.table.c.deprecated == False,
-                                              model.Repository.reviews == None ) ) \
+                                              model.Repository.table.c.deprecated == False ) ) \
                                .join( model.RepositoryMetadata.table ) \
                                .filter( and_( model.RepositoryMetadata.table.c.downloadable == True,
                                               model.RepositoryMetadata.table.c.includes_tools == True,

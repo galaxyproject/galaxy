@@ -25,14 +25,6 @@
     can_view_change_log = trans.webapp.name == 'tool_shed' and not is_new
     changeset_revision_is_repository_tip = changeset_revision == repository.tip( trans.app )
 
-    if repository_metadata:
-        if repository_metadata.includes_tools and repository_metadata.tool_test_errors is not None:
-            can_display_tool_functional_test_results = True
-        else:
-            can_display_tool_functional_test_results = False
-    else:
-        can_display_tool_functional_test_results = False
-
     if can_push:
         browse_label = 'Browse or delete repository tip files'
     else:
@@ -87,9 +79,6 @@
                 %endif
                 %if can_browse_repository_reviews:
                     <a class="action-button" href="${h.url_for( controller='repository_review', action='manage_repository_reviews', id=trans.app.security.encode_id( repository.id ) )}">Browse reviews of this repository</a>
-                %endif
-                %if can_display_tool_functional_test_results:
-                    <a class="action-button" href="${h.url_for( controller='repository', action='display_tool_functional_test_results', repository_id=trans.security.encode_id( repository.id ), repository_metadata_id=trans.security.encode_id( repository_metadata.id ) )}">View tool functional test results</a>
                 %endif
                 %if can_upload:
                     <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>

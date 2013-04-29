@@ -51,20 +51,20 @@
     can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
     can_upload = can_push
     can_view_change_log = trans.webapp.name == 'tool_shed' and not is_new
-    if repository_metadata.tool_test_errors:
-        # The tool_test_errors is mis-named (it should have been named tool_test_results) it will contain a dictionary that includes information
-        # about the test environment even if all tests passed and the repository_metadata.tools_functionally_correct column is set to True.
-        tool_test_errors = repository_metadata.tool_test_errors
-        test_environment_dict = tool_test_errors.get( 'test_environment', None )
-        invalid_tests = tool_test_errors.get( 'invalid_tests', [] )
-        test_errors = tool_test_errors.get( 'test_errors', [] )
-        tests_passed = tool_test_errors.get( 'tests_passed', [] )
+    if repository_metadata.tool_test_results:
+        # The tool_test_results will contain a dictionary that includes information about the test environment even if all tests passed and the
+        # repository_metadata.tools_functionally_correct column is set to True.
+        tool_test_results = repository_metadata.tool_test_results
+        test_environment_dict = tool_test_results.get( 'test_environment', None )
+        missing_test_components = tool_test_results.get( 'missing_test_components', [] )
+        failed_tests = tool_test_results.get( 'failed_tests', [] )
+        passed_tests = tool_test_results.get( 'passed_tests', [] )
     else:
-        tool_test_errors = None
+        tool_test_results = None
         test_environment_dict = {}
-        invalid_tests = []
-        test_errors = []
-        tests_passed = []
+        missing_test_components = []
+        failed_tests = []
+        passed_tests = []
 
     if can_push:
         browse_label = 'Browse or delete repository tip files'
@@ -144,7 +144,7 @@
     <b>Repository name:</b><br/>
     ${repository.name}
 %endif
-%if invalid_tests or tool_test_errors or tests_passed:
+%if missing_test_components or tool_test_results or passed_tests:
     <p/>
     <div class="toolForm">
         <div class="toolFormTitle">Tool functional test results</div>
@@ -203,7 +203,7 @@
                 ${test_environment_dict.get( 'python_version', 'unknown' ) | h}
                 <div style="clear: both"></div>
             </div>
-            %if test_errors:
+            %if failed_tests:
                 <div class="form-row">
                     <table width="100%">
                         <tr bgcolor="#D8D8D8" width="100%"><td><b>Tests that failed</td></tr>
@@ -211,7 +211,7 @@
                 </div>
                 <div class="form-row">
                     <table class="grid">
-                        %for test_results_dict in test_errors:
+                        %for test_results_dict in failed_tests:
                             <%
                                 test_id = test_results_dict.get( 'test_id', 'unknown' )
                                 tool_id = test_results_dict.get( 'tool_id', 'unknown' )
@@ -244,7 +244,7 @@
                     <div style="clear: both"></div>
                 </div>
             %endif
-            %if tests_passed:
+            %if passed_tests:
                 <div class="form-row">
                     <table width="100%">
                         <tr bgcolor="#D8D8D8" width="100%"><td><b>Tests that passed successfully</td></tr>
@@ -252,7 +252,7 @@
                 </div>
                 <div class="form-row">
                     <table class="grid">
-                        %for test_results_dict in tests_passed:
+                        %for test_results_dict in passed_tests:
                             <%
                                 test_id = test_results_dict.get( 'test_id', 'unknown' )
                                 tool_id = test_results_dict.get( 'tool_id', 'unknown' )
@@ -274,7 +274,7 @@
                     </table>
                 </div>
             %endif
-            %if invalid_tests:
+            %if missing_test_components:
                 <div class="form-row">
                     <table width="100%">
                         <tr bgcolor="#D8D8D8" width="100%"><td><b>Invalid tests</td></tr>
@@ -282,22 +282,22 @@
                 </div>
                 <div class="form-row">
                     <table class="grid">
-                        %for test_results_dict in invalid_tests:
+                        %for test_results_dict in missing_test_components:
                             <%
                                 guid = test_results_dict.get( 'tool_guid', None )
                                 tool_id = test_results_dict.get( 'tool_id', None )
                                 tool_version = test_results_dict.get( 'tool_version', None )
-                                reason_test_is_invalid = test_results_dict.get( 'reason_test_is_invalid', None )
+                                missing_components = test_results_dict.get( 'missing_components', None )
                             %>
                             %if tool_id or tool_version:
                                 <tr>
                                     <td colspan="2" bgcolor="#FFFFCC">Tool id: <b>${tool_id}</b> version: <b>${tool_version}</b></td>
                                 </tr>
                             %endif
-                            %if reason_test_is_invalid:
+                            %if missing_components:
                                 <tr>
                                     <td><b>Reason test is invalid</b></td>
-                                    <td>${render_functional_test_text( reason_test_is_invalid )}</td>
+                                    <td>${render_functional_test_text( missing_components )}</td>
                                 </tr>
                             %endif
                         %endfor

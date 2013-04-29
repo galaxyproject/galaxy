@@ -361,6 +361,14 @@ class Test_04_HDAs( CasperJSTestCase ):
         self.run_js_script( 'hda-state-tests.js' )
 
 
+class Test_05_API( CasperJSTestCase ):
+    """Tests for API functionality and security.
+    """
+    def test_00_history_api( self ):
+        """Test history API.
+        """
+        self.run_js_script( 'api-history-tests.js' )
+
 
 # ==================================================================== MAIN
 if __name__ == '__main__':

@@ -36,6 +36,7 @@ from galaxy import jobs, model
 from galaxy.datatypes.metadata import JobExternalOutputMetadataWrapper
 from galaxy.jobs import ParallelismInfo
 from galaxy.tools.actions import DefaultToolAction
+from galaxy.tools.actions.data_source import DataSourceToolAction
 from galaxy.tools.actions.data_manager import DataManagerToolAction
 from galaxy.tools.deps import DependencyManager
 from galaxy.tools.parameters import check_param, params_from_strings, params_to_strings
@@ -3030,6 +3031,7 @@ class DataSourceTool( OutputParameterJSONTool ):
     allow the user to query and extract data from another web site.
     """
     tool_type = 'data_source'
+    default_tool_action = DataSourceToolAction
 
     def _build_GALAXY_URL_parameter( self ):
         return ToolParameter.build( self, ElementTree.XML( '<param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=%s" />' % self.id ) )

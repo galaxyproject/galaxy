@@ -76,9 +76,6 @@
                                 <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_ready_for_review' )}">Repositories ready for review</a>
                             </div>
                             <div class="toolTitle">
-                                <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_with_invalid_tests' )}">Repositories with invalid tests</a>
-                            </div>
-                            <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_without_reviews' )}">All repositories with no reviews</a>
                             </div>
                             %if trans.user.repository_reviews:
@@ -91,6 +88,17 @@
                             </div>
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_components' )}">Manage review components</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="toolSectionPad"></div>
+                    <div class="toolSectionTitle">
+                        Reviewing Repositories With Tools
+                    </div>
+                    <div class="toolSectionBody">
+                        <div class="toolSectionBg">
+                            <div class="toolTitle">
+                                <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_with_invalid_tests' )}">Repositories missing tests or data</a>
                             </div>
                         </div>
                     </div>

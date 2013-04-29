@@ -277,9 +277,10 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
                                                               includes_workflows=includes_workflows )
     # Always set the default values for the following columns.  When resetting all metadata on a repository, this will reset the values.
     repository_metadata.tools_functionally_correct = False
+    repository_metadata.missing_test_components = False
     repository_metadata.do_not_test = False
     repository_metadata.time_last_tested = None
-    repository_metadata.tool_test_errors = None
+    repository_metadata.tool_test_results = None
     trans.sa_session.add( repository_metadata )
     trans.sa_session.flush()
     return repository_metadata
@@ -1722,7 +1723,8 @@ def set_repository_metadata( trans, repository, content_alert_str='', **kwd ):
                 repository_metadata.do_not_test = False
                 repository_metadata.time_last_tested = None
                 repository_metadata.tools_functionally_correct = False
-                repository_metadata.tool_test_errors = None
+                repository_metadata.missing_test_components = False
+                repository_metadata.tool_test_results = None
                 trans.sa_session.add( repository_metadata )
                 trans.sa_session.flush()
             else:
