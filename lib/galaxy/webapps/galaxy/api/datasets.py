@@ -1,15 +1,17 @@
 """
 API operations on the contents of a dataset.
 """
-import logging, os, string, shutil, urllib, re, socket
-from galaxy import util, datatypes, jobs, web, util
+from galaxy import web
 from galaxy.visualization.data_providers.genome import FeatureLocationIndexDataProvider
-from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin, UsesHistoryMixin
+from galaxy.web.base.controller import BaseAPIController, UsesVisualizationMixin, UsesHistoryDatasetAssociationMixin
+from galaxy.web.base.controller import UsesHistoryMixin
 from galaxy.web.framework.helpers import is_true
 
+import logging
 log = logging.getLogger( __name__ )
 
-class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin, UsesHistoryDatasetAssociationMixin ):
+class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistoryMixin,
+                          UsesHistoryDatasetAssociationMixin ):
 
     @web.expose_api
     def index( self, trans, **kwd ):
@@ -17,7 +19,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         GET /api/datasets
         Lists datasets.
         """
-        pass
+        trans.response.status = 501
+        return 'not implemented'
         
     @web.expose_api
     def show( self, trans, id, hda_ldda='hda', data_type=None, **kwd ):
@@ -25,7 +28,6 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         GET /api/datasets/{encoded_dataset_id}
         Displays information about and/or content of a dataset.
         """
-        
         # Get dataset.
         try:
             dataset = self.get_hda_or_ldda( trans, hda_ldda=hda_ldda, dataset_id=id )
@@ -98,7 +100,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         # If there is a chrom, check for data on the chrom.
         if chrom:
             data_provider_registry = trans.app.data_provider_registry
-            data_provider = trans.app.data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
+            data_provider = trans.app.data_provider_registry.get_data_provider( trans,
+                original_dataset=dataset, source='index' )
             if not data_provider.has_data( chrom ):
                 return dataset.conversion_messages.NO_DATA
 
@@ -118,13 +121,11 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                     return data_provider.get_data( query )
         
         return []
-        
     
     def _data( self, trans, dataset, chrom, low, high, start_val=0, max_vals=None, **kwargs ):
         """
         Provides a block of data from a dataset.
         """
-    
         # Parameter check.
         if not chrom:
             return dataset.conversion_messages.NO_DATA
@@ -151,7 +152,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             summary = indexer.get_data( chrom, low, high, detail_cutoff=0, draw_cutoff=0, **kwargs )
             if summary == "detail":
                 # Use maximum level of detail--2--to get summary data no matter the resolution.
-                summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ], level=2, detail_cutoff=0, draw_cutoff=0 )
+                summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ],
+                                            level=2, detail_cutoff=0, draw_cutoff=0 )
             return summary
 
         if 'index' in data_sources and data_sources['index']['name'] == "summary_tree" and mode == "Auto":
@@ -207,7 +209,8 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         return data
 
     @web.expose_api_raw
-    def display( self, trans, history_content_id, history_id, preview=False, filename=None, to_ext=None, chunk=None, **kwd ):
+    def display( self, trans, history_content_id, history_id,
+                 preview=False, filename=None, to_ext=None, chunk=None, **kwd ):
         """
         GET /api/histories/{encoded_history_id}/contents/{encoded_content_id}/display
         Displays history content (dataset).
