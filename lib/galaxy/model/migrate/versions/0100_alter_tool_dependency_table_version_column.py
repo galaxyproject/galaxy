@@ -22,7 +22,6 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -46,7 +45,7 @@ def upgrade(migrate_engine):
         cmd = None
     if cmd:
         try:
-            db_session.execute( cmd )
+            migrate_engine.execute( cmd )
         except Exception, e:
             log.debug( "Altering tool_dependency.version column from TrimmedString(40) to Text failed: %s" % str( e ) )
 def downgrade(migrate_engine):
