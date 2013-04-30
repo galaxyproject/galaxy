@@ -440,15 +440,17 @@ def upgrade(migrate_engine):
     except NoSuchTableError:
         LibraryDatasetDatasetAssociation_table = None
         log.debug( "Failed loading table library_dataset_dataset_association" )
-    if MetadataFile_table is not None and LibraryDatasetDatasetAssociation_table is not None:
-        try:
-            cons = ForeignKeyConstraint( [MetadataFile_table.c.lda_id],
-                                         [LibraryDatasetDatasetAssociation_table.c.id],
-                                         name='metadata_file_lda_id_fkey' )
-            # Create the constraint
-            cons.create()
-        except Exception, e:
-            log.debug( "Adding foreign key constraint 'metadata_file_lda_id_fkey' to table 'metadata_file' failed: %s" % ( str( e ) ) )
+    if migrate_engine.name != 'sqlite':
+        #Sqlite can't alter table add foreign key.
+        if MetadataFile_table is not None and LibraryDatasetDatasetAssociation_table is not None:
+            try:
+                cons = ForeignKeyConstraint( [MetadataFile_table.c.lda_id],
+                                             [LibraryDatasetDatasetAssociation_table.c.id],
+                                             name='metadata_file_lda_id_fkey' )
+                # Create the constraint
+                cons.create()
+            except Exception, e:
+                log.debug( "Adding foreign key constraint 'metadata_file_lda_id_fkey' to table 'metadata_file' failed: %s" % ( str( e ) ) )
     # Make sure we have at least 1 user
     cmd = "SELECT * FROM galaxy_user;"
     users = db_session.execute( cmd ).fetchall()
