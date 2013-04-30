@@ -30,7 +30,7 @@ def upgrade(migrate_engine):
     metadata.reflect()
     ToolDependency_table = Table( "tool_dependency", metadata, autoload=True )
     # Change the tool_dependency table's version column from TrimmedString to Text.
-    if migrate_engine.name == 'postgres':
+    if migrate_engine.name in ['postgresql', 'postgres']:
         cmd = "ALTER TABLE tool_dependency ALTER COLUMN version TYPE Text;"
     elif migrate_engine.name == 'mysql':
         cmd = "ALTER TABLE tool_dependency MODIFY COLUMN version Text;"
