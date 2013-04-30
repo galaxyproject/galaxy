@@ -4,6 +4,7 @@ API operations on a history.
 
 from galaxy import web
 from galaxy.util import string_as_bool, restore_text
+from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.base.controller import BaseAPIController, UsesHistoryMixin
 from galaxy.web import url_for
 from galaxy.model.orm import desc
@@ -207,7 +208,7 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             if   key == 'name':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'name must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'name' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+                validated_payload[ 'name' ] = sanitize_html( val, 'utf-8' )
                 #TODO:?? if sanitized != val: log.warn( 'script kiddie' )
             elif key == 'deleted':
                 if not isinstance( val, bool ):
@@ -220,11 +221,11 @@ class HistoriesController( BaseAPIController, UsesHistoryMixin ):
             elif key == 'genome_build':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'genome_build must be a string: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'genome_build' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+                validated_payload[ 'genome_build' ] = sanitize_html( val, 'utf-8' )
             elif key == 'annotation':
                 if not ( isinstance( val, str ) or isinstance( val, unicode ) ):
                     raise ValueError( 'annotation must be a string or unicode: %s' %( str( type( val ) ) ) )
-                validated_payload[ 'annotation' ] = util.sanitize_html.sanitize_html( val, 'utf-8' )
+                validated_payload[ 'annotation' ] = sanitize_html( val, 'utf-8' )
             elif key not in valid_but_uneditable_keys:
                 raise AttributeError( 'unknown key: %s' %( str( key ) ) )
         return validated_payload
