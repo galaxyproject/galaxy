@@ -11,7 +11,6 @@ import logging
 log = logging.getLogger( __name__ )
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 PageAnnotationAssociation_table = Table( "page_annotation_association", metadata,
     Column( "id", Integer, primary_key=True ),

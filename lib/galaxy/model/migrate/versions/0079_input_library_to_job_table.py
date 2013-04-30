@@ -11,7 +11,6 @@ import logging
 log = logging.getLogger( __name__ )
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 JobToInputLibraryDatasetAssociation_table = Table( "job_to_input_library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),

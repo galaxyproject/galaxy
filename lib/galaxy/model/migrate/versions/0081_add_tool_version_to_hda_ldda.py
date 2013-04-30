@@ -10,7 +10,6 @@ from migrate.changeset import *
 from galaxy.model.custom_types import *
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine

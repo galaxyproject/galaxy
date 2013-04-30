@@ -14,7 +14,6 @@ log = logging.getLogger( __name__ )
 from galaxy.model.custom_types import *
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 # There was a bug when only one column was used for both tables,
 # so create separate columns.

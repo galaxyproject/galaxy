@@ -15,7 +15,6 @@ import datetime
 now = datetime.datetime.utcnow
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 WorkflowInvocation_table = Table( "workflow_invocation", metadata,
     Column( "id", Integer, primary_key=True ),

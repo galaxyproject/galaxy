@@ -12,7 +12,6 @@ import logging
 log = logging.getLogger( __name__ )
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 now = datetime.datetime.utcnow
 
 Task_table = Table( "task", metadata,

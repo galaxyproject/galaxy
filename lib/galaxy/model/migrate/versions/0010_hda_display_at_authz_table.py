@@ -30,7 +30,6 @@ log.addHandler( handler )
 from galaxy.model.custom_types import *
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def display_migration_details():
     print "========================================"

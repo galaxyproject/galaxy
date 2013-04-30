@@ -18,7 +18,6 @@ import datetime
 now = datetime.datetime.utcnow
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 PostJobAction_table = Table("post_job_action", metadata,
     Column("id", Integer, primary_key=True),

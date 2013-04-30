@@ -19,7 +19,6 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 indexes = (
     ( "ix_metadata_file_lda_id", 'metadata_file', 'lda_id' ),                                   # 0003

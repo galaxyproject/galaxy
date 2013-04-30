@@ -22,7 +22,6 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 ToolIdGuidMap_table = Table( "tool_id_guid_map", metadata,
     Column( "id", Integer, primary_key=True ),
