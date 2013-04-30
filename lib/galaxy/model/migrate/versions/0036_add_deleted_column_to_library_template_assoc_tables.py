@@ -12,6 +12,12 @@ log = logging.getLogger( __name__ )
 
 metadata = MetaData()
 
+def get_false_value(migrate_engine):
+    if migrate_engine.name == 'sqlite':
+        return '0'
+    else:
+        return 'false'
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -21,7 +27,7 @@ def upgrade(migrate_engine):
     c = Column( "deleted", Boolean, index=True, default=False )
     c.create( LibraryInfoAssociation_table, index_name='ix_library_info_association_deleted')
     assert c is LibraryInfoAssociation_table.c.deleted
-    cmd = "UPDATE library_info_association SET deleted = false"
+    cmd = "UPDATE library_info_association SET deleted = %s" % get_false_value(migrate_engine)
     try:
         migrate_engine.execute( cmd )
     except Exception, e:
@@ -31,7 +37,7 @@ def upgrade(migrate_engine):
     c = Column( "deleted", Boolean, index=True, default=False )
     c.create( LibraryFolderInfoAssociation_table, index_name='ix_library_folder_info_association_deleted')
     assert c is LibraryFolderInfoAssociation_table.c.deleted
-    cmd = "UPDATE library_folder_info_association SET deleted = false"
+    cmd = "UPDATE library_folder_info_association SET deleted = %s" % get_false_value(migrate_engine)
     try:
         migrate_engine.execute( cmd )
     except Exception, e:
@@ -41,7 +47,7 @@ def upgrade(migrate_engine):
     c = Column( "deleted", Boolean, index=True, default=False )
     c.create( LibraryDatasetDatasetInfoAssociation_table, index_name='ix_library_dataset_dataset_info_association_deleted')
     assert c is LibraryDatasetDatasetInfoAssociation_table.c.deleted
-    cmd = "UPDATE library_dataset_dataset_info_association SET deleted = false"
+    cmd = "UPDATE library_dataset_dataset_info_association SET deleted = %s" % get_false_value(migrate_engine)
     try:
         migrate_engine.execute( cmd )
     except Exception, e:

@@ -16,6 +16,12 @@ log = logging.getLogger( __name__ )
 
 metadata = MetaData()
 
+def get_false_value(migrate_engine):
+    if migrate_engine.name == 'sqlite':
+        return '0'
+    else:
+        return 'false'
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -50,7 +56,7 @@ def upgrade(migrate_engine):
     c = Column( "inheritable", Boolean, index=True, default=False )
     c.create( LibraryInfoAssociation_table, index_name='ix_library_info_association_inheritable')
     assert c is LibraryInfoAssociation_table.c.inheritable
-    cmd = "UPDATE library_info_association SET inheritable = false"
+    cmd = "UPDATE library_info_association SET inheritable = %s" % get_false_value(migrate_engine)
     try:
         migrate_engine.execute( cmd )
     except Exception, e:
@@ -60,7 +66,7 @@ def upgrade(migrate_engine):
     c = Column( "inheritable", Boolean, index=True, default=False )
     c.create( LibraryFolderInfoAssociation_table, index_name='ix_library_folder_info_association_inheritable')
     assert c is LibraryFolderInfoAssociation_table.c.inheritable
-    cmd = "UPDATE library_folder_info_association SET inheritable = false"
+    cmd = "UPDATE library_folder_info_association SET inheritable = %s" % get_false_value(migrate_engine)
     try:
         migrate_engine.execute( cmd )
     except Exception, e:
