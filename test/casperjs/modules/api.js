@@ -58,7 +58,8 @@ API.prototype._ajax = function _ajax( url, options ){
 
     // PUT data needs to be stringified in jq.ajax and the content changed
     //TODO: server side handling could change this?
-    if( ( options.type && options.type === 'PUT' ) && ( options.data ) ){
+    if( ( options.type && [ 'PUT', 'POST' ].indexOf( options.type ) !== -1 )
+    &&  ( options.data ) ){
         options.contentType = 'application/json';
         options.data = JSON.stringify( options.data );
     }
@@ -384,39 +385,23 @@ WorkflowsAPI.prototype.show = function show( id ){
     });
 };
 
-//WorkflowsAPI.prototype.create = function create( payload ){
-//    this.api.spaceghost.info( 'workflows.create: ' + [ this.api.spaceghost.jsonStr( payload ) ] );
-//
-//    // py.payload <-> ajax.data
-//    payload = this.api.ensureObject( payload );
-//    return this.api._ajax( utils.format( this.urlTpls.create ), {
-//        type : 'POST',
-//        data : payload
-//    });
-//};
-//
-//WorkflowsAPI.prototype.update = function create( id, payload ){
-//    this.api.spaceghost.info( 'workflows.update: ' + [ id, this.api.spaceghost.jsonStr( payload ) ] );
-//
-//    // py.payload <-> ajax.data
-//    historyId = this.api.ensureId( historyId );
-//    id = this.api.ensureId( id );
-//    payload = this.api.ensureObject( payload );
-//    url = utils.format( this.urlTpls.update, id );
-//
-//    return this.api._ajax( url, {
-//        type : 'PUT',
-//        data : payload
-//    });
-//};
+WorkflowsAPI.prototype.create = function create( payload ){
+    this.api.spaceghost.info( 'workflows.create: ' + [ this.api.spaceghost.jsonStr( payload ) ] );
 
-WorkflowsAPI.prototype.upload = function upload( filepath ){
-    this.api.spaceghost.info( 'workflows.show: ' + [ id ] );
-    var data = {};
+    // py.payload <-> ajax.data
+    payload = this.api.ensureObject( payload );
+    return this.api._ajax( utils.format( this.urlTpls.create ), {
+        type : 'POST',
+        data : payload
+    });
+};
 
-    id = ( id === 'most_recently_used' )?( id ):( this.api.ensureId( id ) );
-    return this.api._ajax( utils.format( this.urlTpls.show, this.api.ensureId( id ) ), {
-        data : data
+WorkflowsAPI.prototype.upload = function create( workflowJSON ){
+    this.api.spaceghost.info( 'workflows.upload: ' + [ this.api.spaceghost.jsonStr( workflowJSON ) ] );
+
+    return this.api._ajax( utils.format( this.urlTpls.upload ), {
+        type : 'POST',
+        data : { 'workflow': this.api.ensureObject( workflowJSON ) }
     });
 };
 
