@@ -68,8 +68,9 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         return rval
 
     def _dataset_state( self, trans, dataset, **kwargs ):
-        """ Returns state of dataset. """
-            
+        """
+        Returns state of dataset.
+        """
         msg = self.check_dataset_state( trans, dataset )
         if not msg:
             msg = dataset.conversion_messages.DATA
@@ -216,7 +217,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         Displays history content (dataset).
         """
         # Huge amount of code overlap with lib/galaxy/webapps/galaxy/api/history_content:show here.
-        hda_dict = {}
+        rval = ''
         try:
             # for anon users:
             #TODO: check login_required?
@@ -233,6 +234,13 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
                     check_ownership=True, check_accessible=True, deleted=False )
                 hda = self.get_history_dataset_association( trans, history, history_content_id,
                     check_ownership=True, check_accessible=True )
-        except:
-            raise
-        return hda.datatype.display_data(trans, hda, preview, filename, to_ext, chunk, **kwd)
+
+            rval = hda.datatype.display_data( trans, hda, preview, filename, to_ext, chunk, **kwd )
+
+        except Exception, exception:
+            log.error( "Error getting display data for dataset (%s) from history (%s): %s",
+                       history_content_id, history_id, str( exception ), exc_info=True )
+            trans.response.status = 500
+            rval = ( "Could not get display data for dataset: " + str( exception ) )
+
+        return rval
