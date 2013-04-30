@@ -65,6 +65,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     repositories_by_user_grid = repository_grids.RepositoriesByUserGrid()
     repositories_i_own_grid = repository_grids.RepositoriesIOwnGrid()
     repositories_in_category_grid = repository_grids.RepositoriesInCategoryGrid()
+    repositories_missing_tool_test_components_grid = repository_grids.RepositoriesMissingToolTestComponentsGrid()
+    repositories_with_failing_tool_tests_grid = repository_grids.RepositoriesWithFailingToolTestsGrid()
+    repositories_with_no_failing_tool_tests_grid = repository_grids.RepositoriesWithNoFailingToolTestsGrid()
     repository_dependencies_grid = repository_grids.RepositoryDependenciesGrid()
     repository_grid = repository_grids.RepositoryGrid()
     # The repository_metadata_grid is not currently displayed, but is sub-classed by several grids.
@@ -119,6 +122,23 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                                   action='view_or_manage_repository',
                                                                   **new_kwd ) )
         return self.datatypes_grid( trans, **kwd )
+
+    @web.expose
+    def browse_deprecated_repositories_i_own( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+        selected_changeset_revision, repository = self.__get_repository_from_refresh_on_change( trans, **kwd )
+        if repository:
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_repositories',
+                                                              operation='view_or_manage_repository',
+                                                              id=trans.security.encode_id( repository.id ),
+                                                              changeset_revision=selected_changeset_revision ) )
+        return self.deprecated_repositories_i_own_grid( trans, **kwd )
 
     @web.expose
     def browse_invalid_tools( self, trans, **kwd ):
@@ -188,6 +208,34 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         return self.my_writable_repositories_grid( trans, **kwd )
 
     @web.expose
+    def browse_my_writable_repositories_missing_tool_test_components( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        if 'message' not in kwd:
+            message = 'This list contains repositories that match the following criteria:<br>'
+            message += '<ul>'
+            message += '<li>you are authorized to update them</li>'
+            message += '<li>the latest installable revision contains at least 1 tool with no defined tests <b>OR</b>:</li>'
+            message += '<li>the latest installable revision contains at least 1 tool with a test that requires a missing test data file</li>'
+            message += '</ul>'
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'warning'
+        return self.my_writable_repositories_missing_tool_test_components_grid( trans, **kwd )
+
+    @web.expose
     def browse_my_writable_repositories_with_failing_tool_tests( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
@@ -244,44 +292,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
         return self.my_writable_repositories_with_no_failing_tool_tests_grid( trans, **kwd )
-
-    @web.expose
-    def browse_my_writable_repositories_missing_tool_test_components( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd[ 'operation' ].lower()
-            if operation == "view_or_manage_repository":
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='view_or_manage_repository',
-                                                                  **kwd ) )
-            elif operation == "repositories_by_user":
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='browse_repositories_by_user',
-                                                                  **kwd ) )
-            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
-                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='deprecate',
-                                                                  **kwd ) )
-        if 'message' not in kwd:
-            message = 'This list contains repositories that match the following criteria:<br>'
-            message += '<ul>'
-            message += '<li>you are authorized to update them</li>'
-            message += '<li>the latest installable revision contains at least 1 tool with no defined tests <b>OR</b>:</li>'
-            message += '<li>the latest installable revision contains at least 1 tool with a test that requires a missing test data file</li>'
-            message += '</ul>'
-            kwd[ 'message' ] = message
-            kwd[ 'status' ] = 'warning'
-        return self.my_writable_repositories_missing_tool_test_components_grid( trans, **kwd )
-
-    @web.expose
-    def browse_deprecated_repositories_i_own( self, trans, **kwd ):
-        if 'operation' in kwd:
-            operation = kwd[ 'operation' ].lower()
-            if operation == "view_or_manage_repository":
-                return trans.response.send_redirect( web.url_for( controller='repository',
-                                                                  action='view_or_manage_repository',
-                                                                  **kwd ) )
-        return self.deprecated_repositories_i_own_grid( trans, **kwd )
 
     @web.expose
     def browse_repositories( self, trans, **kwd ):
@@ -425,6 +435,89 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             if category:
                 self.repositories_in_category_grid.title = 'Category %s' % str( category.name )
         return self.repositories_in_category_grid( trans, **kwd )
+
+    @web.expose
+    def browse_repositories_missing_tool_test_components( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        if 'message' not in kwd:
+            message = 'This list contains repositories that match the following criteria:<br>'
+            message += '<ul>'
+            message += '<li>the latest installable revision contains at least 1 tool with no defined tests <b>OR</b>:</li>'
+            message += '<li>the latest installable revision contains at least 1 tool with a test that requires a missing test data file</li>'
+            message += '</ul>'
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'warning'
+        return self.repositories_missing_tool_test_components_grid( trans, **kwd )
+
+    @web.expose
+    def browse_repositories_with_failing_tool_tests( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        if 'message' not in kwd:
+            message = 'This list contains repositories that match the following criteria:<br>'
+            message += '<ul>'
+            message += '<li>the latest installable revision contains at least 1 tool</li>'
+            message += '<li>the latest installable revision is not missing any tool test components</li>'
+            message += '<li>the latest installable revision has at least 1 tool test that fails</li>'
+            message += '</ul>'
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'warning'
+        return self.repositories_with_failing_tool_tests_grid( trans, **kwd )
+
+    @web.expose
+    def browse_repositories_with_no_failing_tool_tests( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        if 'message' not in kwd:
+            message = 'This list contains repositories that match the following criteria:<br>'
+            message += '<ul>'
+            message += '<li>the latest installable revision contains at least 1 tool</li>'
+            message += '<li>the latest installable revision is not missing any tool test components</li>'
+            message += '<li>the latest installable revision has no tool tests that fail</li>'
+            message += '</ul>'
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'warning'
+        return self.repositories_with_no_failing_tool_tests_grid( trans, **kwd )
 
     @web.expose
     def browse_repository( self, trans, id, **kwd ):
