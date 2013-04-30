@@ -43,10 +43,14 @@ def upgrade(migrate_engine):
         assert col is ToolDependency_table.c.error_message
     except Exception, e:
         print "Adding error_message column to the tool_dependency table failed: %s" % str( e )
-    try:
-        ToolDependency_table.c.uninstalled.drop()
-    except Exception, e:
-        print "Dropping uninstalled column from the tool_dependency table failed: %s" % str( e )
+
+    if migrate_engine.name != 'sqlite':
+        #This breaks in sqlite due to failure to drop check constraint.
+        # TODO move to alembic.
+        try:
+            ToolDependency_table.c.uninstalled.drop()
+        except Exception, e:
+            print "Dropping uninstalled column from the tool_dependency table failed: %s" % str( e )
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
