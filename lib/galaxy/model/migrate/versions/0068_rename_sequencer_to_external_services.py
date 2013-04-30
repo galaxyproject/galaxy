@@ -63,15 +63,16 @@ def upgrade(migrate_engine):
         assert col is SampleDataset_table.c.external_service_id
     except Exception, e:
         log.debug( "Creating column 'external_service_id' in the 'sample_dataset' table failed: %s" % ( str( e ) ) )
-    # Add the foreign key constraint
-    try:
-        cons = ForeignKeyConstraint( [SampleDataset_table.c.external_service_id],
-                                     [Sequencer_table.c.id],
-                                     name='sample_dataset_external_services_id_fk' )
-        # Create the constraint
-        cons.create()
-    except Exception, e:
-        log.debug( "Adding foreign key constraint 'sample_dataset_external_services_id_fk' to table 'sample_dataset' failed: %s" % ( str( e ) ) )
+    if migrate_engine.name != 'sqlite':
+        # Add the foreign key constraint
+        try:
+            cons = ForeignKeyConstraint( [SampleDataset_table.c.external_service_id],
+                                         [Sequencer_table.c.id],
+                                         name='sample_dataset_external_services_id_fk' )
+            # Create the constraint
+            cons.create()
+        except Exception, e:
+            log.debug( "Adding foreign key constraint 'sample_dataset_external_services_id_fk' to table 'sample_dataset' failed: %s" % ( str( e ) ) )
     # populate the column
     cmd = "SELECT sample_dataset.id, request_type.sequencer_id " \
           + " FROM sample_dataset, sample, request, request_type " \
@@ -102,7 +103,7 @@ def upgrade(migrate_engine):
     if ExternalServices_table is None:
         return
     # if running postgres then rename the primary key sequence too
-    if migrate_engine.name == 'postgres':
+    if migrate_engine.name in ['postgres', 'postgresql']:
         cmd = "ALTER TABLE sequencer_id_seq RENAME TO external_service_id_seq"
         migrate_engine.execute( cmd )
     # rename 'sequencer_type_id' column to 'external_service_type_id' in the table 'external_service'

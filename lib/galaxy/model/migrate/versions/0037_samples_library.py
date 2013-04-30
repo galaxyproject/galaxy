@@ -125,7 +125,10 @@ def upgrade(migrate_engine):
         if Library_table is not None:
             # Add the library_id column in 'sample' table
             try:
-                col = Column( "library_id", Integer, ForeignKey( "library.id" ), index=True )
+                if migrate_engine.name != 'sqlite':
+                    col = Column( "library_id", Integer, ForeignKey( "library.id" ), index=True )
+                else:
+                    col = Column( "library_id", Integer, index=True )
                 col.create( Sample_table, index_name='ix_sample_library_id')
                 assert col is Sample_table.c.library_id
             except Exception, e:
@@ -139,7 +142,10 @@ def upgrade(migrate_engine):
         if LibraryFolder_table is not None:
             # Add the library_id column in 'sample' table
             try:
-                col = Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True )
+                if migrate_engine.name != 'sqlite':
+                    col = Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True )
+                else:
+                    col = Column( "folder_id", Integer, index=True )
                 col.create( Sample_table, index_name='ix_sample_library_folder_id')
                 assert col is Sample_table.c.folder_id
             except Exception, e:
