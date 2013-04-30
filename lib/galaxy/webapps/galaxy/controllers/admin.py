@@ -14,6 +14,7 @@ from tool_shed.util import encoding_util
 from tool_shed.util import common_util
 import galaxy.datatypes.registry
 import logging, imp, subprocess
+from galaxy.util import sanitize_text
 
 log = logging.getLogger( __name__ )
 
@@ -474,7 +475,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                 return trans.response.send_redirect( web.url_for( controller='admin',
                                                                   action='quotas',
                                                                   webapp=params.webapp,
-                                                                  message=util.sanitize_text( message ),
+                                                                  message=sanitize_text( message ),
                                                                   status='done' ) )
             except MessageException, e:
                 params.message = str( e )
@@ -597,7 +598,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         return trans.response.send_redirect( web.url_for( controller='admin',
                                                           action='quotas',
                                                           webapp=params.webapp,
-                                                          message=util.sanitize_text( params.message ),
+                                                          message=sanitize_text( params.message ),
                                                           status='error' ) )
     @web.expose
     @web.require_admin
@@ -608,7 +609,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         return trans.response.send_redirect( web.url_for( controller='admin',
                                                           action='quotas',
                                                           webapp=params.webapp,
-                                                          message=util.sanitize_text( params.message ),
+                                                          message=sanitize_text( params.message ),
                                                           status='error' ) )
     @web.expose
     @web.require_admin
@@ -619,7 +620,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         return trans.response.send_redirect( web.url_for( controller='admin',
                                                           action='quotas',
                                                           webapp=params.webapp,
-                                                          message=util.sanitize_text( params.message ),
+                                                          message=sanitize_text( params.message ),
                                                           status='error' ) )
     @web.expose
     @web.require_admin
@@ -630,7 +631,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         return trans.response.send_redirect( web.url_for( controller='admin',
                                                           action='quotas',
                                                           webapp=params.webapp,
-                                                          message=util.sanitize_text( params.message ),
+                                                          message=sanitize_text( params.message ),
                                                           status='error' ) )
     def _quota_op( self, trans, do_op, op_method, kwd, listify=False ):
         params = self.get_quota_params( kwd )
@@ -646,7 +647,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                 return None, trans.response.send_redirect( web.url_for( controller='admin',
                                                                         action='quotas',
                                                                         webapp=params.webapp,
-                                                                        message=util.sanitize_text( ', '.join( messages ) ),
+                                                                        message=sanitize_text( ', '.join( messages ) ),
                                                                         status='error' ) )
         else:
             try:
@@ -655,7 +656,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                 return None, trans.response.send_redirect( web.url_for( controller='admin',
                                                                         action='quotas',
                                                                         webapp=params.webapp,
-                                                                        message=util.sanitize_text( str( e ) ),
+                                                                        message=sanitize_text( str( e ) ),
                                                                         status='error' ) )
         if do_op == True or ( do_op != False and params.get( do_op, False ) ):
             try:
@@ -663,7 +664,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
                 return None, trans.response.send_redirect( web.url_for( controller='admin',
                                                                         action='quotas',
                                                                         webapp=params.webapp,
-                                                                        message=util.sanitize_text( message ),
+                                                                        message=sanitize_text( message ),
                                                                         status='done' ) )
             except MessageException, e:
                 params.message = e.err_msg
