@@ -41,7 +41,7 @@ def upgrade(migrate_engine):
     ix_name = 'ix_galaxy_user_openid_openid'
     if migrate_engine.name == 'mysql':
         i = "ALTER TABLE galaxy_user_openid ADD UNIQUE INDEX ( openid( 255 ) )"
-        db_session.execute( i )
+        migrate_engine.execute( i )
     else:
         i = Index( ix_name, UserOpenID_table.c.openid, unique=True )
         try:
