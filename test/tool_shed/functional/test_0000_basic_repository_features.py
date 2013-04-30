@@ -118,14 +118,17 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
         self.logout()
         self.login( email=common.test_user_1_email, username=common.test_user_1_name )
         self.set_repository_deprecated( repository, 
-                                        strings_displayed=[ 'has been marked as deprecated', 'Mark as not deprecated' ] )
+                                        strings_displayed=[ 'has been marked as deprecated' ] )
+        strings_displayed = [ 'This repository has been marked as deprecated', 'Mark repository as not deprecated' ]
         self.display_manage_repository_page( repository, 
-                                             strings_displayed=[ 'This repository has been marked as deprecated' ],
+                                             strings_displayed=strings_displayed,
                                              strings_not_displayed=[ 'Upload files', 'Reset all repository metadata' ] )
         self.browse_repository( repository, strings_not_displayed=[ 'Upload files' ] )
         self.set_repository_deprecated( repository, 
-                                        strings_displayed=[ 'has been marked as not deprecated', 'Mark as deprecated' ],
+                                        strings_displayed=[ 'has been marked as not deprecated' ],
                                         set_deprecated=False )
+        strings_displayed = [ 'Mark repository as deprecated', 'Upload files', 'Reset all repository metadata' ]
+        self.display_manage_repository_page( repository, strings_displayed=strings_displayed )
         
     def test_0045_display_repository_tip_file( self ):
         '''Display the contents of filtering.xml in the repository tip revision'''
