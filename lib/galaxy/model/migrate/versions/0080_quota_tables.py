@@ -6,8 +6,8 @@ from sqlalchemy import *
 from sqlalchemy.orm import *
 from migrate import *
 from migrate.changeset import *
-from galaxy.model.orm.ext.assignmapper import *
-from galaxy.model.custom_types import *
+# from galaxy.model.orm.ext.assignmapper import *
+# from galaxy.model.custom_types import *
 
 import datetime
 now = datetime.datetime.utcnow
@@ -16,7 +16,6 @@ import logging
 log = logging.getLogger( __name__ )
 
 metadata = MetaData()
-#db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 # Tables to add
 
