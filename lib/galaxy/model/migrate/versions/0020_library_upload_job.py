@@ -66,15 +66,17 @@ def upgrade(migrate_engine):
             LibraryFolder_table = None
             log.debug( "Failed loading table library_folder" )
         # Add 1 foreign key constraint to the job table
-        if Job_table is not None and LibraryFolder_table is not None:
-            try:
-                cons = ForeignKeyConstraint( [Job_table.c.library_folder_id],
-                                             [LibraryFolder_table.c.id],
-                                             name='job_library_folder_id_fk' )
-                # Create the constraint
-                cons.create()
-            except Exception, e:
-                log.debug( "Adding foreign key constraint 'job_library_folder_id_fk' to table 'library_folder' failed: %s" % ( str( e ) ) )
+        if migrate_engine.name != 'sqlite':
+            #Sqlite can't alter-table-add-foreign-key
+            if Job_table is not None and LibraryFolder_table is not None:
+                try:
+                    cons = ForeignKeyConstraint( [Job_table.c.library_folder_id],
+                                                 [LibraryFolder_table.c.id],
+                                                 name='job_library_folder_id_fk' )
+                    # Create the constraint
+                    cons.create()
+                except Exception, e:
+                    log.debug( "Adding foreign key constraint 'job_library_folder_id_fk' to table 'library_folder' failed: %s" % ( str( e ) ) )
     # Create the ix_dataset_state index
     try:
         Dataset_table = Table( "dataset", metadata, autoload=True )
