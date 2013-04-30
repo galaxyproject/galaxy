@@ -1,14 +1,19 @@
-import os, logging
+import logging
+import os
 from galaxy.webapps.tool_shed import model
 from galaxy.web.framework.helpers import grids
-from galaxy.model.orm import and_, or_
+from galaxy.model.orm import and_
+from galaxy.model.orm import or_
 from tool_shed.grids.repository_grids import RepositoryGrid
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import metadata_util
 
 from galaxy import eggs
 eggs.require('mercurial')
-from mercurial import hg, ui, patch, commands
+from mercurial import commands
+from mercurial import hg
+from mercurial import patch
+from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -49,7 +54,7 @@ class ComponentGrid( grids.Grid ):
     standard_filters = []
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
 class RepositoriesWithReviewsGrid( RepositoryGrid ):
     # This grid filters out repositories that have been marked as either deprecated or deleted.
@@ -351,7 +356,7 @@ class RepositoryReviewsByUserGrid( grids.Grid ):
     standard_filters = []
     num_rows_per_page = 50
     preserve_state = False
-    use_paging = True
+    use_paging = False
 
     def build_initial_query( self, trans, **kwd ):
         user_id = trans.security.decode_id( kwd[ 'id' ] )

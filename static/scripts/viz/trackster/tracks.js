@@ -1534,7 +1534,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
         if (this.overview_drawable) {
             // If drawable to be set as overview is already in overview, do nothing.
             // Otherwise, remove overview.
-            if (this.overview_drawable.dataset_id === drawable.dataset_id) {
+            if (this.overview_drawable.dataset.id === drawable.dataset.id) {
                 return;
             }
             this.overview_viewport.find(".track").remove();
@@ -1712,7 +1712,7 @@ extend(Tool.prototype, {
         tool.run(
                  // URL params.
                  { 
-                     target_dataset_id: this.track.dataset_id,
+                     target_dataset_id: this.track.dataset.id,
                      action: 'rerun',
                      tool_id: tool.id
                  },
@@ -1741,7 +1741,7 @@ extend(Tool.prototype, {
             }),
             url_params = 
             { 
-                target_dataset_id: this.track.dataset_id,
+                target_dataset_id: this.track.dataset.id,
                 action: 'rerun',
                 tool_id: this.id,
                 regions: [
@@ -2249,8 +2249,6 @@ var Track = function(view, container, obj_dict) {
     // Attribute init.
     //
     this.dataset = new data.Dataset(obj_dict.dataset);
-    this.dataset_id = this.dataset.get('id');
-    this.hda_ldda = this.dataset.get('hda_ldda');
     this.dataset_check_type = 'converted_datasets_state';
     this.data_url_extra_params = {};
     this.data_query_wait = ('data_query_wait' in obj_dict ? obj_dict.data_query_wait : DEFAULT_DATA_QUERY_WAIT);
@@ -2395,8 +2393,8 @@ extend(Track.prototype, Drawable.prototype, {
                         window.location.href = 
                             galaxy_paths.get('sweepster_url') + "?" + 
                             $.param({
-                                dataset_id: track.dataset_id,
-                                hda_ldda: track.hda_ldda,
+                                dataset_id: track.dataset.id,
+                                hda_ldda: track.dataset.get('hda_ldda'),
                                 regions: JSON.stringify(new Backbone.Collection(regions).toJSON())
                             });
                     },
@@ -2420,7 +2418,7 @@ extend(Track.prototype, Drawable.prototype, {
     ],
 
     can_draw: function() {        
-        if ( this.dataset_id && Drawable.prototype.can_draw.call(this) ) { 
+        if ( this.dataset.id && Drawable.prototype.can_draw.call(this) ) { 
             return true;
         }
         return false;
@@ -2444,8 +2442,6 @@ extend(Track.prototype, Drawable.prototype, {
     set_dataset: function(dataset) {
         this.dataset = dataset;
         this.data_manager.set('dataset', dataset);
-        this.dataset_id = dataset.get('id');
-        this.hda_ldda = dataset.get('hda_ldda');
     },
 
     /**
@@ -2601,7 +2597,7 @@ extend(Track.prototype, Drawable.prototype, {
         // Tracks with no dataset id are handled differently.
         // FIXME: is this really necessary?
         //
-        if (!track.dataset_id) {
+        if (!track.dataset.id) {
             return;
         }
        
@@ -2609,7 +2605,7 @@ extend(Track.prototype, Drawable.prototype, {
         // about track status.
         var init_deferred = $.Deferred(),
             params = { 
-                hda_ldda: track.hda_ldda, 
+                hda_ldda: track.dataset.get('hda_ldda'), 
                 data_type: this.dataset_check_type,
                 chrom: track.view.chrom,
                 retry: retry
@@ -2771,8 +2767,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         return {
             "track_type": this.get_type(),
             "name": this.name,
-            "hda_ldda": this.hda_ldda,
-            "dataset_id": this.dataset_id,
+            "hda_ldda": this.dataset.get('hda_ldda'),
+            "dataset_id": this.dataset.id,
             "prefs": this.prefs,
             "mode": this.mode,
             "filters": this.filters_manager.to_dict(),
@@ -3200,7 +3196,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             // Reset data URL when dataset indexing has completed/when not pending.
             var ss_deferred = new util.ServerStateDeferred({
                 url: self.dataset_state_url,
-                url_params: {dataset_id : self.dataset_id, hda_ldda: self.hda_ldda},
+                url_params: {dataset_id : self.dataset.id, hda_ldda: self.dataset.get('hda_ldda')},
                 interval: self.data_query_wait,
                 // Set up deferred to check dataset state until it is not pending.
                 success_fn: function(result) { return result !== "pending"; }
@@ -3651,7 +3647,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      */
     set_min_value: function(new_val) {
         this.prefs.min_value = new_val;
-        $('#linetrack_' + this.dataset_id + '_minval').text(this.prefs.min_value);
+        $('#linetrack_' + this.dataset.id + '_minval').text(this.prefs.min_value);
         this.tile_cache.clear();
         this.request_draw();
     },
@@ -3661,7 +3657,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      */
     set_max_value: function(new_val) {
         this.prefs.max_value = new_val;
-        $('#linetrack_' + this.dataset_id + '_maxval').text(this.prefs.max_value);
+        $('#linetrack_' + this.dataset.id + '_maxval').text(this.prefs.max_value);
         this.tile_cache.clear();
         this.request_draw();
     },
@@ -3671,7 +3667,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         track.vertical_range = undefined;
         return $.getJSON( track.dataset.url(), 
             {  data_type: 'data', stats: true, chrom: track.view.chrom, low: 0, 
-               high: track.view.max_high, hda_ldda: track.hda_ldda }, function(result) {
+               high: track.view.max_high, hda_ldda: track.dataset.get('hda_ldda') }, function(result) {
             track.container_div.addClass( "line-track" );
             var data = result.data;
             if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
@@ -3689,8 +3685,8 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 // FIXME: we should probably only save this when the user explicately sets it
                 //        since we lose the ability to compute it on the fly (when changing 
                 //        chromosomes for example).
-                $('#track_' + track.dataset_id + '_minval').val(track.prefs.min_value);
-                $('#track_' + track.dataset_id + '_maxval').val(track.prefs.max_value);
+                $('#track_' + track.dataset.id + '_minval').val(track.prefs.min_value);
+                $('#track_' + track.dataset.id + '_maxval').val(track.prefs.max_value);
             }
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
             track.total_frequency = data.total_frequency;
@@ -3710,7 +3706,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                     }
                 },
                 help_text: "Set min value"
-            }).addClass('yaxislabel bottom').attr("id", 'linetrack_' + track.dataset_id + '_minval')
+            }).addClass('yaxislabel bottom').attr("id", 'linetrack_' + track.dataset.id + '_minval')
               .prependTo(track.container_div),
             max_label = $("<div/>").text(round(track.prefs.max_value, 3)).make_text_editable({
                   num_cols: 6,
@@ -3722,7 +3718,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                       }
                   },
                   help_text: "Set max value"
-              }).addClass('yaxislabel top').attr("id", 'linetrack_' + track.dataset_id + '_maxval')
+              }).addClass('yaxislabel top').attr("id", 'linetrack_' + track.dataset.id + '_maxval')
                 .prependTo(track.container_div);
         });
     },

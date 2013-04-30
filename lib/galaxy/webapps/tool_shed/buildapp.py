@@ -77,19 +77,19 @@ def app_factory( global_conf, **kwargs ):
     # Add the web API.  # A good resource for RESTful services - http://routes.readthedocs.org/en/latest/restful.html
     webapp.add_api_controllers( 'galaxy.webapps.tool_shed.api', app )
     webapp.mapper.resource( 'repository',
-                                'repositories',
-                                controller='repositories',
-                                collection={ 'get_repository_revision_install_info' : 'GET',
-                                             'get_ordered_installable_revisions' : 'GET' },
-                                name_prefix='repository_',
-                                path_prefix='/api',
-                                parent_resources=dict( member_name='repository', collection_name='repositories' ) )
+                            'repositories',
+                            controller='repositories',
+                            collection={ 'get_repository_revision_install_info' : 'GET',
+                                         'get_ordered_installable_revisions' : 'GET' },
+                            name_prefix='repository_',
+                            path_prefix='/api',
+                            parent_resources=dict( member_name='repository', collection_name='repositories' ) )
     webapp.mapper.resource( 'repository_revision',
-                                'repository_revisions',
-                                controller='repository_revisions',
-                                name_prefix='repository_revision_',
-                                path_prefix='/api',
-                                parent_resources=dict( member_name='repository_revision', collection_name='repository_revisions' ) )
+                            'repository_revisions',
+                            controller='repository_revisions',
+                            name_prefix='repository_revision_',
+                            path_prefix='/api',
+                            parent_resources=dict( member_name='repository_revision', collection_name='repository_revisions' ) )
     webapp.finalize_config()
     # Wrap the webapp in some useful middleware
     if kwargs.get( 'middleware', True ):
