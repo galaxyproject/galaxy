@@ -546,8 +546,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         hda_ids = [ trans.security.encode_id( hda.id ) for hda in hdas ]
                         trans.template_context[ 'seek_hda_ids' ] = hda_ids
                 elif operation == "copy to current history":
-                    # Copy a dataset to the current history.
+                    #
+                    # Copy datasets to the current history.
+                    #
+
                     target_histories = [ trans.get_history() ]
+                    
+                    # Reverse HDAs so that they appear in the history in the order they are provided.
+                    hda_ids.reverse()
                     status, message = self._copy_datasets( trans, hda_ids, target_histories )
 
                     # Current history changed, refresh history frame.
