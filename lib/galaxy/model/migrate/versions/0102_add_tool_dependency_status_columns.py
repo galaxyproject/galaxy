@@ -29,7 +29,10 @@ def upgrade(migrate_engine):
     print __doc__
     metadata.reflect()
     ToolDependency_table = Table( "tool_dependency", metadata, autoload=True )
-    col = Column( "status", TrimmedString( 255 ), nullable=False )
+    if migrate_engine.name == 'sqlite':
+        col = Column( "status", TrimmedString( 255 ))
+    else:
+        col = Column( "status", TrimmedString( 255 ), nullable=False)
     try:
         col.create( ToolDependency_table )
         assert col is ToolDependency_table.c.status
