@@ -1,12 +1,11 @@
 import logging
 from datetime import datetime, timedelta
-from string import punctuation as PUNCTUATION
-
-from galaxy import web, util
-from galaxy.model.orm import *
-
+from galaxy import util, web
+from galaxy.model.orm import and_, func, or_
 from galaxy.util import inflector
 from galaxy.web.form_builder import CheckboxField
+from string import punctuation as PUNCTUATION
+
 
 log = logging.getLogger( __name__ )
 
@@ -894,7 +893,7 @@ class Admin( object ):
     def name_autocomplete_data( self, trans, q=None, limit=None, timestamp=None ):
         """Return autocomplete data for user emails"""
         ac_data = ""
-        for user in trans.sa_session.query( User ).filter_by( deleted=False ).filter( func.lower( User.email ).like( q.lower() + "%" ) ):
+        for user in trans.sa_session.query( trans.app.model.User ).filter_by( deleted=False ).filter( func.lower( trans.app.model.User.email ).like( q.lower() + "%" ) ):
             ac_data = ac_data + user.email + "\n"
         return ac_data
     @web.expose
