@@ -146,7 +146,7 @@ class QuotaAgent( NoQuotaAgent ):
                 flush_needed = False
                 for a in quota.users + quota.groups:
                     self.sa_session.delete( a )
-                    flush_neeeded = True
+                    flush_needed = True
                 if flush_needed:
                     self.sa_session.flush()
             for user in users:
