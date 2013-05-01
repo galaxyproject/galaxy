@@ -703,17 +703,18 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         # -- Validate config. --
 
         if vis.type == 'trackster':
-            def unpack_track( track_json ):
+            def unpack_track( track_dict ):
                 """ Unpack a track from its json. """
+                dataset_dict = track_dict[ 'dataset' ]
                 return {
-                    "dataset_id": trans.security.decode_id( track_json['dataset_id'] ),
-                    "hda_ldda": track_json.get('hda_ldda', 'hda'),
-                    "name": track_json['name'],
-                    "track_type": track_json['track_type'],
-                    "prefs": track_json['prefs'],
-                    "mode": track_json['mode'],
-                    "filters": track_json['filters'],
-                    "tool_state": track_json['tool_state']
+                    "dataset_id": trans.security.decode_id( dataset_dict['id'] ),
+                    "hda_ldda": dataset_dict.get('hda_ldda', 'hda'),
+                    "name": track_dict['name'],
+                    "track_type": track_dict['track_type'],
+                    "prefs": track_dict['prefs'],
+                    "mode": track_dict['mode'],
+                    "filters": track_dict['filters'],
+                    "tool_state": track_dict['tool_state']
                 }
 
             def unpack_collection( collection_json ):

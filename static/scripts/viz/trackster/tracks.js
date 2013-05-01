@@ -2765,14 +2765,16 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */
     to_dict: function() {
         return {
-            "track_type": this.get_type(),
-            "name": this.name,
-            "hda_ldda": this.dataset.get('hda_ldda'),
-            "dataset_id": this.dataset.id,
-            "prefs": this.prefs,
-            "mode": this.mode,
-            "filters": this.filters_manager.to_dict(),
-            "tool_state": (this.tool ? this.tool.state_dict() : {})
+            track_type: this.get_type(),
+            name: this.name,
+            dataset: {
+                id: this.dataset.id,
+                hda_ldda: this.dataset.get('hda_ldda')
+            },
+            prefs: this.prefs,
+            mode: this.mode,
+            filters: this.filters_manager.to_dict(),
+            tool_state: (this.tool ? this.tool.state_dict() : {})
         };
     },
     /**
@@ -2943,10 +2945,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         //
         // If using SummaryTree tiles, show max and make it editable.
         //
-        this.container_div.find(".yaxislabel").remove();
         var track = this,
             first_tile = tiles[0];
         if (first_tile instanceof SummaryTreeTile) {
+            // Remove old max.
+            this.container_div.find(".yaxislabel").remove();
+
+            // Add new max.
             var max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val),
                 max_label = $("<div/>").text(max_val).make_text_editable({
                     num_cols: 12,
