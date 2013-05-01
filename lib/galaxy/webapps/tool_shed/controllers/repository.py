@@ -61,12 +61,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     my_writable_repositories_grid = repository_grids.MyWritableRepositoriesGrid()
     my_writable_repositories_missing_tool_test_components_grid = repository_grids.MyWritableRepositoriesMissingToolTestComponentsGrid()
     my_writable_repositories_with_failing_tool_tests_grid = repository_grids.MyWritableRepositoriesWithFailingToolTestsGrid()
+    my_writable_repositories_with_invalid_tools_grid = repository_grids.MyWritableRepositoriesWithInvalidToolsGrid()
     my_writable_repositories_with_no_failing_tool_tests_grid = repository_grids.MyWritableRepositoriesWithNoFailingToolTestsGrid()
     repositories_by_user_grid = repository_grids.RepositoriesByUserGrid()
     repositories_i_own_grid = repository_grids.RepositoriesIOwnGrid()
     repositories_in_category_grid = repository_grids.RepositoriesInCategoryGrid()
     repositories_missing_tool_test_components_grid = repository_grids.RepositoriesMissingToolTestComponentsGrid()
     repositories_with_failing_tool_tests_grid = repository_grids.RepositoriesWithFailingToolTestsGrid()
+    repositories_with_invalid_tools_grid = repository_grids.RepositoriesWithInvalidToolsGrid()
     repositories_with_no_failing_tool_tests_grid = repository_grids.RepositoriesWithNoFailingToolTestsGrid()
     repository_dependencies_grid = repository_grids.RepositoryDependenciesGrid()
     repository_grid = repository_grids.RepositoryGrid()
@@ -139,47 +141,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                               id=trans.security.encode_id( repository.id ),
                                                               changeset_revision=selected_changeset_revision ) )
         return self.deprecated_repositories_i_own_grid( trans, **kwd )
-
-    @web.expose
-    def browse_invalid_tools( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        cntrller = params.get( 'cntrller', 'repository' )
-        is_admin = trans.user_is_admin()
-        invalid_tools_dict = odict()
-        if is_admin and cntrller == 'admin':
-            for repository in trans.sa_session.query( trans.model.Repository ) \
-                                              .filter( trans.model.Repository.table.c.deleted == False ) \
-                                              .order_by( trans.model.Repository.table.c.name ):
-                # A repository's metadata_revisions are those that ignore the value of the repository_metadata.downloadable column.
-                for downloadable_revision in repository.metadata_revisions:
-                    metadata = downloadable_revision.metadata
-                    invalid_tools = metadata.get( 'invalid_tools', [] )
-                    for invalid_tool_config in invalid_tools:
-                        invalid_tools_dict[ invalid_tool_config ] = ( repository.id,
-                                                                      repository.name,
-                                                                      repository.user.username,
-                                                                      downloadable_revision.changeset_revision )
-        else:
-            for repository in trans.sa_session.query( trans.model.Repository ) \
-                                              .filter( and_( trans.model.Repository.table.c.deleted == False,
-                                                             trans.model.Repository.table.c.user_id == trans.user.id ) ) \
-                                              .order_by( trans.model.Repository.table.c.name ):
-                for downloadable_revision in repository.metadata_revisions:
-                    metadata = downloadable_revision.metadata
-                    if metadata:
-                        invalid_tools = metadata.get( 'invalid_tools', [] )
-                        for invalid_tool_config in invalid_tools:
-                            invalid_tools_dict[ invalid_tool_config ] = ( repository.id,
-                                                                          repository.name,
-                                                                          repository.user.username,
-                                                                          downloadable_revision.changeset_revision )
-        return trans.fill_template( '/webapps/tool_shed/repository/browse_invalid_tools.mako',
-                                    cntrller=cntrller,
-                                    invalid_tools_dict=invalid_tools_dict,
-                                    message=message,
-                                    status=status )
 
     @web.expose
     def browse_my_writable_repositories( self, trans, **kwd ):
@@ -263,6 +224,34 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
         return self.my_writable_repositories_with_failing_tool_tests_grid( trans, **kwd )
+
+    @web.expose
+    def browse_my_writable_repositories_with_invalid_tools( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        if 'message' not in kwd:
+            message = 'This list contains repositories that match the following criteria:<br>'
+            message += '<ul>'
+            message += '<li>you are authorized to update them</li>'
+            message += '<li>the latest metadata revision contains at least 1 invalid tool</li>'
+            message += '</ul>'
+            message += 'Click the tool config file name to see why the tool is invalid.'
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'warning'
+        return self.my_writable_repositories_with_invalid_tools_grid( trans, **kwd )
 
     @web.expose
     def browse_my_writable_repositories_with_no_failing_tool_tests( self, trans, **kwd ):
@@ -490,6 +479,33 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
         return self.repositories_with_failing_tool_tests_grid( trans, **kwd )
+
+    @web.expose
+    def browse_repositories_with_invalid_tools( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        if 'message' not in kwd:
+            message = 'This list contains repositories that match the following criteria:<br>'
+            message += '<ul>'
+            message += '<li>the latest metadata revision contains at least 1 invalid tool</li>'
+            message += '</ul>'
+            message += 'Click the tool config file name to see why the tool is invalid.'
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'warning'
+        return self.repositories_with_invalid_tools_grid( trans, **kwd )
 
     @web.expose
     def browse_repositories_with_no_failing_tool_tests( self, trans, **kwd ):
@@ -1976,7 +1992,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 is_malicious = repository_metadata.malicious
             else:
                 # There is no repository_metadata defined for the changeset_revision, so see if it was defined in a previous changeset in the changelog.
-                previous_changeset_revision = suc.get_previous_downloadable_changeset_revision( repository, repo, changeset_revision )
+                previous_changeset_revision = suc.get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=False )
                 if previous_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
                     repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, previous_changeset_revision )
                     if repository_metadata:
@@ -2161,7 +2177,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         # Get the lower bound changeset revision.
-        lower_bound_changeset_revision = suc.get_previous_downloadable_changeset_revision( repository, repo, changeset_revision )
+        lower_bound_changeset_revision = suc.get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=True )
         # Build the list of changeset revision hashes.
         changeset_hashes = []
         for changeset in suc.reversed_lower_upper_bounded_changelog( repo, lower_bound_changeset_revision, changeset_revision ):

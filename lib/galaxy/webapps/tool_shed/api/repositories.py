@@ -48,7 +48,7 @@ class RepositoriesController( BaseAPIController ):
             encoded_repository_id = trans.security.encode_id( repository.id )
             repo_dir = repository.repo_path( trans.app )
             repo = hg.repository( suc.get_configured_ui(), repo_dir )
-            ordered_installable_revisions = suc.get_ordered_downloadable_changeset_revisions( repository, repo )
+            ordered_installable_revisions = suc.get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
             return ordered_installable_revisions
         except Exception, e:
             message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: %s" % str( e )
