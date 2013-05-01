@@ -537,7 +537,9 @@ class RepositoriesMissingToolTestComponentsGrid( RepositoryGrid ):
     def build_initial_query( self, trans, **kwd ):
         # Filter by latest installable revisions that contain tools with missing tool test components.
         revision_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ):
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deprecated == False,
+                                                         model.Repository.table.c.deleted == False ) ):
             changeset_revision = filter_by_latest_downloadable_changeset_revision_that_has_missing_tool_test_components( trans, repository )
             if changeset_revision:
                 revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
@@ -614,7 +616,9 @@ class RepositoriesWithFailingToolTestsGrid( RepositoryGrid ):
     def build_initial_query( self, trans, **kwd ):
         # Filter by latest installable revisions that contain tools with at least 1 failing tool test.
         revision_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ):
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deprecated == False,
+                                                         model.Repository.table.c.deleted == False ) ):
             changeset_revision = filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests( trans, repository )
             if changeset_revision:
                 revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
@@ -692,7 +696,9 @@ class RepositoriesWithNoFailingToolTestsGrid( RepositoryGrid ):
         # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
         # tools with at least 1 failing tool test.
         revision_clause_list = []
-        for repository in trans.sa_session.query( model.Repository ):
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deprecated == False,
+                                                         model.Repository.table.c.deleted == False ) ):
             changeset_revision = filter_by_latest_downloadable_changeset_revision_that_has_no_failing_tool_tests( trans, repository )
             if changeset_revision:
                 revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
@@ -1345,7 +1351,7 @@ def filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests
     repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     repository_metadata = get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata and not repository_metadata.tools_functionally_correct:
+    if repository_metadata and not repository_metadata.missing_test_components and not repository_metadata.tools_functionally_correct:
         return repository_metadata.changeset_revision
     return None
 
