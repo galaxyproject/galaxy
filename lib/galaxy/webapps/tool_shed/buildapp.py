@@ -161,8 +161,8 @@ def wrap_in_middleware( app, global_conf, **local_conf ):
         log.debug( "Enabling 'eval exceptions' middleware" )
     else:
         # Not in interactive debug mode, just use the regular error middleware
-        from paste.exceptions import errormiddleware
-        app = errormiddleware.ErrorMiddleware( app, conf )
+        import galaxy.web.framework.middleware.error
+        app = galaxy.web.framework.middleware.error.ErrorMiddleware( app, conf )
         log.debug( "Enabling 'error' middleware" )
     # Transaction logging (apache access.log style)
     if asbool( conf.get( 'use_translogger', True ) ):
