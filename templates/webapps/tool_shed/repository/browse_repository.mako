@@ -1,22 +1,8 @@
 <%inherit file="/base.mako"/>
 <%namespace file="/message.mako" import="render_msg" />
+<%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="render_tool_shed_repository_actions" />
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
-
-<%
-    from galaxy.web.framework.helpers import time_ago
-    is_admin = trans.user_is_admin()
-    is_new = repository.is_new( trans.app )
-    can_contact_owner = trans.user and trans.user != repository.user
-    can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
-    can_upload = can_push and ( not repository.deprecated )
-    can_download = not is_new and ( not is_malicious or can_push )
-    can_browse_contents = not is_new
-    can_rate = trans.user and repository.user != trans.user
-    can_manage = is_admin or repository.user == trans.user
-    can_view_change_log = not is_new
-    has_readme = metadata and 'readme' in metadata
-%>
 
 <%!
    def inherit(context):
@@ -30,30 +16,6 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
     ${h.css( "jquery.rating", "dynatree_skin/ui.dynatree" )}
-    <style type="text/css">
-    ul.fileBrowser,
-    ul.toolFile {
-        margin-left: 0;
-        padding-left: 0;
-        list-style: none;
-    }
-    ul.fileBrowser {
-        margin-left: 20px;
-    }
-    .fileBrowser li,
-    .toolFile li {
-        padding-left: 20px;
-        background-repeat: no-repeat;
-        background-position: 0;
-        min-height: 20px;
-    }
-    .toolFile li {
-        background-image: url( ${h.url_for( '/static/images/silk/page_white_compressed.png' )} );
-    }
-    .fileBrowser li {
-        background-image: url( ${h.url_for( '/static/images/silk/page_white.png' )} );
-    }
-    </style>
 </%def>
 
 <%def name="javascripts()">
@@ -62,35 +24,14 @@
     ${common_javascripts(repository)}
 </%def>
 
-<br/><br/>
-<ul class="manage-table-actions">
-    %if is_new:
-        <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
-    %else:
-        <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
-        <div popupmenu="repository-${repository.id}-popup">
-            %if can_manage:
-                <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">Manage repository</a>
-            %else:
-                <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View repository</a>
-            %endif
-            %if can_upload:
-                <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
-            %endif
-            %if can_view_change_log:
-                <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.app.security.encode_id( repository.id ) )}">View change log</a>
-            %endif
-            %if can_rate:
-                <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
-            %endif
-            %if can_download:
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='gz' )}">Download as a .tar.gz file</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-                <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='zip' )}">Download as a zip file</a>
-            %endif
-        </div>
-    %endif
-</ul>
+<%
+    is_new = repository.is_new( trans.app )
+    can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
+    can_download = not is_new and ( not is_malicious or can_push )
+    can_browse_contents = not is_new
+%>
+
+${render_tool_shed_repository_actions( repository )}
 
 %if message:
     ${render_msg( message, status )}

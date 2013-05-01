@@ -545,13 +545,11 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
         # Update repository files for browsing.
         suc.update_repository( repo )
-        is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repository=repository,
                                     metadata=metadata,
                                     commit_message=commit_message,
-                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
 
@@ -941,7 +939,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         if message:
             status = 'error'
         tool_state = self.__new_state( trans )
-        is_malicious = suc.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, repository_id, changeset_revision )
         try:
             return trans.fill_template( "/webapps/tool_shed/repository/tool_form.mako",
@@ -950,7 +947,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                         changeset_revision=changeset_revision,
                                         tool=tool,
                                         tool_state=tool_state,
-                                        is_malicious=is_malicious,
                                         message=message,
                                         status=status )
         except Exception, e:
@@ -1779,7 +1775,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         status = params.get( 'status', 'error' )
         repository, tool, error_message = tool_util.load_tool_from_changeset_revision( trans, repository_id, changeset_revision, tool_config )
         tool_state = self.__new_state( trans )
-        is_malicious = suc.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         invalid_file_tups = []
         if tool:
             invalid_file_tups = tool_util.check_tool_input_params( trans.app,
@@ -1797,7 +1792,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                         changeset_revision=changeset_revision,
                                         tool=tool,
                                         tool_state=tool_state,
-                                        is_malicious=is_malicious,
                                         message=message,
                                         status='error' )
         except Exception, e:
@@ -2024,17 +2018,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         malicious_check_box = CheckboxField( 'malicious', checked=is_malicious )
         categories = suc.get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
-        # Determine if the current changeset revision has been reviewed by the current user.
-        reviewed_by_user = review_util.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
-        if reviewed_by_user:
-            review = review_util.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
-                                                                                         repository_id=id,
-                                                                                         changeset_revision=changeset_revision,
-                                                                                         user_id=trans.security.encode_id( trans.user.id ) )
-            review_id = trans.security.encode_id( review.id )
-        else:
-            review_id = None
-        can_browse_repository_reviews = review_util.can_browse_repository_reviews( trans, repository )
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
         return trans.fill_template( '/webapps/tool_shed/repository/manage_repository.mako',
                                     repo_name=repo_name,
@@ -2047,8 +2030,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     containers_dict=containers_dict,
                                     repository_metadata=repository_metadata,
                                     changeset_revision=changeset_revision,
-                                    reviewed_by_user=reviewed_by_user,
-                                    review_id=review_id,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
                                     selected_categories=selected_categories,
@@ -2059,8 +2040,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
                                     malicious_check_box=malicious_check_box,
-                                    is_malicious=is_malicious,
-                                    can_browse_repository_reviews=can_browse_repository_reviews,
                                     message=message,
                                     status=status )
 
@@ -2214,7 +2193,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
         display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
         rra = self.get_user_item_rating( trans.sa_session, trans.user, repository, webapp_model=trans.model )
-        is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/tool_shed/repository/rate_repository.mako', 
                                     repository=repository,
@@ -2223,7 +2201,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     rra=rra,
-                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
 
@@ -2403,12 +2380,10 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             else:
                 message = "Select at least 1 file to delete from the repository before clicking <b>Delete selected files</b>."
                 status = "error"
-        is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/tool_shed/repository/browse_repository.mako',
                                     repo=repo,
                                     repository=repository,
                                     commit_message=commit_message,
-                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
 
@@ -2679,13 +2654,11 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                             'has_metadata' : has_metadata }
             # Make sure we'll view latest changeset first.
             changesets.insert( 0, change_dict )
-        is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, repository.tip( trans.app ) )
         return trans.fill_template( '/webapps/tool_shed/repository/view_changelog.mako', 
                                     repository=repository,
                                     metadata=metadata,
                                     changesets=changesets,
-                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
 
@@ -2711,7 +2684,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
             diffs.append( suc.to_safe_string( diff, to_html=True ) )
-        is_malicious = suc.changeset_is_malicious( trans, id, repository.tip( trans.app ) )
         metadata = self.get_metadata( trans, id, ctx_str )
         return trans.fill_template( '/webapps/tool_shed/repository/view_changeset.mako', 
                                     repository=repository,
@@ -2726,7 +2698,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     ignored=ignored,
                                     clean=clean,
                                     diffs=diffs,
-                                    is_malicious=is_malicious,
                                     message=message,
                                     status=status )
 
@@ -2814,18 +2785,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             else:
                 message += malicious_error
             status = 'error'
-        # Determine if the current changeset revision has been reviewed by the current user.
-        reviewed_by_user = review_util.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
-        if reviewed_by_user:
-            review = review_util.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
-                                                                                         repository_id=id,
-                                                                                         changeset_revision=changeset_revision,
-                                                                                         user_id=trans.security.encode_id( trans.user.id ) )
-            review_id = trans.security.encode_id( review.id )
-        else:
-            review_id = None
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
-        can_browse_repository_reviews = review_util.can_browse_repository_reviews( trans, repository )
         return trans.fill_template( '/webapps/tool_shed/repository/view_repository.mako',
                                     repo=repo,
                                     repository=repository,
@@ -2837,12 +2797,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
                                     changeset_revision=changeset_revision,
-                                    reviewed_by_user=reviewed_by_user,
-                                    review_id=review_id,
                                     changeset_revision_select_field=changeset_revision_select_field,
                                     revision_label=revision_label,
-                                    is_malicious=is_malicious,
-                                    can_browse_repository_reviews=can_browse_repository_reviews,
                                     message=message,
                                     status=status )
 
@@ -2898,22 +2854,12 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         else:
             repository_metadata_id = None
             metadata = None
-        is_malicious = suc.changeset_is_malicious( trans, repository_id, repository.tip( trans.app ) )
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field( trans,
                                                                                             repository,
                                                                                             selected_value=changeset_revision,
                                                                                             add_id_to_name=False,
                                                                                             downloadable=False )
         trans.app.config.tool_data_path = original_tool_data_path
-        reviewed_by_user = review_util.changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
-        if reviewed_by_user:
-            review = review_util.get_review_by_repository_id_changeset_revision_user_id( trans=trans,
-                                                                                         repository_id=repository_id,
-                                                                                         changeset_revision=changeset_revision,
-                                                                                         user_id=trans.security.encode_id( trans.user.id ) )
-            review_id = trans.security.encode_id( review.id )
-        else:
-            review_id = None
         return trans.fill_template( "/webapps/tool_shed/repository/view_tool_metadata.mako",
                                     repository=repository,
                                     repository_metadata_id=repository_metadata_id,
@@ -2924,9 +2870,6 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     changeset_revision=changeset_revision,
                                     revision_label=revision_label,
                                     changeset_revision_select_field=changeset_revision_select_field,
-                                    is_malicious=is_malicious,
-                                    reviewed_by_user=reviewed_by_user,
-                                    review_id=review_id,
                                     message=message,
                                     status=status )
 
