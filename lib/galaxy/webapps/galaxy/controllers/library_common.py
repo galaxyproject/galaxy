@@ -1,17 +1,26 @@
-import os, os.path, shutil, urllib, StringIO, re, gzip, tempfile, shutil, zipfile, copy, glob, string, urllib2
-from galaxy.web.base.controller import *
-from galaxy import util, jobs
-from galaxy.datatypes import sniff
-from galaxy.security import RBACAgent
-from galaxy.util.json import to_json_string
-from galaxy.tools.actions import upload_common
-from galaxy.model.orm import *
-from galaxy.util.streamball import StreamBall
-from galaxy.util import inflector
-from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, TextArea, TextField, WorkflowField, WorkflowMappingField, HistoryField
-import logging, tempfile, zipfile, tarfile, os, sys, operator
+import glob
+import logging
+import operator
+import os
+import os.path
+import string
+import sys
+import tarfile
+import tempfile
+import urllib
+import urllib2
+import zipfile
+from galaxy import util, web
+from galaxy.web import url_for
 from galaxy.eggs import require
 from galaxy.security import Action
+from galaxy.tools.actions import upload_common
+from galaxy.util import inflector
+from galaxy.util.json import to_json_string
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
+from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
+from galaxy.model.orm import and_, eagerload_all
+
 # Whoosh is compatible with Python 2.5+ Try to import Whoosh and set flag to indicate whether tool search is enabled.
 try:
     require( "Whoosh" )
