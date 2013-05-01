@@ -2606,25 +2606,16 @@ def datasets_for_lddas( trans, lddas ):
     return datasets 
 
 def active_folders_and_library_datasets( trans, folder ):
-    # SM: TODO: Eliminate timing code
-    from datetime import datetime, timedelta
-    query_start = datetime.now()
     folders = active_folders( trans, folder )
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( and_( trans.model.LibraryDataset.table.c.deleted == False,
                                                       trans.model.LibraryDataset.table.c.folder_id == folder.id ) ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
-    query_end = datetime.now()
-    query_delta = query_end - query_start
-    #log.debug( "active_folders_and_library_datasets: %d.%.6d" % 
-    #           ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
 
 def activatable_folders_and_library_datasets( trans, folder ):
     folders = activatable_folders( trans, folder )
-    from datetime import datetime, timedelta
-    query_start = datetime.now()
     library_datasets = trans.sa_session.query( trans.model.LibraryDataset ) \
                                        .filter( trans.model.LibraryDataset.table.c.folder_id == folder.id ) \
                                        .join( ( trans.model.LibraryDatasetDatasetAssociation.table,
@@ -2634,11 +2625,8 @@ def activatable_folders_and_library_datasets( trans, folder ):
                                        .filter( trans.model.Dataset.table.c.deleted == False ) \
                                        .order_by( trans.model.LibraryDataset.table.c._name ) \
                                        .all()
-    query_end = datetime.now()
-    query_delta = query_end - query_start
-    log.debug( "activatable_folders_and_library_datasets: %d.%.6d" % 
-               ( query_delta.seconds, query_delta.microseconds ) )
     return folders, library_datasets
+
 def branch_deleted( folder ):
     # Return True if a folder belongs to a branch that has been deleted
     if folder.deleted:
