@@ -1,20 +1,24 @@
-from galaxy.web.base.controller import *
-from galaxy.web.base.controllers.admin import Admin
+import imp
+import logging
+import os
+
+import galaxy.util
 from galaxy import model
-from galaxy.model.orm import *
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.tools.search import ToolBoxSearch
-from galaxy.tools import ToolSection, json_fix
-from galaxy.util import parse_xml, inflector
+from galaxy import web
 from galaxy.actions.admin import AdminActions
-from galaxy.web.params import QuotaParamParser
-from galaxy.exceptions import *
-from galaxy.util.odict import *
-from tool_shed.util import encoding_util
-from tool_shed.util import common_util
-import galaxy.datatypes.registry
-import logging, imp, subprocess
+from galaxy.exceptions import MessageException
 from galaxy.util import sanitize_text
+from galaxy.util.odict import odict
+from galaxy.web import url_for
+from galaxy.web.base.controller import BaseUIController, UsesQuotaMixin
+from galaxy.web.base.controllers.admin import Admin
+from galaxy.web.framework.helpers import grids, time_ago
+from galaxy.web.params import QuotaParamParser
+from tool_shed.util import common_util
+from tool_shed.util import encoding_util
+# from galaxy.model.orm import *
+# from galaxy.util.odict import *
+# import galaxy.datatypes.registry
 
 log = logging.getLogger( __name__ )
 
@@ -638,7 +642,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
         if listify:
             quota = []
             messages = []
-            for id in util.listify( params.id ):
+            for id in galaxy.util.listify( params.id ):
                 try:
                     quota.append( self.get_quota( trans, id ) )
                 except MessageException, e:
@@ -701,7 +705,7 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     def check_for_tool_dependencies( self, trans, migration_stage ):
         # Get the 000x_tools.xml file associated with migration_stage.
         tools_xml_file_path = os.path.abspath( os.path.join( trans.app.config.root, 'scripts', 'migrate_tools', '%04d_tools.xml' % migration_stage ) )
-        tree = util.parse_xml( tools_xml_file_path )
+        tree = galaxy.util.parse_xml( tools_xml_file_path )
         root = tree.getroot()
         tool_shed = root.get( 'name' )
         tool_shed_url = self.get_tool_shed_url_from_tools_xml_file_path( trans, tool_shed )
@@ -729,8 +733,8 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def review_tool_migration_stages( self, trans, **kwd ):
-        message = util.restore_text( kwd.get( 'message', '' ) )
-        status = util.restore_text( kwd.get( 'status', 'done' ) )
+        message = galaxy.util.restore_text( kwd.get( 'message', '' ) )
+        status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
         migration_stages_dict = odict()
         migration_modules = []
         migration_scripts_dir = os.path.abspath( os.path.join( trans.app.config.root, 'lib', 'tool_shed', 'galaxy_install', 'migrate', 'versions' ) )
@@ -760,12 +764,12 @@ class AdminGalaxy( BaseUIController, Admin, AdminActions, UsesQuotaMixin, QuotaP
     @web.expose
     @web.require_admin
     def view_datatypes_registry( self, trans, **kwd ):
-        message = util.restore_text( kwd.get( 'message', '' ) )
-        status = util.restore_text( kwd.get( 'status', 'done' ) )
+        message = galaxy.util.restore_text( kwd.get( 'message', '' ) )
+        status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
         return trans.fill_template( 'admin/view_datatypes_registry.mako', message=message, status=status )
     @web.expose
     @web.require_admin
     def view_tool_data_tables( self, trans, **kwd ):
-        message = util.restore_text( kwd.get( 'message', '' ) )
-        status = util.restore_text( kwd.get( 'status', 'done' ) )
+        message = galaxy.util.restore_text( kwd.get( 'message', '' ) )
+        status = galaxy.util.restore_text( kwd.get( 'status', 'done' ) )
         return trans.fill_template( 'admin/view_data_tables_registry.mako', message=message, status=status )
