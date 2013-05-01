@@ -1,18 +1,14 @@
+import logging
+
 import galaxy.model
 import galaxy.util
+
 from galaxy import web
 from galaxy.web.base.controller import BaseUIController
 from galaxy.web.framework.helpers import grids, time_ago
 from library_common import get_comptypes, lucene_search, whoosh_search
 # from galaxy.model.orm import *
 
-# Older py compatibility
-try:
-    set()
-except:
-    from sets import Set as set
-
-import logging
 log = logging.getLogger( __name__ )
 
 class LibraryListGrid( grids.Grid ):
