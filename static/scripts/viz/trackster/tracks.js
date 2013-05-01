@@ -3349,18 +3349,26 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
 
     draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
         // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
+
+        // SHARED block with TiledTrack.draw_helper():
+
         var track = this,
-            key = this._gen_tile_cache_key(w_scale, region);
+            key = this._gen_tile_cache_key(w_scale, region),
+            is_tile = function(o) { return (o && 'track' in o); };
             
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
                        
         // Check tile cache, if found show existing tile in correct position
         var tile = (force ? undefined : track.tile_cache.get_elt(key));
-        if (tile) { 
-            track.show_tile(tile, parent_element, w_scale);
+        if (tile) {
+            if (is_tile(tile)) {
+                track.show_tile(tile, parent_element, w_scale);
+            }
             return tile;
         }
+
+        // UNIQUE block.
                 
         // Try to get drawables' data.
         var all_data = [],
@@ -3447,17 +3455,20 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             this.show_tile(tile, parent_element, w_scale);
             return tile;
         }
-         
-        // Can't draw now, so trigger another redraw when the data is ready
-        var can_draw = $.Deferred(),
-            track = this;
+
+        // SHARED (somewhat) block with TiledTrack.draw_helper()
+
+        // Can't draw now, so put Deferred in cache and draw tile when data is available.
+        var tile_drawn = $.Deferred();
+        track = this;
+        track.tile_cache.set_elt(key, tile_drawn);
         $.when.apply($, all_data).then(function() {
-            view.request_redraw(false, false, false, track);
-            can_draw.resolve();
+            // Draw tile--force to clear Deferred from cache--and resolve.
+            tile = track.draw_helper(true, region, resolution, parent_element, w_scale, kwargs);
+            tile_drawn.resolve(tile);
         });
         
-        // Returned Deferred that is resolved when tile can be drawn.
-        return can_draw;
+        return tile_drawn;
     },
 
     /**
@@ -3534,7 +3545,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         for (var i = 0; i < tiles.length; i++) {
             var tile = tiles[i];
             if (tile.html_elt.find("canvas").height() !== max_height) {
-                this.draw_helper(true, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { height: max_height } );
+                this.draw_helper(true, tile.region, tile.resolution, tile.html_elt.parent(), w_scale, { height: max_height } );
                 tile.html_elt.remove();
             }
         }        
