@@ -1,13 +1,12 @@
 import csv
 import logging
 import re
-from galaxy import web
-from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.model.orm import select, func, and_
-from galaxy import model, util
-from galaxy.web.form_builder import TextField, CheckboxField, build_select_field, SelectField
+from galaxy import model, util, web
+from galaxy.model.orm import and_, func, select
 from galaxy.security.validate_user_input import validate_email
+from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
+from galaxy.web.form_builder import build_select_field, CheckboxField, SelectField, TextField
+from galaxy.web.framework.helpers import grids, iff, time_ago
 
 log = logging.getLogger( __name__ )
 
