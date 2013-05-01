@@ -1174,8 +1174,8 @@ class JobWrapper( object ):
             # the job has an error, and the job is ok otherwise.
             else:
                 # TODO: Add in the tool and job id:
-                log.debug( "Tool did not define exit code or stdio handling; "
-                         + "checking stderr for success" )
+                # log.debug( "Tool did not define exit code or stdio handling; "
+                #          + "checking stderr for success" )
                 if stderr:
                     success = False
                 else:
