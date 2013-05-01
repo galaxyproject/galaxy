@@ -1,8 +1,6 @@
 import logging
 from cgi import escape
 
-# from sqlalchemy.sql.expression import and_, func
-
 import galaxy.util
 from galaxy import model
 from galaxy import web
