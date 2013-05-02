@@ -47,7 +47,7 @@
 <p/>
 %if can_download:
     <div class="toolForm">
-        <div class="toolFormTitle">Repository '${repository.name}'</div>
+        <div class="toolFormTitle">Repository '${repository.name | h}'</div>
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Clone this repository:</label>

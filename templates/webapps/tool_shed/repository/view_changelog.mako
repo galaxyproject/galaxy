@@ -38,7 +38,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
 
 %if can_download:
     <div class="toolForm">
-        <div class="toolFormTitle">${repository.name | h}</div>
+        <div class="toolFormTitle">Repository '${repository.name | h}'</div>
         <div class="toolFormBody">
             <div class="form-row">
                 <label>Clone this repository:</label>

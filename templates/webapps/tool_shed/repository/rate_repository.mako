@@ -64,7 +64,7 @@ ${render_tool_shed_repository_actions( repository, repo=None, metadata=None, cha
     </div>
     <p/>
     <div class="toolForm">
-        <div class="toolFormTitle">Rate and Review</div>
+        <div class="toolFormTitle">Repository '${repository.name | h}'</div>
         <div class="toolFormBody">
             <form id="rate_repository" name="rate_repository" action="${h.url_for( controller='repository', action='rate_repository', id=trans.security.encode_id( repository.id ) )}" method="post">
                 <div class="form-row">
