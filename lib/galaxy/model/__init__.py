@@ -3467,7 +3467,7 @@ class ToolShedRepository( object ):
                     prior_installation_required = False
                 elif len( rd_tup ) == 5:
                     tool_shed, name, owner, changeset_revision, prior_installation_required = rd_tup
-                    prior_installation_required = util.asbool( str( prior_installation_required ) )
+                    prior_installation_required = galaxy.util.asbool( str( prior_installation_required ) )
                 if prior_installation_required:
                     required_rd_tups_that_must_be_installed.append( ( tool_shed, name, owner, changeset_revision, prior_installation_required ) )
         return required_rd_tups_that_must_be_installed
