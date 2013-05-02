@@ -2722,6 +2722,7 @@ var TiledTrack = function(view, container, obj_dict) {
     }
 };
 extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
+
     action_icons_def: Track.prototype.action_icons_def.concat( [
         // Show more rows when all features are not slotted.
         {
@@ -2737,6 +2738,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             hide: true
         }
     ] ),
+
     /**
      * Returns a copy of the track. The copy uses the same data manager so that the tracks can share data.
      */
@@ -2752,6 +2754,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         new_track.enabled = this.enabled;
         return new_track;
     },
+
     /**
      * Set filters manager + HTML elements.
      */
@@ -2759,6 +2762,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         this.filters_manager = filters_manager;
         this.header_div.after(this.filters_manager.parent_div);
     },
+
     /** 
      * Returns representation of object in a dictionary for easy saving. 
      * Use from_dict to recreate object.
@@ -2777,6 +2781,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             tool_state: (this.tool ? this.tool.state_dict() : {})
         };
     },
+
     /**
      * Change track's mode.
      */
@@ -2789,7 +2794,8 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         track.request_draw();
         this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
         return track;
-     },
+    },
+
     /**
      * Update track's buttons.
      */
@@ -2921,6 +2927,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             }
         });
     },
+
     /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
@@ -3160,6 +3167,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             region_str = (region !== undefined ? region.toString() : "all");
         return " - region=[" + region_str + "], parameters=[" + track.tool.get_param_values().join(", ") + "]";
     },
+
     /**
      * Returns true if data is compatible with a given mode. Defaults to true because, for many tracks,
      * all data is compatible with all modes.
@@ -3167,12 +3175,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     data_and_mode_compatible: function(data, mode) {
         return true;
     },
+
     /**
      * Returns true if data can be subsetted. Defaults to false to ensure data is fetched when needed.
      */
     can_subset: function(data) {
         return false;  
     },
+    
     /**
      * Set up track to receive tool data.
      */
