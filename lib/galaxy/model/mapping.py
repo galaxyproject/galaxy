@@ -2043,10 +2043,7 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     m_obs = inspect.getmembers(model, inspect.isclass)
     m_obs = dict([m for m in m_obs if m[1].__module__ == 'galaxy.model'])
     result = Bunch( **m_obs )
-    #result_old = Bunch( **globals() )
-    #import pdb; pdb.set_trace()
     result.engine = engine
-    # model.flush() has been removed.
     result.session = Session
     # For backward compatibility with "model.context.current"
     result.context = Session
