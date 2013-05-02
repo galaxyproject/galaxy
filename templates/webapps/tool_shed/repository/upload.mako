@@ -41,12 +41,12 @@
 ${render_tool_shed_repository_actions( repository=repository)}
 
 <div class="toolForm">
-    <div class="toolFormTitle">Upload a single file or a tarball</div>
+    <div class="toolFormTitle">Repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         <div class="form-row">
             <div class="warningmessage">
-                Uploading may take a while, depending upon the size of the file.  Wait until a message is displayed in your 
-                browser after clicking the <b>Upload</b> button below.
+                Upload a single file or tarball.  Uploading may take a while, depending upon the size of the file.
+                Wait until a message is displayed in your browser after clicking the <b>Upload</b> button below.
             </div>
             <div style="clear: both"></div>
         </div>

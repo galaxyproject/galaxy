@@ -31,7 +31,7 @@ ${render_galaxy_repository_actions( repository=repository )}
 %endif
 
 <div class="toolForm">
-    <div class="toolFormTitle">Repository ${repository.name | h}</div>
+    <div class="toolFormTitle">Repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         %if len( changeset_revision_select_field.options ) > 1:
             <form name="change_revision" id="change_revision" action="${h.url_for( controller='repository', action='preview_tools_in_changeset', repository_id=trans.security.encode_id( repository.id ) )}" method="post" >

@@ -80,7 +80,7 @@
     <p/>
 %endif
 <div class="toolForm">
-    <div class="toolFormTitle">Repository '${repository.name}'</div>
+    <div class="toolFormTitle">Repository '${repository.name | h}'</div>
     <div class="toolFormBody">
         <div class="form-row">
             <label>${sharable_link_label}</label>
