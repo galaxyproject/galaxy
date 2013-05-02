@@ -845,9 +845,9 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
         
         return obj_dict;
     },
-    request_draw: function(clear_after, force) {
+    request_draw: function(clear_tile_cache, force, clear_after) {
         for (var i = 0; i < this.drawables.length; i++) {
-            this.drawables[i].request_draw(clear_after, force);
+            this.drawables[i].request_draw(clear_tile_cache, force, clear_after);
         }
     }
 });
@@ -1390,7 +1390,6 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
     /**
      * Request that view redraw some or all tracks. If a track is not specificied, redraw all tracks.
      */
-    // FIXME: change method call so that track is first and additional parameters are optional.
     request_redraw: function(force, clear_after, a_track) {
         var 
             view = this,
@@ -2101,7 +2100,7 @@ var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale
             tile.stale = true;
             track.data_manager.get_more_data(tile_region, track.mode, tile.resolution, {}, track.data_manager.DEEP_DATA_REQ);
             $(".bs-tooltip").hide();
-            track.request_draw(true);
+            track.request_draw(false, true);
         }).dblclick(function(e) {
             // Do not propogate as this would normally zoom in.
             e.stopPropagation();
@@ -2112,7 +2111,7 @@ var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale
             tile.stale = true;
             track.data_manager.get_more_data(tile_region, track.mode, tile.resolution, {}, track.data_manager.BROAD_DATA_REQ);
             $(".bs-tooltip").hide();
-            track.request_draw(true);
+            track.request_draw(false, true);
         }).dblclick(function(e) {
             // Do not propogate as this would normally zoom in.
             e.stopPropagation();
@@ -2786,8 +2785,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // TODO: is it necessary to store the mode in two places (.mode and track_config)?
         track.mode = new_mode;
         track.config.values['mode'] = new_mode;
-        track.tile_cache.clear();
-        track.request_draw();
+        track.request_draw(true);
         this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
         return track;
     },
@@ -2843,7 +2841,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Request that track be drawn.
      */
-    request_draw: function(force, clear_after) {
+    request_draw: function(clear_tile_cache, force, clear_after) {
+        if (clear_tile_cache) {
+            this.tile_cache.clear();
+        }
         this.view.request_redraw(force, clear_after, this);
     },
 
@@ -2962,8 +2963,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                         $(".bs-tooltip").remove();
                         var new_val = parseFloat(new_val);
                         track.prefs.histogram_max = (!isNaN(new_val) ? new_val : null);
-                        track.tile_cache.clear();
-                        track.request_draw();
+                        track.request_draw(true);
                     },
                     help_text: "Set max value; leave blank to use default"
                 }).addClass('yaxislabel top').css("color", this.prefs.label_color);
@@ -3670,8 +3670,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     set_min_value: function(new_val) {
         this.prefs.min_value = new_val;
         $('#linetrack_' + this.dataset.id + '_minval').text(this.prefs.min_value);
-        this.tile_cache.clear();
-        this.request_draw();
+        this.request_draw(true);
     },
     
     /**
@@ -3680,8 +3679,7 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     set_max_value: function(new_val) {
         this.prefs.max_value = new_val;
         $('#linetrack_' + this.dataset.id + '_maxval').text(this.prefs.max_value);
-        this.tile_cache.clear();
-        this.request_draw();
+        this.request_draw(true);
     },
     
     predraw_init: function() {
@@ -3811,16 +3809,14 @@ extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype,
      */
     set_min_value: function(new_val) {
         this.prefs.min_value = new_val;
-        this.tile_cache.clear();
-        this.request_draw();
+        this.request_draw(true);
     },
     /**
      * Set track maximum value.
      */
     set_max_value: function(new_val) {
         this.prefs.max_value = new_val;
-        this.tile_cache.clear();
-        this.request_draw();
+        this.request_draw(true);
     },
     
     /**
@@ -3874,9 +3870,8 @@ var FeatureTrack = function(view, container, obj_dict) {
         saved_values: obj_dict.prefs,
         onchange: function() {
             track.set_name(track.prefs.name);
-            track.tile_cache.clear();
             track.set_painter_from_config();
-            track.request_draw();
+            track.request_draw(true);
         }
     });
     this.prefs = this.config.values;
@@ -4210,8 +4205,7 @@ var VariantTrack = function(view, container, obj_dict) {
         saved_values: obj_dict.prefs,
         onchange: function() {
             this.track.set_name(this.track.prefs.name);
-            this.track.tile_cache.clear();
-            this.track.request_draw();
+            this.track.request_draw(true);
         }
     });
     this.prefs = this.config.values;
@@ -4369,8 +4363,7 @@ var ReadTrack = function (view, container, obj_dict) {
         saved_values: obj_dict.prefs,
         onchange: function() {
             this.track.set_name(this.track.prefs.name);
-            this.track.tile_cache.clear();
-            this.track.request_draw();
+            this.track.request_draw(true);
         }
     });
     this.prefs = this.config.values;
