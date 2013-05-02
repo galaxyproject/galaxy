@@ -99,7 +99,7 @@ class TestBasicRepositoryFeatures( ShedTwillTestCase ):
                                                             tool_metadata_strings_displayed=tool_metadata_strings_displayed,
                                                             tool_page_strings_displayed=tool_page_strings_displayed )
         self.check_repository_metadata( repository, tip_only=False )
-        self.browse_repository( repository, strings_displayed=[ 'Browse %s revision' % repository.name, '(repository tip)' ] )
+        self.browse_repository( repository, strings_displayed=[ "Repository '%s' revision" % repository.name, '(repository tip)' ] )
         self.display_repository_clone_page( common.test_user_1_name, 
                                             repository_name, 
                                             strings_displayed=[ 'Uploaded filtering 1.1.0', latest_changeset_revision ] )
