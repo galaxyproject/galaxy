@@ -45,7 +45,7 @@ class DataManager( BaseUIController ):
         job_id = kwd.get( 'id', None )
         try:
             job_id = trans.security.decode_id( job_id )
-            job = trans.app.model.Job.get( job_id )
+            job = trans.sa_session.query( trans.app.model.Job ).get( job_id )
         except Exception, e:
             job = None
             log.error( "Bad job id (%s) passed to view_job: %s" % ( job_id, e ) )
