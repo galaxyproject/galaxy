@@ -2697,7 +2697,7 @@ def lucene_search( trans, cntrller, search_term, search_url, **kwd ):
     response = urllib2.urlopen( full_url )
     ldda_ids = util.json.from_json_string( response.read() )[ "ids" ]
     response.close()
-    lddas = [ trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id ) for ldda_id in ldda_ids ]
+    lddas = [ trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id ) for ldda_id in ldda_ids ]
     return status, message, get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
 def whoosh_search( trans, cntrller, search_term, **kwd ):
     """Return display of results from a full-text whoosh search of data libraries."""
@@ -2722,7 +2722,7 @@ def whoosh_search( trans, cntrller, search_term, **kwd ):
             ldda_ids = [ result[ 'id' ] for result in results ]
             lddas = []
             for ldda_id in ldda_ids:
-                ldda = trans.app.model.LibraryDatasetDatasetAssociation.get( ldda_id )
+                ldda = trans.sa_session.query( trans.app.model.LibraryDatasetDatasetAssociation ).get( ldda_id )
                 if ldda:
                     lddas.append( ldda )
             lddas = get_sorted_accessible_library_items( trans, cntrller, lddas, 'name' )
