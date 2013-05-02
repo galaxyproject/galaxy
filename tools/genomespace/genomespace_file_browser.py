@@ -113,6 +113,10 @@ def download_from_genomespace_file_browser( json_parameter_file, genomespace_sit
         if name.startswith( file_url_prefix ):
             name = name[len( file_url_prefix ):]
             file_numbers.append( int( name ) )
+    if not file_numbers:
+        if output_filename:
+            open( output_filename, 'wb' ) #erase contents of file
+        raise Exception( "You must select at least one file to import into Galaxy." )
     file_numbers.sort()
     used_filenames = []
     for file_num in file_numbers:
