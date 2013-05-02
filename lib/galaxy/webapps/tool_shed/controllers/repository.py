@@ -871,7 +871,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 if category_ids:
                     # Create category associations
                     for category_id in category_ids:
-                        category = trans.app.model.Category.get( trans.security.decode_id( category_id ) )
+                        category = trans.sa_session.query(model.Category).get( trans.security.decode_id( category_id ) )
                         rca = trans.app.model.RepositoryCategoryAssociation( repository, category )
                         trans.sa_session.add( rca )
                         flush_needed = True
@@ -1913,7 +1913,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             if category_ids:
                 # Create category associations
                 for category_id in category_ids:
-                    category = trans.app.model.Category.get( trans.security.decode_id( category_id ) )
+                    category = trans.sa_session.query(model.Category).get( trans.security.decode_id( category_id ) )
                     rca = trans.app.model.RepositoryCategoryAssociation( repository, category )
                     trans.sa_session.add( rca )
                     trans.sa_session.flush()
