@@ -1424,7 +1424,7 @@ class ValidRepositoryGrid( RepositoryGrid ):
     columns = [
         RepositoryGrid.NameColumn( "Name",
                                    key="name",
-                                   attach_popup=False ),
+                                   attach_popup=True ),
         RepositoryGrid.DescriptionColumn( "Synopsis",
                                           key="description",
                                           attach_popup=False ),
