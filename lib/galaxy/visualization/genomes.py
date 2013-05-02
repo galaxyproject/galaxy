@@ -342,7 +342,7 @@ class Genomes( object ):
         else:
             user_keys = from_json_string( dbkey_user.preferences['dbkeys'] )
             dbkey_attributes = user_keys[ dbkey ]
-            fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( dbkey_attributes[ 'fasta' ] )
+            fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( dbkey_attributes[ 'fasta' ] )
             msg = fasta_dataset.convert_dataset( trans, 'twobit' )
             if msg:
                 return msg
