@@ -20,16 +20,16 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Initialize.
     if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
         default_false = "0"
-    elif migrate_engine.name == 'postgres':
+    elif migrate_engine.name in ['postgresql', 'postgres']:
         default_false = "false"
     
     try:
@@ -38,7 +38,7 @@ def upgrade():
         RepositoryMetadata_table = None
         log.debug( "Failed loading table repository_metadata." )
 
-    if RepositoryMetadata_table:
+    if RepositoryMetadata_table is not None:
         # Drop the tool_test_errors column from the repository_metadata table as it is poorly named.  It will be replaced with the new
         # tool_test_results column.
         try:
@@ -58,13 +58,14 @@ def upgrade():
         # Create the missing_test_components column.
         c = Column( "missing_test_components", Boolean, default=False, index=True )
         try:
-            c.create( RepositoryMetadata_table )
+            c.create( RepositoryMetadata_table, index_name="ix_repository_metadata_mtc")
             assert c is RepositoryMetadata_table.c.missing_test_components
-            db_session.execute( "UPDATE repository_metadata SET missing_test_components=%s" % default_false )
+            migrate_engine.execute( "UPDATE repository_metadata SET missing_test_components=%s" % default_false )
         except Exception, e:
             print "Adding missing_test_components column to the repository_metadata table failed: %s" % str( e )
 
 def downgrade():
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Drop missing_test_components and tool_test_results from the repository_metadata table and add tool_test_errors to the repository_metadata table.
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )

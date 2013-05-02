@@ -19,11 +19,11 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Create and initialize imported column in job table.
     Repository_table = Table( "repository", metadata, autoload=True )
@@ -35,14 +35,15 @@ def upgrade():
         # Initialize.
         if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
             default_false = "0"
-        elif migrate_engine.name == 'postgres':
+        elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
-        db_session.execute( "UPDATE repository SET deprecated=%s" % default_false )
+        migrate_engine.execute( "UPDATE repository SET deprecated=%s" % default_false )
     except Exception, e:
         print "Adding deprecated column to the repository table failed: %s" % str( e )
         log.debug( "Adding deprecated column to the repository table failed: %s" % str( e ) )
     
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Drop email_alerts column from repository table.
     Repository_table = Table( "repository", metadata, autoload=True )

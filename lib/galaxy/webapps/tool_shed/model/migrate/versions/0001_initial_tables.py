@@ -20,7 +20,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
+metadata = MetaData()
 
 User_table = Table( "galaxy_user", metadata,
     Column( "id", Integer, primary_key=True),
@@ -145,10 +145,11 @@ ToolAnnotationAssociation_table = Table( "tool_annotation_association", metadata
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "annotation", TEXT, index=True) )
 
-def upgrade():
+def upgrade( migrate_engine ):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.create_all()
 
-def downgrade():
+def downgrade( migrate_engine ):
     # Operations to reverse the above upgrade go here.
     pass

@@ -16,11 +16,11 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Create and initialize imported column in job table.
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )
@@ -32,13 +32,14 @@ def upgrade():
         # Initialize.
         if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
             default_true = "1"
-        elif migrate_engine.name == 'postgres':
+        elif migrate_engine.name in ['postgresql', 'postgres']:
             default_true = "true"
-        db_session.execute( "UPDATE repository_metadata SET downloadable=%s" % default_true )
+        migrate_engine.execute( "UPDATE repository_metadata SET downloadable=%s" % default_true )
     except Exception, e:
         print "Adding downloadable column to the repository_metadata table failed: %s" % str( e )
     
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Drop downloadable column from repository_metadata table.
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )

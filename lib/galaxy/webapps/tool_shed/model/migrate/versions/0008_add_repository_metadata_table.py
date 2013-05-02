@@ -21,8 +21,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 RepositoryMetadata_table = Table( "repository_metadata", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -32,8 +31,9 @@ RepositoryMetadata_table = Table( "repository_metadata", metadata,
     Column( "changeset_revision", TrimmedString( 255 ), index=True ),
     Column( "metadata", JSONType, nullable=True ) )
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Create repository_metadata table.
     try:
@@ -42,7 +42,8 @@ def upgrade():
         print str(e)
         log.debug( "Creating repository_metadata table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Drop repository_metadata table.
     try:

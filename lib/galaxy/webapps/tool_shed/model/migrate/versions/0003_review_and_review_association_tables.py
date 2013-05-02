@@ -22,8 +22,7 @@ log.addHandler( handler )
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 ToolRatingAssociation_table = Table( "tool_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
@@ -34,16 +33,19 @@ ToolRatingAssociation_table = Table( "tool_rating_association", metadata,
     Column( "rating", Integer, index=True ),
     Column( "comment", TEXT ) )
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     # Load existing tables
     metadata.reflect()
     try:
         ToolRatingAssociation_table.create()
     except Exception, e:
         log.debug( "Creating tool_rating_association table failed: %s" % str( e ) )  
-def downgrade():
+
+def downgrade(migrate_engine):
     # Load existing tables
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         ToolRatingAssociation_table.drop()

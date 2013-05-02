@@ -20,11 +20,11 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Initialize.
     if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
@@ -37,49 +37,50 @@ def upgrade():
     # Create tools_functionally_correct column
     c = Column( "includes_datatypes", Boolean, default=False, index=True )
     try:
-        c.create( RepositoryMetadata_table )
+        c.create( RepositoryMetadata_table, index_name="ix_repository_metadata_inc_datatypes")
         assert c is RepositoryMetadata_table.c.includes_datatypes
-        db_session.execute( "UPDATE repository_metadata SET includes_datatypes=%s" % default_false )
+        migrate_engine.execute( "UPDATE repository_metadata SET includes_datatypes=%s" % default_false )
     except Exception, e:
         print "Adding includes_datatypes column to the repository_metadata table failed: %s" % str( e )
     
     # Create includes_datatypes column
     c = Column( "has_repository_dependencies", Boolean, default=False, index=True )
     try:
-        c.create( RepositoryMetadata_table )
+        c.create( RepositoryMetadata_table, index_name="ix_repository_metadata_has_repo_deps")
         assert c is RepositoryMetadata_table.c.has_repository_dependencies
-        db_session.execute( "UPDATE repository_metadata SET has_repository_dependencies=%s" % default_false )
+        migrate_engine.execute( "UPDATE repository_metadata SET has_repository_dependencies=%s" % default_false )
     except Exception, e:
         print "Adding has_repository_dependencies column to the repository_metadata table failed: %s" % str( e )
     
     # Create includes_tools column
     c = Column( "includes_tools", Boolean, default=False, index=True )
     try:
-        c.create( RepositoryMetadata_table )
+        c.create( RepositoryMetadata_table, index_name="ix_repository_metadata_inc_tools")
         assert c is RepositoryMetadata_table.c.includes_tools
-        db_session.execute( "UPDATE repository_metadata SET includes_tools=%s" % default_false )
+        migrate_engine.execute( "UPDATE repository_metadata SET includes_tools=%s" % default_false )
     except Exception, e:
         print "Adding includes_tools column to the repository_metadata table failed: %s" % str( e )
     
     # Create includes_tool_dependencies column
     c = Column( "includes_tool_dependencies", Boolean, default=False, index=True )
     try:
-        c.create( RepositoryMetadata_table )
+        c.create( RepositoryMetadata_table, index_name="ix_repository_metadata_inc_tool_deps")
         assert c is RepositoryMetadata_table.c.includes_tool_dependencies
-        db_session.execute( "UPDATE repository_metadata SET includes_tool_dependencies=%s" % default_false )
+        migrate_engine.execute( "UPDATE repository_metadata SET includes_tool_dependencies=%s" % default_false )
     except Exception, e:
         print "Adding includes_tool_dependencies column to the repository_metadata table failed: %s" % str( e )
     
     # Create includes_workflows column
     c = Column( "includes_workflows", Boolean, default=False, index=True )
     try:
-        c.create( RepositoryMetadata_table )
+        c.create( RepositoryMetadata_table, index_name="ix_repository_metadata_inc_workflows")
         assert c is RepositoryMetadata_table.c.includes_workflows
-        db_session.execute( "UPDATE repository_metadata SET includes_workflows=%s" % default_false )
+        migrate_engine.execute( "UPDATE repository_metadata SET includes_workflows=%s" % default_false )
     except Exception, e:
         print "Adding includes_workflows column to the repository_metadata table failed: %s" % str( e )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     # Drop tool_test_errors, time_last_tested, do_not_test, and tools_functionally_correct columns from repository_metadata table.
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )
