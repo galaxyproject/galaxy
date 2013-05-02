@@ -2853,7 +2853,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Actions to be taken before drawing.
      */
-    before_draw: function() {},
+    before_draw: function() {
+        // Clear because this is set when drawing.
+        this.max_height_px = 0;
+    },
 
     /**
      * Draw track. It is possible to force a redraw rather than use cached tiles and/or clear old 
@@ -2930,11 +2933,15 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Add a maximum/minimum label to track.
      */
-    _add_yaxis_label: function(type, val, pref_name) {
-        var css_class = (type === 'max' ? 'top' : 'bottom'),
-            text = (type === 'max' ? 'max' : 'min');
-
-        var label = this.container_div.find(".yaxislabel." + css_class);
+    _add_yaxis_label: function(type, val, pref_name, on_change) {
+        var track = this,
+            css_class = (type === 'max' ? 'top' : 'bottom'),
+            text = (type === 'max' ? 'max' : 'min'),
+            // Default action for on_change is to redraw track.
+            on_change = on_change || function() { 
+                track.request_draw(true); 
+            },
+            label = this.container_div.find(".yaxislabel." + css_class);
 
         if (label.length !== 0) {
             // Label already exists, so update value.
@@ -2942,14 +2949,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }
         else {
             // Add label.
-            var track = this;
             label = $("<div/>").text(val).make_text_editable({
                 num_cols: 12,
                 on_finish: function(new_val) {
                     $(".bs-tooltip").remove();
                     var new_val = parseFloat(new_val);
                     track.prefs[ pref_name ] = (!isNaN(new_val) ? new_val : null);
-                    track.request_draw(true);
+                    on_change();
                 },
                 help_text: "Set " + text + " value"
             }).addClass('yaxislabel ' + css_class).css("color", this.prefs.label_color);
@@ -3337,6 +3343,9 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
 
     unpack_drawables: DrawableCollection.prototype.unpack_drawables,
 
+    /**
+     * Change mode for all tracks.
+     */
     change_mode: function(new_mode) {
         TiledTrack.prototype.change_mode.call(this, new_mode);
         for (var i = 0; i < this.drawables.length; i++) {
@@ -3425,8 +3434,6 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         if ( can_draw_now ) {
             // Set up and draw tile.
             extend(tile_data, kwargs[ 'more_tile_data' ] );
-            
-            this.tile_predraw_init();
             
             var canvas = track.view.canvas_manager.new_canvas(),
                 tile_low = region.get('start'),
@@ -3518,9 +3525,11 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
     },
 
     /**
-     * Actions taken before drawing a tile.
+     * Actions taken before drawing.
      */
-    tile_predraw_init: function() {
+    before_draw: function() {
+        TiledTrack.prototype.before_draw.call(this);
+
         //
         // Set min, max for LineTracks to be largest min, max.
         //
@@ -3541,6 +3550,8 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
                 }
             }
         }
+        this.prefs.min_value = min;
+        this.prefs.max_value = max;
         
         // Set all tracks to smallest min, biggest max.
         for (var i = 0; i < this.drawables.length; i++) {
@@ -3548,6 +3559,18 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             track.prefs.min_value = min;
             track.prefs.max_value = max;
         }
+    },
+
+    /**
+     * Update minimum, maximum for component tracks.
+     */
+    update_all_min_max: function() {
+        var track = this;
+        _.each(this.drawables, function(d) {
+            d.prefs.min_value = track.prefs.min_value;
+            d.prefs.max_value = track.prefs.max_value;
+        });
+        this.request_draw(true);
     },
 
     /**
@@ -3572,7 +3595,15 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
                 this.draw_helper(true, tile.region, tile.resolution, tile.html_elt.parent(), w_scale, { height: max_height } );
                 tile.html_elt.remove();
             }
-        }        
+        }
+
+        // Wrap function so that it can be called without object reference.
+        var track = this, 
+            t = function() { track.update_all_min_max(); };
+
+        // Add min, max labels.
+        this._add_yaxis_label('min', this.drawables[0].prefs.min_value, 'min_value', t);
+        this._add_yaxis_label('max', this.drawables[0].prefs.max_value, 'max_value', t);
     }
 });
 
@@ -3699,6 +3730,12 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             track.total_frequency = data.total_frequency;
         });
     },
+
+    /**
+     * Actions to be taken before drawing.
+     */
+    // FIXME: can the default behavior be used; right now it breaks during resize.
+    before_draw: function() {},
 
     /**
      * Draw LineTrack tile.
@@ -3840,14 +3877,6 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         } else {
             this.painter = painters.LinkedFeaturePainter;
         }
-    },
-
-    /**
-     * Actions to be taken before drawing.
-     */
-    before_draw: function() {
-        // Clear because this is set when drawing.
-        this.max_height_px = 0;
     },
 
     /**
@@ -4208,14 +4237,6 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             
             return dummy_painter.get_required_height(num_samples);
         }
-    },
-
-    /**
-     * Actions to be taken before drawing.
-     */
-    before_draw: function() {
-        // Clear because this is set when drawing.
-        this.max_height_px = 0;
     },
 
     /**
