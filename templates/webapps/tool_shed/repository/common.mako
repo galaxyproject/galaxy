@@ -980,6 +980,7 @@
         </div>
     %endif
     %if tool_test_results_root_folder:
+        <p/>
         <div class="toolForm">
             <div class="toolFormTitle">Automated tool test results</div>
             <div class="toolFormBody">
