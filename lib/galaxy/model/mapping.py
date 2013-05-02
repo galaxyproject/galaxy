@@ -36,7 +36,7 @@ dialect_to_egg = {
 }
 
 # NOTE REGARDING TIMESTAMPS:
-#   It is currently difficult to have the timestamps calculated by the 
+#   It is currently difficult to have the timestamps calculated by the
 #   database in a portable way, so we're doing it in the client. This
 #   also saves us from needing to postfetch on postgres. HOWEVER: it
 #   relies on the client's clock being set correctly, so if clustering
@@ -63,7 +63,7 @@ model.UserAddress.table = Table( "user_address", metadata,
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
-    Column( "desc", TrimmedString( 255 )),    
+    Column( "desc", TrimmedString( 255 )),
     Column( "name", TrimmedString( 255 ), nullable=False),
     Column( "institution", TrimmedString( 255 )),
     Column( "address", TrimmedString( 255 ), nullable=False),
@@ -106,7 +106,7 @@ model.HistoryUserShareAssociation.table = Table( "history_user_share_association
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
     )
 
-model.HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata, 
+model.HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
@@ -129,7 +129,7 @@ model.HistoryDatasetAssociation.table = Table( "history_dataset_association", me
     Column( "purged", Boolean, index=True, default=False ),
     Column( "visible", Boolean ) )
 
-model.Dataset.table = Table( "dataset", metadata, 
+model.Dataset.table = Table( "dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
@@ -151,7 +151,7 @@ model.HistoryDatasetAssociationDisplayAtAuthorization.table = Table( "history_da
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "site", TrimmedString( 255 ) ) )
-    
+
 model.HistoryDatasetAssociationSubset.table = Table( "history_dataset_association_subset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
@@ -184,7 +184,7 @@ model.Group.table = Table( "galaxy_group", metadata,
     Column( "name", String( 255 ), index=True, unique=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-model.UserGroupAssociation.table = Table( "user_group_association", metadata, 
+model.UserGroupAssociation.table = Table( "user_group_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
@@ -297,7 +297,7 @@ model.DefaultHistoryPermissions.table = Table( "default_history_permissions", me
     Column( "action", TEXT ),
     Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
-model.LibraryDataset.table = Table( "library_dataset", metadata, 
+model.LibraryDataset.table = Table( "library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),#current version of dataset, if null, there is not a current version selected
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
@@ -309,7 +309,7 @@ model.LibraryDataset.table = Table( "library_dataset", metadata,
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "purged", Boolean, index=True, default=False ) )
 
-model.LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_association", metadata, 
+model.LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
@@ -337,7 +337,7 @@ model.LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_a
 
 
 model.ExtendedMetadata.table = Table("extended_metadata", metadata,
-    Column( "id", Integer, primary_key=True ), 
+    Column( "id", Integer, primary_key=True ),
     Column( "data", JSONType ) )
 
 model.ExtendedMetadataIndex.table = Table("extended_metadata_index", metadata,
@@ -467,7 +467,7 @@ model.Job.table = Table( "job", metadata,
     Column( "tool_version", TEXT, default="1.0.0" ),
     Column( "state", String( 64 ), index=True ),
     Column( "info", TrimmedString( 255 ) ),
-    Column( "command_line", TEXT ), 
+    Column( "command_line", TEXT ),
     Column( "param_filename", String( 1024 ) ),
     Column( "runner_name", String( 255 ) ),
     Column( "stdout", TEXT ),
@@ -477,32 +477,32 @@ model.Job.table = Table( "job", metadata,
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True, nullable=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True, nullable=True ),
     Column( "job_runner_name", String( 255 ) ),
-    Column( "job_runner_external_id", String( 255 ) ), 
+    Column( "job_runner_external_id", String( 255 ) ),
     Column( "destination_id", String( 255 ), nullable=True ),
-    Column( "destination_params", JSONType, nullable=True ), 
+    Column( "destination_params", JSONType, nullable=True ),
     Column( "object_store_id", TrimmedString( 255 ), index=True ),
     Column( "imported", Boolean, default=False, index=True ),
     Column( "params", TrimmedString(255), index=True ),
     Column( "handler", TrimmedString( 255 ), index=True ) )
-    
+
 model.JobParameter.table = Table( "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "name", String(255) ),
     Column( "value", TEXT ) )
-    
+
 model.JobToInputDatasetAssociation.table = Table( "job_to_input_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
-    
+
 model.JobToOutputDatasetAssociation.table = Table( "job_to_output_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
-    
+
 model.JobToInputLibraryDatasetAssociation.table = Table( "job_to_input_library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -514,7 +514,7 @@ model.JobToOutputLibraryDatasetAssociation.table = Table( "job_to_output_library
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "ldda_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
-    
+
 model.JobExternalOutputMetadata.table = Table( "job_external_output_metadata", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -526,7 +526,7 @@ model.JobExternalOutputMetadata.table = Table( "job_external_output_metadata", m
     Column( "filename_kwds", String( 255 ) ),
     Column( "filename_override_metadata", String( 255 ) ),
     Column( "job_runner_external_pid", String( 255 ) ) )
-    
+
 model.JobExportHistoryArchive.table = Table( "job_export_history_archive", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -537,7 +537,7 @@ model.JobExportHistoryArchive.table = Table( "job_export_history_archive", metad
     Column( "datasets_attrs_filename", TEXT ),
     Column( "jobs_attrs_filename", TEXT )
     )
-    
+
 model.JobImportHistoryArchive.table = Table( "job_import_history_archive", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
@@ -557,14 +557,14 @@ model.GenomeIndexToolData.table = Table( "genome_index_tool_data", metadata,
     Column( "indexer", String( 64 ) ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     )
-    
+
 model.Task.table = Table( "task", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "execution_time", DateTime ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "state", String( 64 ), index=True ),
-    Column( "command_line", TEXT ), 
+    Column( "command_line", TEXT ),
     Column( "param_filename", String( 1024 ) ),
     Column( "runner_name", String( 255 ) ),
     Column( "stdout", TEXT ),
@@ -609,7 +609,7 @@ model.TransferJob.table = Table( "transfer_job", metadata,
     Column( "socket", Integer ),
     Column( "params", JSONType ) )
 
-model.Event.table = Table( "event", metadata, 
+model.Event.table = Table( "event", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -718,10 +718,10 @@ model.StoredWorkflowUserShareAssociation.table = Table( "stored_workflow_user_sh
 model.StoredWorkflowMenuEntry.table = Table( "stored_workflow_menu_entry", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),                              
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "order_index", Integer ) )
 
-model.MetadataFile.table = Table( "metadata_file", metadata, 
+model.MetadataFile.table = Table( "metadata_file", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "name", TEXT ),
     Column( "hda_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True, nullable=True ),
@@ -746,8 +746,8 @@ model.FormDefinition.table = Table('form_definition', metadata,
     Column( "name", TrimmedString( 255 ), nullable=False ),
     Column( "desc", TEXT ),
     Column( "form_definition_current_id",
-            Integer, 
-            ForeignKey( "form_definition_current.id", name='for_def_form_def_current_id_fk', use_alter=True ), 
+            Integer,
+            ForeignKey( "form_definition_current.id", name='for_def_form_def_current_id_fk', use_alter=True ),
             index=True ),
     Column( "fields", JSONType() ),
     Column( "type", TrimmedString( 255 ), index=True ),
@@ -811,7 +811,7 @@ model.RequestEvent.table = Table('request_event', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "request_id", Integer, ForeignKey( "request.id" ), index=True ), 
+    Column( "request_id", Integer, ForeignKey( "request.id" ), index=True ),
     Column( "state", TrimmedString( 255 ),  index=True ),
     Column( "comment", TEXT ) )
 
@@ -842,21 +842,21 @@ model.SampleEvent.table = Table('sample_event', metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ), 
-    Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ), 
+    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ),
+    Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ),
     Column( "comment", TEXT ) )
 
 model.SampleDataset.table = Table('sample_dataset', metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ), 
+    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ),
     Column( "name", TrimmedString( 255 ), nullable=False ),
     Column( "file_path", TEXT ),
     Column( "status", TrimmedString( 255 ), nullable=False ),
     Column( "error_msg", TEXT ),
     Column( "size", TrimmedString( 255 ) ),
-    Column( "external_service_id", Integer, ForeignKey( "external_service.id" ), index=True ) ) 
+    Column( "external_service_id", Integer, ForeignKey( "external_service.id" ), index=True ) )
 
 model.Run.table = Table( 'run', metadata,
     Column( "id", Integer, primary_key=True ),
@@ -886,9 +886,9 @@ model.Page.table = Table( "page", metadata,
             ForeignKey( "page_revision.id", use_alter=True, name='page_latest_revision_id_fk' ), index=True ),
     Column( "title", TEXT ),
     Column( "slug", TEXT, unique=True, index=True ),
-    Column( "importable", Boolean, index=True, default=False ), 
-    Column( "published", Boolean, index=True, default=False ), 
-    Column( "deleted", Boolean, index=True, default=False ), 
+    Column( "importable", Boolean, index=True, default=False ),
+    Column( "published", Boolean, index=True, default=False ),
+    Column( "deleted", Boolean, index=True, default=False ),
     )
 
 model.PageRevision.table = Table( "page_revision", metadata,
@@ -931,13 +931,13 @@ model.VisualizationRevision.table = Table( "visualization_revision", metadata,
     Column( "dbkey", TEXT, index=True ),
     Column( "config", JSONType )
     )
-    
+
 model.VisualizationUserShareAssociation.table = Table( "visualization_user_share_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True )
     )
-    
+
 #Data Manager tables
 model.DataManagerHistoryAssociation.table = Table( "data_manager_history_association", metadata,
     Column( "id", Integer, primary_key=True),
@@ -961,7 +961,7 @@ model.Tag.table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "type", Integer ),
     Column( "parent_id", Integer, ForeignKey( "tag.id" ) ),
-    Column( "name", TrimmedString(255) ), 
+    Column( "name", TrimmedString(255) ),
     UniqueConstraint( "name" ) )
 
 model.HistoryTagAssociation.table = Table( "history_tag_association", metadata,
@@ -972,7 +972,7 @@ model.HistoryTagAssociation.table = Table( "history_tag_association", metadata,
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
-    
+
 model.DatasetTagAssociation.table = Table( "dataset_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
@@ -990,7 +990,7 @@ model.HistoryDatasetAssociationTagAssociation.table = Table( "history_dataset_as
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
-        
+
 model.StoredWorkflowTagAssociation.table = Table( "stored_workflow_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
@@ -1008,7 +1008,7 @@ model.PageTagAssociation.table = Table( "page_tag_association", metadata,
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
-    
+
 model.WorkflowStepTagAssociation.table = Table( "workflow_step_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
@@ -1017,7 +1017,7 @@ model.WorkflowStepTagAssociation.table = Table( "workflow_step_tag_association",
     Column( "user_tname", Unicode(255), index=True),
     Column( "value", Unicode(255), index=True),
     Column( "user_value", Unicode(255), index=True) )
-    
+
 model.VisualizationTagAssociation.table = Table( "visualization_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
@@ -1026,7 +1026,7 @@ model.VisualizationTagAssociation.table = Table( "visualization_tag_association"
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
-    
+
 model.ToolTagAssociation.table = Table( "tool_tag_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "tool_id", TrimmedString(255), index=True ),
@@ -1035,7 +1035,7 @@ model.ToolTagAssociation.table = Table( "tool_tag_association", metadata,
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
- 
+
 # Annotation tables.
 
 model.HistoryAnnotationAssociation.table = Table( "history_annotation_association", metadata,
@@ -1061,58 +1061,58 @@ model.WorkflowStepAnnotationAssociation.table = Table( "workflow_step_annotation
     Column( "workflow_step_id", Integer, ForeignKey( "workflow_step.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "annotation", TEXT, index=True) )
-    
+
 model.PageAnnotationAssociation.table = Table( "page_annotation_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "annotation", TEXT, index=True) )
-    
+
 model.VisualizationAnnotationAssociation.table = Table( "visualization_annotation_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "annotation", TEXT, index=True) )
-    
+
 # Ratings tables.
 model.HistoryRatingAssociation.table = Table( "history_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
-    
+
 model.HistoryDatasetAssociationRatingAssociation.table = Table( "history_dataset_association_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "history_dataset_association_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
-    
+
 model.StoredWorkflowRatingAssociation.table = Table( "stored_workflow_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
-    
+
 model.PageRatingAssociation.table = Table( "page_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "page_id", Integer, ForeignKey( "page.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
-    
+
 model.VisualizationRatingAssociation.table = Table( "visualization_rating_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "visualization_id", Integer, ForeignKey( "visualization.id" ), index=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "rating", Integer, index=True) )
-    
+
 # User tables.
-    
+
 model.UserPreference.table = Table( "user_preference", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "name", Unicode( 255 ), index=True),
     Column( "value", Unicode( 1024 ) ) )
-    
+
 model.UserAction.table = Table( "user_action", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -1128,12 +1128,12 @@ model.APIKeys.table = Table( "api_keys", metadata,
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "key", TrimmedString( 32 ), index=True, unique=True ) )
 
-# With the tables defined we can define the mappers and setup the 
+# With the tables defined we can define the mappers and setup the
 # relationships between the model objects.
 
 
 mapper( model.Sample, model.Sample.table,
-               properties=dict( 
+               properties=dict(
                     events=relation( model.SampleEvent, backref="sample",
                         order_by=desc( model.SampleEvent.table.c.update_time ) ),
                     datasets=relation( model.SampleDataset, backref="sample",
@@ -1143,7 +1143,7 @@ mapper( model.Sample, model.Sample.table,
                     request=relation( model.Request,
                         primaryjoin=( model.Sample.table.c.request_id == model.Request.table.c.id ) ),
                     folder=relation( model.LibraryFolder,
-                        primaryjoin=( model.Sample.table.c.folder_id == model.LibraryFolder.table.c.id ) ),                 
+                        primaryjoin=( model.Sample.table.c.folder_id == model.LibraryFolder.table.c.id ) ),
                     library=relation( model.Library,
                         primaryjoin=( model.Sample.table.c.library_id == model.Library.table.c.id ) ),
                     history=relation( model.History,
@@ -1182,11 +1182,11 @@ mapper( model.ExternalService, model.ExternalService.table,
                                                            model.FormDefinition.table.c.id ) ),
                                 form_values=relation( model.FormValues,
                                                       primaryjoin=( model.ExternalService.table.c.form_values_id ==
-                                                          model.FormValues.table.c.id ) ) 
+                                                          model.FormValues.table.c.id ) )
                                 ) )
 
-mapper( model.RequestType, model.RequestType.table,               
-               properties=dict( states=relation( model.SampleState, 
+mapper( model.RequestType, model.RequestType.table,
+               properties=dict( states=relation( model.SampleState,
                                                  backref="request_type",
                                                  primaryjoin=( model.RequestType.table.c.id == model.SampleState.table.c.request_type_id ),
                                                  order_by=asc( model.SampleState.table.c.update_time ) ),
@@ -1198,7 +1198,7 @@ mapper( model.RequestType, model.RequestType.table,
 
 mapper( model.RequestTypeExternalServiceAssociation, model.RequestTypeExternalServiceAssociation.table,
     properties=dict(
-        request_type=relation( model.RequestType, 
+        request_type=relation( model.RequestType,
                                primaryjoin=( ( model.RequestTypeExternalServiceAssociation.table.c.request_type_id == model.RequestType.table.c.id ) ), backref="external_service_associations" ),
         external_service=relation( model.ExternalService,
                                    primaryjoin=( model.RequestTypeExternalServiceAssociation.table.c.external_service_id
@@ -1226,19 +1226,19 @@ mapper( model.FormDefinitionCurrent, model.FormDefinitionCurrent.table,
                                                        primaryjoin=( model.FormDefinitionCurrent.table.c.latest_form_id == model.FormDefinition.table.c.id ) )
                                ) )
 
-mapper( model.SampleEvent, model.SampleEvent.table, 
+mapper( model.SampleEvent, model.SampleEvent.table,
                properties=dict( state=relation( model.SampleState,
                                                 primaryjoin=( model.SampleEvent.table.c.sample_state_id == model.SampleState.table.c.id ) ),
 
                                 ) )
-                                
+
 mapper( model.SampleState, model.SampleState.table,
                properties=None )
 
 mapper( model.SampleDataset, model.SampleDataset.table,
                properties=dict( external_service=relation( model.ExternalService,
                                                            primaryjoin=( model.SampleDataset.table.c.external_service_id == model.ExternalService.table.c.id ) )
-    ) 
+    )
 )
 
 
@@ -1252,20 +1252,20 @@ mapper( model.RequestTypeRunAssociation, model.RequestTypeRunAssociation.table,
 
 mapper( model.Run, model.Run.table,
                 properties=dict( template=relation( model.FormDefinition,
-                                                    primaryjoin=( model.Run.table.c.form_definition_id == model.FormDefinition.table.c.id ) ), 
+                                                    primaryjoin=( model.Run.table.c.form_definition_id == model.FormDefinition.table.c.id ) ),
                                  info=relation( model.FormValues,
                                                 primaryjoin=( model.Run.table.c.form_values_id == model.FormValues.table.c.id ) ) ) )
 
 mapper( model.UserAddress, model.UserAddress.table,
-               properties=dict( 
+               properties=dict(
                     user=relation( model.User,
                                    primaryjoin=( model.UserAddress.table.c.user_id == model.User.table.c.id ),
                                    backref='addresses',
-                                   order_by=desc(model.UserAddress.table.c.update_time)), 
+                                   order_by=desc(model.UserAddress.table.c.update_time)),
                 ) )
 
 mapper( model.UserOpenID, model.UserOpenID.table,
-    properties=dict( 
+    properties=dict(
         session=relation( model.GalaxySession,
                           primaryjoin=( model.UserOpenID.table.c.session_id == model.GalaxySession.table.c.id ),
                           backref='openids',
@@ -1279,38 +1279,38 @@ mapper( model.UserOpenID, model.UserOpenID.table,
 mapper( model.ValidationError, model.ValidationError.table )
 
 mapper( model.HistoryDatasetAssociation, model.HistoryDatasetAssociation.table,
-    properties=dict( 
-        dataset=relation( 
-            model.Dataset, 
+    properties=dict(
+        dataset=relation(
+            model.Dataset,
             primaryjoin=( model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id ), lazy=False ),
         # .history defined in History mapper
-        copied_from_history_dataset_association=relation( 
-            model.HistoryDatasetAssociation, 
+        copied_from_history_dataset_association=relation(
+            model.HistoryDatasetAssociation,
             primaryjoin=( model.HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == model.HistoryDatasetAssociation.table.c.id ),
             remote_side=[model.HistoryDatasetAssociation.table.c.id],
             uselist=False ),
-        copied_to_history_dataset_associations=relation( 
-            model.HistoryDatasetAssociation, 
+        copied_to_history_dataset_associations=relation(
+            model.HistoryDatasetAssociation,
             primaryjoin=( model.HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == model.HistoryDatasetAssociation.table.c.id ) ),
-        copied_from_library_dataset_dataset_association=relation( 
-            model.LibraryDatasetDatasetAssociation, 
+        copied_from_library_dataset_dataset_association=relation(
+            model.LibraryDatasetDatasetAssociation,
             primaryjoin=( model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ),
             uselist=False ),
-        copied_to_library_dataset_dataset_associations=relation( 
-            model.LibraryDatasetDatasetAssociation, 
+        copied_to_library_dataset_dataset_associations=relation(
+            model.LibraryDatasetDatasetAssociation,
             primaryjoin=( model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ),
-        implicitly_converted_datasets=relation( 
-            model.ImplicitlyConvertedDatasetAssociation, 
+        implicitly_converted_datasets=relation(
+            model.ImplicitlyConvertedDatasetAssociation,
             primaryjoin=( model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == model.HistoryDatasetAssociation.table.c.id ) ),
-        implicitly_converted_parent_datasets=relation( 
-            model.ImplicitlyConvertedDatasetAssociation, 
+        implicitly_converted_parent_datasets=relation(
+            model.ImplicitlyConvertedDatasetAssociation,
             primaryjoin=( model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id == model.HistoryDatasetAssociation.table.c.id ) ),
-        children=relation( 
-            model.HistoryDatasetAssociation, 
+        children=relation(
+            model.HistoryDatasetAssociation,
             primaryjoin=( model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id ),
             backref=backref( "parent", primaryjoin=( model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id ), remote_side=[model.HistoryDatasetAssociation.table.c.id], uselist=False ) ),
-        visible_children=relation( 
-            model.HistoryDatasetAssociation, 
+        visible_children=relation(
+            model.HistoryDatasetAssociation,
             primaryjoin=( ( model.HistoryDatasetAssociation.table.c.parent_id == model.HistoryDatasetAssociation.table.c.id ) & ( model.HistoryDatasetAssociation.table.c.visible == True ) ) ),
         tags=relation( model.HistoryDatasetAssociationTagAssociation, order_by=model.HistoryDatasetAssociationTagAssociation.table.c.id, backref='history_tag_associations' ),
         annotations=relation( model.HistoryDatasetAssociationAnnotationAssociation, order_by=model.HistoryDatasetAssociationAnnotationAssociation.table.c.id, backref="hdas" ),
@@ -1318,21 +1318,21 @@ mapper( model.HistoryDatasetAssociation, model.HistoryDatasetAssociation.table,
             )
 
 mapper( model.Dataset, model.Dataset.table,
-    properties=dict( 
-        history_associations=relation( 
-            model.HistoryDatasetAssociation, 
+    properties=dict(
+        history_associations=relation(
+            model.HistoryDatasetAssociation,
             primaryjoin=( model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id ) ),
-        active_history_associations=relation( 
-            model.HistoryDatasetAssociation, 
+        active_history_associations=relation(
+            model.HistoryDatasetAssociation,
             primaryjoin=( ( model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id ) & ( model.HistoryDatasetAssociation.table.c.deleted == False ) & ( model.HistoryDatasetAssociation.table.c.purged == False ) ) ),
         purged_history_associations=relation(
             model.HistoryDatasetAssociation,
             primaryjoin=( ( model.Dataset.table.c.id == model.HistoryDatasetAssociation.table.c.dataset_id ) & ( model.HistoryDatasetAssociation.table.c.purged == True ) ) ),
-        library_associations=relation( 
-            model.LibraryDatasetDatasetAssociation, 
+        library_associations=relation(
+            model.LibraryDatasetDatasetAssociation,
             primaryjoin=( model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id ) ),
-        active_library_associations=relation( 
-            model.LibraryDatasetDatasetAssociation, 
+        active_library_associations=relation(
+            model.LibraryDatasetDatasetAssociation,
             primaryjoin=( ( model.Dataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( model.LibraryDatasetDatasetAssociation.table.c.deleted == False ) ) ),
         tags=relation(model.DatasetTagAssociation, order_by=model.DatasetTagAssociation.table.c.id, backref='datasets')
             ) )
@@ -1340,7 +1340,7 @@ mapper( model.Dataset, model.Dataset.table,
 mapper( model.HistoryDatasetAssociationDisplayAtAuthorization, model.HistoryDatasetAssociationDisplayAtAuthorization.table,
     properties=dict( history_dataset_association = relation( model.HistoryDatasetAssociation ),
                      user = relation( model.User ) ) )
-                     
+
 mapper( model.HistoryDatasetAssociationSubset, model.HistoryDatasetAssociationSubset.table,
     properties=dict( hda = relation( model.HistoryDatasetAssociation,
                         primaryjoin=( model.HistoryDatasetAssociationSubset.table.c.history_dataset_association_id == model.HistoryDatasetAssociation.table.c.id ) ),
@@ -1348,18 +1348,18 @@ mapper( model.HistoryDatasetAssociationSubset, model.HistoryDatasetAssociationSu
                         primaryjoin=( model.HistoryDatasetAssociationSubset.table.c.history_dataset_association_subset_id == model.HistoryDatasetAssociation.table.c.id ) )
                     ) )
 
-mapper( model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDatasetAssociation.table, 
-    properties=dict( parent_hda=relation( 
-                        model.HistoryDatasetAssociation, 
+mapper( model.ImplicitlyConvertedDatasetAssociation, model.ImplicitlyConvertedDatasetAssociation.table,
+    properties=dict( parent_hda=relation(
+                        model.HistoryDatasetAssociation,
                         primaryjoin=( model.ImplicitlyConvertedDatasetAssociation.table.c.hda_parent_id == model.HistoryDatasetAssociation.table.c.id ) ),
-                     parent_ldda=relation( 
-                        model.LibraryDatasetDatasetAssociation, 
+                     parent_ldda=relation(
+                        model.LibraryDatasetDatasetAssociation,
                         primaryjoin=( model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ),
-                     dataset_ldda=relation( 
-                        model.LibraryDatasetDatasetAssociation, 
+                     dataset_ldda=relation(
+                        model.LibraryDatasetDatasetAssociation,
                         primaryjoin=( model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ),
-                     dataset=relation( 
-                        model.HistoryDatasetAssociation, 
+                     dataset=relation(
+                        model.HistoryDatasetAssociation,
                         primaryjoin=( model.ImplicitlyConvertedDatasetAssociation.table.c.hda_id == model.HistoryDatasetAssociation.table.c.id ) ) ) )
 
 mapper( model.History, model.History.table,
@@ -1370,10 +1370,10 @@ mapper( model.History, model.History.table,
                      order_by=asc( model.HistoryDatasetAssociation.table.c.hid ), viewonly=True ),
                      tags=relation( model.HistoryTagAssociation, order_by=model.HistoryTagAssociation.table.c.id, backref="histories" ),
                      annotations=relation( model.HistoryAnnotationAssociation, order_by=model.HistoryAnnotationAssociation.table.c.id, backref="histories" ),
-                     ratings=relation( model.HistoryRatingAssociation, order_by=model.HistoryRatingAssociation.table.c.id, backref="histories" ) )  
+                     ratings=relation( model.HistoryRatingAssociation, order_by=model.HistoryRatingAssociation.table.c.id, backref="histories" ) )
                       )
 
-# Set up proxy so that 
+# Set up proxy so that
 #   History.users_shared_with
 # returns a list of users that history is shared with.
 model.History.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
@@ -1383,9 +1383,9 @@ mapper( model.HistoryUserShareAssociation, model.HistoryUserShareAssociation.tab
                      history=relation( model.History, backref='users_shared_with' )
                    ) )
 
-mapper( model.User, model.User.table, 
+mapper( model.User, model.User.table,
     properties=dict( histories=relation( model.History, backref="user",
-                                         order_by=desc(model.History.table.c.update_time) ),               
+                                         order_by=desc(model.History.table.c.update_time) ),
                      active_histories=relation( model.History, primaryjoin=( ( model.History.table.c.user_id == model.User.table.c.id ) & ( not_( model.History.table.c.deleted ) ) ), order_by=desc( model.History.table.c.update_time ) ),
                      galaxy_sessions=relation( model.GalaxySession, order_by=desc( model.GalaxySession.table.c.update_time ) ),
                      stored_workflow_menu_entries=relation( model.StoredWorkflowMenuEntry, backref="user",
@@ -1398,7 +1398,7 @@ mapper( model.User, model.User.table,
                                       primaryjoin=( model.User.table.c.form_values_id == model.FormValues.table.c.id ) ),
                      api_keys=relation( model.APIKeys, backref="user", order_by=desc( model.APIKeys.table.c.create_time ) ),
                      ) )
-                     
+
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
 model.User.preferences = association_proxy('_preferences', 'value', creator=model.UserPreference)
@@ -1428,7 +1428,7 @@ mapper( model.Role, model.Role.table,
 mapper( model.UserRoleAssociation, model.UserRoleAssociation.table,
     properties=dict(
         user=relation( model.User, backref="roles" ),
-        non_private_roles=relation( model.User, 
+        non_private_roles=relation( model.User,
                                     backref="non_private_roles",
                                     primaryjoin=( ( model.User.table.c.id == model.UserRoleAssociation.table.c.user_id ) & ( model.UserRoleAssociation.table.c.role_id == model.Role.table.c.id ) & not_( model.Role.table.c.name == model.User.table.c.email ) ) ),
         role=relation( model.Role )
@@ -1500,7 +1500,7 @@ mapper( model.Library, model.Library.table,
 
 mapper( model.ExtendedMetadata, model.ExtendedMetadata.table,
     properties=dict(
-        children=relation( 
+        children=relation(
             model.ExtendedMetadataIndex,
             primaryjoin=( model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ),
             backref=backref("parent",
@@ -1514,7 +1514,7 @@ mapper( model.ExtendedMetadataIndex, model.ExtendedMetadataIndex.table,
     properties=dict(
         extended_metadata=relation(
             model.ExtendedMetadata,
-            primaryjoin=( ( model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )     
+            primaryjoin=( ( model.ExtendedMetadataIndex.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
         )
     )
 )
@@ -1524,7 +1524,7 @@ mapper( model.LibraryInfoAssociation, model.LibraryInfoAssociation.table,
                properties=dict( library=relation( model.Library,
                                                   primaryjoin=( ( model.LibraryInfoAssociation.table.c.library_id == model.Library.table.c.id ) & ( not_( model.LibraryInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
                                 template=relation( model.FormDefinition,
-                                                   primaryjoin=( model.LibraryInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ), 
+                                                   primaryjoin=( model.LibraryInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ),
                                 info=relation( model.FormValues,
                                                primaryjoin=( model.LibraryInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
                               ) )
@@ -1557,53 +1557,53 @@ mapper( model.LibraryFolderInfoAssociation, model.LibraryFolderInfoAssociation.t
                properties=dict( folder=relation( model.LibraryFolder,
                                                  primaryjoin=( ( model.LibraryFolderInfoAssociation.table.c.library_folder_id == model.LibraryFolder.table.c.id ) & ( not_( model.LibraryFolderInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
                                 template=relation( model.FormDefinition,
-                                                   primaryjoin=( model.LibraryFolderInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ), 
+                                                   primaryjoin=( model.LibraryFolderInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ),
                                 info=relation( model.FormValues,
                                                primaryjoin=( model.LibraryFolderInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
                               ) )
 
 mapper( model.LibraryDataset, model.LibraryDataset.table,
-    properties=dict( 
+    properties=dict(
         folder=relation( model.LibraryFolder ),
         library_dataset_dataset_association=relation( model.LibraryDatasetDatasetAssociation, primaryjoin=( model.LibraryDataset.table.c.library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ),
         expired_datasets = relation( model.LibraryDatasetDatasetAssociation, foreign_keys=[model.LibraryDataset.table.c.id,model.LibraryDataset.table.c.library_dataset_dataset_association_id ], primaryjoin=( ( model.LibraryDataset.table.c.id == model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id ) & ( not_( model.LibraryDataset.table.c.library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ) ), viewonly=True, uselist=True )
         ) )
 
 mapper( model.LibraryDatasetDatasetAssociation, model.LibraryDatasetDatasetAssociation.table,
-    properties=dict( 
+    properties=dict(
         dataset=relation( model.Dataset ),
         library_dataset = relation( model.LibraryDataset,
         primaryjoin=( model.LibraryDatasetDatasetAssociation.table.c.library_dataset_id == model.LibraryDataset.table.c.id ) ),
         #user=relation( model.User.mapper ),
         user=relation( model.User ),
-        copied_from_library_dataset_dataset_association=relation( 
-            model.LibraryDatasetDatasetAssociation, 
+        copied_from_library_dataset_dataset_association=relation(
+            model.LibraryDatasetDatasetAssociation,
             primaryjoin=( model.LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ),
             remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id],
             uselist=False ),
-        copied_to_library_dataset_dataset_associations=relation( 
-            model.LibraryDatasetDatasetAssociation, 
+        copied_to_library_dataset_dataset_associations=relation(
+            model.LibraryDatasetDatasetAssociation,
             primaryjoin=( model.LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ),
-        copied_from_history_dataset_association=relation( 
-            model.HistoryDatasetAssociation, 
+        copied_from_history_dataset_association=relation(
+            model.HistoryDatasetAssociation,
             primaryjoin=( model.LibraryDatasetDatasetAssociation.table.c.copied_from_history_dataset_association_id == model.HistoryDatasetAssociation.table.c.id  ),
             uselist=False ),
-        copied_to_history_dataset_associations=relation( 
-            model.HistoryDatasetAssociation, 
+        copied_to_history_dataset_associations=relation(
+            model.HistoryDatasetAssociation,
             primaryjoin=( model.HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ),
-        implicitly_converted_datasets=relation( 
-            model.ImplicitlyConvertedDatasetAssociation, 
+        implicitly_converted_datasets=relation(
+            model.ImplicitlyConvertedDatasetAssociation,
             primaryjoin=( model.ImplicitlyConvertedDatasetAssociation.table.c.ldda_parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ) ),
-        children=relation( 
-            model.LibraryDatasetDatasetAssociation, 
+        children=relation(
+            model.LibraryDatasetDatasetAssociation,
             primaryjoin=( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ),
             backref=backref( "parent", primaryjoin=( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[model.LibraryDatasetDatasetAssociation.table.c.id] ) ),
-        visible_children=relation( 
-            model.LibraryDatasetDatasetAssociation, 
+        visible_children=relation(
+            model.LibraryDatasetDatasetAssociation,
             primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.parent_id == model.LibraryDatasetDatasetAssociation.table.c.id ) & ( model.LibraryDatasetDatasetAssociation.table.c.visible == True ) ) ),
         extended_metadata=relation(
             model.ExtendedMetadata,
-            primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )     
+            primaryjoin=( ( model.LibraryDatasetDatasetAssociation.table.c.extended_metadata_id == model.ExtendedMetadata.table.c.id ) )
         )
     ))
 
@@ -1611,7 +1611,7 @@ mapper( model.LibraryDatasetDatasetInfoAssociation, model.LibraryDatasetDatasetI
                properties=dict( library_dataset_dataset_association=relation( model.LibraryDatasetDatasetAssociation,
                                                                               primaryjoin=( ( model.LibraryDatasetDatasetInfoAssociation.table.c.library_dataset_dataset_association_id == model.LibraryDatasetDatasetAssociation.table.c.id ) & ( not_( model.LibraryDatasetDatasetInfoAssociation.table.c.deleted ) ) ), backref="info_association" ),
                                 template=relation( model.FormDefinition,
-                                                   primaryjoin=( model.LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ), 
+                                                   primaryjoin=( model.LibraryDatasetDatasetInfoAssociation.table.c.form_definition_id == model.FormDefinition.table.c.id ) ),
                                 info=relation( model.FormValues,
                                                primaryjoin=( model.LibraryDatasetDatasetInfoAssociation.table.c.form_values_id == model.FormValues.table.c.id ) )
                               ) )
@@ -1631,15 +1631,15 @@ mapper( model.JobToOutputLibraryDatasetAssociation, model.JobToOutputLibraryData
 mapper( model.JobParameter, model.JobParameter.table )
 
 mapper( model.JobExternalOutputMetadata, model.JobExternalOutputMetadata.table,
-    properties=dict( job = relation( model.Job ), 
+    properties=dict( job = relation( model.Job ),
                      history_dataset_association = relation( model.HistoryDatasetAssociation, lazy = False ),
                      library_dataset_dataset_association = relation( model.LibraryDatasetDatasetAssociation, lazy = False ) ) )
-                     
+
 mapper( model.JobExportHistoryArchive, model.JobExportHistoryArchive.table,
     properties=dict( job = relation( model.Job ),
                      history = relation( model.History ),
                      dataset = relation( model.Dataset ) ) )
-                     
+
 mapper( model.JobImportHistoryArchive, model.JobImportHistoryArchive.table,
     properties=dict( job = relation( model.Job ), history = relation( model.History ) ) )
 
@@ -1654,10 +1654,10 @@ mapper(model.PostJobAction, model.PostJobAction.table,
     properties=dict(workflow_step = relation( model.WorkflowStep, backref='post_job_actions', primaryjoin=(model.WorkflowStep.table.c.id == model.PostJobAction.table.c.workflow_step_id))))
 
 mapper( model.PostJobActionAssociation, model.PostJobActionAssociation.table,
-    properties=dict( job = relation( model.Job ), 
+    properties=dict( job = relation( model.Job ),
                      post_job_action = relation( model.PostJobAction) ) )
 
-mapper( model.Job, model.Job.table, 
+mapper( model.Job, model.Job.table,
     #properties=dict( user=relation( model.User.mapper ),
     properties=dict( user=relation( model.User ),
                      galaxy_session=relation( model.GalaxySession ),
@@ -1669,18 +1669,18 @@ mapper( model.Job, model.Job.table,
                      post_job_actions=relation( model.PostJobActionAssociation, lazy=False ),
                      input_library_datasets=relation( model.JobToInputLibraryDatasetAssociation ),
                      output_library_datasets=relation( model.JobToOutputLibraryDatasetAssociation ),
-                     external_output_metadata = relation( model.JobExternalOutputMetadata, lazy = False ), 
+                     external_output_metadata = relation( model.JobExternalOutputMetadata, lazy = False ),
                      tasks = relation(model.Task) ) )
 
 mapper( model.Task, model.Task.table,
     properties=dict( job = relation( model.Job ) ) )
-                     
-mapper( model.DeferredJob, model.DeferredJob.table, 
+
+mapper( model.DeferredJob, model.DeferredJob.table,
     properties = {} )
 
-mapper( model.TransferJob, model.TransferJob.table, 
+mapper( model.TransferJob, model.TransferJob.table,
     properties = {} )
-    
+
 mapper( model.Event, model.Event.table,
     properties=dict( history=relation( model.History ),
                      galaxy_session=relation( model.GalaxySession ),
@@ -1694,7 +1694,7 @@ mapper( model.GalaxySession, model.GalaxySession.table,
                      user=relation( model.User ) ) )
 
 mapper( model.GalaxySessionToHistoryAssociation, model.GalaxySessionToHistoryAssociation.table,
-    properties=dict( galaxy_session=relation( model.GalaxySession ), 
+    properties=dict( galaxy_session=relation( model.GalaxySession ),
                      history=relation( model.History ) ) )
 
 mapper( model.Workflow, model.Workflow.table,
@@ -1709,7 +1709,7 @@ mapper( model.Workflow, model.Workflow.table,
 
 mapper( model.WorkflowStep, model.WorkflowStep.table,
                 properties=dict(
-                    tags=relation(model.WorkflowStepTagAssociation, order_by=model.WorkflowStepTagAssociation.table.c.id, backref="workflow_steps"), 
+                    tags=relation(model.WorkflowStepTagAssociation, order_by=model.WorkflowStepTagAssociation.table.c.id, backref="workflow_steps"),
                     annotations=relation( model.WorkflowStepAnnotationAssociation, order_by=model.WorkflowStepAnnotationAssociation.table.c.id, backref="workflow_steps" ) )
                 )
 
@@ -1742,7 +1742,7 @@ mapper( model.StoredWorkflow, model.StoredWorkflow.table,
                      ratings=relation( model.StoredWorkflowRatingAssociation, order_by=model.StoredWorkflowRatingAssociation.table.c.id, backref="stored_workflows" ) )
                    )
 
-# Set up proxy so that 
+# Set up proxy so that
 #   StoredWorkflow.users_shared_with
 # returns a list of users that workflow is shared with.
 model.StoredWorkflow.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
@@ -1780,9 +1780,9 @@ mapper( model.Page, model.Page.table,
                                                lazy=False ),
                      tags=relation(model.PageTagAssociation, order_by=model.PageTagAssociation.table.c.id, backref="pages"),
                      annotations=relation( model.PageAnnotationAssociation, order_by=model.PageAnnotationAssociation.table.c.id, backref="pages" ),
-                     ratings=relation( model.PageRatingAssociation, order_by=model.PageRatingAssociation.table.c.id, backref="pages" )  
+                     ratings=relation( model.PageRatingAssociation, order_by=model.PageRatingAssociation.table.c.id, backref="pages" )
                    ) )
-                   
+
 mapper( model.ToolShedRepository, model.ToolShedRepository.table,
     properties=dict( tool_versions=relation( model.ToolVersion,
                                              primaryjoin=( model.ToolShedRepository.table.c.id == model.ToolVersion.table.c.tool_shed_repository_id ),
@@ -1796,7 +1796,7 @@ mapper( model.ToolShedRepository, model.ToolShedRepository.table,
 
 mapper( model.RepositoryRepositoryDependencyAssociation, model.RepositoryRepositoryDependencyAssociation.table,
     properties=dict( repository=relation( model.ToolShedRepository,
-                                          primaryjoin=( model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id == model.ToolShedRepository.table.c.id ) ), 
+                                          primaryjoin=( model.RepositoryRepositoryDependencyAssociation.table.c.tool_shed_repository_id == model.ToolShedRepository.table.c.id ) ),
                      repository_dependency=relation( model.RepositoryDependency,
                                                      primaryjoin=( model.RepositoryRepositoryDependencyAssociation.table.c.repository_dependency_id == model.RepositoryDependency.table.c.id ) ) ) )
 
@@ -1807,7 +1807,7 @@ mapper( model.RepositoryDependency, model.RepositoryDependency.table,
 mapper( model.ToolDependency, model.ToolDependency.table )
 
 mapper( model.ToolVersion, model.ToolVersion.table,
-    properties=dict( 
+    properties=dict(
         parent_tool_association=relation( model.ToolVersionAssociation,
             primaryjoin=( model.ToolVersion.table.c.id == model.ToolVersionAssociation.table.c.tool_id ) ),
         child_tool_association=relation( model.ToolVersionAssociation,
@@ -1817,11 +1817,11 @@ mapper( model.ToolVersion, model.ToolVersion.table,
 
 mapper( model.ToolVersionAssociation, model.ToolVersionAssociation.table )
 
-# Set up proxy so that 
+# Set up proxy so that
 #   Page.users_shared_with
 # returns a list of users that page is shared with.
 model.Page.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
-                   
+
 mapper( model.PageUserShareAssociation, model.PageUserShareAssociation.table,
    properties=dict( user=relation( model.User, backref='pages_shared_by_others' ),
                     page=relation( model.Page, backref='users_shared_with' )
@@ -1839,23 +1839,23 @@ mapper( model.Visualization, model.Visualization.table,
                                                lazy=False ),
                      tags=relation( model.VisualizationTagAssociation, order_by=model.VisualizationTagAssociation.table.c.id, backref="visualizations" ),
                      annotations=relation( model.VisualizationAnnotationAssociation, order_by=model.VisualizationAnnotationAssociation.table.c.id, backref="visualizations" ),
-                     ratings=relation( model.VisualizationRatingAssociation, order_by=model.VisualizationRatingAssociation.table.c.id, backref="visualizations" ) 
+                     ratings=relation( model.VisualizationRatingAssociation, order_by=model.VisualizationRatingAssociation.table.c.id, backref="visualizations" )
                    ) )
-                   
-# Set up proxy so that 
+
+# Set up proxy so that
 #   Visualization.users_shared_with
 # returns a list of users that visualization is shared with.
 model.Visualization.users_shared_with_dot_users = association_proxy( 'users_shared_with', 'user' )
-                   
+
 mapper( model.VisualizationUserShareAssociation, model.VisualizationUserShareAssociation.table,
   properties=dict( user=relation( model.User, backref='visualizations_shared_by_others' ),
                    visualization=relation( model.Visualization, backref='users_shared_with' )
                  ) )
-                 
+
 # Tag tables.
 
 mapper( model.Tag, model.Tag.table,
-    properties=dict( children=relation(model.Tag, backref=backref( 'parent', remote_side=[model.Tag.table.c.id] ) )  
+    properties=dict( children=relation(model.Tag, backref=backref( 'parent', remote_side=[model.Tag.table.c.id] ) )
                      ) )
 
 mapper( model.HistoryTagAssociation, model.HistoryTagAssociation.table,
@@ -1873,33 +1873,33 @@ mapper( model.HistoryDatasetAssociationTagAssociation, model.HistoryDatasetAssoc
 mapper( model.PageTagAssociation, model.PageTagAssociation.table,
     properties=dict( tag=relation(model.Tag, backref="tagged_pages"), user=relation( model.User ) )
                     )
-                    
+
 mapper( model.StoredWorkflowTagAssociation, model.StoredWorkflowTagAssociation.table,
     properties=dict( tag=relation(model.Tag, backref="tagged_workflows"), user=relation( model.User ) )
                     )
-                    
+
 mapper( model.WorkflowStepTagAssociation, model.WorkflowStepTagAssociation.table,
     properties=dict( tag=relation(model.Tag, backref="tagged_workflow_steps"), user=relation( model.User ) )
                     )
-                    
+
 mapper( model.VisualizationTagAssociation, model.VisualizationTagAssociation.table,
     properties=dict( tag=relation(model.Tag, backref="tagged_visualizations"), user=relation( model.User ) )
                     )
-                    
+
 mapper( model.ToolTagAssociation, model.ToolTagAssociation.table,
     properties=dict( tag=relation(model.Tag, backref="tagged_tools"), user=relation( model.User ) )
                     )
-                    
+
 # Annotation tables.
-                    
+
 mapper( model.HistoryAnnotationAssociation, model.HistoryAnnotationAssociation.table,
     properties=dict( history=relation( model.History ), user=relation( model.User ) )
                     )
-                    
+
 mapper( model.HistoryDatasetAssociationAnnotationAssociation, model.HistoryDatasetAssociationAnnotationAssociation.table,
     properties=dict( hda=relation( model.HistoryDatasetAssociation ), user=relation( model.User ) )
                     )
-                    
+
 mapper( model.StoredWorkflowAnnotationAssociation, model.StoredWorkflowAnnotationAssociation.table,
     properties=dict( stored_workflow=relation( model.StoredWorkflow ), user=relation( model.User ) )
                     )
@@ -1907,25 +1907,25 @@ mapper( model.StoredWorkflowAnnotationAssociation, model.StoredWorkflowAnnotatio
 mapper( model.WorkflowStepAnnotationAssociation, model.WorkflowStepAnnotationAssociation.table,
     properties=dict( workflow_step=relation( model.WorkflowStep ), user=relation( model.User ) )
                     )
-                    
+
 mapper( model.PageAnnotationAssociation, model.PageAnnotationAssociation.table,
     properties=dict( page=relation( model.Page ), user=relation( model.User ) )
                     )
-                    
+
 mapper( model.VisualizationAnnotationAssociation, model.VisualizationAnnotationAssociation.table,
     properties=dict( visualization=relation( model.Visualization ), user=relation( model.User ) )
                     )
-                    
+
 # Rating tables.
 
 mapper( model.HistoryRatingAssociation, model.HistoryRatingAssociation.table,
     properties=dict( history=relation( model.History ), user=relation( model.User ) )
                     )
-                    
+
 mapper( model.HistoryDatasetAssociationRatingAssociation, model.HistoryDatasetAssociationRatingAssociation.table,
     properties=dict( hda=relation( model.HistoryDatasetAssociation ), user=relation( model.User ) )
                     )
-                    
+
 mapper( model.StoredWorkflowRatingAssociation, model.StoredWorkflowRatingAssociation.table,
     properties=dict( stored_workflow=relation( model.StoredWorkflow ), user=relation( model.User ) )
                     )
@@ -1950,19 +1950,19 @@ mapper( model.DataManagerJobAssociation, model.DataManagerJobAssociation.table,
               )
 
 # User tables.
-                    
-mapper( model.UserPreference, model.UserPreference.table, 
+
+mapper( model.UserPreference, model.UserPreference.table,
     properties = {}
               )
-              
-mapper( model.UserAction, model.UserAction.table, 
+
+mapper( model.UserAction, model.UserAction.table,
   #properties = dict( user=relation( model.User.mapper ) )
   properties = dict( user=relation( model.User ) )
             )
 
-mapper( model.APIKeys, model.APIKeys.table, 
+mapper( model.APIKeys, model.APIKeys.table,
     properties = {} )
-    
+
 
 #model.HistoryDatasetAssociation.mapper.add_property( "creating_job_associations", relation( model.JobToOutputDatasetAssociation ) )
 #model.LibraryDatasetDatasetAssociation.mapper.add_property( "creating_job_associations", relation( model.JobToOutputLibraryDatasetAssociation ) )
@@ -2051,7 +2051,7 @@ def init( file_path, url, engine_options={}, create_tables=False, database_query
     #load local galaxy security policy
     result.security_agent = GalaxyRBACAgent( result )
     return result
-    
+
 def get_suite():
     """Get unittest suite for this module"""
     import unittest, mapping_tests
