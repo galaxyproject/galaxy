@@ -199,7 +199,7 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
                 raise Exception( "No dataset with hid '%d'" % hid )
         else:
             try:
-                data = self.app.model.HistoryDatasetAssociation.get( id )
+                data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             except:
                 return "Dataset id '%s' is invalid" % str( id )
         if data:
@@ -466,7 +466,6 @@ class RootController( BaseUIController, UsesHistoryMixin, UsesHistoryDatasetAsso
             old_data = trans.sa_session.query( self.app.model.HistoryDatasetAssociation ).get( id )
             new_data = old_data.copy()
             ## new_data.parent = None
-            ## history = trans.app.model.History.get( old_data.history_id )
             history = trans.get_history()
             history.add_dataset(new_data)
             trans.sa_session.add( new_data )
