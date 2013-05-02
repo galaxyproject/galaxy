@@ -30,7 +30,7 @@ def upgrade( migrate_engine ):
         c.create( Tool_table, index_name = 'ix_tool_suite')
         assert c is Tool_table.c.suite
         # Initialize.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
+        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
             default_false = "0"
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
@@ -38,7 +38,7 @@ def upgrade( migrate_engine ):
     except Exception, e:
         print "Adding suite column to the tool table failed: %s" % str( e )
         log.debug( "Adding suite column to the tool table failed: %s" % str( e ) )
-    
+
 def downgrade( migrate_engine ):
     metadata.bind = migrate_engine
     metadata.reflect()

@@ -33,7 +33,7 @@ def upgrade(migrate_engine):
         c.create( Repository_table )
         assert c is Repository_table.c.deprecated
         # Initialize.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
+        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
             default_false = "0"
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
@@ -41,7 +41,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print "Adding deprecated column to the repository table failed: %s" % str( e )
         log.debug( "Adding deprecated column to the repository table failed: %s" % str( e ) )
-    
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

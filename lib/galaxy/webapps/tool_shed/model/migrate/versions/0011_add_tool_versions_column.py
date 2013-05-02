@@ -35,7 +35,7 @@ def upgrade(migrate_engine):
         assert c is RepositoryMetadata_table.c.tool_versions
     except Exception, e:
         print "Adding tool_versions column to the repository_metadata table failed: %s" % str( e )
-    
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

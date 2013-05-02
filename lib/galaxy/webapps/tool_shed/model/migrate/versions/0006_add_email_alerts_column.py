@@ -35,7 +35,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print "Adding email_alerts column to the repository table failed: %s" % str( e )
         log.debug( "Adding email_alerts column to the repository table failed: %s" % str( e ) )
-    
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

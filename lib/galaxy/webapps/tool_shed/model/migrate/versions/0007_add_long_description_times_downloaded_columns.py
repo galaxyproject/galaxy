@@ -49,7 +49,7 @@ def upgrade(migrate_engine):
     migrate_engine.execute( cmd )
     cmd = "UPDATE repository SET times_downloaded = 0"
     migrate_engine.execute( cmd )
-    
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

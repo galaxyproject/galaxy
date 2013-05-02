@@ -7,7 +7,7 @@ from sqlalchemy.orm import *
 from migrate import *
 from migrate.changeset import *
 from galaxy.model.custom_types import *
- 
+
 log = logging.getLogger( __name__ )
 log.setLevel(logging.DEBUG)
 handler = logging.StreamHandler( sys.stdout )

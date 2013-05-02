@@ -1,6 +1,6 @@
 """
 Drops the tool, tool_category_association, event, tool_event_association, tool_rating_association,
-tool_tag_association and tool_annotation_association tables since they are no longer used in the 
+tool_tag_association and tool_annotation_association tables since they are no longer used in the
 next-gen tool shed.
 """
 from sqlalchemy import *
@@ -107,7 +107,7 @@ def downgrade():
         Column( "state", TrimmedString( 255 ), index=True ),
         Column( "comment", TEXT ) )
 
-    Tool_table = Table( "tool", metadata, 
+    Tool_table = Table( "tool", metadata,
         Column( "id", Integer, primary_key=True ),
         Column( "guid", TrimmedString( 255 ), index=True, unique=True ),
         Column( "tool_id", TrimmedString( 255 ), index=True ),

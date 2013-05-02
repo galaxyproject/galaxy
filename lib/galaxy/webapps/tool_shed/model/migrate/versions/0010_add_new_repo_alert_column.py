@@ -30,7 +30,7 @@ def upgrade(migrate_engine):
         c.create( User_table, index_name="ix_galaxy_user_new_repo_alert")
         assert c is User_table.c.new_repo_alert
         # Initialize.
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
+        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
             default_false = "0"
         elif migrate_engine.name in ['postgresql', 'postgres']:
             default_false = "false"
@@ -40,7 +40,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print "Adding new_repo_alert column to the galaxy_user table failed: %s" % str( e )
         log.debug( "Adding new_repo_alert column to the galaxy_user table failed: %s" % str( e ) )
-    
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

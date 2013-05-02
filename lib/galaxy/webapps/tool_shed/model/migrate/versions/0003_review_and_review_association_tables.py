@@ -41,7 +41,7 @@ def upgrade(migrate_engine):
     try:
         ToolRatingAssociation_table.create()
     except Exception, e:
-        log.debug( "Creating tool_rating_association table failed: %s" % str( e ) )  
+        log.debug( "Creating tool_rating_association table failed: %s" % str( e ) )
 
 def downgrade(migrate_engine):
     # Load existing tables
@@ -50,4 +50,4 @@ def downgrade(migrate_engine):
     try:
         ToolRatingAssociation_table.drop()
     except Exception, e:
-        log.debug( "Dropping tool_rating_association table failed: %s" % str( e ) )  
+        log.debug( "Dropping tool_rating_association table failed: %s" % str( e ) )

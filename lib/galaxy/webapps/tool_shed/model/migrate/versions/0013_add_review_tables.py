@@ -46,7 +46,7 @@ def boolean_false(migrate_engine):
    elif migrate_engine.name == 'sqlite':
        return 0
    else:
-       raise Exception( 'Unable to convert data for unknown database type: %s' % db ) 
+       raise Exception( 'Unable to convert data for unknown database type: %s' % db )
 
 RepositoryReview_table = Table( "repository_review", metadata,
     Column( "id", Integer, primary_key=True ),

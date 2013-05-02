@@ -27,11 +27,11 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     # Initialize.
-    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
+    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
         default_false = "0"
     elif migrate_engine.name in ['postgresql', 'postgres']:
         default_false = "false"
-    
+
     try:
         RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )
     except NoSuchTableError:
@@ -54,7 +54,7 @@ def upgrade(migrate_engine):
             assert c is RepositoryMetadata_table.c.tool_test_results
         except Exception, e:
             print "Adding tool_test_results column to the repository_metadata table failed: %s" % str( e )
-        
+
         # Create the missing_test_components column.
         c = Column( "missing_test_components", Boolean, default=False, index=True )
         try:
@@ -69,13 +69,13 @@ def downgrade():
     metadata.reflect()
     # Drop missing_test_components and tool_test_results from the repository_metadata table and add tool_test_errors to the repository_metadata table.
     RepositoryMetadata_table = Table( "repository_metadata", metadata, autoload=True )
-    
+
     # Drop the missing_test_components column.
     try:
         RepositoryMetadata_table.c.missing_test_components.drop()
     except Exception, e:
         print "Dropping column missing_test_components from the repository_metadata table failed: %s" % str( e )
-    
+
     # Drop the tool_test_results column.
     try:
         RepositoryMetadata_table.c.tool_test_results.drop()
