@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, shutil, tempfile, re, string
+import os, sys, shutil, tempfile, re, string, multiprocessing
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
