@@ -2442,7 +2442,9 @@ extend(Track.prototype, Drawable.prototype, {
     /**
      * Action to take during resize.
      */
-    on_resize: function() {},
+    on_resize: function() {
+        this.request_draw(true);
+    },
 
     /**
      * Add resizing handle to drawable's container_div.
@@ -2926,6 +2928,36 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     },
 
     /**
+     * Add a maximum/minimum label to track.
+     */
+    _add_yaxis_label: function(type, val, pref_name) {
+        var css_class = (type === 'max' ? 'top' : 'bottom'),
+            text = (type === 'max' ? 'max' : 'min');
+
+        var label = this.container_div.find(".yaxislabel." + css_class);
+
+        if (label.length !== 0) {
+            // Label already exists, so update value.
+            label.text(val);
+        }
+        else {
+            // Add label.
+            var track = this;
+            label = $("<div/>").text(val).make_text_editable({
+                num_cols: 12,
+                on_finish: function(new_val) {
+                    $(".bs-tooltip").remove();
+                    var new_val = parseFloat(new_val);
+                    track.prefs[ pref_name ] = (!isNaN(new_val) ? new_val : null);
+                    track.request_draw(true);
+                },
+                help_text: "Set " + text + " value"
+            }).addClass('yaxislabel ' + css_class).css("color", this.prefs.label_color);
+            this.container_div.prepend(label);
+        }
+    },
+
+    /**
      * Actions to be taken after draw has been completed. Draw is completed when all tiles have been 
      * drawn/fetched and shown.
      */
@@ -2947,27 +2979,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }
 
         //
-        // If using SummaryTree tiles, show max and make it editable.
+        // If using SummaryTree tiles, show max.
         //
         var track = this,
             first_tile = tiles[0];
         if (first_tile instanceof SummaryTreeTile) {
-            // Remove old max.
-            this.container_div.find(".yaxislabel").remove();
-
-            // Add new max.
-            var max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val),
-                max_label = $("<div/>").text(max_val).make_text_editable({
-                    num_cols: 12,
-                    on_finish: function(new_val) {
-                        $(".bs-tooltip").remove();
-                        var new_val = parseFloat(new_val);
-                        track.prefs.histogram_max = (!isNaN(new_val) ? new_val : null);
-                        track.request_draw(true);
-                    },
-                    help_text: "Set max value; leave blank to use default"
-                }).addClass('yaxislabel top').css("color", this.prefs.label_color);
-            this.container_div.prepend(max_label);
+            var max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val);
+            this._add_yaxis_label('max', max_val, 'histogram_max');
         }
     },
 
@@ -3496,7 +3514,7 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         
         // Replace track with group.
         var index = this.container.replace_drawable(this, group, true);
-        group.request_draw();
+        group.request_draw(true);
     },
 
     /**
@@ -3647,8 +3665,7 @@ var LineTrack = function (view, container, obj_dict) {
         onchange: function() {
             track.set_name(track.prefs.name);
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
-            track.set_min_value(track.prefs.min_value);
-            track.set_max_value(track.prefs.max_value);
+            track.request_redraw(true);
         }
     });
 
@@ -3657,30 +3674,6 @@ var LineTrack = function (view, container, obj_dict) {
     this.vertical_range = this.config.values.max_value - this.config.values.min_value;
 };
 extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
-    /**
-     * Action to take during resize.
-     */
-    on_resize: function() {
-        this.request_draw(true);
-    },
-
-    /**
-     * Set track minimum value.
-     */
-    set_min_value: function(new_val) {
-        this.prefs.min_value = new_val;
-        $('#linetrack_' + this.dataset.id + '_minval').text(this.prefs.min_value);
-        this.request_draw(true);
-    },
-    
-    /**
-     * Set track maximum value.
-     */
-    set_max_value: function(new_val) {
-        this.prefs.max_value = new_val;
-        $('#linetrack_' + this.dataset.id + '_maxval').text(this.prefs.max_value);
-        this.request_draw(true);
-    },
     
     predraw_init: function() {
         var track = this;
@@ -3701,45 +3694,9 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                 // Update the prefs
                 track.prefs.min_value = min_value;
                 track.prefs.max_value = max_value;
-                // Update the config
-                // FIXME: we should probably only save this when the user explicately sets it
-                //        since we lose the ability to compute it on the fly (when changing 
-                //        chromosomes for example).
-                $('#track_' + track.dataset.id + '_minval').val(track.prefs.min_value);
-                $('#track_' + track.dataset.id + '_maxval').val(track.prefs.max_value);
             }
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
             track.total_frequency = data.total_frequency;
-        
-            // Draw y-axis labels if necessary
-            track.container_div.find(".yaxislabel").remove();
-            
-            // Add min, max labels.
-            var 
-            min_label = $("<div/>").text(round(track.prefs.min_value, 3)).make_text_editable({
-                num_cols: 6,
-                on_finish: function(new_val) {
-                    $(".bs-tooltip").remove();
-                    var new_val = parseFloat(new_val);
-                    if (!isNaN(new_val)) {
-                        track.set_min_value(new_val);
-                    }
-                },
-                help_text: "Set min value"
-            }).addClass('yaxislabel bottom').attr("id", 'linetrack_' + track.dataset.id + '_minval')
-              .prependTo(track.container_div),
-            max_label = $("<div/>").text(round(track.prefs.max_value, 3)).make_text_editable({
-                  num_cols: 6,
-                  on_finish: function(new_val) {
-                      $(".bs-tooltip").remove();
-                      var new_val = parseFloat(new_val);
-                      if (!isNaN(new_val)) {
-                          track.set_max_value(new_val);
-                      }
-                  },
-                  help_text: "Set max value"
-              }).addClass('yaxislabel top').attr("id", 'linetrack_' + track.dataset.id + '_maxval')
-                .prependTo(track.container_div);
         });
     },
 
@@ -3763,6 +3720,15 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      */
     can_subset: function(entry) { 
         return (entry.data[1][0] - entry.data[0][0] === 1);
+    },
+
+    /**
+     * Add min, max labels.
+     */
+    postdraw_actions: function(tiles, width, w_scale, clear_after) {
+        // Add min, max labels.
+        this._add_yaxis_label('max', round(this.prefs.max_value, 3), 'max_value');
+        this._add_yaxis_label('min', round(this.prefs.min_value, 3), 'min_value');
     }
 });
 
@@ -3788,8 +3754,7 @@ var DiagonalHeatmapTrack = function (view, container, obj_dict) {
         onchange: function() {
             track.set_name(track.prefs.name);
             track.vertical_range = track.prefs.max_value - track.prefs.min_value;
-            track.set_min_value(track.prefs.min_value);
-            track.set_max_value(track.prefs.max_value);
+            this.request_redraw(true);
         }
     });
 
@@ -3798,27 +3763,6 @@ var DiagonalHeatmapTrack = function (view, container, obj_dict) {
     this.vertical_range = this.config.values.max_value - this.config.values.min_value;
 };
 extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
-    /**
-     * Action to take during resize.
-     */
-    on_resize: function() {
-        this.request_draw(true);
-    },
-    /**
-     * Set track minimum value.
-     */
-    set_min_value: function(new_val) {
-        this.prefs.min_value = new_val;
-        this.request_draw(true);
-    },
-    /**
-     * Set track maximum value.
-     */
-    set_max_value: function(new_val) {
-        this.prefs.max_value = new_val;
-        this.request_draw(true);
-    },
-    
     /**
      * Draw tile.
      */
