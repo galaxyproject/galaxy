@@ -14,7 +14,8 @@ from sqlalchemy import *
 now = datetime.datetime.utcnow
 from sqlalchemy.orm import *
 
-from galaxy.model.orm.ext.assignmapper import assign_mapper
+from migrate import *
+from migrate.changeset import *
 
 from galaxy.model.custom_types import *
 
@@ -582,7 +583,7 @@ LibraryDataset.table = Table( "library_dataset", metadata,
 ##mappers
 
 
-assign_mapper( context, Dataset, Dataset.table,
+mapper( Dataset, Dataset.table,
     properties=dict(
         history_associations=relation(
             HistoryDatasetAssociation,
@@ -599,7 +600,7 @@ assign_mapper( context, Dataset, Dataset.table,
             ) )
 
 
-assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.table,
+mapper( HistoryDatasetAssociation, HistoryDatasetAssociation.table,
     properties=dict(
         dataset=relation(
             Dataset,
@@ -622,7 +623,7 @@ assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.tab
             primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible == True ) ) )
             ) )
 
-assign_mapper( context, LibraryDatasetDatasetAssociation, LibraryDatasetDatasetAssociation.table,
+mapper( LibraryDatasetDatasetAssociation, LibraryDatasetDatasetAssociation.table,
     properties=dict(
         dataset=relation( Dataset ),
         library_dataset = relation( LibraryDataset,
@@ -644,7 +645,7 @@ assign_mapper( context, LibraryDatasetDatasetAssociation, LibraryDatasetDatasetA
             primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible == True ) ) )
         ) )
 
-assign_mapper( context, LibraryDataset, LibraryDataset.table,
+mapper( LibraryDataset, LibraryDataset.table,
     properties=dict(
         library_dataset_dataset_association=relation( LibraryDatasetDatasetAssociation, primaryjoin=( LibraryDataset.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
         expired_datasets = relation( LibraryDatasetDatasetAssociation, foreign_keys=[LibraryDataset.table.c.id,LibraryDataset.table.c.library_dataset_dataset_association_id ], primaryjoin=( ( LibraryDataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.library_dataset_id ) & ( not_( LibraryDataset.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) ) ), viewonly=True, uselist=True )
