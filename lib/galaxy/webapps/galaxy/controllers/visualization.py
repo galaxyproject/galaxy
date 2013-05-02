@@ -122,7 +122,7 @@ class HistoryDatasetsSelectionGrid( grids.Grid ):
         Current item for grid is the history being queried. This is a bit 
         of hack since current_item typically means the current item in the grid.
         """
-        return model.History.get( trans.security.decode_id( kwargs[ 'f-history' ] ) )
+        return trans.sa_session.query( model.History ).get( trans.security.decode_id( kwargs[ 'f-history' ] ) )
     def build_initial_query( self, trans, **kwargs ):
         return trans.sa_session.query( self.model_class ).join( model.History.table ).join( model.Dataset.table )
     def apply_query_filter( self, trans, query, **kwargs ):
