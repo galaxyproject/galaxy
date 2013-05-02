@@ -17,6 +17,7 @@ from galaxy.security import Action
 from galaxy.tools.actions import upload_common
 from galaxy.util import inflector
 from galaxy.util.json import to_json_string
+from galaxy.util.streamball import StreamBall
 from galaxy.web.base.controller import BaseUIController, UsesFormDefinitionsMixin
 from galaxy.web.form_builder import AddressField, CheckboxField, SelectField, build_select_field
 from galaxy.model.orm import and_, eagerload_all
@@ -1805,13 +1806,13 @@ class LibraryCommon( BaseUIController, UsesFormDefinitionsMixin ):
                         archive.add = lambda x, y: archive.write( x, y.encode('CP437') )
                     elif action == 'tgz':
                         if trans.app.config.upstream_gzip:
-                            archive = util.streamball.StreamBall( 'w|' )
+                            archive = StreamBall( 'w|' )
                             outext = 'tar'
                         else:
-                            archive = util.streamball.StreamBall( 'w|gz' )
+                            archive = StreamBall( 'w|gz' )
                             outext = 'tgz'
                     elif action == 'tbz':
-                        archive = util.streamball.StreamBall( 'w|bz2' )
+                        archive = StreamBall( 'w|bz2' )
                         outext = 'tbz2'
                     elif action == 'ngxzip':
                         archive = NgxZip( trans.app.config.nginx_x_archive_files_base )
