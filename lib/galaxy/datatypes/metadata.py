@@ -446,6 +446,7 @@ class FileParameter( MetadataParameter ):
             try:
                 # FIXME: this query requires a monkey patch in assignmapper.py since
                 # MetadataParameters do not have a handle to the sqlalchemy session
+                # DBTODO this is problematic now.
                 return galaxy.model.MetadataFile.get( value )
             except:
                 #value was not a valid id

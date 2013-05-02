@@ -209,7 +209,7 @@ class DefaultToolAction( object ):
                 # Custom build.
                 custom_build_dict = from_json_string( trans.user.preferences[ 'dbkeys' ] )[ input_dbkey ]
                 if 'fasta' in custom_build_dict:
-                    build_fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( custom_build_dict[ 'fasta' ] )
+                    build_fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( custom_build_dict[ 'fasta' ] )
                     chrom_info = build_fasta_dataset.get_converted_dataset( trans, 'len' ).file_name
             
             if not chrom_info:

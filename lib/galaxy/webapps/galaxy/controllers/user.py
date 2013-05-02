@@ -1329,7 +1329,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 continue
                 
             # Get len file.
-            fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( attributes[ 'fasta' ] )
+            fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
             len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
             # HACK: need to request dataset again b/c get_converted_dataset()
             # doesn't return dataset (as it probably should).
