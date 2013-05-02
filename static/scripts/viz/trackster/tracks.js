@@ -892,7 +892,7 @@ var TracksterView = Backbone.View.extend({
             ], 
             saved_values: obj_dict.prefs,
             onchange: function() {
-                track.request_redraw(false, true);
+                track.request_redraw(true);
             }
         });
     },
@@ -1266,8 +1266,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
                 view.chrom_select.val(view.chrom);
                 view.max_high = found.len-1; // -1 because we're using 0-based indexing.
                 view.reset();
-                view.request_redraw(true);
-
+                
                 for (var i = 0, len = view.drawables.length; i < len; i++) {
                     var drawable = view.drawables[i];
                     if (drawable.init) {
@@ -1392,8 +1391,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
      * Request that view redraw some or all tracks. If a track is not specificied, redraw all tracks.
      */
     // FIXME: change method call so that track is first and additional parameters are optional.
-    // FIXME: is nodraw parameter needed?
-    request_redraw: function(nodraw, force, clear_after, a_track) {
+    request_redraw: function(force, clear_after, a_track) {
         var 
             view = this,
             // Either redrawing a single drawable or all view's drawables.
@@ -1428,7 +1426,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
 
         // Set up redraw if it has not been requested since last redraw.
         if (!this.requested_redraw) {
-            requestAnimationFrame(function() { view._redraw(nodraw); });
+            requestAnimationFrame(function() { view._redraw(); });
             this.requested_redraw = true;
         }
     },
@@ -1437,7 +1435,7 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
      * NOTE: this method should never be called directly; request_redraw() should be used so
      * that requestAnimationFrame can manage redrawing.
      */
-    _redraw: function(nodraw) {
+    _redraw: function() {
         // TODO: move this code to function that does location setting.
         
         // Clear because requested redraw is being handled now.
@@ -1482,20 +1480,18 @@ extend( TracksterView.prototype, DrawableCollection.prototype, {
             this.overview_highlight.css({ left: left_px, width: width_px });
         }
         
-        if (!nodraw) {
-            var track, force, clear_after;
-            for (var i = 0, len = this.tracks_to_be_redrawn.length; i < len; i++) {
-                track = this.tracks_to_be_redrawn[i][0];
-                force = this.tracks_to_be_redrawn[i][1];
-                clear_after = this.tracks_to_be_redrawn[i][2];
-                if (track) {
-                    track._draw(force, clear_after);
-                }
+        var track, force, clear_after;
+        for (var i = 0, len = this.tracks_to_be_redrawn.length; i < len; i++) {
+            track = this.tracks_to_be_redrawn[i][0];
+            force = this.tracks_to_be_redrawn[i][1];
+            clear_after = this.tracks_to_be_redrawn[i][2];
+            if (track) {
+                track._draw(force, clear_after);
             }
-            this.tracks_to_be_redrawn = [];
-            for (i = 0, len = this.label_tracks.length; i < len; i++) {
-                this.label_tracks[i]._draw();
-            }
+        }
+        this.tracks_to_be_redrawn = [];
+        for (i = 0, len = this.label_tracks.length; i < len; i++) {
+            this.label_tracks[i]._draw();
         }
     },
     zoom_in: function (point, container) {
@@ -2848,7 +2844,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * Request that track be drawn.
      */
     request_draw: function(force, clear_after) {
-        this.view.request_redraw(false, force, clear_after, this);
+        this.view.request_redraw(force, clear_after, this);
     },
 
     /**
