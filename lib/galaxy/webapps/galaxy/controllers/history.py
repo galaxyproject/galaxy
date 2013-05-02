@@ -562,6 +562,12 @@ class HistoryController( BaseUIController, SharableMixin, UsesAnnotations, UsesI
             history.purged = True
             self.sa_session.add( history )
             self.sa_session.flush()
+        for hda in history.datasets:
+            job = hda.creating_job_associations[0].job
+            if job.history_id == history.id and job.state in [ trans.app.model.Job.states.QUEUED, trans.app.model.Job.states.RUNNING, trans.app.model.Job.states.NEW ]:
+                # No need to check other outputs since the job's parent history is this history
+                job.mark_deleted( trans.app.config.track_jobs_in_database )
+                trans.app.job_manager.job_stop_queue.put( job.id )
         # Regardless of whether it was previously deleted, we make a new history active
         trans.new_history()
         return trans.show_ok_message( "History deleted, a new history is active", refresh_frames=['history'] )
