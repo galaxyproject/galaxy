@@ -2,22 +2,7 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
-
-<%
-    is_new = repository.is_new( trans.app )
-    can_contact_owner = trans.user and trans.user != repository.user
-    can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
-    can_rate = not is_new and trans.user and repository.user != trans.user
-    can_upload = can_push
-    can_download = not is_new and ( not is_malicious or can_push )
-    can_browse_contents = not is_new
-    can_view_change_log = not is_new
-    if can_push:
-        browse_label = 'Browse or delete repository tip files'
-    else:
-        browse_label = 'Browse repository tip files'
-    has_readme = metadata and 'readme' in metadata
-%>
+<%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="render_galaxy_repository_actions" />
 
 <%!
    def inherit(context):
@@ -39,16 +24,7 @@
     ${container_javascripts()}
 </%def>
 
-<br/><br/>
-<ul class="manage-table-actions">
-    <li><a class="action-button" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), changeset_revisions=changeset_revision )}">Install to Galaxy</a></li>
-    <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Tool Shed Actions</a></li>
-    <div popupmenu="repository-${repository.id}-popup">
-        <a class="action-button" href="${h.url_for( controller='repository', action='browse_valid_categories' )}">Browse valid repositories</a>
-        <a class="action-button" href="${h.url_for( controller='repository', action='find_tools' )}">Search for valid tools</a>
-        <a class="action-button" href="${h.url_for( controller='repository', action='find_workflows' )}">Search for workflows</a>
-    </div>
-</ul>
+${render_galaxy_repository_actions( repository=repository )}
 
 %if message:
     ${render_msg( message, status )}

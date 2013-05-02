@@ -825,6 +825,8 @@ def generate_tool_metadata( tool_config, tool, repository_clone_url, metadata_di
             for output in ttb.outputs:
                 name, file_name, extra = output
                 outputs.append( ( name, suc.strip_path( file_name ) if file_name else None ) )
+                if file_name not in required_files and file_name is not None:
+                    required_files.append( file_name )
             test_dict = dict( name=ttb.name,
                               required_files=required_files,
                               inputs=inputs,

@@ -2,23 +2,13 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="render_clone_str" />
+<%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="render_tool_shed_repository_actions" />
 
 <%
     from galaxy.web.framework.helpers import time_ago
-    is_admin = trans.user_is_admin()
     is_new = repository.is_new( trans.app )
-    can_contact_owner = trans.user and trans.user != repository.user
-    can_browse_contents = not is_new
-    can_manage = is_admin or trans.user == repository.user
     can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
-    can_rate = trans.user and repository.user != trans.user
-    can_upload = can_push
     can_download = not is_new and ( not is_malicious or can_push )
-    if can_push:
-        browse_label = 'Browse or delete repository tip files'
-    else:
-        browse_label = 'Browse repository tip files'
-    has_readme = metadata and 'readme' in metadata
 %>
 
 <%!
@@ -40,34 +30,7 @@
     ${h.js( "libs/jquery/jquery.rating" )}
 </%def>
 
-<br/><br/>
-<ul class="manage-table-actions">
-    <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
-    <div popupmenu="repository-${repository.id}-popup">
-        %if can_upload:
-            <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
-        %endif
-        %if can_manage:
-            <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">Manage repository</a>
-        %else:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View repository</a>
-        %endif
-        %if can_rate:
-            <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.security.encode_id( repository.id ) )}">Rate repository</a>
-        %endif
-        %if can_browse_contents:
-            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">${browse_label}</a>
-        %endif
-        %if can_contact_owner:
-            <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ) )}">Contact repository owner</a>
-        %endif
-        %if can_download:
-            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='gz' )}">Download as a .tar.gz file</a>
-            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='bz2' )}">Download as a .tar.bz2 file</a>
-            <a class="action-button" href="${h.url_for( controller='repository', action='download', repository_id=trans.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ), file_type='zip' )}">Download as a zip file</a>
-        %endif
-    </div>
-</ul>
+${render_tool_shed_repository_actions( repository=repository )}
 
 %if message:
     ${render_msg( message, status )}

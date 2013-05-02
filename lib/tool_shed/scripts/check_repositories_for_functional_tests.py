@@ -387,16 +387,9 @@ def check_for_missing_test_files( test_definition, test_data_path ):
     missing_test_files = []
     required_test_files = []
     for test_dict in test_definition:
-        for input_file in test_dict[ 'required_files' ]:
-            if input_file not in required_test_files:
-                required_test_files.append( input_file )
-        for output in test_dict[ 'outputs' ]:
-            fieldname, filename = output
-            # In rare cases, the filename may be None. If that is the case, skip that output definition.
-            if filename is None:
-                continue
-            if filename not in required_test_files:
-                required_test_files.append( filename )
+        for required_file in test_dict[ 'required_files' ]:
+            if required_file not in required_test_files:
+                required_test_files.append( required_file )
     # Make sure each specified file actually does exist in the test data path of the cloned repository.
     for required_file in required_test_files:
         required_file_full_path = os.path.join( test_data_path, required_file )

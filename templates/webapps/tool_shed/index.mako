@@ -113,16 +113,16 @@
                             <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories' )}">My writable repositories</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_missing_tool_test_components' )}">Latest revision missing tool tests</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_missing_tool_test_components' )}">Latest revision: missing tool tests</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_failing_tool_tests' )}">Latest revision failing tool tests</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_failing_tool_tests' )}">Latest revision: failing tool tests</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_no_failing_tool_tests' )}">Latest revision all tool tests pass</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_no_failing_tool_tests' )}">Latest revision: all tool tests pass</a>
                         </div>
                         <div class="toolTitle">
-                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_invalid_tools', cntrller='repository' )}">My invalid tools</a>
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_invalid_tools' )}">Latest revision: invalid tools</a>
                         </div>
                         <div class="toolSectionPad"></div>
                         <div class="toolSectionTitle">
@@ -164,13 +164,16 @@
                             <div class="toolSectionBody">
                                 <div class="toolSectionBg">
                                     <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_missing_tool_test_components' )}">Latest revision missing tool tests</a>
+                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_missing_tool_test_components' )}">Latest revision: missing tool tests</a>
                                     </div>
                                     <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_failing_tool_tests' )}">Latest revision failing tool tests</a>
+                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_failing_tool_tests' )}">Latest revision: failing tool tests</a>
                                     </div>
                                     <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_no_failing_tool_tests' )}">Latest revision all tool tests pass</a>
+                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_no_failing_tool_tests' )}">Latest revision: all tool tests pass</a>
+                                    </div>
+                                    <div class="toolTitle">
+                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_invalid_tools' )}">Latest revision: invalid tools</a>
                                     </div>
                                 </div>
                             </div>

@@ -520,7 +520,7 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
     Return the installable changeset_revision in the repository changelog after the changeset to which after_changeset_revision refers.  If there
     isn't one, return None.
     """
-    changeset_revisions = get_ordered_downloadable_changeset_revisions( repository, repo )
+    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == after_changeset_revision:
@@ -560,10 +560,14 @@ def get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset
                                                             dist_to_shed=False )
     return repository
 
-def get_ordered_downloadable_changeset_revisions( repository, repo ):
-    """Return an ordered list of changeset_revisions defined by a repository changelog."""
+def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True ):
+    """Return an ordered list of changeset_revisions that are associated with metadata where order is defined by the repository changelog."""
+    if downloadable:
+        metadata_revisions = repository.downloadable_revisions
+    else:
+        metadata_revisions = repository.metadata_revisions
     changeset_tups = []
-    for repository_metadata in repository.downloadable_revisions:
+    for repository_metadata in metadata_revisions:
         changeset_revision = repository_metadata.changeset_revision
         ctx = get_changectx_for_changeset( repo, changeset_revision )
         if ctx:
@@ -575,12 +579,12 @@ def get_ordered_downloadable_changeset_revisions( repository, repo ):
     sorted_changeset_revisions = [ changeset_tup[ 1 ] for changeset_tup in sorted_changeset_tups ]
     return sorted_changeset_revisions
 
-def get_previous_downloadable_changeset_revision( repository, repo, before_changeset_revision ):
+def get_previous_metadata_changeset_revision( repository, repo, before_changeset_revision, downloadable=True ):
     """
-    Return the installable changeset_revision in the repository changelog prior to the changeset to which before_changeset_revision
-    refers.  If there isn't one, return the hash value of an empty repository changelog, INITIAL_CHANGELOG_HASH.
+    Return the changeset_revision in the repository changelog that has associated metadata prior to the changeset to which
+    before_changeset_revision refers.  If there isn't one, return the hash value of an empty repository changelog, INITIAL_CHANGELOG_HASH.
     """
-    changeset_revisions = get_ordered_downloadable_changeset_revisions( repository, repo )
+    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=downloadable )
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == before_changeset_revision:
@@ -1091,7 +1095,7 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
     """
     # To set excluded_lower_bounds_changeset_revision, calling methods should do the following, where the value of changeset_revision
     # is a downloadable changeset_revision.
-    # excluded_lower_bounds_changeset_revision = get_previous_downloadable_changeset_revision( repository, repo, changeset_revision )
+    # excluded_lower_bounds_changeset_revision = get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=? )
     if excluded_lower_bounds_changeset_revision == INITIAL_CHANGELOG_HASH:
         appending_started = True
     else:

@@ -178,7 +178,7 @@ var NumberFilter = function(obj_dict) {
                                                         filter.manager.alpha_filter = null;
                                                         filter.transparency_icon.removeClass("active");
                                                     }
-                                                    filter.manager.track.request_draw(true, true);
+                                                    filter.manager.track.request_draw(false, true, true);
                                                 } )
                                                 .appendTo(display_controls_div).hide();
     this.height_icon = create_action_icon("Use filter for data height", "arrow-resize-090", 
@@ -195,7 +195,7 @@ var NumberFilter = function(obj_dict) {
                                                         filter.manager.height_filter = null;
                                                         filter.height_icon.removeClass("active");
                                                     }
-                                                    filter.manager.track.request_draw(true, true);
+                                                    filter.manager.track.request_draw(false, true, true);
                                                 } )
                                                 .appendTo(display_controls_div).hide();
     filter.parent_div.hover( function() { 
@@ -265,7 +265,7 @@ extend(NumberFilter.prototype, {
         var self = this;
         setTimeout(function() {
             if (values[0] === self.low && values[1] === self.high) {
-                self.manager.track.request_draw(true, true);
+                self.manager.track.request_draw(false, true, true);
             }
         }, 25);
          
