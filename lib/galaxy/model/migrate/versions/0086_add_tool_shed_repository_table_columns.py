@@ -24,7 +24,7 @@ log.addHandler( handler )
 metadata = MetaData()
 
 def get_default_false(migrate_engine):
-    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
+    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
         return "0"
     elif migrate_engine.name in ['postgresql', 'postgres']:
         return "false"

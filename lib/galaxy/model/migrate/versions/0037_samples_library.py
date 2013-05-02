@@ -1,8 +1,8 @@
 """
-This migration script removes the library_id & folder_id fields in the 'request' table and 
-adds the same to the 'sample' table. This also adds a 'datatx' column to request_type table 
+This migration script removes the library_id & folder_id fields in the 'request' table and
+adds the same to the 'sample' table. This also adds a 'datatx' column to request_type table
 to store the sequencer login information. Finally, this adds a 'dataset_files' column to
-the sample table. 
+the sample table.
 """
 from sqlalchemy import *
 from sqlalchemy.orm import *
@@ -42,7 +42,7 @@ def upgrade(migrate_engine):
             col.create( RequestType_table )
             assert col is RequestType_table.c.datatx_info
         except Exception, e:
-            log.debug( "Adding column 'datatx_info' to request_type table failed: %s" % ( str( e ) ) )   
+            log.debug( "Adding column 'datatx_info' to request_type table failed: %s" % ( str( e ) ) )
     # request table
     try:
         Request_table = Table( "request", metadata, autoload=True )
@@ -68,7 +68,7 @@ def upgrade(migrate_engine):
             try:
                 RequestTemp_table.create()
             except Exception, e:
-                log.debug( "Creating request_temp table failed: %s" % str( e ) )  
+                log.debug( "Creating request_temp table failed: %s" % str( e ) )
             # insert all the rows from the request table to the request_temp table
             cmd = \
                 "INSERT INTO request_temp " + \
@@ -81,7 +81,7 @@ def upgrade(migrate_engine):
                     "request_type_id," + \
                     "user_id," + \
                     "deleted " + \
-                "FROM request;" 
+                "FROM request;"
             migrate_engine.execute( cmd )
             # delete the 'request' table
             try:
@@ -89,19 +89,19 @@ def upgrade(migrate_engine):
             except Exception, e:
                 log.debug( "Dropping request table failed: %s" % str( e ) )
             # rename table request_temp to request
-            cmd = "ALTER TABLE request_temp RENAME TO request" 
+            cmd = "ALTER TABLE request_temp RENAME TO request"
             migrate_engine.execute( cmd )
         else:
             # Delete the library_id column in 'request' table
             try:
                 Request_table.c.library_id.drop()
             except Exception, e:
-                log.debug( "Deleting column 'library_id' to request table failed: %s" % ( str( e ) ) )   
+                log.debug( "Deleting column 'library_id' to request table failed: %s" % ( str( e ) ) )
             # Delete the folder_id column in 'request' table
             try:
                 Request_table.c.folder_id.drop()
             except Exception, e:
-                log.debug( "Deleting column 'folder_id' to request table failed: %s" % ( str( e ) ) )   
+                log.debug( "Deleting column 'folder_id' to request table failed: %s" % ( str( e ) ) )
     # sample table
     try:
         Sample_table = Table( "sample", metadata, autoload=True )

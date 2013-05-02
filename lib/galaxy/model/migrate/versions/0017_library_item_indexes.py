@@ -16,13 +16,13 @@ handler.setFormatter( formatter )
 log.addHandler( handler )
 
 metadata = MetaData()
-          
+
 def display_migration_details():
     print "========================================"
     print "This script adds 3 indexes to table columns: library_folder.name,"
     print "library_dataset.name, library_dataset_dataset_association.name."
     print "========================================"
-        
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     LibraryFolder_table = Table( "library_folder", metadata, autoload=True )

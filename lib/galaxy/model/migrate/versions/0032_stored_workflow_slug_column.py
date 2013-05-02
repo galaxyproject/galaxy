@@ -13,12 +13,12 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    
+
     print __doc__
     metadata.reflect()
-    
+
     StoredWorkflow_table = Table( "stored_workflow", metadata, autoload=True )
-    
+
     if migrate_engine.name != 'sqlite':
         # Create slug column.
         c = Column( "slug", TEXT, index=True )
@@ -28,7 +28,7 @@ def upgrade(migrate_engine):
         c = Column( "slug", TEXT )
         c.create( StoredWorkflow_table )
     assert c is StoredWorkflow_table.c.slug
-    
+
     # Create slug index.
     if migrate_engine.name != 'sqlite':
         try:

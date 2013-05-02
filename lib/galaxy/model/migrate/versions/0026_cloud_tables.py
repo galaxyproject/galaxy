@@ -17,8 +17,8 @@ def display_migration_details():
     print "========================================"
     print "This script adds tables needed for Galaxy cloud functionality."
     print "========================================"
-    
-CloudImage_table = Table( "cloud_image", metadata, 
+
+CloudImage_table = Table( "cloud_image", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -30,7 +30,7 @@ CloudImage_table = Table( "cloud_image", metadata,
     Column( "deleted", Boolean, default=False ) )
 
 """ UserConfiguredInstance (UCI) table """
-UCI_table = Table( "cloud_uci", metadata, 
+UCI_table = Table( "cloud_uci", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -45,7 +45,7 @@ UCI_table = Table( "cloud_uci", metadata,
     Column( "launch_time", DateTime ),
     Column( "deleted", Boolean, default=False ) )
 
-CloudInstance_table = Table( "cloud_instance", metadata, 
+CloudInstance_table = Table( "cloud_instance", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -64,7 +64,7 @@ CloudInstance_table = Table( "cloud_instance", metadata,
     Column( "security_group", TEXT ),
     Column( "availability_zone", TEXT ) )
 
-CloudStore_table = Table( "cloud_store", metadata, 
+CloudStore_table = Table( "cloud_store", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -81,7 +81,7 @@ CloudStore_table = Table( "cloud_store", metadata,
     Column( "error", TEXT ),
     Column( "deleted", Boolean, default=False ) )
 
-CloudSnapshot_table = Table( "cloud_snapshot", metadata, 
+CloudSnapshot_table = Table( "cloud_snapshot", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -94,7 +94,7 @@ CloudSnapshot_table = Table( "cloud_snapshot", metadata,
     Column( "error", TEXT ),
     Column( "deleted", Boolean, default=False ) )
 
-CloudUserCredentials_table = Table( "cloud_user_credentials", metadata, 
+CloudUserCredentials_table = Table( "cloud_user_credentials", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -105,7 +105,7 @@ CloudUserCredentials_table = Table( "cloud_user_credentials", metadata,
     Column( "secret_key", TEXT ),
     Column( "deleted", Boolean, default=False ) )
 
-CloudProvider_table = Table( "cloud_provider", metadata, 
+CloudProvider_table = Table( "cloud_provider", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -132,7 +132,7 @@ def upgrade(migrate_engine):
     display_migration_details()
     # Load existing tables
     metadata.reflect()
-    
+
     CloudProvider_table.create()
     CloudUserCredentials_table.create()
 
@@ -142,17 +142,17 @@ def upgrade(migrate_engine):
     CloudInstance_table.create()
     CloudStore_table.create()
     CloudSnapshot_table.create()
-    
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     CloudInstance_table.drop()
     CloudSnapshot_table.drop()
     CloudStore_table.drop()
 
     UCI_table.drop()
-    CloudImage_table.drop() 
+    CloudImage_table.drop()
 
-    CloudUserCredentials_table.drop() 
+    CloudUserCredentials_table.drop()
     CloudProvider_table.drop()

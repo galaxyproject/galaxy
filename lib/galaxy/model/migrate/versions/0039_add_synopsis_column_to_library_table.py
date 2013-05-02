@@ -15,7 +15,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-    
+
     Library_table = Table( "library", metadata, autoload=True )
     c = Column( "synopsis", TEXT )
     c.create( Library_table )

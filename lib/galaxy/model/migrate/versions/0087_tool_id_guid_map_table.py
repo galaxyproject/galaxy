@@ -42,7 +42,7 @@ def upgrade(migrate_engine):
         ToolIdGuidMap_table.create()
     except Exception, e:
         log.debug( "Creating tool_id_guid_map table failed: %s" % str( e ) )
-        
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

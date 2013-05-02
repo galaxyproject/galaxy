@@ -111,7 +111,7 @@ SampleEvent_table = Table('sample_event', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ), 
+    Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ),
     Column( "sample_state_id", Integer, ForeignKey( "sample_state.id" ), index=True ),
     Column( "comment", TEXT ) )
 
@@ -126,7 +126,7 @@ def upgrade(migrate_engine):
     try:
         FormDefinitionCurrent_table.create()
     except Exception, e:
-        log.debug( "Creating form_definition_current table failed: %s" % str( e ) ) 
+        log.debug( "Creating form_definition_current table failed: %s" % str( e ) )
     try:
         FormDefinition_table.create()
     except Exception, e:
@@ -144,27 +144,27 @@ def upgrade(migrate_engine):
     try:
         FormValues_table.create()
     except Exception, e:
-        log.debug( "Creating form_values table failed: %s" % str( e ) )  
+        log.debug( "Creating form_values table failed: %s" % str( e ) )
     try:
         RequestType_table.create()
     except Exception, e:
-        log.debug( "Creating request_type table failed: %s" % str( e ) )  
+        log.debug( "Creating request_type table failed: %s" % str( e ) )
     try:
         Request_table.create()
     except Exception, e:
-        log.debug( "Creating request table failed: %s" % str( e ) )  
+        log.debug( "Creating request table failed: %s" % str( e ) )
     try:
         Sample_table.create()
     except Exception, e:
-        log.debug( "Creating sample table failed: %s" % str( e ) )  
+        log.debug( "Creating sample table failed: %s" % str( e ) )
     try:
         SampleState_table.create()
     except Exception, e:
-        log.debug( "Creating sample_state table failed: %s" % str( e ) )  
+        log.debug( "Creating sample_state table failed: %s" % str( e ) )
     try:
         SampleEvent_table.create()
     except Exception, e:
-        log.debug( "Creating sample_event table failed: %s" % str( e ) )  
+        log.debug( "Creating sample_event table failed: %s" % str( e ) )
 
 def downgrade(migrate_engine):
     db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
@@ -174,32 +174,32 @@ def downgrade(migrate_engine):
     try:
         FormDefinition_table.drop()
     except Exception, e:
-        log.debug( "Dropping form_definition table failed: %s" % str( e ) )  
+        log.debug( "Dropping form_definition table failed: %s" % str( e ) )
     try:
         FormDefinitionCurrent_table.drop()
     except Exception, e:
-        log.debug( "Dropping form_definition_current table failed: %s" % str( e ) )  
+        log.debug( "Dropping form_definition_current table failed: %s" % str( e ) )
     try:
         FormValues_table.drop()
     except Exception, e:
-        log.debug( "Dropping form_values table failed: %s" % str( e ) )  
+        log.debug( "Dropping form_values table failed: %s" % str( e ) )
     try:
         Request_table.drop()
     except Exception, e:
-        log.debug( "Dropping request table failed: %s" % str( e ) )  
+        log.debug( "Dropping request table failed: %s" % str( e ) )
     try:
         RequestType_table.drop()
     except Exception, e:
-        log.debug( "Dropping request_type table failed: %s" % str( e ) )  
+        log.debug( "Dropping request_type table failed: %s" % str( e ) )
     try:
         Sample_table.drop()
     except Exception, e:
-        log.debug( "Dropping sample table failed: %s" % str( e ) )  
+        log.debug( "Dropping sample table failed: %s" % str( e ) )
     try:
         SampleState_table.drop()
     except Exception, e:
-        log.debug( "Dropping sample_state table failed: %s" % str( e ) )  
+        log.debug( "Dropping sample_state table failed: %s" % str( e ) )
     try:
         SampleEvent_table.drop()
     except Exception, e:
-        log.debug( "Dropping sample_event table failed: %s" % str( e ) )      
+        log.debug( "Dropping sample_event table failed: %s" % str( e ) )

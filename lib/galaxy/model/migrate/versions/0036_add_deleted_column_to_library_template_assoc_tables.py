@@ -22,7 +22,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-    
+
     LibraryInfoAssociation_table = Table( "library_info_association", metadata, autoload=True )
     c = Column( "deleted", Boolean, index=True, default=False )
     c.create( LibraryInfoAssociation_table, index_name='ix_library_info_association_deleted')
@@ -32,7 +32,7 @@ def upgrade(migrate_engine):
         migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "deleted to false in library_info_association failed: %s" % ( str( e ) ) )
-    
+
     LibraryFolderInfoAssociation_table = Table( "library_folder_info_association", metadata, autoload=True )
     c = Column( "deleted", Boolean, index=True, default=False )
     c.create( LibraryFolderInfoAssociation_table, index_name='ix_library_folder_info_association_deleted')

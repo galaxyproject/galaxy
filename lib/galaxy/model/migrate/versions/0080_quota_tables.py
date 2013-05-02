@@ -54,7 +54,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-    
+
     # Create quota table
     try:
         Quota_table.create()
@@ -95,7 +95,7 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     # Drop default_quota_association table
     try:
         DefaultQuotaAssociation_table.drop()

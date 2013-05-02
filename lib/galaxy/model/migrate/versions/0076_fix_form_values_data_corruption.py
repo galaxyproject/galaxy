@@ -61,8 +61,8 @@ def upgrade(migrate_engine):
                 field_name_key = '"%s": "' % field['name']
                 field_index = field_values_str.find( field_name_key )
                 if field_index == -1:
-                    # if the field name is not present the field values dict then 
-                    # inform the admin that this form values cannot be fixed 
+                    # if the field name is not present the field values dict then
+                    # inform the admin that this form values cannot be fixed
                     print "The 'content' field of row 'id' %i does not have the field '%s' in the 'form_values' table and could not be fixed by this migration script." % ( int( field['id'] ), field['name'] )
                 else:
                     # check if this is the last field

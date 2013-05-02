@@ -67,7 +67,7 @@ LibraryDatasetDatasetInfoAssociation_table = Table( 'library_dataset_dataset_inf
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id" ), nullable=True, index=True ),
     Column( "form_definition_id", Integer, ForeignKey( "form_definition.id" ), index=True ),
     Column( "form_values_id", Integer, ForeignKey( "form_values.id" ), index=True ) )
-    
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     display_migration_details()

@@ -1,6 +1,6 @@
 """
-Migration script to add 'name' attribute to the JSON dict which describes 
-a form definition field and the form values in the database. In the 'form_values' 
+Migration script to add 'name' attribute to the JSON dict which describes
+a form definition field and the form values in the database. In the 'form_values'
 table, the 'content' column is now a JSON dict instead of a list.
 """
 
@@ -87,7 +87,7 @@ def upgrade(migrate_engine):
                 values_dict[ field_name ] = get_value(values_list, field_index )
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( to_json_string( values_dict ), form_values_id )
             migrate_engine.execute( cmd )
-                
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
@@ -119,7 +119,7 @@ def downgrade(migrate_engine):
             for field_index, field in enumerate( fields_list ):
                 field_name = field[ 'name' ]
                 field_value = values_dict[ field_name ]
-                values_list.append( field_value ) 
+                values_list.append( field_value )
             cmd = "UPDATE form_values SET content='%s' WHERE id=%i" %( to_json_string( values_list ), form_values_id )
             migrate_engine.execute( cmd )
     # remove name attribute from the field column of the form_definition table

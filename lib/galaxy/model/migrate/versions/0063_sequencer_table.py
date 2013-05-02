@@ -1,5 +1,5 @@
 """
-Migration script to create a new 'sequencer' table 
+Migration script to create a new 'sequencer' table
 """
 
 from sqlalchemy import *
@@ -40,8 +40,8 @@ def upgrade(migrate_engine):
         Sequencer_table.create()
     except Exception, e:
         log.debug( "Creating 'sequencer' table failed: %s" % str( e ) )
-        
-        
+
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
@@ -55,5 +55,5 @@ def downgrade(migrate_engine):
         try:
             Sequencer_table.drop()
         except Exception, e:
-            log.debug( "Deleting 'sequencer' table failed: %s" % str( e ) )   
+            log.debug( "Deleting 'sequencer' table failed: %s" % str( e ) )
 

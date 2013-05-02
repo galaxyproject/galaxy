@@ -29,7 +29,7 @@ Group_table = Table( "galaxy_group", metadata,
     Column( "name", String( 255 ), index=True, unique=True ),
     Column( "deleted", Boolean, index=True, default=False ) )
 
-UserGroupAssociation_table = Table( "user_group_association", metadata, 
+UserGroupAssociation_table = Table( "user_group_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "group_id", Integer, ForeignKey( "galaxy_group.id" ), index=True ),
@@ -129,7 +129,7 @@ DefaultHistoryPermissions_table = Table( "default_history_permissions", metadata
     Column( "action", TEXT ),
     Column( "role_id", Integer, ForeignKey( "role.id" ), index=True ) )
 
-LibraryDataset_table = Table( "library_dataset", metadata, 
+LibraryDataset_table = Table( "library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),#current version of dataset, if null, there is not a current version selected
     Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True ),
@@ -140,7 +140,7 @@ LibraryDataset_table = Table( "library_dataset", metadata,
     Column( "info", TrimmedString( 255 ),  key="_info" ), #when not None/null this will supercede display in library (but not when imported into user's history?)
     Column( "deleted", Boolean, index=True, default=False ) )
 
-LibraryDatasetDatasetAssociation_table = Table( "library_dataset_dataset_association", metadata, 
+LibraryDatasetDatasetAssociation_table = Table( "library_dataset_dataset_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
@@ -197,7 +197,7 @@ LibraryItemInfoTemplateElement_table = Table( "library_item_info_template_elemen
     Column( "options", JSONType() ),
     Column( "library_item_info_template_id", Integer, ForeignKey( "library_item_info_template.id" ) ) )
 Index( "ix_liite_library_item_info_template_id", LibraryItemInfoTemplateElement_table.c.library_item_info_template_id )
-    
+
 LibraryItemInfoTemplate_table = Table( "library_item_info_template", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
@@ -332,7 +332,7 @@ def upgrade(migrate_engine):
        elif migrate_engine.name == 'sqlite':
            return 0
        else:
-           raise Exception( 'Unable to convert data for unknown database type: %s' % db ) 
+           raise Exception( 'Unable to convert data for unknown database type: %s' % db )
 
     # Add 2 new columns to the galaxy_user table
     try:
@@ -381,8 +381,8 @@ def upgrade(migrate_engine):
             log.debug( "Adding column 'lda_id' to metadata_file table failed: %s" % ( str( e ) ) )
     # Add 1 new column to the stored_workflow table - changeset 2328
     try:
-        StoredWorkflow_table = Table( "stored_workflow", metadata, 
-            Column( "latest_workflow_id", Integer, 
+        StoredWorkflow_table = Table( "stored_workflow", metadata,
+            Column( "latest_workflow_id", Integer,
                 ForeignKey( "workflow.id", use_alter=True, name='stored_workflow_latest_workflow_id_fk' ), index=True ),
             autoload=True, extend_existing=True )
     except NoSuchTableError:
@@ -457,7 +457,7 @@ def upgrade(migrate_engine):
     if users:
         cmd = "SELECT * FROM role;"
         roles = db_session.execute( cmd ).fetchall()
-        if not roles: 
+        if not roles:
             # Create private roles for each user - pass 1
             cmd = \
                 "INSERT INTO role " + \
@@ -503,7 +503,7 @@ def upgrade(migrate_engine):
                 "ORDER BY galaxy_user.id;"
             cmd = cmd % nextval('default_user_permissions')
             db_session.execute( cmd )
-            # Create default history permissions for each active history associated with a user 
+            # Create default history permissions for each active history associated with a user
 
             cmd = \
                 "INSERT INTO default_history_permissions " + \

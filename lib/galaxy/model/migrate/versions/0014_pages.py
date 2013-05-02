@@ -48,7 +48,7 @@ def upgrade(migrate_engine):
         PageRevision_table.create()
     except:
         log.debug( "Could not create page_revision table" )
-    
+
     # Add 1 column to the user table
     User_table = Table( "galaxy_user", metadata, autoload=True )
     col = Column( 'username', String(255), index=True, unique=True, default=False )

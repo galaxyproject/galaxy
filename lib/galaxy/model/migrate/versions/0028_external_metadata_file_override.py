@@ -1,6 +1,6 @@
 """
-This script adds the filename_override_metadata column to the JobExternalOutputMetadata table, 
-allowing existing metadata files to be written when using external metadata and a cluster 
+This script adds the filename_override_metadata column to the JobExternalOutputMetadata table,
+allowing existing metadata files to be written when using external metadata and a cluster
 set up with read-only access to database/files
 """
 from sqlalchemy import *

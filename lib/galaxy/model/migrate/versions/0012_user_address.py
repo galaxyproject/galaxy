@@ -60,7 +60,7 @@ def upgrade(migrate_engine):
     try:
         UserAddress_table.create()
     except Exception, e:
-        log.debug( "Creating user_address table failed: %s" % str( e ) ) 
+        log.debug( "Creating user_address table failed: %s" % str( e ) )
     # Add 1 column to the request_type table
     try:
         RequestType_table = Table( "request_type", metadata, autoload=True )

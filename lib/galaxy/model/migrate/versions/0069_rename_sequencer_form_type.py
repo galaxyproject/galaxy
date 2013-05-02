@@ -27,8 +27,8 @@ def upgrade(migrate_engine):
     cmd = "update form_definition set type='%s' where type='%s'" % ( new_form_type, current_form_type )
     migrate_engine.execute( cmd )
 
-        
-        
+
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

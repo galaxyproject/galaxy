@@ -31,7 +31,7 @@ MigrateTools_table = Table( "migrate_tools", metadata,
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
-    
+
     metadata.reflect()
     # Create the table.
     try:
@@ -40,7 +40,7 @@ def upgrade(migrate_engine):
         migrate_engine.execute( cmd )
     except Exception, e:
         log.debug( "Creating migrate_tools table failed: %s" % str( e ) )
-        
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

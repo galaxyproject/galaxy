@@ -15,10 +15,10 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    
+
     print __doc__
     metadata.reflect()
-    
+
     Visualization_table = Table( "visualization", metadata, autoload=True )
     Visualization_revision_table = Table( "visualization_revision", metadata, autoload=True )
 
@@ -43,7 +43,7 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     Visualization_table = Table( "visualization", metadata, autoload=True )
     Visualization_revision_table = Table( "visualization_revision", metadata, autoload=True )
 

@@ -51,7 +51,7 @@ def upgrade(migrate_engine):
     cmd = "SELECT * FROM library_dataset WHERE deleted = %s;" % boolean_true(migrate_engine)
     deleted_lds = migrate_engine.execute( cmd ).fetchall()
     for row in deleted_lds:
-        cmd = "SELECT * FROM library_dataset_dataset_association WHERE library_dataset_id = %d AND library_dataset_dataset_association.deleted = %s;" % ( int( row.id ), boolean_false(migrate_engine) ) 
+        cmd = "SELECT * FROM library_dataset_dataset_association WHERE library_dataset_id = %d AND library_dataset_dataset_association.deleted = %s;" % ( int( row.id ), boolean_false(migrate_engine) )
         active_lddas = migrate_engine.execute( cmd ).fetchall()
         if not active_lddas:
             print "Updating purged column to True for LibraryDataset id : ", int( row.id )

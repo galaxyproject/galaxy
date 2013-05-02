@@ -35,11 +35,11 @@ GenomeIndexToolData_table = Table( "genome_index_tool_data", metadata,
     Column( "indexer", String( 64 ) ),
     Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     )
-    
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
-    
+
     metadata.reflect()
     try:
         GenomeIndexToolData_table.create()

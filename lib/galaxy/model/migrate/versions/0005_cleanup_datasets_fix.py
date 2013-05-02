@@ -94,7 +94,7 @@ class Dataset( object ):
     file_name = property( get_file_name, set_file_name )
     @property
     def extra_files_path( self ):
-        if self._extra_files_path: 
+        if self._extra_files_path:
             path = self._extra_files_path
         else:
             path = os.path.join( self.file_path, "dataset_%d_files" % self.id )
@@ -136,7 +136,7 @@ class DatasetInstance( object ):
     """A base class for all 'dataset instances', HDAs, LDAs, etc"""
     states = Dataset.states
     permitted_actions = Dataset.permitted_actions
-    def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None, 
+    def __init__( self, id=None, hid=None, name=None, info=None, blurb=None, peek=None, extension=None,
                   dbkey=None, metadata=None, history=None, dataset=None, deleted=False, designation=None,
                   parent_id=None, validation_errors=None, visible=True, create_dataset = False ):
         self.name = name or "Unnamed dataset"
@@ -197,9 +197,9 @@ class DatasetInstance( object ):
         return dbkey[0]
     def set_dbkey( self, value ):
         if "dbkey" in self.datatype.metadata_spec:
-            if not isinstance(value, list): 
+            if not isinstance(value, list):
                 self.metadata.dbkey = [value]
-            else: 
+            else:
                 self.metadata.dbkey = value
     dbkey = property( get_dbkey, set_dbkey )
     def change_datatype( self, new_ext ):
@@ -298,11 +298,11 @@ class DatasetInstance( object ):
 
 
 class HistoryDatasetAssociation( DatasetInstance ):
-    def __init__( self, 
-                  hid = None, 
-                  history = None, 
-                  copied_from_history_dataset_association = None, 
-                  copied_from_library_dataset_dataset_association = None, 
+    def __init__( self,
+                  hid = None,
+                  history = None,
+                  copied_from_history_dataset_association = None,
+                  copied_from_library_dataset_dataset_association = None,
                   **kwd ):
         DatasetInstance.__init__( self, **kwd )
         self.hid = hid
@@ -311,17 +311,17 @@ class HistoryDatasetAssociation( DatasetInstance ):
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
     def copy( self, copy_children = False, parent_id = None, target_history = None ):
-        hda = HistoryDatasetAssociation( hid=self.hid, 
-                                         name=self.name, 
-                                         info=self.info, 
-                                         blurb=self.blurb, 
-                                         peek=self.peek, 
-                                         extension=self.extension, 
-                                         dbkey=self.dbkey, 
-                                         dataset = self.dataset, 
-                                         visible=self.visible, 
-                                         deleted=self.deleted, 
-                                         parent_id=parent_id, 
+        hda = HistoryDatasetAssociation( hid=self.hid,
+                                         name=self.name,
+                                         info=self.info,
+                                         blurb=self.blurb,
+                                         peek=self.peek,
+                                         extension=self.extension,
+                                         dbkey=self.dbkey,
+                                         dataset = self.dataset,
+                                         visible=self.visible,
+                                         deleted=self.deleted,
+                                         parent_id=parent_id,
                                          copied_from_history_dataset_association=self,
                                          history = target_history )
         context.add( hda )
@@ -342,21 +342,21 @@ class HistoryDatasetAssociation( DatasetInstance ):
             # The replace_dataset param ( when not None ) refers to a LibraryDataset that is being replaced with a new version.
             library_dataset = replace_dataset
         else:
-            # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new 
+            # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new
             # LibraryDataset, and the current user's DefaultUserPermissions will be applied to the associated Dataset.
             library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info )
             context.add( library_dataset )
             context.flush()
-        ldda = LibraryDatasetDatasetAssociation( name=self.name, 
+        ldda = LibraryDatasetDatasetAssociation( name=self.name,
                                                  info=self.info,
-                                                 blurb=self.blurb, 
-                                                 peek=self.peek, 
-                                                 extension=self.extension, 
-                                                 dbkey=self.dbkey, 
-                                                 dataset=self.dataset, 
+                                                 blurb=self.blurb,
+                                                 peek=self.peek,
+                                                 extension=self.extension,
+                                                 dbkey=self.dbkey,
+                                                 dataset=self.dataset,
                                                  library_dataset=library_dataset,
-                                                 visible=self.visible, 
-                                                 deleted=self.deleted, 
+                                                 visible=self.visible,
+                                                 deleted=self.deleted,
                                                  parent_id=parent_id,
                                                  copied_from_history_dataset_association=self,
                                                  user=self.history.user )
@@ -401,16 +401,16 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         self.user = user
     def to_history_dataset_association( self, target_history, parent_id=None ):
         hid = target_history._next_hid()
-        hda = HistoryDatasetAssociation( name=self.name, 
+        hda = HistoryDatasetAssociation( name=self.name,
                                          info=self.info,
-                                         blurb=self.blurb, 
-                                         peek=self.peek, 
-                                         extension=self.extension, 
-                                         dbkey=self.dbkey, 
-                                         dataset=self.dataset, 
-                                         visible=self.visible, 
-                                         deleted=self.deleted, 
-                                         parent_id=parent_id, 
+                                         blurb=self.blurb,
+                                         peek=self.peek,
+                                         extension=self.extension,
+                                         dbkey=self.dbkey,
+                                         dataset=self.dataset,
+                                         visible=self.visible,
+                                         deleted=self.deleted,
+                                         parent_id=parent_id,
                                          copied_from_library_dataset_dataset_association=self,
                                          history=target_history,
                                          hid=hid )
@@ -424,16 +424,16 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         context.flush()
         return hda
     def copy( self, copy_children = False, parent_id = None, target_folder = None ):
-        ldda = LibraryDatasetDatasetAssociation( name=self.name, 
-                                                 info=self.info, 
-                                                 blurb=self.blurb, 
-                                                 peek=self.peek, 
-                                                 extension=self.extension, 
-                                                 dbkey=self.dbkey, 
-                                                 dataset=self.dataset, 
-                                                 visible=self.visible, 
-                                                 deleted=self.deleted, 
-                                                 parent_id=parent_id, 
+        ldda = LibraryDatasetDatasetAssociation( name=self.name,
+                                                 info=self.info,
+                                                 blurb=self.blurb,
+                                                 peek=self.peek,
+                                                 extension=self.extension,
+                                                 dbkey=self.dbkey,
+                                                 dataset=self.dataset,
+                                                 visible=self.visible,
+                                                 deleted=self.deleted,
+                                                 parent_id=parent_id,
                                                  copied_from_library_dataset_dataset_association=self,
                                                  folder=target_folder )
         context.add( ldda )
@@ -513,7 +513,7 @@ class LibraryDataset( object ):
 ##tables
 
 
-Dataset.table = Table( "dataset", metadata, 
+Dataset.table = Table( "dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
@@ -527,7 +527,7 @@ Dataset.table = Table( "dataset", metadata,
 
 
 
-HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata, 
+HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
     Column( "create_time", DateTime, default=now ),
@@ -547,7 +547,7 @@ HistoryDatasetAssociation.table = Table( "history_dataset_association", metadata
     Column( "visible", Boolean ) )
 
 
-LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_association", metadata, 
+LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_id", Integer, ForeignKey( "library_dataset.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
@@ -567,7 +567,7 @@ LibraryDatasetDatasetAssociation.table = Table( "library_dataset_dataset_associa
     Column( "visible", Boolean ),
     Column( "message", TrimmedString( 255 ) ) )
 
-LibraryDataset.table = Table( "library_dataset", metadata, 
+LibraryDataset.table = Table( "library_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "library_dataset_dataset_association_id", Integer, ForeignKey( "library_dataset_dataset_association.id", use_alter=True, name="library_dataset_dataset_association_id_fk" ), nullable=True, index=True ),#current version of dataset, if null, there is not a current version selected
     Column( "order_id", Integer ),
@@ -583,69 +583,69 @@ LibraryDataset.table = Table( "library_dataset", metadata,
 
 
 assign_mapper( context, Dataset, Dataset.table,
-    properties=dict( 
-        history_associations=relation( 
-            HistoryDatasetAssociation, 
+    properties=dict(
+        history_associations=relation(
+            HistoryDatasetAssociation,
             primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) ),
-        active_history_associations=relation( 
-            HistoryDatasetAssociation, 
+        active_history_associations=relation(
+            HistoryDatasetAssociation,
             primaryjoin=( ( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ) & ( HistoryDatasetAssociation.table.c.deleted == False ) ) ),
-        library_associations=relation( 
-            LibraryDatasetDatasetAssociation, 
+        library_associations=relation(
+            LibraryDatasetDatasetAssociation,
             primaryjoin=( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) ),
-        active_library_associations=relation( 
-            LibraryDatasetDatasetAssociation, 
+        active_library_associations=relation(
+            LibraryDatasetDatasetAssociation,
             primaryjoin=( ( Dataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.dataset_id ) & ( LibraryDatasetDatasetAssociation.table.c.deleted == False ) ) )
             ) )
 
 
 assign_mapper( context, HistoryDatasetAssociation, HistoryDatasetAssociation.table,
-    properties=dict( 
-        dataset=relation( 
-            Dataset, 
+    properties=dict(
+        dataset=relation(
+            Dataset,
             primaryjoin=( Dataset.table.c.id == HistoryDatasetAssociation.table.c.dataset_id ), lazy=False ),
         # .history defined in History mapper
-        copied_to_history_dataset_associations=relation( 
-            HistoryDatasetAssociation, 
+        copied_to_history_dataset_associations=relation(
+            HistoryDatasetAssociation,
             primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ),
             backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_history_dataset_association_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
-        copied_to_library_dataset_dataset_associations=relation( 
-            LibraryDatasetDatasetAssociation, 
+        copied_to_library_dataset_dataset_associations=relation(
+            LibraryDatasetDatasetAssociation,
             primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
             backref=backref( "copied_from_history_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id], uselist=False ) ),
-        children=relation( 
-            HistoryDatasetAssociation, 
+        children=relation(
+            HistoryDatasetAssociation,
             primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ),
             backref=backref( "parent", primaryjoin=( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ), remote_side=[HistoryDatasetAssociation.table.c.id], uselist=False ) ),
-        visible_children=relation( 
-            HistoryDatasetAssociation, 
+        visible_children=relation(
+            HistoryDatasetAssociation,
             primaryjoin=( ( HistoryDatasetAssociation.table.c.parent_id == HistoryDatasetAssociation.table.c.id ) & ( HistoryDatasetAssociation.table.c.visible == True ) ) )
             ) )
 
 assign_mapper( context, LibraryDatasetDatasetAssociation, LibraryDatasetDatasetAssociation.table,
-    properties=dict( 
+    properties=dict(
         dataset=relation( Dataset ),
         library_dataset = relation( LibraryDataset,
         primaryjoin=( LibraryDatasetDatasetAssociation.table.c.library_dataset_id == LibraryDataset.table.c.id ) ),
-        copied_to_library_dataset_dataset_associations=relation( 
-            LibraryDatasetDatasetAssociation, 
+        copied_to_library_dataset_dataset_associations=relation(
+            LibraryDatasetDatasetAssociation,
             primaryjoin=( LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
             backref=backref( "copied_from_library_dataset_dataset_association", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
-        copied_to_history_dataset_associations=relation( 
-            HistoryDatasetAssociation, 
+        copied_to_history_dataset_associations=relation(
+            HistoryDatasetAssociation,
             primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ),
             backref=backref( "copied_from_library_dataset_dataset_association", primaryjoin=( HistoryDatasetAssociation.table.c.copied_from_library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id], uselist=False ) ),
-        children=relation( 
-            LibraryDatasetDatasetAssociation, 
+        children=relation(
+            LibraryDatasetDatasetAssociation,
             primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ),
             backref=backref( "parent", primaryjoin=( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ), remote_side=[LibraryDatasetDatasetAssociation.table.c.id] ) ),
-        visible_children=relation( 
-            LibraryDatasetDatasetAssociation, 
+        visible_children=relation(
+            LibraryDatasetDatasetAssociation,
             primaryjoin=( ( LibraryDatasetDatasetAssociation.table.c.parent_id == LibraryDatasetDatasetAssociation.table.c.id ) & ( LibraryDatasetDatasetAssociation.table.c.visible == True ) ) )
         ) )
 
 assign_mapper( context, LibraryDataset, LibraryDataset.table,
-    properties=dict( 
+    properties=dict(
         library_dataset_dataset_association=relation( LibraryDatasetDatasetAssociation, primaryjoin=( LibraryDataset.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) ),
         expired_datasets = relation( LibraryDatasetDatasetAssociation, foreign_keys=[LibraryDataset.table.c.id,LibraryDataset.table.c.library_dataset_dataset_association_id ], primaryjoin=( ( LibraryDataset.table.c.id == LibraryDatasetDatasetAssociation.table.c.library_dataset_id ) & ( not_( LibraryDataset.table.c.library_dataset_dataset_association_id == LibraryDatasetDatasetAssociation.table.c.id ) ) ), viewonly=True, uselist=True )
         ) )
@@ -678,7 +678,7 @@ def upgrade(migrate_engine):
     context.flush()
     log.debug( "%i items affected, and restored." % ( affected_items ) )
     log.debug( "Time elapsed: %s" % ( time.time() - start_time ) )
-    
+
     #fix share before hda
     log.debug( "Fixing a discrepancy concerning cleaning up deleted history items shared before HDAs." )
     dataset_by_filename = {}
@@ -692,7 +692,7 @@ def upgrade(migrate_engine):
             if guessed_dataset and dataset.file_name != guessed_dataset.file_name:#not os.path.samefile( dataset.file_name, guessed_dataset.file_name ):
                 guessed_dataset = None
             dataset_by_filename[ dataset.file_name ] = guessed_dataset
-        
+
         if guessed_dataset is not None and guessed_dataset.id != dataset.id: #could we have a self referential dataset?
             for dataset_instance in dataset.history_associations + dataset.library_associations:
                 dataset_instance.dataset = guessed_dataset
@@ -708,4 +708,4 @@ def upgrade(migrate_engine):
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     log.debug( "Downgrade is not possible." )
-    
+

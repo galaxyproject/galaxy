@@ -1,5 +1,5 @@
 """
-This migration script adds the request_event table and 
+This migration script adds the request_event table and
 removes the state field in the request table
 """
 # Need our custom types, but don't import anything else from model
@@ -30,7 +30,7 @@ metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
-    print "This migration script adds the request_event table and" 
+    print "This migration script adds the request_event table and"
     print "removes the state field in the request table"
     print "========================================"
 
@@ -39,7 +39,7 @@ RequestEvent_table = Table('request_event', metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
-    Column( "request_id", Integer, ForeignKey( "request.id" ), index=True ), 
+    Column( "request_id", Integer, ForeignKey( "request.id" ), index=True ),
     Column( "state", TrimmedString( 255 ),  index=True ),
     Column( "comment", TEXT ) )
 
@@ -77,10 +77,10 @@ def upgrade(migrate_engine):
         "request.id AS request_id," + \
         "request.state AS state," + \
         "'%s' AS comment " + \
-        "FROM request;" 
+        "FROM request;"
     cmd = cmd % ( nextval('request_event'), localtimestamp(), localtimestamp(), 'Imported from request table')
     migrate_engine.execute( cmd )
-    
+
     if migrate_engine.name != 'sqlite':
         # Delete the state column
         try:
@@ -92,8 +92,8 @@ def upgrade(migrate_engine):
             try:
                 Request_table.c.state.drop()
             except Exception, e:
-                log.debug( "Deleting column 'state' to request table failed: %s" % ( str( e ) ) )   
-    
+                log.debug( "Deleting column 'state' to request table failed: %s" % ( str( e ) ) )
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     pass

@@ -29,7 +29,7 @@ def upgrade(migrate_engine):
     except NoSuchTableError, e:
         Request_table = None
         log.debug( "Failed loading table 'request'" )
-        
+
 
     if Request_table is not None:
         # create the column again as JSONType
@@ -38,7 +38,7 @@ def upgrade(migrate_engine):
             col.create( Request_table )
             assert col is Request_table.c.notification
         except Exception, e:
-            log.debug( "Creating column 'notification' in the 'request' table failed: %s" % ( str( e ) ) )   
+            log.debug( "Creating column 'notification' in the 'request' table failed: %s" % ( str( e ) ) )
 
         cmd = "SELECT id, user_id, notify FROM request"
         result = migrate_engine.execute( cmd )
@@ -48,7 +48,7 @@ def upgrade(migrate_engine):
             notify_new = dict(email=[], sample_states=[], body='', subject='')
             cmd = "update request set notification='%s' where id=%i" % (to_json_string(notify_new), id)
             migrate_engine.execute( cmd )
-        
+
         cmd = "SELECT id, notification FROM request"
         result = migrate_engine.execute( cmd )
         for r in result:
@@ -59,9 +59,9 @@ def upgrade(migrate_engine):
             try:
                 Request_table.c.notify.drop()
             except Exception, e:
-                log.debug( "Deleting column 'notify' from the 'request' table failed: %s" % ( str( e ) ) )   
-     
-            
+                log.debug( "Deleting column 'notify' from the 'request' table failed: %s" % ( str( e ) ) )
+
+
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine

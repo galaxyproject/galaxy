@@ -20,7 +20,7 @@ User_table = Table( "galaxy_user", metadata,
     Column( "email", TrimmedString( 255 ), nullable=False ),
     Column( "password", TrimmedString( 40 ), nullable=False ),
     Column( "external", Boolean, default=False ) )
-            
+
 History_table = Table( "history", metadata,
     Column( "id", Integer, primary_key=True),
     Column( "create_time", DateTime, default=now ),
@@ -32,7 +32,7 @@ History_table = Table( "history", metadata,
     Column( "purged", Boolean, index=True, default=False ),
     Column( "genome_build", TrimmedString( 40 ) ) )
 
-HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata, 
+HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "history_id", Integer, ForeignKey( "history.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
@@ -51,7 +51,7 @@ HistoryDatasetAssociation_table = Table( "history_dataset_association", metadata
     Column( "deleted", Boolean, index=True, default=False ),
     Column( "visible", Boolean ) )
 
-Dataset_table = Table( "dataset", metadata, 
+Dataset_table = Table( "dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, index=True, default=now, onupdate=now ),
@@ -89,7 +89,7 @@ Job_table = Table( "job", metadata,
     Column( "tool_version", TEXT, default="1.0.0" ),
     Column( "state", String( 64 ) ),
     Column( "info", TrimmedString( 255 ) ),
-    Column( "command_line", TEXT ), 
+    Column( "command_line", TEXT ),
     Column( "param_filename", String( 1024 ) ),
     Column( "runner_name", String( 255 ) ),
     Column( "stdout", TEXT ),
@@ -98,26 +98,26 @@ Job_table = Table( "job", metadata,
     Column( "session_id", Integer, ForeignKey( "galaxy_session.id" ), index=True, nullable=True ),
     Column( "job_runner_name", String( 255 ) ),
     Column( "job_runner_external_id", String( 255 ) ) )
-    
+
 JobParameter_table = Table( "job_parameter", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "name", String(255) ),
     Column( "value", TEXT ) )
-    
+
 JobToInputDatasetAssociation_table = Table( "job_to_input_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
-    
+
 JobToOutputDatasetAssociation_table = Table( "job_to_output_dataset", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "job_id", Integer, ForeignKey( "job.id" ), index=True ),
     Column( "dataset_id", Integer, ForeignKey( "history_dataset_association.id" ), index=True ),
     Column( "name", String(255) ) )
-    
-Event_table = Table( "event", metadata, 
+
+Event_table = Table( "event", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "create_time", DateTime, default=now ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
@@ -200,7 +200,7 @@ StoredWorkflowUserShareAssociation_table = Table( "stored_workflow_user_share_co
 StoredWorkflowMenuEntry_table = Table( "stored_workflow_menu_entry", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "stored_workflow_id", Integer, ForeignKey( "stored_workflow.id" ), index=True ),
-    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),                              
+    Column( "user_id", Integer, ForeignKey( "galaxy_user.id" ), index=True ),
     Column( "order_index", Integer ) )
 
 def upgrade(migrate_engine):

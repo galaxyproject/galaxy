@@ -1,5 +1,5 @@
 """
-Migration script to add the sample_dataset table and remove the 'dataset_files' column 
+Migration script to add the sample_dataset table and remove the 'dataset_files' column
 from the 'sample' table
 """
 
@@ -28,7 +28,7 @@ def nextval( table, col='id' ):
         return "null"
     else:
         raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
-    
+
 def localtimestamp():
    if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
        return "LOCALTIMESTAMP"
@@ -41,7 +41,7 @@ SampleDataset_table = Table('sample_dataset', metadata,
                             Column( "id", Integer, primary_key=True ),
                             Column( "create_time", DateTime, default=now ),
                             Column( "update_time", DateTime, default=now, onupdate=now ),
-                            Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ), 
+                            Column( "sample_id", Integer, ForeignKey( "sample.id" ), index=True ),
                             Column( "name", TrimmedString( 255 ), nullable=False ),
                             Column( "file_path", TrimmedString( 255 ), nullable=False ),
                             Column( "status", TrimmedString( 255 ), nullable=False ),
@@ -56,7 +56,7 @@ def upgrade(migrate_engine):
         SampleDataset_table.create()
     except Exception, e:
         log.debug( "Creating sample_dataset table failed: %s" % str( e ) )
-        
+
     cmd = "SELECT id, dataset_files FROM sample"
     result = migrate_engine.execute( cmd )
     for r in result:
@@ -76,7 +76,7 @@ def upgrade(migrate_engine):
                                   "",
                                   df.get('size', '').replace('"', '').replace("'", "").replace(df.get('filepath', ''), '').strip() )
                 migrate_engine.execute( cmd )
-            
+
     # Delete the dataset_files column in the Sample table
     try:
         Sample_table = Table( "sample", metadata, autoload=True )
@@ -87,7 +87,7 @@ def upgrade(migrate_engine):
         try:
             Sample_table.c.dataset_files.drop()
         except Exception, e:
-            log.debug( "Deleting column 'dataset_files' from the 'sample' table failed: %s" % ( str( e ) ) )   
+            log.debug( "Deleting column 'dataset_files' from the 'sample' table failed: %s" % ( str( e ) ) )
 
 
 def downgrade(migrate_engine):

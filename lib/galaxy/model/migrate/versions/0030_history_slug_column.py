@@ -13,12 +13,12 @@ metadata = MetaData()
 
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
-    
+
     print __doc__
     metadata.reflect()
-    
+
     History_table = Table( "history", metadata, autoload=True )
-    
+
     # Create slug column.
     c = Column( "slug", TEXT, index=True )
     c.create( History_table , index_name='ix_history_slug')

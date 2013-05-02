@@ -23,7 +23,7 @@ def display_migration_details():
     print "========================================"
     print """This script creates a request.folder_id column which is a foreign
 key to the library_folder table. This also adds a 'type' and 'layout' column
-to the form_definition table.""" 
+to the form_definition table."""
     print "========================================"
 
 def upgrade(migrate_engine):
@@ -73,7 +73,7 @@ def upgrade(migrate_engine):
         except Exception, e:
             log.debug( "Adding column 'type' to form_definition table failed: %s" % ( str( e ) ) )
         try:
-            col = Column( "layout", JSONType()) 
+            col = Column( "layout", JSONType())
             col.create( FormDefinition_table )
             assert col is FormDefinition_table.c.layout
         except Exception, e:

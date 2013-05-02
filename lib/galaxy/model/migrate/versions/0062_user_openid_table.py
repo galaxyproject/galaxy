@@ -31,7 +31,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-    
+
     # Create galaxy_user_openid table
     try:
         UserOpenID_table.create()
@@ -48,11 +48,11 @@ def upgrade(migrate_engine):
             i.create()
         except Exception, e:
             log.debug( "Adding index '%s' failed: %s" % ( ix_name, str( e ) ) )
-        
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     # Drop galaxy_user_openid table
     try:
         UserOpenID_table.drop()

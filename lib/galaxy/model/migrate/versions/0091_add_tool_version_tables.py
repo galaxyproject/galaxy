@@ -33,7 +33,7 @@ def nextval( table, col='id' ):
         return "null"
     else:
         raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
-    
+
 def localtimestamp():
    if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
        return "LOCALTIMESTAMP"
@@ -57,9 +57,9 @@ ToolVersionAssociation_table = Table( "tool_version_association", metadata,
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
-    
+
     ToolIdGuidMap_table = Table( "tool_id_guid_map", metadata, autoload=True )
-    
+
     metadata.reflect()
     # Create the tables.
     try:
@@ -92,7 +92,7 @@ def upgrade(migrate_engine):
         ToolIdGuidMap_table.drop()
     except Exception, e:
         log.debug( "Dropping tool_id_guid_map table failed: %s" % str( e ) )
-        
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
 

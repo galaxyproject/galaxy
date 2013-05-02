@@ -25,10 +25,10 @@ def upgrade(migrate_engine):
     try:
 
         # Sqlite doesn't support .alter, so we need to drop an recreate
-    
+
         i = Index( "ix_page_slug", Page_table.c.slug )
         i.drop()
-    
+
         i = Index( "ix_page_slug", Page_table.c.slug, unique=False )
         i.create()
 

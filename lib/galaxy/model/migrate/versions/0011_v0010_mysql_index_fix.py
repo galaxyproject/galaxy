@@ -1,5 +1,5 @@
 """
-This script fixes a problem introduced in 0010_hda_display_at_atuhz_table.py.  MySQL has a 
+This script fixes a problem introduced in 0010_hda_display_at_atuhz_table.py.  MySQL has a
 name length limit and thus the index "ix_hdadaa_history_dataset_association_id" has to be
 manually created.
 """
@@ -51,7 +51,7 @@ def upgrade(migrate_engine):
         try:
             i.create()
         except Exception, e:
-            log.debug( "Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )  
+            log.debug( "Adding index 'ix_hdadaa_history_dataset_association_id' to table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -62,4 +62,4 @@ def downgrade(migrate_engine):
         try:
             i.drop()
         except Exception, e:
-            log.debug( "Removing index 'ix_hdadaa_history_dataset_association_id' from table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )  
+            log.debug( "Removing index 'ix_hdadaa_history_dataset_association_id' from table 'history_dataset_association_display_at_authorization' table failed: %s" % str( e ) )

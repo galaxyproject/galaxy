@@ -35,14 +35,14 @@ def display_migration_details():
     print "(OperationalError) (1059, 'Identifier name "
     print "'ix_history_dataset_association_tag_association_history_dataset_association_id'"
     print "is too long)"
-    
+
 
 # New tables to support tagging of histories, datasets, and history-dataset associations.
 Tag_table = Table( "tag", metadata,
     Column( "id", Integer, primary_key=True ),
     Column( "type", Integer ),
     Column( "parent_id", Integer, ForeignKey( "tag.id" ) ),
-    Column( "name", TrimmedString(255) ), 
+    Column( "name", TrimmedString(255) ),
     UniqueConstraint( "name" ) )
 
 HistoryTagAssociation_table = Table( "history_tag_association", metadata,
@@ -51,7 +51,7 @@ HistoryTagAssociation_table = Table( "history_tag_association", metadata,
     Column( "user_tname", TrimmedString(255), index=True),
     Column( "value", TrimmedString(255), index=True),
     Column( "user_value", TrimmedString(255), index=True) )
-    
+
 DatasetTagAssociation_table = Table( "dataset_tag_association", metadata,
     Column( "dataset_id", Integer, ForeignKey( "dataset.id" ), index=True ),
     Column( "tag_id", Integer, ForeignKey( "tag.id" ), index=True ),
@@ -90,7 +90,7 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.debug( "Creating history_dataset_association_tag_association table failed: %s" % str( e ) )
-    
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

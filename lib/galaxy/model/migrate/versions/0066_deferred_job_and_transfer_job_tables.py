@@ -40,23 +40,23 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-    
+
     # Create deferred_job table
     try:
         DeferredJob_table.create()
     except Exception, e:
         log.error( "Creating deferred_job table failed: %s" % str( e ) )
-        
+
     # Create transfer_job table
     try:
         TransferJob_table.create()
     except Exception, e:
         log.error( "Creating transfer_job table failed: %s" % str( e ) )
-        
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     # Drop deferred_job table
     try:
         DeferredJob_table.drop()

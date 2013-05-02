@@ -41,7 +41,7 @@ def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
     Job_table = Table( "job", metadata, autoload=True )
-    
+
     try:
         Job_table.c.destination_params.drop()
     except Exception, e:

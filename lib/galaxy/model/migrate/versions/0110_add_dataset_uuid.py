@@ -23,7 +23,7 @@ def upgrade(migrate_engine):
     metadata = MetaData()
     metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     # Add the uuid colum to the dataset table
     try:
         dataset_table = Table( "dataset", metadata, autoload=True )
@@ -32,15 +32,15 @@ def upgrade(migrate_engine):
     except Exception, e:
         print str(e)
         log.error( "Adding column 'uuid' to dataset table failed: %s" % str( e ) )
-        return 
+        return
 
 
 def downgrade(migrate_engine):
     metadata = MetaData()
     metadata.bind = migrate_engine
     metadata.reflect()
-    
-    # Drop the dataset table's uuid column. 
+
+    # Drop the dataset table's uuid column.
     try:
         dataset_table = Table( "dataset", metadata, autoload=True )
         dataset_uuid = dataset_table.c.uuid

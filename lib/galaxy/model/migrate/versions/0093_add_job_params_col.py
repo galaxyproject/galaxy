@@ -26,21 +26,21 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-    
+
     # Add column to Job table.
     try:
         Job_table = Table( "job", metadata, autoload=True )
         params_col.create( Job_table, index_name="ix_job_params")
         assert params_col is Job_table.c.params
-        
+
     except Exception, e:
         print str(e)
         log.debug( "Adding column 'params' to job table failed: %s" % str( e ) )
-                                
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     # Drop column from Job table.
     try:
         Job_table = Table( "job", metadata, autoload=True )

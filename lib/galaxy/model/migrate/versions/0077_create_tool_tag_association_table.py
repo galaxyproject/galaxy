@@ -32,17 +32,17 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-    
+
     # Create tool_tag_association table
     try:
         ToolTagAssociation_table.create()
     except Exception, e:
         log.error( "Creating tool_tag_association table failed: %s" % str( e ) )
-        
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()
-    
+
     # Drop tool_tag_association table
     try:
         ToolTagAssociation_table.drop()

@@ -1,5 +1,5 @@
 """
-Add the ExtendedMetadata and ExtendedMetadataIndex tables 
+Add the ExtendedMetadata and ExtendedMetadataIndex tables
 """
 
 from sqlalchemy import *
@@ -62,12 +62,12 @@ def downgrade(migrate_engine):
     except Exception, e:
         log.debug( "Dropping 'extended_metadata_index' table failed: %s" % ( str( e ) ) )
 
-    try:   
+    try:
         ExtendedMetadata_table.drop()
     except Exception, e:
         log.debug( "Dropping 'extended_metadata' table failed: %s" % ( str( e ) ) )
-    
-    # Drop the LDDA table's extended metadata ID column. 
+
+    # Drop the LDDA table's extended metadata ID column.
     try:
         ldda_table = Table( "library_dataset_dataset_association", metadata, autoload=True )
         extended_metadata_id = ldda_table.c.extended_metadata_id

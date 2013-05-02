@@ -33,7 +33,7 @@ WorkflowInvocationStep_table = Table( "workflow_invocation_step", metadata,
     )
 
 tables = [ WorkflowInvocation_table, WorkflowInvocationStep_table ]
-    
+
 def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
@@ -44,7 +44,7 @@ def upgrade(migrate_engine):
             table.create()
         except:
             log.warn( "Failed to create table '%s', ignoring (might result in wrong schema)" % table.name )
-        
+
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
     metadata.reflect()

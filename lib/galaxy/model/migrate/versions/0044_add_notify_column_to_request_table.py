@@ -15,7 +15,7 @@ def upgrade(migrate_engine):
     metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
-    
+
     Request_table = Table( "request", metadata, autoload=True )
     c = Column( "notify", Boolean, default=False  )
     c.create( Request_table )

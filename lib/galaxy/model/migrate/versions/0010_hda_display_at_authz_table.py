@@ -5,7 +5,7 @@ If using mysql, this script will display the following error, which is corrected
 migration script:
 
 history_dataset_association_display_at_authorization table failed:  (OperationalError)
-(1059, "Identifier name  'ix_history_dataset_association_display_at_authorization_update_time'  
+(1059, "Identifier name  'ix_history_dataset_association_display_at_authorization_update_time'
 is too long
 """
 from sqlalchemy import *
@@ -58,7 +58,7 @@ def upgrade(migrate_engine):
     try:
         HistoryDatasetAssociationDisplayAtAuthorization_table.create()
     except Exception, e:
-        log.debug( "Creating history_dataset_association_display_at_authorization table failed: %s" % str( e ) )  
+        log.debug( "Creating history_dataset_association_display_at_authorization table failed: %s" % str( e ) )
 
 def downgrade(migrate_engine):
     metadata.bind = migrate_engine
@@ -67,4 +67,4 @@ def downgrade(migrate_engine):
     try:
         HistoryDatasetAssociationDisplayAtAuthorization_table.drop()
     except Exception, e:
-        log.debug( "Dropping history_dataset_association_display_at_authorization table failed: %s" % str( e ) )  
+        log.debug( "Dropping history_dataset_association_display_at_authorization table failed: %s" % str( e ) )
