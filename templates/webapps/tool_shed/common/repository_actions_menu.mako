@@ -5,19 +5,55 @@
         from tool_shed.util.review_util import can_browse_repository_reviews, changeset_revision_reviewed_by_user, get_review_by_repository_id_changeset_revision_user_id
         from tool_shed.util.shed_util_common import changeset_is_malicious
 
-        has_metadata = repository.metadata_revisions
-        has_readme = metadata and 'readme' in metadata
+        if repository.metadata_revisions:
+            has_metadata = True
+        else:
+            has_metadata = False
+
         is_admin = trans.user_is_admin()
-        is_deprecated = repository.deprecated
-        is_new = repository.is_new( trans.app )
-        is_malicious = changeset_is_malicious( trans, trans.security.encode_id( repository.id ), repository.tip( trans.app ) )
+
+        if repository.deprecated:
+            is_deprecated = True
+        else:
+            is_deprecated = False
+
+        if repository.is_new( trans.app ):
+            is_new = True
+        else:
+            is_new = False
+
+        if changeset_is_malicious( trans, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
+            is_malicious = True
+        else:
+            is_malicious = False
 
         can_browse_contents = not is_new
-        can_browse_reviews = can_browse_repository_reviews( trans, repository )
-        can_contact_owner = trans.user and trans.user != repository.user
-        can_deprecate = not is_new and trans.user and ( is_admin or repository.user == trans.user ) and not is_deprecated
-        can_push = not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository )
-        can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
+
+        if can_browse_repository_reviews( trans, repository ):
+            can_browse_reviews = True
+        else:
+            can_browse_reviews = False
+
+        if trans.user and trans.user != repository.user:
+            can_contact_owner = True
+        else:
+            can_contact_owner = False
+        
+        if not is_new and trans.user and ( is_admin or repository.user == trans.user ) and not is_deprecated:
+            can_deprecate = True
+        else:
+            can_deprecate = False
+
+        if not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository ):
+            can_push = True
+        else:
+            can_push = False
+
+        if not is_deprecated and not is_new and ( not is_malicious or can_push ):
+            can_download = True
+        else:
+            can_download = False
+
         if not is_deprecated:
             if repo and len( repo ) > 0:
                 can_reset_all_metadata = True
@@ -25,16 +61,30 @@
                 can_reset_all_metadata = False
         else:
             can_reset_all_metadata = False
-        can_upload = can_push and not is_deprecated
-        can_rate = not is_new and not is_deprecated and trans.user and repository.user != trans.user
-        if changeset_revision:
-            can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
-            reviewed_by_user = changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision )
+
+        if can_push and not is_deprecated:
+            can_upload = True
+        else:
+            can_upload = False
+
+        if not is_new and not is_deprecated and trans.user and repository.user != trans.user:
+            can_rate = True
+        else:
+            can_rate = False
+        
+        if changeset_revision is not None:
+            if has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user ):
+                can_review_repository = True
+            else:
+                can_review_repository = False
+            if changeset_revision_reviewed_by_user( trans, trans.user, repository, changeset_revision ):
+                reviewed_by_user = True
+            else:
+                reviewed_by_user = False
         else:
             can_review_repository = False
             reviewed_by_user = False
 
-        # Determine if the current changeset revision has been reviewed by the current user.
         if reviewed_by_user:
             review = get_review_by_repository_id_changeset_revision_user_id( trans=trans,
                                                                              repository_id=trans.security.encode_id( repository.id ),
@@ -44,17 +94,29 @@
         else:
             review_id = None
 
-        can_set_metadata = not is_new and not is_deprecated
-        if changeset_revision:
+        if not is_new and not is_deprecated:
+            can_set_metadata = True
+        else:
+            can_set_metadata = False
+
+        if changeset_revision is not None:
             if changeset_revision == repository.tip( trans.app ):
                 changeset_revision_is_repository_tip = True
             else:
                 changeset_revision_is_repository_tip = False
         else:
             changeset_revision_is_repository_tip = False
-        can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision_is_repository_tip
-        can_undeprecate = trans.user and ( is_admin or repository.user == trans.user ) and is_deprecated
-        can_manage = is_admin or repository.user == trans.user
+
+        if trans.user and ( is_admin or repository.user == trans.user ) and is_deprecated:
+            can_undeprecate = True
+        else:
+            can_undeprecate = False
+
+        if is_admin or repository.user == trans.user:
+            can_manage = True
+        else:
+            can_manage = False
+
         can_view_change_log = not is_new
 
         if can_push:
@@ -68,6 +130,9 @@
         %if is_new:
             %if can_upload:
                 <a class="action-button" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
+            %endif
+            %if can_undeprecate:
+                <a class="action-button" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=False )}">Mark repository as not deprecated</a>
             %endif
         %else:
             <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>

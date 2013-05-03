@@ -6,19 +6,56 @@
 
 <%
     from galaxy.web.framework.helpers import time_ago
+    from tool_shed.util.shed_util_common import changeset_is_malicious
 
-    has_metadata = repository.metadata_revisions
-    has_readme = metadata and 'readme' in metadata
+    if repository.metadata_revisions:
+        has_metadata = True
+    else:
+        has_metadata = False
+
     is_admin = trans.user_is_admin()
     is_new = repository.is_new( trans.app )
-    is_deprecated = repository.deprecated
 
-    can_push = not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository )
-    can_download = not is_deprecated and not is_new and ( not is_malicious or can_push )
-    can_review_repository = has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user )
-    can_set_metadata = not is_new and not is_deprecated
-    changeset_revision_is_repository_tip = changeset_revision == repository.tip( trans.app )
-    can_set_malicious = metadata and can_set_metadata and is_admin and changeset_revision_is_repository_tip
+    if repository.deprecated:
+        is_deprecated = True
+    else:
+        is_deprecated = False
+
+    if changeset_is_malicious( trans, trans.security.encode_id( repository.id ), repository.tip( trans.app ) ):
+        is_malicious = True
+    else:
+        is_malicious = False
+
+    if not is_deprecated and trans.app.security_agent.can_push( trans.app, trans.user, repository ):
+        can_push = True
+    else:
+        can_push = False
+
+    if not is_deprecated and not is_new and ( not is_malicious or can_push ):
+        can_download = True
+    else:
+        can_download = False
+
+    if has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user ):
+        can_review_repository = True
+    else:
+        can_review_repository = False
+
+    if not is_new and not is_deprecated:
+        can_set_metadata = True
+    else:
+        can_set_metadata = False
+
+    if changeset_revision == repository.tip( trans.app ):
+        changeset_revision_is_repository_tip = True
+    else:
+        changeset_revision_is_repository_tip = False
+
+    if metadata and can_set_metadata and is_admin and changeset_revision_is_repository_tip:
+        can_set_malicious = True
+    else:
+        can_set_malicious = False
+
     can_view_change_log = not is_new
 
     if changeset_revision_is_repository_tip:
