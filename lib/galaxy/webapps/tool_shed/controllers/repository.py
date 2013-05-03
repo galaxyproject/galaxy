@@ -95,7 +95,9 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     kwd[ 'id' ] = trans.security.encode_id( repository.id )
                 except:
                     pass
-            return self.browse_repositories( trans, **kwd )
+            return trans.response.send_redirect( web.url_for( controller='repository',
+                                                              action='browse_repositories',
+                                                              **kwd ) )
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
             if operation in [ "repositories_by_category", "repositories_by_user" ]:
