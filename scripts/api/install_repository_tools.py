@@ -34,7 +34,7 @@ def main( options ):
         data[ 'install_repository_dependencies' ] = options.install_repository_dependencies
     if options.install_tool_dependencies:
         data[ 'install_tool_dependencies' ] = options.install_tool_dependencies
-    submit( options.api, '%s%s' % ( options.local_url, '/api/tool_shed_repositories/new/install_repository_revision' ), data )
+    submit( options.api, '%s%s' % ( options.local_url.strip('/'), '/api/tool_shed_repositories/new/install_repository_revision' ), data )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser( description='Installation of tool shed repositories via the Galaxy API.' )
