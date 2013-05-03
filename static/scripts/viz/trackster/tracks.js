@@ -438,6 +438,7 @@ var DrawableCollection = function(view, container, obj_dict) {
     this.obj_type = obj_dict.obj_type;
     this.drawables = [];
 };
+
 extend(DrawableCollection.prototype, Drawable.prototype, {
     /**
      * Unpack and add drawables to the collection.
@@ -560,6 +561,26 @@ extend(DrawableCollection.prototype, Drawable.prototype, {
      */
     get_drawables: function() {
         return this.drawables;
+    },
+
+    /**
+     * Returns all <track_type> tracks in collection.
+     */
+    get_tracks: function(track_type) {
+        // Initialize queue with copy of drawables array.
+        var queue = this.drawables.slice(0),
+            tracks = [],
+            drawable;
+        while (queue.length !== 0) {
+            drawable = queue.shift();
+            if (drawable instanceof track_type) {
+                tracks.push(drawable);
+            }
+            else if (drawable.drawables) {
+                queue = queue.concat(drawable.drawables);
+            }
+        }
+        return tracks;
     }
 });
 
@@ -967,8 +988,8 @@ var TracksterView = Backbone.View.extend({
                 source: function(request, response) {
                     // Using current text, query each track and create list of all matching features.
                     var all_features = [],
-                        feature_search_deferreds = $.map(view.get_drawables(), function(drawable) {
-                        return drawable.data_manager.search_features(request.term).success(function(dataset_features) {
+                        feature_search_deferreds = $.map(view.get_tracks(FeatureTrack), function(t) {
+                        return t.data_manager.search_features(request.term).success(function(dataset_features) {
                             all_features = all_features.concat(dataset_features);
                         });
                     });
