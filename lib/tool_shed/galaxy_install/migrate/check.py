@@ -1,6 +1,7 @@
 import sys, os, logging, subprocess
 from galaxy import eggs
 import pkg_resources
+pkg_resources.require( "decorator" )
 pkg_resources.require( "sqlalchemy-migrate" )
 
 from migrate.versioning import repository, schema

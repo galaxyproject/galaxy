@@ -7,6 +7,7 @@ sys.path = new_path
 from galaxy import eggs
 
 import pkg_resources
+pkg_resources.require( "decorator" )
 pkg_resources.require( "sqlalchemy-migrate" )
 
 from migrate.versioning.shell import main
