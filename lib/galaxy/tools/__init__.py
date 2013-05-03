@@ -2546,6 +2546,7 @@ class Tool( object ):
         param_dict['__root_dir__'] = param_dict['GALAXY_ROOT_DIR'] = os.path.abspath( self.app.config.root )
         param_dict['__datatypes_config__'] = param_dict['GALAXY_DATATYPES_CONF_FILE'] = self.app.datatypes_registry.integrated_datatypes_configs
         param_dict['__admin_users__'] = self.app.config.admin_users
+        param_dict['__user__'] = RawObjectWrapper( param_dict.get( '__user__', None ) )
         # Return the dictionary of parameters
         return param_dict
     def build_param_file( self, param_dict, directory=None ):
@@ -3243,6 +3244,8 @@ class RawObjectWrapper( ToolParameterValueWrapper ):
     """
     def __init__( self, obj ):
         self.obj = obj
+    def __nonzero__( self ):
+        return bool( self.obj ) #FIXME: would it be safe/backwards compatible to rename .obj to .value, so that we can just inherit this method?
     def __str__( self ):
         return "%s:%s" % (self.obj.__module__, self.obj.__class__.__name__)
     def __getattr__( self, key ):

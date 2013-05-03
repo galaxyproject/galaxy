@@ -678,13 +678,16 @@ class JobWrapper( object ):
 
         # These can be passed on the command line if wanted as $__user_*__
         if job.history and job.history.user:
+            user = job.history.user
             user_id = '%d' % job.history.user.id
             user_email = str(job.history.user.email)
             user_name = str(job.history.user.username)
         else:
+            user = None
             user_id = 'Anonymous'
             user_email = 'Anonymous'
             user_name = 'Anonymous'
+        incoming['__user__'] = user
         incoming['__user_id__'] = incoming['userId'] = user_id
         incoming['__user_email__'] = incoming['userEmail'] = user_email
         incoming['__user_name__'] = user_name
