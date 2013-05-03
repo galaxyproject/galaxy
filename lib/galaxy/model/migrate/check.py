@@ -4,6 +4,7 @@ import logging
 
 from galaxy import eggs
 eggs.require( "SQLAlchemy" )
+eggs.require( "decorator" ) #Required by sqlalchemy-migrate
 eggs.require( "Tempita " ) #Required by sqlalchemy-migrate
 eggs.require( "sqlalchemy-migrate" )
 
