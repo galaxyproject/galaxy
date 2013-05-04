@@ -572,14 +572,7 @@ def main():
         # it will record the result of the tests, and if any failed, the traceback and captured output of the tool that was run.
         # After all tests have completed, the repository is uninstalled, so that the previous test cases don't interfere with
         # the next repository's functional tests.
-        keep_skipping = True
         for repository_info_dict in detailed_repository_list:
-            if repository_info_dict[ 'name' ] == 'simsearch' and repository_info_dict[ 'changeset_revision' ] == '430f55978191':
-                keep_skipping = False
-            if keep_skipping:
-                continue
-            if repository_info_dict[ 'name' ] == 'sortmerna':
-                continue
             """
             Each repository_info_dict looks something like:
             {
