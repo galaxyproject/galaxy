@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 
 STATEMENTS = "__galaxy_statements__" #this is the name of the property in a Datatype class where new metadata spec element Statements are stored
 
-DATABASE_CONNECTION_AVAILABLE = True #When False, certain metadata parameter types (see FileParameter) will behave differently
+DATABASE_CONNECTION_AVAILABLE = False #When False, certain metadata parameter types (see FileParameter) will behave differently
 
 class Statement( object ):
     """
