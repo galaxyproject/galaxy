@@ -134,7 +134,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     @web.require_login( "use Galaxy workflows" )
     def list_grid( self, trans, **kwargs ):
         """ List user's stored workflows. """
-        status = message = None
+        # status = message = None
         if 'operation' in kwargs:
             operation = kwargs['operation'].lower()
             if operation == "rename":
@@ -462,7 +462,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             return trans.show_error_message( "The specified workflow does not exist." )
 
         # Rate workflow.
-        stored_rating = self.rate_item( trans.sa_session, trans.get_user(), stored, rating )
+        self.rate_item( trans.sa_session, trans.get_user(), stored, rating )
 
         return self.get_ave_item_rating_data( trans.sa_session, stored )
 
@@ -507,8 +507,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     @web.require_login( "use Galaxy workflows" )
     def gen_image( self, trans, id ):
         stored = self.get_stored_workflow( trans, id, check_ownership=True )
-        session = trans.sa_session
-
         trans.response.set_content_type("image/svg+xml")
         return self._workflow_to_svg_canvas( trans, stored ).standalone_xml()
 
@@ -942,7 +940,6 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
 
         # Load encoded workflow from database
-        user = trans.get_user()
         id = trans.security.decode_id( id )
         trans.workflow_building_mode = True
         stored = trans.sa_session.query( model.StoredWorkflow ).get( id )
@@ -1034,6 +1031,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         trans.response.headers["Content-Disposition"] = 'attachment; filename="Galaxy-Workflow-%s.ga"' % ( sname )
         trans.response.set_content_type( 'application/galaxy-archive' )
         return stored_dict
+
     @web.expose
     def import_workflow( self, trans, cntrller='workflow', **kwd ):
         """
@@ -1097,7 +1095,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 else:
                     uploaded_file = file_data.file
                     uploaded_file_name = uploaded_file.name
-                    uploaded_file_filename = file_data.filename
+                    # uploaded_file_filename = file_data.filename
                     if os.path.getsize( os.path.abspath( uploaded_file_name ) ) > 0:
                         # We're reading the file as text so we can re-use the existing code below.
                         # This may not be ideal...
@@ -1198,6 +1196,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                                     status=status,
                                     use_panels=True,
                                     myexperiment_target_url=myexperiment_target_url )
+
     @web.json
     def get_datatypes( self, trans ):
         ext_to_class_name = dict()
@@ -1335,7 +1334,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Build the state for each step
         errors = {}
         has_upgrade_messages = False
-        has_errors = False
+        # has_errors is never used
+        # has_errors = False
         saved_history = None
         if history_id is not None:
             saved_history = trans.get_history();
@@ -1498,7 +1498,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                         step.state = step.module.state
                         # Error dict
                         if step.tool_errors:
-                            has_errors = True
+                            # has_errors is never used.
+                            # has_errors = True
                             errors[step.id] = step.tool_errors
                     else:
                         ## Non-tool specific stuff?
@@ -1553,7 +1554,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         # Build the state for each step
         errors = {}
         has_upgrade_messages = False
-        has_errors = False
+        # has_errors is never used
+        # has_errors = False
         if kwargs:
             # If kwargs were provided, the states for each step should have
             # been POSTed
@@ -1591,7 +1593,8 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                 step.state = step.module.state
                 # Error dict
                 if step.tool_errors:
-                    has_errors = True
+                    # has_errors is never used
+                    # has_errors = True
                     errors[step.id] = step.tool_errors
             else:
                 ## Non-tool specific stuff?
@@ -1825,7 +1828,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Unpack and add post-job actions.
             post_job_actions = step_dict.get( 'post_job_actions', {} )
             for name, pja_dict in post_job_actions.items():
-                pja = model.PostJobAction( pja_dict[ 'action_type' ],
+                model.PostJobAction( pja_dict[ 'action_type' ],
                                      step, pja_dict[ 'output_name' ],
                                      pja_dict[ 'action_arguments' ] )
         # Second pass to deal with connections between steps
@@ -2064,7 +2067,6 @@ def cleanup_param_values( inputs, values ):
     but track the associations.
     """
     associations = []
-    names_to_clean = []
     # dbkey is pushed in by the framework
     if 'dbkey' in values:
         del values['dbkey']
