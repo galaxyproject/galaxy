@@ -37,8 +37,8 @@ from galaxy.web.framework.helpers import to_unicode
 from galaxy.workflow.modules import module_factory, ToolModule
 
 
-
 class StoredWorkflowListGrid( grids.Grid ):
+
     class StepsColumn( grids.GridColumn ):
         def get_value(self, trans, grid, workflow):
             return len( workflow.latest_workflow.steps )
@@ -73,6 +73,7 @@ class StoredWorkflowListGrid( grids.Grid ):
     def apply_query_filter( self, trans, query, **kwargs ):
         return query.filter_by( user=trans.user, deleted=False )
 
+
 class StoredWorkflowAllPublishedGrid( grids.Grid ):
     title = "Published Workflows"
     model_class = model.StoredWorkflow
@@ -94,12 +95,15 @@ class StoredWorkflowAllPublishedGrid( grids.Grid ):
         key="free-text-search", visible=False, filterable="standard" )
                 )
     operations = []
+
     def build_initial_query( self, trans, **kwargs ):
         # Join so that searching stored_workflow.user makes sense.
         return trans.sa_session.query( self.model_class ).join( model.User.table )
+
     def apply_query_filter( self, trans, query, **kwargs ):
         # A public workflow is published, has a slug, and is not deleted.
         return query.filter( self.model_class.published==True ).filter( self.model_class.slug != None ).filter( self.model_class.deleted == False )
+
 
 # Simple SGML parser to get all content in a single tag.
 class SingleTagContentsParser( sgmllib.SGMLParser ):
@@ -118,6 +122,7 @@ class SingleTagContentsParser( sgmllib.SGMLParser ):
         """ Called for each block of plain text. """
         if self.cur_tag == self.target_tag:
             self.tag_content += text
+
 
 class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesAnnotations, UsesItemRatings ):
     stored_list_grid = StoredWorkflowListGrid()
@@ -847,7 +852,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             for input_name, conns in step.temp_input_connections.iteritems():
                 if conns:
                     conn_dicts = conns if isinstance(conns,list) else [conns]
-                    for conn_dict in conn_dicts: 
+                    for conn_dict in conn_dicts:
                         conn = model.WorkflowStepConnection()
                         conn.input_step = step
                         conn.input_name = input_name
@@ -883,6 +888,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         """
         stored = self.get_stored_workflow( trans, id, check_ownership=False, check_accessible=True )
         return trans.fill_template( "/workflow/export.mako", item=stored, use_panels=True )
+
     @web.expose
     @web.require_login( "use workflows" )
     def import_from_myexp( self, trans, myexp_id, **kwd ):
@@ -932,6 +938,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             return trans.show_warn_message( "Imported, but this workflow contains cycles. %s" % workflow_list_str )
         else:
             return trans.show_message( "Workflow '%s' imported. %s" % (workflow.name, workflow_list_str) )
+
     @web.expose
     @web.require_login( "use workflows" )
     def export_to_myexp( self, trans, id, myexp_username, myexp_password ):
@@ -1767,7 +1774,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # tools. This should be removed at some point. Mirrored
             # hack in _workflow_from_dict should never be removed so
             # existing workflow exports continue to function.
-            for input_name, input_conn in dict(input_conn_dict).iteritems(): 
+            for input_name, input_conn in dict(input_conn_dict).iteritems():
                 if len(input_conn) == 1:
                     input_conn_dict[input_name] = input_conn[0]
             step_dict['input_connections'] = input_conn_dict
@@ -1776,6 +1783,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
             # Add to return value
             data['steps'][step.order_index] = step_dict
         return data
+
     def _workflow_from_dict( self, trans, data, source=None, add_to_menu=False ):
         """
         Creates a workflow from a dict. Created workflow is stored in the database and returned.
@@ -1869,16 +1877,13 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
         return stored, missing_tool_tups
 
     def _workflow_to_svg_canvas( self, trans, stored ):
-
         workflow = stored.latest_workflow
         data = []
-
         canvas = svgfig.canvas(style="stroke:black; fill:none; stroke-width:1px; stroke-linejoin:round; text-anchor:left")
         text = svgfig.SVG("g")
         connectors = svgfig.SVG("g")
         boxes = svgfig.SVG("g")
         svgfig.Text.defaults["font-size"] = "10px"
-
         in_pos = {}
         out_pos = {}
         margin = 5
@@ -2020,6 +2025,7 @@ def order_workflow_steps_with_levels( steps ):
         return topsort_levels( edgelist_for_workflow_steps( steps ) )
     except CycleError:
         return None
+
 
 class FakeJob( object ):
     """
