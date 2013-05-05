@@ -356,6 +356,7 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
     @web.expose
     @web.require_login( "to import a workflow", use_panels=True )
     def imp( self, trans, id, **kwargs ):
+        """Imports a workflow shared by other users."""
         # Set referer message.
         referer = trans.request.referer
         if referer is not "":
