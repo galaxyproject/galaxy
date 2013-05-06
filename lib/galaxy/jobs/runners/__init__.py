@@ -174,7 +174,7 @@ class BaseJobRunner( object ):
 
         # Append metadata setting commands, we don't want to overwrite metadata
         # that was copied over in init_meta(), as per established behavior
-        if include_metadata and self.app.config.set_metadata_externally:
+        if include_metadata:
             commands += "; cd %s; " % os.path.abspath( os.getcwd() )
             commands += job_wrapper.setup_external_metadata( 
                             exec_dir = os.path.abspath( os.getcwd() ),

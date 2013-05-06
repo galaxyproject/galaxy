@@ -185,7 +185,6 @@ def main():
                            cluster_files_directory = cluster_files_directory,
                            job_working_directory = job_working_directory,
                            outputs_to_working_directory = 'True',
-                           set_metadata_externally = 'True',
                            static_enabled = 'False',
                            debug = 'False',
                            track_jobs_in_database = 'True',

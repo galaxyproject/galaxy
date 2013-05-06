@@ -1339,9 +1339,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 continue
                 
             # Get chrom count file.
-            # NOTE: this conversion doesn't work well with set_metadata_externally=False 
-            # because the conversion occurs before metadata can be set; the 
-            # dataset is marked as deleted and a subsequent conversion is run.
             chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
             if not chrom_count_dataset or chrom_count_dataset.state != trans.app.model.Job.states.OK:
                 # No valid linecount dataset.

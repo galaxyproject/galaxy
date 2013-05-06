@@ -953,9 +953,7 @@ class JobWrapper( object ):
                     #either use the metadata from originating output dataset, or call set_meta on the copies
                     #it would be quicker to just copy the metadata from the originating output dataset,
                     #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if not self.app.config.set_metadata_externally or \
-                     ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) \
-                       and self.app.config.retry_metadata_internally ):
+                    if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and self.app.config.retry_metadata_internally ):
                         dataset.datatype.set_meta( dataset, overwrite = False ) #call datatype.set_meta directly for the initial set_meta call during dataset creation
                     elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != final_job_state:
                         dataset._state = model.Dataset.states.FAILED_METADATA
@@ -1226,8 +1224,7 @@ class JobWrapper( object ):
         try:
             for fname in self.extra_filenames:
                 os.remove( fname )
-            if self.app.config.set_metadata_externally:
-                self.external_output_metadata.cleanup_external_metadata( self.sa_session )
+            self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
             galaxy.tools.genome_index.GenomeIndexToolWrapper( self.job_id ).postprocessing( self.sa_session, self.app )

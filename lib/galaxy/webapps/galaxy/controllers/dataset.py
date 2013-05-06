@@ -379,10 +379,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
                         error = True
                     else:
-                        trans.app.datatypes_registry.change_datatype( data, params.datatype, set_meta = not trans.app.config.set_metadata_externally )
+                        trans.app.datatypes_registry.change_datatype( data, params.datatype )
                         trans.sa_session.flush()
-                        if trans.app.config.set_metadata_externally:
-                            trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data }, overwrite = False ) #overwrite is False as per existing behavior
+                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data }, overwrite = False ) #overwrite is False as per existing behavior
                         message = "Changed the type of dataset '%s' to %s" % ( to_unicode( data.name ), params.datatype )
                         refresh_frames=['history']
                 else:
@@ -436,13 +435,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         if name not in [ 'name', 'info', 'dbkey', 'base_name' ]:
                             if spec.get( 'default' ):
                                 setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                    if trans.app.config.set_metadata_externally:
-                        message = 'Attributes have been queued to be updated'
-                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
-                    else:
-                        message = 'Attributes updated'
-                        data.set_meta()
-                        data.datatype.after_setting_metadata( data )
+                    message = 'Attributes have been queued to be updated'
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
                     trans.sa_session.flush()
                     refresh_frames=['history']
             elif params.convert_data:

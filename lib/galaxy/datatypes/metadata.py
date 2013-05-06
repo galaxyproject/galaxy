@@ -28,8 +28,6 @@ log = logging.getLogger(__name__)
 
 STATEMENTS = "__galaxy_statements__" #this is the name of the property in a Datatype class where new metadata spec element Statements are stored
 
-DATABASE_CONNECTION_AVAILABLE = False #When False, certain metadata parameter types (see FileParameter) will behave differently
-
 class Statement( object ):
     """
     This class inserts its target into a list in the surrounding
@@ -442,19 +440,9 @@ class FileParameter( MetadataParameter ):
             return None
         if isinstance( value, galaxy.model.MetadataFile ) or isinstance( value, MetadataTempFile ):
             return value
-        if DATABASE_CONNECTION_AVAILABLE:
-            try:
-                # FIXME: this query requires a monkey patch in assignmapper.py since
-                # MetadataParameters do not have a handle to the sqlalchemy session
-                # DBTODO this is problematic now.
-                return galaxy.model.MetadataFile.get( value )
-            except:
-                #value was not a valid id
-                return None
-        else:
-            mf = galaxy.model.MetadataFile()
-            mf.id = value #we assume this is a valid id, since we cannot check it
-            return mf
+        mf = galaxy.model.MetadataFile()
+        mf.id = value #we assume this is a valid id, since we cannot check it
+        return mf
     
     def make_copy( self, value, target_context, source_context ):
         value = self.wrap( value )
@@ -499,13 +487,13 @@ class FileParameter( MetadataParameter ):
         return value
     
     def new_file( self, dataset = None, **kwds ):
-        if DATABASE_CONNECTION_AVAILABLE:
+        if object_session( dataset ):
             mf = galaxy.model.MetadataFile( name = self.spec.name, dataset = dataset, **kwds )
             object_session( dataset ).add( mf )
             object_session( dataset ).flush() #flush to assign id
             return mf
         else:
-            #we need to make a tmp file that is accessable to the head node, 
+            #we need to make a tmp file that is accessable to the head node,
             #we will be copying its contents into the MetadataFile objects filename after restoring from JSON
             #we do not include 'dataset' in the kwds passed, as from_JSON_value() will handle this for us
             return MetadataTempFile( **kwds )

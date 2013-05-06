@@ -365,15 +365,9 @@ class ToolsController( BaseAPIController, UsesVisualizationMixin ):
 
                     # Set metadata.
                     # TODO: set meta internally if dataset is small enough?
-                    if trans.app.config.set_metadata_externally:
-                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, 
-                                                                                                     trans, incoming = { 'input1':new_dataset }, 
-                                                                                                     overwrite=False, job_params={ "source" : "trackster" } )
-                    else:
-                        message = 'Attributes updated'
-                        new_dataset.set_meta()
-                        new_dataset.datatype.after_setting_metadata( new_dataset )
-
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, 
+                                                                                                 trans, incoming = { 'input1':new_dataset }, 
+                                                                                                 overwrite=False, job_params={ "source" : "trackster" } )
                     # Add HDA subset association.
                     subset_association = trans.app.model.HistoryDatasetAssociationSubset( hda=input_dataset, subset=new_dataset, location=regions_str )
                     trans.sa_session.add( subset_association )
