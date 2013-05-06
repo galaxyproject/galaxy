@@ -21,6 +21,7 @@ import time
 
 import galaxy.datatypes
 import galaxy.datatypes.registry
+import galaxy.security.passwords
 from galaxy.datatypes.metadata import MetadataCollection
 from galaxy.model.item_attrs import APIItem, UsesAnnotations
 from galaxy.security import get_permitted_actions
@@ -86,13 +87,13 @@ class User( object, APIItem ):
         """
         Set user password to the digest of `cleartext`.
         """
-        self.password = new_secure_hash( text_type=cleartext )
+        self.password = galaxy.security.passwords.hash_password( cleartext )
 
     def check_password( self, cleartext ):
         """
         Check if `cleartext` matches user password when hashed.
         """
-        return self.password == new_secure_hash( text_type=cleartext )
+        return galaxy.security.passwords.check_password( cleartext, self.password )
 
     def all_roles( self ):
         """
