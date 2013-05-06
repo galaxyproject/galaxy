@@ -704,8 +704,6 @@ def main():
                     os.environ[ 'GALAXY_TOOL_SHED_TEST_FILE' ] = galaxy_shed_tools_dict
                     os.environ[ 'GALAXY_TEST_HOST' ] = galaxy_test_host
                     os.environ[ 'GALAXY_TEST_PORT' ] = galaxy_test_port
-                    # Explicitly clear tests from twill's test environment.
-                    remove_generated_tests( app )
                     # Set the module-level variable 'toolbox', so that test.functional.test_toolbox will generate the appropriate test methods.
                     test_toolbox.toolbox = app.toolbox
                     # Generate the test methods for this installed repository. We need to pass in True here, or it will look 
