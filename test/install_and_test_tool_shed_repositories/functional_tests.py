@@ -196,6 +196,7 @@ def execute_uninstall_method( app ):
         name = str( repository.name )
         owner = str( repository.owner )
         changeset_revision = str( repository.installed_changeset_revision )
+        log.debug( 'Changeset revision %s of repository %s queued for uninstallation.' % ( changeset_revision, name ) )
         repository_dict = dict( name=name, owner=owner, changeset_revision=changeset_revision )
         # Generate a test method to uninstall this repository through the embedded Galaxy application's web interface.
         test_install_repositories.generate_uninstall_method( repository_dict )
@@ -321,6 +322,7 @@ def remove_generated_tests( app ):
     # and try to re-run the tests after uninstalling the repository, which will cause false failure reports, 
     # since the test data has been deleted from disk by now.
     tests_to_delete = []
+    tools_to_delete = []
     global test_toolbox
     for key in test_toolbox.__dict__:
         if key.startswith( 'TestForTool_' ):
@@ -328,12 +330,14 @@ def remove_generated_tests( app ):
             # We can't delete this test just yet, we're still iterating over __dict__.
             tests_to_delete.append( key )
             tool_id = key.replace( 'TestForTool_', '' )
-            if tool_id in app.toolbox.tools_by_id:
-                # But we can remove the relevant tool from app.toolbox.tools_by_id.
-                del app.toolbox.tools_by_id[ tool_id ]
+            for tool in app.toolbox.tools_by_id:
+                if tool.replace( '_', ' ' ) == tool_id.replace( '_', ' ' ):
+                    tools_to_delete.append( tool )
     for key in tests_to_delete:
         # Now delete the tests found in the previous loop.
         del test_toolbox.__dict__[ key ]
+    for tool in tools_to_delete:
+        del app.toolbox.tools_by_id[ tool ]
 
 def run_tests( test_config ):
     loader = nose.loader.TestLoader( config=test_config )
