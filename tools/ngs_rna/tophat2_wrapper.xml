@@ -7,49 +7,38 @@
         <requirement type="package">bowtie2</requirement>
         <requirement type="package">tophat2</requirement>
     </requirements>
-    <command interpreter="python">
-        tophat2_wrapper.py
+
+    <command>
+        ##
+        ## Set path to index, building the reference if necessary.
+        ##
+
+        #set index_path = ''
+        #if $refGenomeSource.genomeSource == "history":
+            bowtie2-build "$refGenomeSource.ownFile" genome ; ln -s "$refGenomeSource.ownFile" genome.fa ;
+            #set index_path = 'genome'
+        #else:
+            #set index_path = $refGenomeSource.index.fields.path
+        #end if
+
+        ##
+        ## Run tophat.
+        ##
+
+        tophat2
         
         ## Change this to accommodate the number of threads you have available.
-        --num-threads="4"
-
-        ## Provide outputs.
-        --junctions-output=$junctions
-        --hits-output=$accepted_hits
-
-        ## Handle reference file.
-        #if $refGenomeSource.genomeSource == "history":
-            --own-file=$refGenomeSource.ownFile
-        #else:
-            --indexes-path="${refGenomeSource.index.fields.path}"
-        #end if
-
-        ## Are reads single-end or paired?
-        --single-paired=$singlePaired.sPaired
-
-        ## First input file always required.
-        --input1=$input1
-        
-        ## Second input only if input is paired-end.
-        ## Also set parameters specific to paired data.
-        #if $singlePaired.sPaired == "paired"
-            --input2=$singlePaired.input2
-            -r $singlePaired.mate_inner_distance
-            --mate-std-dev=$singlePaired.mate_std_dev
-            
-            #if str($singlePaired.report_discordant_pairs) == "No":
-                --no-discordant
-            #end if
-        #end if
+        --num-threads 4
 
         ## Set params.
-        --settings=$params.settingsType
         #if $params.settingsType == "full":
             --read-mismatches $params.read_mismatches
             #if str($params.bowtie_n) == "Yes":
                 --bowtie-n
             #end if
         
+            --read-edit-dist $params.read_edit_dist
+            --read-realign-edit-dist $params.read_realign_edit_dist
             -a $params.anchor_length
             -m $params.splice_mismatches
             -i $params.min_intron_length
@@ -57,9 +46,9 @@
             -g $params.max_multihits
             --min-segment-intron $params.min_segment_intron
             --max-segment-intron $params.max_segment_intron
-            --seg-mismatches=$params.seg_mismatches
-            --seg-length=$params.seg_length
-            --library-type=$params.library_type
+            --segment-mismatches $params.seg_mismatches
+            --segment-length $params.seg_length
+            --library-type $params.library_type
             
             ## Indel search.
             #if $params.indel_search.allow_indel_search == "Yes":
@@ -78,7 +67,6 @@
                 #if $params.own_junctions.raw_juncs.use_juncs == "Yes":
                     -j $params.own_junctions.raw_juncs.raw_juncs
                 #end if
-                ## TODO: No idea why a string cast is necessary, but it is:
                 #if str($params.own_junctions.no_novel_juncs) == "Yes":
                     --no-novel-juncs
                 #end if
@@ -91,7 +79,7 @@
             #else:
                 --no-coverage-search
             #end if
-            ## TODO: No idea why the type conversion is necessary, but it seems to be.
+            
             #if str($params.microexon_search) == "Yes":
                 --microexon-search
             #end if
@@ -116,12 +104,27 @@
 
         ## Read group information.
         #if $readGroup.specReadGroup == "yes"
-          --rgid="$readGroup.rgid"
-          --rglb="$readGroup.rglb"
-          --rgpl="$readGroup.rgpl"
-          --rgsm="$readGroup.rgsm"
+          --rg-id "$readGroup.rgid"
+          --rg-library "$readGroup.rglb"
+          --rg-platform "$readGroup.rgpl"
+          --rg-sample "$readGroup.rgsm"
+        #end if
+
+        ## Set index path, inputs and parameters specific to paired data.
+        #if $singlePaired.sPaired == "paired"
+            -r $singlePaired.mate_inner_distance
+            --mate-std-dev=$singlePaired.mate_std_dev
+            
+            #if str($singlePaired.report_discordant_pairs) == "No":
+                --no-discordant
+            #end if
+
+            ${index_path} $singlePaired.input1 $singlePaired.input2
+        #else
+            ${index_path} $singlePaired.input1
         #end if
     </command>
+    
     <inputs>
         <conditional name="singlePaired">
             <param name="sPaired" type="select" label="Is this library mate-paired?">
@@ -157,6 +160,10 @@
             <when value="preSet" />
             <!-- Full/advanced params. -->
             <when value="full">
+              <param name="read_realign_edit_dist" type="integer" value="1000" label="Max realign edit distance" help="Some of the reads spanning multiple exons may be mapped incorrectly as a contiguous alignment to the genome even though the correct alignment should be a spliced one - this can happen in the presence of processed pseudogenes that are rarely (if at all) transcribed or expressed. This option can direct TopHat to re-align reads for which the edit distance of an alignment obtained in a previous mapping step is above or equal to this option value. If you set this option to 0, TopHat will map every read in all the mapping steps (transcriptome if you provided gene annotations, genome, and finally splice variants detected by TopHat), reporting the best possible alignment found in any of these mapping steps. This may greatly increase the mapping accuracy at the expense of an increase in running time. The default value for this option is set such that TopHat will not try to realign reads already mapped in earlier steps." />
+
+              <param name="read_edit_dist" type="integer" value="2" label="Max edit distance" help="Final read alignments having more than these many edit distance are discarded." />
+
               <param name="library_type" type="select" label="Library Type" help="TopHat will treat the reads as strand specific. Every read alignment will have an XS attribute tag. Consider supplying library type options below to select the correct RNA-seq protocol.">
                   <option value="fr-unstranded">FR Unstranded</option>
                   <option value="fr-firststrand">FR First Strand</option>
@@ -260,6 +267,11 @@
       </conditional> <!-- readGroup -->
     </inputs>
 
+    <stdio>
+        <regex match="Exception" source="both" level="error" description="Tool exception"/>
+        <regex match=".*" source="both" level="log" description="tool progress"/>
+    </stdio>
+
     <outputs>
         <data format="tabular" name="fusions" label="${tool.name} on ${on_string}: fusions" from_work_dir="tophat_out/fusions.out">
             <filter>(params['settingsType'] == 'full' and params['fusion_search']['do_search'] == 'Yes')</filter>
@@ -277,6 +289,7 @@
           <expand macro="dbKeyActions" />
         </data>
     </outputs>
+
     <macros>
       <import>tophat_macros.xml</import>
       <macro name="dbKeyActions">
@@ -312,7 +325,7 @@
             <param name="index" value="tophat_test" />
             <param name="settingsType" value="preSet" />
             <param name="specReadGroup" value="No" />
-            <output name="junctions" file="tophat_out1j.bed" />
+            <output name="junctions" file="tophat2_out1j.bed" />
             <output name="accepted_hits" file="tophat_out1h.bam" compare="sim_size" />
         </test>
         <!-- Test using base-space test data: paired-end reads, index from history. -->
@@ -369,6 +382,7 @@
             <param name="min_coverage_intron" value="50" />
             <param name="max_coverage_intron" value="20000" />
             <param name="microexon_search" value="Yes" />
+            <param name="b2_settings" value="No" />
             <!-- Fusion search params -->
             <param name="do_search" value="Yes" />            
             <param name="anchor_len" value="21" />
@@ -418,6 +432,7 @@
             <param name="report_discordant_pairs" value="Yes" />
             <param name="use_search" value="No" />
             <param name="microexon_search" value="Yes" />
+            <param name="b2_settings" value="No" />
             <!-- Fusion search params -->
             <param name="do_search" value="Yes" />            
             <param name="anchor_len" value="21" />
