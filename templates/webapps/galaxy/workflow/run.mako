@@ -504,6 +504,6 @@ if wf_parms:
     <span id="new_history_input">named: <input type='text' name='new_history_name' value='${h.to_unicode( workflow.name )}'/></span>
 </p>
     %endif
-<input type="submit" name="run_workflow" value="Run workflow" />
+<input type="submit" class="btn btn-primary" name="run_workflow" value="Run workflow" />
 </form>
 %endif
