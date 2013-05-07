@@ -3,9 +3,8 @@
 <%
     self.has_left_panel = hasattr( self, 'left_panel' )
     self.has_right_panel = hasattr( self, 'right_panel' )
-    self.message_box_visible=False
+    self.message_box_visible = app.config.message_box_visible
     self.overlay_visible=False
-    self.message_box_class=""
     self.active_view=None
     self.body_class=""
     self.require_javascript=False
@@ -245,16 +244,16 @@
     </div>
 </%def>
 
-## Messagebox
-<%def name="message_box_content()">
-</%def>
-
 ## Document
 <html>
     <!--base_panels.mako-->
     ${self.init()}    
     <head>
-        <title>${self.title()}</title>
+        %if app.config.brand:
+            <title>${self.title()} / ${app.config.brand}</title>
+        %else:
+            <title>${self.title()}</title>
+        %endif
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         ## For mobile browsers, don't scale up
         <meta name = "viewport" content = "maximum-scale=1.0">
@@ -284,9 +283,9 @@
                     ${self.masthead()}
                 </div>
             </div>
-            <div id="messagebox" class="panel-${self.message_box_class}-message">
-                %if self.message_box_visible:
-                    ${self.message_box_content()}
+            <div id="messagebox" class="panel-${app.config.message_box_class}-message">
+                %if self.message_box_visible and app.config.message_box_content:
+                        ${app.config.message_box_content}
                 %endif
             </div>
             ${self.overlay(visible=self.overlay_visible)}

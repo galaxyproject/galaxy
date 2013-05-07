@@ -264,6 +264,11 @@ nglims_config_file = tool-data/nglims.yaml
 
 # -- UI Localization
 
+# Show a message box under the masthead.
+#message_box_visible = False
+#message_box_content = None
+#message_box_class = info
+
 # Append "/{brand}" to the "Galaxy" text in the masthead.
 #brand = None
 
