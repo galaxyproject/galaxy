@@ -1034,8 +1034,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
         user = trans.get_user()
         if source_history is not None:
             history = self.get_history(trans, source_history)
+            current_history = trans.get_history()
         else:
-            history = trans.get_history()
+            history = current_history = trans.get_history()
         refresh_frames = []
         if source_dataset_ids:
             if not isinstance( source_dataset_ids, list ):
@@ -1083,7 +1084,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     else:
                         for hist in target_histories:
                             hist.add_dataset( hda.copy( copy_children = True ) )
-                if history in target_histories:
+                if current_history in target_histories:
                     refresh_frames = ['history']
                 trans.sa_session.flush()
                 hist_names_str = ", ".join( ['<a href="%s" target="_top">%s</a>' %
@@ -1100,7 +1101,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
            target_histories = user.active_histories
         return trans.fill_template( "/dataset/copy_view.mako",
                                     source_history = history,
-                                    current_history = trans.get_history(),
+                                    current_history = current_history,
                                     source_dataset_ids = source_dataset_ids,
                                     target_history_id = target_history_id,
                                     target_history_ids = target_history_ids,
