@@ -94,6 +94,7 @@ class ToolRunner( BaseUIController ):
                                     tool=tool,
                                     util=galaxy.util,
                                     add_frame=add_frame,
+                                    form_input_auto_focus=True,
                                     **vars )
 
     @web.expose

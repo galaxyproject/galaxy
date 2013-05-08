@@ -463,6 +463,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                                     message=message,
                                     status=status,
                                     openid_providers=trans.app.openid_providers,
+                                    form_input_auto_focus=True,
                                     active_view="user" )
     def __validate_login( self, trans, **kwd ):
         message = kwd.get( 'message', '' )
