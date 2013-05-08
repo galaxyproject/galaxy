@@ -1,5 +1,5 @@
 <%inherit file="/base.mako"/>
-
+<%namespace file="/dataset/display.mako" import="render_deleted_data_message" />
 
 <%def name="title()">Dataset Display</%def>
 
@@ -37,3 +37,5 @@
 <%def name="stylesheets()">
     ${parent.stylesheets()}
 </%def>
+
+${ render_deleted_data_message( dataset ) }
