@@ -1068,10 +1068,8 @@ class TwillTestCase( unittest.TestCase ):
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
             # can't find form fields (and hence user can't be logged in).
             self.visit_url( "%s/user/login?use_panels=False" % self.url )
-            tc.fv( '1', 'email', email )
-            tc.fv( '1', 'redirect', redirect )
-            tc.fv( '1', 'password', password )
-            tc.submit( 'login_button' )
+            self.submit_form( 1, 'login_button', email=email, redirect=redirect, password=password )
+
     def logout( self ):
         self.home()
         self.visit_page( "user/logout" )
@@ -1368,12 +1366,7 @@ class TwillTestCase( unittest.TestCase ):
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it 
         # can't find form fields (and hence user can't be logged in).
         self.visit_url( "%s/user/create?cntrller=admin" % self.url )
-        tc.fv( '1', 'email', email )
-        tc.fv( '1', 'redirect', redirect )
-        tc.fv( '1', 'password', password )
-        tc.fv( '1', 'confirm', password )
-        tc.fv( '1', 'username', username )
-        tc.submit( 'create_user_button' )
+        self.submit_form( 1, 'create_user_button', email=email, redirect=redirect, password=password, confirm=password, username=username )
         previously_created = False
         username_taken = False
         invalid_username = False
@@ -1396,6 +1389,7 @@ class TwillTestCase( unittest.TestCase ):
                     except:
                         pass
         return previously_created, username_taken, invalid_username
+
     def reset_password_as_admin( self, user_id, password='testreset' ):
         """Reset a user password"""
         self.home()
