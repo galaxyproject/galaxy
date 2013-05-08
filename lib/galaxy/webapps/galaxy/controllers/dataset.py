@@ -290,6 +290,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( hda_id ) )
         if not self._can_access_dataset( trans, data ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
+        if data.purged:
+            return trans.show_error_message( "The dataset you are attempting to view has been purged." )
         if data.deleted and not ( trans.user_is_admin() or ( data.history and trans.get_user() == data.history.user ) ):
             return trans.show_error_message( "The dataset you are attempting to view has been deleted." )
         if data.state == trans.model.Dataset.states.UPLOAD:
