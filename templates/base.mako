@@ -73,6 +73,18 @@
             image_path: '${h.url_for( "/static/images" )}'
         });
     </script>
+
+    %if not form_input_auto_focus is UNDEFINED and form_input_auto_focus:
+        <script type="text/javascript">
+            $(document).ready( function() {
+                // Auto Focus on first item on form
+                if ( $("*:focus").html() == null ) {
+                    $(":input:not([type=hidden]):visible:enabled:first").focus();
+                }
+            });
+        </script>
+    %endif
+
 </%def>
 
 ## Additional metas can be defined by templates inheriting from this one.
