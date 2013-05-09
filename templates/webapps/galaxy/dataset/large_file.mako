@@ -10,5 +10,5 @@ ${ render_deleted_data_message( data ) }
 </div>
 
 <pre>
-${ unicode( truncated_data, 'utf-8' ) | h }
+${ util.unicodify( truncated_data ) | h }
 </pre>
