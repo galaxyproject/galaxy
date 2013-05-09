@@ -1266,23 +1266,23 @@ class Tool( object ):
         """
         # TODO: Allow raw HTML or an external link.
         self.help = root.find("help")
-        # Handle tool shelp image display for tools that are contained in repositories that are in the lool shed or installed into Galaxy.
-        # When tool config files use the speical string $PATH_TO_IMAGES, the folloing code will replace that string with the path on disk.
-        if self.repository_id and self.help.text.find( '$PATH_TO_IMAGES' ) >= 0:
-            if self.app.name == 'galaxy':
-                repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( self.app.security.decode_id( self.repository_id ) )
-                if repository:
-                    path_to_images = '/tool_runner/static/images/%s' % self.repository_id
-                    self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
-            elif self.app.name == 'tool_shed':
-                repository = self.sa_session.query( self.app.model.Repository ).get( self.app.security.decode_id( self.repository_id ) )
-                if repository:
-                    path_to_images = '/repository/static/images/%s' % self.repository_id
-                    self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
         self.help_by_page = list()
         help_header = ""
         help_footer = ""
         if self.help is not None:
+            # Handle tool help image display for tools that are contained in repositories that are in the tool shed or installed into Galaxy.
+            # When tool config files use the special string $PATH_TO_IMAGES, the following code will replace that string with the path on disk.
+            if self.repository_id and self.help.text.find( '$PATH_TO_IMAGES' ) >= 0:
+                if self.app.name == 'galaxy':
+                    repository = self.sa_session.query( self.app.model.ToolShedRepository ).get( self.app.security.decode_id( self.repository_id ) )
+                    if repository:
+                        path_to_images = '/tool_runner/static/images/%s' % self.repository_id
+                        self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
+                elif self.app.name == 'tool_shed':
+                    repository = self.sa_session.query( self.app.model.Repository ).get( self.app.security.decode_id( self.repository_id ) )
+                    if repository:
+                        path_to_images = '/repository/static/images/%s' % self.repository_id
+                        self.help.text = self.help.text.replace( '$PATH_TO_IMAGES', path_to_images )
             help_pages = self.help.findall( "page" )
             help_header = self.help.text
             try:
