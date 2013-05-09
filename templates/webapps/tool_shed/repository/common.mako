@@ -733,7 +733,7 @@
                 %else:
                     <%
                         if string_as_bool( str( tool_dependency.is_orphan ) ):
-                            is_orpan = 'yes'
+                            is_orphan = 'yes'
                         else:
                             is_orphan = 'no'
                     %>
