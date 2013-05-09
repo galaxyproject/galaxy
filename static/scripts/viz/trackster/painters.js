@@ -133,49 +133,6 @@ Painter.prototype.default_prefs = {};
  */
 Painter.prototype.draw = function(ctx, width, height, w_scale) {};
 
-/**
- * SummaryTreePainter, a histogram showing number of intervals in a region
- */
-var SummaryTreePainter = function(data, view_start, view_end, prefs, mode) {
-    Painter.call(this, data, view_start, view_end, prefs, mode);
-};
-
-SummaryTreePainter.prototype.default_prefs = { show_counts: false };
-
-SummaryTreePainter.prototype.draw = function(ctx, width, height, w_scale) {
-    var view_start = this.view_start,
-        points = this.data.data,
-        max = (this.prefs.histogram_max ? this.prefs.histogram_max : this.data.max),
-        // Set base Y so that max label and data do not overlap. Base Y is where rectangle bases
-        // start. However, height of each rectangle is relative to required_height; hence, the
-        // max rectangle is required_height.
-        base_y = height,
-        delta_x_px = Math.ceil(this.data.delta * w_scale);
-    ctx.save();
-    
-    for (var i = 0, len = points.length; i < len; i++) {
-        var x = Math.floor( (points[i][0] - view_start) * w_scale );
-        var y = points[i][1];
-        
-        if (!y) { continue; }
-        var y_px = y / max * height;
-        if (y !== 0 && y_px < 1) { y_px = 1; }
-
-        ctx.fillStyle = this.prefs.block_color;
-        ctx.fillRect( x, base_y - y_px, delta_x_px, y_px );
-        
-        // Draw number count if it can fit the number with some padding, otherwise things clump up
-        var text_padding_req_x = 4;
-        if (this.prefs.show_counts && (ctx.measureText(y).width + text_padding_req_x) < delta_x_px) {
-            ctx.fillStyle = this.prefs.label_color;
-            ctx.textAlign = "center";
-            ctx.fillText(y, x + (delta_x_px/2), 10);
-        }
-    }
-    
-    ctx.restore();
-};
-
 var LinePainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
     var i, len;
@@ -1692,7 +1649,6 @@ extend(VariantPainter.prototype, Painter.prototype, {
 
 return {
     Scaler: Scaler,
-    SummaryTreePainter: SummaryTreePainter,
     LinePainter: LinePainter,
     LinkedFeaturePainter: LinkedFeaturePainter,
     ReadPainter: ReadPainter,

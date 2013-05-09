@@ -359,7 +359,7 @@ class Taxonomy( Tabular ):
 class Sam( Tabular ):
     file_ext = 'sam'
     track_type = "ReadTrack"
-    data_sources = { "data": "bam", "index": "summary_tree" }
+    data_sources = { "data": "bam", "index": "bigwig" }
 
     def __init__(self, **kwd):
         """Initialize taxonomy datatype"""
@@ -537,7 +537,7 @@ class ElandMulti( Tabular ):
 class Vcf( Tabular ):
     """ Variant Call Format for describing SNPs and other simple genome variations. """
     track_type = "VariantTrack"
-    data_sources = { "data": "tabix", "index": "summary_tree" }
+    data_sources = { "data": "tabix", "index": "bigwig" }
 
     file_ext = 'vcf'
     column_names = [ 'Chrom', 'Pos', 'ID', 'Ref', 'Alt', 'Qual', 'Filter', 'Info', 'Format', 'data' ]

@@ -2076,11 +2076,10 @@ var Tile = function(track, region, resolution, canvas, data) {
  */
 Tile.prototype.predisplay_actions = function() {};
 
-var SummaryTreeTile = function(track, region, resolution, canvas, data, max_val) {
+var LineTrackTile = function(track, region, resolution, canvas, data) {
     Tile.call(this, track, region, resolution, canvas, data);
-    this.max_val = max_val;
 };
-extend(SummaryTreeTile.prototype, Tile.prototype);
+LineTrackTile.prototype.predisplay_actions = function() {};
 
 var FeatureTrackTile = function(track, region, resolution, canvas, data, w_scale, mode, message, all_slotted, feature_mapper) {
     // Attribute init.
@@ -2601,7 +2600,7 @@ extend(Track.prototype, Drawable.prototype, {
         track.enabled = false;
         track.tile_cache.clear();    
         track.data_manager.clear();
-        track.content_div.css("height", "auto");
+        track.tiles_div.css("height", "auto");
         /*
         if (!track.content_div.text()) {
             track.content_div.text(DATA_LOADING);
@@ -2669,7 +2668,7 @@ extend(Track.prototype, Drawable.prototype, {
                     track.tiles_div.css( "height", track.visible_height_px + "px" );
                     track.enabled = true;
                     // predraw_init may be asynchronous, wait for it and then draw
-                    $.when(track.predraw_init()).done(function() {
+                    $.when.apply($, track.predraw_init()).done(function() {
                         init_deferred.resolve();
                         track.container_div.removeClass("nodata error pending");
                         track.request_draw();
@@ -2688,7 +2687,29 @@ extend(Track.prototype, Drawable.prototype, {
     /**
      * Additional initialization required before drawing track for the first time.
      */
-    predraw_init: function() {},
+    predraw_init: function() {
+        var track = this;
+        return $.getJSON( track.dataset.url(), 
+            {  data_type: 'data', stats: true, chrom: track.view.chrom, low: 0, 
+               high: track.view.max_high, hda_ldda: track.dataset.get('hda_ldda') }, function(result) {
+            track.container_div.addClass( "line-track" );
+            var data = result.data;
+            
+            // Tracks may not have stat data either because there is no data or data is not yet ready.
+            if (data && data.min && data.max) {
+                // Compute default minimum and maximum values
+                var min_value = data.min,
+                    max_value = data.max;
+                // If mean and sd are present, use them to compute a ~95% window
+                // but only if it would shrink the range on one side
+                min_value = Math.floor( Math.min( 0, Math.max( min_value, data.mean - 2 * data.sd ) ) );
+                max_value = Math.ceil( Math.max( 0, Math.min( max_value, data.mean + 2 * data.sd ) ) );
+                // Update the prefs
+                track.prefs.min_value = min_value;
+                track.prefs.max_value = max_value;
+            }
+        });
+    },
 
     /**
      * Returns all drawables in this drawable.
@@ -2801,6 +2822,32 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     },
 
     /**
+     * Set track bounds for current chromosome.
+     */
+    set_min_max: function() {
+        var track = this;
+
+        return $.getJSON( track.dataset.url(), 
+            { data_type: 'data', stats: true, chrom: track.view.chrom, low: 0, 
+              high: track.view.max_high, hda_ldda: track.dataset.get('hda_ldda') }, 
+            function(result) {
+                var data = result.data;
+                if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
+                    // Compute default minimum and maximum values
+                    var min_value = data.min,
+                        max_value = data.max;
+                    // If mean and sd are present, use them to compute a ~95% window
+                    // but only if it would shrink the range on one side
+                    min_value = Math.floor( Math.min( 0, Math.max( min_value, data.mean - 2 * data.sd ) ) );
+                    max_value = Math.ceil( Math.max( 0, Math.min( max_value, data.mean + 2 * data.sd ) ) );
+                    // Update the prefs
+                    track.prefs.min_value = min_value;
+                    track.prefs.max_value = max_value;
+                }
+            });
+    },
+
+    /**
      * Change track's mode.
      */
     change_mode: function(new_mode) {
@@ -2808,6 +2855,10 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // TODO: is it necessary to store the mode in two places (.mode and track_config)?
         track.mode = new_mode;
         track.config.values['mode'] = new_mode;
+        // FIXME: find a better way to get Auto data w/o clearing cache; using mode in the
+        // data manager would work if Auto data were checked for compatibility when a specific
+        // mode is chosen.
+        if (new_mode === 'Auto') { this.data_manager.clear(); }
         track.request_draw(true);
         this.action_icons.mode_icon.attr("title", "Set display mode (now: " + track.mode + ")");
         return track;
@@ -2954,10 +3005,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     /**
      * Add a maximum/minimum label to track.
      */
-    _add_yaxis_label: function(type, val, pref_name, on_change) {
+    _add_yaxis_label: function(type, on_change) {
         var track = this,
             css_class = (type === 'max' ? 'top' : 'bottom'),
             text = (type === 'max' ? 'max' : 'min'),
+            pref_name = (type === 'max' ? 'max_value' : 'min_value'),
             // Default action for on_change is to redraw track.
             on_change = on_change || function() { 
                 track.request_draw(true); 
@@ -2966,11 +3018,11 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
         if (label.length !== 0) {
             // Label already exists, so update value.
-            label.text(val);
+            label.text(track.prefs[pref_name]);
         }
         else {
             // Add label.
-            label = $("<div/>").text(val).make_text_editable({
+            label = $("<div/>").text(track.prefs[pref_name]).make_text_editable({
                 num_cols: 12,
                 on_finish: function(new_val) {
                     $(".bs-tooltip").remove();
@@ -2990,6 +3042,29 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
         //
+        // If some tiles have line track tiles (which denote coverage data), redraw all tiles using coverage data.
+        //
+        var non_line_track_tiles = _.filter(tiles, function(tile) {
+            return !(tile instanceof LineTrackTile);
+        });
+
+        if (tiles.length !== non_line_track_tiles.length) {
+            // Clear because this is set when drawing.
+            this.max_height_px = 0;
+            var track = this;
+            _.each(non_line_track_tiles, function(tile) {
+                tile.html_elt.remove();
+                track.draw_helper(true, tile.region, tile.resolution, track.tiles_div, w_scale, { mode: 'Coverage' });
+            });
+
+            track._add_yaxis_label('max');
+        }
+        else {
+           // Remove Y-axis labels because there are no line track tiles.
+           this.container_div.find('.yaxislabel').remove();
+        }
+
+        //
         // If some tiles have icons, set padding of tiles without icons so features and rows align.
         //
         var icons_present = _.find(tiles, function(tile) { 
@@ -3004,16 +3079,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 }
             });
         }
-
-        //
-        // If using SummaryTree tiles, show max.
-        //
-        var track = this,
-            first_tile = tiles[0];
-        if (first_tile instanceof SummaryTreeTile) {
-            var max_val = (this.prefs.histogram_max ? this.prefs.histogram_max : first_tile.max_val);
-            this._add_yaxis_label('max', max_val, 'histogram_max');
-        }
     },
 
     /**
@@ -3021,12 +3086,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
      * jQuery.Deferred object that is fulfilled when tile can be drawn again.
      */ 
     draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
-        var track = this,
-            key = this._gen_tile_cache_key(w_scale, region),
-            is_tile = function(o) { return (o && 'track' in o); };
-            
         // Init kwargs if necessary to avoid having to check if kwargs defined.
         if (!kwargs) { kwargs = {}; }
+
+        var track = this,
+            key = this._gen_tile_cache_key(w_scale, region),
+            is_tile = function(o) { return (o && 'track' in o); },
+            mode = kwargs.mode || track.mode;
                        
         // Check tile cache, if found show existing tile in correct position
         var tile = (force ? undefined : track.tile_cache.get_elt(key));
@@ -3041,7 +3107,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         var can_draw_now = true;
         
         // Get the track data, maybe a deferred
-        var tile_data = track.data_manager.get_data(region, track.mode, resolution, track.data_url_extra_params);
+        var tile_data = track.data_manager.get_data(region, mode, resolution, track.data_url_extra_params);
         if ( is_deferred( tile_data ) ) {
             can_draw_now = false;
         }
@@ -3049,7 +3115,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Get reference data if needed, maybe a deferred
         var seq_data;
         if ( view.reference_track ) {
-            seq_data = view.reference_track.data_manager.get_data(region, track.mode, resolution, view.reference_track.data_url_extra_params);
+            seq_data = view.reference_track.data_manager.get_data(region, mode, resolution, view.reference_track.data_url_extra_params);
             if ( is_deferred( seq_data ) ) {
                 can_draw_now = false;
             }
@@ -3066,7 +3132,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             
             // HACK: this is FeatureTrack-specific.
             // If track mode is Auto, determine mode and update.
-            var mode = track.mode;
             if (mode === "Auto" && track.get_mode) {
                 mode = track.get_mode(tile_data);
                 track.update_auto_mode(mode);
@@ -3079,7 +3144,6 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 tile_high = region.get('end'),
                 width = Math.ceil( (tile_high - tile_low) * w_scale ) + track.left_offset,
                 height = track.get_canvas_height(tile_data, mode, w_scale, width);
-            
             canvas.width = width;
             canvas.height = height;
             var ctx = canvas.getContext('2d');
@@ -3115,12 +3179,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     },
 
     /**
-     * Draw a track tile for summary tree data.
+     * Draw line (bigwig) data onto tile.
      */
-    _draw_summary_tree_tile: function(result, ctx, region, resolution, w_scale) {
-        var painter = new painters.SummaryTreePainter(result, region.get('start'), region.get('end'), this.prefs);
-        painter.draw(ctx, ctx.canvas.width, ctx.canvas.height, w_scale);
-        return new SummaryTreeTile(this, region, resolution, ctx.canvas, result.data, result.max);
+    _draw_line_track_tile: function(result, ctx, mode, resolution, region, w_scale) {
+        var canvas = ctx.canvas,
+            painter = new painters.LinePainter(result.data, region.get('start'), region.get('end'), this.prefs, mode);
+        painter.draw(ctx, canvas.width, canvas.height, w_scale);
+        
+        return new LineTrackTile(this, region, resolution, canvas, result.data);
     },
 
     /**
@@ -3277,10 +3343,17 @@ var LabelTrack = function (view, container) {
 };
 extend(LabelTrack.prototype, Track.prototype, {
     build_header_div: function() {},
+
     init: function() {
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;  
     },
+
+    /**
+     * Additional initialization required before drawing track for the first time.
+     */
+    predraw_init: function() {},
+
     _draw: function() {
         var view = this.view,
             range = view.high - view.low,
@@ -3623,8 +3696,8 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
             t = function() { track.update_all_min_max(); };
 
         // Add min, max labels.
-        this._add_yaxis_label('min', this.drawables[0].prefs.min_value, 'min_value', t);
-        this._add_yaxis_label('max', this.drawables[0].prefs.max_value, 'max_value', t);
+        this._add_yaxis_label('min', t);
+        this._add_yaxis_label('max', t);
     }
 });
 
@@ -3654,6 +3727,11 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         // Enable by default because there should always be data when drawing track.
         this.enabled = true;
     },
+
+    /**
+     * Additional initialization required before drawing track for the first time.
+     */
+    predraw_init: function() {},
 
     can_draw: Drawable.prototype.can_draw,
 
@@ -3716,42 +3794,15 @@ var LineTrack = function (view, container, obj_dict) {
         saved_values: obj_dict.prefs,
         onchange: function() {
             track.set_name(track.prefs.name);
-            track.vertical_range = track.prefs.max_value - track.prefs.min_value;
             track.request_redraw(true);
         }
     });
 
     this.prefs = this.config.values;
     this.visible_height_px = this.config.values.height;
-    this.vertical_range = this.config.values.max_value - this.config.values.min_value;
 };
 extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     
-    predraw_init: function() {
-        var track = this;
-        track.vertical_range = undefined;
-        return $.getJSON( track.dataset.url(), 
-            {  data_type: 'data', stats: true, chrom: track.view.chrom, low: 0, 
-               high: track.view.max_high, hda_ldda: track.dataset.get('hda_ldda') }, function(result) {
-            track.container_div.addClass( "line-track" );
-            var data = result.data;
-            if ( isNaN(parseFloat(track.prefs.min_value)) || isNaN(parseFloat(track.prefs.max_value)) ) {
-                // Compute default minimum and maximum values
-                var min_value = data.min,
-                    max_value = data.max;
-                // If mean and sd are present, use them to compute a ~95% window
-                // but only if it would shrink the range on one side
-                min_value = Math.floor( Math.min( 0, Math.max( min_value, data.mean - 2 * data.sd ) ) );
-                max_value = Math.ceil( Math.max( 0, Math.min( max_value, data.mean + 2 * data.sd ) ) );
-                // Update the prefs
-                track.prefs.min_value = min_value;
-                track.prefs.max_value = max_value;
-            }
-            track.vertical_range = track.prefs.max_value - track.prefs.min_value;
-            track.total_frequency = data.total_frequency;
-        });
-    },
-
     /**
      * Actions to be taken before drawing.
      */
@@ -3759,18 +3810,10 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     before_draw: function() {},
 
     /**
-     * Draw LineTrack tile.
+     * Draw track tile.
      */
     draw_tile: function(result, ctx, mode, resolution, region, w_scale) {
-        // Paint onto canvas.
-        var 
-            canvas = ctx.canvas,
-            tile_low = region.get('start'),
-            tile_high = region.get('end'),
-            painter = new painters.LinePainter(result.data, tile_low, tile_high, this.prefs, mode);
-        painter.draw(ctx, canvas.width, canvas.height, w_scale);
-        
-        return new Tile(this, region, resolution, canvas, result.data);
+        return this._draw_line_track_tile(result, ctx, mode, resolution, region, w_scale);
     },
 
     /**
@@ -3811,14 +3854,12 @@ var DiagonalHeatmapTrack = function (view, container, obj_dict) {
         saved_values: obj_dict.prefs,
         onchange: function() {
             track.set_name(track.prefs.name);
-            track.vertical_range = track.prefs.max_value - track.prefs.min_value;
             this.request_redraw(true);
         }
     });
 
     this.prefs = this.config.values;
     this.visible_height_px = this.config.values.height;
-    this.vertical_range = this.config.values.max_value - this.config.values.min_value;
 };
 extend(DiagonalHeatmapTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     /**
@@ -3863,7 +3904,8 @@ var FeatureTrack = function(view, container, obj_dict) {
             { key: 'label_color', label: 'Label color', type: 'color', default_value: 'black' },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true, 
               help: 'Show the number of items in each bin when drawing summary histogram' },
-            { key: 'histogram_max', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+            { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+            { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' },
             { key: 'connector_style', label: 'Connector style', type: 'select', default_value: 'fishbones',
                 options: [ { label: 'Line with arrows', value: 'fishbone' }, { label: 'Arcs', value: 'arcs' } ] },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
@@ -3905,12 +3947,14 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * drawn/fetched and shown.
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
-        TiledTrack.prototype.postdraw_actions.call(this, tiles, clear_after);
+        TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
         
         var track = this,
             i;
                 
         // If mode is Coverage and tiles do not share max, redraw tiles as necessary using new max.
+        /*
+        This code isn't used right now because Coverage mode uses predefined max in preferences.
         if (track.mode === "Coverage") {
             // Get global max.
             var global_max = -1;
@@ -3928,7 +3972,8 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
                     track.draw_helper(true, tile.index, tile.resolution, tile.html_elt.parent(), w_scale, { more_tile_data: { max: global_max } } );
                 }
             }
-        }            
+        }
+        */           
         
         //
         // Update filter attributes, UI.
@@ -3992,17 +4037,17 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             this.action_icons.show_more_rows_icon.hide();
         }
     },
+
     update_auto_mode: function( mode ) {
         var mode;
         if ( this.mode === "Auto" ) {
             if ( mode === "no_detail" ) {
                 mode = "feature spans";
-            } else if ( mode === "summary_tree" ) {
-                mode = "coverage histogram";
             }
             this.action_icons.mode_icon.attr("title", "Set display mode (now: Auto/" + mode + ")");
         }
     },
+
     /**
      * Place features in slots for drawing (i.e. pack features).
      * this.slotters[level] is created in this method. this.slotters[level]
@@ -4022,15 +4067,13 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
         return slotter.slot_features( features );
     },
+
     /**
      * Returns appropriate display mode based on data.
      */
     get_mode: function(data) {
-        if (data.dataset_type === "summary_tree") {
-            mode = "summary_tree";
-        } 
         // HACK: use no_detail mode track is in overview to prevent overview from being too large.
-        else if (data.extra_info === "no_detail" || this.is_overview) {
+        if (data.extra_info === "no_detail" || this.is_overview) {
             mode = "no_detail";
         } 
         else {
@@ -4054,12 +4097,13 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         }
         return mode;
     },
+
     /**
      * Returns canvas height needed to display data; return value is an integer that denotes the
      * number of pixels required.
      */
     get_canvas_height: function(result, mode, w_scale, canvas_width) {
-        if (mode === "summary_tree" || mode === "Coverage") {
+        if (mode === "Coverage" || result.dataset_type === 'bigwig') {
             return this.summary_draw_height;
         }
         else {
@@ -4071,6 +4115,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             return Math.max(MIN_TRACK_HEIGHT, dummy_painter.get_required_height(rows_required, canvas_width) );
         }
     },
+
     /**
      * Draw FeatureTrack tile.
      * @param result result from server
@@ -4087,10 +4132,10 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
             tile_low = region.get('start'),
             tile_high = region.get('end'),
             left_offset = this.left_offset;
-        
-        // Drawing the summary tree.
-        if (mode === "summary_tree" || mode === "Coverage") {
-            return this._draw_summary_tree_tile(result, ctx, region, resolution, w_scale);
+
+        // If data is line track data, draw line track tile.
+        if (result.dataset_type === 'bigwig') {
+            return this._draw_line_track_tile(result, ctx, 'Histogram', resolution, region, w_scale);
         }
 
         // Handle row-by-row tracks
@@ -4147,6 +4192,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         
         return new FeatureTrackTile(track, region, resolution, canvas, result.data, w_scale, mode, result.message, all_slotted, feature_mapper);        
     },
+
     /**
      * Returns true if data is compatible with a given mode.
      */
@@ -4155,24 +4201,25 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         if (mode === "Auto") {
             return true;
         }
-        // Histogram mode requires summary_tree data.
+        // Histogram mode requires bigwig data.
         else if (mode === "Coverage") {
-            return data.dataset_type === "summary_tree";
+            return data.dataset_type === "bigwig";
         }
         // All other modes--Dense, Squish, Pack--require data + details.
-        else if (data.extra_info === "no_detail" || data.dataset_type === "summary_tree") {
+        else if (data.extra_info === "no_detail") {
             return false;
         }
         else {
             return true;
         }
     },
+
     /**
      * Returns true if data can be subsetted.
      */
     can_subset: function(data) {
-        // Do not subset summary tree data, entries with a message, or data with no detail.
-        if (data.dataset_type === "summary_tree" || data.message || data.extra_info === "no_detail")  {
+        // Do not subset entries with a message or data with no detail.
+        if (data.dataset_type === 'bigwig' || data.message || data.extra_info === "no_detail")  {
             return false;
         }
 
@@ -4217,9 +4264,9 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Draw tile.
      */
     draw_tile: function(result, ctx, mode, resolution, region, w_scale) {
-        // Data could be summary tree data or variant data.
-        if (result.dataset_type === 'summary_tree') {
-            return this._draw_summary_tree_tile(result, ctx, region, resolution, w_scale);
+        // Data could be coverage data or variant data.
+        if (result.dataset_type === 'bigwig') {
+            return this._draw_line_track_tile(result, ctx, "Histogram", region, resolution, w_scale);
         }
         else { // result.dataset_type === 'variant'
             var view = this.view,
@@ -4235,7 +4282,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * number of pixels required.
      */
     get_canvas_height: function(result, mode, w_scale, canvas_width) {
-        if (result.dataset_type === 'summary_tree') {
+        if (result.dataset_type === 'bigwig') {
             return this.summary_draw_height;
         }
         else {
@@ -4264,9 +4311,11 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      * Additional initialization required before drawing track for the first time.
      */
     predraw_init: function() {
+        var deferreds = [ Track.prototype.predraw_init.call(this) ];
         if (!this.dataset.get_metadata('sample_names')) {
-            return this.dataset.fetch();
+            deferreds.push(this.dataset.fetch());
         }
+        return deferreds;
     },
 
     /**
@@ -4277,7 +4326,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
         TiledTrack.prototype.postdraw_actions.call(this, tiles, width, w_scale, clear_after);
 
         // Add summary/sample labels if needed and not already included.
-        if ( !(tiles[0] instanceof SummaryTreeTile) && this.prefs.show_labels) {
+        if ( !(tiles[0] instanceof LineTrackTile) && this.prefs.show_labels) {
             var font_size;
 
             // Add and/or style labels.
@@ -4343,7 +4392,6 @@ var ReadTrack = function (view, container, obj_dict) {
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
             { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
-            { key: 'histogram_max', label: 'Histogram maximum', type: 'float', default_value: null, help: 'Clear value to set automatically' },
             { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
         ], 
         saved_values: obj_dict.prefs,

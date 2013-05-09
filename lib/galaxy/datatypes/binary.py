@@ -103,7 +103,7 @@ class Bam( Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"
     track_type = "ReadTrack"
-    data_sources = { "data": "bai", "index": [ "bigwig", "summary_tree" ] }
+    data_sources = { "data": "bai", "index": "bigwig" }
 
     MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True )
 

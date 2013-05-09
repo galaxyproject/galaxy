@@ -29,7 +29,6 @@ class DataProviderRegistry( object ):
             "interval_index": genome.IntervalIndexDataProvider,
             "bai": genome.BamDataProvider,
             "bam": genome.SamDataProvider,
-            "summary_tree": genome.SummaryTreeDataProvider,
             "bigwig": genome.BigWigDataProvider,
             "bigbed": genome.BigBedDataProvider
         }

@@ -145,32 +145,41 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             
         extra_info = None
         mode = kwargs.get( "mode", "Auto" )
-        # Handle histogram mode uniquely for now:
         data_provider_registry = trans.app.data_provider_registry
+
+        # Coverage mode uses index data.
         if mode == "Coverage":
             # Get summary using minimal cutoffs.
             indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
-            summary = indexer.get_data( chrom, low, high, detail_cutoff=0, draw_cutoff=0, **kwargs )
-            if summary == "detail":
-                # Use maximum level of detail--2--to get summary data no matter the resolution.
-                summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ],
-                                            level=2, detail_cutoff=0, draw_cutoff=0 )
-            return summary
+            return indexer.get_data( chrom, low, high, **kwargs )
 
-        if 'index' in data_sources and data_sources['index']['name'] == "summary_tree" and mode == "Auto":
-            # Only check for summary_tree if it's Auto mode (which is the default)
-            # 
-            # Have to choose between indexer and data provider
+        # TODO: 
+        # (1) add logic back in for no_detail
+        # (2) handle scenario where mode is Squish/Pack but data requested is large, so reduced data needed to be returned.
+            
+        # If mode is Auto, need to determine what type of data to return.
+        if mode == "Auto":
+            # Get stats from indexer.
             indexer = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='index' )
-            summary = indexer.get_data( chrom, low, high, resolution=kwargs[ 'resolution' ] )
-            if summary is None:
-                return { 'dataset_type': indexer.dataset_type, 'data': None }
-                
-            if summary == "draw":
-                kwargs["no_detail"] = True # meh
-                extra_info = "no_detail"
-            elif summary != "detail":
-                return summary
+            stats = indexer.get_data( chrom, low, high, stats=True )
+
+            # If stats were requested, return them.
+            if 'stats' in kwargs:
+                if stats[ 'data' ][ 'max' ] == 0:
+                    return { 'dataset_type': indexer.dataset_type, 'data': None }
+                else:
+                    return stats
+
+            # Use heuristic based on max depth and region size to determine whether to 
+            # return coverage data. When zoomed out and region is large, max depth
+            # is determining factor. However, when sufficiently zoomed in and region is 
+            # small, coverage data is no longer provided.
+            if int( high ) - int( low ) > 50000 and stats[ 'data' ][ 'max' ] > 1000:
+                return indexer.get_data( chrom, low, high )
+ 
+        #
+        # Provide individual data points.
+        #
         
         # Get data provider.
         data_provider = data_provider_registry.get_data_provider( trans, original_dataset=dataset, source='data' )

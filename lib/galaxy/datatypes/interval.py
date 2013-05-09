@@ -47,7 +47,7 @@ class Interval( Tabular ):
     file_ext = "interval"
     line_class = "region"
     track_type = "FeatureTrack"
-    data_sources = { "data": "tabix", "index": "summary_tree" }
+    data_sources = { "data": "tabix", "index": "bigwig" }
 
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
@@ -354,7 +354,7 @@ class BedGraph( Interval ):
 class Bed( Interval ):
     """Tab delimited data in BED format"""
     file_ext = "bed"
-    data_sources = { "data": "tabix", "index": "summary_tree", "feature_search": "fli" }
+    data_sources = { "data": "tabix", "index": "bigwig", "feature_search": "fli" }
     track_type = Interval.track_type
 
     """Add metadata elements"""
@@ -569,7 +569,7 @@ class Gff( Tabular, _RemoteCallMixin ):
     """Tab delimited data in Gff format"""
     file_ext = "gff"
     column_names = [ 'Seqname', 'Source', 'Feature', 'Start', 'End', 'Score', 'Strand', 'Frame', 'Group' ]
-    data_sources = { "data": "interval_index", "index": "summary_tree", "feature_search": "fli" }
+    data_sources = { "data": "interval_index", "index": "bigwig", "feature_search": "fli" }
     track_type = Interval.track_type
 
     """Add metadata elements"""
@@ -1288,7 +1288,7 @@ class ENCODEPeak( Interval ):
     
     file_ext = "encodepeak"
     column_names = [ 'Chrom', 'Start', 'End', 'Name', 'Score', 'Strand', 'SignalValue', 'pValue', 'qValue', 'Peak' ]
-    data_sources = { "data": "tabix", "index": "summary_tree" }
+    data_sources = { "data": "tabix", "index": "bigwig" }
     
     """Add metadata elements"""
     MetadataElement( name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter )
@@ -1307,7 +1307,7 @@ class ChromatinInteractions( Interval ):
     
     file_ext = "chrint"
     track_type = "DiagonalHeatmapTrack"
-    data_sources = { "data": "tabix", "index": "summary_tree" }
+    data_sources = { "data": "tabix", "index": "bigwig" }
     
     column_names = [ 'Chrom1', 'Start1', 'End1', 'Chrom2', 'Start2', 'End2', 'Value' ]
     
