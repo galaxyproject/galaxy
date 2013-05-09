@@ -312,12 +312,7 @@ class ShedTwillTestCase( TwillTestCase ):
         
     def create_user_in_galaxy( self, cntrller='user', email='test@bx.psu.edu', password='testuser', username='admin-user', redirect='' ):
         self.visit_galaxy_url( "/user/create?cntrller=%s&use_panels=False" % cntrller )
-        tc.fv( '1', 'email', email )
-        tc.fv( '1', 'redirect', redirect )
-        tc.fv( '1', 'password', password )
-        tc.fv( '1', 'confirm', password )
-        tc.fv( '1', 'username', username )
-        tc.submit( 'create_user_button' )
+        self.submit_form( '1', 'create_user_button', email=email, password=password, confirm=password, username=username, redirect=redirect )
         previously_created = False
         username_taken = False
         invalid_username = False
@@ -509,10 +504,7 @@ class ShedTwillTestCase( TwillTestCase ):
             self.create_user_in_galaxy( email=email, password=password, username=username, redirect=redirect )
         if previously_created:
             self.visit_galaxy_url( "/user/login?use_panels=False" )
-            tc.fv( '1', 'email', email )
-            tc.fv( '1', 'redirect', redirect )
-            tc.fv( '1', 'password', password )
-            tc.submit( 'login_button' )
+            self.submit_form( '1', 'login_button', email=email, redirect=redirect, password=password )
         
     def galaxy_logout( self ):
         self.home()
