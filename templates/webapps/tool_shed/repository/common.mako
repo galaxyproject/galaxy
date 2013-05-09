@@ -544,6 +544,7 @@
 <%def name="render_repository_dependency( repository_dependency, pad, parent, row_counter, row_is_header=False )">
                 
     <%
+        from galaxy.util import string_as_bool
         encoded_id = trans.security.encode_id( repository_dependency.id )
         if trans.webapp.name == 'galaxy':
             if repository_dependency.tool_shed_repository_id:
@@ -557,6 +558,7 @@
         repository_name = str( repository_dependency.repository_name )
         repository_owner = str( repository_dependency.repository_owner )
         changeset_revision = str( repository_dependency.changeset_revision )
+        prior_installation_required = string_as_bool( str( repository_dependency.prior_installation_required ) ) 
         if prior_installation_required:
             prior_installation_required_str = " <i>(prior install required)</i>"
         else:
@@ -676,6 +678,7 @@
 
 <%def name="render_tool_dependency( tool_dependency, pad, parent, row_counter, row_is_header )">
     <%
+        from galaxy.util import string_as_bool
         encoded_id = trans.security.encode_id( tool_dependency.id )
         is_missing = tool_dependency.installation_status not in [ 'Installed' ]
         if row_is_header:
@@ -725,7 +728,17 @@
                     ${tool_dependency.install_dir | h}
                 %endif
             %else:
-                ${tool_dependency.is_orphan | h}
+                %if row_is_header:
+                    ${tool_dependency.is_orphan | h}
+                %else:
+                    <%
+                        if string_as_bool( str( tool_dependency.is_orphan ) ):
+                            is_orpan = 'yes'
+                        else:
+                            is_orphan = 'no'
+                    %>
+                    ${is_orphan | h}
+                %endif
             %endif
         </${cell_type}>
     </tr>
