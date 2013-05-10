@@ -341,6 +341,12 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                     action_dict[ 'target_filename' ] = action_elem.attrib[ 'target_filename' ]
             else:
                 continue
+        elif action_type == 'download_file':
+            # <action type="download_file">http://effectors.org/download/version/TTSS_GUI-1.0.1.jar</action>
+            if action_elem.text:
+                action_dict[ 'url' ] = action_elem.text
+            else:
+                continue
         elif action_type == 'make_directory':
             # <action type="make_directory">$INSTALL_DIR/lib/python</action>
             if action_elem.text:

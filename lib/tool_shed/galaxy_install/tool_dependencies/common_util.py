@@ -151,6 +151,9 @@ def isbz2( file_path ):
 def isgzip( file_path ):
     return checkers.is_gzip( file_path )
 
+def isjar( file_path ):
+    return iszip( file_path ) and file_path.endswith( '.jar' )
+
 def istar( file_path ):
     return tarfile.is_tarfile( file_path )
 

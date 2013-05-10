@@ -71,6 +71,8 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         # <action type="download_by_url">http://sourceforge.net/projects/samtools/files/samtools/0.1.18/samtools-0.1.18.tar.bz2</action>
                         common_util.extract_tar( downloaded_file_path, work_dir )
                         dir = common_util.tar_extraction_directory( work_dir, downloaded_filename )
+                    elif common_util.isjar( downloaded_file_path ):
+                        dir = os.path.curdir
                     elif common_util.iszip( downloaded_file_path ):
                         # <action type="download_by_url">http://downloads.sourceforge.net/project/picard/picard-tools/1.56/picard-tools-1.56.zip</action>
                         zip_archive_extracted = common_util.extract_zip( downloaded_file_path, work_dir )
@@ -85,6 +87,14 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     if return_code:
                         return
                     dir = package_name
+                elif action_type == 'download_file':
+                    # <action type="download_file">http://effectors.org/download/version/TTSS_GUI-1.0.1.jar</action>
+                    # Download a single file to the working directory.
+                    filtered_actions = actions[ 1: ]
+                    url = action_dict[ 'url' ]
+                    filename = url.split( '/' )[ -1 ]
+                    common_util.url_download( work_dir, filename, url )
+                    dir = os.path.curdir
                 else:
                     # We're handling a complex repository dependency where we only have a set_environment tag set.
                     # <action type="set_environment">
@@ -137,6 +147,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
+                        elif action_type == 'download_file':
+                            # Download a single file to the current directory.
+                            url = action_dict[ 'url' ]
+                            filename = url.split( '/' )[ -1 ]
+                            common_util.url_download( current_dir, filename, url )
 
 def log_results( command, fabric_AttributeString, file_path ):
     """
