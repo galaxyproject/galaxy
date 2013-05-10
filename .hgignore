@@ -20,6 +20,7 @@ database/job_working_directory
 database/pbs
 database/tmp
 database/*.sqlite
+database/openid_consumer_cache
 
 # Python bytecode
 *.pyc
