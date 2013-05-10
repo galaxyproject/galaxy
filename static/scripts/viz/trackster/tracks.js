@@ -4266,7 +4266,7 @@ extend(VariantTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
     draw_tile: function(result, ctx, mode, resolution, region, w_scale) {
         // Data could be coverage data or variant data.
         if (result.dataset_type === 'bigwig') {
-            return this._draw_line_track_tile(result, ctx, "Histogram", region, resolution, w_scale);
+            return this._draw_line_track_tile(result, ctx, "Histogram", resolution, region, w_scale);
         }
         else { // result.dataset_type === 'variant'
             var view = this.view,
