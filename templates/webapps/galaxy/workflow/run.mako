@@ -2,7 +2,6 @@
 
 <%def name="javascripts()">
     ${parent.javascripts()}
-    ${h.js( "libs/jquery/select2" )}
     <script type="text/javascript">
         $( function() {
             function show_tool_body(title){

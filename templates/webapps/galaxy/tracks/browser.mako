@@ -105,10 +105,7 @@ ${render_trackster_js_files()}
                         "Create": function() { $(document).trigger("convert_to_values"); continue_fn(); }
                     });
                     $("#new-title").focus();
-                    $("select[name='dbkey']").combobox({
-                        appendTo: $("#overlay"),
-                        size: 40
-                    });
+                    $("select[name='dbkey']").select2({ width: 'resolve'});
                     // To support the large number of options for dbkey, enable scrolling in overlay.
                     $("#overlay").css("overflow", "auto");
                 }
