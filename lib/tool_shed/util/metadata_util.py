@@ -1373,7 +1373,8 @@ def populate_containers_dict_from_repository_metadata( trans, tool_shed_url, too
         invalid_tools = metadata.get( 'invalid_tools', None )
         # Handle README files.
         if repository.has_readme_files:
-            if reinstalling:
+            if reinstalling or repository.status not in [ trans.model.ToolShedRepository.installation_status.DEACTIVATED,
+                                                          trans.model.ToolShedRepository.installation_status.INSTALLED ]:
                 # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
                 url = suc.url_join( tool_shed_url,
                                     'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \

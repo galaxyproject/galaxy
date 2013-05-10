@@ -1130,7 +1130,7 @@ class AdminToolshed( AdminGalaxy ):
         """
         Select or change the tool panel section to contain the tools included in the tool shed repository being reinstalled.  If there are updates
         available for the repository in the tool shed, the tool_dependencies and repository_dependencies associated with the updated changeset revision
-        will have been retrieved from the tool shed and passed in the received kwd.  In this case, the stored tool shed repository metqdata from the
+        will have been retrieved from the tool shed and passed in the received kwd.  In this case, the stored tool shed repository metadata from the
         Galaxy database will not be used since it is outdated.
         """
         message = ''
@@ -1185,7 +1185,12 @@ class AdminToolshed( AdminGalaxy ):
                     includes_tool_dependencies = True
                 if 'workflows' in metadata:
                     includes_workflows = True
-                readme_files_dict = readme_util.build_readme_files_dict( metadata )
+                # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
+                url = suc.url_join( tool_shed_url,
+                                    'repository/get_readme_files?name=%s&owner=%s&changeset_revision=%s' % \
+                                    ( tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.installed_changeset_revision ) )
+                raw_text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+                readme_files_dict = json.from_json_string( raw_text )
                 tool_dependencies = metadata.get( 'tool_dependencies', None )
             repository_dependencies = self.get_repository_dependencies( trans=trans,
                                                                         repository_id=repository_id,
