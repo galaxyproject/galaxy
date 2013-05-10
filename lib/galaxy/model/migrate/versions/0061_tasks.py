@@ -11,8 +11,7 @@ import datetime
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 now = datetime.datetime.utcnow
 
 Task_table = Table( "task", metadata,
@@ -21,7 +20,7 @@ Task_table = Table( "task", metadata,
     Column( "execution_time", DateTime ),
     Column( "update_time", DateTime, default=now, onupdate=now ),
     Column( "state", String( 64 ), index=True ),
-    Column( "command_line", TEXT ), 
+    Column( "command_line", TEXT ),
     Column( "param_filename", String( 1024 ) ),
     Column( "runner_name", String( 255 ) ),
     Column( "stdout", TEXT ),
@@ -34,7 +33,8 @@ Task_table = Table( "task", metadata,
 
 tables = [Task_table]
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     for table in tables:
@@ -43,7 +43,8 @@ def upgrade():
         except:
             log.warn( "Failed to create table '%s', ignoring (might result in wrong schema)" % table.name )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     for table in tables:
         table.drop()

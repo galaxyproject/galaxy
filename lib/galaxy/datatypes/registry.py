@@ -163,7 +163,7 @@ class Registry( object ):
                             # Use default mime type as per datatype spec
                             mimetype = self.datatypes_by_extension[ extension ].get_mime()
                         self.mimetypes_by_extension[ extension ] = mimetype
-                        if hasattr( datatype_class, "get_track_type" ):
+                        if datatype_class.track_type:
                             self.available_tracks.append( extension )
                         if display_in_upload:
                             self.upload_file_formats.append( extension )
@@ -397,7 +397,7 @@ class Registry( object ):
         except KeyError:
             builder = data.Text()
         return builder
-    def change_datatype(self, data, ext, set_meta = True ):
+    def change_datatype(self, data, ext):
         data.extension = ext
         # call init_meta and copy metadata from itself.  The datatype
         # being converted *to* will handle any metadata copying and
@@ -405,10 +405,6 @@ class Registry( object ):
         if data.has_data():
             data.set_size()
             data.init_meta( copy_from=data )
-            if set_meta:
-                #metadata is being set internally
-                data.set_meta( overwrite = False )
-                data.set_peek()
         return data
     def old_change_datatype(self, data, ext):
         """Creates and returns a new datatype based on an existing data and an extension"""

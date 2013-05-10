@@ -5,24 +5,8 @@ Utility functions used systemwide.
 import logging, threading, random, string, re, binascii, pickle, time, datetime, math, re, os, sys, tempfile, stat, grp, smtplib, errno, shutil
 from email.MIMEText import MIMEText
 
-# Older py compatibility
-try:
-    set()
-except:
-    from sets import Set as set
-
-try:
-    from hashlib import md5
-except ImportError:
-    from md5 import new as md5
-
-try:
-    from math import isinf
-except ImportError:
-    INF = float( 'inf' )
-    NEG_INF = -INF
-    ISINF_LIST = [ INF, NEG_INF ]
-    isinf = lambda x: x in ISINF_LIST
+from os.path import relpath
+from hashlib import md5
 
 from galaxy import eggs
 import pkg_resources
@@ -170,6 +154,25 @@ def pretty_print_xml( elem, level=0 ):
         if level and ( not elem.tail or not elem.tail.strip() ):
             elem.tail = i + pad
     return elem
+
+def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False ):
+    if len( value ) > size:
+        len_join_by = len( join_by )
+        min_size = len_join_by + 2
+        if size < min_size:
+            if beginning_on_size_error:
+                return value[:size]
+            elif end_on_size_error:
+                return value[-size:]
+            raise ValueError( 'With the provided join_by value (%s), the minimum size value is %i.' % ( join_by, min_size ) )
+        left_index = right_index = int( ( size - len_join_by ) / 2 )
+        if left_index + right_index + len_join_by < size:
+            if left_larger:
+                left_index += 1
+            else:
+                right_index += 1
+        value = "%s%s%s" % ( value[:left_index], join_by, value[-right_index:] )
+    return value
 
 def pretty_print_json(json_data, is_json_string=False):
     if is_json_string:

@@ -5,20 +5,33 @@ Naming: try to use class names that have a distinct plural form so that
 the relationship cardinalities are obvious (e.g. prefer Dataset to Data)
 """
 
-import pkg_resources
-pkg_resources.require("simplejson")
-pkg_resources.require("pexpect")
-import simplejson, os, errno, codecs, operator, socket, pexpect, logging, time
+from galaxy import eggs
+eggs.require("simplejson")
+eggs.require("pexpect")
+
+import codecs
+import errno
+import logging
+import operator
+import os
+import pexpect
+import simplejson
+import socket
+import time
+
 import galaxy.datatypes
 import galaxy.datatypes.registry
+import galaxy.security.passwords
 from galaxy.datatypes.metadata import MetadataCollection
+from galaxy.model.item_attrs import APIItem, UsesAnnotations
 from galaxy.security import get_permitted_actions
-from galaxy import util
+from galaxy.util import is_multi_byte, nice_size, Params, restore_text, send_mail
 from galaxy.util.bunch import Bunch
 from galaxy.util.hash_util import new_secure_hash
-from galaxy.web.form_builder import (AddressField, CheckboxField, PasswordField, SelectField, TextArea, TextField,
-                                    WorkflowField, WorkflowMappingField, HistoryField)
-from galaxy.model.item_attrs import UsesAnnotations, APIItem
+from galaxy.web.framework.helpers import to_unicode
+from galaxy.web.form_builder import (AddressField, CheckboxField, HistoryField,
+        PasswordField, SelectField, TextArea, TextField, WorkflowField,
+        WorkflowMappingField)
 from sqlalchemy.orm import object_session
 from sqlalchemy.sql.expression import func
 
@@ -47,9 +60,17 @@ def set_datatypes_registry( d_registry ):
     global datatypes_registry
     datatypes_registry = d_registry
 
+
 class User( object, APIItem ):
+    """
+    Data for a Galaxy user or admin and relations to their
+    histories, credentials, and roles.
+    """
+    # attributes that will be accessed and returned when calling get_api_value( view='collection' )
     api_collection_visible_keys = ( 'id', 'email' )
+    # attributes that will be accessed and returned when calling get_api_value( view='element' )
     api_element_visible_keys = ( 'id', 'email', 'username', 'total_disk_usage', 'nice_total_disk_usage' )
+
     def __init__( self, email=None, password=None ):
         self.email = email
         self.password = password
@@ -60,44 +81,77 @@ class User( object, APIItem ):
         # Relationships
         self.histories = []
         self.credentials = []
+        #? self.roles = []
 
     def set_password_cleartext( self, cleartext ):
-        """Set 'self.password' to the digest of 'cleartext'."""
-        self.password = new_secure_hash( text_type=cleartext )
+        """
+        Set user password to the digest of `cleartext`.
+        """
+        self.password = galaxy.security.passwords.hash_password( cleartext )
+
     def check_password( self, cleartext ):
-        """Check if 'cleartext' matches 'self.password' when hashed."""
-        return self.password == new_secure_hash( text_type=cleartext )
+        """
+        Check if `cleartext` matches user password when hashed.
+        """
+        return galaxy.security.passwords.check_password( cleartext, self.password )
+
     def all_roles( self ):
+        """
+        Return a unique list of Roles associated with this user or any of their groups.
+        """
         roles = [ ura.role for ura in self.roles ]
         for group in [ uga.group for uga in self.groups ]:
             for role in [ gra.role for gra in group.roles ]:
                 if role not in roles:
                     roles.append( role )
         return roles
+
     def get_disk_usage( self, nice_size=False ):
+        """
+        Return byte count of disk space used by user or a human-readable
+        string if `nice_size` is `True`.
+        """
         rval = 0
         if self.disk_usage is not None:
             rval = self.disk_usage
         if nice_size:
             rval = galaxy.datatypes.data.nice_size( rval )
         return rval
+
     def set_disk_usage( self, bytes ):
+        """
+        Manually set the disk space used by a user to `bytes`.
+        """
         self.disk_usage = bytes
+
     total_disk_usage = property( get_disk_usage, set_disk_usage )
+
     @property
     def nice_total_disk_usage( self ):
+        """
+        Return byte count of disk space used in a human-readable string.
+        """
         return self.get_disk_usage( nice_size=True )
+
     def calculate_disk_usage( self ):
+        """
+        Return byte count total of disk space used by all non-purged, non-library
+        HDAs in non-purged histories.
+        """
+        # maintain a list so that we don't double count
         dataset_ids = []
         total = 0
         # this can be a huge number and can run out of memory, so we avoid the mappers
         db_session = object_session( self )
         for history in db_session.query( History ).enable_eagerloads( False ).filter_by( user_id=self.id, purged=False ).yield_per( 1000 ):
             for hda in db_session.query( HistoryDatasetAssociation ).enable_eagerloads( False ).filter_by( history_id=history.id, purged=False ).yield_per( 1000 ):
+                #TODO: def hda.counts_toward_disk_usage():
+                #   return ( not self.dataset.purged and not self.dataset.library_associations )
                 if not hda.dataset.id in dataset_ids and not hda.dataset.purged and not hda.dataset.library_associations:
                     dataset_ids.append( hda.dataset.id )
                     total += hda.dataset.get_total_size()
         return total
+
 
 class Job( object ):
     """
@@ -574,8 +628,10 @@ class UserGroupAssociation( object ):
         self.group = group
 
 class History( object, UsesAnnotations ):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name' )
+
+    api_collection_visible_keys = ( 'id', 'name', 'published', 'deleted' )
+    api_element_visible_keys = ( 'id', 'name', 'published', 'deleted', 'genome_build', 'purged' )
+
     def __init__( self, id=None, name=None, user=None ):
         self.id = id
         self.name = name or "Unnamed history"
@@ -588,6 +644,7 @@ class History( object, UsesAnnotations ):
         self.user = user
         self.datasets = []
         self.galaxy_sessions = []
+
     def _next_hid( self ):
         # TODO: override this with something in the database that ensures
         # better integrity
@@ -599,18 +656,21 @@ class History( object, UsesAnnotations ):
                 if dataset.hid > last_hid:
                     last_hid = dataset.hid
             return last_hid + 1
+
     def add_galaxy_session( self, galaxy_session, association=None ):
         if association is None:
             self.galaxy_sessions.append( GalaxySessionToHistoryAssociation( galaxy_session, self ) )
         else:
             self.galaxy_sessions.append( association )
+
     def add_dataset( self, dataset, parent_id=None, genome_build=None, set_hid=True, quota=True ):
         if isinstance( dataset, Dataset ):
             dataset = HistoryDatasetAssociation(dataset=dataset)
             object_session( self ).add( dataset )
             object_session( self ).flush()
         elif not isinstance( dataset, HistoryDatasetAssociation ):
-            raise TypeError, "You can only add Dataset and HistoryDatasetAssociation instances to a history ( you tried to add %s )." % str( dataset )
+            raise TypeError, ( "You can only add Dataset and HistoryDatasetAssociation instances to a history" +
+                               " ( you tried to add %s )." % str( dataset ) )
         if parent_id:
             for data in self.datasets:
                 if data.id == parent_id:
@@ -629,6 +689,7 @@ class History( object, UsesAnnotations ):
             self.genome_build = genome_build
         self.datasets.append( dataset )
         return dataset
+
     def copy( self, name=None, target_user=None, activatable=False ):
         # Create new history.
         if not name:
@@ -646,7 +707,7 @@ class History( object, UsesAnnotations ):
         # Copy annotation.
         self.copy_item_annotation( db_session, self.user, self, target_user, new_history )
 
-        #Copy Tags
+        # Copy Tags
         new_history.copy_tags_from(target_user=target_user, source_history=self)
 
         # Copy HDAs.
@@ -666,12 +727,17 @@ class History( object, UsesAnnotations ):
         db_session.add( new_history )
         db_session.flush()
         return new_history
+
     @property
     def activatable_datasets( self ):
         # This needs to be a list
         return [ hda for hda in self.datasets if not hda.dataset.deleted ]
+
     def get_display_name( self ):
-        """ History name can be either a string or a unicode object. If string, convert to unicode object assuming 'utf-8' format. """
+        """
+        History name can be either a string or a unicode object.
+        If string, convert to unicode object assuming 'utf-8' format.
+        """
         history_name = self.name
         if isinstance(history_name, str):
             history_name = unicode(history_name, 'utf-8')
@@ -681,6 +747,7 @@ class History( object, UsesAnnotations ):
         if value_mapper is None:
             value_mapper = {}
         rval = {}
+
         try:
             visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
         except AttributeError:
@@ -692,26 +759,62 @@ class History( object, UsesAnnotations ):
                     rval[key] = value_mapper.get( key )( rval[key] )
             except AttributeError:
                 rval[key] = None
+
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        rval['tags'] = tags_str_list
+        rval['model_class'] = self.__class__.__name__
         return rval
+
+    def set_from_dict( self, new_data ):
+        #AKA: set_api_value
+        """
+        Set object attributes to the values in dictionary new_data limiting
+        to only those keys in api_element_visible_keys.
+
+        Returns a dictionary of the keys, values that have been changed.
+        """
+        # precondition: keys are proper, values are parsed and validated
+        changed = {}
+        # unknown keys are ignored here
+        for key in [ k for k in new_data.keys() if k in self.api_element_visible_keys ]:
+            new_val = new_data[ key ]
+            old_val = self.__getattribute__( key )
+            if new_val == old_val:
+                continue
+
+            self.__setattr__( key, new_val )
+            changed[ key ] = new_val
+
+        return changed
+
     @property
     def get_disk_size_bytes( self ):
         return self.get_disk_size( nice_size=False )
+
     def unhide_datasets( self ):
         for dataset in self.datasets:
             dataset.mark_unhidden()
+
     def resume_paused_jobs( self ):
         for dataset in self.datasets:
             job = dataset.creating_job
             if job is not None and job.state == Job.states.PAUSED:
                 job.set_state(Job.states.NEW)
+
     def get_disk_size( self, nice_size=False ):
         # unique datasets only
         db_session = object_session( self )
-        rval = db_session.query( func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
-                                                     .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
-                                                     .filter( HistoryDatasetAssociation.purged != True )
-                                                     .filter( Dataset.purged != True )
-                                                     .distinct().subquery().c.total_size ) ).first()[0]
+        rval = db_session.query(
+            func.sum( db_session.query( HistoryDatasetAssociation.dataset_id, Dataset.total_size ).join( Dataset )
+                                            .filter( HistoryDatasetAssociation.table.c.history_id == self.id )
+                                            .filter( HistoryDatasetAssociation.purged != True )
+                                            .filter( Dataset.purged != True )
+                                            .distinct().subquery().c.total_size ) ).first()[0]
         if rval is None:
             rval = 0
         if nice_size:
@@ -723,6 +826,7 @@ class History( object, UsesAnnotations ):
             new_shta = src_shta.copy()
             new_shta.user = target_user
             self.tags.append(new_shta)
+
 
 class HistoryUserShareAssociation( object ):
     def __init__( self ):
@@ -795,7 +899,7 @@ class Quota( object, APIItem ):
         if self.bytes == -1:
             return "unlimited"
         else:
-            return util.nice_size( self.bytes )
+            return nice_size( self.bytes )
 
 class DefaultQuotaAssociation( Quota, APIItem ):
     api_element_visible_keys = ( 'type', )
@@ -920,7 +1024,10 @@ class Dataset( object ):
         return self.object_store.get_filename( self, dir_only=True, extra_dir=self._extra_files_path or "dataset_%d_files" % self.id )
     def _calculate_size( self ):
         if self.external_filename:
-            return os.path.getsize(self.external_filename)
+            try:
+                return os.path.getsize(self.external_filename)
+            except OSError:
+                return 0
         else:
             return self.object_store.size(self)
     def get_size( self, nice_size=False ):
@@ -965,7 +1072,7 @@ class Dataset( object ):
         if not self.has_data():
             return False
         try:
-            return util.is_multi_byte( codecs.open( self.file_name, 'r', 'utf-8' ).read( 100 ) )
+            return is_multi_byte( codecs.open( self.file_name, 'r', 'utf-8' ).read( 100 ) )
         except UnicodeDecodeError:
             return False
     # FIXME: sqlalchemy will replace this
@@ -1321,10 +1428,9 @@ class DatasetInstance( object ):
         with entries of type
         (<datasource_type> : {<datasource_name>, <indexing_message>}).
         """
-        track_type, data_sources = self.datatype.get_track_type()
         data_sources_dict = {}
         msg = None
-        for source_type, source_list in data_sources.iteritems():
+        for source_type, source_list in self.datatype.data_sources.iteritems():
             data_source = None
             if source_type == "data_standalone":
                 # Nothing to do.
@@ -1376,7 +1482,11 @@ class DatasetInstance( object ):
 
         return msg
 
-class HistoryDatasetAssociation( DatasetInstance ):
+class HistoryDatasetAssociation( DatasetInstance, UsesAnnotations ):
+    """
+    Resource class that creates a relation between a dataset and a user history.
+    """
+
     def __init__( self,
                   hid = None,
                   history = None,
@@ -1384,6 +1494,9 @@ class HistoryDatasetAssociation( DatasetInstance ):
                   copied_from_library_dataset_dataset_association = None,
                   sa_session = None,
                   **kwd ):
+        """
+        Create a a new HDA and associate it with the given history.
+        """
         # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset
         # parameter is True so that the new object can be flushed.  Is there a better way?
         DatasetInstance.__init__( self, sa_session=sa_session, **kwd )
@@ -1392,7 +1505,11 @@ class HistoryDatasetAssociation( DatasetInstance ):
         self.history = history
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
+
     def copy( self, copy_children = False, parent_id = None ):
+        """
+        Create a copy of this HDA.
+        """
         hda = HistoryDatasetAssociation( hid=self.hid,
                                          name=self.name,
                                          info=self.info,
@@ -1419,13 +1536,20 @@ class HistoryDatasetAssociation( DatasetInstance ):
             hda.set_peek()
         object_session( self ).flush()
         return hda
-    def to_library_dataset_dataset_association( self, trans, target_folder, replace_dataset=None, parent_id=None, user=None, roles=[], ldda_message='' ):
+
+    def to_library_dataset_dataset_association( self, trans, target_folder,
+            replace_dataset=None, parent_id=None, user=None, roles=[], ldda_message='' ):
+        """
+        Copy this HDA to a library optionally replacing an existing LDDA.
+        """
         if replace_dataset:
-            # The replace_dataset param ( when not None ) refers to a LibraryDataset that is being replaced with a new version.
+            # The replace_dataset param ( when not None ) refers to a LibraryDataset that
+            #   is being replaced with a new version.
             library_dataset = replace_dataset
         else:
-            # If replace_dataset is None, the Library level permissions will be taken from the folder and applied to the new
-            # LibraryDataset, and the current user's DefaultUserPermissions will be applied to the associated Dataset.
+            # If replace_dataset is None, the Library level permissions will be taken from the folder and
+            #   applied to the new LibraryDataset, and the current user's DefaultUserPermissions will be applied
+            #   to the associated Dataset.
             library_dataset = LibraryDataset( folder=target_folder, name=self.name, info=self.info )
             object_session( self ).add( library_dataset )
             object_session( self ).flush()
@@ -1450,7 +1574,8 @@ class HistoryDatasetAssociation( DatasetInstance ):
         object_session( self ).flush()
         # If roles were selected on the upload form, restrict access to the Dataset to those roles
         for role in roles:
-            dp = trans.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, ldda.dataset, role )
+            dp = trans.model.DatasetPermissions( trans.app.security_agent.permitted_actions.DATASET_ACCESS.action,
+                                                 ldda.dataset, role )
             trans.sa_session.add( dp )
             trans.sa_session.flush()
         # Must set metadata after ldda flushed, as MetadataFiles require ldda.id
@@ -1475,30 +1600,47 @@ class HistoryDatasetAssociation( DatasetInstance ):
             ldda.set_peek()
         object_session( self ).flush()
         return ldda
+
     def clear_associated_files( self, metadata_safe = False, purge = False ):
+        """
+        """
         # metadata_safe = True means to only clear when assoc.metadata_safe == False
         for assoc in self.implicitly_converted_datasets:
             if not assoc.deleted and ( not metadata_safe or not assoc.metadata_safe ):
                 assoc.clear( purge = purge )
         for assoc in self.implicitly_converted_parent_datasets:
             assoc.clear( purge = purge, delete_dataset = False )
+
     def get_display_name( self ):
-        ## Name can be either a string or a unicode object. If string, convert to unicode object assuming 'utf-8' format.
+        """
+        Return the name of this HDA in either ascii or utf-8 encoding.
+        """
+        # Name can be either a string or a unicode object.
+        #   If string, convert to unicode object assuming 'utf-8' format.
         hda_name = self.name
         if isinstance(hda_name, str):
             hda_name = unicode(hda_name, 'utf-8')
         return hda_name
+
     def get_access_roles( self, trans ):
+        """
+        Return The access roles associated with this HDA's dataset.
+        """
         return self.dataset.get_access_roles( trans )
+
     def quota_amount( self, user ):
         """
-        If the user has multiple instances of this dataset, it will not affect their disk usage statistic.
+        Return the disk space used for this HDA relevant to user quotas.
+
+        If the user has multiple instances of this dataset, it will not affect their
+        disk usage statistic.
         """
         rval = 0
         # Anon users are handled just by their single history size.
         if not user:
             return rval
-        # Gets an HDA and its children's disk usage, if the user does not already have an association of the same dataset
+        # Gets an HDA and its children's disk usage, if the user does not already
+        #   have an association of the same dataset
         if not self.dataset.library_associations and not self.purged and not self.dataset.purged:
             for hda in self.dataset.history_associations:
                 if hda.id == self.id:
@@ -1510,14 +1652,17 @@ class HistoryDatasetAssociation( DatasetInstance ):
         for child in self.children:
             rval += child.get_disk_usage( user )
         return rval
+
     def get_api_value( self, view='collection' ):
+        """
+        Return attributes of this HDA that are exposed using the API.
+        """
         # Since this class is a proxy to rather complex attributes we want to
         # display in other objects, we can't use the simpler method used by
         # other model classes.
         hda = self
         rval = dict( id = hda.id,
                      uuid = ( lambda uuid: str( uuid ) if uuid else None )( hda.dataset.uuid ),
-                     history_id = hda.history.id,
                      hid = hda.hid,
                      file_ext = hda.ext,
                      peek = ( lambda hda: hda.display_peek() if hda.peek and hda.peek != 'no peek' else None )( hda ),
@@ -1532,6 +1677,11 @@ class HistoryDatasetAssociation( DatasetInstance ):
                      genome_build = hda.dbkey,
                      misc_info = hda.info,
                      misc_blurb = hda.blurb )
+
+        if hda.history is not None:
+            rval['history_id'] = hda.history.id,
+
+        rval[ 'peek' ] = to_unicode( hda.display_peek() )
         for name, spec in hda.metadata.spec.items():
             val = hda.metadata.get( name )
             if isinstance( val, MetadataFile ):
@@ -1541,6 +1691,33 @@ class HistoryDatasetAssociation( DatasetInstance ):
                 val = getattr( hda.datatype, name )
             rval['metadata_' + name] = val
         return rval
+
+    def set_from_dict( self, new_data ):
+        #AKA: set_api_value
+        """
+        Set object attributes to the values in dictionary new_data limiting
+        to only the following keys: name, deleted, visible, genome_build,
+        info, and blurb.
+
+        Returns a dictionary of the keys, values that have been changed.
+        """
+        # precondition: keys are proper, values are parsed and validated
+        #NOTE!: does not handle metadata
+        editable_keys = ( 'name', 'deleted', 'visible', 'dbkey', 'info', 'blurb' )
+
+        changed = {}
+        # unknown keys are ignored here
+        for key in [ k for k in new_data.keys() if k in editable_keys ]:
+            new_val = new_data[ key ]
+            old_val = self.__getattribute__( key )
+            if new_val == old_val:
+                continue
+
+            self.__setattr__( key, new_val )
+            changed[ key ] = new_val
+
+        return changed
+
 
 class HistoryDatasetAssociationDisplayAtAuthorization( object ):
     def __init__( self, hda=None, user=None, site=None ):
@@ -1557,7 +1734,7 @@ class HistoryDatasetAssociationSubset( object ):
 class Library( object, APIItem ):
     permitted_actions = get_permitted_actions( filter='LIBRARY' )
     api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'name', 'description', 'synopsis' )
+    api_element_visible_keys = ( 'id', 'deleted', 'name', 'description', 'synopsis' )
     def __init__( self, name=None, description=None, synopsis=None, root_folder=None ):
         self.name = name or "Unnamed library"
         self.description = description
@@ -1624,7 +1801,7 @@ class Library( object, APIItem ):
         return name
 
 class LibraryFolder( object, APIItem ):
-    api_element_visible_keys = ( 'id', 'name', 'description', 'item_count', 'genome_build' )
+    api_element_visible_keys = ( 'id', 'parent_id', 'name', 'description', 'item_count', 'genome_build' )
     def __init__( self, name=None, description=None, item_count=0, order_id=None ):
         self.name = name or "Unnamed folder"
         self.description = description
@@ -1704,7 +1881,17 @@ class LibraryFolder( object, APIItem ):
             else:
                 template = info_association.template
             rval['data_template'] = template.name
+        rval['library_path'] = self.library_path
+        rval['parent_library_id'] = self.parent_library.id
         return rval
+    @property
+    def library_path(self):
+        l_path = []
+        f = self
+        while f.parent:
+            l_path.insert(0, f.name)
+            f = f.parent        
+        return l_path
     @property
     def parent_library( self ):
         f = self
@@ -1767,6 +1954,7 @@ class LibraryDataset( object ):
 
         rval = dict( id = self.id,
                      ldda_id = ldda.id,
+                     folder_id = self.folder_id,
                      model_class = self.__class__.__name__,
                      name = ldda.name,
                      file_name = ldda.file_name,
@@ -1880,6 +2068,44 @@ class LibraryDatasetDatasetAssociation( DatasetInstance ):
         if restrict:
             return None, inherited
         return self.library_dataset.folder.get_info_association( inherited=True )
+    def get_api_value( self, view='collection' ):
+        # Since this class is a proxy to rather complex attributes we want to
+        # display in other objects, we can't use the simpler method used by
+        # other model classes.
+        ldda = self
+        try:
+            file_size = int( ldda.get_size() )
+        except OSError:
+            file_size = 0
+        rval = dict( id = ldda.id,
+                     model_class = self.__class__.__name__,
+                     name = ldda.name,
+                     deleted = ldda.deleted,
+                     visible = ldda.visible,
+                     state = ldda.state,
+                     library_dataset_id = ldda.library_dataset_id,
+                     file_size = file_size,
+                     file_name = ldda.file_name,
+                     data_type = ldda.ext,
+                     genome_build = ldda.dbkey,
+                     misc_info = ldda.info,
+                     misc_blurb = ldda.blurb )
+        if ldda.dataset.uuid is None:
+            rval['uuid'] = None
+        else:
+            rval['uuid'] = str(ldda.dataset.uuid)
+        rval['parent_library_id'] = ldda.library_dataset.folder.parent_library.id
+        if ldda.extended_metadata is not None:
+            rval['extended_metadata'] = ldda.extended_metadata.data
+        for name, spec in ldda.metadata.spec.items():
+            val = ldda.metadata.get( name )
+            if isinstance( val, MetadataFile ):
+                val = val.file_name
+            # If no value for metadata, look in datatype for metadata.
+            elif val == None and hasattr( ldda.datatype, name ):
+                val = getattr( ldda.datatype, name )
+            rval['metadata_' + name] = val
+        return rval
     def get_template_widgets( self, trans, get_contents=True ):
         # See if we have any associated templatesThe get_contents
         # param is passed by callers that are inheriting a template - these
@@ -2069,8 +2295,8 @@ class UCI( object ):
         self.user = None
 
 class StoredWorkflow( object, APIItem):
-    api_collection_visible_keys = ( 'id', 'name' )
-    api_element_visible_keys = ( 'id', 'name' )
+    api_collection_visible_keys = ( 'id', 'name', 'published' )
+    api_element_visible_keys = ( 'id', 'name', 'published' )
     def __init__( self ):
         self.id = None
         self.user = None
@@ -2085,6 +2311,18 @@ class StoredWorkflow( object, APIItem):
             new_swta = src_swta.copy()
             new_swta.user = target_user
             self.tags.append(new_swta)
+
+    def get_api_value( self, view='collection', value_mapper = None  ):
+        rval = APIItem.get_api_value(self, view=view, value_mapper = value_mapper)
+        tags_str_list = []
+        for tag in self.tags:
+            tag_str = tag.user_tname
+            if tag.value is not None:
+                tag_str += ":" + tag.user_value
+            tags_str_list.append( tag_str )
+        rval['tags'] = tags_str_list
+        return rval
+
 
 class Workflow( object ):
     def __init__( self ):
@@ -2198,7 +2436,7 @@ class FormDefinition( object, APIItem ):
         Return the list of widgets that comprise a form definition,
         including field contents if any.
         '''
-        params = util.Params( kwd )
+        params = Params( kwd )
         widgets = []
         for index, field in enumerate( self.fields ):
             field_type = field[ 'type' ]
@@ -2214,7 +2452,7 @@ class FormDefinition( object, APIItem ):
                 if field_type == 'CheckboxField':
                     value = CheckboxField.is_checked( params.get( field_name, False ) )
                 else:
-                    value = util.restore_text( params.get( field_name, '' ) )
+                    value = restore_text( params.get( field_name, '' ) )
             elif contents:
                 try:
                     # This field has a saved value.
@@ -2429,7 +2667,7 @@ All samples in state:     %(sample_state)s
             frm = 'galaxy-no-reply@' + host
             subject = "Galaxy Sample Tracking notification: '%s' sequencing request" % self.name
             try:
-                util.send_mail( frm, to, subject, body, trans.app.config )
+                send_mail( frm, to, subject, body, trans.app.config )
                 comments = "Email notification sent to %s." % ", ".join( to ).strip().strip( ',' )
             except Exception,e:
                 comments = "Email notification failed. (%s)" % str(e)
@@ -2471,7 +2709,7 @@ class ExternalService( object ):
             if data_transfer_protocol == self.data_transfer_protocol.SCP:
                 scp_configs = {}
                 automatic_transfer = data_transfer_obj.config.get( 'automatic_transfer', 'false' )
-                scp_configs[ 'automatic_transfer' ] = util.string_as_bool( automatic_transfer )
+                scp_configs[ 'automatic_transfer' ] = galaxy.util.string_as_bool( automatic_transfer )
                 scp_configs[ 'host' ] = self.form_values.content.get( data_transfer_obj.config.get( 'host', '' ), '' )
                 scp_configs[ 'user_name' ] = self.form_values.content.get( data_transfer_obj.config.get( 'user_name', '' ), '' )
                 scp_configs[ 'password' ] = self.form_values.content.get( data_transfer_obj.config.get( 'password', '' ), '' )
@@ -2481,7 +2719,7 @@ class ExternalService( object ):
             if data_transfer_protocol == self.data_transfer_protocol.HTTP:
                 http_configs = {}
                 automatic_transfer = data_transfer_obj.config.get( 'automatic_transfer', 'false' )
-                http_configs[ 'automatic_transfer' ] = util.string_as_bool( automatic_transfer )
+                http_configs[ 'automatic_transfer' ] = galaxy.util.string_as_bool( automatic_transfer )
                 self.data_transfer[ self.data_transfer_protocol.HTTP ] = http_configs
     def populate_actions( self, trans, item, param_dict=None ):
         return self.get_external_service_type( trans ).actions.populate( self, item, param_dict=param_dict )
@@ -3217,20 +3455,20 @@ class ToolShedRepository( object ):
         be installed in order for this repository to function correctly.  However, those repository dependencies that are defined for this
         repository with prior_installation_required set to True place them in a special category in that the required repositories must be
         installed before this repository is installed.  Among other things, this enables these "special" repository dependencies to include
-        information that enables the successful intallation of this repository.
+        information that enables the successful intallation of this repository.  This method is not used during the initial installation of
+        this repository, but only after it has been installed (metadata must be set for this repository in order for this method to be useful).
         """
         required_rd_tups_that_must_be_installed = []
         if self.has_repository_dependencies:
             rd_tups = self.metadata[ 'repository_dependencies' ][ 'repository_dependencies' ]
             for rd_tup in rd_tups:
                 if len( rd_tup ) == 4:
-                    # Metadata should have been reset on this installed tool_shed_repository, but it wasn't.
+                    # For backward compatibility to the 12/20/12 Galaxy release, default prior_installation_required to False.
                     tool_shed, name, owner, changeset_revision = rd_tup
-                    # Default prior_installation_required to False.
                     prior_installation_required = False
                 elif len( rd_tup ) == 5:
                     tool_shed, name, owner, changeset_revision, prior_installation_required = rd_tup
-                    prior_installation_required = util.asbool( str( prior_installation_required ) )
+                    prior_installation_required = galaxy.util.asbool( str( prior_installation_required ) )
                 if prior_installation_required:
                     required_rd_tups_that_must_be_installed.append( ( tool_shed, name, owner, changeset_revision, prior_installation_required ) )
         return required_rd_tups_that_must_be_installed
@@ -3326,7 +3564,7 @@ class ToolShedRepository( object ):
         """Return the repository's tool dependencies that are currently installed."""
         installed_dependencies = []
         for tool_dependency in self.tool_dependencies:
-            if tool_dependency.status == ToolDependency.installation_status.INSTALLED:
+            if tool_dependency.status in [ ToolDependency.installation_status.INSTALLED, ToolDependency.installation_status.ERROR ]:
                 installed_dependencies.append( tool_dependency )
         return installed_dependencies
     @property
@@ -3428,7 +3666,8 @@ class ToolDependency( object ):
                                  self.tool_shed_repository.name,
                                  self.tool_shed_repository.installed_changeset_revision )
 
-class ToolVersion( object ):
+class ToolVersion( object, APIItem ):
+    api_element_visible_keys = ( 'id', 'tool_shed_repository' )
     def __init__( self, id=None, create_time=None, tool_id=None, tool_shed_repository=None ):
         self.id = id
         self.create_time = create_time
@@ -3484,6 +3723,15 @@ class ToolVersion( object ):
                 version_ids.insert( 0, tool_version.tool_id )
             return version_ids
         return [ tool_version.tool_id for tool_version in self.get_versions( app ) ]
+
+    def get_api_value( self, view='element' ):
+        rval = APIItem.get_api_value(self, view)
+        rval['tool_name'] = self.tool_id
+        for a in self.parent_tool_association:
+            rval['parent_tool_id'] = a.parent_id
+        for a in self.child_tool_association:
+            rval['child_tool_id'] = a.tool_id
+        return rval
 
 class ToolVersionAssociation( object ):
     def __init__( self, id=None, tool_id=None, parent_id=None ):

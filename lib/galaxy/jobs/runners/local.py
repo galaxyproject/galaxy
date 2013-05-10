@@ -83,14 +83,14 @@ class LocalJobRunner( BaseJobRunner ):
             stdout_file.close()
             stderr_file.close()
             log.debug('execution finished: %s' % command_line)
-        except Exception, exc:
+        except Exception:
             job_wrapper.fail( "failure running job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
         #run the metadata setting script here
         #this is terminate-able when output dataset/job is deleted
         #so that long running set_meta()s can be canceled without having to reboot the server
-        if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and self.app.config.set_metadata_externally and job_wrapper.output_paths:
+        if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and job_wrapper.output_paths:
             external_metadata_script = job_wrapper.setup_external_metadata( output_fnames = job_wrapper.get_output_fnames(),
                                                                             set_extension = True,
                                                                             tmp_dir = job_wrapper.working_directory,

@@ -20,8 +20,15 @@ var Dataset = Backbone.RelationalModel.extend({
     },
 
     initialize: function() {
-        // -- Create and initialize metadata. -- 
+        // Set metadata.
+        // FIXME: pass back a metadata dict and then Backbone-relational
+        // can be used unpack metadata automatically.
+        this._set_metadata();
+        // Update metadata on change.
+        this.on('change', this._set_metadata, this);
+    },
 
+    _set_metadata: function() {
         var metadata = new DatasetMetadata();
 
         // Move metadata from dataset attributes to metadata object.
@@ -34,7 +41,8 @@ var Dataset = Backbone.RelationalModel.extend({
             }
         }, this);
 
-        this.set('metadata', metadata);
+        // Because this is an internal change, silence it.
+        this.set('metadata', metadata, { 'silent': true });
     },
 
     /**
@@ -109,12 +117,14 @@ var DatasetCollection = Backbone.Collection.extend({
  */
 var TabularDatasetChunkedView = Backbone.View.extend({
 
-    initialize: function(options) {},
+    initialize: function(options)
+    {
+        // load trackster button
+        (new TabularButtonTracksterView(options)).render();
+    },
 
-    render: function() {
-        // Add loading indicator div.
-        this.$el.append( $('<div/>').attr('id', 'loading_indicator') );
-
+    render: function()
+    {
         // Add data table and header.
         var data_table = $('<table/>').attr({
             id: 'content_table',
@@ -223,6 +233,173 @@ var TabularDatasetChunkedView = Backbone.View.extend({
     }
 });
 
+// button for trackster visualization
+var TabularButtonTracksterView = Backbone.View.extend(
+{
+    // gene region columns
+    col: {
+        chrom   : null,
+        start   : null,
+        end     : null
+    },
+
+    // url for trackster
+    url_viz     : null,
+
+    // dataset id
+    dataset_id  : null,
+
+    // database key
+    genome_build: null,
+
+    // backbone initialize
+    initialize: function (options)
+    {
+        // verify that metadata exists
+        var metadata = options.model.attributes.metadata.attributes;
+        if (typeof metadata.chromCol === "undefined" || typeof metadata.startCol === "undefined" || typeof metadata.endCol === "undefined")
+            console.log("TabularButtonTrackster : Metadata for column identification is missing.");
+        else {
+            // read in columns
+            this.col.chrom   = metadata.chromCol - 1;
+            this.col.start   = metadata.startCol - 1;
+            this.col.end     = metadata.endCol - 1;
+        }
+
+        // check
+        if(this.col.chrom === null)
+            return;
+
+        // get dataset id
+        if (typeof options.model.attributes.id === "undefined")
+            console.log("TabularButtonTrackster : Dataset identification is missing.");
+        else
+            this.dataset_id = options.model.attributes.id;
+        
+        // get url
+        if (typeof options.model.attributes.url_viz === "undefined")
+            console.log("TabularButtonTrackster : Url for visualization controller is missing.");
+        else
+            this.url_viz = options.model.attributes.url_viz;
+
+        // get genome_build / database key
+        if (typeof options.model.attributes.genome_build !== "undefined")
+            this.genome_build = options.model.attributes.genome_build;
+    },
+
+    // backbone events
+    events:
+    {
+        'mouseover tr'  : 'btn_viz_show',
+        'mouseleave'    : 'btn_viz_hide'
+    },
+    
+    // show button
+    btn_viz_show: function (e)
+    {
+        // check
+        if(this.col.chrom === null)
+            return;
+            
+        // get selected data line
+        var row = $(e.target).parent();
+        
+        // verify that location has been found
+        var chrom = row.children().eq(this.col.chrom).html();
+        var start = row.children().eq(this.col.start).html();
+        var end   = row.children().eq(this.col.end).html();
+        if (chrom !== "" && start !== "" && end !== "")
+        {
+            // get target gene region
+            var btn_viz_pars = {
+                dataset_id  : this.dataset_id,
+                gene_region : chrom + ":" + start + "-" + end
+            };
+        
+            // get button position
+            var offset  = row.offset();
+            var left    = offset.left - 10;
+            var top     = offset.top;
+
+            // update css
+            $('#btn_viz').css({'position': 'fixed', 'top': top + 'px', 'left': left + 'px'});
+            $('#btn_viz').off('click');
+            $('#btn_viz').click(this.create_trackster_action(this.url_viz, btn_viz_pars, this.genome_build));
+
+            // show the button
+            $('#btn_viz').show();
+        }
+    },
+    
+    // hide button
+    btn_viz_hide: function ()
+    {
+        // hide button from screen
+        $('#btn_viz').hide();
+    },
+    
+    // create action
+    create_trackster_action : function (vis_url, dataset_params, dbkey) {
+        return function() {
+            var listTracksParams = {};
+            if (dbkey){
+                // list_tracks seems to use 'f-dbkey' (??)
+                listTracksParams[ 'f-dbkey' ] = dbkey;
+            }
+            $.ajax({
+                url: vis_url + '/list_tracks?' + $.param( listTracksParams ),
+                dataType: "html",
+                error: function() { alert( ( "Could not add this dataset to browser" ) + '.' ); },
+                success: function(table_html) {
+                    var parent = window.parent;
+
+                    parent.show_modal( ( "View Data in a New or Saved Visualization" ), "", {
+                        "Cancel": function() {
+                            parent.hide_modal();
+                        },
+                        "View in saved visualization": function() {
+                            // Show new modal with saved visualizations.
+                            parent.show_modal( ( "Add Data to Saved Visualization" ), table_html, {
+                                "Cancel": function() {
+                                    parent.hide_modal();
+                                },
+                                "Add to visualization": function() {
+                                    $(parent.document).find('input[name=id]:checked').each(function() {
+                                        var vis_id = $(this).val();
+                                        dataset_params.id = vis_id;
+                                        parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                                    });
+                                }
+                            });
+                        },
+                        "View in new visualization": function() {
+                            parent.location = vis_url + "/trackster?" + $.param(dataset_params);
+                        }
+                    });
+                }
+            });
+            return false;
+        };
+    },
+
+    // render frame
+    render: function()
+    {
+        // render the icon from template
+        var btn_viz = new IconButtonView({ model : new IconButton({
+            title       : 'Visualize',
+            icon_class  : 'chart_curve',
+            id          : 'btn_viz'
+        })});
+        
+        // add it to the screen
+        this.$el.append(btn_viz.render().$el);
+
+        // hide the button
+        $('#btn_viz').hide();
+    }    
+});
+
 // -- Utility functions. --
 
 /**
@@ -251,7 +428,7 @@ var createTabularDatasetChunkedView = function(dataset_config, parent_elt) {
     // Create view element and add to parent.
     var view_div = $('<div/>').appendTo(parent_elt);
 
-    // Create view with model, render, and return.
+    // default viewer
     return new TabularDatasetChunkedView({
         el: view_div,
         model: new TabularDataset(dataset_config)

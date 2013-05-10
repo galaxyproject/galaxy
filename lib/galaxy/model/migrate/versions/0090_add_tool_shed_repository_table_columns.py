@@ -21,10 +21,16 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def default_false(migrate_engine):
+    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+        return "0"
+    elif migrate_engine.name in ['postgresql', 'postgres']:
+        return "false"
+
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
@@ -32,26 +38,19 @@ def upgrade():
     try:
         c.create( ToolShedRepository_table )
         assert c is ToolShedRepository_table.c.uninstalled
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
-            default_false = "0"
-        elif migrate_engine.name == 'postgres':
-            default_false = "false"
-        db_session.execute( "UPDATE tool_shed_repository SET uninstalled=%s" % default_false )
+        migrate_engine.execute( "UPDATE tool_shed_repository SET uninstalled=%s" % default_false(migrate_engine) )
     except Exception, e:
         print "Adding uninstalled column to the tool_shed_repository table failed: %s" % str( e )
     c = Column( "dist_to_shed", Boolean, default=False )
     try:
         c.create( ToolShedRepository_table )
         assert c is ToolShedRepository_table.c.dist_to_shed
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
-            default_false = "0"
-        elif migrate_engine.name == 'postgres':
-            default_false = "false"
-        db_session.execute( "UPDATE tool_shed_repository SET dist_to_shed=%s" % default_false )
+        migrate_engine.execute( "UPDATE tool_shed_repository SET dist_to_shed=%s" % default_false(migrate_engine) )
     except Exception, e:
         print "Adding dist_to_shed column to the tool_shed_repository table failed: %s" % str( e )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
     try:

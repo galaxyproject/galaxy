@@ -1,16 +1,14 @@
-import sys
-from galaxy import model, util
-from galaxy.web.base.controller import *
-from galaxy.web.framework.helpers import time_ago, iff, grids
-from galaxy.model.orm import *
-from library_common import get_comptypes, lucene_search, whoosh_search
-# Older py compatibility
-try:
-    set()
-except:
-    from sets import Set as set
-
 import logging
+
+import galaxy.model
+import galaxy.util
+
+from galaxy import web
+from galaxy.web.base.controller import BaseUIController
+from galaxy.web.framework.helpers import grids, time_ago
+from library_common import get_comptypes, lucene_search, whoosh_search
+# from galaxy.model.orm import *
+
 log = logging.getLogger( __name__ )
 
 class LibraryListGrid( grids.Grid ):
@@ -31,7 +29,7 @@ class LibraryListGrid( grids.Grid ):
             return ""
     # Grid definition
     title = "Data Libraries"
-    model_class = model.Library
+    model_class = galaxy.model.Library
     template='/admin/library/grid.mako'
     default_sort_key = "name"
     columns = [
@@ -90,7 +88,7 @@ class LibraryAdmin( BaseUIController ):
         self.library_list_grid.operations = []
         if 'f-deleted' in kwd:
             if kwd[ 'f-deleted' ] != 'All':
-                if util.string_as_bool( kwd[ 'f-deleted' ] ):
+                if galaxy.util.string_as_bool( kwd[ 'f-deleted' ] ):
                     # We're viewing deleted data libraries, so add a GridOperation
                     # enabling one or more of them to be undeleted.
                     self.library_list_grid.operations = [
@@ -134,8 +132,8 @@ class LibraryAdmin( BaseUIController ):
                 indexed_search_enabled = False
             if indexed_search_enabled:
                 comptypes = get_comptypes( trans )
-                show_deleted = util.string_as_bool( kwd.get( 'show_deleted', False ) )
-                use_panels = util.string_as_bool( kwd.get( 'use_panels', False ) )
+                show_deleted = galaxy.util.string_as_bool( kwd.get( 'show_deleted', False ) )
+                use_panels = galaxy.util.string_as_bool( kwd.get( 'use_panels', False ) )
                 return trans.fill_template( '/library/common/library_dataset_search_results.mako',
                                             cntrller='library_admin',
                                             search_term=search_term,
@@ -150,13 +148,13 @@ class LibraryAdmin( BaseUIController ):
     @web.expose
     @web.require_admin
     def create_library( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
+        params = galaxy.util.Params( kwd )
+        message = galaxy.util.restore_text( params.get( 'message', ''  ) )
         status = params.get( 'status', 'done' )
         if params.get( 'create_library_button', False ):
-            name = util.restore_text( params.get( 'name', 'No name' ) )
-            description = util.restore_text( params.get( 'description', '' ) )
-            synopsis = util.restore_text( params.get( 'synopsis', '' ) )
+            name = galaxy.util.restore_text( params.get( 'name', 'No name' ) )
+            description = galaxy.util.restore_text( params.get( 'description', '' ) )
+            synopsis = galaxy.util.restore_text( params.get( 'synopsis', '' ) )
             if synopsis in [ 'None', None ]:
                 synopsis = ''
             library = trans.app.model.Library( name=name, description=description, synopsis=synopsis )
@@ -169,7 +167,7 @@ class LibraryAdmin( BaseUIController ):
                                                               action='browse_library',
                                                               cntrller='library_admin',
                                                               id=trans.security.encode_id( library.id ),
-                                                              message=util.sanitize_text( message ),
+                                                              message=galaxy.util.sanitize_text( message ),
                                                               status='done' ) )
         return trans.fill_template( '/admin/library/new_library.mako', message=message, status=status )
     @web.expose
@@ -198,7 +196,7 @@ class LibraryAdmin( BaseUIController ):
         # TODO: change this function to purge_library_item, behaving similar to delete_library_item
         # assuming we want the ability to purge libraries.
         # This function is currently only used by the functional tests.
-        params = util.Params( kwd )
+        params = galaxy.util.Params( kwd )
         library = trans.sa_session.query( trans.app.model.Library ).get( trans.security.decode_id( params.id ) )
         def purge_folder( library_folder ):
             for lf in library_folder.folders:
@@ -228,7 +226,7 @@ class LibraryAdmin( BaseUIController ):
             message = "Library '%s' has not been marked deleted, so it cannot be purged" % ( library.name )
             return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                               action='browse_libraries',
-                                                              message=util.sanitize_text( message ),
+                                                              message=galaxy.util.sanitize_text( message ),
                                                               status='error' ) )
         else:
             purge_folder( library.root_folder )
@@ -238,5 +236,5 @@ class LibraryAdmin( BaseUIController ):
             message = "Library '%s' and all of its contents have been purged, datasets will be removed from disk via the cleanup_datasets script" % library.name
             return trans.response.send_redirect( web.url_for( controller='library_admin',
                                                               action='browse_libraries',
-                                                              message=util.sanitize_text( message ),
+                                                              message=galaxy.util.sanitize_text( message ),
                                                               status='done' ) )   

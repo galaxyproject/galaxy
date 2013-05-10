@@ -174,7 +174,7 @@ class BaseJobRunner( object ):
 
         # Append metadata setting commands, we don't want to overwrite metadata
         # that was copied over in init_meta(), as per established behavior
-        if include_metadata and self.app.config.set_metadata_externally:
+        if include_metadata:
             commands += "; cd %s; " % os.path.abspath( os.getcwd() )
             commands += job_wrapper.setup_external_metadata( 
                             exec_dir = os.path.abspath( os.getcwd() ),
@@ -226,7 +226,7 @@ class BaseJobRunner( object ):
                             # Copy from working dir to HDA.
                             # TODO: move instead of copy to save time?
                             source_file = os.path.join( os.path.abspath( job_wrapper.working_directory ), hda_tool_output.from_work_dir )
-                            destination = output_paths[ dataset.dataset_id ]
+                            destination = job_wrapper.get_output_destination( output_paths[ dataset.dataset_id ] )
                             if in_directory( source_file, job_wrapper.working_directory ):
                                 output_pairs.append( ( source_file, destination ) )
                                 log.debug( "Copying %s to %s as directed by from_work_dir" % ( source_file, destination ) )

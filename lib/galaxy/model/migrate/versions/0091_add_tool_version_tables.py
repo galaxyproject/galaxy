@@ -23,8 +23,8 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
+#migrate_engine = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
 
 def nextval( table, col='id' ):
     if migrate_engine.name == 'postgres':
@@ -33,7 +33,7 @@ def nextval( table, col='id' ):
         return "null"
     else:
         raise Exception( 'Unable to convert data for unknown database type: %s' % migrate_engine.name )
-    
+
 def localtimestamp():
    if migrate_engine.name == 'postgres' or migrate_engine.name == 'mysql':
        return "LOCALTIMESTAMP"
@@ -54,11 +54,12 @@ ToolVersionAssociation_table = Table( "tool_version_association", metadata,
     Column( "tool_id", Integer, ForeignKey( "tool_version.id" ), index=True, nullable=False ),
     Column( "parent_id", Integer, ForeignKey( "tool_version.id" ), index=True, nullable=False ) )
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
-    
+
     ToolIdGuidMap_table = Table( "tool_id_guid_map", metadata, autoload=True )
-    
+
     metadata.reflect()
     # Create the tables.
     try:
@@ -71,7 +72,7 @@ def upgrade():
         log.debug( "Creating tool_version_association table failed: %s" % str( e ) )
     # Populate the tool table with tools included in installed tool shed repositories.
     cmd = "SELECT id, metadata FROM tool_shed_repository"
-    result = db_session.execute( cmd )
+    result = migrate_engine.execute( cmd )
     count = 0
     for row in result:
         if row[1]:
@@ -83,7 +84,7 @@ def upgrade():
             for tool_dict in tools:
                 cmd = "INSERT INTO tool_version VALUES (%s, %s, %s, '%s', %s)" % \
                     ( nextval( 'tool_version' ), localtimestamp(), localtimestamp(), tool_dict[ 'guid' ], tool_shed_repository_id )
-                db_session.execute( cmd )
+                migrate_engine.execute( cmd )
                 count += 1
     print "Added %d rows to the new tool_version table." % count
     # Drop the tool_id_guid_map table since the 2 new tables render it unnecessary.
@@ -91,8 +92,9 @@ def upgrade():
         ToolIdGuidMap_table.drop()
     except Exception, e:
         log.debug( "Dropping tool_id_guid_map table failed: %s" % str( e ) )
-        
-def downgrade():
+
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
 
     ToolIdGuidMap_table = Table( "tool_id_guid_map", metadata,
         Column( "id", Integer, primary_key=True ),

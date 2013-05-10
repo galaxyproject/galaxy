@@ -86,7 +86,6 @@ class Configuration( object ):
         self.galaxy_data_manager_data_path = kwargs.get( 'galaxy_data_manager_data_path',  self.tool_data_path )
         self.tool_secret = kwargs.get( "tool_secret", "" )
         self.id_secret = kwargs.get( "id_secret", "USING THE DEFAULT IS NOT SECURE!" )
-        self.set_metadata_externally = string_as_bool( kwargs.get( "set_metadata_externally", "False" ) )
         self.retry_metadata_internally = string_as_bool( kwargs.get( "retry_metadata_internally", "True" ) )
         self.use_remote_user = string_as_bool( kwargs.get( "use_remote_user", "False" ) )
         self.remote_user_maildomain = kwargs.get( "remote_user_maildomain", None )
@@ -166,6 +165,7 @@ class Configuration( object ):
         self.enable_whoosh_library_search = string_as_bool( kwargs.get( 'enable_whoosh_library_search', False ) )
         self.whoosh_index_dir = resolve_path( kwargs.get( "whoosh_index_dir", "database/whoosh_indexes" ), self.root )
         self.ftp_upload_dir = kwargs.get( 'ftp_upload_dir', None )
+        self.ftp_upload_dir_identifier = kwargs.get( 'ftp_upload_dir_identifier', 'email' )  # attribute on user - email, username, id, etc...
         self.ftp_upload_site = kwargs.get( 'ftp_upload_site', None )
         self.allow_library_path_paste = kwargs.get( 'allow_library_path_paste', False )
         self.disable_library_comptypes = kwargs.get( 'disable_library_comptypes', '' ).lower().split( ',' )

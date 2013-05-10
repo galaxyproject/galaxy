@@ -5,14 +5,14 @@ for velvet assembler tool in galaxy
 """
 
 import data
+import logging
+import os
+import re
+import sys
 from galaxy.datatypes import sequence
-import logging, os, sys, time, tempfile, shutil, string, glob, re
-import galaxy.model
-from galaxy.datatypes import metadata
-from galaxy.datatypes.metadata import MetadataElement
-from galaxy import util
 from galaxy.datatypes.images import Html
-from sniff import *
+from galaxy.datatypes.metadata import MetadataElement
+
 
 log = logging.getLogger(__name__)
 
@@ -174,7 +174,6 @@ class Velvet( Html ):
         gen_msg = ''
         try:
             efp = dataset.extra_files_path
-            flist = os.listdir(efp)
             log_path = os.path.join(efp,'Log')
             f = open(log_path,'r')
             log_content = f.read(1000)
@@ -223,5 +222,5 @@ class Velvet( Html ):
         self.regenerate_primary_file(dataset)
 
 if __name__ == '__main__':
-    import doctest, sys
+    import doctest
     doctest.testmod(sys.modules[__name__])

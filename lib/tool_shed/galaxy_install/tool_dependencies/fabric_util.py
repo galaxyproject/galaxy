@@ -1,9 +1,12 @@
 # For Python 2.5
 from __future__ import with_statement
 
-import os, shutil, tempfile
-from contextlib import contextmanager
 import common_util
+import logging
+import os
+import shutil
+import tempfile
+from contextlib import contextmanager
 
 from galaxy import eggs
 import pkg_resources
@@ -11,7 +14,12 @@ import pkg_resources
 pkg_resources.require('ssh' )
 pkg_resources.require( 'Fabric' )
 
-from fabric.api import env, lcd, local, settings
+from fabric.api import env
+from fabric.api import lcd
+from fabric.api import local
+from fabric.api import settings
+
+log = logging.getLogger( __name__ )
 
 INSTALLATION_LOG = 'INSTALLATION.log'
 
@@ -19,31 +27,23 @@ def check_fabric_version():
     version = env.version
     if int( version.split( "." )[ 0 ] ) < 1:
         raise NotImplementedError( "Install Fabric version 1.0 or later." )
-def set_galaxy_environment( galaxy_user, tool_dependency_dir, host='localhost', shell='/bin/bash -l -c' ):
-    """General Galaxy environment configuration"""
-    env.user = galaxy_user
-    env.install_dir = tool_dependency_dir
-    env.host_string = host
-    env.shell = shell
-    env.use_sudo = False
-    env.safe_cmd = local
-    return env
-@contextmanager
-def make_tmp_dir():
-    work_dir = tempfile.mkdtemp()
-    yield work_dir
-    if os.path.exists( work_dir ):
-        local( 'rm -rf %s' % work_dir )
+
 def handle_command( app, tool_dependency, install_dir, cmd ):
     sa_session = app.model.context.current
     output = local( cmd, capture=True )
     log_results( cmd, output, os.path.join( install_dir, INSTALLATION_LOG ) )
     if output.return_code:
         tool_dependency.status = app.model.ToolDependency.installation_status.ERROR
-        tool_dependency.error_message = str( output.stderr )
+        if output.stderr:
+            tool_dependency.error_message = str( output.stderr )[ :32768 ]
+        elif output.stdout:
+            tool_dependency.error_message = str( output.stdout )[ :32768 ]
+        else:
+            tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % ( str( cmd ), str( output.return_code ) )
         sa_session.add( tool_dependency )
         sa_session.flush()
     return output.return_code
+
 def install_and_build_package( app, tool_dependency, actions_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
     sa_session = app.model.context.current
@@ -51,6 +51,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
     package_name = actions_dict[ 'package_name' ]
     actions = actions_dict.get( 'actions', None )
     filtered_actions = []
+    env_shell_file_paths = []
     if actions:
         with make_tmp_dir() as work_dir:
             with lcd( work_dir ):
@@ -75,7 +76,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         zip_archive_extracted = common_util.extract_zip( downloaded_file_path, work_dir )
                         dir = common_util.zip_extraction_directory( work_dir, downloaded_filename )
                     else:
-                        dir = work_dir
+                        dir = os.path.curdir
                 elif action_type == 'shell_command':
                     # <action type="shell_command">git clone --recursive git://github.com/ekg/freebayes.git</action>
                     # Eliminate the shell_command clone action so remaining actions can be processed correctly.
@@ -91,8 +92,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     # </action>
                     filtered_actions = [ a for a in actions ]
                     dir = install_dir
-                if not os.path.exists( dir ):
-                    os.makedirs( dir )
+                # We need to be careful in determining if the value of dir is a valid directory because we're dealing with 2 environments, the fabric local
+                # environment and the python environment.  Checking the path as follows should work.
+                full_path_to_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+                if not os.path.exists( full_path_to_dir ):
+                    os.makedirs( full_path_to_dir )
                 # The package has been down-loaded, so we can now perform all of the actions defined for building it.
                 with lcd( dir ):
                     for action_tup in filtered_actions:
@@ -118,11 +122,22 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                 return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
+                        elif action_type == 'set_environment_for_install':
+                            # Currently the only action supported in this category is a list of paths to one or more tool dependency env.sh files,
+                            # the environment setting in each of which will be injected into the environment for all <action type="shell_command">
+                            # tags that follow this <action type="set_environment_for_install"> tag set in the tool_dependencies.xml file.
+                            env_shell_file_paths = action_dict[ 'env_shell_file_paths' ]
                         elif action_type == 'shell_command':
                             with settings( warn_only=True ):
-                                return_code = handle_command( app, tool_dependency, install_dir, action_dict[ 'command' ] )
+                                cmd = ''
+                                for env_shell_file_path in env_shell_file_paths:
+                                    for i, env_setting in enumerate( open( env_shell_file_path ) ):
+                                        cmd += '%s\n' % env_setting
+                                cmd += action_dict[ 'command' ]
+                                return_code = handle_command( app, tool_dependency, install_dir, cmd )
                                 if return_code:
                                     return
+
 def log_results( command, fabric_AttributeString, file_path ):
     """
     Write attributes of fabric.operations._AttributeString (which is the output of executing command using fabric's local() method)
@@ -141,3 +156,20 @@ def log_results( command, fabric_AttributeString, file_path ):
     logfile.write( str( fabric_AttributeString.stderr ) )
     logfile.write( "\n#############################################\n" )
     logfile.close()
+
+@contextmanager
+def make_tmp_dir():
+    work_dir = tempfile.mkdtemp()
+    yield work_dir
+    if os.path.exists( work_dir ):
+        local( 'rm -rf %s' % work_dir )
+
+def set_galaxy_environment( galaxy_user, tool_dependency_dir, host='localhost', shell='/bin/bash -l -c' ):
+    """General Galaxy environment configuration.  This method is not currently used."""
+    env.user = galaxy_user
+    env.install_dir = tool_dependency_dir
+    env.host_string = host
+    env.shell = shell
+    env.use_sudo = False
+    env.safe_cmd = local
+    return env

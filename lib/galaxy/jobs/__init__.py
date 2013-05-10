@@ -4,6 +4,7 @@ Support for running a tool in Galaxy via an internal job management system
 
 import copy
 import datetime
+import galaxy
 import logging
 import os
 import pwd
@@ -14,17 +15,15 @@ import subprocess
 import sys
 import threading
 import traceback
-
-import galaxy
-from galaxy import util, model
-from galaxy.util.bunch import Bunch
+from galaxy import model, util
 from galaxy.datatypes import metadata
-from galaxy.util.json import from_json_string
-from galaxy.util.expressions import ExpressionContext
-from galaxy.jobs.actions.post import ActionBox
 from galaxy.exceptions import ObjectInvalid
+from galaxy.jobs.actions.post import ActionBox
 from galaxy.jobs.mapper import JobRunnerMapper
 from galaxy.jobs.runners import BaseJobRunner
+from galaxy.util.bunch import Bunch
+from galaxy.util.expressions import ExpressionContext
+from galaxy.util.json import from_json_string
 
 log = logging.getLogger( __name__ )
 
@@ -33,6 +32,9 @@ log = logging.getLogger( __name__ )
 # This interface is currently experimental, is only used by the upload tool,
 # and should eventually become API'd
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
+
+DATABASE_MAX_STRING_SIZE = 32768
+DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
 class Sleeper( object ):
     """
@@ -578,7 +580,7 @@ class JobWrapper( object ):
         self.tool_provided_job_metadata = None
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.external_output_metadata = metadata.JobExternalOutputMetadataWrapper( job )
-        self.job_runner_mapper = JobRunnerMapper( self, queue.dispatcher.url_to_destination )
+        self.job_runner_mapper = JobRunnerMapper( self, queue.dispatcher.url_to_destination, self.app.job_config )
         self.params = None
         if job.params:
             self.params = from_json_string( job.params )
@@ -676,13 +678,16 @@ class JobWrapper( object ):
 
         # These can be passed on the command line if wanted as $__user_*__
         if job.history and job.history.user:
+            user = job.history.user
             user_id = '%d' % job.history.user.id
             user_email = str(job.history.user.email)
             user_name = str(job.history.user.username)
         else:
+            user = None
             user_id = 'Anonymous'
             user_email = 'Anonymous'
             user_name = 'Anonymous'
+        incoming['__user__'] = user
         incoming['__user_id__'] = incoming['userId'] = user_id
         incoming['__user_email__'] = incoming['userEmail'] = user_email
         incoming['__user_name__'] = user_name
@@ -774,13 +779,13 @@ class JobWrapper( object ):
             job.info = message
             # TODO: Put setting the stdout, stderr, and exit code in one place
             # (not duplicated with the finish method).
-            if ( len( stdout ) > 32768 ):
-                stdout = stdout[:32768]
-                log.info( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
+            if ( len( stdout ) > DATABASE_MAX_STRING_SIZE ):
+                stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                log.info( "stdout for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
             job.stdout = stdout
-            if ( len( stderr ) > 32768 ):
-                stderr = stderr[:32768]
-                log.info( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
+            if ( len( stderr ) > DATABASE_MAX_STRING_SIZE ):
+                stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
             job.stderr = stderr
             # Let the exit code be Null if one is not provided:
             if ( exit_code != None ):
@@ -914,14 +919,21 @@ class JobWrapper( object ):
                         return self.fail( "Job %s's output dataset(s) could not be read" % job.id )
 
         job_context = ExpressionContext( dict( stdout = job.stdout, stderr = job.stderr ) )
-
+        #DBTODO unused
+        #job_tool = self.app.toolbox.tools_by_id.get( job.tool_id, None )
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             context = self.get_dataset_finish_context( job_context, dataset_assoc.dataset.dataset )
             #should this also be checking library associations? - can a library item be added from a history before the job has ended? - lets not allow this to occur
             for dataset in dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations: #need to update all associated output hdas, i.e. history was shared with job running
                 dataset.blurb = 'done'
                 dataset.peek  = 'no peek'
-                dataset.info = ( dataset.info  or '' ) + context['stdout'] + context['stderr']
+                dataset.info = (dataset.info or '')
+                if context['stdout'].strip():
+                    #Ensure white space between entries
+                    dataset.info = dataset.info.rstrip() + "\n" + context['stdout'].strip()
+                if context['stderr'].strip():
+                    #Ensure white space between entries
+                    dataset.info = dataset.info.rstrip() + "\n" + context['stderr'].strip()
                 dataset.tool_version = self.version_string
                 dataset.set_size()
                 if 'uuid' in context:
@@ -941,9 +953,7 @@ class JobWrapper( object ):
                     #either use the metadata from originating output dataset, or call set_meta on the copies
                     #it would be quicker to just copy the metadata from the originating output dataset,
                     #but somewhat trickier (need to recurse up the copied_from tree), for now we'll call set_meta()
-                    if not self.app.config.set_metadata_externally or \
-                     ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) \
-                       and self.app.config.retry_metadata_internally ):
+                    if ( not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and self.app.config.retry_metadata_internally ):
                         dataset.datatype.set_meta( dataset, overwrite = False ) #call datatype.set_meta directly for the initial set_meta call during dataset creation
                     elif not self.external_output_metadata.external_metadata_set_successfully( dataset, self.sa_session ) and job.states.ERROR != final_job_state:
                         dataset._state = model.Dataset.states.FAILED_METADATA
@@ -998,12 +1008,12 @@ class JobWrapper( object ):
         # will now be seen by the user.
         self.sa_session.flush()
         # Save stdout and stderr
-        if len( job.stdout ) > 32768:
-            log.info( "stdout for job %d is greater than 32K, only first part will be logged to database" % job.id )
-        job.stdout = job.stdout[:32768]
-        if len( job.stderr ) > 32768:
-            log.info( "stderr for job %d is greater than 32K, only first part will be logged to database" % job.id )
-        job.stderr = job.stderr[:32768]
+        if len( job.stdout ) > DATABASE_MAX_STRING_SIZE:
+            log.info( "stdout for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        job.stdout = util.shrink_string_by_size( job.stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+        if len( job.stderr ) > DATABASE_MAX_STRING_SIZE:
+            log.info( "stderr for job %d is greater than %s, only a portion will be logged to database" % ( job.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        job.stderr = util.shrink_string_by_size( job.stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         # The exit code will be null if there is no exit code to be set.
         # This is so that we don't assign an exit code, such as 0, that
         # is either incorrect or has the wrong semantics.
@@ -1165,8 +1175,8 @@ class JobWrapper( object ):
             # the job has an error, and the job is ok otherwise.
             else:
                 # TODO: Add in the tool and job id:
-                log.debug( "Tool did not define exit code or stdio handling; "
-                         + "checking stderr for success" )
+                # log.debug( "Tool did not define exit code or stdio handling; "
+                #          + "checking stderr for success" )
                 if stderr:
                     success = False
                 else:
@@ -1214,8 +1224,7 @@ class JobWrapper( object ):
         try:
             for fname in self.extra_filenames:
                 os.remove( fname )
-            if self.app.config.set_metadata_externally:
-                self.external_output_metadata.cleanup_external_metadata( self.sa_session )
+            self.external_output_metadata.cleanup_external_metadata( self.sa_session )
             galaxy.tools.imp_exp.JobExportHistoryArchiveWrapper( self.job_id ).cleanup_after_job( self.sa_session )
             galaxy.tools.imp_exp.JobImportHistoryArchiveWrapper( self.app, self.job_id ).cleanup_after_job()
             galaxy.tools.genome_index.GenomeIndexToolWrapper( self.job_id ).postprocessing( self.sa_session, self.app )
@@ -1467,6 +1476,14 @@ class JobWrapper( object ):
             self.__galaxy_system_pwent = pwd.getpwuid(os.getuid())
         return self.__galaxy_system_pwent
 
+    def get_output_destination( self, output_path ):
+        """
+        Destination for outputs marked as from_work_dir. This is the normal case,
+        just copy these files directly to the ulimate destination.
+        """
+        return output_path
+
+
 class TaskWrapper(JobWrapper):
     """
     Extension of JobWrapper intended for running tasks.
@@ -1652,12 +1669,12 @@ class TaskWrapper(JobWrapper):
             task.state = task.states.ERROR
 
         # Save stdout and stderr
-        if len( stdout ) > 32768:
-            log.error( "stdout for task %d is greater than 32K, only first part will be logged to database" % task.id )
-        task.stdout = stdout[:32768]
-        if len( stderr ) > 32768:
-            log.error( "stderr for job %d is greater than 32K, only first part will be logged to database" % task.id )
-        task.stderr = stderr[:32768]
+        if len( stdout ) > DATABASE_MAX_STRING_SIZE:
+            log.error( "stdout for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        task.stdout = util.shrink_string_by_size( stdout, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+        if len( stderr ) > DATABASE_MAX_STRING_SIZE:
+            log.error( "stderr for task %d is greater than %s, only a portion will be logged to database" % ( task.id, DATABASE_MAX_STRING_SIZE_PRETTY ) )
+        task.stderr = util.shrink_string_by_size( stderr, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
         task.exit_code = tool_exit_code
         task.command_line = self.command_line
         self.sa_session.flush()
@@ -1687,6 +1704,15 @@ class TaskWrapper(JobWrapper):
     def setup_external_metadata( self, exec_dir=None, tmp_dir=None, dataset_files_path=None, config_root=None, config_file=None, datatypes_config=None, set_extension=True, **kwds ):
         # There is no metadata setting for tasks.  This is handled after the merge, at the job level.
         return ""
+
+    def get_output_destination( self, output_path ):
+        """
+        Destination for outputs marked as from_work_dir. These must be copied with
+        the same basenme as the path for the ultimate output destination. This is
+        required in the task case so they can be merged.
+        """
+        return os.path.join( self.working_directory, os.path.basename( output_path ) )
+
 
 class NoopQueue( object ):
     """

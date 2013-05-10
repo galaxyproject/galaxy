@@ -42,6 +42,10 @@ class RepositoryRevisionsController( BaseAPIController ):
         tools_functionally_correct = kwd.get( 'tools_functionally_correct', None )
         if tools_functionally_correct is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.tools_functionally_correct == util.string_as_bool( tools_functionally_correct ) )
+        # Filter by missing_test_components if received.
+        missing_test_components = kwd.get( 'missing_test_components', None )
+        if missing_test_components is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.missing_test_components == util.string_as_bool( missing_test_components ) )
         # Filter by do_not_test if received.
         do_not_test = kwd.get( 'do_not_test', None )
         if do_not_test is not None:

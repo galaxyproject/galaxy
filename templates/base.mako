@@ -1,6 +1,7 @@
 <% _=n_ %>
 <!DOCTYPE HTML>
 <html>
+    <!--base.mako-->
     <head>
         <title>${self.title()}</title>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />

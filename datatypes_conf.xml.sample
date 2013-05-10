@@ -3,6 +3,8 @@
   <registration converters_path="lib/galaxy/datatypes/converters" display_path="display_applications">
     <datatype extension="ab1" type="galaxy.datatypes.binary:Ab1" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="afg" type="galaxy.datatypes.assembly:Amos" display_in_upload="false"/>
+    <datatype extension="asn1" type="galaxy.datatypes.data:GenericAsn1" mimetype="text/plain" display_in_upload="true" />
+    <datatype extension="asn1-binary" type="galaxy.datatypes.binary:GenericAsn1Binary" mimetype="application/octet-stream" display_in_upload="true" />
     <datatype extension="axt" type="galaxy.datatypes.sequence:Axt" display_in_upload="true"/>
     <datatype extension="fli" type="galaxy.datatypes.tabular:FeatureLocationIndex" display_in_upload="false"/>
     <datatype extension="bam" type="galaxy.datatypes.binary:Bam" mimetype="application/octet-stream" display_in_upload="true">
@@ -157,7 +159,10 @@
 	  <converter file="encodepeak_to_summary_tree_converter.xml" target_datatype="summary_tree"/>
 	</datatype>
     <datatype extension="pdf" type="galaxy.datatypes.images:Pdf" mimetype="application/pdf"/>
-    <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true" />
+    <datatype extension="pileup" type="galaxy.datatypes.tabular:Pileup" display_in_upload="true">
+      <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
+      <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
+    </datatype>
     <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png"/>
     <datatype extension="qual" type="galaxy.datatypes.qualityscore:QualityScore" />
     <datatype extension="qualsolexa" type="galaxy.datatypes.qualityscore:QualityScoreSolexa" display_in_upload="true"/>

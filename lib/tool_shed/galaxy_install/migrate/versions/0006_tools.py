@@ -14,7 +14,7 @@ the following command.
 
 import sys
 
-def upgrade():
+def upgrade(migrate_engine):
     print __doc__
-def downgrade():
+def downgrade(migrate_engine):
     pass

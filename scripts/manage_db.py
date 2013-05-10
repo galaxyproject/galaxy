@@ -6,8 +6,9 @@ sys.path = new_path
 
 from galaxy import eggs
 
-import pkg_resources
-pkg_resources.require( "sqlalchemy-migrate" )
+eggs.require( "Tempita" )
+eggs.require( "SQLAlchemy" )
+eggs.require( "sqlalchemy_migrate" )
 
 from migrate.versioning.shell import main
 from ConfigParser import SafeConfigParser
@@ -51,7 +52,7 @@ dialect = ( db_url.split( ':', 1 ) )[0]
 try:
     egg = dialect_to_egg[dialect]
     try:
-        pkg_resources.require( egg )
+        eggs.require( egg )
         log.debug( "%s egg successfully loaded for %s dialect" % ( egg, dialect ) )
     except:
         # If the module is in the path elsewhere (i.e. non-egg), it'll still load.

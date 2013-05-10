@@ -12,8 +12,10 @@ convert_repository_long_description = "Convert delimiters to tab"
 category_name = 'Test 0080 Advanced Circular Dependencies'
 category_description = 'Test circular dependency features'
 
+
 class TestRepositoryCircularDependencies( ShedTwillTestCase ):
     '''Verify that the code correctly handles circular dependencies.'''
+    
     def test_0000_initiate_users( self ):
         """Create necessary user accounts."""
         self.logout()
@@ -26,6 +28,7 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
         admin_user = test_db_util.get_user( common.admin_email )
         assert admin_user is not None, 'Problem retrieving user with email %s from the database' % admin_email
         admin_user_private_role = test_db_util.get_private_role( admin_user )
+        
     def test_0005_create_column_repository( self ):
         """Create and populate the column_maker repository."""
         category = self.create_category( name=category_name, description=category_description )
@@ -46,6 +49,7 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
                           commit_message='Uploaded column_maker tarball.',
                           strings_displayed=[], 
                           strings_not_displayed=[] )
+        
     def test_0005_create_convert_repository( self ):
         """Create and populate the convert_chars repository."""
         self.logout()
@@ -68,46 +72,30 @@ class TestRepositoryCircularDependencies( ShedTwillTestCase ):
                           commit_message='Uploaded convert_chars tarball.',
                           strings_displayed=[], 
                           strings_not_displayed=[] )
+        
     def test_0020_create_repository_dependencies( self ):
-        '''Upload a repository_dependencies.xml file that specifies the current revision of freebayes to the filtering_0040 repository.'''
+        '''Upload a repository_dependencies.xml file that specifies the current revision of convert_chars_0080 to the column_maker_0080 repository.'''
         convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0080', additional_paths=[ 'convert' ] )
-        self.generate_repository_dependency_xml( [ convert_repository ], 
-                                                 self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
-                                                 dependency_description='Column maker depends on the convert repository.' )
-        self.upload_file( column_repository, 
-                          filename='repository_dependencies.xml', 
-                          filepath=repository_dependencies_path,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False, 
-                          commit_message='Uploaded dependency on convert_chars.',
-                          strings_displayed=[], 
-                          strings_not_displayed=[] )
+        repository_tuple = ( self.url, convert_repository.name, convert_repository.user.username, self.get_repository_tip( convert_repository ) )
+        self.create_repository_dependency( repository=column_repository, repository_tuples=[ repository_tuple ], filepath=repository_dependencies_path )
+
     def test_0025_create_dependency_on_filtering( self ):
         '''Upload a repository_dependencies.xml file that specifies the current revision of filtering to the freebayes_0040 repository.'''
         convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
         repository_dependencies_path = self.generate_temp_path( 'test_0080', additional_paths=[ 'convert' ] )
-        self.generate_repository_dependency_xml( [ column_repository ], 
-                                                 self.get_filename( 'repository_dependencies.xml', filepath=repository_dependencies_path ), 
-                                                 dependency_description='Convert chars depends on the column_maker repository.' )
-        self.upload_file( convert_repository, 
-                          filename='repository_dependencies.xml', 
-                          filepath=repository_dependencies_path,
-                          valid_tools_only=True,
-                          uncompress_file=True,
-                          remove_repo_files_not_in_tar=False, 
-                          commit_message='Uploaded dependency on column_maker.',
-                          strings_displayed=[], 
-                          strings_not_displayed=[] )
+        repository_tuple = ( self.url, column_repository.name, column_repository.user.username, self.get_repository_tip( column_repository ) )
+        self.create_repository_dependency( repository=convert_repository, repository_tuples=[ repository_tuple ], filepath=repository_dependencies_path )
+
     def test_0030_verify_repository_dependencies( self ):
         '''Verify that each repository can depend on the other without causing an infinite loop.'''
         convert_repository = test_db_util.get_repository_by_name_and_owner( convert_repository_name, common.test_user_1_name )
         column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )
         self.check_repository_dependency( convert_repository, column_repository, self.get_repository_tip( column_repository ) )
         self.check_repository_dependency( column_repository, convert_repository, self.get_repository_tip( convert_repository ) )
+        
     def test_0035_verify_repository_metadata( self ):
         '''Verify that resetting the metadata does not change it.'''
         column_repository = test_db_util.get_repository_by_name_and_owner( column_repository_name, common.test_user_1_name )

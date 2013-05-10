@@ -35,6 +35,11 @@ tool_shed_webapp.log
 tool_shed_webapp.pid
 hgweb.config*
 
+# Reports Runtime Files
+reports_webapp.lock
+reports_webapp.log
+reports_webapp.pid
+
 # Config files
 universe_wsgi.ini
 reports_wsgi.ini

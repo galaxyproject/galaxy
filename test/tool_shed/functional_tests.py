@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import os, sys, shutil, tempfile, re, string
+import os, sys, shutil, tempfile, re, string, multiprocessing
 
 # Assume we are run from the galaxy root directory, add lib to the python path
 cwd = os.getcwd()
@@ -184,11 +184,14 @@ def main():
         kwargs[ 'object_store' ] = 'distributed'
         kwargs[ 'distributed_object_store_config_file' ] = 'distributed_object_store_conf.xml.sample'
 
+
+    if not toolshed_database_connection.startswith( 'sqlite://' ):
+            kwargs[ 'database_engine_option_pool_size' ] = '10'
+
     toolshedapp = ToolshedUniverseApplication( admin_users = 'test@bx.psu.edu',
                                                allow_user_creation = True,
                                                allow_user_deletion = True,
                                                database_connection = toolshed_database_connection,
-                                               database_engine_option_pool_size = '10',
                                                datatype_converters_config_file = 'datatype_converters_conf.xml.sample',
                                                file_path = shed_file_path,
                                                global_conf = global_conf,
@@ -212,7 +215,7 @@ def main():
 
     # ---- Run tool shed webserver ------------------------------------------------------
     tool_shed_server = None
-    toolshedwebapp = toolshedbuildapp.app_factory( dict( database_file=toolshed_database_connection ),
+    toolshedwebapp = toolshedbuildapp.app_factory( dict( database_connection=toolshed_database_connection ),
                                            use_translogger=False,
                                            static_enabled=False,
                                            app=toolshedapp )
@@ -270,13 +273,13 @@ def main():
         # ---- Build Galaxy Application -------------------------------------------------- 
         galaxy_global_conf = { '__file__' : 'universe_wsgi.ini.sample' }
         if not galaxy_database_connection.startswith( 'sqlite://' ):
+            kwargs[ 'database_engine_option_pool_size' ] = '10'
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
         galaxyapp = GalaxyUniverseApplication( allow_user_creation = True,
                                                allow_user_deletion = True,
                                                admin_users = 'test@bx.psu.edu',
                                                allow_library_path_paste = True,
                                                database_connection = galaxy_database_connection,
-                                               database_engine_option_pool_size = '10',
                                                datatype_converters_config_file = "datatype_converters_conf.xml.sample",
                                                enable_tool_shed_check = True,
                                                file_path = galaxy_file_path,

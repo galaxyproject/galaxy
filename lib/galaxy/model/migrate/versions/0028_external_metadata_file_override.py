@@ -1,11 +1,10 @@
 """
-This script adds the filename_override_metadata column to the JobExternalOutputMetadata table, 
-allowing existing metadata files to be written when using external metadata and a cluster 
+This script adds the filename_override_metadata column to the JobExternalOutputMetadata table,
+allowing existing metadata files to be written when using external metadata and a cluster
 set up with read-only access to database/files
 """
 from sqlalchemy import *
 from sqlalchemy.orm import *
-from sqlalchemy.exceptions import *
 from migrate import *
 from migrate.changeset import *
 import datetime
@@ -22,8 +21,7 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
@@ -31,7 +29,9 @@ def display_migration_details():
     print" allowing existing metadata files to be written when using external metadata and a cluster"
     print "set up with read-only access to database/files"
     print "========================================"
-def upgrade():
+
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
@@ -43,5 +43,6 @@ def upgrade():
     except Exception, e:
         log.debug( "Adding column 'filename_override_metadata' to job_external_output_metadata table failed: %s" % ( str( e ) ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

@@ -7,6 +7,53 @@
     ${parent.javascripts()}
 </%def>
 
+<%def name="get_user_json()">
+<%
+    """Bootstrapping user API JSON"""
+    #TODO: move into common location (poss. BaseController)
+    if trans.user:
+        user_dict = trans.user.get_api_value( view='element', value_mapper={ 'id': trans.security.encode_id,
+                                                                             'total_disk_usage': float } )
+        user_dict['quota_percent'] = trans.app.quota_agent.get_percent( trans=trans )
+    else:
+        usage = 0
+        percent = None
+        try:
+            usage = trans.app.quota_agent.get_usage( trans, history=trans.history )
+            percent = trans.app.quota_agent.get_percent( trans=trans, usage=usage )
+        except AssertionError, assertion:
+            # no history for quota_agent.get_usage assertion
+            pass
+        user_dict = {
+            'total_disk_usage'      : int( usage ),
+            'nice_total_disk_usage' : util.nice_size( usage ),
+            'quota_percent'         : percent
+        }
+%>
+${h.to_json_string( user_dict )}
+</%def>
+
+<%def name="late_javascripts()">
+${parent.late_javascripts()}
+
+<!-- quota meter -->
+${h.templates( "helpers-common-templates", "template-user-quotaMeter-quota", "template-user-quotaMeter-usage" )}
+${h.js( "mvc/base-mvc", "mvc/user/user-model", "mvc/user/user-quotameter" )}
+<script type="text/javascript">
+
+    // start a Galaxy namespace for objects created
+    window.Galaxy = window.Galaxy || {};
+
+    // set up the quota meter (And fetch the current user data from trans)
+    Galaxy.currUser = new User( ${get_user_json()} );
+    Galaxy.quotaMeter = new UserQuotaMeter({
+        model   : Galaxy.currUser,
+        el      : $( document ).find( '.quota-meter-container' )
+    }).render();
+
+</script>
+</%def>
+
 ## Masthead
 <%def name="masthead()">
 
@@ -157,10 +204,7 @@
         else:
             menu_options.append( [ _('Preferences'), h.url_for( controller='/user', action='index', cntrller='user' ), "galaxy_main" ] )
             menu_options.append( [ 'Custom Builds', h.url_for( controller='/user', action='dbkeys' ), "galaxy_main" ] )
-            if app.config.require_login:
-                logout_url = h.url_for( controller='/root', action='index', m_c='user', m_a='logout' )
-            else:
-                logout_url = h.url_for( controller='/user', action='logout' )
+            logout_url = h.url_for( controller='/user', action='logout' )
             menu_options.append( [ 'Logout', logout_url, "_top" ] )
             menu_options.append( None )
         menu_options.append( [ _('Saved Histories'), h.url_for( controller='/history', action='list' ), "galaxy_main" ] )
@@ -193,44 +237,6 @@
         </a>
     </div>
 
-    ## Quota meter
-    <%
-        bar_style = "quota-meter-bar"
-        usage = 0
-        percent = 0
-        quota = None
-        try:
-            usage = trans.app.quota_agent.get_usage( trans=trans )
-            quota = trans.app.quota_agent.get_quota( trans.user )
-            percent = trans.app.quota_agent.get_percent( usage=usage, quota=quota )
-            if percent is not None:
-                if percent >= 100:
-                    bar_style += " quota-meter-bar-error"
-                elif percent >= 85:
-                    bar_style += " quota-meter-bar-warn"
-            else:
-                percent = 0
-        except AssertionError:
-            pass # Probably no history yet
-        tooltip = None
-        if not trans.user and quota and trans.app.config.allow_user_creation:
-            if trans.app.quota_agent.default_registered_quota is None or trans.app.quota_agent.default_unregistered_quota < trans.app.quota_agent.default_registered_quota:
-                tooltip = "Your disk quota is %s.  You can increase your quota by registering a Galaxy account." % util.nice_size( quota )
-    %>
+    <div class="quota-meter-container"></div>
 
-    <div class="quota-meter-container">
-        %if tooltip:
-        <div id="quota-meter" class="quota-meter tooltip" title="${tooltip}">
-        %else:
-        <div id="quota-meter" class="quota-meter">
-        %endif
-            <div id="quota-meter-bar" class="${bar_style}" style="width: ${percent}px;"></div>
-            %if quota is not None:
-                <div id="quota-meter-text" class="quota-meter-text">Using ${percent}%</div>
-            %else:
-                <div id="quota-meter-text" class="quota-meter-text">Using ${util.nice_size( usage )}</div>
-            %endif
-        </div>
-    </div>
-    
 </%def>

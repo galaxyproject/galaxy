@@ -53,11 +53,12 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 var ajaxPromise = jQuery.ajax( purge_url );
                 ajaxPromise.success( function( message, status, responseObj ){
                     hdaView.model.set( 'purged', true );
+                    hdaView.trigger( 'purged', hdaView );
                 });
                 ajaxPromise.error( function( error, status, message ){
                     //TODO: Exception messages are hidden within error page
                     //!NOTE: that includes the 'Removal of datasets by users is not allowed in this Galaxy instance.'
-                    alert( '(' + error.status + ') Unable to purge this dataset:\n' + message );
+                    hdaView.trigger( 'error', _l( "Unable to purge this dataset" ), error, status, message );
                 });
             });
         }
@@ -152,7 +153,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             icon_class  : 'delete',
             on_click    : function() {
                 // Delete the dataset on the server and update HDA + view depending on success/failure.
-                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly 
+                // FIXME: when HDA-delete is implemented in the API, can call set(), then save directly
                 // on the model.
                 $.ajax({
                     url: delete_url,
@@ -456,7 +457,8 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         //BUG: broken with latest
         //TODO: this is a drop in from history.mako - should use MV as well
         this.log( this + '.loadAndDisplayTags', event );
-        var tagArea = this.$el.find( '.tag-area' ),
+        var view = this,
+            tagArea = this.$el.find( '.tag-area' ),
             tagElt = tagArea.find( '.tag-elt' );
 
         // Show or hide tag area; if showing tag area and it's empty, fill it.
@@ -466,7 +468,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 $.ajax({
                     //TODO: the html from this breaks a couple of times
                     url: this.urls.tags.get,
-                    error: function() { alert( _l( "Tagging failed" ) ); },
+                    error: function( xhr, status, error ){
+                        view.log( "Tagging failed", xhr, status, error );
+                        view.trigger( 'error', _l( "Tagging failed" ), xhr, status, error );
+                    },
                     success: function(tag_elt_html) {
                         tagElt.html(tag_elt_html);
                         tagElt.find(".tooltip").tooltip();
@@ -481,7 +486,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             // Hide.
             tagArea.slideUp("fast");
         }
-        return false;        
+        return false;
     },
     
     /** Find the annotation area and, if initial: load the html (via ajax) for displaying them; otherwise, unhide/hide
@@ -500,7 +505,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 // Need to fill annotation element.
                 $.ajax({
                     url: this.urls.annotation.get,
-                    error: function(){ alert( _l( "Annotations failed" ) ); },
+                    error: function(){
+                        view.log( "Annotation failed", xhr, status, error );
+                        view.trigger( 'error', _l( "Annotation failed" ), xhr, status, error );
+                    },
                     success: function( htmlFromAjax ){
                         if( htmlFromAjax === "" ){
                             htmlFromAjax = "<em>" + _l( "Describe or add notes to dataset" ) + "</em>";
@@ -524,7 +532,7 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
             // Hide.
             annotationArea.slideUp("fast");
         }
-        return false;        
+        return false;
     },
 
     // ......................................................................... UTILTIY

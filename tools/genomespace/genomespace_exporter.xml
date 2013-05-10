@@ -3,10 +3,9 @@
     <description> - send data to GenomeSpace</description>
     <command interpreter="python">genomespace_exporter.py 
         --genomespace_site "prod"
-        #assert $__user_id__ != 'Anonymous', Exception( 'You must be logged in to use this tool.' )
-        #set $user = $__app__.model.User.get( $__user_id__ )
-        #set $username = $user.preferences.get( 'genomespace_username', None )
-        #set $token = $user.preferences.get( 'genomespace_token', None )
+        #assert $__user__, Exception( 'You must be logged in to use this tool.' )
+        #set $username = $__user__.preferences.get( 'genomespace_username', None )
+        #set $token = $__user__.preferences.get( 'genomespace_token', None )
         #assert None not in ( $username, $token ), Exception( 'You must associate a GenomeSpace OpenID with your account and log in with it.' )
         #import binascii
         --username "${username}"
@@ -36,7 +35,7 @@
     <inputs>
         <param format="data" name="input1" type="data" label="Send this dataset to GenomeSpace" />
         <param name="base_url" type="baseurl" />
-        <param name="subdirectory" type="drill_down" display="radio" hierarchy="exact" multiple="False" label="Choose Target Directory" dynamic_options="galaxy_code_get_genomespace_folders( genomespace_site = 'prod', trans=__trans__, value=__value__, input_dataset=input1 )" help="Leave blank to generate automatically"/>
+        <param name="subdirectory" type="drill_down" display="radio" hierarchy="exact" multiple="False" optional="True" label="Choose Target Directory" dynamic_options="galaxy_code_get_genomespace_folders( genomespace_site = 'prod', trans=__trans__, value=__value__, input_dataset=input1 )" help="Leave blank to generate automatically"/>
         <param name="filename" type="text" size="80" help="Leave blank to generate automatically" />
     </inputs>
     <outputs>

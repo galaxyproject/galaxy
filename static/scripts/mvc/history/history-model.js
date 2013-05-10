@@ -6,12 +6,12 @@
  *      tool use and a collection of the datasets those tools produced.
  *  @name History
  *
- *  @augments BaseModel
+ *  @augments Backbone.Model
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var History = BaseModel.extend( LoggableMixin ).extend(
+var History = Backbone.Model.extend( LoggableMixin ).extend(
 /** @lends History.prototype */{
     //TODO: bind change events from items and collection to this (itemLengths, states)
 
@@ -21,18 +21,12 @@ var History = BaseModel.extend( LoggableMixin ).extend(
 
     // values from api (may need more)
     defaults : {
-        id              : '',
-        name            : '',
-        state           : '',
+        id              : null,
+        name            : 'Unnamed History',
+        state           : 'new',
 
         diskSize : 0,
-        deleted : false,
-
-        //tags        : [],
-        annotation  : null,
-
-        //TODO: message? how to get over the api?
-        message     : null
+        deleted : false
     },
 
     //TODO: hardcoded
@@ -40,7 +34,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
     /** url for fetch */
     url : function(){
         // api location of history resource
-        return 'api/histories/' + this.get( 'id' );
+        return this.urlRoot + this.get( 'id' );
     },
 
     /** Set up the hdas collection
@@ -48,25 +42,20 @@ var History = BaseModel.extend( LoggableMixin ).extend(
      *  @param {Object[]} initialHdas array of model data for this History's HDAs
      *  @see BaseModel#initialize
      */
-    initialize : function( initialSettings, initialHdas ){
+    initialize : function( initialSettings, initialHdas, logger ){
+        logger = logger || null;
         this.log( this + ".initialize:", initialSettings, initialHdas );
 
         /** HDACollection of the HDAs contained in this history. */
         this.hdas = new HDACollection();
 
         // if we've got hdas passed in the constructor, load them and set up updates if needed
-        if( initialHdas ){
-            if( _.isArray( initialHdas ) ){
-                this.hdas.reset( initialHdas );
-                this.checkForUpdates();
-                //TODO: don't call if force_history_refresh
+        if( initialHdas && _.isArray( initialHdas ) ){
+            this.hdas.reset( initialHdas );
+            this.checkForUpdates();
+            //TODO: don't call if force_history_refresh
+            if( this.hdas.length > 0 ){
                 this.updateDisplayApplications();
-
-            // handle errors in initialHdas
-            //TODO: errors from the api shouldn't be plain strings...
-            //TODO: remove when mappers and hda_dict are unified (or move to alt history)
-            } else if( _.isString( initialHdas ) && ( initialHdas.match( /error/i ) ) ){
-                alert( _l( 'Error loading bootstrapped history' ) + ':\n' + initialHdas );
             }
         }
 
@@ -82,52 +71,11 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             }
         }, this );
 
-        // events
-        //this.on( 'change', function( currModel, changedList ){
-        //    this.log( this + ' has changed:', currModel, changedList );
-        //});
-        //this.bind( 'all', function( event ){
-        //    //this.log( this + '', arguments );
-        //});
-    },
-
-    /** get data via the api (alternative to sending options, hdas to initialize)
-     *  @param {String} historyId encoded id 
-     *  @param {Object[]} success 
-     *  @see BaseModel#initialize
-     */
-    //TODO: this needs work - move to more straightforward deferred
-    // events: loaded, loaded:user, loaded:hdas
-    loadFromApi : function( historyId, success ){
-        var history = this;
-
-        // fetch the history AND the user (mainly to see if they're logged in at this point)
-        history.attributes.id = historyId;
-        //TODO:?? really? fetch user here?
-        jQuery.when(
-                jQuery.ajax( 'api/users/current' ),
-                history.fetch()
-
-            ).then( function( userResponse, historyResponse ){
-                history.attributes.user = userResponse[0]; //? meh.
-
-                history.trigger( 'loaded:user', userResponse[0] );
-                history.trigger( 'loaded', historyResponse[0] );
-
-            }).then( function(){
-                // ...then the hdas (using contents?ids=...)
-                jQuery.ajax( history.url() + '/contents?' + jQuery.param({
-                    ids : history.hdaIdsFromStateIds().join( ',' )
-
-                // reset the collection to the hdas returned
-                })).success( function( hdas ){
-                    history.hdas.reset( hdas );
-                    history.checkForUpdates();
-
-                    history.trigger( 'loaded:hdas', hdas );
-                    if( success ){ callback( history ); }
-                });
-            });
+        if( this.logger ){
+            this.bind( 'all', function( event ){
+                this.log( this + '', arguments );
+            }, this );
+        }
     },
 
     // reduce the state_ids map of hda id lists -> a single list of ids
@@ -141,7 +89,7 @@ var History = BaseModel.extend( LoggableMixin ).extend(
 
     // get the history's state from it's cummulative ds states, delay + update if needed
     // events: ready
-    checkForUpdates : function( datasets ){
+    checkForUpdates : function(){
         // get overall History state from collection, run updater if History has running/queued hdas
         // boiling it down on the client to running/not
         if( this.hdas.running().length ){
@@ -189,7 +137,6 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             }
 
             // set up to keep pulling if this history in run/queue state
-            //TODO: magic number here
             if( ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.RUNNING )
             ||  ( history.get( 'state' ) === HistoryDatasetAssociation.STATES.QUEUED ) ){
                 setTimeout( function(){
@@ -202,11 +149,22 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             }
 
         }).error( function( xhr, status, error ){
+            //TODO: use ajax.status handlers here
+            // keep rolling on a bad gateway - server restart
+            if( xhr.status === 502 ){
+                setTimeout( function(){
+                    history.log( 'Bad Gateway error. Retrying...' );
+                    //TODO: someway to throw error on X tries
+                    history.stateUpdater();
+                }, History.UPDATE_DELAY );
+
             // if not interruption by iframe reload
             //TODO: remove when iframes are removed
-            if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
-                alert( _l( 'Error getting history updates from the server:' ) + '\n' + error );
+            } else if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
                 history.log( 'stateUpdater error:', error, 'responseText:', xhr.responseText );
+                var msg = _l( 'An error occurred while getting updates from the server.' ) + ' '
+                        + _l( 'Please contact a Galaxy administrator if the problem persists.' );
+                history.trigger( 'error', msg, xhr, status, error );
             }
         });
     },
@@ -243,9 +201,11 @@ var History = BaseModel.extend( LoggableMixin ).extend(
                     history.updateHdas( errorJson );
 
                 } else {
-                    var msg = _l( 'ERROR updating hdas from api history contents' ) + ': ';
-                    history.log( msg, hdaIds, xhr, status, error, errorJson );
-                    alert( msg + hdaIds.join(',') );
+                    history.log( 'Error updating hdas from api history contents',
+                        hdaIds, xhr, status, error, errorJson );
+                    var msg = _l( 'An error occurred while getting dataset details from the server.' ) + ' '
+                            + _l( 'Please contact a Galaxy administrator if the problem persists.' );
+                    history.trigger( 'error', msg, xhr, status, error );
                 }
             },
 
@@ -324,10 +284,10 @@ var History = BaseModel.extend( LoggableMixin ).extend(
             },
             error : function( xhr, status, error ){
                 if( !( ( xhr.readyState === 0 ) && ( xhr.status === 0 ) ) ){
-                    var msg = 'Error fetching display applications, ' + ids + ':' + ( xhr.responseText || error );
-                    Galaxy.show_modal( 'History panel error',
-                        msg, { 'Ok': function(){ Galaxy.hide_modal(); } });
-                    this.log( msg );
+                    history.log( 'Error fetching display applications:', ids, xhr, status, error );
+                    var msg = _l( 'An error occurred while getting display applications from the server.' ) + ' '
+                            + _l( 'Please contact a Galaxy administrator if the problem persists.' );
+                    history.trigger( 'error', msg, xhr, status, error );
                 }
             }
         });

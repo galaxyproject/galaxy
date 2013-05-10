@@ -185,7 +185,6 @@ def main():
                            cluster_files_directory = cluster_files_directory,
                            job_working_directory = job_working_directory,
                            outputs_to_working_directory = 'True',
-                           set_metadata_externally = 'True',
                            static_enabled = 'False',
                            debug = 'False',
                            track_jobs_in_database = 'True',
@@ -220,6 +219,7 @@ def main():
             global_conf = None
         if not database_connection.startswith( 'sqlite://' ):
             kwargs[ 'database_engine_option_max_overflow' ] = '20'
+            kwargs[ 'database_engine_option_pool_size' ] = '10'
         if tool_dependency_dir is not None:
             kwargs[ 'tool_dependency_dir' ] = tool_dependency_dir
         if use_distributed_object_store:
@@ -230,7 +230,6 @@ def main():
                                    id_secret = 'changethisinproductiontoo',
                                    template_path = "templates",
                                    database_connection = database_connection,
-                                   database_engine_option_pool_size = '10',
                                    file_path = file_path,
                                    new_file_path = new_file_path,
                                    tool_path = tool_path,

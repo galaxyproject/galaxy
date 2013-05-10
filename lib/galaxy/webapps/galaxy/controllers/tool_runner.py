@@ -65,7 +65,7 @@ class ToolRunner( BaseUIController ):
         if tool.require_login and not trans.user:
             message = "You must be logged in to use this tool."
             status = "info"
-            redirect = url_for( controller='/tool_runner', action='index', tool_id=tool_id, **kwd )
+            redirect = url_for( controller='tool_runner', action='index', tool_id=tool_id, **kwd )
             return trans.response.send_redirect( url_for( controller='user',
                                                           action='login',
                                                           cntrller='user',

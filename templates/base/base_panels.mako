@@ -251,6 +251,7 @@
 
 ## Document
 <html>
+    <!--base_panels.mako-->
     ${self.init()}    
     <head>
         <title>${self.title()}</title>

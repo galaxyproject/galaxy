@@ -2,26 +2,13 @@
 <%namespace file="/message.mako" import="render_msg" />
 <%namespace file="/webapps/tool_shed/common/common.mako" import="*" />
 <%namespace file="/webapps/tool_shed/repository/common.mako" import="*" />
+<%namespace file="/webapps/tool_shed/common/repository_actions_menu.mako" import="render_tool_shed_repository_actions" />
 
 <%
-    is_admin = trans.user_is_admin()
-    is_new = repository.is_new( trans.app )
-    can_browse_contents = not is_new
-    can_contact_owner = trans.user and trans.user != repository.user
-    can_manage = is_admin or repository.user == trans.user
-    can_push = trans.app.security_agent.can_push( trans.app, trans.user, repository )
-    can_rate = not is_new and trans.user and repository.user != trans.user
-    can_view_change_log = not is_new
-    if can_push:
-        browse_label = 'Browse or delete repository tip files'
-    else:
-        browse_label = 'Browse repository tip files'
     if mine:
         title = "My reviews of repository '%s'" % repository.name
-        review_revision_label = "Manage my review of this revision"
     else:
         title = "All reviews of repository '%s'" % repository.name
-        review_revision_label = "Inspect reviews of this revision"
 %>
 
 <%!
@@ -39,29 +26,7 @@
     ${common_javascripts(repository)}
 </%def>
 
-<br/><br/>
-<ul class="manage-table-actions">
-    <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
-    <div popupmenu="repository-${repository.id}-popup">
-        %if can_manage:
-            <a class="action-button" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">Manage repository</a>
-        %else:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip( trans.app ) )}">View repository</a>
-        %endif
-        %if can_view_change_log:
-            <a class="action-button" href="${h.url_for( controller='repository', action='view_changelog', id=trans.security.encode_id( repository.id ) )}">View change log</a>
-        %endif
-        %if can_rate:
-            <a class="action-button" href="${h.url_for( controller='repository', action='rate_repository', id=trans.security.encode_id( repository.id ) )}">Rate repository</a>
-        %endif
-        %if can_browse_contents:
-            <a class="action-button" href="${h.url_for( controller='repository', action='browse_repository', id=trans.security.encode_id( repository.id ) )}">${browse_label | h}</a>
-        %endif
-        %if can_contact_owner:
-            <a class="action-button" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ) )}">Contact repository owner</a>
-        %endif
-    </div>
-</ul>
+${render_tool_shed_repository_actions( repository=repository )}
 
 %if message:
     ${render_msg( message, status )}

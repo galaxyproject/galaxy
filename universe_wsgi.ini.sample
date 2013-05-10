@@ -625,12 +625,6 @@ use_interactive = True
 # running more than one Galaxy server using the same database.
 #enable_job_recovery = True
 
-# Setting metadata on job outputs to in a separate process (or if using a
-# cluster, on the cluster).  Thanks to Python's Global Interpreter Lock and the
-# hefty expense that setting metadata incurs, your Galaxy process may become
-# unresponsive when this operation occurs internally.
-#set_metadata_externally = False
-
 # Although it is fairly reliable, setting metadata can occasionally fail.  In
 # these instances, you can choose to retry setting it internally or leave it in
 # a failed state (since retrying internally may cause the Galaxy process to be

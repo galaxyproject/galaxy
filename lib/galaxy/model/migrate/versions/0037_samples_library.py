@@ -1,8 +1,8 @@
 """
-This migration script removes the library_id & folder_id fields in the 'request' table and 
-adds the same to the 'sample' table. This also adds a 'datatx' column to request_type table 
+This migration script removes the library_id & folder_id fields in the 'request' table and
+adds the same to the 'sample' table. This also adds a 'datatx' column to request_type table
 to store the sequencer login information. Finally, this adds a 'dataset_files' column to
-the sample table. 
+the sample table.
 """
 from sqlalchemy import *
 from sqlalchemy.orm import *
@@ -22,10 +22,10 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     # Load existing tables
     metadata.reflect()
@@ -35,21 +35,21 @@ def upgrade():
     except NoSuchTableError:
         RequestType_table = None
         log.debug( "Failed loading table request_type" )
-    if RequestType_table:
+    if RequestType_table is not None:
         # Add the datatx_info column in 'request_type' table
         try:
             col = Column( "datatx_info", JSONType() )
             col.create( RequestType_table )
             assert col is RequestType_table.c.datatx_info
         except Exception, e:
-            log.debug( "Adding column 'datatx_info' to request_type table failed: %s" % ( str( e ) ) )   
+            log.debug( "Adding column 'datatx_info' to request_type table failed: %s" % ( str( e ) ) )
     # request table
     try:
         Request_table = Table( "request", metadata, autoload=True )
     except NoSuchTableError:
         Request_table = None
         log.debug( "Failed loading table request" )
-    if Request_table:
+    if Request_table is not None:
         # Delete library_id & folder_id columns in the table 'request'.
         # if Galaxy is running on sqlite, the delete/recreate the table
         # otherwise remove the specific columns
@@ -68,7 +68,7 @@ def upgrade():
             try:
                 RequestTemp_table.create()
             except Exception, e:
-                log.debug( "Creating request_temp table failed: %s" % str( e ) )  
+                log.debug( "Creating request_temp table failed: %s" % str( e ) )
             # insert all the rows from the request table to the request_temp table
             cmd = \
                 "INSERT INTO request_temp " + \
@@ -81,34 +81,34 @@ def upgrade():
                     "request_type_id," + \
                     "user_id," + \
                     "deleted " + \
-                "FROM request;" 
-            db_session.execute( cmd )
+                "FROM request;"
+            migrate_engine.execute( cmd )
             # delete the 'request' table
             try:
                 Request_table.drop()
             except Exception, e:
                 log.debug( "Dropping request table failed: %s" % str( e ) )
             # rename table request_temp to request
-            cmd = "ALTER TABLE request_temp RENAME TO request" 
-            db_session.execute( cmd )
+            cmd = "ALTER TABLE request_temp RENAME TO request"
+            migrate_engine.execute( cmd )
         else:
             # Delete the library_id column in 'request' table
             try:
                 Request_table.c.library_id.drop()
             except Exception, e:
-                log.debug( "Deleting column 'library_id' to request table failed: %s" % ( str( e ) ) )   
+                log.debug( "Deleting column 'library_id' to request table failed: %s" % ( str( e ) ) )
             # Delete the folder_id column in 'request' table
             try:
                 Request_table.c.folder_id.drop()
             except Exception, e:
-                log.debug( "Deleting column 'folder_id' to request table failed: %s" % ( str( e ) ) )   
+                log.debug( "Deleting column 'folder_id' to request table failed: %s" % ( str( e ) ) )
     # sample table
     try:
         Sample_table = Table( "sample", metadata, autoload=True )
     except NoSuchTableError:
         Sample_table = None
         log.debug( "Failed loading table sample" )
-    if Sample_table:
+    if Sample_table is not None:
         # Add the dataset_files column in 'sample' table
         try:
             col = Column( "dataset_files", JSONType() )
@@ -122,11 +122,14 @@ def upgrade():
         except NoSuchTableError:
             Library_table = None
             log.debug( "Failed loading table library" )
-        if Library_table:
+        if Library_table is not None:
             # Add the library_id column in 'sample' table
             try:
-                col = Column( "library_id", Integer, ForeignKey( "library.id" ), index=True )
-                col.create( Sample_table )
+                if migrate_engine.name != 'sqlite':
+                    col = Column( "library_id", Integer, ForeignKey( "library.id" ), index=True )
+                else:
+                    col = Column( "library_id", Integer, index=True )
+                col.create( Sample_table, index_name='ix_sample_library_id')
                 assert col is Sample_table.c.library_id
             except Exception, e:
                 log.debug( "Adding column 'library_id' to sample table failed: %s" % ( str( e ) ) )
@@ -136,14 +139,18 @@ def upgrade():
         except NoSuchTableError:
             LibraryFolder_table = None
             log.debug( "Failed loading table library_folder" )
-        if LibraryFolder_table:
+        if LibraryFolder_table is not None:
             # Add the library_id column in 'sample' table
             try:
-                col = Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True )
-                col.create( Sample_table )
+                if migrate_engine.name != 'sqlite':
+                    col = Column( "folder_id", Integer, ForeignKey( "library_folder.id" ), index=True )
+                else:
+                    col = Column( "folder_id", Integer, index=True )
+                col.create( Sample_table, index_name='ix_sample_library_folder_id')
                 assert col is Sample_table.c.folder_id
             except Exception, e:
                 log.debug( "Adding column 'folder_id' to sample table failed: %s" % ( str( e ) ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

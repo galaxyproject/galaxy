@@ -112,32 +112,25 @@ def expose_api_raw( func ):
 
 def expose_api_anonymous( func, to_json=True ):
     """
-    Expose this function via the API but don't require an API key.
+    Expose this function via the API but don't require a set user.
     """
-    return expose_api( func, to_json=to_json, key_required=False )
+    return expose_api( func, to_json=to_json, user_required=False )
 
-def expose_api( func, to_json=True, key_required=True ):
+def expose_api( func, to_json=True, user_required=True ):
+    """
+    Expose this function via the API.
+    """
     @wraps(func)
     def decorator( self, trans, *args, **kwargs ):
         def error( environ, start_response ):
             start_response( error_status, [('Content-type', 'text/plain')] )
             return error_message
         error_status = '403 Forbidden'
-        #If no key supplied, we use the existing session which may be an anonymous user.
-        if key_required and not trans.user:
-            try:
-                provided_key = trans.sa_session.query( trans.app.model.APIKeys ).filter( trans.app.model.APIKeys.table.c.key == kwargs['key'] ).one()
-            except NoResultFound:
-                error_message = 'Provided API key is not valid.'
-                return error
-            if provided_key.user.deleted:
-                error_message = 'User account is deactivated, please contact an administrator.'
-                return error
-            newest_key = provided_key.user.api_keys[0]
-            if newest_key.key != provided_key.key:
-                error_message = 'Provided API key has expired.'
-                return error
-            trans.set_user( provided_key.user )
+        if trans.error_message:
+            return trans.error_message
+        if user_required and trans.user is None:
+            error_message = "API Authentication Required for this request"
+            return error
         if trans.request.body:
             def extract_payload_from_request(trans, func, kwargs):
                 content_type = trans.request.headers['content-type']
@@ -236,6 +229,7 @@ def error( message ):
 def form( *args, **kwargs ):
     return FormBuilder( *args, **kwargs )
 
+
 class WebApplication( base.WebApplication ):
 
     def __init__( self, galaxy_app, session_cookie='galaxysession', name=None ):
@@ -324,6 +318,7 @@ class WebApplication( base.WebApplication ):
                         controller_name = getattr( T, "controller_name", name )
                         self.add_api_controller( controller_name, T( app ) )
 
+
 class GalaxyWebTransaction( base.DefaultWebTransaction ):
     """
     Encapsulates web transaction specific state for the Galaxy application
@@ -344,13 +339,26 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         # Flag indicating whether this is an API call and the API key user is an administrator
         self.api_inherit_admin = False
         self.__user = None
-        # Always have a valid galaxy session
-        self._ensure_valid_session( session_cookie )
-        # Prevent deleted users from accessing Galaxy
-        if self.app.config.use_remote_user and self.galaxy_session.user.deleted:
-            self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
-        if self.app.config.require_login:
-            self._ensure_logged_in_user( environ, session_cookie )
+        self.galaxy_session = None
+        self.error_message = None
+        if self.environ.get('is_api_request', False):
+            # With API requests, if there's a key, use it and associate the
+            # user with the transaction.
+            # If not, check for an active session but do not create one.
+            # If an error message is set here, it's sent back using
+            # trans.show_error in the response -- in expose_api.
+            self.error_message = self._authenticate_api( session_cookie )
+        else:
+            #This is a web request, get or create session.
+            self._ensure_valid_session( session_cookie )
+        if self.galaxy_session:
+            # When we've authenticated by session, we have to check the
+            # following.
+            # Prevent deleted users from accessing Galaxy
+            if self.app.config.use_remote_user and self.galaxy_session.user.deleted:
+                self.response.send_redirect( url_for( '/static/user_disabled.html' ) )
+            if self.app.config.require_login:
+                self._ensure_logged_in_user( environ, session_cookie )
 
     def setup_i18n( self ):
         locales = []
@@ -380,16 +388,17 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
 
     def get_user( self ):
         """Return the current user if logged in or None."""
-        if self.__user:
-            return self.__user
-        else:
+        if self.galaxy_session:
             return self.galaxy_session.user
+        else:
+            return self.__user
 
     def set_user( self, user ):
         """Set the current user."""
-        self.galaxy_session.user = user
-        self.sa_session.add( self.galaxy_session )
-        self.sa_session.flush()
+        if self.galaxy_session:
+            self.galaxy_session.user = user
+            self.sa_session.add( self.galaxy_session )
+            self.sa_session.flush()
         self.__user = user
 
     user = property( get_user, set_user )
@@ -471,6 +480,33 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         except CookieError, e:
             log.warning( "Error setting httponly attribute in cookie '%s': %s" % ( name, e ) )
 
+    def _authenticate_api( self, session_cookie ):
+        """
+        Authenticate for the API via key or session (if available).
+        """
+        api_key = self.request.params.get('key', None)
+        secure_id = self.get_cookie( name=session_cookie )
+        if self.environ.get('is_api_request', False) and api_key:
+            # Sessionless API transaction, we just need to associate a user.
+            try:
+                provided_key = self.sa_session.query( self.app.model.APIKeys ).filter( self.app.model.APIKeys.table.c.key == api_key ).one()
+            except NoResultFound:
+                return 'Provided API key is not valid.'
+            if provided_key.user.deleted:
+                return 'User account is deactivated, please contact an administrator.'
+            newest_key = provided_key.user.api_keys[0]
+            if newest_key.key != provided_key.key:
+                return 'Provided API key has expired.'
+            self.set_user( provided_key.user )
+        elif secure_id:
+            # API authentication via active session
+            # Associate user using existing session
+            self._ensure_valid_session( session_cookie )
+        else:
+            # Anonymous API interaction -- anything but @expose_api_anonymous will fail past here.
+            self.user = None
+            self.galaxy_session = None
+
     def _ensure_valid_session( self, session_cookie, create=True):
         """
         Ensure that a valid Galaxy session exists and is available as
@@ -503,8 +539,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                                                 .filter( and_( self.app.model.GalaxySession.table.c.session_key==session_key,
                                                                self.app.model.GalaxySession.table.c.is_valid==True ) ) \
                                                 .first()
-        # If remote user is in use it can invalidate the session, so we need to to check some things now.
+        # If remote user is in use it can invalidate the session and in some
+        # cases won't have a cookie set above, so we need to to check some
+        # things now.
         if self.app.config.use_remote_user:
+            #If this is an api request, and they've passed a key, we let this go.
             assert "HTTP_REMOTE_USER" in self.environ, \
                 "use_remote_user is set but no HTTP_REMOTE_USER variable"
             remote_user_email = self.environ[ 'HTTP_REMOTE_USER' ]
@@ -603,6 +642,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                     pass
             if self.request.path not in allowed_paths:
                 self.response.send_redirect( url_for( controller='root', action='index' ) )
+
     def __create_new_session( self, prev_galaxy_session=None, user_for_new_session=None ):
         """
         Create a new GalaxySession for this request, possibly with a connection
@@ -625,6 +665,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             # The new session should be associated with the user
             galaxy_session.user = user_for_new_session
         return galaxy_session
+
     def get_or_create_remote_user( self, remote_user_email ):
         """
         Create a remote user with the email remote_user_email and return it
@@ -669,11 +710,14 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                 self.app.security_agent.user_set_default_permissions( user )
             #self.log_event( "Automatically created account '%s'", user.email )
         return user
+
     def __update_session_cookie( self, name='galaxysession' ):
         """
         Update the session cookie to match the current session.
         """
-        self.set_cookie( self.security.encode_guid( self.galaxy_session.session_key ), name=name, path=self.app.config.cookie_path )
+        self.set_cookie( self.security.encode_guid(self.galaxy_session.session_key ),
+                         name=name, path=self.app.config.cookie_path )
+
     def handle_user_login( self, user ):
         """
         Login a new user (possibly newly created)
@@ -699,9 +743,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             except:
                 users_last_session = None
                 last_accessed = False
-            if prev_galaxy_session.current_history and \
-                not prev_galaxy_session.current_history.deleted and \
-                prev_galaxy_session.current_history.datasets:
+            if (prev_galaxy_session.current_history and not
+                    prev_galaxy_session.current_history.deleted and
+                    prev_galaxy_session.current_history.datasets):
                 if prev_galaxy_session.current_history.user is None or prev_galaxy_session.current_history.user == user:
                     # If the previous galaxy session had a history, associate it with the new
                     # session, but only if it didn't belong to a different user.
@@ -712,10 +756,9 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                             user.total_disk_usage += hda.quota_amount( user )
             elif self.galaxy_session.current_history:
                 history = self.galaxy_session.current_history
-            if not history and \
-                users_last_session and \
-                users_last_session.current_history and \
-                not users_last_session.current_history.deleted:
+            if (not history and users_last_session and
+                    users_last_session.current_history and not
+                    users_last_session.current_history.deleted):
                 history = users_last_session.current_history
             elif not history:
                 history = self.get_history( create=True )
@@ -734,6 +777,8 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.flush()
         # This method is not called from the Galaxy reports, so the cookie will always be galaxysession
         self.__update_session_cookie( name=cookie_name )
+
+
     def handle_user_logout( self, logout_all=False ):
         """
         Logout the current user:
@@ -758,31 +803,35 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             self.__update_session_cookie( name='galaxysession' )
         elif self.webapp.name == 'tool_shed':
             self.__update_session_cookie( name='galaxycommunitysession' )
+
     def get_galaxy_session( self ):
         """
         Return the current galaxy session
         """
         return self.galaxy_session
+
     def get_history( self, create=False ):
         """
         Load the current history, creating a new one only if there is not
-        current history and we're told to create"
+        current history and we're told to create.
+        Transactions will not always have an active history (API requests), so
+        None is a valid response.
         """
-        history = self.galaxy_session.current_history
-        if not history:
-            if util.string_as_bool( create ):
-                history = self.new_history()
-            else:
-                # Perhaps a bot is running a tool without having logged in to get a history
-                log.debug( "This request returned None from get_history(): %s" % self.request.browser_url )
-                return None
+        history = None
+        if self.galaxy_session:
+            history = self.galaxy_session.current_history
+        if not history and util.string_as_bool( create ):
+            history = self.new_history()
         return history
+
     def set_history( self, history ):
         if history and not history.deleted:
             self.galaxy_session.current_history = history
         self.sa_session.add( self.galaxy_session )
         self.sa_session.flush()
+
     history = property( get_history, set_history )
+
     def new_history( self, name=None ):
         """
         Create a new history and associate it with the current session and
@@ -807,6 +856,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.sa_session.add_all( ( self.galaxy_session, history ) )
         self.sa_session.flush()
         return history
+
     def get_current_user_roles( self ):
         user = self.get_user()
         if user:
@@ -814,27 +864,34 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         else:
             roles = []
         return roles
+
     def user_is_admin( self ):
         if self.api_inherit_admin:
             return True
         admin_users = [ x.strip() for x in self.app.config.get( "admin_users", "" ).split( "," ) ]
         return self.user and admin_users and self.user.email in admin_users
+
     def user_can_do_run_as( self ):
         run_as_users = self.app.config.get( "api_allow_run_as", "" ).split( "," )
         return self.user and run_as_users and self.user.email in run_as_users
+
     def get_toolbox(self):
         """Returns the application toolbox"""
         return self.app.toolbox
+
     @base.lazy_property
     def template_context( self ):
         return dict()
+
     @property
     def model( self ):
         return self.app.model
+
     def make_form_data( self, name, **kwargs ):
         rval = self.template_context[name] = FormData()
         rval.values.update( kwargs )
         return rval
+
     def set_message( self, message, type=None ):
         """
         Convenience method for setting the 'message' and 'message_type'
@@ -843,12 +900,14 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         self.template_context['message'] = message
         if type:
             self.template_context['status'] = type
+
     def get_message( self ):
         """
         Convenience method for getting the 'message' element of the template
         context.
         """
         return self.template_context['message']
+
     def show_message( self, message, type='info', refresh_frames=[], cont=None, use_panels=False, active_view="" ):
         """
         Convenience method for displaying a simple page with a single message.
@@ -860,21 +919,25 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
                           refreshed when the message is displayed
         """
         return self.fill_template( "message.mako", status=type, message=message, refresh_frames=refresh_frames, cont=cont, use_panels=use_panels, active_view=active_view )
+
     def show_error_message( self, message, refresh_frames=[], use_panels=False, active_view="" ):
         """
         Convenience method for displaying an error message. See `show_message`.
         """
         return self.show_message( message, 'error', refresh_frames, use_panels=use_panels, active_view=active_view )
+
     def show_ok_message( self, message, refresh_frames=[], use_panels=False, active_view="" ):
         """
         Convenience method for displaying an ok message. See `show_message`.
         """
         return self.show_message( message, 'done', refresh_frames, use_panels=use_panels, active_view=active_view )
+
     def show_warn_message( self, message, refresh_frames=[], use_panels=False, active_view="" ):
         """
         Convenience method for displaying an warn message. See `show_message`.
         """
         return self.show_message( message, 'warning', refresh_frames, use_panels=use_panels, active_view=active_view )
+
     def show_form( self, form, header=None, template="form.mako", use_panels=False, active_view="" ):
         """
         Convenience method for displaying a simple page with a single HTML
@@ -882,6 +945,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         """
         return self.fill_template( template, form=form, header=header, use_panels=( form.use_panels or use_panels ),
                                     active_view=active_view )
+
     def fill_template(self, filename, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
@@ -895,6 +959,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             template = Template( file=os.path.join(self.app.config.template_path, filename),
                                  searchList=[kwargs, self.template_context, dict(caller=self, t=self, h=helpers, util=util, request=self.request, response=self.response, app=self.app)] )
             return str( template )
+
     def fill_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
@@ -902,6 +967,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
         data.update( self.template_context )
         data.update( kwargs )
         return template.render( **data )
+
     def stream_template_mako( self, filename, **kwargs ):
         template = self.webapp.mako_template_lookup.get_template( filename )
         template.output_encoding = 'utf-8'
@@ -919,6 +985,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             template.render_context( context )
             return []
         return render
+
     def fill_template_string(self, template_string, context=None, **kwargs):
         """
         Fill in a template, putting any keyword arguments on the context.
@@ -958,6 +1025,11 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
     def ncbi_builds( self ):
         return util.dlnames['ncbi']
 
+    @property
+    def user_ftp_dir( self ):
+        identifier = self.app.config.ftp_upload_dir_identifier
+        return os.path.join( self.app.config.ftp_upload_dir, getattr(self.user, identifier) )
+
     def db_dataset_for( self, dbkey ):
         """
         Returns the db_file dataset associated/needed by `dataset`, or `None`.
@@ -981,6 +1053,7 @@ class GalaxyWebTransaction( base.DefaultWebTransaction ):
             return True
         return False
 
+
 class FormBuilder( object ):
     """
     Simple class describing an HTML form
@@ -992,16 +1065,21 @@ class FormBuilder( object ):
         self.submit_text = submit_text
         self.inputs = []
         self.use_panels = use_panels
+
     def add_input( self, type, name, label, value=None, error=None, help=None, use_label=True  ):
         self.inputs.append( FormInput( type, label, name, value, error, help, use_label ) )
         return self
+
     def add_text( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'text', label, name, value, error, help )
+
     def add_password( self, name, label, value=None, error=None, help=None  ):
         return self.add_input( 'password', label, name, value, error, help )
+
     def add_select( self, name, label, value=None, options=[], error=None, help=None, use_label=True ):
         self.inputs.append( SelectInput( name, label, value=value, options=options, error=error, help=help, use_label=use_label   ) )
         return self
+
 
 class FormInput( object ):
     """
@@ -1016,11 +1094,13 @@ class FormInput( object ):
         self.help = help
         self.use_label = use_label
 
+
 class SelectInput( FormInput ):
     """ A select form input. """
     def __init__( self, name, label, value=None, options=[], error=None, help=None, use_label=True ):
         FormInput.__init__( self, "select", name, label, value=value, error=error, help=help, use_label=use_label )
         self.options = options
+
 
 class FormData( object ):
     """
@@ -1031,6 +1111,7 @@ class FormData( object ):
         self.values = Bunch()
         self.errors = Bunch()
 
+
 class Bunch( dict ):
     """
     Bunch based on a dict
@@ -1040,3 +1121,4 @@ class Bunch( dict ):
         return self[key]
     def __setattr__( self, key, value ):
         self[key] = value
+

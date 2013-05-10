@@ -17,17 +17,17 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
 def display_migration_details():
     print "========================================"
     print """This script creates a request.folder_id column which is a foreign
 key to the library_folder table. This also adds a 'type' and 'layout' column
-to the form_definition table.""" 
+to the form_definition table."""
     print "========================================"
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     display_migration_details()
     # Load existing tables
     metadata.reflect()
@@ -37,10 +37,10 @@ def upgrade():
     except NoSuchTableError:
         Request_table = None
         log.debug( "Failed loading table request" )
-    if Request_table:
+    if Request_table is not None:
         try:
             col = Column( "folder_id", Integer, index=True )
-            col.create( Request_table )
+            col.create( Request_table, index_name='ix_request_folder_id')
             assert col is Request_table.c.folder_id
         except Exception, e:
             log.debug( "Adding column 'folder_id' to request table failed: %s" % ( str( e ) ) )
@@ -50,7 +50,7 @@ def upgrade():
             LibraryFolder_table = None
             log.debug( "Failed loading table library_folder" )
         # Add 1 foreign key constraint to the library_folder table
-        if Request_table and LibraryFolder_table:
+        if migrate_engine.name != 'sqlite' and Request_table is not None and LibraryFolder_table is not None:
             try:
                 cons = ForeignKeyConstraint( [Request_table.c.folder_id],
                                              [LibraryFolder_table.c.id],
@@ -65,20 +65,21 @@ def upgrade():
     except NoSuchTableError:
         FormDefinition_table = None
         log.debug( "Failed loading table form_definition" )
-    if FormDefinition_table:
+    if FormDefinition_table is not None:
         try:
             col = Column( "type", TrimmedString( 255 ), index=True )
-            col.create( FormDefinition_table )
+            col.create( FormDefinition_table, index_name='ix_form_definition_type')
             assert col is FormDefinition_table.c.type
         except Exception, e:
             log.debug( "Adding column 'type' to form_definition table failed: %s" % ( str( e ) ) )
         try:
-            col = Column( "layout", JSONType()) 
+            col = Column( "layout", JSONType())
             col.create( FormDefinition_table )
             assert col is FormDefinition_table.c.layout
         except Exception, e:
             log.debug( "Adding column 'layout' to form_definition table failed: %s" % ( str( e ) ) )
 
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     pass

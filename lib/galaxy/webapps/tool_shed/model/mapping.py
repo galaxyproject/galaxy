@@ -10,7 +10,6 @@ import datetime
 
 from galaxy.webapps.tool_shed.model import *
 from galaxy.model.orm import *
-from galaxy.model.orm.ext.assignmapper import *
 from galaxy.model.custom_types import *
 from galaxy.util.bunch import Bunch
 import galaxy.webapps.tool_shed.util.shed_statistics as shed_statistics
@@ -134,7 +133,8 @@ RepositoryMetadata.table = Table( "repository_metadata", metadata,
     Column( "tools_functionally_correct", Boolean, default=False, index=True ),
     Column( "do_not_test", Boolean, default=False, index=True ),
     Column( "time_last_tested", DateTime, default=None, nullable=True ),
-    Column( "tool_test_errors", JSONType, nullable=True ),
+    Column( "missing_test_components", Boolean, default=False, index=True ),
+    Column( "tool_test_results", JSONType, nullable=True ),
     Column( "has_repository_dependencies", Boolean, default=False, index=True ),
     Column( "includes_datatypes", Boolean, default=False, index=True ),
     Column( "includes_tools", Boolean, default=False, index=True ),
@@ -199,27 +199,27 @@ Tag.table = Table( "tag", metadata,
     UniqueConstraint( "name" ) )
 
 # With the tables defined we can define the mappers and setup the relationships between the model objects.
-assign_mapper( context, User, User.table, 
+mapper( User, User.table, 
     properties=dict( active_repositories=relation( Repository, primaryjoin=( ( Repository.table.c.user_id == User.table.c.id ) & ( not_( Repository.table.c.deleted ) ) ), order_by=( Repository.table.c.name ) ),
                      galaxy_sessions=relation( GalaxySession, order_by=desc( GalaxySession.table.c.update_time ) ),
                      api_keys=relation( APIKeys, backref="user", order_by=desc( APIKeys.table.c.create_time ) ) ) )
 
-assign_mapper( context, APIKeys, APIKeys.table, 
+mapper( APIKeys, APIKeys.table, 
     properties = {} )
 
-assign_mapper( context, Group, Group.table,
+mapper( Group, Group.table,
     properties=dict( users=relation( UserGroupAssociation ) ) )
 
-assign_mapper( context, Role, Role.table,
+mapper( Role, Role.table,
     properties=dict(
         users=relation( UserRoleAssociation ),
         groups=relation( GroupRoleAssociation ) ) )
 
-assign_mapper( context, UserGroupAssociation, UserGroupAssociation.table,
+mapper( UserGroupAssociation, UserGroupAssociation.table,
     properties=dict( user=relation( User, backref = "groups" ),
                      group=relation( Group, backref = "members" ) ) )
 
-assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
+mapper( UserRoleAssociation, UserRoleAssociation.table,
     properties=dict(
         user=relation( User, backref="roles" ),
         non_private_roles=relation( User, 
@@ -227,28 +227,28 @@ assign_mapper( context, UserRoleAssociation, UserRoleAssociation.table,
                                     primaryjoin=( ( User.table.c.id == UserRoleAssociation.table.c.user_id ) & ( UserRoleAssociation.table.c.role_id == Role.table.c.id ) & not_( Role.table.c.name == User.table.c.email ) ) ),
         role=relation( Role ) ) )
 
-assign_mapper( context, GroupRoleAssociation, GroupRoleAssociation.table,
+mapper( GroupRoleAssociation, GroupRoleAssociation.table,
     properties=dict(
         group=relation( Group, backref="roles" ),
         role=relation( Role ) ) )
 
-assign_mapper( context, GalaxySession, GalaxySession.table,
-    properties=dict( user=relation( User.mapper ) ) )
+mapper( GalaxySession, GalaxySession.table,
+    properties=dict( user=relation( User ) ) )
 
-assign_mapper( context, Tag, Tag.table,
+mapper( Tag, Tag.table,
     properties=dict( children=relation(Tag, backref=backref( 'parent', remote_side=[ Tag.table.c.id ] ) ) ) )
 
-assign_mapper( context, Category, Category.table,
+mapper( Category, Category.table,
     properties=dict( repositories=relation( RepositoryCategoryAssociation,
                                             secondary=Repository.table,
                                             primaryjoin=( Category.table.c.id == RepositoryCategoryAssociation.table.c.category_id ),
                                             secondaryjoin=( RepositoryCategoryAssociation.table.c.repository_id == Repository.table.c.id ) ) ) )
 
-assign_mapper( context, Repository, Repository.table, 
+mapper( Repository, Repository.table, 
     properties = dict(
         categories=relation( RepositoryCategoryAssociation ),
         ratings=relation( RepositoryRatingAssociation, order_by=desc( RepositoryRatingAssociation.table.c.update_time ), backref="repositories" ),
-        user=relation( User.mapper ),
+        user=relation( User ),
         downloadable_revisions=relation( RepositoryMetadata,
                                          primaryjoin=( ( Repository.table.c.id == RepositoryMetadata.table.c.repository_id ) & ( RepositoryMetadata.table.c.downloadable == True ) ),
                                          order_by=desc( RepositoryMetadata.table.c.update_time ) ),
@@ -261,13 +261,13 @@ assign_mapper( context, Repository, Repository.table,
                             primaryjoin=( Repository.table.c.id == RepositoryReview.table.c.repository_id ),
                             secondaryjoin=( RepositoryReview.table.c.user_id == User.table.c.id ) ) ) )
 
-assign_mapper( context, RepositoryMetadata, RepositoryMetadata.table,
+mapper( RepositoryMetadata, RepositoryMetadata.table,
     properties=dict( repository=relation( Repository ),
                      reviews=relation( RepositoryReview,
                                        foreign_keys=[ RepositoryMetadata.table.c.repository_id, RepositoryMetadata.table.c.changeset_revision ],
                                        primaryjoin=( ( RepositoryMetadata.table.c.repository_id == RepositoryReview.table.c.repository_id ) & ( RepositoryMetadata.table.c.changeset_revision == RepositoryReview.table.c.changeset_revision ) ) ) ) )
 
-assign_mapper( context, RepositoryReview, RepositoryReview.table,
+mapper( RepositoryReview, RepositoryReview.table,
     properties=dict( repository=relation( Repository,
                                           primaryjoin=( RepositoryReview.table.c.repository_id == Repository.table.c.id ) ),
                      # Take case when using the mapper below!  It should be used only when a new review is being created for a repository change set revision.
@@ -283,17 +283,17 @@ assign_mapper( context, RepositoryReview, RepositoryReview.table,
                      private_component_reviews=relation( ComponentReview,
                                                          primaryjoin=( ( RepositoryReview.table.c.id == ComponentReview.table.c.repository_review_id ) & ( ComponentReview.table.c.deleted == False ) & ( ComponentReview.table.c.private == True ) ) ) ) )
 
-assign_mapper( context, ComponentReview, ComponentReview.table,
+mapper( ComponentReview, ComponentReview.table,
     properties=dict( repository_review=relation( RepositoryReview ),
                      component=relation( Component,
                                          primaryjoin=( ComponentReview.table.c.component_id == Component.table.c.id ) ) ) )
 
-assign_mapper( context, Component, Component.table )
+mapper( Component, Component.table )
 
-assign_mapper( context, RepositoryRatingAssociation, RepositoryRatingAssociation.table,
+mapper( RepositoryRatingAssociation, RepositoryRatingAssociation.table,
     properties=dict( repository=relation( Repository ), user=relation( User ) ) )
 
-assign_mapper( context, RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
+mapper( RepositoryCategoryAssociation, RepositoryCategoryAssociation.table,
     properties=dict(
         category=relation( Category ),
         repository=relation( Repository ) ) )

@@ -21,10 +21,16 @@ formatter = logging.Formatter( format )
 handler.setFormatter( formatter )
 log.addHandler( handler )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def get_default_false(migrate_engine):
+    if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite':
+        return "0"
+    elif migrate_engine.name in ['postgresql', 'postgres']:
+        return "false"
+
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
@@ -37,13 +43,9 @@ def upgrade():
         log.debug( "Adding metadata column to the tool_shed_repository table failed: %s" % str( e ) )
     c = Column( "includes_datatypes", Boolean, index=True, default=False )
     try:
-        c.create( ToolShedRepository_table )
+        c.create( ToolShedRepository_table, index_name="ix_tool_shed_repository_includes_datatypes")
         assert c is ToolShedRepository_table.c.includes_datatypes
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
-            default_false = "0"
-        elif migrate_engine.name == 'postgres':
-            default_false = "false"
-        db_session.execute( "UPDATE tool_shed_repository SET includes_datatypes=%s" % default_false )
+        migrate_engine.execute( "UPDATE tool_shed_repository SET includes_datatypes=%s" % get_default_false(migrate_engine))
     except Exception, e:
         print "Adding includes_datatypes column to the tool_shed_repository table failed: %s" % str( e )
         log.debug( "Adding includes_datatypes column to the tool_shed_repository table failed: %s" % str( e ) )
@@ -51,16 +53,13 @@ def upgrade():
     try:
         c.create( ToolShedRepository_table )
         assert c is ToolShedRepository_table.c.update_available
-        if migrate_engine.name == 'mysql' or migrate_engine.name == 'sqlite': 
-            default_false = "0"
-        elif migrate_engine.name == 'postgres':
-            default_false = "false"
-        db_session.execute( "UPDATE tool_shed_repository SET update_available=%s" % default_false )
+        migrate_engine.execute( "UPDATE tool_shed_repository SET update_available=%s" % get_default_false(migrate_engine))
     except Exception, e:
         print "Adding update_available column to the tool_shed_repository table failed: %s" % str( e )
         log.debug( "Adding update_available column to the tool_shed_repository table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
     try:

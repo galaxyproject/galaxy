@@ -10,10 +10,10 @@ now = datetime.datetime.utcnow
 # Need our custom types, but don't import anything else from model
 from galaxy.model.custom_types import *
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
@@ -34,7 +34,7 @@ def upgrade():
     # Update the status column value for tool_shed_repositories to the default value 'Installed'.
     cmd = "UPDATE tool_shed_repository SET status = 'Installed';"
     try:
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         print "Exception executing sql command: "
         print cmd
@@ -42,7 +42,7 @@ def upgrade():
     # Update the status column for tool_shed_repositories that have been uninstalled.
     cmd = "UPDATE tool_shed_repository SET status = 'Uninstalled' WHERE uninstalled;"
     try:
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         print "Exception executing sql command: "
         print cmd
@@ -50,12 +50,13 @@ def upgrade():
     # Update the status column for tool_shed_repositories that have been deactivated.
     cmd = "UPDATE tool_shed_repository SET status = 'Deactivated' where deleted and not uninstalled;"
     try:
-        db_session.execute( cmd )
+        migrate_engine.execute( cmd )
     except Exception, e:
         print "Exception executing sql command: "
         print cmd
         print str( e )
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     ToolShedRepository_table = Table( "tool_shed_repository", metadata, autoload=True )
     try:

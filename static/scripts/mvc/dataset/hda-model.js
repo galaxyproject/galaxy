@@ -6,12 +6,12 @@
  *      related to a history.
  *  @name HistoryDatasetAssociation
  *
- *  @augments BaseModel
+ *  @augments Backbone.Model
  *  @borrows LoggableMixin#logger as #logger
  *  @borrows LoggableMixin#log as #log
  *  @constructs
  */
-var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
+var HistoryDatasetAssociation = Backbone.Model.extend( LoggableMixin ).extend(
 /** @lends HistoryDatasetAssociation.prototype */{
     
     ///** logger used to record this.log messages, commonly set to console */
@@ -26,15 +26,14 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         history_id          : null,
         // often used with tagging
         model_class         : 'HistoryDatasetAssociation',
-        // index within history (??)
         hid                 : 0,
         
         // ---whereas these are Dataset related/inherited
 
-        id                  : null, 
+        id                  : null,
         name                : '(unnamed dataset)',
         // one of HistoryDatasetAssociation.STATES
-        state               : 'ok',
+        state               : 'new',
         // sniffed datatype (sam, tabular, bed, etc.)
         data_type           : null,
         // size in bytes
@@ -44,14 +43,12 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
         // array of associated file types (eg. [ 'bam_index', ... ])
         meta_files          : [],
 
-        misc_blurb          : '', 
+        misc_blurb          : '',
         misc_info           : '',
 
-        deleted             : false, 
+        deleted             : false,
         purged              : false,
-        // aka. !hidden (start hidden)
-        visible             : false,
-        // based on trans.user (is_admin or security_agent.can_access_dataset( <user_roles>, hda.dataset ))
+        visible             : true,
         accessible          : true
     },
 
@@ -59,7 +56,7 @@ var HistoryDatasetAssociation = BaseModel.extend( LoggableMixin ).extend(
     urlRoot: 'api/histories/',
     url : function(){
         //TODO: get this via url router
-        return 'api/histories/' + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
+        return this.urlRoot + this.get( 'history_id' ) + '/contents/' + this.get( 'id' );
         //TODO: this breaks on save()
     },
     

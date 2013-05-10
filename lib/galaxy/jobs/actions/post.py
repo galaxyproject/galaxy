@@ -1,4 +1,5 @@
-import logging, datetime
+import datetime
+import logging
 from galaxy.util import send_mail
 from galaxy.util.json import to_json_string
 

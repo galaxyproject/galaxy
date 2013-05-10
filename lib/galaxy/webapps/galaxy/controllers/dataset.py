@@ -20,11 +20,6 @@ import pkg_resources;
 pkg_resources.require( "Paste" )
 import paste.httpexceptions
 
-if sys.version_info[:2] < ( 2, 6 ):
-    zipfile.BadZipFile = zipfile.error
-if sys.version_info[:2] < ( 2, 5 ):
-    zipfile.LargeZipFile = zipfile.error
-
 tmpd = tempfile.mkdtemp()
 comptypes=[]
 ziptype = '32'
@@ -253,7 +248,7 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             to = to_address + ", " + email
         else:
             to = to_address
-        subject = "Galaxy tool error report from " + email
+        subject = "Galaxy tool error report from %s" % email
         # Send it
         try:
             util.send_mail( frm, to, subject, body, trans.app.config )
@@ -295,6 +290,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
             raise paste.httpexceptions.HTTPRequestRangeNotSatisfiable( "Invalid reference dataset id: %s." % str( hda_id ) )
         if not self._can_access_dataset( trans, data ):
             return trans.show_error_message( "You are not allowed to access this dataset" )
+        if data.deleted:
+            return trans.show_error_message( "The dataset you are attempting to view has been deleted." )
         if data.state == trans.model.Dataset.states.UPLOAD:
             return trans.show_error_message( "Please wait until this dataset finishes uploading before attempting to view it." )
         return data
@@ -382,10 +379,9 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         message = "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them."
                         error = True
                     else:
-                        trans.app.datatypes_registry.change_datatype( data, params.datatype, set_meta = not trans.app.config.set_metadata_externally )
+                        trans.app.datatypes_registry.change_datatype( data, params.datatype )
                         trans.sa_session.flush()
-                        if trans.app.config.set_metadata_externally:
-                            trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data }, overwrite = False ) #overwrite is False as per existing behavior
+                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data }, overwrite = False ) #overwrite is False as per existing behavior
                         message = "Changed the type of dataset '%s' to %s" % ( to_unicode( data.name ), params.datatype )
                         refresh_frames=['history']
                 else:
@@ -393,8 +389,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                     error = True
             elif params.save:
                 # The user clicked the Save button on the 'Edit Attributes' form
-                data.name  = params.name
-                data.info  = params.info
+                data.name  = params.name if params.name else ''
+                data.info  = params.info if params.info else ''
                 message = ''
                 if __ok_to_edit_metadata( data.id ):
                     # The following for loop will save all metadata_spec items
@@ -439,13 +435,8 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         if name not in [ 'name', 'info', 'dbkey', 'base_name' ]:
                             if spec.get( 'default' ):
                                 setattr( data.metadata, name, spec.unwrap( spec.get( 'default' ) ) )
-                    if trans.app.config.set_metadata_externally:
-                        message = 'Attributes have been queued to be updated'
-                        trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
-                    else:
-                        message = 'Attributes updated'
-                        data.set_meta()
-                        data.datatype.after_setting_metadata( data )
+                    message = 'Attributes have been queued to be updated'
+                    trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute( trans.app.datatypes_registry.set_external_metadata_tool, trans, incoming = { 'input1':data } )
                     trans.sa_session.flush()
                     refresh_frames=['history']
             elif params.convert_data:
@@ -551,8 +542,14 @@ class DatasetInterface( BaseUIController, UsesAnnotations, UsesHistoryMixin, Use
                         hda_ids = [ trans.security.encode_id( hda.id ) for hda in hdas ]
                         trans.template_context[ 'seek_hda_ids' ] = hda_ids
                 elif operation == "copy to current history":
-                    # Copy a dataset to the current history.
+                    #
+                    # Copy datasets to the current history.
+                    #
+
                     target_histories = [ trans.get_history() ]
+                    
+                    # Reverse HDAs so that they appear in the history in the order they are provided.
+                    hda_ids.reverse()
                     status, message = self._copy_datasets( trans, hda_ids, target_histories )
 
                     # Current history changed, refresh history frame.

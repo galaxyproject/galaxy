@@ -1329,7 +1329,7 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 continue
                 
             # Get len file.
-            fasta_dataset = trans.app.model.HistoryDatasetAssociation.get( attributes[ 'fasta' ] )
+            fasta_dataset = trans.sa_session.query( trans.app.model.HistoryDatasetAssociation ).get( attributes[ 'fasta' ] )
             len_dataset = fasta_dataset.get_converted_dataset( trans, "len" )
             # HACK: need to request dataset again b/c get_converted_dataset()
             # doesn't return dataset (as it probably should).
@@ -1339,9 +1339,6 @@ class User( BaseUIController, UsesFormDefinitionsMixin ):
                 continue
                 
             # Get chrom count file.
-            # NOTE: this conversion doesn't work well with set_metadata_externally=False 
-            # because the conversion occurs before metadata can be set; the 
-            # dataset is marked as deleted and a subsequent conversion is run.
             chrom_count_dataset = len_dataset.get_converted_dataset( trans, "linecount" )
             if not chrom_count_dataset or chrom_count_dataset.state != trans.app.model.Job.states.OK:
                 # No valid linecount dataset.

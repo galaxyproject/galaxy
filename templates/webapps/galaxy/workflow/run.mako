@@ -34,12 +34,12 @@
                         select.val($('option:last', select).val());
                     }
                     select.closest('.form-row').children('label').children('span.mode-icon').hide();
-                    select.removeAttr('multiple').refresh_select2().removeAttr('size');
+                    select.removeAttr('multiple').removeAttr('size');
                     placeholder = 'type to filter';
                 } else {
                     $('.multiinput', select.closest('.form-row')).removeClass('disabled');
                     select.closest('.form-row').children('label').children('span.mode-icon').show();
-                    select.attr('multiple', 'multiple').refresh_select2().attr('size', 8);
+                    select.attr('multiple', 'multiple').attr('size', 8);
                     placeholder = 'type to filter, [enter] to select all';
                 }
                 $('input.multiinput-filter', select.parent()).attr(
@@ -73,7 +73,10 @@
             $("#new_history_cbx").click(function(){
                 $("#new_history_input").toggle(this.checked);
             });
-            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').refresh_select2().each(function(i, s) {
+            // The destroy on the following line is temporary and prevents
+            // select2 use on Input Dataset Steps, but allows elsewhere.  We
+            // need a new widget to better handle pairwise matching.
+            $('span.multiinput_wrap select[name*="|input"]').removeAttr('multiple').select2("destroy").each(function(i, s) {
                 var select = $(s);
                 var new_width = Math.max(200, select.width()) + 20;
                 // Find the label for this element.
@@ -82,7 +85,7 @@
                         if ($(this).hasClass('disabled')) return;
                         toggle_multiinput(select);
                         select.focus();
-                    }).attr('original-title',
+                    }).attr('title',
                             'Enable/disable selection of multiple input ' +
                             'files. Each selected file will have an ' +
                             'instance of the workflow.').tooltip({placement: 'bottom'})
@@ -132,13 +135,15 @@
             $(function(){
                 $(".multi-mode").each(function(){
                     if($(this).val() == "matched") { 
-                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link mode-icon"></span>')
+                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link mode-icon" title="This input is linked and will be run in matched order with other input datasets (ex: use this for matching forward and reverse reads)."></span>')
                             .attr({id:$(this).attr("id")})
-                            .css("display", $(this).css("display")));
+                            .css("display", $(this).css("display"))
+                            .tooltip({placement: 'bottom'}));
                     } else {
-                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link-broken mode-icon"></span>')
+                        $(this).closest('.form-row').children('label').append($('<span class="icon-button link-broken mode-icon" title="This input is not linked and each selection will be run against *all* other inputs."></span>')
                             .attr({id:$(this).attr("id")})
-                            .css("display", $(this).css("display"))); 
+                            .css("display", $(this).css("display"))
+                            .tooltip({placement: 'bottom'}));
                     }
                 });
                 $("span.mode-icon").click(function(){

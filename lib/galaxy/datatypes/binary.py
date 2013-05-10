@@ -2,18 +2,26 @@
 Binary classes
 """
 
-import data, logging, binascii
+import binascii
+import data
+import gzip
+import logging
+import os
+import shutil
+import struct
+import subprocess
+import tempfile
+import zipfile
+
+from urllib import urlencode, quote_plus
+from galaxy import eggs
+eggs.require( "bx-python" )
+
+from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
+
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes import metadata
 from galaxy.datatypes.sniff import *
-from galaxy import eggs
-import pkg_resources
-pkg_resources.require( "bx-python" )
-from bx.seq.twobit import TWOBIT_MAGIC_NUMBER, TWOBIT_MAGIC_NUMBER_SWAP, TWOBIT_MAGIC_SIZE
-from urllib import urlencode, quote_plus
-import zipfile, gzip
-import os, subprocess, tempfile
-import struct
 
 log = logging.getLogger(__name__)
 
@@ -85,9 +93,18 @@ class Ab1( Binary ):
 
 Binary.register_unsniffable_binary_ext("ab1")
 
+class GenericAsn1Binary( Binary ):
+    """Class for generic ASN.1 binary format"""
+    file_ext = "asn1-binary"
+
+Binary.register_unsniffable_binary_ext("asn1-binary")
+
 class Bam( Binary ):
     """Class describing a BAM binary file"""
     file_ext = "bam"
+    track_type = "ReadTrack"
+    data_sources = { "data": "bai", "index": [ "bigwig", "summary_tree" ] }
+
     MetadataElement( name="bam_index", desc="BAM Index File", param=metadata.FileParameter, file_ext="bai", readonly=True, no_value=None, visible=False, optional=True )
 
     def _get_samtools_version( self ):
@@ -238,9 +255,7 @@ class Bam( Binary ):
             return dataset.peek
         except:
             return "Binary bam alignments file (%s)" % ( data.nice_size( dataset.get_size() ) )
-    def get_track_type( self ):
-        return "ReadTrack", { "data": "bai", "index": [ "bigwig", "summary_tree" ] }
-
+    
 Binary.register_sniffable_binary_format("bam", "bam", Bam)
 
 class H5( Binary ):
@@ -318,6 +333,9 @@ class BigWig(Binary):
     The supplemental info in the paper has the binary details:
     http://bioinformatics.oxfordjournals.org/cgi/content/abstract/btq351v1
     """
+    track_type = "LineTrack"
+    data_sources = { "data_standalone": "bigwig" }
+
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
         self._magic = 0x888FFC26
@@ -342,19 +360,18 @@ class BigWig(Binary):
             return dataset.peek
         except:
             return "Binary UCSC %s file (%s)" % ( self._name, data.nice_size( dataset.get_size() ) )
-    def get_track_type( self ):
-        return "LineTrack", {"data_standalone": "bigwig"}
-
+    
 Binary.register_sniffable_binary_format("bigwig", "bigwig", BigWig)
 
 class BigBed(BigWig):
     """BigBed support from UCSC."""
+
+    data_sources = { "data_standalone": "bigbed" }
+
     def __init__( self, **kwd ):
         Binary.__init__( self, **kwd )
         self._magic = 0x8789F2EB
         self._name = "BigBed"
-    def get_track_type( self ):
-        return "LineTrack", {"data_standalone": "bigbed"}
 
 Binary.register_sniffable_binary_format("bigbed", "bigbed", BigBed)
 

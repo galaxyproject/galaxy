@@ -3,7 +3,6 @@ import os
 import shutil
 import string
 import tempfile
-import urllib2
 from datetime import datetime
 from time import gmtime
 from time import strftime
@@ -14,7 +13,7 @@ from galaxy.web.form_builder import SelectField
 from galaxy.datatypes import checkers
 from galaxy.model.orm import and_
 import sqlalchemy.orm.exc
-
+from tool_shed.util import common_util
 from galaxy import eggs
 import pkg_resources
 
@@ -33,7 +32,8 @@ import markupsafe
 log = logging.getLogger( __name__ )
 
 INITIAL_CHANGELOG_HASH = '000000000000'
-MAX_CONTENT_SIZE = 32768
+MAX_CONTENT_SIZE = 1048576
+MAX_DISPLAY_SIZE = 32768
 VALID_CHARS = set( string.letters + string.digits + "'\"-=_.()/+*^,:?!#[]%\\$@;{}&<>" )
 
 new_repo_email_alert_template = """
@@ -444,12 +444,14 @@ def get_configured_ui():
     _ui.setconfig( 'ui', 'quiet', True )
     return _ui
 
-def get_ctx_rev( tool_shed_url, name, owner, changeset_revision ):
-    """Send a request to the tool shed to retrieve the ctx_rev for a repository defined by the combination of a name, owner and changeset revision."""
-    url = url_join( tool_shed_url, 'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
-    response = urllib2.urlopen( url )
-    ctx_rev = response.read()
-    response.close()
+def get_ctx_rev( app, tool_shed_url, name, owner, changeset_revision ):
+    """
+    Send a request to the tool shed to retrieve the ctx_rev for a repository defined by the combination of a name, owner and changeset
+    revision.
+    """
+    url = url_join( tool_shed_url, 
+                    'repository/get_ctx_rev?name=%s&owner=%s&changeset_revision=%s' % ( name, owner, changeset_revision ) )
+    ctx_rev = common_util.tool_shed_get( app, tool_shed_url, url )
     return ctx_rev
 
 def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
@@ -518,7 +520,7 @@ def get_next_downloadable_changeset_revision( repository, repo, after_changeset_
     Return the installable changeset_revision in the repository changelog after the changeset to which after_changeset_revision refers.  If there
     isn't one, return None.
     """
-    changeset_revisions = get_ordered_downloadable_changeset_revisions( repository, repo )
+    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True )
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == after_changeset_revision:
@@ -544,7 +546,7 @@ def get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset
     if not repository:
         tool_shed_url = get_url_from_tool_shed( trans.app, tool_shed )
         repository_clone_url = os.path.join( tool_shed_url, 'repos', owner, name )
-        ctx_rev = get_ctx_rev( tool_shed_url, name, owner, changeset_revision )
+        ctx_rev = get_ctx_rev( trans.app, tool_shed_url, name, owner, changeset_revision )
         repository = create_or_update_tool_shed_repository( app=trans.app,
                                                             name=name,
                                                             description=None,
@@ -558,10 +560,14 @@ def get_or_create_tool_shed_repository( trans, tool_shed, name, owner, changeset
                                                             dist_to_shed=False )
     return repository
 
-def get_ordered_downloadable_changeset_revisions( repository, repo ):
-    """Return an ordered list of changeset_revisions defined by a repository changelog."""
+def get_ordered_metadata_changeset_revisions( repository, repo, downloadable=True ):
+    """Return an ordered list of changeset_revisions that are associated with metadata where order is defined by the repository changelog."""
+    if downloadable:
+        metadata_revisions = repository.downloadable_revisions
+    else:
+        metadata_revisions = repository.metadata_revisions
     changeset_tups = []
-    for repository_metadata in repository.downloadable_revisions:
+    for repository_metadata in metadata_revisions:
         changeset_revision = repository_metadata.changeset_revision
         ctx = get_changectx_for_changeset( repo, changeset_revision )
         if ctx:
@@ -573,12 +579,12 @@ def get_ordered_downloadable_changeset_revisions( repository, repo ):
     sorted_changeset_revisions = [ changeset_tup[ 1 ] for changeset_tup in sorted_changeset_tups ]
     return sorted_changeset_revisions
 
-def get_previous_downloadable_changeset_revision( repository, repo, before_changeset_revision ):
+def get_previous_metadata_changeset_revision( repository, repo, before_changeset_revision, downloadable=True ):
     """
-    Return the installable changeset_revision in the repository changelog prior to the changeset to which before_changeset_revision
-    refers.  If there isn't one, return the hash value of an empty repository changelog, INITIAL_CHANGELOG_HASH.
+    Return the changeset_revision in the repository changelog that has associated metadata prior to the changeset to which
+    before_changeset_revision refers.  If there isn't one, return the hash value of an empty repository changelog, INITIAL_CHANGELOG_HASH.
     """
-    changeset_revisions = get_ordered_downloadable_changeset_revisions( repository, repo )
+    changeset_revisions = get_ordered_metadata_changeset_revisions( repository, repo, downloadable=downloadable )
     if len( changeset_revisions ) == 1:
         changeset_revision = changeset_revisions[ 0 ]
         if changeset_revision == before_changeset_revision:
@@ -639,11 +645,11 @@ def get_repository_by_name_and_owner( app, name, owner ):
 def get_repository_for_dependency_relationship( app, tool_shed, name, owner, changeset_revision ):
     """Return a tool shed repository database record that is defined by either the current changeset revision or the installed_changeset_revision."""
     # This method is used only in Galaxy, not the tool shed.
-    repository =  get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app=app,
-                                                                                            tool_shed=tool_shed,
-                                                                                            name=name,
-                                                                                            owner=owner,
-                                                                                            installed_changeset_revision=changeset_revision )
+    repository = get_tool_shed_repository_by_shed_name_owner_installed_changeset_revision( app=app,
+                                                                                           tool_shed=tool_shed,
+                                                                                           name=name,
+                                                                                           owner=owner,
+                                                                                           installed_changeset_revision=changeset_revision )
     if not repository:
         repository = get_tool_shed_repository_by_shed_name_owner_changeset_revision( app=app,
                                                                                      tool_shed=tool_shed,
@@ -666,10 +672,17 @@ def get_repository_file_contents( file_path ):
         safe_str = ''
         for i, line in enumerate( open( file_path ) ):
             safe_str = '%s%s' % ( safe_str, to_safe_string( line ) )
+            # Stop reading after string is larger than MAX_CONTENT_SIZE.
             if len( safe_str ) > MAX_CONTENT_SIZE:
-                large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
-                safe_str = '%s%s' % ( safe_str, to_safe_string( large_str ) )
+                large_str = \
+                    to_safe_string( '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE ) )
+                safe_str = '%s%s' % ( safe_str, large_str )
                 break
+        if len( safe_str ) > MAX_DISPLAY_SIZE:
+            # Eliminate the middle of the file to display a file no larger than MAX_DISPLAY_SIZE.  This may not be ideal if the file is larger than MAX_CONTENT_SIZE.
+            join_by_str = \
+                to_safe_string( "\n\n...some text eliminated here because file size is larger than maximum viewing size of %s...\n\n" % util.nice_size( MAX_DISPLAY_SIZE ) )
+            safe_str = util.shrink_string_by_size( safe_str, MAX_DISPLAY_SIZE, join_by=join_by_str, left_larger=True, beginning_on_size_error=True )
     return safe_str
 
 def get_repository_files( trans, folder_path ):
@@ -786,9 +799,8 @@ def get_tool_panel_config_tool_path_install_dir( app, repository ):
     This method assumes all repository tools are defined in a single shed-related tool panel config.
     """
     tool_shed = clean_tool_shed_url( repository.tool_shed )
-    partial_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
+    relative_install_dir = '%s/repos/%s/%s/%s' % ( tool_shed, repository.owner, repository.name, repository.installed_changeset_revision )
     # Get the relative tool installation paths from each of the shed tool configs.
-    relative_install_dir = None
     shed_config_dict = repository.get_shed_config_dict( app )
     if not shed_config_dict:
         # Just pick a semi-random shed config.
@@ -798,7 +810,6 @@ def get_tool_panel_config_tool_path_install_dir( app, repository ):
                 break
     shed_tool_conf = shed_config_dict[ 'config_filename' ]
     tool_path = shed_config_dict[ 'tool_path' ]
-    relative_install_dir = partial_install_dir
     return shed_tool_conf, tool_path, relative_install_dir
 
 def get_tool_path_by_shed_tool_conf_filename( trans, shed_tool_conf ):
@@ -1055,16 +1066,15 @@ def repository_was_previously_installed( trans, tool_shed_url, repository_name, 
     in the tool shed and now we're trying to install the latest changeset revision of the same repository instead of updating the one
     that was previously installed.  We'll look in the database instead of on disk since the repository may be uninstalled.
     """
-    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = get_repo_info_tuple_contents( repo_info_tuple )
+    description, repository_clone_url, changeset_revision, ctx_rev, repository_owner, repository_dependencies, tool_dependencies = \
+        get_repo_info_tuple_contents( repo_info_tuple )
     tool_shed = get_tool_shed_from_clone_url( repository_clone_url )
     # Get all previous change set revisions from the tool shed for the repository back to, but excluding, the previous valid changeset
     # revision to see if it was previously installed using one of them.
     url = url_join( tool_shed_url,
                     'repository/previous_changeset_revisions?galaxy_url=%s&name=%s&owner=%s&changeset_revision=%s' % \
                     ( url_for( '/', qualified=True ), repository_name, repository_owner, changeset_revision ) )
-    response = urllib2.urlopen( url )
-    text = response.read()
-    response.close()
+    text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
     if text:
         changeset_revisions = util.listify( text )
         for previous_changeset_revision in changeset_revisions:
@@ -1085,7 +1095,7 @@ def reversed_lower_upper_bounded_changelog( repo, excluded_lower_bounds_changese
     """
     # To set excluded_lower_bounds_changeset_revision, calling methods should do the following, where the value of changeset_revision
     # is a downloadable changeset_revision.
-    # excluded_lower_bounds_changeset_revision = get_previous_downloadable_changeset_revision( repository, repo, changeset_revision )
+    # excluded_lower_bounds_changeset_revision = get_previous_metadata_changeset_revision( repository, repo, changeset_revision, downloadable=? )
     if excluded_lower_bounds_changeset_revision == INITIAL_CHANGELOG_HASH:
         appending_started = True
     else:
@@ -1121,6 +1131,7 @@ def set_repository_attributes( trans, repository, status, error_message, deleted
 
 def set_prior_installation_required( repository, required_repository ):
     """Return True if the received required_repository must be installed before the received repository."""
+    # This method is called only from Galaxy when rendering repository dependencies for an installed tool shed repository.
     required_repository_tup = [ required_repository.tool_shed, required_repository.name, required_repository.owner, required_repository.changeset_revision ]
     # Get the list of repository dependency tuples associated with the received repository where prior_installation_required is True.
     required_rd_tups_that_must_be_installed = repository.requires_prior_installation_of
@@ -1187,13 +1198,13 @@ def tool_shed_is_this_tool_shed( toolshed_base_url ):
     return toolshed_base_url.rstrip( '/' ) == str( url_for( '/', qualified=True ) ).rstrip( '/' )
 
 def translate_string( raw_text, to_html=True ):
-    """Return a subset of a string (up to MAX_CONTENT_SIZE) translated to a safe string for display in a browser."""
+    """Return a subset of a string (up to MAX_DISPLAY_SIZE) translated to a safe string for display in a browser."""
     if raw_text:
-        if len( raw_text ) <= MAX_CONTENT_SIZE:
+        if len( raw_text ) <= MAX_DISPLAY_SIZE:
             translated_string = to_safe_string( raw_text, to_html=to_html )
         else:
-            large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_CONTENT_SIZE )
-            translated_string = to_safe_string( '%s%s' % ( raw_text[ 0:MAX_CONTENT_SIZE ], large_str ), to_html=to_html )
+            large_str = '\nFile contents truncated because file size is larger than maximum viewing size of %s\n' % util.nice_size( MAX_DISPLAY_SIZE )
+            translated_string = to_safe_string( '%s%s' % ( raw_text[ 0:MAX_DISPLAY_SIZE ], large_str ), to_html=to_html )
     else:
         translated_string = ''
     return translated_string

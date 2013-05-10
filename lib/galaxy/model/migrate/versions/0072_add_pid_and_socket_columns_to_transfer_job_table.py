@@ -10,10 +10,10 @@ from migrate.changeset import *
 import logging
 log = logging.getLogger( __name__ )
 
-metadata = MetaData( migrate_engine )
-db_session = scoped_session( sessionmaker( bind=migrate_engine, autoflush=False, autocommit=True ) )
+metadata = MetaData()
 
-def upgrade():
+def upgrade(migrate_engine):
+    metadata.bind = migrate_engine
     print __doc__
     metadata.reflect()
     try:
@@ -28,7 +28,8 @@ def upgrade():
         print "Adding columns to transfer_job table failed: %s" % str( e )
         log.debug( "Adding columns to transfer_job table failed: %s" % str( e ) )
 
-def downgrade():
+def downgrade(migrate_engine):
+    metadata.bind = migrate_engine
     metadata.reflect()
     try:
         TransferJob_table = Table( "transfer_job", metadata, autoload=True )
