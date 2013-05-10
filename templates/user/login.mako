@@ -3,7 +3,7 @@
 def inherit(context):
     if context.get('trans').webapp.name == 'galaxy' and context.get( 'use_panels', True ):
         return '/webapps/galaxy/base_panels.mako'
-    elif context.get('trans').webapp.name == 'tool_shed':
+    elif context.get('trans').webapp.name == 'tool_shed' and context.get( 'use_panels', True ):
         return '/webapps/tool_shed/base_panels.mako'
     else:
         return '/base.mako'
