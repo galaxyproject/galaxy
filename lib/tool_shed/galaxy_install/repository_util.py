@@ -95,6 +95,34 @@ def create_repo_info_dict( trans, repository_clone_url, changeset_revision, ctx_
                                                  tool_dependencies )
     return repo_info_dict
 
+def get_next_prior_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids ):
+    """
+    The order in which the prior_install_required_dict is processed is critical in order to ensure that the ultimate repository installation order is correctly
+    defined.  This method determines the next key / value pair from the received prior_install_required_dict that should be processed.
+    """
+    # Return the first key / value pair that is not yet processed and whose value is an empty list.
+    for key, value in prior_install_required_dict.items():
+        if key in processed_tsr_ids:
+            continue
+        if not value:
+            return key
+    # Return the first key / value pair that is not yet processed and whose ids in value are all included in processed_tsr_ids.
+    for key, value in prior_install_required_dict.items():
+        if key in processed_tsr_ids:
+            continue
+        all_contained = True
+        for required_repository_id in value:
+            if required_repository_id not in processed_tsr_ids:
+                all_contained = False
+                break
+        if all_contained:
+            return key
+    # Return the first key / value pair that is not yet processed.  Hopefully this is all that is necessary at this point.
+    for key, value in prior_install_required_dict.items():
+        if key in processed_tsr_ids:
+            continue
+        return key
+
 def get_prior_install_required_dict( trans, tsr_ids, repo_info_dicts ):
     """
     Return a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained in the received list of tsr_ids
@@ -591,10 +619,13 @@ def order_components_for_installation( trans, tsr_ids, repo_info_dicts, tool_pan
     # Create a dictionary whose keys are the received tsr_ids and whose values are a list of tsr_ids, each of which is contained in the received list of tsr_ids
     # and whose associated repository must be installed prior to the repository associated with the tsr_id key.
     prior_install_required_dict = get_prior_install_required_dict( trans, tsr_ids, repo_info_dicts )
-    # Create the ordered_tsr_ids, the ordered_repo_info_dicts and the ordered_tool_panel_section_keys lists.
-    for tsr_id in tsr_ids:
+    processed_tsr_ids = []
+    while len( processed_tsr_ids ) != len( prior_install_required_dict.keys() ):
+        tsr_id = get_next_prior_install_required_dict_entry( prior_install_required_dict, processed_tsr_ids )
+        processed_tsr_ids.append( tsr_id )
+        # Create the ordered_tsr_ids, the ordered_repo_info_dicts and the ordered_tool_panel_section_keys lists.
         if tsr_id not in ordered_tsr_ids:
-            prior_install_required_ids = prior_install_required_dict.get( tsr_id, [] )
+            prior_install_required_ids = prior_install_required_dict[ tsr_id ]
             for prior_install_required_id in prior_install_required_ids:
                 if prior_install_required_id not in ordered_tsr_ids:
                     # Install the associated repository dependency first.

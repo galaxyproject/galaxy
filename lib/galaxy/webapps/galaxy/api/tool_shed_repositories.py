@@ -248,25 +248,31 @@ class ToolShedRepositoriesController( BaseAPIController ):
             # Install the repositories, keeping track of each one for later display.
             for index, tsr_id in enumerate( ordered_tsr_ids ):
                 tool_shed_repository = trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( tsr_id ) )
-                repo_info_dict = ordered_repo_info_dicts[ index ]
-                tool_panel_section_key = ordered_tool_panel_section_keys[ index ]
-                repository_util.install_tool_shed_repository( trans,
-                                                              tool_shed_repository,
-                                                              repo_info_dict,
-                                                              tool_panel_section_key,
-                                                              shed_tool_conf,
-                                                              tool_path,
-                                                              install_tool_dependencies,
-                                                              reinstalling=False )
-                tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
-                tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
-                                                                  action='show',
-                                                                  id=trans.security.encode_id( tool_shed_repository.id ) )
-                installed_tool_shed_repositories.append( tool_shed_repository_dict )
-        else:
+                if tool_shed_repository.status in [ trans.model.ToolShedRepository.installation_status.NEW,
+                                                    trans.model.ToolShedRepository.installation_status.UNINSTALLED ]:
+
+                    repo_info_dict = ordered_repo_info_dicts[ index ]
+                    tool_panel_section_key = ordered_tool_panel_section_keys[ index ]
+                    repository_util.install_tool_shed_repository( trans,
+                                                                  tool_shed_repository,
+                                                                  repo_info_dict,
+                                                                  tool_panel_section_key,
+                                                                  shed_tool_conf,
+                                                                  tool_path,
+                                                                  install_tool_dependencies,
+                                                                  reinstalling=False )
+                    tool_shed_repository_dict = tool_shed_repository.as_dict( value_mapper=default_tool_shed_repository_value_mapper( trans, tool_shed_repository ) )
+                    tool_shed_repository_dict[ 'url' ] = web.url_for( controller='tool_shed_repositories',
+                                                                      action='show',
+                                                                      id=trans.security.encode_id( tool_shed_repository.id ) )
+                    installed_tool_shed_repositories.append( tool_shed_repository_dict )
+        elif message:
             log.error( message, exc_info=True )
             trans.response.status = 500
             return dict( status='error', error=message )
+        elif not created_or_updated_tool_shed_repositories and not message:
+            # We're attempting to install more than 1 repository, and all of them have already been installed.
+            return dict( status='error', error='All repositories that you are attempting to install have been previously installed.' )
         # Display the list of installed repositories.
         return installed_tool_shed_repositories
 
