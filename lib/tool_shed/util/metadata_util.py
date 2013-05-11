@@ -1857,23 +1857,14 @@ def update_repository_dependencies_metadata( metadata, repository_dependency_tup
         else:
             tool_shed, name, owner, changeset_revision, prior_installation_required, error_message = repository_dependency_tup
         prior_installation_required = util.asbool( str( prior_installation_required ) )
-        rd_key = container_util.generate_repository_dependencies_key_for_repository( toolshed_base_url=tool_shed,
-                                                                                     repository_name=name,
-                                                                                     repository_owner=owner,
-                                                                                     changeset_revision=changeset_revision,
-                                                                                     prior_installation_required=prior_installation_required )
         if repository_dependencies_dict:
-            if rd_key in repository_dependencies_dict:
-                repository_dependencies = repository_dependencies_dict[ rd_key ]
-                for repository_dependency_tup in repository_dependency_tups:
-                    if repository_dependency_tup not in repository_dependencies:
-                        repository_dependencies.append( repository_dependency_tup )
-                repository_dependencies_dict[ rd_key ] = repository_dependencies
-            else:
-                repository_dependencies_dict[ rd_key ] = repository_dependency_tups
+            repository_dependencies = repository_dependencies_dict.get( 'repository_dependencies', [] )
+            for repository_dependency_tup in repository_dependency_tups:
+                if repository_dependency_tup not in repository_dependencies:
+                    repository_dependencies.append( repository_dependency_tup )
+            repository_dependencies_dict[ 'repository_dependencies' ] = repository_dependencies
         else:
-            repository_dependencies_dict = dict( root_key=rd_key,
-                                                 description=description,
+            repository_dependencies_dict = dict( description=description,
                                                  repository_dependencies=repository_dependency_tups )
     if repository_dependencies_dict:
         if is_valid:

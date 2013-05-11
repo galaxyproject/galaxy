@@ -198,7 +198,7 @@ def copy_file_from_manifest( repo, ctx, filename, dir ):
 def create_or_update_tool_shed_repository( app, name, description, installed_changeset_revision, ctx_rev, repository_clone_url, metadata_dict,
                                            status, current_changeset_revision=None, owner='', dist_to_shed=False ):
     """
-    Update a tool shed repository record i the Galaxy database with the new information received.  If a record defined by the received tool shed, repository name
+    Update a tool shed repository record in the Galaxy database with the new information received.  If a record defined by the received tool shed, repository name
     and owner does not exists, create a new record with the received information.
     """
     # The received value for dist_to_shed will be True if the InstallManager is installing a repository that contains tools or datatypes that used
@@ -1051,6 +1051,10 @@ def parse_repository_dependency_tuple( repository_dependency_tuple, contains_err
             tool_shed, name, owner, changeset_revision, prior_installation_required = repository_dependency_tuple
         prior_installation_required = util.asbool( str( prior_installation_required ) )
         return tool_shed, name, owner, changeset_revision, prior_installation_required
+
+def pretty_print( dict=None ):
+    if dict:
+        return json.to_json_string( dict, sort_keys=True, indent=4 * ' ' )
 
 def remove_dir( dir ):
     """Attempt to remove a directory from disk."""

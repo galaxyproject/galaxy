@@ -487,9 +487,9 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
                                                     tool_shed_repository,
                                                     trans.model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS )
             tool_shed_url = suc.get_url_from_tool_shed( trans.app, tool_shed_repository.tool_shed )
-            url  = suc.url_join( tool_shed_url,
-                                 '/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' % 
-                                 ( tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.changeset_revision ) )
+            url = suc.url_join( tool_shed_url,
+                                '/repository/get_tool_versions?name=%s&owner=%s&changeset_revision=%s' %
+                                ( tool_shed_repository.name, tool_shed_repository.owner, tool_shed_repository.changeset_revision ) )
             text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
             if text:
                 tool_version_dicts = json.from_json_string( text )
