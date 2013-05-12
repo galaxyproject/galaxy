@@ -1,5 +1,6 @@
 import logging
 import os
+import tempfile
 from galaxy import eggs
 from galaxy import util
 from galaxy.util import json
@@ -285,7 +286,43 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                 encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
                 encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )
                 url = suc.url_join( tool_shed_url, '/repository/get_required_repo_info_dict?encoded_str=%s' % encoded_required_repository_str )
-                text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+                # In some cases the above URL will be long.  With apache, the default limit for the length of the request line is 8190 bytes 
+                # (http://httpd.apache.org/docs/2.2/mod/core.html#limitrequestline). And if we subtract three bytes for the request method 
+                # (i.e. GET), eight bytes for the version information (i.e. HTTP/1.0/HTTP/1.1) and two bytes for the separating space, we end 
+                # up with 8177 bytes for the URI path plus query.
+                if len( url ) >= 8177:
+                    # Persist the encoded string to a temporary file.
+                    fh = tempfile.NamedTemporaryFile( 'wb' )
+                    tmp_file_name = fh.name
+                    fh.close()
+                    fh = open( tmp_file_name, 'wb' )
+                    fh.write( encoded_required_repository_str )
+                    fh.close()
+                    encoded_tmp_file_name = encoding_util.tool_shed_encode( os.path.abspath( tmp_file_name ) )
+                    # Send a request to the tool shed to enable it to read the temporary file.
+                    url = suc.url_join( tool_shed_url, '/repository/get_required_repo_info_dict?encoded_tmp_file_name=%s' % encoded_tmp_file_name )
+                else:
+                    encoded_tmp_file_name = None
+                    tmp_file_name = None
+                try:
+                    text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
+                except Exception, e:
+                    if encoded_tmp_file_name:
+                        message = 'The selected tool shed repositories cannot be installed until the tool shed at '
+                        message += '%s and the Galaxy instance at %s ' % ( str( tool_shed_url ), str( trans.request.base ) )
+                        message += 'are both updated to at least the June 3, 2013 Galaxy release.  These upgrades '
+                        message += 'are necessary because the number of repositories you are attemping to install '
+                        message += 'generates an HTTP request that is longer than 8177 bytes which cannot be handled '
+                        message += 'by tool shed or Galaxy instances older than this release.'
+                        log.debug( message )
+                    else:
+                        log.exception()
+                    text = None
+                if tmp_file_name:
+                    try:
+                        os.unlink( tmp_file_name )
+                    except:
+                        pass
                 if text:
                     required_repo_info_dict = json.from_json_string( text )
                     required_repo_info_dicts = []
@@ -356,3 +393,7 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                                                app.model.ToolDependency.installation_status.ERROR ]:
                 installed_tool_dependencies.append( tool_dependency )
     return installed_tool_dependencies
+
+def stream_file_contents( trans, encoded_tmp_file_name ):
+    tmp_file_name = encoding_util.tool_shed_decode( encoded_tmp_file_name )
+    return open( tmp_file_name )

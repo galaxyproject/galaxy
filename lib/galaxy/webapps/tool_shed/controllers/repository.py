@@ -4,9 +4,11 @@ import os
 import re
 import string
 import tempfile
+import urllib2
 from time import gmtime
 from time import strftime
-from datetime import date, datetime
+from datetime import date
+from datetime import datetime
 from galaxy import util
 from galaxy import web
 from galaxy.util.odict import odict
@@ -1471,12 +1473,29 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                      repo_info_dicts=repo_info_dicts )
 
     @web.json
-    def get_required_repo_info_dict( self, trans, encoded_str ):
+    def get_required_repo_info_dict( self, trans, encoded_str=None, **kwd ):
         """
         Retrieve and return a dictionary that includes a list of dictionaries that each contain all of the information needed to install the list of
         repositories defined by the received encoded_str.
         """
-        encoded_required_repository_str = encoding_util.tool_shed_decode( encoded_str )
+        # In some cases the received encoded_str will be long.  With apache, the default limit for the length of the request line is 8190 bytes 
+        # (http://httpd.apache.org/docs/2.2/mod/core.html#limitrequestline). And if we subtract three bytes for the request method (i.e. GET), 
+        # eight bytes for the version information (i.e. HTTP/1.0/HTTP/1.1) and two bytes for the separating space, we end up with 8177 bytes for 
+        # the URI path plus query.  The referer handles requests longer than this by persisting the encoded_str to a temporary file which we
+        # can read.
+        encoded_tmp_file_name = kwd.get( 'encoded_tmp_file_name', None )
+        if encoded_str:
+            encoded_required_repository_str = encoding_util.tool_shed_decode( encoded_str )
+        else:
+            # The request would have been longer than 8190 bytes if it included the encoded_str, so we'll send a request to the Galaxy instance to
+            # stream the string to us.
+            galaxy_url = suc.handle_galaxy_url( trans, **kwd )
+            if galaxy_url and encoded_tmp_file_name:
+                url = suc.url_join( galaxy_url, '/common_install_util/stream_file_contents?encoded_tmp_file_name=%s' % encoded_tmp_file_name )
+                response = urllib2.urlopen( url )
+                encoded_required_repository_str = response.read()
+            else:
+                raise Exception( "Required galaxy_url or encoded_tmp_file_name request parameters missing." )
         encoded_required_repository_tups = encoded_required_repository_str.split( encoding_util.encoding_sep2 )
         decoded_required_repository_tups = []
         for encoded_required_repository_tup in encoded_required_repository_tups:
