@@ -299,8 +299,11 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                     fh.write( encoded_required_repository_str )
                     fh.close()
                     encoded_tmp_file_name = encoding_util.tool_shed_encode( os.path.abspath( tmp_file_name ) )
+                    galaxy_url = web.url_for( '/', qualified=True )
                     # Send a request to the tool shed to enable it to read the temporary file.
-                    url = suc.url_join( tool_shed_url, '/repository/get_required_repo_info_dict?encoded_tmp_file_name=%s' % encoded_tmp_file_name )
+                    url = suc.url_join( tool_shed_url, 
+                                        '/repository/get_required_repo_info_dict?encoded_tmp_file_name=%s&galaxy_url=%s' % \
+                                        ( encoded_tmp_file_name, galaxy_url ) )
                 else:
                     encoded_tmp_file_name = None
                     tmp_file_name = None
@@ -311,7 +314,7 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                         message = 'The selected tool shed repositories cannot be installed until the tool shed at '
                         message += '%s and the Galaxy instance at %s ' % ( str( tool_shed_url ), str( trans.request.base ) )
                         message += 'are both updated to at least the June 3, 2013 Galaxy release.  These upgrades '
-                        message += 'are necessary because the number of repositories you are attemping to install '
+                        message += 'are necessary because the number of repositories you are attempting to install '
                         message += 'generates an HTTP request that is longer than 8177 bytes which cannot be handled '
                         message += 'by tool shed or Galaxy instances older than this release.'
                         log.debug( message )
