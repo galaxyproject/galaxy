@@ -362,4 +362,3 @@ class ToolShedRepositoriesController( BaseAPIController ):
             elif isinstance( installed_tool_shed_repositories, list ):
                 all_installed_tool_shed_repositories.extend( installed_tool_shed_repositories )
         return all_installed_tool_shed_repositories
-    

@@ -1491,11 +1491,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             # stream the string to us.
             galaxy_url = suc.handle_galaxy_url( trans, **kwd )
             if galaxy_url and encoded_tmp_file_name:
-                url = suc.url_join( galaxy_url, '/common_install_util/stream_file_contents?encoded_tmp_file_name=%s' % encoded_tmp_file_name )
+                url = suc.url_join( galaxy_url,
+                                    'admin_toolshed/stream_file_contents?encoded_tmp_file_name=%s' % encoded_tmp_file_name )
                 response = urllib2.urlopen( url )
                 encoded_required_repository_str = response.read()
             else:
-                raise Exception( "Required galaxy_url or encoded_tmp_file_name request parameters missing." )
+                log.debug( "Invalid galaxy_url '%s' or encoded_tmp_file_name '%s'." % ( str( galaxy_url ), str( encoded_tmp_file_name ) ) )
+                repo_info_dict = {}
+                return repo_info_dict
         encoded_required_repository_tups = encoded_required_repository_str.split( encoding_util.encoding_sep2 )
         decoded_required_repository_tups = []
         for encoded_required_repository_tup in encoded_required_repository_tups:

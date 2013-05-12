@@ -3,6 +3,7 @@ import os
 import tempfile
 from galaxy import eggs
 from galaxy import util
+from galaxy import web
 from galaxy.util import json
 from galaxy.webapps.tool_shed.util import container_util
 import tool_shed.util.shed_util_common as suc
@@ -396,7 +397,3 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                                                app.model.ToolDependency.installation_status.ERROR ]:
                 installed_tool_dependencies.append( tool_dependency )
     return installed_tool_dependencies
-
-def stream_file_contents( trans, encoded_tmp_file_name ):
-    tmp_file_name = encoding_util.tool_shed_decode( encoded_tmp_file_name )
-    return open( tmp_file_name )

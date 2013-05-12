@@ -1406,6 +1406,15 @@ class AdminToolshed( AdminGalaxy ):
                                     message=message,
                                     status=status )
 
+    @web.expose
+    def stream_file_contents( self, trans, encoded_tmp_file_name ):
+        tmp_file_name = encoding_util.tool_shed_decode( encoded_tmp_file_name )
+        if os.path.exists( tmp_file_name ):
+            return open( tmp_file_name, 'r' )
+        else:
+            log.debug( "The required temporary file '%s' cannot be located." % str( tmp_file_name ) )
+            return ''
+
     @web.json
     def tool_dependency_status_updates( self, trans, ids=None, status_list=None ):
         # Avoid caching
