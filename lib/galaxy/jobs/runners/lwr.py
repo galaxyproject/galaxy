@@ -1,5 +1,4 @@
 import logging
-import subprocess
 
 from galaxy import model
 from galaxy.jobs.runners import AsynchronousJobState, AsynchronousJobRunner
@@ -7,6 +6,7 @@ from galaxy.jobs import JobDestination
 
 import errno
 from time import sleep
+import os
 
 from lwr_client import FileStager, Client, url_to_destination_params
 
@@ -140,23 +140,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_wrapper.fail( "failure running job", exception=True )
             log.exception("failure running job %d" % job_wrapper.job_id)
             return
-        #run the metadata setting script here
-        #this is terminate-able when output dataset/job is deleted
-        #so that long running set_meta()s can be canceled without having to reboot the server
-        if job_wrapper.get_state() not in [ model.Job.states.ERROR, model.Job.states.DELETED ] and job_wrapper.output_paths:
-            external_metadata_script = job_wrapper.setup_external_metadata( output_fnames = job_wrapper.get_output_fnames(),
-                                                                            set_extension = True,
-                                                                            kwds = { 'overwrite' : False } ) #we don't want to overwrite metadata that was copied over in init_meta(), as per established behavior
-            log.debug( 'executing external set_meta script for job %d: %s' % ( job_wrapper.job_id, external_metadata_script ) )
-            external_metadata_proc = subprocess.Popen( args = external_metadata_script, 
-                                         shell = True, 
-                                         env = os.environ,
-                                         preexec_fn = os.setpgrp )
-            job_wrapper.external_output_metadata.set_job_runner_external_pid( external_metadata_proc.pid, self.sa_session )
-            external_metadata_proc.wait()
-            log.debug( 'execution of external set_meta finished for job %d' % job_wrapper.job_id )
-
-        # Finish the job                
+        self._handle_metadata_externally( job_wrapper )
+        # Finish the job
         try:
             job_wrapper.finish( stdout, stderr )
         except:
