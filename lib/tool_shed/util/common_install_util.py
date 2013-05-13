@@ -17,6 +17,9 @@ from tool_shed.galaxy_install.tool_dependencies.install_util import set_environm
 
 import pkg_resources
 
+pkg_resources.require( "simplejson" )
+import simplejson
+
 pkg_resources.require( 'elementtree' )
 from elementtree import ElementTree
 from elementtree import ElementInclude
@@ -253,7 +256,6 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
     repository_dependencies entries in each of the received repo_info_dicts includes all required repositories, so only one pass through
     this method is required to retrieve all repository dependencies.
     """
-    all_repo_info_dicts = []
     if repo_info_dicts:
         # We'll send tuples of ( tool_shed, repository_name, repository_owner, changeset_revision ) to the tool shed to discover repository ids.
         required_repository_tups = []
@@ -287,59 +289,47 @@ def get_required_repo_info_dicts( trans, tool_shed_url, repo_info_dicts ):
                 encoded_required_repository_str = encoding_util.encoding_sep2.join( encoded_required_repository_tups )
                 encoded_required_repository_str = encoding_util.tool_shed_encode( encoded_required_repository_str )
                 url = suc.url_join( tool_shed_url, '/repository/get_required_repo_info_dict?encoded_str=%s' % encoded_required_repository_str )
-                # In some cases the above URL will be long.  With apache, the default limit for the length of the request line is 8190 bytes 
-                # (http://httpd.apache.org/docs/2.2/mod/core.html#limitrequestline). And if we subtract three bytes for the request method 
-                # (i.e. GET), eight bytes for the version information (i.e. HTTP/1.0/HTTP/1.1) and two bytes for the separating space, we end 
-                # up with 8177 bytes for the URI path plus query.
-                if len( url ) >= 8177:
-                    # Persist the encoded string to a temporary file.
-                    fh = tempfile.NamedTemporaryFile( 'wb' )
-                    tmp_file_name = fh.name
-                    fh.close()
-                    fh = open( tmp_file_name, 'wb' )
-                    fh.write( encoded_required_repository_str )
-                    fh.close()
-                    encoded_tmp_file_name = encoding_util.tool_shed_encode( os.path.abspath( tmp_file_name ) )
-                    galaxy_url = web.url_for( '/', qualified=True )
-                    # Send a request to the tool shed to enable it to read the temporary file.
-                    url = suc.url_join( tool_shed_url, 
-                                        '/repository/get_required_repo_info_dict?encoded_tmp_file_name=%s&galaxy_url=%s' % \
-                                        ( encoded_tmp_file_name, galaxy_url ) )
-                else:
-                    encoded_tmp_file_name = None
-                    tmp_file_name = None
-                try:
-                    text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
-                except Exception, e:
-                    if encoded_tmp_file_name:
-                        message = 'The selected tool shed repositories cannot be installed until the tool shed at '
-                        message += '%s and the Galaxy instance at %s ' % ( str( tool_shed_url ), str( trans.request.base ) )
-                        message += 'are both updated to at least the June 3, 2013 Galaxy release.  These upgrades '
-                        message += 'are necessary because the number of repositories you are attempting to install '
-                        message += 'generates an HTTP request that is longer than 8177 bytes which cannot be handled '
-                        message += 'by tool shed or Galaxy instances older than this release.'
-                        log.debug( message )
-                    else:
-                        log.exception()
-                    text = None
-                if tmp_file_name:
-                    try:
-                        os.unlink( tmp_file_name )
-                    except:
-                        pass
+                text = common_util.tool_shed_get( trans.app, tool_shed_url, url )
                 if text:
-                    required_repo_info_dict = json.from_json_string( text )
-                    required_repo_info_dicts = []
-                    encoded_dict_strings = required_repo_info_dict[ 'repo_info_dicts' ]
-                    for encoded_dict_str in encoded_dict_strings:
-                        decoded_dict = encoding_util.tool_shed_decode( encoded_dict_str )
-                        required_repo_info_dicts.append( decoded_dict )                        
-                    if required_repo_info_dicts:                            
-                        for required_repo_info_dict in required_repo_info_dicts:
-                            if required_repo_info_dict not in all_repo_info_dicts:
-                                all_repo_info_dicts.append( required_repo_info_dict )
-    return all_repo_info_dicts
+                    try:
+                        required_repo_info_dict = json.from_json_string( text )
+                    except simplejson.decoder.JSONDecodeError, e:
+                        if len( url ) >= 8177:
+                            message = '\n\nThe selected tool shed repositories cannot be installed until the tool shed at %s and the Galaxy ' % str( tool_shed_url )
+                            message += 'instance at %s are both updated to at least the June 3, 2013 Galaxy release.  These upgrades ' % str( trans.request.base )
+                            message += 'are necessary because the number of repositories you are attempting to install generates an HTTP request that is longer than '
+                            message += '8177 bytes which cannot be handled by tool shed or Galaxy instances older than the June 3, 2013 release.\n\n'
+                            log.exception( message )
+                        else:
+                            log.exception()
+                        return []
+                    except Exception, e:
+                        log.exception()
+                        return []
+                    return process_repo_info_dict( trans, required_repo_info_dict )
+    return []
 
+def handle_large_repo_info_dict( trans, tool_shed_url, encoded_required_repository_str ):
+    """
+    Handle the cases where the received encoded_required_repository_str is long.  With apache, the default limit for the length of the request line is 8190 bytes
+    (http://httpd.apache.org/docs/2.2/mod/core.html#limitrequestline). And if we subtract three bytes for the request method (i.e. GET), eight bytes for the version
+    information (i.e. HTTP/1.0/HTTP/1.1) and two bytes for the separating space, we end up with 8177 bytes for the URI path plus query.
+    """
+    # Persist the encoded string to a temporary file.
+    fh = tempfile.NamedTemporaryFile( 'wb' )
+    tmp_file_name = fh.name
+    fh.close()
+    fh = open( tmp_file_name, 'wb' )
+    fh.write( encoded_required_repository_str )
+    fh.close()
+    encoded_tmp_file_name = encoding_util.tool_shed_encode( os.path.abspath( tmp_file_name ) )
+    galaxy_url = web.url_for( '/', qualified=True )
+    # Redirect to the tool shed to enable it to read the persisted encoded_required_repository_str.
+    url = suc.url_join( tool_shed_url, 
+                        '/repository/handle_large_repo_info_dict?encoded_tmp_file_name=%s&galaxy_url=%s' % \
+                        ( encoded_tmp_file_name, galaxy_url ) )
+    return trans.response.send_redirect( url )
+                    
 def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_config, tool_dependencies ):
     """
     Install and build tool dependencies defined in the tool_dependencies_config.  This config's tag sets can currently refer to installation
@@ -397,3 +387,24 @@ def handle_tool_dependencies( app, tool_shed_repository, tool_dependencies_confi
                                                                app.model.ToolDependency.installation_status.ERROR ]:
                 installed_tool_dependencies.append( tool_dependency )
     return installed_tool_dependencies
+
+def process_repo_info_dict( trans, required_repo_info_dict ):
+    all_repo_info_dicts = []
+    required_repo_info_dicts = []
+    encoded_dict_strings = required_repo_info_dict[ 'repo_info_dicts' ]
+    for encoded_dict_str in encoded_dict_strings:
+        decoded_dict = encoding_util.tool_shed_decode( encoded_dict_str )
+        required_repo_info_dicts.append( decoded_dict )                        
+    if required_repo_info_dicts:                            
+        for required_repo_info_dict in required_repo_info_dicts:
+            if required_repo_info_dict not in all_repo_info_dicts:
+                all_repo_info_dicts.append( required_repo_info_dict )
+    # Remove the temporary file that stored the long encoded_required_repository_str if possible.
+    encoded_tmp_file_name = required_repo_info_dict.get( 'encoded_tmp_file_name', None )
+    if encoded_tmp_file_name:
+        tmp_file_name = encoding_util.tool_shed_decode( encoded_tmp_file_name )
+        try:
+            os.unlink( tmp_file_name )
+        except:
+            pass
+    return all_repo_info_dicts

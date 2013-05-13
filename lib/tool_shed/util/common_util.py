@@ -27,7 +27,7 @@ def check_for_missing_tools( app, tool_panel_configs, latest_tool_migration_scri
                 url = '%s/repository/get_tool_dependencies?name=%s&owner=%s&changeset_revision=%s&from_install_manager=True' % \
                 ( tool_shed_url, repository_name, REPOSITORY_OWNER, changeset_revision )
                 try:
-                    text = tool_shed_get(app, tool_shed_url, url)
+                    text = tool_shed_get( app, tool_shed_url, url )
                     tool_shed_accessible = True
                 except Exception, e:
                     # Tool shed may be unavailable - we have to set tool_shed_accessible since we're looping.

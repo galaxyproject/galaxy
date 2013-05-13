@@ -313,6 +313,11 @@ class AdminToolshed( AdminGalaxy ):
         """Return an svg image representation of a workflow dictionary created when the workflow was exported."""
         return workflow_util.generate_workflow_image( trans, workflow_name, repository_metadata_id=None, repository_id=repository_id )
 
+    @web.expose
+    def get_contents_of_file( self, trans, encoded_file_path ):
+        file_path = encoding_util.tool_shed_decode( encoded_file_path )
+        return suc.get_file_contents( file_path )
+
     @web.json
     @web.require_admin
     def get_file_contents( self, trans, file_path ):
@@ -382,6 +387,34 @@ class AdminToolshed( AdminGalaxy ):
     def get_versions_of_tool( self, app, guid ):
         tool_version = tool_util.get_tool_version( app, guid )
         return tool_version.get_version_ids( app, reverse=True )
+
+    @web.json
+    def handle_large_repo_info_dict( self, trans, **kwd ):
+        """
+        In some cases the required encoded_str will be long.  With apache, the default limit for the length of the request line is 8190 bytes 
+        (http://httpd.apache.org/docs/2.2/mod/core.html#limitrequestline). And if we subtract three bytes for the request method (i.e. GET), 
+        eight bytes for the version information (i.e. HTTP/1.0/HTTP/1.1) and two bytes for the separating space, we end up with 8177 bytes for 
+        the URI path plus query.  The referer handles requests longer than this by persisting the repo_info_dict to a temporary file which we can read.
+        """
+        required_repo_info_dict = {}
+        encoded_tmp_file_name = kwd.get( 'encoded_tmp_file_name', None )
+        # The request would have been longer than 8190 bytes if it included the encoded_str, so we'll send a request to the Galaxy instance to get it.
+        tool_shed_url = kwd.get( 'tool_shed_url', None )
+        if tool_shed_url and encoded_tmp_file_name:
+            url = suc.url_join( tool_shed_url,
+                                '/repository/get_contents_of_file?encoded_tmp_file_name=%s' % encoded_tmp_file_name )
+            response = urllib2.urlopen( url )
+            text = response.read()
+            required_repo_info_dict = json.from_json_string( text )
+        else:
+            log.debug( "Invalid tool_shed_url '%s' or encoded_tmp_file_name '%s'." % ( str( tool_shed_url ), str( encoded_tmp_file_name ) ) )
+        tmp_file_name = encoding_util.tool_shed_decode( encoded_tmp_file_name )
+        if os.path.exists( tmp_file_name ):
+            try:
+                os.unkink( tmp_file_name )
+            except:
+                pass
+        return common_install_util.process_repo_info_dict( trans, required_repo_info_dict )
 
     @web.expose
     @web.require_admin
@@ -1405,15 +1438,6 @@ class AdminToolshed( AdminGalaxy ):
                                     containers_dict=containers_dict,
                                     message=message,
                                     status=status )
-
-    @web.expose
-    def stream_file_contents( self, trans, encoded_tmp_file_name ):
-        tmp_file_name = encoding_util.tool_shed_decode( encoded_tmp_file_name )
-        if os.path.exists( tmp_file_name ):
-            return open( tmp_file_name, 'r' )
-        else:
-            log.debug( "The required temporary file '%s' cannot be located." % str( tmp_file_name ) )
-            return ''
 
     @web.json
     def tool_dependency_status_updates( self, trans, ids=None, status_list=None ):

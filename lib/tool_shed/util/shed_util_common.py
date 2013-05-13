@@ -466,6 +466,14 @@ def get_ctx_file_path_from_manifest( filename, repo, changeset_revision ):
                 return manifest_ctx, ctx_file
     return None, None
 
+def get_file_contents( file_path ):
+    if os.path.exists( file_path ):
+         fh = open( file_path )
+         contents = fh.read()
+         fh.close()
+         return contents
+    return ''
+
 def get_file_context_from_ctx( ctx, filename ):
     """Return the mercurial file context for a specified file."""
     # We have to be careful in determining if we found the correct file because multiple files with the same name may be in different directories
