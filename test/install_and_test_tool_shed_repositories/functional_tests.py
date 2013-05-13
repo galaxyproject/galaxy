@@ -720,8 +720,9 @@ def main():
                     test_toolbox.toolbox = app.toolbox
                     repositories_failed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
                 elif missing_tool_dependencies:
-                    # If a tool dependency fails to install correctly, this should be considered a missing test component,
-                    # as the tools depend on the tool dependency being present in order to return coherent results.
+                    # If a tool dependency fails to install correctly, this should be considered an installation error,
+                    # and functional tests should be skipped, since the tool dependency needs to be correctly installed
+                    # for the test to be considered reliable.
                     log.error( 'One or more tool dependencies of this repository are marked as missing.' )
                     log.error( 'Updating repository and skipping functional tests.' )
                     # In keeping with the standard display layout, add the error message to the dict for each tool individually.
