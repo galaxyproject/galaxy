@@ -15,7 +15,7 @@
     <p>Access managed data by job</p>
     
 %if jobs:
-<form name="jobs" action="${h.url_for()}" method="POST">
+<div>
     <table class="manage-table colored" border="0" cellspacing="0" cellpadding="0" width="100%">
         <tr class="header">
             <td>Job ID</td>
@@ -42,7 +42,7 @@
         %endfor
     </table>
     <p/>
-</form>
+</div>
 %else:
     <div class="infomessage">There are no jobs for this data manager.</div>
 %endif
