@@ -88,7 +88,7 @@
     ${container_javascripts()}
 </%def>
 
-${render_tool_shed_repository_actions( repository, repo=repo, metadata=metadata, changeset_revision=changeset_revision )}
+${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_revision=changeset_revision )}
 
 %if message:
     ${render_msg( message, status )}

@@ -1,6 +1,6 @@
 <%inherit file="/base.mako"/>
 
-<%def name="render_tool_shed_repository_actions( repository, repo=None, metadata=None, changeset_revision=None )">
+<%def name="render_tool_shed_repository_actions( repository, metadata=None, changeset_revision=None )">
     <%
         from tool_shed.util.review_util import can_browse_repository_reviews, changeset_revision_reviewed_by_user, get_review_by_repository_id_changeset_revision_user_id
         from tool_shed.util.shed_util_common import changeset_is_malicious
@@ -54,11 +54,8 @@
         else:
             can_download = False
 
-        if not is_deprecated:
-            if repo and len( repo ) > 0:
-                can_reset_all_metadata = True
-            else:
-                can_reset_all_metadata = False
+        if ( is_admin or ( trans.user and trans.user == repository.user ) ) and not repository.deleted and not repository.deprecated and not is_new:
+            can_reset_all_metadata = True
         else:
             can_reset_all_metadata = False
 
