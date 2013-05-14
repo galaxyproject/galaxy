@@ -1855,14 +1855,19 @@ class WorkflowController( BaseUIController, SharableMixin, UsesStoredWorkflowMix
                     conn.output_name = conn_dict['output_name']
                     conn.output_step = steps_by_external_id[ conn_dict['id'] ]
             del step.temp_input_connections
+
         # Order the steps if possible
         attach_ordered_steps( workflow, steps )
+
         # Connect up
         stored = model.StoredWorkflow()
         stored.name = workflow.name
         workflow.stored_workflow = stored
         stored.latest_workflow = workflow
         stored.user = trans.user
+        if data[ 'annotation' ]:
+            self.add_item_annotation( trans.sa_session, stored.user, stored, data[ 'annotation' ] )
+        
         # Persist
         trans.sa_session.add( stored )
         trans.sa_session.flush()
