@@ -625,6 +625,17 @@ def main():
             # repository, with tool and repository dependencies also selected for installation.
             result, _ = run_tests( test_config )
             success = result.wasSuccessful()
+            repository_status = get_tool_test_results_from_api( galaxy_tool_shed_url, metadata_revision_id )
+            if 'test_environment' not in repository_status:
+                repository_status[ 'test_environment' ] = {}
+            test_environment = get_test_environment( repository_status[ 'test_environment' ] )
+            test_environment[ 'galaxy_database_version' ] = get_database_version( app )
+            test_environment[ 'galaxy_revision'] = get_repository_current_revision( os.getcwd() )
+            repository_status[ 'test_environment' ] = test_environment
+            repository_status[ 'passed_tests' ] = []
+            repository_status[ 'failed_tests' ] = []
+            repository_status[ 'installation_errors' ] = dict( current_repository=[], repository_dependencies=[], tool_dependencies=[] )
+            repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
             # If the installation succeeds, configure and run functional tests for this repository. This is equivalent to 
             # sh run_functional_tests.sh -installed
             if success:
@@ -684,18 +695,8 @@ def main():
                 #             },
                 #         ]
                 # }
-                repository_status = get_tool_test_results_from_api( galaxy_tool_shed_url, metadata_revision_id )
-                if 'test_environment' not in repository_status:
-                    repository_status[ 'test_environment' ] = {}
-                test_environment = get_test_environment( repository_status[ 'test_environment' ] )
-                test_environment[ 'galaxy_database_version' ] = get_database_version( app )
-                test_environment[ 'galaxy_revision'] = get_repository_current_revision( os.getcwd() )
-                repository_status[ 'test_environment' ] = test_environment
-                repository_status[ 'passed_tests' ] = []
-                repository_status[ 'failed_tests' ] = []
-                repository_status[ 'installation_errors' ] = []
-                repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
-                missing_tool_dependencies = repository.includes_tool_dependencies and repository.missing_tool_dependencies
+                failed_tool_dependencies = repository.includes_tool_dependencies and repository.tool_dependencies_with_installation_errors
+                failed_repository_dependencies = repository.repository_dependencies_with_installation_errors
                 if 'missing_test_components' not in repository_status:
                     repository_status[ 'missing_test_components' ] = []
                 if not has_test_data:
@@ -708,9 +709,10 @@ def main():
                         tool_version = tool[ 'version' ]
                         tool_guid = tool[ 'guid' ]
                         # In keeping with the standard display layout, add the error message to the dict for each tool individually.
-                        failed_tests = dict( tool_id=tool_id, tool_version=tool_version, tool_guid=tool_guid,
-                                             missing_components="Repository %s is missing a test-data directory." % name )
-                        repository_status[ 'missing_test_components' ].append( failed_tests )
+                        missing_components = dict( tool_id=tool_id, tool_version=tool_version, tool_guid=tool_guid,
+                                                   missing_components="Repository %s is missing a test-data directory." % name )
+                        if missing_components not in repository_status[ 'missing_test_components' ]:
+                            repository_status[ 'missing_test_components' ].append( missing_components )
                     # Record the status of this repository in the tool shed.
                     register_test_result( galaxy_tool_shed_url, metadata_revision_id, repository_status, passed_tests=False )
                     # Run the cleanup method. This removes tool functional test methods from the test_toolbox module and uninstalls the
@@ -719,17 +721,26 @@ def main():
                     # Set the test_toolbox.toolbox module-level variable to the new app.toolbox.
                     test_toolbox.toolbox = app.toolbox
                     repositories_failed.append( dict( name=name, owner=owner, changeset_revision=changeset_revision ) )
-                elif missing_tool_dependencies:
+                elif failed_tool_dependencies or failed_repository_dependencies:
                     # If a tool dependency fails to install correctly, this should be considered an installation error,
                     # and functional tests should be skipped, since the tool dependency needs to be correctly installed
                     # for the test to be considered reliable.
                     log.error( 'One or more tool dependencies of this repository are marked as missing.' )
                     log.error( 'Updating repository and skipping functional tests.' )
                     # In keeping with the standard display layout, add the error message to the dict for each tool individually.
-                    for dependency in repository.missing_tool_dependencies:
-                        test_result = dict( name=name, owner=owner, changeset_revision=changeset_revision,
+                    for dependency in repository.tool_dependencies_with_installation_errors:
+                        test_result = dict( type=dependency.type, 
+                                            name=dependency.name, 
+                                            version=dependency.version,
                                             error_message=dependency.error_message )
-                        repository_status[ 'installation_errors' ].append( test_result )
+                        repository_status[ 'installation_errors' ][ 'tool_dependencies' ].append( test_result )
+                    for dependency in repository.repository_dependencies_with_installation_errors:
+                        test_result = dict( tool_shed=dependency.tool_shed, 
+                                            name=dependency.name, 
+                                            owner=dependency.owner, 
+                                            changeset_revision=dependency.changeset_revision,
+                                            error_message=dependency.error_message )
+                        repository_status[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
                     # Record the status of this repository in the tool shed.
                     register_test_result( galaxy_tool_shed_url, metadata_revision_id, repository_status, passed_tests=False )
                     # Run the cleanup method. This removes tool functional test methods from the test_toolbox module and uninstalls the
@@ -838,6 +849,14 @@ def main():
             else:
                 # Even if the repository failed to install, execute the uninstall method, in case a dependency did succeed.
                 log.debug( 'Uninstalling repository %s', repository_info_dict[ 'name' ] )
+                repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
+                test_result = dict( tool_shed=repository.tool_shed, 
+                                    name=repository.name, 
+                                    owner=repository.owner, 
+                                    changeset_revision=repository.changeset_revision,
+                                    error_message=repository.error_message )
+                repository_status[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
+                register_test_result( galaxy_tool_shed_url, metadata_revision_id, repository_status, passed_tests=False )
                 success = execute_uninstall_method( app  )
                 if not success:
                     log.error( 'Repository %s failed to uninstall.', repository_info_dict[ 'name' ] )
