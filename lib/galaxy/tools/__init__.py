@@ -3157,6 +3157,10 @@ class DataManagerTool( OutputParameterJSONTool ):
         #process results of tool
         if job and job.state == job.states.ERROR:
             return
+        #Job state may now be 'running' instead of previous 'error', but datasets are still set to e.g. error
+        for dataset in out_data.itervalues():
+            if dataset.state != dataset.states.OK:
+                return
         data_manager_id = job.data_manager_association.data_manager_id
         data_manager = self.app.data_managers.get_manager( data_manager_id, None )
         assert data_manager is not None, "Invalid data manager (%s) requested. It may have been removed before the job completed." % ( data_manager_id )
