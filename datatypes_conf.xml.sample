@@ -17,7 +17,6 @@
     </datatype>
     <datatype extension="bed" type="galaxy.datatypes.interval:Bed" display_in_upload="true">
       <converter file="bed_to_gff_converter.xml" target_datatype="gff"/>
-      <converter file="interval_to_coverage.xml" target_datatype="coverage"/>
       <converter file="bed_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="bed_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
       <converter file="bed_gff_or_vcf_to_bigwig_converter.xml" target_datatype="bigwig"/>
