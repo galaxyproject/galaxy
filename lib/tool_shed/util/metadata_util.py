@@ -362,7 +362,7 @@ def generate_data_manager_metadata( app, repository, repo_dir, data_manager_conf
                     data_tables.append( data_table_name )
             if bad_data_table:
                 continue
-        data_manager_metadata_tool_file = os.path.join( relative_data_manager_dir, tool_file )
+        data_manager_metadata_tool_file = os.path.normpath( os.path.join( relative_data_manager_dir, tool_file ) )
         tool_metadata_tool_file = os.path.join( repo_files_directory, data_manager_metadata_tool_file )
         tool = tools.get( tool_metadata_tool_file, None )
         if tool is None:
