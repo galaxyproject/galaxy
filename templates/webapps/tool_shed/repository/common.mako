@@ -220,10 +220,12 @@
                 elif folder.label in [ 'Installed repository dependencies', 'Repository dependencies', 'Missing repository dependencies' ]:
                     if folder.description:
                         folder_label = "%s<i> - %s</i>" % ( folder_label, folder.description )
-                    elif folder.label not in [ 'Installed repository dependencies' ]:
+                    elif folder.label not in [ 'Installed repository dependencies' ] and folder.parent.label not in [ 'Installation errors' ]:
                         folder_label = "%s<i> - installation of these additional repositories is required</i>" % folder_label
                     if trans.webapp.name == 'galaxy':
                         col_span_str = 'colspan="4"'
+                elif folder.label == 'Installation errors':
+                    folder_label = "%s<i> - no functional tests were run for any tools in this changeset revision</i>" % folder_label
                 elif folder.label == 'Invalid repository dependencies':
                     folder_label = "%s<i> - click the repository dependency to see why it is invalid</i>" % folder_label
                 elif folder.label == 'Invalid tool dependencies':
@@ -345,6 +347,26 @@
             ${render_missing_test_component( missing_test_component, pad, my_row, row_counter )}
         %endfor
     %endif
+    %if folder.installation_errors:
+        %for installation_error in folder.installation_errors:
+            ${render_folder( installation_error, pad, my_row, row_counter )}
+        %endfor
+    %endif
+    %if folder.tool_dependency_installation_errors:
+        %for tool_dependency_installation_error in folder.tool_dependency_installation_errors:
+            ${render_tool_dependency_installation_error( tool_dependency_installation_error, pad, my_row, row_counter )}
+        %endfor
+    %endif 
+    %if folder.repository_installation_errors:
+        %for repository_installation_error in folder.repository_installation_errors:
+            ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=False )}
+        %endfor
+    %endif 
+    %if folder.current_repository_installation_errors:
+        %for repository_installation_error in folder.current_repository_installation_errors:
+            ${render_repository_installation_error( repository_installation_error, pad, my_row, row_counter, is_current_repository=True )}
+        %endfor
+    %endif 
 </%def>
 
 <%def name="render_datatype( datatype, pad, parent, row_counter, row_is_header=False )">
@@ -601,6 +623,65 @@
                 Repository <b>${repository_name | h}</b> revision <b>${changeset_revision | h}</b> owned by <b>${repository_owner | h}</b>${prior_installation_required_str}
             </td>
         %endif
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False )">
+    <% encoded_id = trans.security.encode_id( installation_error.id ) %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table class="grid" id="td_installation_errors">
+                <tr bgcolor="#FFFFCC">
+                    <th>Type</th><th>Name</th><th>Version</th>
+                </tr>
+                <tr>
+                    <td>${installation_error.name | h}</td>
+                    <td>${installation_error.type | h}</td>
+                    <td>${installation_error.version | h}</td>
+                </tr>
+                <tr><th>Error</th></tr>
+                <tr><td colspan="3">${installation_error.error_message | h}</td></tr>
+            </table>
+        </td>
+    </tr>
+    <%
+        my_row = row_counter.count
+        row_counter.increment()
+    %>
+</%def>
+
+<%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False )">
+    <% encoded_id = trans.security.encode_id( installation_error.id ) %>
+    <tr class="datasetRow"
+        %if parent is not None:
+            parent="${parent}"
+        %endif
+        id="libraryItem-${encoded_id}">
+        <td style="padding-left: ${pad+20}px;">
+            <table class="grid" id="repository_installation_errors">
+                %if not is_current_repository:
+                    <tr bgcolor="#FFFFCC">
+                        <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
+                    </tr>
+                    <tr>
+                        <td>${installation_error.tool_shed | h}</td>
+                        <td>${installation_error.name | h}</td>
+                        <td>${installation_error.owner | h}</td>
+                        <td>${installation_error.changeset_revision | h}</td>
+                    </tr>
+                %endif
+                <tr><th>Error</th></tr>
+                <tr><td colspan="4">${installation_error.error_message | h}</td></tr>
+            </table>
+        </td>
     </tr>
     <%
         my_row = row_counter.count
