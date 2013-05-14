@@ -617,6 +617,9 @@ def handle_tool_panel_selection( trans, metadata, no_changes_checked, tool_panel
     if 'tools' in metadata:
         # This forces everything to be loaded into the same section (or no section) in the tool panel.
         if no_changes_checked:
+            # Make sure the no_changes checkbox overrides the new_tool_panel_section if the user checked the checkbox and
+            # entered something into the field.
+            new_tool_panel_section = None
             if 'tool_panel_section' in metadata:
                 tool_panel_dict = metadata[ 'tool_panel_section' ]
                 if not tool_panel_dict:

@@ -445,7 +445,8 @@ def install_tool_shed_repository( trans, tool_shed_repository, repo_info_dict, t
         try:
             tool_section = trans.app.toolbox.tool_panel[ tool_panel_section_key ]
         except KeyError:
-            log.debug( 'Invalid tool_panel_section_key "%s" specified.  Tools will be loaded outside of sections in the tool panel.' )
+            log.debug( 'Invalid tool_panel_section_key "%s" specified.  Tools will be loaded outside of sections in the tool panel.', 
+                       str( tool_panel_section_key ) )
             tool_section = None
     else:
         tool_section = None
