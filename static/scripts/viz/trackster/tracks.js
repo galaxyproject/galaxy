@@ -3102,34 +3102,39 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             }
             return tile;
         }
-                
-        // Flag to track whether we can draw everything now 
-        var can_draw_now = true;
-        
-        // Get the track data, maybe a deferred
-        var tile_data = track.data_manager.get_data(region, mode, resolution, track.data_url_extra_params);
-        if ( is_deferred( tile_data ) ) {
-            can_draw_now = false;
-        }
-        
-        // Get reference data if needed, maybe a deferred
-        var seq_data;
-        if ( view.reference_track ) {
-            seq_data = view.reference_track.data_manager.get_data(region, mode, resolution, view.reference_track.data_url_extra_params);
-            if ( is_deferred( seq_data ) ) {
-                can_draw_now = false;
-            }
-            else {
-                // Sequence data is available, subset to get only data in region.
-                seq_data = view.reference_track.data_manager.subset_entry(seq_data, region);
-            }
-        }
-                
-        // If we can draw now, do so.
-        if ( can_draw_now ) {
-            // Set up and draw tile.
-            extend(tile_data, kwargs[ 'more_tile_data' ] );
+
+        // Function that returns data/Deferreds needed to draw tile.
+        var get_data = function() {
+            // Get the track data, maybe a deferred
+            var tile_data = track.data_manager.get_data(region, track.mode, resolution, track.data_url_extra_params);
             
+            // Get reference data if needed, maybe a deferred
+            var seq_data;
+            if ( view.reference_track ) {
+                seq_data = view.reference_track.data_manager.get_data(region, track.mode, resolution, view.reference_track.data_url_extra_params);
+                      }
+
+            return [tile_data, seq_data];    
+        };
+     
+        //
+        // When data is available, draw tile.
+        //
+        var tile_drawn = $.Deferred();
+        track.tile_cache.set_elt(key, tile_drawn);
+        $.when.apply($, get_data()).then( function() {
+            var data = get_data(),
+                tile_data = data[0],
+                seq_data = data[1];
+
+            // Set up and draw tile.
+            extend(tile_data, kwargs[ 'more_tile_data' ] ); 
+            
+            // If sequence data is available, subset to get only data in region.
+            if (view.reference_track) {
+                seq_data = view.reference_track.data_manager.subset_entry(seq_data, region);    
+            }
+
             // HACK: this is FeatureTrack-specific.
             // If track mode is Auto, determine mode and update.
             if (mode === "Auto" && track.get_mode) {
@@ -3138,8 +3143,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             }
             
             // Draw canvas.
-            var 
-                canvas = track.view.canvas_manager.new_canvas(),
+            var canvas = track.view.canvas_manager.new_canvas(),
                 tile_low = region.get('start'),
                 tile_high = region.get('end'),
                 width = Math.ceil( (tile_high - tile_low) * w_scale ) + track.left_offset,
@@ -3147,26 +3151,18 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             canvas.width = width;
             canvas.height = height;
             var ctx = canvas.getContext('2d');
-            ctx.translate(this.left_offset, 0);
+            ctx.translate(track.left_offset, 0);
             var tile = track.draw_tile(tile_data, ctx, mode, resolution, region, w_scale, seq_data);
-            
+
             // Don't cache, show if no tile.
             if (tile !== undefined) {
                 track.tile_cache.set_elt(key, tile);
                 track.show_tile(tile, parent_element, w_scale);
             }
-            return tile;
-        }
-         
-        // Can't draw now, so put Deferred in cache and draw tile when data is available.
-        var tile_drawn = $.Deferred();
-        track.tile_cache.set_elt(key, tile_drawn);
-        $.when( tile_data, seq_data ).then( function() {
-            // Draw tile--force to clear Deferred from cache--and resolve.
-            tile = track.draw_helper(true, region, resolution, parent_element, w_scale, kwargs);
+
             tile_drawn.resolve(tile);
         });
-        
+
         return tile_drawn;
     },
 
