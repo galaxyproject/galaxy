@@ -2681,17 +2681,39 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                                               id=id,
                                                               message=message,
                                                               status=status ) )
-        ctx_parent = ctx.parents()[0]
+        ctx_parent = ctx.parents()[ 0 ]
+        if ctx.children():
+            ctx_child = ctx.children()[ 0 ]
+        else:
+            ctx_child = None
         modified, added, removed, deleted, unknown, ignored, clean = repo.status( node1=ctx_parent.node(), node2=ctx.node() )
         anchors = modified + added + removed + deleted + unknown + ignored + clean
         diffs = []
         for diff in patch.diff( repo, node1=ctx_parent.node(), node2=ctx.node() ):
             diffs.append( suc.to_safe_string( diff, to_html=True ) )
         metadata = self.get_metadata( trans, id, ctx_str )
+        # For rendering the prev button.
+        if ctx_parent:
+            ctx_parent_rev = ctx_parent.rev()
+            if ctx_parent_rev < 0:
+                 prev = None
+            else:
+                prev = "%s:%s" % ( ctx_parent_rev, ctx_parent )
+        else:
+           prev = None
+        if ctx_child:
+            ctx_child_rev = ctx_child.rev()
+            next = "%s:%s" % ( ctx_child_rev, ctx_child )
+        else:
+            next = None
         return trans.fill_template( '/webapps/tool_shed/repository/view_changeset.mako', 
                                     repository=repository,
                                     metadata=metadata,
+                                    prev=prev,
+                                    next=next,
                                     ctx=ctx,
+                                    ctx_parent=ctx_parent,
+                                    ctx_child=ctx_child,
                                     anchors=anchors,
                                     modified=modified,
                                     added=added,

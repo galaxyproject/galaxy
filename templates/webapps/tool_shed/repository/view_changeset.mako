@@ -50,13 +50,33 @@ ${render_tool_shed_repository_actions( repository=repository )}
 <div class="toolForm">
     <%
         if can_download:
-            title_str = 'Changeset %s' % ctx
+            title_str = 'Changeset %s:%s' % ( ctx.rev(), ctx )
         else:
-            title_str = '%s changeset %s' % ( repository.name, ctx )
+            title_str = '%s changeset %s:%s' % ( repository.name, ctx.rev(), ctx )
     %>
-    <div class="toolFormTitle">${title_str | h}</div>
+    <div class="toolFormTitle">
+        ${title_str | h}
+    </div>
     <div class="toolFormBody">
         <table class="grid">
+            %if prev or next:
+                <tr>
+                    <td>
+                        %if prev:
+                            <a class="action-button" href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_parent )}">Previous changeset ${prev | h}</a>
+                        %endif
+                        %if next:
+                            <a class="action-button" href="${h.url_for( controller='repository', action='view_changeset', id=trans.security.encode_id( repository.id ), ctx_str=ctx_child )}">Next changeset ${next | h}</a>
+                        %endif
+                    </td>
+                </tr>
+            %endif
+            <tr>
+                <td>
+                    <b>Commit message:</b>
+                    <br/>${ctx.description() | h}<br/>
+                </td>
+            </tr>
             %if modified:
                 <tr>
                     <td>
