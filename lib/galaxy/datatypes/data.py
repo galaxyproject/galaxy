@@ -860,7 +860,7 @@ def get_file_peek( file_name, is_multi_byte=False, WIDTH=256, LINE_COUNT=5, skip
         text = "%s file" % file_type
     else:
         try:
-            text = unicode( '\n'.join( lines ), 'utf-8' )
+            text = util.unicodify( '\n'.join( lines ) )
         except UnicodeDecodeError:
             text = "binary/unknown file"
     return text
