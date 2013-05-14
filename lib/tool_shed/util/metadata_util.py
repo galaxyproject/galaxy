@@ -9,6 +9,7 @@ from galaxy.model.orm import and_
 from galaxy.tools.data_manager.manager import DataManager
 from galaxy.util import inflector
 from galaxy.util import json
+from galaxy.web import url_for
 from galaxy.webapps.tool_shed.util import container_util
 import tool_shed.util.shed_util_common as suc
 from tool_shed.util import common_util
@@ -1050,6 +1051,9 @@ def handle_repository_elem( app, repository_elem ):
     is_valid = True
     error_message = ''
     toolshed = repository_elem.get( 'toolshed' )
+    if not toolshed:
+        # Default to the current tool shed.
+        toolshed = str( url_for( '/', qualified=True ) ).rstrip( '/' )
     name = repository_elem.get( 'name' )
     owner = repository_elem.get( 'owner' )
     changeset_revision = repository_elem.get( 'changeset_revision' )
