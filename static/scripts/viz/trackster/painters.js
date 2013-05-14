@@ -135,20 +135,11 @@ Painter.prototype.draw = function(ctx, width, height, w_scale) {};
 
 var LinePainter = function(data, view_start, view_end, prefs, mode) {
     Painter.call( this, data, view_start, view_end, prefs, mode );
-    var i, len;
     if ( this.prefs.min_value === undefined ) {
-        var min_value = Infinity;
-        for (i = 0, len = this.data.length; i < len; i++) {
-            min_value = Math.min( min_value, this.data[i][1] );
-        }
-        this.prefs.min_value = min_value;
+        this.prefs.min_value = _.min( _.map(this.data, function(d) { return d[1]; }) ) || 0;
     }
     if ( this.prefs.max_value === undefined ) {
-        var max_value = -Infinity;
-        for (i = 0, len = this.data.length; i < len; i++) {
-            max_value = Math.max( max_value, this.data[i][1] );
-        }
-        this.prefs.max_value = max_value;
+        this.prefs.max_value = _.max( _.map(this.data, function(d) { return d[1]; }) ) || 0;
     }
 };
 
@@ -184,15 +175,17 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
         delta_x_px = 10;
     }
     
-    // Extract RGB from preference color.
-    var pref_color = parseInt( this.prefs.color.slice(1), 16 ),
+    // Painter color can be in either block_color (FeatureTrack) or color pref (LineTrack).
+    var painter_color = this.prefs.block_color || this.prefs.color,
+        // Extract RGB from preference color.
+        pref_color = parseInt( painter_color.slice(1), 16 ),
         pref_r = (pref_color & 0xff0000) >> 16,
         pref_g = (pref_color & 0x00ff00) >> 8,
         pref_b = pref_color & 0x0000ff;
     
     // Paint track.
     for (var i = 0, len = data.length; i < len; i++) {
-        ctx.fillStyle = ctx.strokeStyle = this.prefs.color;
+        ctx.fillStyle = ctx.strokeStyle = painter_color;
         // -0.5 to offset drawing between bases.
         x_scaled = Math.round((data[i][0] - view_start - 0.5) * w_scale);
         y = data[i][1];
@@ -261,7 +254,7 @@ LinePainter.prototype.draw = function(ctx, width, height, w_scale) {
                 ctx.fillRect(x_scaled, height_px - 3, overflow_x, 3);
             }
         }
-        ctx.fillStyle = this.prefs.color;
+        ctx.fillStyle = painter_color;
     }
     if (mode === "Filled") {
         if (in_path) {
