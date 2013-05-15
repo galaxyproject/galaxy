@@ -56,7 +56,6 @@ class LibrariesController( BaseAPIController ):
         log.debug( "LibraryContentsController.show: enter" )
         library_id = id
         deleted = util.string_as_bool( deleted )
-        params = util.Params( kwd )
         try:
             decoded_library_id = trans.security.decode_id( library_id )
         except TypeError:
