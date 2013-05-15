@@ -3026,7 +3026,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
                 num_cols: 12,
                 on_finish: function(new_val) {
                     $(".bs-tooltip").remove();
-                    var new_val = parseFloat(new_val);
+                    var new_val = round(parseFloat(new_val), 3);
                     track.prefs[ pref_name ] = (!isNaN(new_val) ? new_val : null);
                     on_change();
                 },
@@ -3134,14 +3134,14 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         track.tile_cache.set_elt(key, tile_drawn);
         $.when.apply($, get_tile_data()).then( function() {
             var tile_data = get_tile_data(),
-                tracks_data = tile_data.slice(0, tile_data.length - 1),
-                seq_data = tile_data[tile_data.length - 1];
-                
-            // If sequence data is available, subset to get only data in region.
-            if (seq_data) {
-                seq_data = view.reference_track.data_manager.subset_entry(seq_data, region);    
-            }
+                tracks_data = tile_data,
+                seq_data;
 
+            // If sequence data is available, subset to get only data in region.
+            if (view.reference_track) {
+                seq_data = view.reference_track.data_manager.subset_entry(tile_data.pop(), region);
+            }
+            
             // Get drawing modes, heights for all tracks.
             var drawing_modes = [],
                 drawing_heights = [];
@@ -3733,8 +3733,8 @@ extend(LineTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
      */
     postdraw_actions: function(tiles, width, w_scale, clear_after) {
         // Add min, max labels.
-        this._add_yaxis_label('max', round(this.prefs.max_value, 3), 'max_value');
-        this._add_yaxis_label('min', round(this.prefs.min_value, 3), 'min_value');
+        this._add_yaxis_label('max');
+        this._add_yaxis_label('min');
     }
 });
 
