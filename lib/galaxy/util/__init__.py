@@ -422,10 +422,7 @@ def unicodify( value, encoding=DEFAULT_ENCODING, error='replace', default=None )
     Returns a unicode string or None
     """
     if isinstance( value, unicode ):
-        try:
-            return value.encode( encoding, error )
-        except:
-            return value
+        return value
     try:
         return unicode( value, encoding, error )
     except:
