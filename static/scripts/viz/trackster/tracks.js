@@ -3082,6 +3082,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
     },
 
     /**
+     * Returns a list of drawables to draw. Defaults to current track.
+     */
+    _get_drawables: function() {
+        return [ this ];
+    },
+
+    /**
      * Retrieves from cache, draws, or sets up drawing for a single tile. Returns either a Tile object or a 
      * jQuery.Deferred object that is fulfilled when tile can be drawn again.
      */ 
@@ -3090,6 +3097,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         if (!kwargs) { kwargs = {}; }
 
         var track = this,
+            drawables = this._get_drawables(),
             key = this._gen_tile_cache_key(w_scale, region),
             is_tile = function(o) { return (o && 'track' in o); },
             mode = kwargs.mode || track.mode;
@@ -3104,17 +3112,19 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         }
 
         // Function that returns data/Deferreds needed to draw tile.
-        var get_data = function() {
-            // Get the track data, maybe a deferred
-            var tile_data = track.data_manager.get_data(region, mode, resolution, track.data_url_extra_params);
-            
-            // Get reference data if needed, maybe a deferred
-            var seq_data;
-            if ( view.reference_track ) {
-                seq_data = view.reference_track.data_manager.get_data(region, mode, resolution, view.reference_track.data_url_extra_params);
-                      }
+        var get_tile_data = function() {
+            // Map drawable object to data needed for drawing.
+            var tile_data = _.map(drawables, function(d) {
+                // Get the track data/promise.
+                return d.data_manager.get_data(region, mode, resolution, track.data_url_extra_params);
+            });
 
-            return [tile_data, seq_data];    
+            // Get reference data/promise.
+            if (view.reference_track) {
+                tile_data.push(view.reference_track.data_manager.get_data(region, mode, resolution, view.reference_track.data_url_extra_params));
+            }
+
+            return tile_data;
         };
      
         //
@@ -3122,37 +3132,54 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         //
         var tile_drawn = $.Deferred();
         track.tile_cache.set_elt(key, tile_drawn);
-        $.when.apply($, get_data()).then( function() {
-            var data = get_data(),
-                tile_data = data[0],
-                seq_data = data[1];
-
-            // Set up and draw tile.
-            extend(tile_data, kwargs[ 'more_tile_data' ] ); 
-            
+        $.when.apply($, get_tile_data()).then( function() {
+            var tile_data = get_tile_data(),
+                tracks_data = tile_data.slice(0, tile_data.length - 1),
+                seq_data = tile_data[tile_data.length - 1];
+                
             // If sequence data is available, subset to get only data in region.
-            if (view.reference_track) {
+            if (seq_data) {
                 seq_data = view.reference_track.data_manager.subset_entry(seq_data, region);    
             }
 
-            // HACK: this is FeatureTrack-specific.
-            // If track mode is Auto, determine mode and update.
-            if (mode === "Auto" && track.get_mode) {
-                mode = track.get_mode(tile_data);
-                track.update_auto_mode(mode);
-            }
-            
-            // Draw canvas.
+            // Get drawing modes, heights for all tracks.
+            var drawing_modes = [],
+                drawing_heights = [];
+
+            _.each(drawables, function(d, i) {
+                var mode = d.mode,
+                    data = tracks_data[i];
+                if (mode === "Auto") {
+                    mode = d.get_mode(data);
+                    d.update_auto_mode(mode);
+                }
+                drawing_modes.push(mode);
+                drawing_heights.push(d.get_canvas_height(data, mode, w_scale, width));
+            })
+
             var canvas = track.view.canvas_manager.new_canvas(),
                 tile_low = region.get('start'),
                 tile_high = region.get('end'),
+                all_data_index = 0,
                 width = Math.ceil( (tile_high - tile_low) * w_scale ) + track.left_offset,
-                height = track.get_canvas_height(tile_data, mode, w_scale, width);
+                height = _.max(drawing_heights),
+                tile;
+                
+            //
+            // Draw all tracks on tile.
+            //
             canvas.width = width;
-            canvas.height = height;
+            // Height is specified in kwargs or is the height found above.
+            canvas.height = (kwargs.height ? kwargs.height : height);
             var ctx = canvas.getContext('2d');
             ctx.translate(track.left_offset, 0);
-            var tile = track.draw_tile(tile_data, ctx, mode, resolution, region, w_scale, seq_data);
+            if (drawables.length > 1) {
+                ctx.globalAlpha = 0.5;
+                ctx.globalCompositeOperation = "source-over";
+            }
+            _.each(drawables, function(d, i) {
+                tile = d.draw_tile(tracks_data[i], ctx, drawing_modes[i], resolution, region, w_scale, seq_data);
+            });
 
             // Don't cache, show if no tile.
             if (tile !== undefined) {
@@ -3470,126 +3497,8 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
 
     can_draw: Drawable.prototype.can_draw,
 
-    draw_helper: function(force, region, resolution, parent_element, w_scale, kwargs) {
-        // FIXME: this function is similar to TiledTrack.draw_helper -- can the two be merged/refactored?
-
-        // SHARED block with TiledTrack.draw_helper():
-
-        var track = this,
-            key = this._gen_tile_cache_key(w_scale, region),
-            is_tile = function(o) { return (o && 'track' in o); };
-            
-        // Init kwargs if necessary to avoid having to check if kwargs defined.
-        if (!kwargs) { kwargs = {}; }
-                       
-        // Check tile cache, if found show existing tile in correct position
-        var tile = (force ? undefined : track.tile_cache.get_elt(key));
-        if (tile) {
-            if (is_tile(tile)) {
-                track.show_tile(tile, parent_element, w_scale);
-            }
-            return tile;
-        }
-
-        // UNIQUE block.
-                
-        // Try to get drawables' data.
-        var all_data = [],
-            track,
-            // Flag to track whether we can draw everything now 
-            can_draw_now = true,
-            tile_data,
-            seq_data;
-        for (var i = 0; i < this.drawables.length; i++) {
-            track = this.drawables[i];
-            // Get the track data, maybe a deferred.
-            tile_data = track.data_manager.get_data(region, track.mode, resolution, track.data_url_extra_params);
-            if ( is_deferred( tile_data ) ) {
-                can_draw_now = false;
-            }
-            all_data.push(tile_data);
-
-            // Get seq data if needed, maybe a deferred.
-            seq_data = null;
-            if ( view.reference_track && w_scale > view.canvas_manager.char_width_px ) {
-                seq_data = view.reference_track.data_manager.get_data(region, track.mode, resolution, view.reference_track.data_url_extra_params);
-                if ( is_deferred( seq_data ) ) {
-                    can_draw_now = false;
-                }
-            }
-            all_data.push(seq_data);
-        }
-                
-        // If we can draw now, do so.
-        if ( can_draw_now ) {
-            // Set up and draw tile.
-            extend(tile_data, kwargs[ 'more_tile_data' ] );
-            
-            var canvas = track.view.canvas_manager.new_canvas(),
-                tile_low = region.get('start'),
-                tile_high = region.get('end'),
-                all_data_index = 0,
-                width = Math.ceil( (tile_high - tile_low) * w_scale ) + this.left_offset,
-                height = 0,
-                track_modes = [],
-                i;
-                
-            // Get max height for all tracks and record track modes.
-            var track_canvas_height = 0;
-            for (i = 0; i < this.drawables.length; i++, all_data_index += 2) {
-                track = this.drawables[i];
-                tile_data = all_data[ all_data_index ];
-
-                // HACK: this is FeatureTrack-specific.
-                // If track mode is Auto, determine mode and update.
-                var mode = track.mode;
-                if (mode === "Auto") {
-                    mode = track.get_mode(tile_data);
-                    track.update_auto_mode(mode);
-                }
-                track_modes.push(mode);
-
-                track_canvas_height = track.get_canvas_height(tile_data, mode, w_scale, width);
-                if (track_canvas_height > height) { height = track_canvas_height; }
-            }
-            
-            //
-            // Draw all tracks on a single tile.
-            //
-            canvas.width = width;
-            // Height is specified in kwargs or is the height found above.
-            canvas.height = (kwargs.height ? kwargs.height : height);
-            all_data_index = 0;
-            var ctx = canvas.getContext('2d');
-            ctx.translate(this.left_offset, 0);
-            ctx.globalAlpha = 0.5;
-            ctx.globalCompositeOperation = "source-over";
-            for (i = 0; i < this.drawables.length; i++, all_data_index += 2) {
-                track = this.drawables[i];
-                tile_data = all_data[ all_data_index ];
-                seq_data = all_data[ all_data_index + 1 ];
-                tile = track.draw_tile(tile_data, ctx, track_modes[i], resolution, region, w_scale, seq_data);
-            }
-            
-            // Don't cache, show if no tile.
-            this.tile_cache.set_elt(key, tile);
-            this.show_tile(tile, parent_element, w_scale);
-            return tile;
-        }
-
-        // SHARED (somewhat) block with TiledTrack.draw_helper()
-
-        // Can't draw now, so put Deferred in cache and draw tile when data is available.
-        var tile_drawn = $.Deferred();
-        track = this;
-        track.tile_cache.set_elt(key, tile_drawn);
-        $.when.apply($, all_data).then(function() {
-            // Draw tile--force to clear Deferred from cache--and resolve.
-            tile = track.draw_helper(true, region, resolution, parent_element, w_scale, kwargs);
-            tile_drawn.resolve(tile);
-        });
-        
-        return tile_drawn;
+    _get_drawables: function() {
+        return this.drawables;
     },
 
     /**
