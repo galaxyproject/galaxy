@@ -3106,12 +3106,12 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
         // Function that returns data/Deferreds needed to draw tile.
         var get_data = function() {
             // Get the track data, maybe a deferred
-            var tile_data = track.data_manager.get_data(region, track.mode, resolution, track.data_url_extra_params);
+            var tile_data = track.data_manager.get_data(region, mode, resolution, track.data_url_extra_params);
             
             // Get reference data if needed, maybe a deferred
             var seq_data;
             if ( view.reference_track ) {
-                seq_data = view.reference_track.data_manager.get_data(region, track.mode, resolution, view.reference_track.data_url_extra_params);
+                seq_data = view.reference_track.data_manager.get_data(region, mode, resolution, view.reference_track.data_url_extra_params);
                       }
 
             return [tile_data, seq_data];    
