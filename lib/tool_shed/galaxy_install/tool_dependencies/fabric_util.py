@@ -92,7 +92,10 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                     # Download a single file to the working directory.
                     filtered_actions = actions[ 1: ]
                     url = action_dict[ 'url' ]
-                    filename = url.split( '/' )[ -1 ]
+                    if action_dict[ 'target_filename' ]:
+                        filename = action_dict[ 'target_filename' ]
+                    else:
+                        filename = url.split( '/' )[ -1 ]
                     common_util.url_download( work_dir, filename, url )
                     dir = os.path.curdir
                 else:
@@ -150,7 +153,10 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                         elif action_type == 'download_file':
                             # Download a single file to the current directory.
                             url = action_dict[ 'url' ]
-                            filename = url.split( '/' )[ -1 ]
+                            if action_dict[ 'target_filename' ]:
+                                filename = action_dict[ 'target_filename' ]
+                            else:
+                                filename = url.split( '/' )[ -1 ]
                             common_util.url_download( current_dir, filename, url )
 
 def log_results( command, fabric_AttributeString, file_path ):

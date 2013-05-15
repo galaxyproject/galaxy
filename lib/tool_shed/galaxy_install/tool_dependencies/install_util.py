@@ -345,6 +345,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             # <action type="download_file">http://effectors.org/download/version/TTSS_GUI-1.0.1.jar</action>
             if action_elem.text:
                 action_dict[ 'url' ] = action_elem.text
+                action_dict[ 'target_filename' ] = action_elem.attrib.get( 'target_filename', None )
             else:
                 continue
         elif action_type == 'make_directory':
@@ -402,8 +403,8 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             else:
                 continue
         else:
-            log.debug( "Skipping unsupported action type '%s'." % str( action_type ) )
-            continue
+            log.debug( "Unsupported action type '%s'. Not proceeding." % str( action_type ) )
+            raise Exception( "Unsupported action type '%s' in tool dependency definition." % str( action_type ) )
         actions.append( ( action_type, action_dict ) )
     if actions:
         actions_dict[ 'actions' ] = actions
