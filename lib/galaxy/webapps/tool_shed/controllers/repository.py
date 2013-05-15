@@ -64,6 +64,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     my_writable_repositories_with_failing_tool_tests_grid = repository_grids.MyWritableRepositoriesWithFailingToolTestsGrid()
     my_writable_repositories_with_invalid_tools_grid = repository_grids.MyWritableRepositoriesWithInvalidToolsGrid()
     my_writable_repositories_with_no_failing_tool_tests_grid = repository_grids.MyWritableRepositoriesWithNoFailingToolTestsGrid()
+    my_writable_repositories_with_skip_tests_checked_grid = repository_grids.MyWritableRepositoriesWithSkipTestsCheckedGrid()
+    my_writable_repositories_with_test_install_errors_grid = repository_grids.MyWritableRepositoriesWithTestInstallErrorsGrid()
     repositories_by_user_grid = repository_grids.RepositoriesByUserGrid()
     repositories_i_own_grid = repository_grids.RepositoriesIOwnGrid()
     repositories_in_category_grid = repository_grids.RepositoriesInCategoryGrid()
@@ -71,6 +73,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     repositories_with_failing_tool_tests_grid = repository_grids.RepositoriesWithFailingToolTestsGrid()
     repositories_with_invalid_tools_grid = repository_grids.RepositoriesWithInvalidToolsGrid()
     repositories_with_no_failing_tool_tests_grid = repository_grids.RepositoriesWithNoFailingToolTestsGrid()
+    repositories_with_skip_tests_checked_grid = repository_grids.RepositoriesWithSkipTestsCheckedGrid()
+    repositories_with_test_install_errors_grid = repository_grids.RepositoriesWithTestInstallErrorsGrid()
     repository_dependencies_grid = repository_grids.RepositoryDependenciesGrid()
     repository_grid = repository_grids.RepositoryGrid()
     # The repository_metadata_grid is not currently displayed, but is sub-classed by several grids.
@@ -222,6 +226,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             message += '<li>you are authorized to update them</li>'
             message += '<li>the latest installable revision contains at least 1 tool</li>'
             message += '<li>the latest installable revision is not missing any tool test components</li>'
+            message += '<li>the latest installable revision has no installation errors</li>'
             message += '<li>the latest installable revision has at least 1 tool test that fails</li>'
             message += '</ul>'
             kwd[ 'message' ] = message
@@ -284,6 +289,63 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
         return self.my_writable_repositories_with_no_failing_tool_tests_grid( trans, **kwd )
+
+    @web.expose
+    def browse_my_writable_repositories_with_install_errors( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        if 'message' not in kwd:
+            message = 'This list contains repositories that match the following criteria:<br>'
+            message += '<ul>'
+            message += '<li>you are authorized to update them</li>'
+            message += '<li>the latest installable revision contains at least 1 tool</li>'
+            message += '<li>the latest installable revision is not missing any tool test components</li>'
+            message += '<li>the latest installable revision has installation errors (the repository itself, repository dependencies or tool dependencies)</li>'
+            message += '</ul>'
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'warning'
+        return self.my_writable_repositories_with_test_install_errors_grid( trans, **kwd )
+
+    @web.expose
+    def browse_my_writable_repositories_with_skip_tool_test_checked( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        if 'message' not in kwd:
+            message = 'This list contains repositories that match the following criteria:<br>'
+            message += '<ul>'
+            message += '<li>you are authorized to update them</li>'
+            message += '<li>the latest installable revision contains at least 1 tool</li>'
+            message += '<li>the latest installable revision has <b>Skip tool tests</b> checked</li>'
+            message += '</ul>'
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'warning'
+        return self.my_writable_repositories_with_skip_tests_checked_grid( trans, **kwd )
 
     @web.expose
     def browse_repositories( self, trans, **kwd ):
@@ -484,6 +546,34 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         return self.repositories_with_failing_tool_tests_grid( trans, **kwd )
 
     @web.expose
+    def browse_repositories_with_install_errors( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        if 'message' not in kwd:
+            message = 'This list contains repositories that match the following criteria:<br>'
+            message += '<ul>'
+            message += '<li>the latest installable revision contains at least 1 tool</li>'
+            message += '<li>the latest installable revision is not missing any tool test components</li>'
+            message += '<li>the latest installable revision has installation errors (the repository itself, repository dependencies or tool dependencies)</li>'
+            message += '</ul>'
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'warning'
+        return self.repositories_with_test_install_errors_grid( trans, **kwd )
+
+    @web.expose
     def browse_repositories_with_invalid_tools( self, trans, **kwd ):
         if 'operation' in kwd:
             operation = kwd[ 'operation' ].lower()
@@ -537,6 +627,33 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
         return self.repositories_with_no_failing_tool_tests_grid( trans, **kwd )
+
+    @web.expose
+    def browse_repositories_with_skip_tool_test_checked( self, trans, **kwd ):
+        if 'operation' in kwd:
+            operation = kwd[ 'operation' ].lower()
+            if operation == "view_or_manage_repository":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='view_or_manage_repository',
+                                                                  **kwd ) )
+            elif operation == "repositories_by_user":
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='browse_repositories_by_user',
+                                                                  **kwd ) )
+            elif operation in [ 'mark as deprecated', 'mark as not deprecated' ]:
+                kwd[ 'mark_deprecated' ] = operation == 'mark as deprecated'
+                return trans.response.send_redirect( web.url_for( controller='repository',
+                                                                  action='deprecate',
+                                                                  **kwd ) )
+        if 'message' not in kwd:
+            message = 'This list contains repositories that match the following criteria:<br>'
+            message += '<ul>'
+            message += '<li>the latest installable revision contains at least 1 tool</li>'
+            message += '<li>the latest installable revision has <b>Skip tool tests</b> checked</li>'
+            message += '</ul>'
+            kwd[ 'message' ] = message
+            kwd[ 'status' ] = 'warning'
+        return self.repositories_with_skip_tests_checked_grid( trans, **kwd )
 
     @web.expose
     def browse_repository( self, trans, id, **kwd ):

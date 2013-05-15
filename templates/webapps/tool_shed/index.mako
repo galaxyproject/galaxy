@@ -116,7 +116,13 @@
                             <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_missing_tool_test_components' )}">Latest revision: missing tool tests</a>
                         </div>
                         <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_install_errors' )}">Latest revision: installation errors</a>
+                        </div>
+                        <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_failing_tool_tests' )}">Latest revision: failing tool tests</a>
+                        </div>
+                        <div class="toolTitle">
+                            <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_skip_tool_test_checked' )}">Latest revision: skip tool tests</a>
                         </div>
                         <div class="toolTitle">
                             <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_my_writable_repositories_with_no_failing_tool_tests' )}">Latest revision: all tool tests pass</a>
@@ -167,7 +173,13 @@
                                         <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_missing_tool_test_components' )}">Latest revision: missing tool tests</a>
                                     </div>
                                     <div class="toolTitle">
+                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_install_errors' )}">Latest revision: installation errors</a>
+                                    </div>
+                                    <div class="toolTitle">
                                         <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_failing_tool_tests' )}">Latest revision: failing tool tests</a>
+                                    </div>
+                                    <div class="toolTitle">
+                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_skip_tool_test_checked' )}">Latest revision: skip tool tests</a>
                                     </div>
                                     <div class="toolTitle">
                                         <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_no_failing_tool_tests' )}">Latest revision: all tool tests pass</a>

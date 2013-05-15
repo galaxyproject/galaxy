@@ -793,6 +793,13 @@ def get_shed_tool_conf_dict( app, shed_tool_conf ):
             if shed_tool_conf == file_name:
                 return index, shed_tool_conf_dict
 
+def get_skip_tool_test_by_changeset_revision( trans, changeset_revision ):
+    """Return a skip_tool_test record whose initial_changeset_revision is the received changeset_revision."""
+    # There should only be one, but we'll use first() so callers won't have to handle exceptions.
+    return trans.sa_session.query( trans.model.SkipToolTest ) \
+                           .filter( trans.model.SkipToolTest.table.c.initial_changeset_revision == changeset_revision ) \
+                           .first()
+
 def get_tool_panel_config_tool_path_install_dir( app, repository ):
     """
     Return shed-related tool panel config, the tool_path configured in it, and the relative path to the directory where the repository is installed.

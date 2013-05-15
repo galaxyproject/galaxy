@@ -604,6 +604,180 @@ class MyWritableRepositoriesMissingToolTestComponentsGrid( RepositoriesMissingTo
                                .filter( model.Repository.table.c.id < 0 )
 
 
+class RepositoriesWithTestInstallErrorsGrid( RepositoryGrid ):
+    # This grid displays only the latest installable revision of each repository.
+    title = "Repositories with tool test installation errors"
+    columns = [
+        RepositoryGrid.NameColumn( "Name",
+                                   key="name",
+                                   link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                   attach_popup=False ),
+        RepositoryGrid.LatestInstallableRevisionColumn( "Latest Installable Revision" ),
+        RepositoryGrid.UserColumn( "Owner",
+                                   key="User.username",
+                                   model_class=model.User,
+                                   link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
+                                   attach_popup=False )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[0] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = []
+    use_paging = False
+
+    def build_initial_query( self, trans, **kwd ):
+        # Filter by latest installable revisions that contain tools with missing tool test components.
+        revision_clause_list = []
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deprecated == False,
+                                                         model.Repository.table.c.deleted == False ) ):
+            changeset_revision = filter_by_latest_downloadable_changeset_revision_that_has_test_install_errors( trans, repository )
+            if changeset_revision:
+                revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
+        if revision_clause_list:
+            return trans.sa_session.query( model.Repository ) \
+                                   .filter( and_( model.Repository.table.c.deprecated == False,
+                                                  model.Repository.table.c.deleted == False ) ) \
+                                   .join( model.RepositoryMetadata ) \
+                                   .filter( or_( *revision_clause_list ) ) \
+                                   .join( model.User.table )
+        # Return an empty query.
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.id < 0 )
+
+
+class MyWritableRepositoriesWithTestInstallErrorsGrid( RepositoriesWithTestInstallErrorsGrid ):
+    # This grid displays only the latest installable revision of each repository.
+    title = "Repositories I can change with tool test installation errors"
+    columns = [ col for col in RepositoriesWithTestInstallErrorsGrid.columns ]
+    operations = []
+    use_paging = False
+
+    def build_initial_query( self, trans, **kwd ):
+        # First get all repositories that the current user is authorized to update.
+        username = trans.user.username
+        user_clause_list = []
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deprecated == False,
+                                                         model.Repository.table.c.deleted == False ) ):
+            allow_push = repository.allow_push( trans.app )
+            if allow_push:
+                allow_push_usernames = allow_push.split( ',' )
+                if username in allow_push_usernames:
+                    user_clause_list.append( model.Repository.table.c.id == repository.id )
+        if user_clause_list:
+            # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
+            # tools with missing tool test components.
+            revision_clause_list = []
+            for repository in trans.sa_session.query( model.Repository ) \
+                                              .filter( and_( model.Repository.table.c.deprecated == False,
+                                                             model.Repository.table.c.deleted == False ) ) \
+                                              .filter( or_( *user_clause_list ) ):
+                changeset_revision = filter_by_latest_downloadable_changeset_revision_that_has_test_install_errors( trans, repository )
+                if changeset_revision:
+                    revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
+            if revision_clause_list:
+                return trans.sa_session.query( model.Repository ) \
+                                       .filter( and_( model.Repository.table.c.deprecated == False,
+                                                      model.Repository.table.c.deleted == False ) ) \
+                                       .join( model.User.table ) \
+                                       .filter( or_( *user_clause_list ) ) \
+                                       .join( model.RepositoryMetadata ) \
+                                       .filter( or_( *revision_clause_list ) )
+        # Return an empty query.
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.id < 0 )
+
+
+class RepositoriesWithSkipTestsCheckedGrid( RepositoryGrid ):
+    # This grid displays only the latest installable revision of each repository.
+    title = "Repositories with skip tool tests checked"
+    columns = [
+        RepositoryGrid.NameColumn( "Name",
+                                   key="name",
+                                   link=( lambda item: dict( operation="view_or_manage_repository", id=item.id ) ),
+                                   attach_popup=False ),
+        RepositoryGrid.LatestInstallableRevisionColumn( "Latest Installable Revision" ),
+        RepositoryGrid.UserColumn( "Owner",
+                                   key="User.username",
+                                   model_class=model.User,
+                                   link=( lambda item: dict( operation="repositories_by_user", id=item.id ) ),
+                                   attach_popup=False )
+    ]
+    columns.append( grids.MulticolFilterColumn( "Search repository name", 
+                                                cols_to_filter=[ columns[0] ],
+                                                key="free-text-search",
+                                                visible=False,
+                                                filterable="standard" ) )
+    operations = []
+    use_paging = False
+
+    def build_initial_query( self, trans, **kwd ):
+        # Filter by latest installable revisions that contain tools with missing tool test components.
+        revision_clause_list = []
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deprecated == False,
+                                                         model.Repository.table.c.deleted == False ) ):
+            changeset_revision = filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( trans, repository )
+            if changeset_revision:
+                revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
+        if revision_clause_list:
+            return trans.sa_session.query( model.Repository ) \
+                                   .filter( and_( model.Repository.table.c.deprecated == False,
+                                                  model.Repository.table.c.deleted == False ) ) \
+                                   .join( model.RepositoryMetadata ) \
+                                   .filter( or_( *revision_clause_list ) ) \
+                                   .join( model.User.table )
+        # Return an empty query.
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.id < 0 )
+
+
+class MyWritableRepositoriesWithSkipTestsCheckedGrid( RepositoriesWithSkipTestsCheckedGrid ):
+    # This grid displays only the latest installable revision of each repository.
+    title = "Repositories I can change with skip tool tests checked"
+    columns = [ col for col in RepositoriesWithSkipTestsCheckedGrid.columns ]
+    operations = []
+    use_paging = False
+
+    def build_initial_query( self, trans, **kwd ):
+        # First get all repositories that the current user is authorized to update.
+        username = trans.user.username
+        user_clause_list = []
+        for repository in trans.sa_session.query( model.Repository ) \
+                                          .filter( and_( model.Repository.table.c.deprecated == False,
+                                                         model.Repository.table.c.deleted == False ) ):
+            allow_push = repository.allow_push( trans.app )
+            if allow_push:
+                allow_push_usernames = allow_push.split( ',' )
+                if username in allow_push_usernames:
+                    user_clause_list.append( model.Repository.table.c.id == repository.id )
+        if user_clause_list:
+            # We have the list of repositories that the current user is authorized to update, so filter further by latest installable revisions that contain
+            # tools with missing tool test components.
+            revision_clause_list = []
+            for repository in trans.sa_session.query( model.Repository ) \
+                                              .filter( and_( model.Repository.table.c.deprecated == False,
+                                                             model.Repository.table.c.deleted == False ) ) \
+                                              .filter( or_( *user_clause_list ) ):
+                changeset_revision = filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( trans, repository )
+                if changeset_revision:
+                    revision_clause_list.append( model.RepositoryMetadata.table.c.changeset_revision == changeset_revision )
+            if revision_clause_list:
+                return trans.sa_session.query( model.Repository ) \
+                                       .filter( and_( model.Repository.table.c.deprecated == False,
+                                                      model.Repository.table.c.deleted == False ) ) \
+                                       .join( model.User.table ) \
+                                       .filter( or_( *user_clause_list ) ) \
+                                       .join( model.RepositoryMetadata ) \
+                                       .filter( or_( *revision_clause_list ) )
+        # Return an empty query.
+        return trans.sa_session.query( model.Repository ) \
+                               .filter( model.Repository.table.c.id < 0 )
+
+
 class DeprecatedRepositoriesIOwnGrid( RepositoriesIOwnGrid ):
     title = "Deprecated repositories I own"
     columns = [
@@ -1475,7 +1649,10 @@ def filter_by_latest_downloadable_changeset_revision_that_has_failing_tool_tests
     repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     repository_metadata = get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository )
-    if repository_metadata and not repository_metadata.missing_test_components and not repository_metadata.tools_functionally_correct:
+    if repository_metadata \
+        and not repository_metadata.missing_test_components \
+        and not repository_metadata.tools_functionally_correct \
+        and not repository_metadata.test_install_error:
         return repository_metadata.changeset_revision
     return None
 
@@ -1513,6 +1690,32 @@ def filter_by_latest_metadata_changeset_revision_that_has_invalid_tools( trans, 
     tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
     repository_metadata = get_latest_repository_metadata_if_it_includes_invalid_tools( trans, repository )
     if repository_metadata:
+        return repository_metadata.changeset_revision
+    return None
+
+def filter_by_latest_downloadable_changeset_revision_that_has_test_install_errors( trans, repository ):
+    """
+    Inspect the latest installable changeset revision for the received repository to see if it has tool test installation errors.
+    """
+    encoded_repository_id = trans.security.encode_id( repository.id )
+    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
+    repository_metadata = get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository )
+    if repository_metadata \
+        and repository_metadata.test_install_error \
+        and not repository_metadata.missing_test_components:
+        return repository_metadata.changeset_revision
+    return None
+
+def filter_by_latest_downloadable_changeset_revision_with_skip_tests_checked( trans, repository ):
+    """
+    Inspect the latest installable changeset revision for the received repository to see if skip tests is checked.
+    """
+    encoded_repository_id = trans.security.encode_id( repository.id )
+    repo = hg.repository( suc.get_configured_ui(), repository.repo_path( trans.app ) )
+    tip_ctx = str( repo.changectx( repo.changelog.tip() ) )
+    repository_metadata = get_latest_installable_repository_metadata_if_it_includes_tools( trans, repository )
+    if repository_metadata and repository_metadata.skip_tool_tests:
         return repository_metadata.changeset_revision
     return None
 

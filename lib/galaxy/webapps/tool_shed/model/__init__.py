@@ -219,13 +219,14 @@ class Repository( object, APIItem ):
 class RepositoryMetadata( object, APIItem ):
     api_collection_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'has_repository_dependencies', 'includes_datatypes',
                                     'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
-    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct',
-                                 'do_not_test', 'time_last_tested', 'tool_test_results', 'has_repository_dependencies', 'includes_datatypes', 'includes_tools',
-                                 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
+    api_element_visible_keys = ( 'id', 'repository_id', 'changeset_revision', 'malicious', 'downloadable', 'tools_functionally_correct', 'do_not_test',
+                                 'test_install_error', 'time_last_tested', 'tool_test_results', 'has_repository_dependencies', 'includes_datatypes',
+                                 'includes_tools', 'includes_tool_dependencies', 'includes_tools_for_display_in_tool_panel', 'includes_workflows' )
 
     def __init__( self, id=None, repository_id=None, changeset_revision=None, metadata=None, tool_versions=None, malicious=False, downloadable=False, 
-                  missing_test_components=None, tools_functionally_correct=False, do_not_test=False, time_last_tested=None, tool_test_results=None,
-                  has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False, includes_workflows=False ):
+                  missing_test_components=None, tools_functionally_correct=False, do_not_test=False, test_install_error=False, time_last_tested=None,
+                  tool_test_results=None, has_repository_dependencies=False, includes_datatypes=False, includes_tools=False, includes_tool_dependencies=False,
+                  includes_workflows=False ):
         self.id = id
         self.repository_id = repository_id
         self.changeset_revision = changeset_revision
@@ -236,6 +237,7 @@ class RepositoryMetadata( object, APIItem ):
         self.missing_test_components = missing_test_components
         self.tools_functionally_correct = tools_functionally_correct
         self.do_not_test = do_not_test
+        self.test_install_error = test_install_error
         self.time_last_tested = time_last_tested
         self.tool_test_results = tool_test_results
         self.has_repository_dependencies = has_repository_dependencies
@@ -252,6 +254,37 @@ class RepositoryMetadata( object, APIItem ):
                 if tool_dict.get( 'add_to_tool_panel', True ):
                     return True
         return False
+
+    def as_dict( self, value_mapper=None ):
+        return self.get_api_value( view='element', value_mapper=value_mapper )
+
+    def get_api_value( self, view='collection', value_mapper=None ):
+        if value_mapper is None:
+            value_mapper = {}
+        rval = {}
+        try:
+            visible_keys = self.__getattribute__( 'api_' + view + '_visible_keys' )
+        except AttributeError:
+            raise Exception( 'Unknown API view: %s' % view )
+        for key in visible_keys:
+            try:
+                rval[ key ] = self.__getattribute__( key )
+                if key in value_mapper:
+                    rval[ key ] = value_mapper.get( key, rval[ key ] )
+            except AttributeError:
+                rval[ key ] = None
+        return rval
+
+
+class SkipToolTest( object, APIItem ):
+    api_collection_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision' )
+    api_element_visible_keys = ( 'id', 'repository_metadata_id', 'initial_changeset_revision', 'comment' )
+
+    def __init__( self, id=None, repository_metadata_id=None, initial_changeset_revision=None, comment=None ):
+        self.id = id
+        self.repository_metadata_id = repository_metadata_id
+        self.initial_changeset_revision = initial_changeset_revision
+        self.comment = comment
 
     def as_dict( self, value_mapper=None ):
         return self.get_api_value( view='element', value_mapper=value_mapper )
