@@ -148,9 +148,6 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         test_user_1 = test_db_util.get_user( common.test_user_1_email )
         encoded_user_id = self.security.encode_id( test_user_1.id )
         encoded_repository_id = self.security.encode_id( repository.id )
-        # We are checking the changeset revision pointed to by first_changeset_hash, stored in a global variable at the end of
-        # test_0005. The tip changeset hash should not be displayed here, but first_changeset_hash should.
-        tip_changeset_hash = self.get_repository_tip( repository )
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
         # The iframe should point to /repository/view_repository?id=<encoded repository ID>
@@ -158,7 +155,7 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         strings_displayed_in_iframe = [ 'user1', 'filtering_0420', 'Galaxy filtering tool for test 0420', first_changeset_hash ]
         strings_displayed_in_iframe.append( 'Sharable link to this repository revision:' )
         strings_displayed_in_iframe.append( '%s/view/user1/filtering_0420/%s' % ( self.url, first_changeset_hash ) )
-        strings_not_displayed_in_iframe = [ tip_changeset_hash ]
+        strings_not_displayed_in_iframe = []
         self.load_citable_url( username='user1', 
                                repository_name='filtering_0420', 
                                changeset_revision=first_changeset_hash, 
@@ -173,20 +170,20 @@ class TestRepositoryCitableURLs( ShedTwillTestCase ):
         test_user_1 = test_db_util.get_user( common.test_user_1_email )
         encoded_user_id = self.security.encode_id( test_user_1.id )
         encoded_repository_id = self.security.encode_id( repository.id )
-        changeset_hash = '!!invalid!!'
+        invalid_changeset_hash = 'invalid'
         tip_revision = self.get_repository_tip( repository )
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
         # The iframe should point to /repository/view_repository?id=<encoded repository ID>&status=error
         strings_displayed = [ '/repository', 'view_repository', 'id=' + encoded_repository_id ]
-        strings_displayed.extend( [ 'The+change+log', 'does+not+include+revision', '%21%21invalid%21%21', 'status=error' ] )
+        strings_displayed.extend( [ 'The+change+log', 'does+not+include+revision', invalid_changeset_hash, 'status=error' ] )
         strings_displayed_in_iframe = [ 'user1', 'filtering_0420', 'Galaxy filtering tool for test 0420' ]
         strings_displayed_in_iframe.append( 'Sharable link to this repository revision:' )
-        strings_displayed_in_iframe.append( '%s/view/user1/filtering_0420/%s' % ( self.url, changeset_hash ) )
-        strings_not_displayed_in_iframe = [ tip_revision ]
+        strings_displayed_in_iframe.append( '%s/view/user1/filtering_0420/%s' % ( self.url, invalid_changeset_hash ) )
+        strings_not_displayed_in_iframe = []
         self.load_citable_url( username='user1', 
                                repository_name='filtering_0420', 
-                               changeset_revision=changeset_hash, 
+                               changeset_revision=invalid_changeset_hash, 
                                encoded_user_id=encoded_user_id, 
                                encoded_repository_id=encoded_repository_id,
                                strings_displayed=strings_displayed, 
