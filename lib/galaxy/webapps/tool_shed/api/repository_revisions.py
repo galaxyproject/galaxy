@@ -54,6 +54,10 @@ class RepositoryRevisionsController( BaseAPIController ):
         includes_tools = kwd.get( 'includes_tools', None )
         if includes_tools is not None:
             clause_list.append( trans.model.RepositoryMetadata.table.c.includes_tools == util.string_as_bool( includes_tools ) )
+        # Filter by test_install_error if received.
+        test_install_error = kwd.get( 'test_install_error', None )
+        if test_install_error is not None:
+            clause_list.append( trans.model.RepositoryMetadata.table.c.test_install_error == util.string_as_bool( test_install_error ) )
         # Filter by skip_tool_test if received.
         skip_tool_test = kwd.get( 'skip_tool_test', None )
         if skip_tool_test is not None:
