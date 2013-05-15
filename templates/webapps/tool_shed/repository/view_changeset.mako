@@ -74,7 +74,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
             <tr>
                 <td>
                     <b>Commit message:</b>
-                    <br/>${ctx.description() | h}<br/>
+                    <br/>${ util.unicodify( ctx.description() ) | h}<br/>
                 </td>
             </tr>
             %if modified:
@@ -82,7 +82,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                     <td>
                         <b>modified:</b>
                         %for item in modified:
-                            <br/><a href="#${item}">${item | h}</a>
+                            <br/><a href="#${ util.unicodify( item ) }">${ util.unicodify( item ) | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -92,7 +92,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                     <td>
                         <b>added:</b>
                         %for item in added:
-                            <br/><a href="#${item}">${item | h}</a>
+                            <br/><a href="#${ util.unicodify( item ) }">${ util.unicodify( item ) | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -102,7 +102,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                     <td>
                         <b>removed:</b>
                         %for item in removed:
-                            <br/><a href="#${item}">${item | h}</a>
+                            <br/><a href="#${ util.unicodify( item ) }">${ util.unicodify( item ) | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -112,7 +112,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                     <td>
                         <b>deleted:</b>
                         %for item in deleted:
-                            <br/><a href="#${item}">${item | h}</a>
+                            <br/><a href="#${ util.unicodify( item ) }">${ util.unicodify( item ) | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -122,7 +122,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                     <td>
                         <b>unknown:</b>
                         %for item in unknown:
-                            <br/><a href="#${item}">${item | h}</a>
+                            <br/><a href="#${ util.unicodify( item ) }">${ util.unicodify( item ) | h}</a>
                         %endfor
                     }</td>
                 </tr>
@@ -132,7 +132,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                     <td>
                         <b>ignored:</b>
                         %for item in ignored:
-                            <br/><a href="#${item}">${item | h}</a>
+                            <br/><a href="#${ util.unicodify( item ) }">${ util.unicodify( item ) | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -142,7 +142,7 @@ ${render_tool_shed_repository_actions( repository=repository )}
                     <td>
                         clean:
                         %for item in clean:
-                            <br/><a href="#${item}">${item | h}</a>
+                            <br/><a href="#${ util.unicodify( item ) }">${ util.unicodify( item ) | h}</a>
                         %endfor
                     </td>
                 </tr>
@@ -162,8 +162,8 @@ ${render_tool_shed_repository_actions( repository=repository )}
                                 break
                         ctr += 1
                 %>
-                <tr><td bgcolor="#E0E0E0">${anchor_str}</td></tr>
-                <tr><td>${diff}</td></tr>
+                <tr><td bgcolor="#E0E0E0">${ util.unicodify( anchor_str ) }</td></tr>
+                <tr><td>${ util.unicodify( diff ) }</td></tr>
             %endfor
         </table>
     </div>

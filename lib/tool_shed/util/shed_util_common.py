@@ -690,7 +690,7 @@ def get_repository_files( trans, folder_path ):
     contents = []
     for item in os.listdir( folder_path ):
         # Skip .hg directories
-        if str( item ).startswith( '.hg' ):
+        if item.startswith( '.hg' ):
             continue
         if os.path.isdir( os.path.join( folder_path, item ) ):
             # Append a '/' character so that our jquery dynatree will function properly.
