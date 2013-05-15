@@ -790,9 +790,8 @@ def main():
                                             error_message=dependency.error_message )
                         repository_status[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
                     # Record the status of this repository in the tool shed.
-                    set_do_not_test = not is_latest_downloadable_revision( galaxy_tool_shed_url, repository_info_dict )
                     params[ 'tools_functionally_correct' ] = 'false'
-                    params[ 'do_not_test' ] = str( set_do_not_test )
+                    params[ 'do_not_test' ] = 'false'
                     params[ 'test_install_error' ] = 'true'
                     register_test_result( galaxy_tool_shed_url, 
                                           metadata_revision_id, 
@@ -925,10 +924,9 @@ def main():
                                     changeset_revision=repository.changeset_revision,
                                     error_message=repository.error_message )
                 repository_status[ 'installation_errors' ][ 'repository_dependencies' ].append( test_result )
-                set_do_not_test = not is_latest_downloadable_revision( galaxy_tool_shed_url, repository_info_dict )
                 params[ 'tools_functionally_correct' ] = 'false'
                 params[ 'test_install_error' ] = 'true'
-                params[ 'do_not_test' ] = str( set_do_not_test )
+                params[ 'do_not_test' ] = 'false'
                 register_test_result( galaxy_tool_shed_url, 
                                       metadata_revision_id, 
                                       repository_status, 
