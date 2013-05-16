@@ -650,7 +650,8 @@ def main():
                 repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
             except:
                 log.exception( 'Error getting installed repository.' )
-                continue
+                success = False
+                pass
             # If the installation succeeds, configure and run functional tests for this repository. This is equivalent to 
             # sh run_functional_tests.sh -installed
             if success:
@@ -921,7 +922,11 @@ def main():
             else:
                 # Even if the repository failed to install, execute the uninstall method, in case a dependency did succeed.
                 log.debug( 'Uninstalling repository %s', repository_info_dict[ 'name' ] )
-                repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
+                try:
+                    repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
+                except:
+                    log.exception( 'Unable to uninstall, no installed repository found.' )
+                    continue
                 test_result = dict( tool_shed=repository.tool_shed, 
                                     name=repository.name, 
                                     owner=repository.owner, 
