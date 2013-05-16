@@ -32,6 +32,21 @@ CHUNK_SIZE = 2**20 # 1Mb
 
 class UploadController( BaseUIController ):
 
+    def check_archive( self, archive ):
+        for member in archive.getmembers():
+            # Allow regular files and directories only
+            if not ( member.isdir() or member.isfile() or member.islnk() ):
+                message = "Uploaded archives can only include regular directories and files (no symbolic links, devices, etc). Offender: %s" % str( member )
+                return False, message
+            for item in [ '.hg', '..', '/' ]:
+                if member.name.startswith( item ):
+                    message = "Uploaded archives cannot contain .hg directories, absolute filenames starting with '/', or filenames with two dots '..'."
+                    return False, message
+            if member.name in [ 'hgrc' ]:
+                message = "Uploaded archives cannot contain hgrc files."
+                return False, message
+        return True, ''
+
     def check_file_contents_for_email_alerts( self, trans ):
         """
         See if any admin users have chosen to receive email alerts when a repository is updated.  If so, the file contents of the update must be
@@ -54,32 +69,266 @@ class UploadController( BaseUIController ):
             message = 'The file "%s" contains image content.\n' % str( file_path )
         return message
 
+    def create_and_write_tmp_file( self, text ):
+        fh = tempfile.NamedTemporaryFile( 'wb' )
+        tmp_filename = fh.name
+        fh.close()
+        fh = open( tmp_filename, 'wb' )
+        fh.write( '<?xml version="1.0"?>\n' )
+        fh.write( text )
+        fh.close()
+        return tmp_filename
+
+    def get_upload_point( self, repository, **kwd ):
+        upload_point = kwd.get( 'upload_point', None )
+        if upload_point is not None:
+            # The value of upload_point will be something like: database/community_files/000/repo_12/1.bed
+            if os.path.exists( upload_point ):
+                if os.path.isfile( upload_point ):
+                    # Get the parent directory
+                    upload_point, not_needed = os.path.split( upload_point )
+                    # Now the value of uplaod_point will be something like: database/community_files/000/repo_12/
+                upload_point = upload_point.split( 'repo_%d' % repository.id )[ 1 ]
+                if upload_point:
+                    upload_point = upload_point.lstrip( '/' )
+                    upload_point = upload_point.rstrip( '/' )
+                # Now the value of uplaod_point will be something like: /
+                if upload_point == '/':
+                    upload_point = None
+            else:
+                # Must have been an error selecting something that didn't exist, so default to repository root
+                upload_point = None
+        return upload_point
+
+    def handle_bz2( self, repository, uploaded_file_name ):
+        fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_bunzip2_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
+        bzipped_file = bz2.BZ2File( uploaded_file_name, 'rb' )
+        while 1:
+            try:
+                chunk = bzipped_file.read( CHUNK_SIZE )
+            except IOError:
+                os.close( fd )
+                os.remove( uncompressed )
+                log.exception( 'Problem uncompressing bz2 data "%s": %s' % ( uploaded_file_name, str( e ) ) )
+                return
+            if not chunk:
+                break
+            os.write( fd, chunk )
+        os.close( fd )
+        bzipped_file.close()
+        shutil.move( uncompressed, uploaded_file_name )
+
+    def handle_directory_changes( self, trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
+                                  undesirable_dirs_removed, undesirable_files_removed ):    
+        repo_dir = repository.repo_path( trans.app )
+        repo = hg.repository( suc.get_configured_ui(), repo_dir )
+        content_alert_str = ''
+        files_to_remove = []
+        filenames_in_archive = [ os.path.join( full_path, name ) for name in filenames_in_archive ]
+        if remove_repo_files_not_in_tar and not repository.is_new( trans.app ):
+            # We have a repository that is not new (it contains files), so discover those files that are in the repository, but not in the uploaded archive.
+            for root, dirs, files in os.walk( full_path ):
+                if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
+                    for undesirable_dir in undesirable_dirs:
+                        if undesirable_dir in dirs:
+                            dirs.remove( undesirable_dir )
+                            undesirable_dirs_removed += 1
+                    for undesirable_file in undesirable_files:
+                        if undesirable_file in files:
+                            files.remove( undesirable_file )
+                            undesirable_files_removed += 1
+                    for name in files:
+                        full_name = os.path.join( root, name )
+                        if full_name not in filenames_in_archive:
+                            files_to_remove.append( full_name )
+            for repo_file in files_to_remove:
+                # Remove files in the repository (relative to the upload point) that are not in the uploaded archive.
+                try:
+                    commands.remove( repo.ui, repo, repo_file, force=True )
+                except Exception, e:
+                    log.debug( "Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str( e ))
+                    relative_selected_file = selected_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
+                    repo.dirstate.remove( relative_selected_file )
+                    repo.dirstate.write()
+                    absolute_selected_file = os.path.abspath( selected_file )
+                    if os.path.isdir( absolute_selected_file ):
+                        try:
+                            os.rmdir( absolute_selected_file )
+                        except OSError, e:
+                            # The directory is not empty.
+                            pass
+                    elif os.path.isfile( absolute_selected_file ):
+                        os.remove( absolute_selected_file )
+                        dir = os.path.split( absolute_selected_file )[0]
+                        try:
+                            os.rmdir( dir )
+                        except OSError, e:
+                            # The directory is not empty.
+                            pass
+        # See if any admin users have chosen to receive email alerts when a repository is
+        # updated.  If so, check every uploaded file to ensure content is appropriate.
+        check_contents = self.check_file_contents_for_email_alerts( trans )
+        for filename_in_archive in filenames_in_archive:
+            # Check file content to ensure it is appropriate.
+            if check_contents and os.path.isfile( filename_in_archive ):
+                content_alert_str += self.check_file_content_for_html_and_images( filename_in_archive )
+            commands.add( repo.ui, repo, filename_in_archive )
+            if filename_in_archive.endswith( 'tool_data_table_conf.xml.sample' ):
+                # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
+                # to the in-memory trans.app.tool_data_tables dictionary.
+                error, message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
+                if error:
+                    return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
+        commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
+        admin_only = len( repository.downloadable_revisions ) != 1
+        suc.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
+        return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
+
+    def handle_gzip( self, repository, uploaded_file_name ):
+        fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
+        gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
+        while 1:
+            try:
+                chunk = gzipped_file.read( CHUNK_SIZE )
+            except IOError, e:
+                os.close( fd )
+                os.remove( uncompressed )
+                log.exception( 'Problem uncompressing gz data "%s": %s' % ( uploaded_file_name, str( e ) ) )
+                return
+            if not chunk:
+                break
+            os.write( fd, chunk )
+        os.close( fd )
+        gzipped_file.close()
+        shutil.move( uncompressed, uploaded_file_name )
+
+    def handle_repository_dependencies_definition( self, trans, repository_dependencies_config ):
+        altered = False
+        try:
+            # Make sure we're looking at a valid repository_dependencies.xml file.
+            tree = util.parse_xml( repository_dependencies_config )
+            root = tree.getroot()
+        except Exception, e:
+            error_message = "Error parsing %s in handle_repository_dependencies_definition: " % str( repository_dependencies_config )
+            log.exception( error_message )
+            return False, None
+        if root.tag == 'repositories':
+            for index, elem in enumerate( root ):
+                # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
+                populated, elem = self.handle_repository_dependency_elem( trans, elem )
+                if populated:
+                    root[ index ] = elem
+                    if not altered:
+                        altered = True
+            return altered, root
+        return False, None
+
+    def handle_repository_dependency_elem( self, trans, elem ):
+        # <repository name="molecule_datatypes" owner="test" changeset_revision="1a070566e9c6" />
+        populated = False
+        name = elem.get( 'name' )
+        owner = elem.get( 'owner' )
+        changeset_revision = elem.get( 'changeset_revision' )
+        if not changeset_revision:
+            # Populate the changeset_revision attribute with the latest installable metadata revision for the defined repository.
+            # We use the latest installable revision instead of the latest metadata revision to ensure that the contents of the
+            # revision are valid.
+            repository = suc.get_repository_by_name_and_owner( trans.app, name, owner )
+            if repository:
+                repo_dir = repository.repo_path( trans.app )
+                repo = hg.repository( suc.get_configured_ui(), repo_dir )
+                lastest_installable_changeset_revision = suc.get_latest_downloadable_changeset_revision( trans, repository, repo )
+                if lastest_installable_changeset_revision != suc.INITIAL_CHANGELOG_HASH:
+                    elem.attrib[ 'changeset_revision' ] = lastest_installable_changeset_revision
+                    populated = True
+        return populated, elem
+
+    def handle_tool_dependencies_definition( self, trans, tool_dependencies_config ):
+        altered = False
+        try:
+            # Make sure we're looking at a valid tool_dependencies.xml file.
+            tree = util.parse_xml( tool_dependencies_config )
+            root = tree.getroot()
+        except Exception, e:
+            error_message = "Error parsing %s in handle_tool_dependencies_definition: " % str( tool_dependencies_config )
+            log.exception( error_message )
+            return False, None
+        if root.tag == 'tool_dependency':
+            for root_index, root_elem in enumerate( root ):
+                # <package name="eigen" version="2.0.17">
+                if root_elem.tag == 'package':
+                    package_altered = False
+                    for package_index, package_elem in enumerate( root_elem ):
+                        if package_elem.tag == 'repository':
+                            # <repository name="package_eigen_2_0" owner="test" changeset_revision="09eb05087cd0" prior_installation_required="True" />
+                            populated, repository_elem = self.handle_repository_dependency_elem( trans, package_elem )
+                            if populated:
+                                root_elem[ package_index ] = repository_elem
+                                package_altered = True
+                                if not altered:
+                                    altered = True
+
+                        elif package_elem.tag == 'install':
+                            # <install version="1.0">
+                            for actions_index, actions_elem in enumerate( package_elem ):
+                                for action_index, action_elem in enumerate( actions_elem ):
+                                    action_type = action_elem.get( 'type' )
+                                    if action_type == 'set_environment_for_install':
+                                        # <action type="set_environment_for_install">
+                                        #     <repository name="package_eigen_2_0" owner="test" changeset_revision="09eb05087cd0">
+                                        #        <package name="eigen" version="2.0.17" />
+                                        #     </repository>
+                                        # </action>
+                                        for repo_index, repo_elem in enumerate( action_elem ):
+                                            populated, repository_elem = self.handle_repository_dependency_elem( trans, repo_elem )
+                                            if populated:
+                                                action_elem[ repo_index ] = repository_elem
+                                                package_altered = True
+                                                if not altered:
+                                                    altered = True
+                                        if package_altered:
+                                            actions_elem[ action_index ] = action_elem
+                                if package_altered:
+                                    root_elem[ actions_index ] = actions_elem
+
+                    if package_altered:
+                        root[ root_index ] = root_elem
+            return altered, root
+        return False, None
+
+    def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
+        if isgzip:
+            self.handle_gzip( repository, uploaded_file_name )
+            return uploaded_file_filename.rstrip( '.gz' )
+        if isbz2:
+            self.handle_bz2( repository, uploaded_file_name )
+            return uploaded_file_filename.rstrip( '.bz2' )
+
     @web.expose
     @web.require_login( 'upload', use_panels=True )
     def upload( self, trans, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
-        commit_message = util.restore_text( params.get( 'commit_message', 'Uploaded'  ) )
-        category_ids = util.listify( params.get( 'category_id', '' ) )
+        message = kwd.get( 'message', ''  )
+        status = kwd.get( 'status', 'done' )
+        commit_message = kwd.get( 'commit_message', 'Uploaded'  )
+        category_ids = util.listify( kwd.get( 'category_id', '' ) )
         categories = suc.get_categories( trans )
-        repository_id = params.get( 'repository_id', '' )
+        repository_id = kwd.get( 'repository_id', '' )
         repository = suc.get_repository_in_tool_shed( trans, repository_id )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
-        uncompress_file = util.string_as_bool( params.get( 'uncompress_file', 'true' ) )
-        remove_repo_files_not_in_tar = util.string_as_bool( params.get( 'remove_repo_files_not_in_tar', 'true' ) )
+        uncompress_file = util.string_as_bool( kwd.get( 'uncompress_file', 'true' ) )
+        remove_repo_files_not_in_tar = util.string_as_bool( kwd.get( 'remove_repo_files_not_in_tar', 'true' ) )
         uploaded_file = None
-        upload_point = self.__get_upload_point( repository, **kwd )
+        upload_point = self.get_upload_point( repository, **kwd )
         tip = repository.tip( trans.app )
-        file_data = params.get( 'file_data', '' )
-        url = params.get( 'url', '' )
+        file_data = kwd.get( 'file_data', '' )
+        url = kwd.get( 'url', '' )
         # Part of the upload process is sending email notification to those that have registered to
         # receive them.  One scenario occurs when the first change set is produced for the repository.
         # See the suc.handle_email_alerts() method for the definition of the scenarios.
         new_repo_alert = repository.is_new( trans.app )
         uploaded_directory = None
-        if params.get( 'upload_button', False ):
+        if kwd.get( 'upload_button', False ):
             if file_data == '' and url == '':
                 message = 'No files were entered on the upload form.'
                 status = 'error'
@@ -155,10 +404,28 @@ class UploadController( BaseUIController ):
                         full_path = os.path.abspath( os.path.join( repo_dir, upload_point, uploaded_file_filename ) )
                     else:
                         full_path = os.path.abspath( os.path.join( repo_dir, uploaded_file_filename ) )
-                    # Move the uploaded file to the load_point within the repository hierarchy.
-                    shutil.move( uploaded_file_name, full_path )
-                    # See if any admin users have chosen to receive email alerts when a repository is
-                    # updated.  If so, check every uploaded file to ensure content is appropriate.
+                    # Move some version of the uploaded file to the load_point within the repository hierarchy.
+                    if uploaded_file_filename in [ 'repository_dependencies.xml' ]:
+                        # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
+                        altered, root = self.handle_repository_dependencies_definition( trans, uploaded_file_name )
+                        if altered:
+                            tmp_filename = self.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                            shutil.move( tmp_filename, full_path )
+                        else:
+                            shutil.move( uploaded_file_name, full_path )
+                    elif uploaded_file_filename in [ 'tool_dependencies.xml' ]:
+                        # Inspect the contents of the file to see if it defines a complex repository dependency definition whose changeset_revision values
+                        # are missing and if so, set them appropriately.
+                        altered, root = self.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                        if altered:
+                            tmp_filename = self.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                            shutil.move( tmp_filename, full_path )
+                        else:
+                            shutil.move( uploaded_file_name, full_path )
+                    else:
+                        shutil.move( uploaded_file_name, full_path )
+                    # See if any admin users have chosen to receive email alerts when a repository is updated.  If so, check every uploaded file to ensure
+                    # content is appropriate.
                     check_contents = self.check_file_contents_for_email_alerts( trans )
                     if check_contents and os.path.isfile( full_path ):
                         content_alert_str = self.check_file_content_for_html_and_images( full_path )
@@ -264,7 +531,7 @@ class UploadController( BaseUIController ):
         filenames_in_archive = []
         for root, dirs, files in os.walk( uploaded_directory ):
             for uploaded_file in files:
-                relative_path = os.path.normpath(os.path.join(os.path.relpath(root, uploaded_directory), uploaded_file))
+                relative_path = os.path.normpath( os.path.join( os.path.relpath( root, uploaded_directory ), uploaded_file ) )
                 ok = os.path.basename( uploaded_file ) not in undesirable_files
                 if ok:
                     for file_path_item in relative_path.split( '/' ):
@@ -275,19 +542,19 @@ class UploadController( BaseUIController ):
                 else:
                     undesirable_files_removed += 1
                 if ok:
-                    repo_path = os.path.join(full_path, relative_path)
-                    repo_basedir = os.path.normpath(os.path.join(repo_path, os.path.pardir))
-                    if not os.path.exists(repo_basedir):
-                        os.makedirs(repo_basedir)
-                    if os.path.exists(repo_path):
-                        if os.path.isdir(repo_path):
-                            shutil.rmtree(repo_path)
+                    repo_path = os.path.join( full_path, relative_path )
+                    repo_basedir = os.path.normpath( os.path.join( repo_path, os.path.pardir ) )
+                    if not os.path.exists( repo_basedir ):
+                        os.makedirs( repo_basedir )
+                    if os.path.exists( repo_path ):
+                        if os.path.isdir( repo_path ):
+                            shutil.rmtree( repo_path )
                         else:
-                            os.remove(repo_path)
-                    shutil.move(os.path.join(uploaded_directory, relative_path), repo_path)
+                            os.remove( repo_path )
+                    shutil.move( os.path.join( uploaded_directory, relative_path ), repo_path )
                     filenames_in_archive.append( relative_path )
-        return self.__handle_directory_changes(trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
-                                               undesirable_dirs_removed, undesirable_files_removed)
+        return self.handle_directory_changes( trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
+                                              undesirable_dirs_removed, undesirable_files_removed )
 
     def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert ):
         # Upload a tar archive of files.
@@ -295,7 +562,7 @@ class UploadController( BaseUIController ):
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         undesirable_dirs_removed = 0
         undesirable_files_removed = 0
-        ok, message = self.__check_archive( tar )
+        ok, message = self.check_archive( tar )
         if not ok:
             tar.close()
             uploaded_file.close()
@@ -322,159 +589,12 @@ class UploadController( BaseUIController ):
             tar.extractall( path=full_path )
             tar.close()
             uploaded_file.close()
-            return self.__handle_directory_changes( trans,
-                                                    repository,
-                                                    full_path,
-                                                    filenames_in_archive,
-                                                    remove_repo_files_not_in_tar,
-                                                    new_repo_alert,
-                                                    commit_message,
-                                                    undesirable_dirs_removed,
-                                                    undesirable_files_removed )
-
-    def __handle_directory_changes( self, trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
-                                    undesirable_dirs_removed, undesirable_files_removed ):    
-        repo_dir = repository.repo_path( trans.app )
-        repo = hg.repository( suc.get_configured_ui(), repo_dir )
-        content_alert_str = ''
-        files_to_remove = []
-        filenames_in_archive = [ os.path.join( full_path, name ) for name in filenames_in_archive ]
-        if remove_repo_files_not_in_tar and not repository.is_new( trans.app ):
-            # We have a repository that is not new (it contains files), so discover
-            # those files that are in the repository, but not in the uploaded archive.
-            for root, dirs, files in os.walk( full_path ):
-                if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
-                    for undesirable_dir in undesirable_dirs:
-                        if undesirable_dir in dirs:
-                            dirs.remove( undesirable_dir )
-                            undesirable_dirs_removed += 1
-                    for undesirable_file in undesirable_files:
-                        if undesirable_file in files:
-                            files.remove( undesirable_file )
-                            undesirable_files_removed += 1
-                    for name in files:
-                        full_name = os.path.join( root, name )
-                        if full_name not in filenames_in_archive:
-                            files_to_remove.append( full_name )
-            for repo_file in files_to_remove:
-                # Remove files in the repository (relative to the upload point) that are not in the uploaded archive.
-                try:
-                    commands.remove( repo.ui, repo, repo_file, force=True )
-                except Exception, e:
-                    log.debug( "Error removing files using the mercurial API, so trying a different approach, the error was: %s" % str( e ))
-                    relative_selected_file = selected_file.split( 'repo_%d' % repository.id )[1].lstrip( '/' )
-                    repo.dirstate.remove( relative_selected_file )
-                    repo.dirstate.write()
-                    absolute_selected_file = os.path.abspath( selected_file )
-                    if os.path.isdir( absolute_selected_file ):
-                        try:
-                            os.rmdir( absolute_selected_file )
-                        except OSError, e:
-                            # The directory is not empty
-                            pass
-                    elif os.path.isfile( absolute_selected_file ):
-                        os.remove( absolute_selected_file )
-                        dir = os.path.split( absolute_selected_file )[0]
-                        try:
-                            os.rmdir( dir )
-                        except OSError, e:
-                            # The directory is not empty
-                            pass
-        # See if any admin users have chosen to receive email alerts when a repository is
-        # updated.  If so, check every uploaded file to ensure content is appropriate.
-        check_contents = self.check_file_contents_for_email_alerts( trans )
-        for filename_in_archive in filenames_in_archive:
-            # Check file content to ensure it is appropriate.
-            if check_contents and os.path.isfile( filename_in_archive ):
-                content_alert_str += self.check_file_content_for_html_and_images( filename_in_archive )
-            commands.add( repo.ui, repo, filename_in_archive )
-            if filename_in_archive.endswith( 'tool_data_table_conf.xml.sample' ):
-                # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded by parsing the file and adding new entries
-                # to the in-memory trans.app.tool_data_tables dictionary.
-                error, message = tool_util.handle_sample_tool_data_table_conf_file( trans.app, filename_in_archive )
-                if error:
-                    return False, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
-        commands.commit( repo.ui, repo, full_path, user=trans.user.username, message=commit_message )
-        admin_only = len( repository.downloadable_revisions ) != 1
-        suc.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
-        return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
-
-    def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
-        if isgzip:
-            self.__handle_gzip( repository, uploaded_file_name )
-            return uploaded_file_filename.rstrip( '.gz' )
-        if isbz2:
-            self.__handle_bz2( repository, uploaded_file_name )
-            return uploaded_file_filename.rstrip( '.bz2' )
-
-    def __handle_gzip( self, repository, uploaded_file_name ):
-        fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
-        gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
-        while 1:
-            try:
-                chunk = gzipped_file.read( CHUNK_SIZE )
-            except IOError, e:
-                os.close( fd )
-                os.remove( uncompressed )
-                log.exception( 'Problem uncompressing gz data "%s": %s' % ( uploaded_file_name, str( e ) ) )
-                return
-            if not chunk:
-                break
-            os.write( fd, chunk )
-        os.close( fd )
-        gzipped_file.close()
-        shutil.move( uncompressed, uploaded_file_name )
-
-    def __handle_bz2( self, repository, uploaded_file_name ):
-        fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_bunzip2_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
-        bzipped_file = bz2.BZ2File( uploaded_file_name, 'rb' )
-        while 1:
-            try:
-                chunk = bzipped_file.read( CHUNK_SIZE )
-            except IOError:
-                os.close( fd )
-                os.remove( uncompressed )
-                log.exception( 'Problem uncompressing bz2 data "%s": %s' % ( uploaded_file_name, str( e ) ) )
-                return
-            if not chunk:
-                break
-            os.write( fd, chunk )
-        os.close( fd )
-        bzipped_file.close()
-        shutil.move( uncompressed, uploaded_file_name )
-
-    def __get_upload_point( self, repository, **kwd ):
-        upload_point = kwd.get( 'upload_point', None )
-        if upload_point is not None:
-            # The value of upload_point will be something like: database/community_files/000/repo_12/1.bed
-            if os.path.exists( upload_point ):
-                if os.path.isfile( upload_point ):
-                    # Get the parent directory
-                    upload_point, not_needed = os.path.split( upload_point )
-                    # Now the value of uplaod_point will be something like: database/community_files/000/repo_12/
-                upload_point = upload_point.split( 'repo_%d' % repository.id )[ 1 ]
-                if upload_point:
-                    upload_point = upload_point.lstrip( '/' )
-                    upload_point = upload_point.rstrip( '/' )
-                # Now the value of uplaod_point will be something like: /
-                if upload_point == '/':
-                    upload_point = None
-            else:
-                # Must have been an error selecting something that didn't exist, so default to repository root
-                upload_point = None
-        return upload_point
-
-    def __check_archive( self, archive ):
-        for member in archive.getmembers():
-            # Allow regular files and directories only
-            if not ( member.isdir() or member.isfile() or member.islnk() ):
-                message = "Uploaded archives can only include regular directories and files (no symbolic links, devices, etc). Offender: %s" % str( member )
-                return False, message
-            for item in [ '.hg', '..', '/' ]:
-                if member.name.startswith( item ):
-                    message = "Uploaded archives cannot contain .hg directories, absolute filenames starting with '/', or filenames with two dots '..'."
-                    return False, message
-            if member.name in [ 'hgrc' ]:
-                message = "Uploaded archives cannot contain hgrc files."
-                return False, message
-        return True, ''
+            return self.handle_directory_changes( trans,
+                                                  repository,
+                                                  full_path,
+                                                  filenames_in_archive,
+                                                  remove_repo_files_not_in_tar,
+                                                  new_repo_alert,
+                                                  commit_message,
+                                                  undesirable_dirs_removed,
+                                                  undesirable_files_removed )

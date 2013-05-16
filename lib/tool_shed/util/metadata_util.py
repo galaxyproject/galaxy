@@ -1283,6 +1283,13 @@ def new_repository_dependency_metadata_required( trans, repository_metadata, met
             new_repository_dependencies_metadata = metadata_dict.get( 'repository_dependencies', None )
             if new_repository_dependencies_metadata:
                 new_repository_dependencies = metadata_dict[ 'repository_dependencies' ][ 'repository_dependencies' ]
+                # TODO: We used to include the following here to handle the case where repository dependency definitions were deleted.  However,
+                # this erroneously returned True in cases where is should not have done so.  This usually occurred where multiple single files
+                # were uploaded when a single tarball should have been.  We need to implement support for handling deleted repository dependency
+                # definitions so that we can guarantee reproducibility, but we need to do it in a way that is better than the following.
+                # for new_repository_dependency in new_repository_dependencies:
+                #     if new_repository_dependency not in saved_repository_dependencies:
+                #         return True
                 # The saved metadata must be a subset of the new metadata.
                 for saved_repository_dependency in saved_repository_dependencies:
                     if saved_repository_dependency not in new_repository_dependencies:
@@ -1314,6 +1321,13 @@ def new_tool_dependency_metadata_required( trans, repository_metadata, metadata_
                 saved_tool_dependencies = metadata[ 'tool_dependencies' ]
                 new_tool_dependencies = metadata_dict.get( 'tool_dependencies', None )
                 if new_tool_dependencies:
+                    # TODO: We used to include the following here to handle the case where tool dependency definitions were deleted.  However,
+                    # this erroneously returned True in cases where is should not have done so.  This usually occurred where multiple single files
+                    # were uploaded when a single tarball should have been.  We need to implement support for handling deleted tool dependency
+                    # definitions so that we can guarantee reproducibility, but we need to do it in a way that is better than the following.
+                    # for new_tool_dependency in new_tool_dependencies:
+                    #     if new_tool_dependency not in saved_tool_dependencies:
+                    #         return True
                     # The saved metadata must be a subset of the new metadata.
                     for saved_tool_dependency in saved_tool_dependencies:
                         if saved_tool_dependency not in new_tool_dependencies:

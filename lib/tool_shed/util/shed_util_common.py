@@ -492,6 +492,13 @@ def get_installed_tool_shed_repository( trans, id ):
     """Get a tool shed repository record from the Galaxy database defined by the id."""
     return trans.sa_session.query( trans.model.ToolShedRepository ).get( trans.security.decode_id( id ) )
 
+def get_latest_downloadable_changeset_revision( trans, repository, repo ):
+    repository_tip = repository.tip( trans.app )
+    repository_metadata = get_repository_metadata_by_changeset_revision( trans, trans.security.encode_id( repository.id ), repository_tip )
+    if repository_metadata and repository_metadata.downloadable:
+        return repository_tip
+    return get_previous_metadata_changeset_revision( repository, repo, repository_tip, downloadable=True )
+
 def get_named_tmpfile_from_ctx( ctx, filename, dir ):
     """Return a named temporary file created from a specified file with a given name included in a repository changeset revision."""
     filename = strip_path( filename )
