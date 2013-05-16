@@ -646,7 +646,11 @@ def main():
             repository_status[ 'passed_tests' ] = []
             repository_status[ 'failed_tests' ] = []
             repository_status[ 'installation_errors' ] = dict( current_repository=[], repository_dependencies=[], tool_dependencies=[] )
-            repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
+            try:
+                repository = test_db_util.get_installed_repository_by_name_owner_changeset_revision( name, owner, changeset_revision )
+            except:
+                log.exception( 'Error getting installed repository.' )
+                continue
             # If the installation succeeds, configure and run functional tests for this repository. This is equivalent to 
             # sh run_functional_tests.sh -installed
             if success:
