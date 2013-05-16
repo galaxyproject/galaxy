@@ -210,8 +210,9 @@ class LwrJobRunner( AsynchronousJobRunner ):
         job_state.job_destination = job_wrapper.job_destination
         job_wrapper.command_line = job.get_command_line()
         job_state.job_wrapper = job_wrapper
-        if job.get_state() in [model.Job.states.RUNNING, model.Job.states.QUEUED]:
+        state = job.get_state()
+        if state in [model.Job.states.RUNNING, model.Job.states.QUEUED]:
             log.debug( "(LWR/%s) is still in running state, adding to the LWR queue" % ( job.get_id()) )
             job_state.old_state = True
-            job_state.running = True
+            job_state.running = state == model.Job.states.RUNNING
             self.monitor_queue.put( job_state )
