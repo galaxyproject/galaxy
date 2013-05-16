@@ -1,15 +1,27 @@
-import sys, os, shutil, logging, tarfile, tempfile, urllib
+import logging
+import os
+import shutil
+import sys
+import tarfile
+import tempfile
+import urllib
 from galaxy.web.base.controller import BaseUIController
-from galaxy import web, util
+from galaxy import util
+from galaxy import web
 from galaxy.datatypes import checkers
 from galaxy.util import json
 
 import tool_shed.util.shed_util_common as suc
-from tool_shed.util import metadata_util, repository_dependency_util, tool_dependency_util, tool_util
+from tool_shed.util import metadata_util
+from tool_shed.util import repository_dependency_util
+from tool_shed.util import tool_dependency_util
+from tool_shed.util import tool_util
 
 from galaxy import eggs
-eggs.require('mercurial')
-from mercurial import hg, ui, commands
+eggs.require( 'mercurial' )
+from mercurial import commands
+from mercurial import hg
+from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
@@ -17,7 +29,9 @@ undesirable_dirs = [ '.hg', '.svn', '.git', '.cvs' ]
 undesirable_files = [ '.hg_archival.txt', 'hgrc', '.DS_Store' ]
 CHUNK_SIZE = 2**20 # 1Mb
 
+
 class UploadController( BaseUIController ):
+
     def check_file_contents_for_email_alerts( self, trans ):
         """
         See if any admin users have chosen to receive email alerts when a repository is updated.  If so, the file contents of the update must be
@@ -31,6 +45,7 @@ class UploadController( BaseUIController ):
                 if user_email in admin_users:
                     return True
         return False
+
     def check_file_content_for_html_and_images( self, file_path ):
         message = ''
         if checkers.check_html( file_path ):
@@ -38,6 +53,7 @@ class UploadController( BaseUIController ):
         elif checkers.check_image( file_path ):
             message = 'The file "%s" contains image content.\n' % str( file_path )
         return message
+
     @web.expose
     @web.require_login( 'upload', use_panels=True )
     def upload( self, trans, **kwd ):
@@ -235,6 +251,7 @@ class UploadController( BaseUIController ):
                                     remove_repo_files_not_in_tar=remove_repo_files_not_in_tar,
                                     message=message,
                                     status=status )
+
     def upload_directory( self, trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert ):
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
@@ -269,7 +286,9 @@ class UploadController( BaseUIController ):
                             os.remove(repo_path)
                     shutil.move(os.path.join(uploaded_directory, relative_path), repo_path)
                     filenames_in_archive.append( relative_path )
-        return self.__handle_directory_changes(trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed)
+        return self.__handle_directory_changes(trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
+                                               undesirable_dirs_removed, undesirable_files_removed)
+
     def upload_tar( self, trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert ):
         # Upload a tar archive of files.
         repo_dir = repository.repo_path( trans.app )
@@ -303,8 +322,18 @@ class UploadController( BaseUIController ):
             tar.extractall( path=full_path )
             tar.close()
             uploaded_file.close()
-            return self.__handle_directory_changes(trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed)
-    def __handle_directory_changes( self, trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message, undesirable_dirs_removed, undesirable_files_removed ):    
+            return self.__handle_directory_changes( trans,
+                                                    repository,
+                                                    full_path,
+                                                    filenames_in_archive,
+                                                    remove_repo_files_not_in_tar,
+                                                    new_repo_alert,
+                                                    commit_message,
+                                                    undesirable_dirs_removed,
+                                                    undesirable_files_removed )
+
+    def __handle_directory_changes( self, trans, repository, full_path, filenames_in_archive, remove_repo_files_not_in_tar, new_repo_alert, commit_message,
+                                    undesirable_dirs_removed, undesirable_files_removed ):    
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
         content_alert_str = ''
@@ -369,6 +398,7 @@ class UploadController( BaseUIController ):
         admin_only = len( repository.downloadable_revisions ) != 1
         suc.handle_email_alerts( trans, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only )
         return True, '', files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
+
     def uncompress( self, repository, uploaded_file_name, uploaded_file_filename, isgzip, isbz2 ):
         if isgzip:
             self.__handle_gzip( repository, uploaded_file_name )
@@ -376,6 +406,7 @@ class UploadController( BaseUIController ):
         if isbz2:
             self.__handle_bz2( repository, uploaded_file_name )
             return uploaded_file_filename.rstrip( '.bz2' )
+
     def __handle_gzip( self, repository, uploaded_file_name ):
         fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_gunzip_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
         gzipped_file = gzip.GzipFile( uploaded_file_name, 'rb' )
@@ -393,6 +424,7 @@ class UploadController( BaseUIController ):
         os.close( fd )
         gzipped_file.close()
         shutil.move( uncompressed, uploaded_file_name )
+
     def __handle_bz2( self, repository, uploaded_file_name ):
         fd, uncompressed = tempfile.mkstemp( prefix='repo_%d_upload_bunzip2_' % repository.id, dir=os.path.dirname( uploaded_file_name ), text=False )
         bzipped_file = bz2.BZ2File( uploaded_file_name, 'rb' )
@@ -410,6 +442,7 @@ class UploadController( BaseUIController ):
         os.close( fd )
         bzipped_file.close()
         shutil.move( uncompressed, uploaded_file_name )
+
     def __get_upload_point( self, repository, **kwd ):
         upload_point = kwd.get( 'upload_point', None )
         if upload_point is not None:
@@ -430,6 +463,7 @@ class UploadController( BaseUIController ):
                 # Must have been an error selecting something that didn't exist, so default to repository root
                 upload_point = None
         return upload_point
+
     def __check_archive( self, archive ):
         for member in archive.getmembers():
             # Allow regular files and directories only
