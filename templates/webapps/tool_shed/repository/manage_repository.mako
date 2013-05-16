@@ -58,6 +58,11 @@
 
     can_view_change_log = not is_new
 
+    if repository_metadata and repository_metadata.includes_tools:
+        includes_tools = True
+    else:
+        includes_tools = False
+
     if changeset_revision_is_repository_tip:
         tip_str = 'repository tip'
         sharable_link_label = 'Sharable link to this repository:'
@@ -193,6 +198,36 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
     </div>
 </div>
 ${render_repository_items( metadata, containers_dict, can_set_metadata=True )}
+%if includes_tools:
+    <p/>
+    <div class="toolForm">
+        <div class="toolFormTitle">Automated tool tests</div>
+        <div class="toolFormBody">
+            <form name="skip_tool_tests" id="skip_tool_tests" action="${h.url_for( controller='repository', action='manage_repository', id=trans.security.encode_id( repository.id ), changeset_revision=repository_metadata.changeset_revision )}" method="post" >
+                <div class="form-row">
+                    <label>Skip automated testing of tools in this revision:</label>
+                    ${skip_tool_tests_check_box.get_html()}
+                    <div class="toolParamHelp" style="clear: both;">
+                        Check the box and click <b>Save</b> to skip automated testing of the tools in this revision.
+                    </div>
+                </div>
+                <div style="clear: both"></div>
+                <div class="form-row">
+                <label>Reason for skipping automated testing:</label>
+                %if skip_tool_test:
+                    <pre><textarea name="skip_tool_tests_comment" rows="3" cols="80">${skip_tool_test.comment | h}</textarea></pre>
+                %else:
+                    <textarea name="skip_tool_tests_comment" rows="3" cols="80"></textarea>
+                %endif
+                </div>
+                <div style="clear: both"></div>
+                <div class="form-row">
+                    <input type="submit" name="skip_tool_tests_button" value="Save"/>
+                </div>
+            </form>
+        </div>
+    </div>
+%endif
 <p/>
 <div class="toolForm">
     <div class="toolFormTitle">Manage categories</div>

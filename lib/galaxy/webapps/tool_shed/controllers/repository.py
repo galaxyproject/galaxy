@@ -341,7 +341,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             message += '<ul>'
             message += '<li>you are authorized to update them</li>'
             message += '<li>the latest installable revision contains at least 1 tool</li>'
-            message += '<li>the latest installable revision has <b>Skip tool tests</b> checked</li>'
+            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this revision</b> checked</li>'
             message += '</ul>'
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
@@ -649,7 +649,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             message = 'This list contains repositories that match the following criteria:<br>'
             message += '<ul>'
             message += '<li>the latest installable revision contains at least 1 tool</li>'
-            message += '<li>the latest installable revision has <b>Skip tool tests</b> checked</li>'
+            message += '<li>the latest installable revision has <b>Skip automated testing of tools in this revision</b> checked</li>'
             message += '</ul>'
             kwd[ 'message' ] = message
             kwd[ 'status' ] = 'warning'
@@ -1976,29 +1976,31 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
     @web.expose
     @web.require_login( "manage repository" )
     def manage_repository( self, trans, id, **kwd ):
-        params = util.Params( kwd )
-        message = util.restore_text( params.get( 'message', ''  ) )
-        status = params.get( 'status', 'done' )
+        message = util.restore_text( kwd.get( 'message', ''  ) )
+        status = kwd.get( 'status', 'done' )
         repository = suc.get_repository_in_tool_shed( trans, id )
         repo_dir = repository.repo_path( trans.app )
         repo = hg.repository( suc.get_configured_ui(), repo_dir )
-        repo_name = util.restore_text( params.get( 'repo_name', repository.name ) )
-        changeset_revision = util.restore_text( params.get( 'changeset_revision', repository.tip( trans.app ) ) )
-        description = util.restore_text( params.get( 'description', repository.description ) )
-        long_description = util.restore_text( params.get( 'long_description', repository.long_description ) )
+        repo_name = util.restore_text( kwd.get( 'repo_name', repository.name ) )
+        changeset_revision = util.restore_text( kwd.get( 'changeset_revision', repository.tip( trans.app ) ) )
+        description = util.restore_text( kwd.get( 'description', repository.description ) )
+        long_description = util.restore_text( kwd.get( 'long_description', repository.long_description ) )
         avg_rating, num_ratings = self.get_ave_item_rating_data( trans.sa_session, repository, webapp_model=trans.model )
-        display_reviews = util.string_as_bool( params.get( 'display_reviews', False ) )
-        alerts = params.get( 'alerts', '' )
+        display_reviews = util.string_as_bool( kwd.get( 'display_reviews', False ) )
+        alerts = kwd.get( 'alerts', '' )
         alerts_checked = CheckboxField.is_checked( alerts )
-        category_ids = util.listify( params.get( 'category_id', '' ) )
+        skip_tool_tests = kwd.get( 'skip_tool_tests', '' )
+        skip_tool_tests_checked = CheckboxField.is_checked( skip_tool_tests )
+        skip_tool_tests_comment = kwd.get( 'skip_tool_tests_comment', '' )
+        category_ids = util.listify( kwd.get( 'category_id', '' ) )
         if repository.email_alerts:
             email_alerts = json.from_json_string( repository.email_alerts )
         else:
             email_alerts = []
-        allow_push = params.get( 'allow_push', '' )
+        allow_push = kwd.get( 'allow_push', '' )
         error = False
         user = trans.user
-        if params.get( 'edit_repository_button', False ):
+        if kwd.get( 'edit_repository_button', False ):
             flush_needed = False
             # TODO: add a can_manage in the security agent.
             if not ( user.email == repository.user.email or trans.user_is_admin() ):
@@ -2034,7 +2036,32 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 trans.sa_session.add( repository )
                 trans.sa_session.flush()
                 message += "The repository information has been updated."
-        elif params.get( 'manage_categories_button', False ):
+        elif kwd.get( 'skip_tool_tests_button', False ):
+            repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
+            skip_tool_test = repository_metadata.skip_tool_tests
+            if skip_tool_test:
+                # Handle the mapper behavior.
+                skip_tool_test = skip_tool_test[ 0 ]
+            if skip_tool_tests_checked:
+                if skip_tool_test:
+                    comment = skip_tool_test.comment
+                    if comment != skip_tool_tests_comment:
+                        skip_tool_test.comment = skip_tool_tests_comment
+                        trans.sa_session.add( skip_tool_test )
+                        trans.sa_session.flush()
+                else:
+                    skip_tool_test = trans.model.SkipToolTest( repository_metadata_id=repository_metadata.id,
+                                                               initial_changeset_revision=changeset_revision,
+                                                               comment=skip_tool_tests_comment )
+                    trans.sa_session.add( skip_tool_test )
+                    trans.sa_session.flush()
+                message = "Tools in this revision will be tested by the automated test framework."
+            else:
+                if skip_tool_test:
+                    trans.sa_session.delete( skip_tool_test )
+                    trans.sa_session.flush()
+                message = "Tools in this revision will not be tested by the automated test framework."
+        elif kwd.get( 'manage_categories_button', False ):
             flush_needed = False
             # Delete all currently existing categories.
             for rca in repository.categories:
@@ -2043,14 +2070,14 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
             if category_ids:
                 # Create category associations
                 for category_id in category_ids:
-                    category = trans.sa_session.query(model.Category).get( trans.security.decode_id( category_id ) )
+                    category = trans.sa_session.query( trans.model.Category ).get( trans.security.decode_id( category_id ) )
                     rca = trans.app.model.RepositoryCategoryAssociation( repository, category )
                     trans.sa_session.add( rca )
                     trans.sa_session.flush()
             message = "The repository information has been updated."
-        elif params.get( 'user_access_button', False ):
+        elif kwd.get( 'user_access_button', False ):
             if allow_push not in [ 'none' ]:
-                remove_auth = params.get( 'remove_auth', '' )
+                remove_auth = kwd.get( 'remove_auth', '' )
                 if remove_auth:
                     usernames = ''
                 else:
@@ -2062,7 +2089,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                     usernames = ','.join( usernames )
                 repository.set_allow_push( trans.app, usernames, remove_auth=remove_auth )
             message = "The repository information has been updated."
-        elif params.get( 'receive_email_alerts_button', False ):
+        elif kwd.get( 'receive_email_alerts_button', False ):
             flush_needed = False
             if alerts_checked:
                 if user.email not in email_alerts:
@@ -2097,6 +2124,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
         repository_metadata = None
         metadata = None
         is_malicious = False
+        skip_tool_test = None
         repository_dependencies = None
         if changeset_revision != suc.INITIAL_CHANGELOG_HASH:
             repository_metadata = suc.get_repository_metadata_by_changeset_revision( trans, id, changeset_revision )
@@ -2114,6 +2142,11 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                         metadata = repository_metadata.metadata
                         is_malicious = repository_metadata.malicious
             if repository_metadata:
+                skip_tool_test = repository_metadata.skip_tool_tests
+                if skip_tool_test:
+                    # Handle the mapper behavior.
+                    skip_tool_test = skip_tool_test[ 0 ]
+                    skip_tool_tests_checked = True
                 metadata = repository_metadata.metadata
                 # Get a dictionary of all repositories upon which the contents of the current repository_metadata record depend.
                 repository_dependencies = \
@@ -2136,6 +2169,7 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                 message += malicious_error
             status = 'error'
         malicious_check_box = CheckboxField( 'malicious', checked=is_malicious )
+        skip_tool_tests_check_box = CheckboxField( 'skip_tool_tests', checked=skip_tool_tests_checked )
         categories = suc.get_categories( trans )
         selected_categories = [ rca.category_id for rca in repository.categories ]
         containers_dict = container_util.build_repository_containers_for_tool_shed( trans, repository, changeset_revision, repository_dependencies, repository_metadata )
@@ -2159,6 +2193,8 @@ class RepositoryController( BaseUIController, common_util.ItemRatings ):
                                     display_reviews=display_reviews,
                                     num_ratings=num_ratings,
                                     alerts_check_box=alerts_check_box,
+                                    skip_tool_tests_check_box=skip_tool_tests_check_box,
+                                    skip_tool_test=skip_tool_test,
                                     malicious_check_box=malicious_check_box,
                                     message=message,
                                     status=status )
