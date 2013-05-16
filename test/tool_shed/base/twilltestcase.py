@@ -1024,10 +1024,27 @@ class ShedTwillTestCase( TwillTestCase ):
         tc.submit( "malicious_button" )
         self.check_for_strings( strings_displayed, strings_not_displayed )
         
+    def set_skip_tool_tsts_flag( self, repository, flag_value, reason, changeset_revision=None ):
+        '''
+        NOTE: As with certain other methods in this test suite, the form can't easily be filled out, so we're emulating the
+        form's expected behavior with url parameters, in particular the checkbox behavior.
+        '''
+        if changeset_revision is None:
+            changeset_revision = self.get_repository_tip( repository )
+        self.display_manage_repository_page( repository, changeset_revision=changeset_revision )
+        params = 'skip_tool_tests=true&%s' % ( urllib.urlencode( dict( changeset_revision=changeset_revision,
+                                                                       id=self.security.encode_id( repository.id ),
+                                                                       skip_tool_tests=str( flag_value ), 
+                                                                       skip_tool_tests_comment=reason, 
+                                                                       skip_tool_tests_button='Save' ) ) )
+        url = '/repository/manage_repository?%s' % params
+        self.visit_url( url )
+        self.check_for_strings( strings_displayed=[ 'Tools in this revision', 'automated test framework' ] )
+        
     def tip_has_metadata( self, repository ):
         tip = self.get_repository_tip( repository )
         return test_db_util.get_repository_metadata_by_repository_id_changeset_revision( repository.id, tip )
-        
+    
     def undelete_repository( self, repository ):
         repository_id = self.security.encode_id( repository.id )
         url = '/admin/browse_repositories?operation=Undelete&id=%s' % repository_id
