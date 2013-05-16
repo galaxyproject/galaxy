@@ -34,15 +34,18 @@ class LwrJobRunner( AsynchronousJobRunner ):
     def check_watched_item(self, job_state):
         try:
             client = self.get_client_from_state(job_state)
-            complete = client.check_complete()
+            status = client.get_status()
         except Exception:
             # An orphaned job was put into the queue at app startup, so remote server went down
             # either way we are done I guess.
             self.mark_as_finished(job_state)
             return None
-        if complete:
+        if status == "complete":
             self.mark_as_finished(job_state)
             return None
+        if status == "running" and not job_state.running:
+            job_state.running = True
+            job_state.job_wrapper.change_state( model.Job.states.RUNNING )
         return job_state
 
     def queue_job(self, job_wrapper):
@@ -81,7 +84,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
             job_id = file_stager.job_id
             client.launch( rebuilt_command_line )
             job_wrapper.set_job_destination( job_destination, job_id )
-            job_wrapper.change_state( model.Job.states.RUNNING )
+            job_wrapper.change_state( model.Job.states.QUEUED )
 
         except Exception, exc:
             job_wrapper.fail( "failure running job", exception=True )
@@ -92,7 +95,7 @@ class LwrJobRunner( AsynchronousJobRunner ):
         lwr_job_state.job_wrapper = job_wrapper
         lwr_job_state.job_id = job_id
         lwr_job_state.old_state = True
-        lwr_job_state.running = True
+        lwr_job_state.running = False
         lwr_job_state.job_destination = job_destination
         self.monitor_job(lwr_job_state)
 
@@ -207,12 +210,8 @@ class LwrJobRunner( AsynchronousJobRunner ):
         job_state.job_destination = job_wrapper.job_destination
         job_wrapper.command_line = job.get_command_line()
         job_state.job_wrapper = job_wrapper
-        if job.get_state() == model.Job.states.RUNNING:
+        if job.get_state() in [model.Job.states.RUNNING, model.Job.states.QUEUED]:
             log.debug( "(LWR/%s) is still in running state, adding to the LWR queue" % ( job.get_id()) )
             job_state.old_state = True
             job_state.running = True
             self.monitor_queue.put( job_state )
-        elif job.get_state() == model.Job.states.QUEUED:
-            # LWR doesn't queue currently, so this indicates galaxy was shutoff while 
-            # job was being staged. Not sure how to recover from that. 
-            job_state.job_wrapper.fail( "This job was killed when Galaxy was restarted.  Please retry the job." )
