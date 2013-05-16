@@ -1087,7 +1087,7 @@ def handle_repository_elem( app, repository_elem ):
     name = repository_elem.get( 'name' )
     owner = repository_elem.get( 'owner' )
     changeset_revision = repository_elem.get( 'changeset_revision' )
-    prior_installation_required = repository_elem.get( 'prior_installation_required', False )
+    prior_installation_required = str( repository_elem.get( 'prior_installation_required', False ) )
     repository_dependency_tup = [ toolshed, name, owner, changeset_revision, prior_installation_required ]
     user = None
     repository = None
