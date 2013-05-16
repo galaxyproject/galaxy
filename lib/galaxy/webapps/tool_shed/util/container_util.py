@@ -799,8 +799,11 @@ def build_repository_containers_for_tool_shed( trans, repository, changeset_revi
                     containers_dict[ 'valid_tools' ] = valid_tools_root_folder
             # Tool test results container.
             if tool_test_results:
-                folder_id, tool_test_results_root_folder = build_tool_test_results_folder( trans, folder_id, tool_test_results, time_last_tested=time_last_tested )
-                containers_dict[ 'tool_test_results' ] = tool_test_results_root_folder
+                # Only create and populate this folder if there are actual tool test results to display, since the
+                # display of the 'Test environment' folder by itself can be misleading.
+                if 'passed_tests' in tool_test_results or 'failed_tests' in tool_test_results or 'installation_errors' in tool_test_results:
+                    folder_id, tool_test_results_root_folder = build_tool_test_results_folder( trans, folder_id, tool_test_results, time_last_tested=time_last_tested )
+                    containers_dict[ 'tool_test_results' ] = tool_test_results_root_folder
             # Workflows container.
             if metadata:
                 if 'workflows' in metadata:
