@@ -724,6 +724,9 @@ def get_repository_metadata_by_changeset_revision( trans, id, changeset_revision
         return all_metadata_records[ 0 ]
     return None
 
+def get_repository_metadata_by_id( trans, id ):
+    return trans.sa_session.query( trans.model.RepositoryMetadata ).get( trans.security.decode_id( id ) )
+
 def get_repository_owner( cleaned_repository_url ):
     """Gvien a "cleaned" repository clone URL, return the owner of the repository."""
     items = cleaned_repository_url.split( '/repos/' )

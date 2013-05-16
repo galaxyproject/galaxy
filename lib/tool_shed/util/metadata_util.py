@@ -300,18 +300,17 @@ def create_or_update_repository_metadata( trans, id, repository, changeset_revis
             skip_tool_test = suc.get_skip_tool_test_by_changeset_revision( trans, changeset_hash )
             if skip_tool_test:
                 # We found a skip_tool_test record associated with the changeset_revision, so see if it has a valid repository_revision.
-                try:
-                    repository_revision = skip_tool_test.repository_revision
+                repository_revision = suc.get_repository_metadata_by_id( trans, trans.security.encode_id( repository_metadata.id ) )
+                if repository_revision:
                     # The skip_tool_test record is associated with a valid repository_metadata record, so proceed.
                     continue
-                except:
-                    # We found a skip_tool_test record that is associated with an invalid repository_metadata record, so update it to point to
-                    # the newly created repository_metadata record.  In some special cases there may be multiple skip_tool_test records that
-                    # require updating, so we won't break here, we'll continue to inspect the rest of the changelog up to the received
-                    # changeset_revision.
-                    skip_tool_test.repository_revision = repository_metadata
-                    trans.sa_session.add( skip_tool_test )
-                    trans.sa_session.flush()
+                # We found a skip_tool_test record that is associated with an invalid repository_metadata record, so update it to point to
+                # the newly created repository_metadata record.  In some special cases there may be multiple skip_tool_test records that
+                # require updating, so we won't break here, we'll continue to inspect the rest of the changelog up to the received
+                # changeset_revision.
+                skip_tool_test.repository_metadata_id = repository_metadata.id
+                trans.sa_session.add( skip_tool_test )
+                trans.sa_session.flush()
             if changeset_hash == changeset_revision:
                 # Proceed no further than the received changeset_revision.
                 break
@@ -1285,16 +1284,19 @@ def new_repository_dependency_metadata_required( trans, repository_metadata, met
             if new_repository_dependencies_metadata:
                 new_repository_dependencies = metadata_dict[ 'repository_dependencies' ][ 'repository_dependencies' ]
                 # The saved metadata must be a subset of the new metadata.
-                for new_repository_dependency_metadata in new_repository_dependencies:
-                    if new_repository_dependency_metadata not in saved_repository_dependencies:
+                for new_repository_dependency in new_repository_dependencies:
+                    if new_repository_dependency not in saved_repository_dependencies:
                         return True
                 for saved_repository_dependency_metadata in saved_repository_dependencies:
                     if saved_repository_dependency_metadata not in new_repository_dependencies:
                         return True
+                return False
             else:
                 # The repository_dependencies.xml file must have been deleted, so create a new repository_metadata record so we always have
                 # access to the deleted file.
                 return True
+        else:
+            return False
     else:
         if 'repository_dependencies' in metadata_dict:
             # There is no saved repository metadata, so we need to create a new repository_metadata record.
@@ -1316,16 +1318,19 @@ def new_tool_dependency_metadata_required( trans, repository_metadata, metadata_
                 new_tool_dependencies = metadata_dict.get( 'tool_dependencies', None )
                 if new_tool_dependencies:
                     # The saved metadata must be a subset of the new metadata.
-                    for new_repository_dependency_metadata in new_tool_dependencies:
-                        if new_repository_dependency_metadata not in saved_tool_dependencies:
+                    for new_tool_dependency in new_tool_dependencies:
+                        if new_tool_dependency not in saved_tool_dependencies:
                             return True
-                    for saved_repository_dependency_metadata in saved_tool_dependencies:
-                        if saved_repository_dependency_metadata not in new_tool_dependencies:
+                    for saved_tool_dependency in saved_tool_dependencies:
+                        if saved_tool_dependency not in new_tool_dependencies:
                             return True
+                    return False
                 else:
                     # The tool_dependencies.xml file must have been deleted, so create a new repository_metadata record so we always have
                     # access to the deleted file.
                     return True
+            else:
+                return False
         else:
             # We have repository metadata that does not include metadata for any tool dependencies in the repository, so we can update
             # the existing repository metadata.
@@ -1367,6 +1372,7 @@ def new_tool_metadata_required( trans, repository_metadata, metadata_dict ):
                     for new_tool_metadata_dict in metadata_dict[ 'tools' ]:
                         if new_tool_metadata_dict[ 'id' ] not in saved_tool_ids:
                             return True
+                    return False
                 else:
                     # The new metadata includes tools, but the stored metadata does not, so we can update the stored metadata.
                     return False
