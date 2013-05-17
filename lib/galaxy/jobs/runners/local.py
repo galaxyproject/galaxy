@@ -12,6 +12,7 @@ from time import sleep
 
 from galaxy import model
 from galaxy.jobs.runners import BaseJobRunner
+from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 
 log = logging.getLogger( __name__ )
 
@@ -78,8 +79,8 @@ class LocalJobRunner( BaseJobRunner ):
             exit_code = proc.wait()
             stdout_file.seek( 0 )
             stderr_file.seek( 0 )
-            stdout = stdout_file.read( 32768 )
-            stderr = stderr_file.read( 32768 )
+            stdout = shrink_stream_by_size( stdout_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+            stderr = shrink_stream_by_size( stderr_file, DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
             stdout_file.close()
             stderr_file.close()
             log.debug('execution finished: %s' % command_line)

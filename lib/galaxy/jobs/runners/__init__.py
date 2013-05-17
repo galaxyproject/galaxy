@@ -12,6 +12,7 @@ from Queue import Queue, Empty
 
 import galaxy.jobs
 from galaxy import model
+from galaxy.util import DATABASE_MAX_STRING_SIZE, shrink_stream_by_size
 
 log = logging.getLogger( __name__ )
 
@@ -383,8 +384,8 @@ class AsynchronousJobRunner( BaseJobRunner ):
         which_try = 0
         while which_try < (self.app.config.retry_job_output_collection + 1):
             try:
-                stdout = file( job_state.output_file, "r" ).read( 32768 )
-                stderr = file( job_state.error_file, "r" ).read( 32768 )
+                stdout = shrink_stream_by_size( file( job_state.output_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
+                stderr = shrink_stream_by_size( file( job_state.error_file, "r" ), DATABASE_MAX_STRING_SIZE, join_by="\n..\n", left_larger=True, beginning_on_size_error=True )
                 which_try = (self.app.config.retry_job_output_collection + 1)
             except Exception, e:
                 if which_try == self.app.config.retry_job_output_collection:

@@ -27,14 +27,14 @@ from galaxy.util.json import from_json_string
 
 log = logging.getLogger( __name__ )
 
+DATABASE_MAX_STRING_SIZE = util.DATABASE_MAX_STRING_SIZE
+DATABASE_MAX_STRING_SIZE_PRETTY = util.DATABASE_MAX_STRING_SIZE_PRETTY
+
 # This file, if created in the job's working directory, will be used for
 # setting advanced metadata properties on the job and its associated outputs.
 # This interface is currently experimental, is only used by the upload tool,
 # and should eventually become API'd
 TOOL_PROVIDED_JOB_METADATA_FILE = 'galaxy.json'
-
-DATABASE_MAX_STRING_SIZE = 32768
-DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
 
 class Sleeper( object ):
     """
