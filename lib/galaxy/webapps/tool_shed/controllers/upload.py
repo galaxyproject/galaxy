@@ -23,10 +23,6 @@ from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
-undesirable_dirs = [ '.hg', '.svn', '.git', '.cvs' ]
-undesirable_files = [ '.hg_archival.txt', 'hgrc', '.DS_Store' ]
-CHUNK_SIZE = 2**20 # 1Mb
-
 
 class UploadController( BaseUIController ):
 
@@ -258,10 +254,10 @@ class UploadController( BaseUIController ):
         for root, dirs, files in os.walk( uploaded_directory ):
             for uploaded_file in files:
                 relative_path = os.path.normpath( os.path.join( os.path.relpath( root, uploaded_directory ), uploaded_file ) )
-                ok = os.path.basename( uploaded_file ) not in undesirable_files
+                ok = os.path.basename( uploaded_file ) not in commit_util.UNDESIRABLE_FILES
                 if ok:
                     for file_path_item in relative_path.split( '/' ):
-                        if file_path_item in undesirable_dirs:
+                        if file_path_item in COMMIT_UTIL.UNDESIRABLE_DIRS:
                             undesirable_dirs_removed += 1
                             ok = False
                             break
@@ -300,10 +296,10 @@ class UploadController( BaseUIController ):
                 full_path = os.path.abspath( repo_dir )
             filenames_in_archive = []
             for tarinfo_obj in tar.getmembers():
-                ok = os.path.basename( tarinfo_obj.name ) not in undesirable_files
+                ok = os.path.basename( tarinfo_obj.name ) not in commit_util.UNDESIRABLE_FILES
                 if ok:
                     for file_path_item in tarinfo_obj.name.split( '/' ):
-                        if file_path_item in undesirable_dirs:
+                        if file_path_item in commit_util.UNDESIRABLE_DIRS:
                             undesirable_dirs_removed += 1
                             ok = False
                             break

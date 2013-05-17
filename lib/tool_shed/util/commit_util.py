@@ -16,6 +16,10 @@ from mercurial import ui
 
 log = logging.getLogger( __name__ )
 
+UNDESIRABLE_DIRS = [ '.hg', '.svn', '.git', '.cvs' ]
+UNDESIRABLE_FILES = [ '.hg_archival.txt', 'hgrc', '.DS_Store' ]
+CHUNK_SIZE = 2**20 # 1Mb
+
 def check_archive( archive ):
     for member in archive.getmembers():
         # Allow regular files and directories only
@@ -113,11 +117,11 @@ def handle_directory_changes( trans, repository, full_path, filenames_in_archive
         # We have a repository that is not new (it contains files), so discover those files that are in the repository, but not in the uploaded archive.
         for root, dirs, files in os.walk( full_path ):
             if root.find( '.hg' ) < 0 and root.find( 'hgrc' ) < 0:
-                for undesirable_dir in undesirable_dirs:
+                for undesirable_dir in UNDESIRABLE_DIRS:
                     if undesirable_dir in dirs:
                         dirs.remove( undesirable_dir )
                         undesirable_dirs_removed += 1
-                for undesirable_file in undesirable_files:
+                for undesirable_file in UNDESIRABLE_FILES:
                     if undesirable_file in files:
                         files.remove( undesirable_file )
                         undesirable_files_removed += 1
