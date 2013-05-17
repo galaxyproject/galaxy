@@ -257,7 +257,7 @@ class UploadController( BaseUIController ):
                 ok = os.path.basename( uploaded_file ) not in commit_util.UNDESIRABLE_FILES
                 if ok:
                     for file_path_item in relative_path.split( '/' ):
-                        if file_path_item in COMMIT_UTIL.UNDESIRABLE_DIRS:
+                        if file_path_item in commit_util.UNDESIRABLE_DIRS:
                             undesirable_dirs_removed += 1
                             ok = False
                             break
