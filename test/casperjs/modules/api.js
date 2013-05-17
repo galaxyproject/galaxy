@@ -24,6 +24,7 @@ var API = function API( spaceghost, apikey ){
     this.tools      = new ToolsAPI( this );
     this.workflows  = new WorkflowsAPI( this );
     this.users      = new UsersAPI( this );
+    this.visualizations = new VisualizationsAPI( this );
 };
 exports.API = API;
 
@@ -73,6 +74,7 @@ API.prototype._ajax = function _ajax( url, options ){
     if( resp.status !== 200 ){
         // grrr... this doesn't lose the \n\r\t
         //throw new APIError( resp.responseText.replace( /[\s\n\r\t]+/gm, ' ' ).replace( /"/, '' ) );
+        this.spaceghost.debug( 'api error response status code: ' + resp.status );
         throw new APIError( resp.responseText, resp.status );
     }
     return JSON.parse( resp.responseText );
@@ -490,3 +492,57 @@ UsersAPI.prototype.update = function create( id, payload ){
 };
 
 
+// =================================================================== HISTORIES
+var VisualizationsAPI = function VisualizationsAPI( api ){
+    this.api = api;
+};
+VisualizationsAPI.prototype.toString = function toString(){
+    return this.api + '.VisualizationsAPI';
+};
+
+// -------------------------------------------------------------------
+VisualizationsAPI.prototype.urlTpls = {
+    index   : 'api/visualizations',
+    show    : 'api/visualizations/%s',
+    create  : 'api/visualizations',
+    //delete_ : 'api/visualizations/%s',
+    //undelete: 'api/visualizations/deleted/%s/undelete',
+    update  : 'api/visualizations/%s'
+};
+
+VisualizationsAPI.prototype.index = function index(){
+    this.api.spaceghost.info( 'visualizations.index' );
+
+    return this.api._ajax( this.urlTpls.index );
+};
+
+VisualizationsAPI.prototype.show = function show( id ){
+    this.api.spaceghost.info( 'visualizations.show' );
+
+    return this.api._ajax( utils.format( this.urlTpls.show, this.api.ensureId( id ) ) );
+};
+
+VisualizationsAPI.prototype.create = function create( payload ){
+    this.api.spaceghost.info( 'visualizations.create: ' + this.api.spaceghost.jsonStr( payload ) );
+
+    // py.payload <-> ajax.data
+    payload = this.api.ensureObject( payload );
+    return this.api._ajax( utils.format( this.urlTpls.create ), {
+        type : 'POST',
+        data : payload
+    });
+};
+
+VisualizationsAPI.prototype.update = function create( id, payload ){
+    this.api.spaceghost.info( 'visualizations.update: ' + id + ',' + this.api.spaceghost.jsonStr( payload ) );
+
+    // py.payload <-> ajax.data
+    id = this.api.ensureId( id );
+    payload = this.api.ensureObject( payload );
+    url = utils.format( this.urlTpls.update, id );
+
+    return this.api._ajax( url, {
+        type : 'PUT',
+        data : payload
+    });
+};
