@@ -15,7 +15,7 @@ new_path = [ os.path.join( cwd, "lib" ) ]
 new_path.extend( sys.path[1:] )
 sys.path = new_path
 
-from galaxy import eggs
+from galaxy import eggs, model
 
 eggs.require( "nose" )
 eggs.require( "NoseHTML" )
@@ -38,7 +38,6 @@ import galaxy.webapps.tool_shed.app
 from galaxy.webapps.tool_shed.app import UniverseApplication as ToolshedUniverseApplication
 from galaxy.webapps.tool_shed import buildapp as toolshedbuildapp
 # This is for the galaxy application.
-import galaxy.app
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.web import buildapp as galaxybuildapp
 

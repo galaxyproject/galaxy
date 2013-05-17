@@ -1119,6 +1119,41 @@ class ShedTwillTestCase( TwillTestCase ):
         #            time.sleep( 1 )
         #            continue
         
+    def upload_url( self, 
+                    repository, 
+                    url, 
+                    filepath,
+                    valid_tools_only,
+                    uncompress_file,
+                    remove_repo_files_not_in_tar,
+                    commit_message,
+                    strings_displayed=[], 
+                    strings_not_displayed=[] ):
+        removed_message = 'files were removed from the repository'
+        if remove_repo_files_not_in_tar:
+            if not self.repository_is_new( repository ):
+                if removed_message not in strings_displayed:
+                    strings_displayed.append( removed_message )
+        else:
+            if removed_message not in strings_not_displayed:
+                strings_not_displayed.append( removed_message )
+        self.visit_url( '/upload/upload?repository_id=%s' % self.security.encode_id( repository.id ) )
+        if valid_tools_only:
+            strings_displayed.extend( [ 'has been successfully', 'uploaded to the repository.' ] )
+        tc.fv( "1", "url", url )
+        if uncompress_file:
+            tc.fv( 1, 'uncompress_file', 'Yes' )
+        else:
+            tc.fv( 1, 'uncompress_file', 'No' )
+        if not self.repository_is_new( repository ):
+            if remove_repo_files_not_in_tar:
+                tc.fv( 1, 'remove_repo_files_not_in_tar', 'Yes' )
+            else:
+                tc.fv( 1, 'remove_repo_files_not_in_tar', 'No' )
+        tc.fv( 1, 'commit_message', commit_message )
+        tc.submit( "upload_button" )
+        self.check_for_strings( strings_displayed, strings_not_displayed )
+
     def verify_installed_repositories( self, installed_repositories=[], uninstalled_repositories=[] ):
         for repository_name, repository_owner in installed_repositories:
             galaxy_repository = test_db_util.get_installed_repository_by_name_owner( repository_name, repository_owner )
