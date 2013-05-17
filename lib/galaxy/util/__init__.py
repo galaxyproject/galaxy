@@ -24,6 +24,11 @@ import wchartype
 log   = logging.getLogger(__name__)
 _lock = threading.RLock()
 
+CHUNK_SIZE = 65536 #64k
+
+DATABASE_MAX_STRING_SIZE = 32768
+DATABASE_MAX_STRING_SIZE_PRETTY = '32K'
+
 gzip_magic = '\037\213'
 bz2_magic = 'BZh'
 DEFAULT_ENCODING = 'utf-8'
@@ -102,7 +107,7 @@ def file_iter(fname, sep=None):
         if line and line[0] != '#':
             yield line.split(sep)
 
-def file_reader(fp, chunk_size=65536):
+def file_reader( fp, chunk_size=CHUNK_SIZE ):
     """This generator yields the open fileobject in chunks (default 64k). Closes the file at the end"""
     while 1:
         data = fp.read(chunk_size)
@@ -151,6 +156,60 @@ def pretty_print_xml( elem, level=0 ):
         if level and ( not elem.tail or not elem.tail.strip() ):
             elem.tail = i + pad
     return elem
+
+def get_file_size( value, default=None ):
+    try:
+        #try built-in
+        return os.path.getsize( value )
+    except:
+        try:
+            #try built-in one name attribute
+            return os.path.getsize( value.name )
+        except:
+            try:
+                #try tell() of end of object
+                offset = value.tell()
+                value.seek( 0, 2 )
+                rval = value.tell()
+                value.seek( offset )
+                return rval
+            except:
+                #return default value
+                return default
+
+def shrink_stream_by_size( value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False ):
+    rval = ''
+    if get_file_size( value ) > size:
+        start = value.tell()
+        len_join_by = len( join_by )
+        min_size = len_join_by + 2
+        if size < min_size:
+            if beginning_on_size_error:
+                rval = value.read( size )
+                value.seek( start )
+                return rval
+            elif end_on_size_error:
+                value.seek( -size, 2 )
+                rval = value.read( size )
+                value.seek( start )
+                return rval
+            raise ValueError( 'With the provided join_by value (%s), the minimum size value is %i.' % ( join_by, min_size ) )
+        left_index = right_index = int( ( size - len_join_by ) / 2 )
+        if left_index + right_index + len_join_by < size:
+            if left_larger:
+                left_index += 1
+            else:
+                right_index += 1
+        rval = value.read( left_index ) + join_by
+        value.seek( -right_index, 2 )
+        rval += value.read( right_index )
+    else:
+        while True:
+            data = value.read( CHUNK_SIZE )
+            if not data:
+                break
+            rval += data
+    return rval
 
 def shrink_string_by_size( value, size, join_by="..", left_larger=True, beginning_on_size_error=False, end_on_size_error=False ):
     if len( value ) > size:
