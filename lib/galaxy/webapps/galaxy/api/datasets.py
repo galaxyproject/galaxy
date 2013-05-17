@@ -23,7 +23,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         return 'not implemented'
         
     @web.expose_api
-    def show( self, trans, id, hda_ldda='hda', data_type=None, **kwd ):
+    def show( self, trans, id, hda_ldda='hda', data_type=None, provider=None, **kwd ):
         """
         GET /api/datasets/{encoded_dataset_id}
         Displays information about and/or content of a dataset.
@@ -46,7 +46,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
             elif data_type == 'features':
                 rval = self._search_features( trans, dataset, kwd.get( 'query' ) )
             elif data_type == 'raw_data':
-                rval = self._raw_data( trans, dataset, **kwd )
+                rval = self._raw_data( trans, dataset, provider, **kwd )
             elif data_type == 'track_config':
                 rval = self.get_new_track_config( trans, dataset )
             elif data_type == 'genome_data':
@@ -201,7 +201,7 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         result.update( { 'dataset_type': data_provider.dataset_type, 'extra_info': extra_info } )
         return result
 
-    def _raw_data( self, trans, dataset, **kwargs ):
+    def _raw_data( self, trans, dataset, provider=None, **kwargs ):
         """
         Uses original (raw) dataset to return data. This method is useful 
         when the dataset is not yet indexed and hence using data would
@@ -212,8 +212,15 @@ class DatasetsController( BaseAPIController, UsesVisualizationMixin, UsesHistory
         if msg:
             return msg
     
+        registry = trans.app.data_provider_registry
+        # allow the caller to specifiy which provider is used
+        if provider and provider in registry.dataset_type_name_to_data_provider:
+            data_provider = registry.dataset_type_name_to_data_provider[ provider ]( dataset )
+        # or have it look up by datatype
+        else:
+            data_provider = registry.get_data_provider( trans, raw=True, original_dataset=dataset )
+
         # Return data.
-        data_provider = trans.app.data_provider_registry.get_data_provider( trans, raw=True, original_dataset=dataset )
         data = data_provider.get_data( **kwargs )
 
         return data
