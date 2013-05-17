@@ -5,13 +5,6 @@ define( ["libs/underscore", "viz/visualization", "viz/trackster/util",
 
 var extend = _.extend;
 
-/**
- * Helper to determine if object is jQuery deferred.
- */
-var is_deferred = function ( d ) {
-    return ( 'isResolved' in d );
-};
-
 // ---- Web UI specific utilities ----
 
 /**
@@ -179,7 +172,10 @@ var
     DATA_LOADING = "Loading data...",
     DATA_OK = "Ready for display",
     TILE_CACHE_SIZE = 10,
-    DATA_CACHE_SIZE = 20;
+    DATA_CACHE_SIZE = 20,
+
+    // Numerical/continuous data display modes.
+    CONTINUOUS_DATA_MODES = ["Histogram", "Line", "Filled", "Intensity"];
     
 /**
  * Round a number to a given number of decimal places.
@@ -829,13 +825,6 @@ extend(DrawableGroup.prototype, Drawable.prototype, DrawableCollection.prototype
      * Replace group with a single composite track that includes all group's tracks.
      */
     show_composite_track: function() {
-        // Create composite track name.
-        var drawables_names = [];
-        for (var i = 0; i < this.drawables.length; i++) {
-            drawables_names.push(this.drawables[i].name);
-        }
-        
-        // Replace this group with composite track.
         var composite_track = new CompositeTrack(this.view, this.view, {
             name: this.name,
             drawables: this.drawables
@@ -3048,7 +3037,7 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
             return !(tile instanceof LineTrackTile);
         });
 
-        if (tiles.length !== non_line_track_tiles.length) {
+        if (non_line_track_tiles.length > 0 && non_line_track_tiles.length < tiles.length) {
             // Clear because this is set when drawing.
             this.max_height_px = 0;
             var track = this;
@@ -3113,10 +3102,13 @@ extend(TiledTrack.prototype, Drawable.prototype, Track.prototype, {
 
         // Function that returns data/Deferreds needed to draw tile.
         var get_tile_data = function() {
+            // HACK: if display mode (mode) is in continuous data modes, data mode must be coverage to get coverage data.
+            var data_mode = (_.find(CONTINUOUS_DATA_MODES, function(m) { return m === mode; }) ? "Coverage" : mode);
+
             // Map drawable object to data needed for drawing.
             var tile_data = _.map(drawables, function(d) {
                 // Get the track data/promise.
-                return d.data_manager.get_data(region, mode, resolution, track.data_url_extra_params);
+                return d.data_manager.get_data(region, data_mode, resolution, track.data_url_extra_params);
             });
 
             // Get reference data/promise.
@@ -3399,9 +3391,11 @@ extend(LabelTrack.prototype, Track.prototype, {
 });
 
 /**
- * A tiled track composed of multiple other tracks.
+ * A tiled track composed of multiple other tracks. Composite tracks only work with 
+ * bigwig data for now.
  */
 var CompositeTrack = function(view, container, obj_dict) {
+    this.display_modes = CONTINUOUS_DATA_MODES;
     TiledTrack.call(this, view, container, obj_dict);
     
     // Init drawables; each drawable is a copy so that config/preferences 
@@ -3420,12 +3414,13 @@ var CompositeTrack = function(view, container, obj_dict) {
         }
         this.enabled = true;
     }
-    
-    // HACK: modes should be static class vars for most tracks and should update as
-    // needed for CompositeTracks
-    if (this.drawables.length !== 0) {
-        this.set_display_modes(this.drawables[0].display_modes, this.drawables[0].mode);
-    }
+
+    // Set all feature tracks to use Coverage mode.
+    _.each(this.drawables, function(d) {
+        if (d instanceof FeatureTrack || d instanceof ReadTrack) {
+            d.change_mode("Coverage");
+        }
+    });
     
     this.update_icons();
     
@@ -3530,34 +3525,21 @@ extend(CompositeTrack.prototype, TiledTrack.prototype, {
         TiledTrack.prototype.before_draw.call(this);
 
         //
-        // Set min, max for LineTracks to be largest min, max.
+        // Set min, max for tracks to be largest min, max.
         //
         
         // Get smallest min, biggest max.
-        var 
-            min = Number.MAX_VALUE,
-            max = -min,
-            track;
-        for (var i = 0; i < this.drawables.length; i++) {
-            track = this.drawables[i];
-            if (track instanceof LineTrack) {
-                if (track.prefs.min_value < min) {
-                    min = track.prefs.min_value;
-                }
-                if (track.prefs.max_value > max) {
-                    max = track.prefs.max_value;
-                }
-            }
-        }
+        var min = _.min(_.map(this.drawables, function(d) { return d.prefs.min_value; })),
+            max = _.max(_.map(this.drawables, function(d) { return d.prefs.max_value; }));
+            
         this.prefs.min_value = min;
         this.prefs.max_value = max;
         
         // Set all tracks to smallest min, biggest max.
-        for (var i = 0; i < this.drawables.length; i++) {
-            track = this.drawables[i];
-            track.prefs.min_value = min;
-            track.prefs.max_value = max;
-        }
+        _.each(this.drawables, function(d) {
+            d.prefs.min_value = min;
+            d.prefs.max_value = max;
+        });
     },
 
     /**
@@ -3681,7 +3663,7 @@ extend(ReferenceTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
  */
 var LineTrack = function (view, container, obj_dict) {
     var track = this;
-    this.display_modes = ["Histogram", "Line", "Filled", "Intensity"];
+    this.display_modes = CONTINUOUS_DATA_MODES;
     this.mode = "Histogram";
     TiledTrack.call(this, view, container, obj_dict);
        
@@ -4040,7 +4022,7 @@ extend(FeatureTrack.prototype, Drawable.prototype, TiledTrack.prototype, {
 
         // If data is line track data, draw line track tile.
         if (result.dataset_type === 'bigwig') {
-            return this._draw_line_track_tile(result, ctx, 'Histogram', resolution, region, w_scale);
+            return this._draw_line_track_tile(result, ctx, mode, resolution, region, w_scale);
         }
 
         // Handle row-by-row tracks
@@ -4297,7 +4279,9 @@ var ReadTrack = function (view, container, obj_dict) {
             { key: 'show_insertions', label: 'Show insertions', type: 'bool', default_value: false },
             { key: 'show_differences', label: 'Show differences only', type: 'bool', default_value: true },
             { key: 'show_counts', label: 'Show summary counts', type: 'bool', default_value: true },
-            { key: 'mode', type: 'string', default_value: this.mode, hidden: true }
+            { key: 'mode', type: 'string', default_value: this.mode, hidden: true },
+            { key: 'min_value', label: 'Histogram minimum', type: 'float', default_value: null, help: 'clear value to set automatically' },
+            { key: 'max_value', label: 'Histogram maximum', type: 'float', default_value: null, help: 'clear value to set automatically' }
         ], 
         saved_values: obj_dict.prefs,
         onchange: function() {
