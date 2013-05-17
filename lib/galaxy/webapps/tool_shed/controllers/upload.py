@@ -117,7 +117,7 @@ class UploadController( BaseUIController ):
                     ok, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
                         self.upload_tar( trans, repository, tar, uploaded_file, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert )
                 elif uploaded_directory:
-                    ok,message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
+                    ok, message, files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed = \
                         self.upload_directory( trans, repository, uploaded_directory, upload_point, remove_repo_files_not_in_tar, commit_message, new_repo_alert )
                 else:
                     if ( isgzip or isbz2 ) and uncompress_file:
@@ -263,6 +263,19 @@ class UploadController( BaseUIController ):
                             break
                 else:
                     undesirable_files_removed += 1
+                uploaded_file_name = os.path.abspath( os.path.join( root, uploaded_file ) )
+                if os.path.split( uploaded_file_name )[ -1 ] == 'repository_dependencies.xml':
+                    # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
+                    altered, root = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
+                    if altered:
+                        tmp_filename = commit_util.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                        shutil.move( tmp_filename, uploaded_file_name )
+                elif os.path.split( uploaded_file_name )[ -1 ] == 'tool_dependencies.xml':
+                    # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
+                    altered, root = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                    if altered:
+                        tmp_filename = commit_util.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                        shutil.move( tmp_filename, uploaded_file_name )
                 if ok:
                     repo_path = os.path.join( full_path, relative_path )
                     repo_basedir = os.path.normpath( os.path.join( repo_path, os.path.pardir ) )
@@ -311,6 +324,20 @@ class UploadController( BaseUIController ):
             tar.extractall( path=full_path )
             tar.close()
             uploaded_file.close()
+            for filename in filenames_in_archive:
+                uploaded_file_name = os.path.join( full_path, filename )
+                if os.path.split( uploaded_file_name )[ -1 ] == 'repository_dependencies.xml':
+                    # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
+                    altered, root = commit_util.handle_repository_dependencies_definition( trans, uploaded_file_name )
+                    if altered:
+                        tmp_filename = commit_util.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                        shutil.move( tmp_filename, uploaded_file_name )
+                elif os.path.split( uploaded_file_name )[ -1 ] == 'tool_dependencies.xml':
+                    # Inspect the contents of the file to see if changeset_revision values are missing and if so, set them appropriately.
+                    altered, root = commit_util.handle_tool_dependencies_definition( trans, uploaded_file_name )
+                    if altered:
+                        tmp_filename = commit_util.create_and_write_tmp_file( util.xml_to_string( root, pretty=True ) )
+                        shutil.move( tmp_filename, uploaded_file_name )
             return commit_util.handle_directory_changes( trans,
                                                          repository,
                                                          full_path,
