@@ -75,6 +75,7 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     ancestor_repository_dependencies = ancestor_repository_dependencies_dict.get( 'repository_dependencies', [] )
     ancestor_tool_dependencies = ancestor_metadata_dict.get( 'tool_dependencies', {} )
     ancestor_workflows = ancestor_metadata_dict.get( 'workflows', [] )
+    ancestor_data_manager = ancestor_metadata_dict.get( 'data_manager', {} )
     current_datatypes = current_metadata_dict.get( 'datatypes', [] )
     current_tools = current_metadata_dict.get( 'tools', [] )
     current_guids = [ tool_dict[ 'guid' ] for tool_dict in current_tools ]
@@ -84,6 +85,7 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     current_repository_dependencies = current_repository_dependencies_dict.get( 'repository_dependencies', [] )
     current_tool_dependencies = current_metadata_dict.get( 'tool_dependencies', {} ) 
     current_workflows = current_metadata_dict.get( 'workflows', [] )
+    current_data_manager = current_metadata_dict.get( 'data_manager', {} )
     # Handle case where no metadata exists for either changeset.
     no_datatypes = not ancestor_datatypes and not current_datatypes
     no_readme_files = not ancestor_readme_files and not current_readme_files
@@ -92,7 +94,8 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     no_tool_dependencies = not ancestor_tool_dependencies and not current_tool_dependencies
     no_tools = not ancestor_guids and not current_guids
     no_workflows = not ancestor_workflows and not current_workflows
-    if no_datatypes and no_readme_files and no_repository_dependencies and no_tool_dependencies and no_tools and no_workflows:
+    no_data_manager = not ancestor_data_manager and not current_data_manager
+    if no_datatypes and no_readme_files and no_repository_dependencies and no_tool_dependencies and no_tools and no_workflows and no_data_manager:
         return 'no metadata'
     # Uncomment the following if we decide that README files should affect how installable repository revisions are defined.  See the NOTE in the
     # compare_readme_files() method.
@@ -101,20 +104,25 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
     tool_dependency_comparison = compare_tool_dependencies( ancestor_tool_dependencies, current_tool_dependencies )
     workflow_comparison = compare_workflows( ancestor_workflows, current_workflows )
     datatype_comparison = compare_datatypes( ancestor_datatypes, current_datatypes )
+    data_manager_comparison = compare_data_manager( ancestor_data_manager, current_data_manager )
     # Handle case where all metadata is the same.
+    # TODO: these values, ('equal', etc), should be abstracted out to constants
     if ancestor_guids == current_guids and \
         repository_dependency_comparison == 'equal' and \
         tool_dependency_comparison == 'equal' and \
         workflow_comparison == 'equal' and \
-        datatype_comparison == 'equal':
+        datatype_comparison == 'equal' and \
+        data_manager_comparison == 'equal':
         return 'equal'
     # Handle case where ancestor metadata is a subset of current metadata.
     # readme_file_is_subset = readme_file_comparision in [ 'equal', 'subset' ]
+    # TODO: this list [ 'equal', 'subset' ] should be created once
     repository_dependency_is_subset = repository_dependency_comparison in [ 'equal', 'subset' ]
     tool_dependency_is_subset = tool_dependency_comparison in [ 'equal', 'subset' ]
     workflow_dependency_is_subset = workflow_comparison in [ 'equal', 'subset' ]
     datatype_is_subset = datatype_comparison in [ 'equal', 'subset' ]
-    if repository_dependency_is_subset and tool_dependency_is_subset and workflow_dependency_is_subset and datatype_is_subset:
+    datamanager_is_subset = data_manager_comparison in [ 'equal', 'subset' ]
+    if repository_dependency_is_subset and tool_dependency_is_subset and workflow_dependency_is_subset and datatype_is_subset and datamanager_is_subset:
         is_subset = True
         for guid in ancestor_guids:
             if guid not in current_guids:
@@ -122,6 +130,21 @@ def compare_changeset_revisions( ancestor_changeset_revision, ancestor_metadata_
                 break
         if is_subset:
             return 'subset'
+    return 'not equal and not subset'
+
+def compare_data_manager( ancestor_metadata, current_metadata ):
+    """Determine if ancestor_metadata is the same as or a subset of current_metadata for data_managers."""
+    def __data_manager_dict_to_tuple_list( metadata_dict ):
+        # we do not check tool_guid or tool conf file name
+        return set( sorted( [ ( name, tuple( sorted( value.get( 'data_tables', [] ) ) ), value.get( 'guid'  ), value.get( 'version' ), value.get( 'name' ), value.get( 'id' )  ) for name, value in metadata_dict.iteritems() ] ) )
+    # only compare valid entries, any invalid entries are ignored
+    ancestor_metadata = __data_manager_dict_to_tuple_list( ancestor_metadata.get( 'data_managers', {} ) )
+    current_metadata = __data_manager_dict_to_tuple_list( current_metadata.get( 'data_managers', {} ) )
+    # use set comparisons
+    if ancestor_metadata.issubset( current_metadata ):
+        if ancestor_metadata == current_metadata:
+            return 'equal'
+        return 'subset'
     return 'not equal and not subset'
 
 def compare_datatypes( ancestor_datatypes, current_datatypes ):
