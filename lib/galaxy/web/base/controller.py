@@ -689,7 +689,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
     Mixin for controllers that use Visualization objects.
     """
 
-    DEFAULT_ORDER_BY = [ model.Visualization.title ]
     viz_types = [ "trackster" ]
 
     def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
@@ -715,8 +714,10 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         Set `query_only` to return just the query for further filtering or
         processing.
         """
+        #TODO: move into model (as class attr)
+        DEFAULT_ORDER_BY = [ model.Visualization.title ]
         if not order_by:
-            order_by = self.DEFAULT_ORDER_BY
+            order_by = DEFAULT_ORDER_BY
         if not isinstance( order_by, list ):
             order_by = [ order_by ]
         query = trans.sa_session.query( model.Visualization )
@@ -736,8 +737,9 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         Set `query_only` to return just the query for further filtering or
         processing.
         """
+        DEFAULT_ORDER_BY = [ model.Visualization.title ]
         if not order_by:
-            order_by = self.DEFAULT_ORDER_BY
+            order_by = DEFAULT_ORDER_BY
         if not isinstance( order_by, list ):
             order_by = [ order_by ]
         query = trans.sa_session.query( model.Visualization ).join( model.VisualizationUserShareAssociation )
@@ -760,8 +762,9 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMix
         Set `query_only` to return just the query for further filtering or
         processing.
         """
+        DEFAULT_ORDER_BY = [ model.Visualization.title ]
         if not order_by:
-            order_by = self.DEFAULT_ORDER_BY
+            order_by = DEFAULT_ORDER_BY
         if not isinstance( order_by, list ):
             order_by = [ order_by ]
         query = trans.sa_session.query( model.Visualization )
