@@ -171,6 +171,10 @@ paste.app_factory = galaxy.web.buildapp:app_factory
 # Galaxy.
 #datatypes_config_file = datatypes_conf.xml
 
+# Visualizations config file, defines what visualizations apply to particular data and how to pass them
+# the necessary parameters
+#visualizations_conf_path = visualizations_conf.xml
+
 # Each job is given a unique empty directory as its current working directory.
 # This option defines in what parent directory those directories will be
 # created.

@@ -239,8 +239,25 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
      *  @returns {jQuery} rendered DOM
      */
     _render_visualizationsButton : function(){
+        var visualizations = this.model.get( 'visualizations' );
+        if( ( !this.model.hasData() )
+        ||  ( _.isEmpty( visualizations ) ) ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
+        //TODO: this is a bridge to allow the framework to be switched off
+        // remove this fn and use the other when fully integrated
+        if( _.isObject( visualizations[0] ) ){
+            return this._render_visualizationsFrameworkButton( visualizations );
+        }
+
+        if( !this.urls.visualization ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
         var dbkey = this.model.get( 'dbkey' ),
-            visualizations = this.model.get( 'visualizations' ),
             visualization_url = this.urls.visualization,
             popup_menu_dict = {},
             params = {
@@ -250,17 +267,10 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
         // Add dbkey to params if it exists.
         if( dbkey ){ params.dbkey = dbkey; }
 
-        if( !( this.model.hasData() )
-        ||  !( visualizations && visualizations.length )
-        ||  !( visualization_url ) ){
-            this.visualizationsButton = null;
-            return null;
-        }
-        
         // render the icon from template
         this.visualizationsButton = new IconButtonView({ model : new IconButton({
             title       : _l( 'Visualize' ),
-            href        : visualization_url,
+            href        : this.urls.visualization,
             icon_class  : 'chart_curve'
         })});
         var $icon = this.visualizationsButton.render().$el;
@@ -296,6 +306,40 @@ var HDAEditView = HDABaseView.extend( LoggableMixin ).extend(
                 popup_menu_dict[ _l( titleCaseVisualization ) ] = create_viz_action( visualization );
             });
             make_popupmenu( $icon, popup_menu_dict );
+        }
+        return $icon;
+    },
+
+    /** Render an icon-button or popupmenu of links based on the applicable visualizations
+     *  @returns {jQuery} rendered DOM
+     */
+    _render_visualizationsFrameworkButton : function( visualizations ){
+        if( !( this.model.hasData() )
+        ||  !( visualizations && !_.isEmpty( visualizations ) ) ){
+            this.visualizationsButton = null;
+            return null;
+        }
+
+        // render the icon from template
+        this.visualizationsButton = new IconButtonView({ model : new IconButton({
+            title       : _l( 'Visualize' ),
+            icon_class  : 'chart_curve'
+        })});
+        var $icon = this.visualizationsButton.render().$el;
+        $icon.addClass( 'visualize-icon' ); // needed?
+
+        // No need for popup menu because there's a single visualization.
+        if( _.keys( visualizations ).length === 1 ) {
+            $icon.attr( 'title', _.keys( visualizations )[0] );
+            $icon.attr( 'href', _.values( visualizations )[0] );
+
+        // >1: Populate menu dict with visualization fns, make the popupmenu
+        } else {
+            var popup_menu_options = [];
+            _.each( visualizations, function( linkData ) {
+                popup_menu_options.push( linkData );
+            });
+            var popup = new PopupMenu( $icon, popup_menu_options );
         }
         return $icon;
     },

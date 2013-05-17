@@ -15,6 +15,7 @@ import galaxy.quota
 from galaxy.tags.tag_handler import GalaxyTagHandler
 from galaxy.visualization.genomes import Genomes
 from galaxy.visualization.data_providers.registry import DataProviderRegistry
+from galaxy.visualization.registry import VisualizationsRegistry
 from galaxy.tools.imp_exp import load_history_imp_exp_tools
 from galaxy.tools.genome_index import load_genome_index_tools
 from galaxy.sample_tracking import external_service_types
@@ -120,6 +121,9 @@ class UniverseApplication( object ):
         load_history_imp_exp_tools( self.toolbox )
         # Load genome indexer tool.
         load_genome_index_tools( self.toolbox )
+        # visualizations registry: associates resources with visualizations, controls how to render
+        self.visualizations_registry = ( VisualizationsRegistry( self.config.root, self.config.visualizations_conf_path )
+                                         if self.config.visualizations_conf_path else None )
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.security.HostAgent( model=self.security_agent.model, permitted_actions=self.security_agent.permitted_actions )

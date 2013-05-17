@@ -275,6 +275,8 @@ class Configuration( object ):
         self.fluent_log = string_as_bool( kwargs.get( 'fluent_log', False ) )
         self.fluent_host = kwargs.get( 'fluent_host', 'localhost' )
         self.fluent_port = int( kwargs.get( 'fluent_port', 24224 ) )
+        # visualizations registry config path
+        self.visualizations_conf_path = kwargs.get( 'visualizations_conf_path', None )
 
     @property
     def sentry_dsn_public( self ):

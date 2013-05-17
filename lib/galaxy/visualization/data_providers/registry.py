@@ -30,7 +30,9 @@ class DataProviderRegistry( object ):
             "bai": genome.BamDataProvider,
             "bam": genome.SamDataProvider,
             "bigwig": genome.BigWigDataProvider,
-            "bigbed": genome.BigBedDataProvider
+            "bigbed": genome.BigBedDataProvider,
+
+            "column": ColumnDataProvider
         }
 
     def get_data_provider( self, trans, name=None, source='data', raw=False, original_dataset=None ):

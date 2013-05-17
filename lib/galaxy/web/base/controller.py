@@ -14,7 +14,7 @@ import routes
 from sqlalchemy import func, and_, select
 from paste.httpexceptions import HTTPBadRequest, HTTPInternalServerError, HTTPNotImplemented, HTTPRequestRangeNotSatisfiable
 
-from galaxy import util, web
+from galaxy import util, web, model
 from gettext import gettext
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.exceptions import ItemAccessibilityException, ItemDeletionException, ItemOwnershipException, MessageException
@@ -27,7 +27,6 @@ from galaxy.web.form_builder import build_select_field, HistoryField, PasswordFi
 from galaxy.workflow.modules import module_factory
 from galaxy.model.orm import eagerload, eagerload_all
 from galaxy.datatypes.data import Text
-
 
 from galaxy.datatypes.display_applications import util as da_util
 from galaxy.datatypes.metadata import FileParameter
@@ -486,6 +485,25 @@ class UsesHistoryDatasetAssociationMixin:
                     error( "Please wait until this dataset finishes uploading before attempting to view it." )
         return hda
 
+    def get_hda_list( self, trans, hda_ids, check_ownership=True, check_accessible=False, check_state=True ):
+        """
+        Returns one or more datasets in a list.
+
+        If a dataset is not found or is inaccessible to trans.user,
+        add None in its place in the list.
+        """
+        # precondtion: dataset_ids is a list of encoded id strings
+        hdas = []
+        for id in hda_ids:
+            hda = None
+            try:
+                hda = self.get_dataset( trans, id,
+                    check_ownership=check_ownership, check_accesible=check_accesible, check_state=check_state )
+            except Exception, exception:
+                pass
+            hdas.append( hda )
+        return hdas
+
     def get_data( self, dataset, preview=True ):
         """
         Gets a dataset's data.
@@ -552,9 +570,13 @@ class UsesHistoryDatasetAssociationMixin:
         if meta_files:
             hda_dict[ 'meta_files' ] = meta_files
 
-        #hda_dict[ 'display_types' ] = self.get_old_display_applications( trans, hda )
-        #hda_dict[ 'display_apps' ] = self.get_display_apps( trans, hda )
-        hda_dict[ 'visualizations' ] = hda.get_visualizations()
+        # currently, the viz reg is optional - handle on/off
+        if trans.app.visualizations_registry:
+            hda_dict[ 'visualizations' ] = trans.app.visualizations_registry.get_visualizations( trans, hda )
+        else:
+            hda_dict[ 'visualizations' ] = hda.get_visualizations()
+        #TODO: it may also be wiser to remove from here and add as API call that loads the visualizations
+        #           when the visualizations button is clicked (instead of preloading/pre-checking)
 
         # ---- return here if deleted
         if hda.deleted and not purged:
@@ -662,18 +684,187 @@ class UsesLibraryMixinItems( SharableItemSecurityMixin ):
         return self.get_object( trans, id, 'LibraryDataset', check_ownership=False, check_accessible=check_accessible )
 
 
-class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
-                              UsesLibraryMixinItems ):
-    """ Mixin for controllers that use Visualization objects. """
+class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin, UsesLibraryMixinItems ):
+    """
+    Mixin for controllers that use Visualization objects.
+    """
 
+    DEFAULT_ORDER_BY = [ model.Visualization.title ]
     viz_types = [ "trackster" ]
 
-    def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None, dbkey=None, annotation=None, config={}, save=True ):
-        """ Create visualiation and first revision. """
+    def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
+        """
+        Get a Visualization from the database by id, verifying ownership.
+        """
+        # Load workflow from database
+        try:
+            visualization = trans.sa_session.query( trans.model.Visualization ).get( trans.security.decode_id( id ) )
+        except TypeError:
+            visualization = None
+        if not visualization:
+            error( "Visualization not found" )
+        else:
+            return self.security_check( trans, visualization, check_ownership, check_accessible )
+
+    def get_visualizations_by_user( self, trans, user, order_by=None, query_only=False ):
+        """
+        Return query or query results of visualizations filtered by a user.
+
+        Set `order_by` to a column or list of columns to change the order
+        returned. Defaults to `DEFAULT_ORDER_BY`.
+        Set `query_only` to return just the query for further filtering or
+        processing.
+        """
+        if not order_by:
+            order_by = self.DEFAULT_ORDER_BY
+        if not isinstance( order_by, list ):
+            order_by = [ order_by ]
+        query = trans.sa_session.query( model.Visualization )
+        query = query.filter( model.Visualization.user == user )
+        if order_by:
+            query = query.order_by( *order_by )
+        if query_only:
+            return query
+        return query.all()
+
+    def get_visualizations_shared_with_user( self, trans, user, order_by=None, query_only=False ):
+        """
+        Return query or query results for visualizations shared with the given user.
+
+        Set `order_by` to a column or list of columns to change the order
+        returned. Defaults to `DEFAULT_ORDER_BY`.
+        Set `query_only` to return just the query for further filtering or
+        processing.
+        """
+        if not order_by:
+            order_by = self.DEFAULT_ORDER_BY
+        if not isinstance( order_by, list ):
+            order_by = [ order_by ]
+        query = trans.sa_session.query( model.Visualization ).join( model.VisualizationUserShareAssociation )
+        query = query.filter( model.VisualizationUserShareAssociation.user_id == user.id )
+        # remove duplicates when a user shares with themselves?
+        query = query.filter( model.Visualization.user_id != user.id )
+        if order_by:
+            query = query.order_by( *order_by )
+        if query_only:
+            return query
+        return query.all()
+
+    def get_published_visualizations( self, trans, exclude_user=None, order_by=None, query_only=False ):
+        """
+        Return query or query results for published visualizations optionally excluding
+        the user in `exclude_user`.
+
+        Set `order_by` to a column or list of columns to change the order
+        returned. Defaults to `DEFAULT_ORDER_BY`.
+        Set `query_only` to return just the query for further filtering or
+        processing.
+        """
+        if not order_by:
+            order_by = self.DEFAULT_ORDER_BY
+        if not isinstance( order_by, list ):
+            order_by = [ order_by ]
+        query = trans.sa_session.query( model.Visualization )
+        query = query.filter( model.Visualization.published == True )
+        if exclude_user:
+            query = query.filter( model.Visualization.user != exclude_user )
+        if order_by:
+            query = query.order_by( *order_by )
+        if query_only:
+            return query
+        return query.all()
+
+    #TODO: move into model (get_api_value)
+    def get_visualization_summary_dict( self, visualization ):
+        """
+        Return a set of summary attributes for a visualization in dictionary form.
+        NOTE: that encoding ids isn't done here should happen at the caller level.
+        """
+        #TODO: deleted
+        #TODO: importable
+        return {
+            'id'        : visualization.id,
+            'title'     : visualization.title,
+            'type'      : visualization.type,
+            'dbkey'     : visualization.dbkey,
+        }
+
+    def get_visualization_dict( self, visualization ):
+        """
+        Return a set of detailed attributes for a visualization in dictionary form.
+        The visualization's latest_revision is returned in its own sub-dictionary.
+        NOTE: that encoding ids isn't done here should happen at the caller level.
+        """
+        return {
+            'model_class': 'Visualization',
+            'id'        : visualization.id,
+            'title'     : visualization.title,
+            'type'      : visualization.type,
+            'user_id'   : visualization.user.id,
+            'dbkey'     : visualization.dbkey,
+            'slug'      : visualization.slug,
+            # dictify only the latest revision (allow older to be fetched elsewhere)
+            'latest_revision' : self.get_visualization_revision_dict( visualization.latest_revision ),
+            'revisions' : [ r.id for r in visualization.revisions ],
+        }
+
+    def get_visualization_revision_dict( self, revision ):
+        """
+        Return a set of detailed attributes for a visualization in dictionary form.
+        NOTE: that encoding ids isn't done here should happen at the caller level.
+        """
+        return {
+            'model_class': 'VisualizationRevision',
+            'id'        : revision.id,
+            'visualization_id' : revision.visualization.id,
+            'title'     : revision.title,
+            'dbkey'     : revision.dbkey,
+            'config'    : revision.config,
+        }
+
+    def import_visualization( self, trans, id, user=None ):
+        """
+        Copy the visualization with the given id and associate the copy
+        with the given user (defaults to trans.user).
+
+        Raises `ItemAccessibilityException` if `user` is not passed and
+        the current user is anonymous, and if the visualization is not `importable`.
+        Raises `ItemDeletionException` if the visualization has been deleted.
+        """
+        # default to trans.user, error if anon
+        if not user:
+            if not trans.user:
+                raise ItemAccessibilityException( "You must be logged in to import Galaxy visualizations" )
+            user = trans.user
+
+        # check accessibility
+        visualization = self.get_visualization( trans, id, check_ownership=False )
+        if not visualization.importable:
+            raise ItemAccessibilityException( "The owner of this visualization has disabled imports via this link." )
+        if visualization.deleted:
+            raise ItemDeletionException( "You can't import this visualization because it has been deleted." )
+
+        # copy vis and alter title
+        #TODO: need to handle custom db keys.
+        imported_visualization = visualization.copy( user=user, title="imported: " + visualization.title )
+        trans.sa_session.add( imported_visualization )
+        trans.sa_session.flush()
+        return imported_visualization
+
+    def create_visualization( self, trans, type, title="Untitled Genome Vis", slug=None,
+                              dbkey=None, annotation=None, config={}, save=True ):
+        """
+        Create visualiation and first revision.
+        """
         visualization = self._create_visualization( trans, title, type, dbkey, slug, annotation, save )
+        #TODO: handle this error structure better either in _create or here
+        if isinstance( visualization, dict ):
+            err_dict = visualization
+            raise ValueError( err_dict[ 'title_err' ] or err_dict[ 'slug_err' ] )
 
         # Create and save first visualization revision
-        revision = trans.model.VisualizationRevision( visualization=visualization, title=title, config=config, dbkey=dbkey )
+        revision = trans.model.VisualizationRevision( visualization=visualization, title=title,
+                                                      config=config, dbkey=dbkey )
         visualization.latest_revision = revision
 
         if save:
@@ -682,6 +873,21 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             session.flush()
 
         return visualization
+
+    def add_visualization_revision( self, trans, visualization, config, title, dbkey ):
+        """
+        Adds a new `VisualizationRevision` to the given `visualization` with
+        the given parameters and set its parent visualization's `latest_revision`
+        to the new revision.
+        """
+        #precondition: only add new revision on owned vis's
+        #TODO:?? should we default title, dbkey, config? to which: visualization or latest_revision?
+        revision = trans.model.VisualizationRevision( visualization, title, dbkey, config )
+        visualization.latest_revision = revision
+        #TODO:?? does this automatically add revision to visualzation.revisions?
+        trans.sa_session.add( revision )
+        trans.sa_session.flush()
+        return revision
 
     def save_visualization( self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None ):
         session = trans.sa_session
@@ -697,8 +903,10 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         # Create new VisualizationRevision that will be attached to the viz
         vis_rev = trans.model.VisualizationRevision()
         vis_rev.visualization = vis
-        vis_rev.title = vis.title
-        vis_rev.dbkey = dbkey
+        # do NOT alter the dbkey
+        vis_rev.dbkey = vis.dbkey
+        # do alter the title and config
+        vis_rev.title = title
 
         # -- Validate config. --
 
@@ -759,18 +967,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         session.flush()
         encoded_id = trans.security.encode_id( vis.id )
         return { "vis_id": encoded_id, "url": url_for( controller='visualization', action=vis.type, id=encoded_id ) }
-
-    def get_visualization( self, trans, id, check_ownership=True, check_accessible=False ):
-        """ Get a Visualization from the database by id, verifying ownership. """
-        # Load workflow from database
-        try:
-            visualization = trans.sa_session.query( trans.model.Visualization ).get( trans.security.decode_id( id ) )
-        except TypeError:
-            visualization = None
-        if not visualization:
-            error( "Visualization not found" )
-        else:
-            return self.security_check( trans, visualization, check_ownership, check_accessible )
 
     def get_visualization_config( self, trans, visualization ):
         """ Returns a visualization's configuration. Only works for trackster visualizations right now. """
@@ -911,7 +1107,6 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
         if title_err or slug_err:
             return { 'title_err': title_err, 'slug_err': slug_err }
 
-
         # Create visualization
         visualization = trans.model.Visualization( user=user, title=title, dbkey=dbkey, type=type )
         if slug:
@@ -920,6 +1115,8 @@ class UsesVisualizationMixin( UsesHistoryDatasetAssociationMixin,
             self.create_item_slug( trans.sa_session, visualization )
         if annotation:
             annotation = sanitize_html( annotation, 'utf-8', 'text/html' )
+            #TODO: if this is to stay in the mixin, UsesAnnotations should be added to the superclasses
+            #   right now this is depending on the classes that include this mixin to have UsesAnnotations
             self.add_item_annotation( trans.sa_session, trans.user, visualization, annotation )
 
         if save:
