@@ -62,6 +62,8 @@ def __main__():
     parser.add_option( '-c', '--min-alignment-count', dest='min_alignment_count', help='The minimum number of alignments in a locus for needed to conduct significance testing on changes in that locus observed between samples. If no testing is performed, changes in the locus are deemed not signficant, and the locus\' observed changes don\'t contribute to correction for multiple testing. The default is 1,000 fragment alignments (up to 2,000 paired reads).' )
     parser.add_option( '--FDR', dest='FDR', help='The allowed false discovery rate. The default is 0.05.' )
     parser.add_option( '-u', '--multi-read-correct', dest='multi_read_correct', action="store_true", help='Tells Cufflinks to do an initial estimation procedure to more accurately weight reads mapping to multiple locations in the genome')
+    parser.add_option( '--library-norm-method', dest='library_norm_method' )
+    parser.add_option( '--dispersion-method', dest='dispersion_method' )
 
     # Advanced Options:	
     parser.add_option( '--num-importance-samples', dest='num_importance_samples', help='Sets the number of importance samples generated for each locus during abundance estimation. Default: 1000' )
@@ -143,6 +145,10 @@ def __main__():
     cmd = "cuffdiff --no-update-check -q"
     
     # Add options.
+    if options.library_norm_method:
+        cmd += ( " --library-norm-method %s" % options.library_norm_method )
+    if options.dispersion_method:
+        cmd += ( " --dispersion-method %s" % options.dispersion_method )
     if options.inner_dist_std_dev:
         cmd += ( " -s %i" % int ( options.inner_dist_std_dev ) )
     if options.num_threads:
