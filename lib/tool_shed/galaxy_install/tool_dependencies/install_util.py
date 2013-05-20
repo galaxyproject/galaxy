@@ -137,21 +137,32 @@ def handle_set_environment_entry_for_package( app, install_dir, tool_shed_reposi
                 for actions_elem in package_elem:
                     for action_elem in actions_elem:
                         action_type = action_elem.get( 'type', 'shell_command' )
+                        env_var_dicts = []
                         if action_type == 'set_environment':
                             # <action type="set_environment">
                             #     <environment_variable name="PYTHONPATH" action="append_to">$INSTALL_DIR/lib/python</environment_variable>
                             #     <environment_variable name="PATH" action="prepend_to">$INSTALL_DIR/bin</environment_variable>
                             # </action>
-                            env_var_dicts = []
                             for env_elem in action_elem:
                                 if env_elem.tag == 'environment_variable':
                                     env_var_dict = common_util.create_env_var_dict( env_elem, tool_dependency_install_dir=install_dir )
                                     if env_var_dict:
                                         env_var_dicts.append( env_var_dict )
-                            if env_var_dicts:
-                                action_dict[ env_elem.tag ] = env_var_dicts
-                                actions.append( ( action_type, action_dict ) )
-                            return tool_dependency, actions
+                        elif action_type == 'setup_virtualenv':
+                            # Add the virtualenv's site-pacakges to PYTHONPATH and bin to PATH.  This is a bit hackish.
+                            site_packages_command = "%s -c 'import os, sys; print os.path.join(sys.prefix, \"lib\", \"python\" + sys.version[:3], \"site-packages\")'" % os.path.join( install_dir, "venv", "bin", "python" )
+                            output = fabric_util.handle_command( app, tool_dependency, install_dir, site_packages_command, return_output=True )
+                            if output.return_code:
+                                log.error( 'Dependency includes a setup_virtualenv action but venv python is broken:', output.stderr )
+                            elif not os.path.exists( output.stdout ):
+                                log.error( "virtualenv's site-packages directory '%s' does not exist", output.stdout )
+                            else:
+                                env_var_dicts.append( dict( name="PYTHONPATH", action="prepend_to", value=output.stdout ) )
+                                env_var_dicts.append( dict( name="PATH", action="prepend_to", value=os.path.join( install_dir, 'venv', 'bin' ) ) )
+                    if env_var_dicts:
+                        action_dict[ 'environment_variable' ] = env_var_dicts
+                        actions.append( ( 'set_environment', action_dict ) )
+                        return tool_dependency, actions
             else:
                 raise NotImplementedError( 'Only install version 1.0 is currently supported (i.e., change your tag to be <install version="1.0">).' )
     return None, actions

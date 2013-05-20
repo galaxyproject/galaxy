@@ -6,6 +6,7 @@ import logging
 import os
 import shutil
 import tempfile
+import shutil
 from contextlib import contextmanager
 
 from galaxy import eggs
@@ -22,13 +23,14 @@ from fabric.api import settings
 log = logging.getLogger( __name__ )
 
 INSTALLATION_LOG = 'INSTALLATION.log'
+VIRTUALENV_URL = 'https://pypi.python.org/packages/source/v/virtualenv/virtualenv-1.9.1.tar.gz'
 
 def check_fabric_version():
     version = env.version
     if int( version.split( "." )[ 0 ] ) < 1:
         raise NotImplementedError( "Install Fabric version 1.0 or later." )
 
-def handle_command( app, tool_dependency, install_dir, cmd ):
+def handle_command( app, tool_dependency, install_dir, cmd, return_output=False ):
     sa_session = app.model.context.current
     with settings( warn_only=True ):
         output = local( cmd, capture=True )
@@ -43,7 +45,24 @@ def handle_command( app, tool_dependency, install_dir, cmd ):
             tool_dependency.error_message = "Unknown error occurred executing shell command %s, return_code: %s"  % ( str( cmd ), str( output.return_code ) )
         sa_session.add( tool_dependency )
         sa_session.flush()
+    if return_output:
+        return output
     return output.return_code
+
+def install_virtualenv( app, venv_dir ):
+    if not os.path.exists( venv_dir ):
+        with make_tmp_dir() as work_dir:
+            downloaded_filename = VIRTUALENV_URL.rsplit('/', 1)[-1]
+            downloaded_file_path = common_util.url_download( work_dir, downloaded_filename, VIRTUALENV_URL )
+            if common_util.istar( downloaded_file_path ):
+                common_util.extract_tar( downloaded_file_path, work_dir )
+                dir = common_util.tar_extraction_directory( work_dir, downloaded_filename )
+            else:
+                log.error( "Failed to download virtualenv: Downloaded file '%s' is not a tar file", downloaded_filename )
+                return False
+            full_path_to_dir = os.path.abspath( os.path.join( work_dir, dir ) )
+            shutil.move( full_path_to_dir, venv_dir )
+    return True
 
 def install_and_build_package( app, tool_dependency, actions_dict ):
     """Install a Galaxy tool dependency package either via a url or a mercurial or git clone command."""
@@ -142,6 +161,11 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # tags that follow this <action type="set_environment_for_install"> tag set in the tool_dependencies.xml file.
                             env_shell_file_paths = action_dict[ 'env_shell_file_paths' ]
                         elif action_type == 'setup_virtualenv':
+                            # TODO: maybe should be configurable
+                            venv_src_directory = os.path.abspath( os.path.join( app.config.tool_dependency_dir, '__virtualenv_src' ) )
+                            if not install_virtualenv( app, venv_src_directory ):
+                                log.error( 'Unable to install virtualenv' )
+                                return
                             requirements = action_dict[ 'requirements' ]
                             if os.path.exists( os.path.join( dir, requirements ) ):
                                 # requirements specified as path to a file
@@ -153,7 +177,7 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                                     f.write( requirements )
                             venv_directory = os.path.join( install_dir, "venv" )
                             # TODO: Consider making --no-site-packages optional.
-                            setup_command = "virtualenv --no-site-packages '%s'" % venv_directory
+                            setup_command = "python %s/virtualenv.py --no-site-packages '%s'" % (venv_src_directory, venv_directory)
                             # POSIXLY_CORRECT forces shell commands . and source to have the same
                             # and well defined behavior in bash/zsh.
                             activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join( venv_directory, "bin", "activate" )
@@ -162,7 +186,18 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             return_code = handle_command( app, tool_dependency, install_dir, full_setup_command )
                             if return_code:
                                 return
-                            modify_env_command = common_util.create_or_update_env_shell_file_with_command( install_dir, activate_command )
+                            site_packages_command = "%s -c 'import os, sys; print os.path.join(sys.prefix, \"lib\", \"python\" + sys.version[:3], \"site-packages\")'" % os.path.join( venv_directory, "bin", "python" )
+                            output = handle_command( app, tool_dependency, install_dir, site_packages_command, return_output=True )
+                            if output.return_code:
+                                return
+                            if not os.path.exists( output.stdout ):
+                                log.error( "virtualenv's site-packages directory '%s' does not exist", output.stdout )
+                                return
+                            modify_env_command = common_util.create_or_update_env_shell_file( install_dir, dict( name="PYTHONPATH", action="prepend_to", value=output.stdout ) )
+                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            if return_code:
+                                return
+                            modify_env_command = common_util.create_or_update_env_shell_file( install_dir, dict( name="PATH", action="prepend_to", value=os.path.join( venv_directory, "bin" ) ) )
                             return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
                             if return_code:
                                 return
