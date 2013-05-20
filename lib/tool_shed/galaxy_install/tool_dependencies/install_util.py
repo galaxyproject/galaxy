@@ -3,6 +3,7 @@ import os
 import sys
 import subprocess
 import tempfile
+from string import Template
 import common_util
 import fabric_util
 import tool_shed.util.shed_util_common as suc
@@ -317,6 +318,17 @@ def install_package( app, elem, tool_shed_repository, tool_dependencies=None ):
 def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package_name=None, proprietary_fabfile_path=None, **kwd ):
     """Parse a tool_dependency.xml file's <actions> tag set to gather information for the installation via fabric."""
     sa_session = app.model.context.current
+
+    def evaluate_template( text ):
+        """ Substitute variables defined in XML blocks obtained loaded from
+        dependencies file. """
+        # TODO: Add tool_version substitution for compat with CloudBioLinux.
+        substitutions = {
+            "INSTALL_DIR": install_dir,
+            "system_install": install_dir,  # Added for compat with CloudBioLinux
+        }
+        return Template( text ).safe_substitute( substitutions )
+
     if not os.path.exists( install_dir ):
         os.makedirs( install_dir )
     actions_dict = dict( install_dir=install_dir )
@@ -328,7 +340,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
         action_type = action_elem.get( 'type', 'shell_command' )
         if action_type == 'shell_command':
             # <action type="shell_command">make</action>
-            action_elem_text = action_elem.text.replace( '$INSTALL_DIR', install_dir )
+            action_elem_text = evaluate_template( action_elem.text )
             if action_elem_text:
                 action_dict[ 'command' ] = action_elem_text
             else:
@@ -351,7 +363,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
         elif action_type == 'make_directory':
             # <action type="make_directory">$INSTALL_DIR/lib/python</action>
             if action_elem.text:
-                action_dict[ 'full_path' ] = action_elem.text.replace( '$INSTALL_DIR', install_dir )
+                action_dict[ 'full_path' ] = evaluate_template( action_elem.text )
             else:
                 continue
         elif action_type in [ 'move_directory_files', 'move_file' ]:
@@ -364,7 +376,7 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
             #     <destination_directory>$INSTALL_DIR/bin</destination_directory>
             # </action>
             for move_elem in action_elem:
-                move_elem_text = move_elem.text.replace( '$INSTALL_DIR', install_dir )
+                move_elem_text = evaluate_template( move_elem.text )
                 if move_elem_text:
                     action_dict[ move_elem.tag ] = move_elem_text
         elif action_type == 'set_environment':
@@ -402,6 +414,15 @@ def install_via_fabric( app, tool_dependency, actions_elem, install_dir, package
                 action_dict[ 'env_shell_file_paths' ] = all_env_shell_file_paths
             else:
                 continue
+        elif action_type == 'setup_virtualenv':
+            # <action type="setup_virtualenv" />
+            ## Install requirements from file requirements.txt of downloaded bundle - or -
+            # <action type="setup_virtualenv">tools/requirements.txt</action>
+            ## Install requirements from specified file from downloaded bundle -or -
+            # <action type="setup_virtualenv">pyyaml==3.2.0
+            # lxml==2.3.0</action>
+            ## Manually specify contents of requirements.txt file to create dynamically.
+            action_dict[ 'requirements' ] = evaluate_template( action_elem.text or 'requirements.txt' )
         else:
             log.debug( "Unsupported action type '%s'. Not proceeding." % str( action_type ) )
             raise Exception( "Unsupported action type '%s' in tool dependency definition." % str( action_type ) )

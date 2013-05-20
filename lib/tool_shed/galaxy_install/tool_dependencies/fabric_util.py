@@ -140,6 +140,31 @@ def install_and_build_package( app, tool_dependency, actions_dict ):
                             # the environment setting in each of which will be injected into the environment for all <action type="shell_command">
                             # tags that follow this <action type="set_environment_for_install"> tag set in the tool_dependencies.xml file.
                             env_shell_file_paths = action_dict[ 'env_shell_file_paths' ]
+                        elif action_type == 'setup_virtualenv':
+                            requirements = action_dict[ 'requirements' ]
+                            if os.path.exists( os.path.join( dir, requirements ) ):
+                                # requirements specified as path to a file
+                                requirements_path = requirements
+                            else:
+                                # requirements specified directly in XML, create a file with these for pip.
+                                requirements_path = os.path.join( install_dir, "requirements.txt" )
+                                with open( requirements_path, "w" ) as f:
+                                    f.write( requirements )
+                            venv_directory = os.path.join( install_dir, "venv" )
+                            # TODO: Consider making --no-site-packages optional.
+                            setup_command = "virtualenv --no-site-packages '%s'" % venv_directory
+                            # POSIXLY_CORRECT forces shell commands . and source to have the same
+                            # and well defined behavior in bash/zsh.
+                            activate_command = "POSIXLY_CORRECT=1; . %s" % os.path.join( venv_directory, "bin", "activate" )
+                            install_command = "pip install -r '%s'" % requirements_path
+                            full_setup_command = "%s; %s; %s" % ( setup_command, activate_command, install_command )
+                            return_code = handle_command( app, tool_dependency, install_dir, full_setup_command )
+                            if return_code:
+                                return
+                            modify_env_command = common_util.create_or_update_env_shell_file_with_command( install_dir, activate_command )
+                            return_code = handle_command( app, tool_dependency, install_dir, modify_env_command )
+                            if return_code:
+                                return
                         elif action_type == 'shell_command':
                             with settings( warn_only=True ):
                                 cmd = ''

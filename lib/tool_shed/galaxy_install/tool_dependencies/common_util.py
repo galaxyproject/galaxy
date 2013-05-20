@@ -47,18 +47,27 @@ def create_or_update_env_shell_file( install_dir, env_var_dict ):
         changed_value = '%s' % env_var_value
     elif env_var_action == 'append_to':
         changed_value = '$%s:%s' % ( env_var_name, env_var_value )
+    line = "%s=%s; export %s" % (env_var_name, changed_value, env_var_name)
+    return create_or_update_env_shell_file_with_command(install_dir, line)
+
+
+def create_or_update_env_shell_file_with_command( install_dir, command ):
+    """
+    Return a shell expression which when executed will create or update
+    a Galaxy env.sh dependency file in the specified install_dir containing
+    the supplied command.
+    """
     env_shell_file_path = '%s/env.sh' % install_dir
     if os.path.exists( env_shell_file_path ):
         write_action = '>>'
     else:
         write_action = '>'
-    cmd = "echo '%s=%s; export %s' %s %s;chmod +x %s" % ( env_var_name,
-                                                          changed_value,
-                                                          env_var_name,
-                                                          write_action,
-                                                          env_shell_file_path,
-                                                          env_shell_file_path )
+    cmd = "echo %s %s %s;chmod +x %s" % ( __shellquote(command),
+                                          write_action,
+                                          __shellquote(env_shell_file_path),
+                                          __shellquote(env_shell_file_path))
     return cmd
+
 
 def extract_tar( file_name, file_path ):
     if isgzip( file_name ) or isbz2( file_name ):
@@ -233,3 +242,10 @@ def zipfile_ok( path_to_archive ):
         if not member_path.startswith( basename ):
             return False
     return True
+
+
+def __shellquote(s):
+    """
+    Quote and escape the supplied string for use in shell expressions.
+    """
+    return "'" + s.replace("'", "'\\''") + "'"
